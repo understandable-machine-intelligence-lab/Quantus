@@ -1,0 +1,13 @@
+# jupyter notebook checkpoints
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache
+
+# data files
+*.jpg
+*.jpeg
+*.png
+*.npy
+*.npz
+*.csv
