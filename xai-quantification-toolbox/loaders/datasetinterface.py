@@ -4,16 +4,16 @@ from abc import ABC, abstractmethod
 class DataSample(ABC):
     """ Represents a single sample of a dataset. """
 
-    def __init__(self, datum, filename):
+    def __init__(self, sample, filename):
         """ Initializes a new DataSample instance.
         Supported attributes:
-            datum   - sample data
+            sample   - sample data
             filename    - key
             label   - list of class labels
             one_hot_label   - one hot encoded class labels
             binary_mask     - dict of type label -> binary mask
         """
-        self.datum = datum
+        self.sample = sample
         self.filename = filename
 
 
