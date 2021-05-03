@@ -38,17 +38,16 @@ class ModularQuantifier:
         """
 
     def __init__(self,
-                 measures: List[Measure]):
-        self.measures = measures
+                 measure: Measure):
+        self.measure = measure
 
     def fit(self, inputs, targets, model, attributions=None, save_to_file=False):
         if attributions is None:
             get_explanations(inputs, targets)
 
         if isinstance(inputs, np.ndarray):
-            for measure in self.measures:
-                results = measure(model, inputs, targets, attributions)
-                self.__save_results(measure, results, save_to_file=save_to_file)
+            results = self.measure(model, inputs, targets, attributions)
+            self.__save_results(self.measure, results, save_to_file=save_to_file)
 
         else:
             try:
@@ -58,9 +57,8 @@ class ModularQuantifier:
                     # load attributions
                     attributions = get_attributions(data, targets, handles)
                     # compute measures
-                    for measure in self.measures:
-                        results = measure(model, data, targets, attributions)
-                        self.__save_results(measure, results, save_to_file=save_to_file)
+                    results = self.measure(model, data, targets, attributions)
+                    self.__save_results(self.measure, results, save_to_file=save_to_file)
 
             except TypeError:
                 print("{} is not iterable.".format(inputs))
