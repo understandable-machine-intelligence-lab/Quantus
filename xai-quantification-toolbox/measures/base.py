@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 
-class Measure:
+class FitMeasure:
     """
     This class is the base class for creating evaluation measures.
     The measures outputs at minimum one numerical value per sample and explanation method.
@@ -38,7 +38,7 @@ class Measure:
         return self.params
 
 
-class ModularMeasure:
+class Measure:
 
     def __init__(self,
                  name: Optional[str] = "Measure",
