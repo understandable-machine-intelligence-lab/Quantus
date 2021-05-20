@@ -17,7 +17,6 @@ def pointing_game(sample, attribution, binary_mask):
     # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
 
     # check if maximum of explanation is on target object class
-
     # case max is at more than one pixel
     if len(maxindex[0]) > 1:
         hit = 0
@@ -69,6 +68,7 @@ class LocalizationTest(Measure):
 
     def __init__(self, **params):
         self.params = params
+        self.perturbation_function = params.get("perturbation_function", None)
         self.localization_function = params.get("localization_function", "pointing_game")
 
         super(LocalizationTest, self).__init__()
@@ -86,7 +86,12 @@ class LocalizationTest(Measure):
 
             binary_mask = get_binary_mask(sample, targets[s])
 
-            results.append(self.localization_function(sample, attributions[s], binary_mask))
+            if self.perturbation_function:
+                attribution = self.perturbation_function(attributions[s])
+            else:
+                attribution = attributions[s]
+
+            results.append(self.localization_function(sample, attribution, binary_mask))
 
         return results
 
