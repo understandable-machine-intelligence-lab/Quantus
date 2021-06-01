@@ -35,7 +35,7 @@ class ModelParameterRandomizationTest(Measure):
 
                 original_attribution = attributions[s]
 
-                modified_attribution = compute_attribution(model, ...)
+                modified_attribution = model.attribute( ...)
 
                 # normalize attributions
                 original_attribution /= np.max(np.abs(original_attribution))

@@ -56,7 +56,7 @@ class ModelInterface(ABC):
         return NotImplementedError
 
     @abstractmethod
-    def compute_relevance(self, batch, layer_names, neuron_selection, xai_method, additional_parameter):
+    def attribute(self, batch, layer_names, neuron_selection, xai_method, additional_parameter):
         """ Computes attributions for the given data and labels.
         Parameters
             batch: numpy array
