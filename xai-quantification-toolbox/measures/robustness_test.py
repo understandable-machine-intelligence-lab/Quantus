@@ -28,9 +28,9 @@ class RobustnessTest(Measure):
     """
 
     def __init__(self, **kwargs):
-        self.params = params
-        self.perturbation_function = kwargs.get("perturbation_function", None)
-        self.similarity_function = kwargs.get("similarity_function", None)
+        self.kwargs = kwargs
+        self.perturbation_function = self.kwargs.get("perturbation_function", None)
+        self.similarity_function = self.kwargs.get("similarity_function", None)
 
         assert (
             self.perturbation_function in PERTURBATION_FUNCTIONS
