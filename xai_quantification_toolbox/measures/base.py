@@ -1,7 +1,5 @@
 """This module implements the base class for creating evaluation measures."""
-from typing import Optional, Any, Dict, Union, List
-import tensorflow as tf
-import torch
+from typing import Optional, Any, Union, List
 import numpy as np
 
 class Measure:
@@ -12,23 +10,27 @@ class Measure:
     """
 
     def __init__(self,
-                 name: Optional[str] = "Measure",
-                 **params: Dict[str, Any]):
+                 #name: Optional[str] = "Measure",
+                 **kwargs: dict):
         """ Initialize Measure. """
-        assert isinstance(name, str)
-        assert isinstance(params, Dict)
-        self.name = name
-        self.params = params
+        #assert isinstance(name, str)
+        assert isinstance(kwargs, dict)
+        #self.name = name
+        self.kwargs = kwargs
 
     def __call__(self,
                  model,
                  inputs: np.array,
-                 targets: Union[np.array, int, None],
+                 targets: Union[np.array, int],
                  attributions: Union[np.array, None],
                  ):
-        """ Makes computation for given data. Return float/Array per Sample. """
+        """Placeholder to compute measure for given data and attributions. Return float/Array per Sample. """
 
         raise NotImplementedError("Implementation of the Measure missing.")
+
+    #def __str__(self):
+    #    return '{self.name}'.format(self=self)
+        #raise NotImplementedError("Name of the of the Measure missing.")
 
     @property
     def get_params(self) -> Dict[str, Union[Optional[str], Optional[int], Optional[float], List]]:
@@ -53,7 +55,7 @@ class SequentialMeasure:
     def __call__(self,
                  model,
                  inputs: np.array,
-                 targets: Union[np.array, int, None],
+                 targets: Union[np.array, int],
                  attributions: Union[np.array, None]
                  ):
 

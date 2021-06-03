@@ -58,7 +58,9 @@ class RobustnessTest(Measure):
 
         if attributions is None:
             attributions = model.attribute(
-                inputs, targets, kwargs.get("xai_method", "gradient")
+                batch=inputs,
+                neuron_selection=targets,
+                xai_method=kwargs.get("xai_method", "gradient"),
             )
 
         # Reshape images and attributions as vectors.
