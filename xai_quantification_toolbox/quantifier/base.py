@@ -33,9 +33,9 @@ class Quantifier:
 
 class ModularQuantifier:
     """
-        This class is where evaluation specified and where it is run against some data, explanations and model.
-        Here we specify how things are run (local, #gpus) and where the output is stored.
-        """
+    This class is where evaluation specified and where it is run against some data, explanations and model.
+    Here we specify how things are run (local, #gpus) and where the output is stored.
+    """
 
     def __init__(self,
                  measure: Measure):
