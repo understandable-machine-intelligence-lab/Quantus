@@ -70,3 +70,6 @@ class FaithfulnessTest(Measure):
     @property
     def score_(self):
         pass
+
+    def faithfulness_correlation(self):
+        pass
