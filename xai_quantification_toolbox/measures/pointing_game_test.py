@@ -6,7 +6,7 @@ from .base import Measure
 
 
 class PointingGameTest(Measure):
-    """ Implements the Pointing Game as described in
+    """Implements the Pointing Game as described in
     Zhang et. al., 2018, Top-Down Neural Attention by Exitation Backprop
     """
 
@@ -15,20 +15,24 @@ class PointingGameTest(Measure):
 
         super(PointingGameTest, self).__init__()
 
-    def __call__(self,
-                 model,
-                 inputs: np.array,
-                 targets: Union[np.array, int, None],
-                 attributions: Union[np.array, None],
-                 gaussian_blur=True,
-                 **kwargs):
+    def __call__(
+        self,
+        model,
+        inputs: np.array,
+        targets: Union[np.array, int, None],
+        attributions: Union[np.array, None],
+        gaussian_blur=True,
+        **kwargs
+    ):
 
         ratios, hits = [], []
         # results = []
 
         if gaussian_blur:
-            attributions = [gaussian_filter(attribution, sigma=0.02 * np.max(attribution))
-                            for attribution in attributions]    # maybe: np.max(np.abs(attribution))    ?
+            attributions = [
+                gaussian_filter(attribution, sigma=0.02 * np.max(attribution))
+                for attribution in attributions
+            ]  # maybe: np.max(np.abs(attribution))    ?
 
         # iterate samples
         for s, sample in enumerate(inputs):
@@ -36,11 +40,15 @@ class PointingGameTest(Measure):
             # find index of max value
             maxindex = np.where(attributions[s] == np.max(attributions[s]))
 
-            binary_mask = get_binary_mask(sample, targets[s])   # sample.binary_mask[label]
+            binary_mask = get_binary_mask(
+                sample, targets[s]
+            )  # sample.binary_mask[label]
 
-            assert (binary_mask.shape == attributions[s].shape)
+            assert binary_mask.shape == attributions[s].shape
 
-            ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+            ratio = np.sum(binary_mask) / float(
+                binary_mask.shape[0] * binary_mask.shape[1]
+            )
 
             # check if maximum of explanation is on target object class
 
@@ -57,5 +65,5 @@ class PointingGameTest(Measure):
             hits.append(hit)
             # results.append((ratio, hit))
 
-        return ratios, hits         # maybe as a dict??
+        return ratios, hits  # maybe as a dict??
         # return results

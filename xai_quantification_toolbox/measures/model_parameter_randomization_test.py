@@ -5,7 +5,7 @@ from .base import Measure
 
 
 class ModelParameterRandomizationTest(Measure):
-    """ Implements the Model Parameter Randomization Method as described in
+    """Implements the Model Parameter Randomization Method as described in
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 
@@ -16,12 +16,14 @@ class ModelParameterRandomizationTest(Measure):
 
         super(ModelParameterRandomizationTest, self).__init__()
 
-    def __call__(self,
-                 model,
-                 inputs: np.array,
-                 targets: Union[np.array, int, None],
-                 attributions: Union[np.array, None],
-                 **kwargs):
+    def __call__(
+        self,
+        model,
+        inputs: np.array,
+        targets: Union[np.array, int, None],
+        attributions: Union[np.array, None],
+        **kwargs
+    ):
 
         results = []
 
@@ -29,23 +31,27 @@ class ModelParameterRandomizationTest(Measure):
 
             layer_results = []
 
-            model = randomize_layer(model, layer, independent=(self.layer_order == "independent"))
+            model = randomize_layer(
+                model, layer, independent=(self.layer_order == "independent")
+            )
 
             for s, sample in enumerate(inputs):
 
                 original_attribution = attributions[s]
 
-                modified_attribution = model.attribute( ...)
+                modified_attribution = model.attribute(...)
 
                 # normalize attributions
                 original_attribution /= np.max(np.abs(original_attribution))
                 modified_attribution /= np.max(np.abs(modified_attribution))
 
                 # compute distance measure / ToDo: ensure computation of multiple distance measures at once
-                distance = self.distance_measure(modified_attribution, original_attribution)
+                distance = self.distance_measure(
+                    modified_attribution, original_attribution
+                )
 
                 layer_results.append(distance)
 
-            results.append(layer_results)   # how to save results ??
+            results.append(layer_results)  # how to save results ??
 
         return results
