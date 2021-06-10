@@ -3,7 +3,7 @@ import random
 
 
 class DataLoader:
-    """ Encapsulates the dataloading functionality.
+    """Encapsulates the dataloading functionality.
     -----------
     Attributes
     -----------
@@ -25,7 +25,7 @@ class DataLoader:
         self.shuffle = shuffle
 
         if endidx > 0:
-            assert (startidx < endidx)
+            assert startidx < endidx
             if endidx > len(self.dataset):
                 self.idx = list(range(startidx, len(self.dataset)))
             else:
@@ -38,7 +38,10 @@ class DataLoader:
         if self.shuffle:
             random.shuffle(self.idx)
 
-        self.batches = [self.idx[i:i+self.batch_size] for i in range(0, len(self.idx), self.batch_size)]
+        self.batches = [
+            self.idx[i : i + self.batch_size]
+            for i in range(0, len(self.idx), self.batch_size)
+        ]
 
         self.current_batch = 0
 

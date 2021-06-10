@@ -5,7 +5,7 @@ class DataSample(ABC):
     """ Represents a single sample of a dataset. """
 
     def __init__(self, sample, filename):
-        """ Initializes a new DataSample instance.
+        """Initializes a new DataSample instance.
         Supported attributes:
             sample   - sample data
             filename    - key
@@ -18,7 +18,7 @@ class DataSample(ABC):
 
 
 class Dataset(ABC):
-    """ Abstract Interface for custom datasets.
+    """Abstract Interface for custom datasets.
     -----------
     Attributes
     -----------

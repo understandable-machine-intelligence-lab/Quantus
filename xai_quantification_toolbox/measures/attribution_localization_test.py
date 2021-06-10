@@ -3,46 +3,59 @@ from typing import Union
 
 from .base import Measure
 
+
 class LocalizationTest(Measure):
     """ Implements basis for all Localization Test Measures. """
 
-    def __init__(self, **params):
-        self.params = params
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
         self.perturbation_function = params.get("perturbation_function", None)
-        self.localization_function = params.get("localization_function", "pointing_game")
+        self.localization_function = params.get(
+            "localization_function", "pointing_game"
+        )
+        self.agg_function = kwargs.get("agg_function", np.mean)
 
         super(LocalizationTest, self).__init__()
 
-    def __call__(self,
-                 model,
-                 inputs: np.array,
-                 targets: Union[np.array, int, None],
-                 attributions: Union[np.array, None],
-                 **kwargs):
+    def __call__(
+        self,
+        model,
+        inputs: np.array,
+        targets: Union[np.array, int, None],
+        attributions: Union[np.array, None],
+        **kwargs
+    ):
 
         results = []
 
         for s, sample in enumerate(inputs):
 
-            binary_mask = get_binary_mask(sample, targets[s])
+            sub_results = []
+
+            for target in targets:
+
+                binary_mask = get_binary_mask(sample, targets[s])
 
             if self.perturbation_function:
                 attribution = self.perturbation_function(attributions[s])
             else:
                 attribution = attributions[s]
 
-            results.append(self.localization_function(sample, attribution, binary_mask))
+                sub_results.append(
+                    self.localization_function(sample, attribution, binary_mask)
+                )
+
+            results.append(self.agg_function(sub_results))
 
         return results
 
-
     @staticmethod
     def pointing_game(attribution, binary_mask):
-        """ Implements the Pointing Game as described in
+        """Implements the Pointing Game as described in
         Zhang et. al., 2018, Top-Down Neural Attention by Exitation Backprop
         """
 
-        assert (binary_mask.shape == attribution.shape)
+        assert binary_mask.shape == attribution.shape
 
         # find index of max value
         maxindex = np.where(attribution == np.max(attribution))
@@ -62,7 +75,7 @@ class LocalizationTest(Measure):
 
     @staticmethod
     def attribution_localization(attribution, binary_mask, weighted=False):
-        """ Implements the Attribution Localization Quantification Method as described in
+        """Implements the Attribution Localization Quantification Method as described in
         Kohlbrenner et. al., 2020, Towards Best Practice in Explaining Neural Network Decisions with LRP
         """
 
@@ -82,8 +95,11 @@ class LocalizationTest(Measure):
         ratio = size_bbox / size_data
 
         if inside_attribution / total_attribution > 1.0:
-            print("inside explanation {} greater than total explanation {}".format(inside_attribution,
-                                                                                   total_attribution))
+            print(
+                "inside explanation {} greater than total explanation {}".format(
+                    inside_attribution, total_attribution
+                )
+            )
 
         inside_attribution_ratio = inside_attribution / total_attribution
 
@@ -91,7 +107,8 @@ class LocalizationTest(Measure):
             return inside_attribution_ratio
 
         else:
-            weighted_inside_attribution_ratio = inside_attribution_ratio * (size_data / size_bbox)
+            weighted_inside_attribution_ratio = inside_attribution_ratio * (
+                size_data / size_bbox
+            )
 
             return weighted_inside_attribution_ratio
-
