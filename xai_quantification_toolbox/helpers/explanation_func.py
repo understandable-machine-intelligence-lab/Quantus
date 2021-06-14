@@ -1,10 +1,16 @@
+from typing import Callable, Union
 import torch
+import torchvision
 import cv2
 from captum.attr import *
 from .utils import *
 
 
-def explain(model, inputs, targets, xai_method, device=None, **params) -> torch.Tensor:
+def explain(model: Union[torchvision.models, torch.nn],
+            inputs: Union[np.array, torch.Tensor],
+            targets: Union[np.array, torch.Tensor],
+            explanation_func: Callable,
+            **kwargs) -> torch.Tensor:
     """
     Explain inputs given a model, targets and an explanation method.
 
@@ -16,113 +22,110 @@ def explain(model, inputs, targets, xai_method, device=None, **params) -> torch.
             torch.Tensor(inputs)
             .reshape(
                 -1,
-                params.get("nr_channels", 3),
-                params.get("img_size", 224),
-                params.get("img_size", 224),
-            )
-            .to(device)
+                kwargs.get("nr_channels", 3),
+                kwargs.get("img_size", 224),
+                kwargs.get("img_size", 224),
+            ).to(kwargs.get("device", None))
         )
     if not isinstance(targets, torch.Tensor):
-        targets = torch.as_tensor(targets).to(
-            device
-        )  # torch.nn.functional.one_hot(torch.Tensor(targets)).to(device) #torch.Tensor(targets).to(device)
+        targets = torch.as_tensor(targets).to(kwargs.get("device", None))  # torch.nn.functional.one_hot(torch.Tensor(targets)).to(device) #torch.Tensor(targets).to(device)
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
-    if xai_method == "GradientShap":
+    if explanation_func == "GradientShap":
         explanation = (
             GradientShap(model)
             .attribute(
                 inputs=inputs,
                 target=targets,
-                baselines=params.get("baseline", torch.zeros_like(inputs)),
+                baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
             .sum(axis=1)
         )
 
-    elif xai_method == "IntegratedGradients":
+    elif explanation_func == "IntegratedGradients":
         explanation = (
             IntegratedGradients(model)
             .attribute(
                 inputs=inputs,
                 target=targets,
-                baselines=params.get("baseline", torch.zeros_like(inputs)),
+                baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
             .sum(axis=1)
         )
 
-    elif xai_method == "InputXGradient":
+    elif explanation_func == "InputXGradient":
         explanation = (
             InputXGradient(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
-    elif xai_method == "Saliency":
+    elif explanation_func == "Saliency":
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
             .sum(axis=1)
         )
 
-    elif xai_method == "Gradient":
+    elif explanation_func == "Gradient":
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=False)
             .sum(axis=1)
         )
 
-    elif xai_method == "Occlusion":
+    elif explanation_func == "Occlusion":
 
         assert (
-            "sliding_window" in params
-        ), "Provide params, 'oc_sliding_window' e.g., (4, 4) to compute an Occlusion explanation."
+            "sliding_window" in kwargs
+        ), "Provide kwargs, 'oc_sliding_window' e.g., (4, 4) to compute an Occlusion explanation."
 
         explanation = (
             Occlusion(model)
             .attribute(
                 inputs=inputs,
                 target=targets,
-                sliding_window_shapes=params["oc_sliding_window"],
+                sliding_window_shapes=kwargs["oc_sliding_window"],
             )
             .sum(axis=1)
         )
 
-    elif xai_method == "FeatureAblation":
+    elif explanation_func == "FeatureAblation":
 
         explanation = (
             FeatureAblation(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
-    elif xai_method == "GradCam":
+    elif explanation_func == "GradCam":
 
         assert (
-            "gc_layer" in params
-        ), "Provide params, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+            "gc_layer" in kwargs
+        ), "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
 
         explanation = (
-            LayerGradCam(model, layer=params["gc_layer"])
+            LayerGradCam(model, layer=kwargs["gc_layer"])
             .attribute(inputs=inputs, target=targets)
             .sum(axis=1)
         )
         explanation = torch.Tensor(
             cv2.resize(
                 explanation.cpu().data.numpy(),
-                dsize=(params.get("img_size", 224), params.get("img_size", 224)),
+                dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             )
         )
 
     else:
         raise KeyError("Specify a XAI method that exists.")
 
-    if params.get("abs", False):
+    if kwargs.get("abs", False):
         explanation = explanation.abs()
 
-    if params.get("pos_only", False):
+    if kwargs.get("pos_only", False):
         explanation[explanation < 0] = 0.0
 
-    if params.get("neg_only", False):
+    if kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
 
-    # if params.get("normalise", False):
+    # if kwargs.get("normalise", False):
     #   explanation = normalize_heatmap(explanation)
 
     return explanation

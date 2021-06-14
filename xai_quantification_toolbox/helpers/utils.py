@@ -21,7 +21,7 @@ def denormalize_image(
     std=torch.Tensor([0.229, 0.224, 0.225]).reshape(-1, 1, 1),
     **params,
 ):
-    """De-normalize a torch heatmap."""
+    """De-normalize a torch image."""
     if isinstance(image, torch.Tensor):
         return (
             image.view(
@@ -37,9 +37,9 @@ def denormalize_image(
         std
         return (image * std.numpy()) + mean.numpy()
     else:
-        print("Make image either a np.array or")
+        print("Make image either a np.array or torch.Tensor before denormalizing.")
         return image
-
+    
 
 def check_if_fitted(m) -> Optional[bool]:
     """Checks if a measure is fitted by the presence of """

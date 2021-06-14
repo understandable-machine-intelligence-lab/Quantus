@@ -36,6 +36,29 @@ def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.chebyshev(u=a, v=b)
 
 
+def lipschitz_constant(
+    a: np.array,
+    b: np.array,
+    c: Union[np.array, None],
+    d: Union[np.array, None],
+    **kwargs
+) -> float:
+    """Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x."""
+
+    d1 = kwargs.get("distance_numerator", distance_manhattan)
+    d2 = kwargs.get("distance_denominator", distance_euclidean)
+
+    if np.shape(a) == ():
+        return float(abs(a - b) / d2(c, d))
+    else:
+        return float(d1(a, b) / d2(a=c, b=d))
+
+
+def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
+    """Calculate the absolute difference between two images (or explanations)."""
+    return np.mean(abs(a - b))
+
+
 def cosine(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate Cosine of two images (or explanations)."""
     return scipy.spatial.distance.cosine(u=a, v=b)
@@ -53,22 +76,9 @@ def mse(a: np.array, b: np.array, **kwargs) -> float:
     return sklearn.metrics.mean_squared_error(y_true=a, y_pred=b)
 
 
-def lipschitz_constant(
-    a: np.array,
-    b: np.array,
-    c: Union[np.array, None],
-    d: Union[np.array, None],
-    **kwargs
-) -> float:
-    """Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x."""
-
-    d1 = kwargs.get("norm_numerator", distance_manhattan)
-    d2 = kwargs.get("norm_denominator", distance_euclidean)
-
-    if np.shape(a) == ():
-        return float(abs(a - b) / d2(c, d))
-    else:
-        return float(d1(a, b) / d2(a=c, b=d))
+def difference(a: np.array, b: np.array, **kwargs) -> float:
+    """Calculate the difference between two images (or explanations)."""
+    return a - b
 
 
 SIMILARITY_FUNCTIONS = {
@@ -79,6 +89,8 @@ SIMILARITY_FUNCTIONS = {
     "distance_manhattan": distance_manhattan,
     "distance_chebyshev": distance_chebyshev,
     "lipschitz_constant": lipschitz_constant,
+    "abs_difference": abs_difference,
+    "difference": difference,
     "cosine": cosine,
     "ssim": ssim,
     "mse": mse,
