@@ -33,9 +33,9 @@ class Quantifier:
 
 class ModularQuantifier:
     """
-        This class is where evaluation specified and where it is run against some data, explanations and model.
-        Here we specify how things are run (local, #gpus) and where the output is stored.
-        """
+    This class is where evaluation specified and where it is run against some data, explanations and model.
+    Here we specify how things are run (local, #gpus) and where the output is stored.
+    """
 
     def __init__(self,
                  measure: Measure):
@@ -64,8 +64,14 @@ class ModularQuantifier:
                 print("{} is not iterable.".format(inputs))
 
     def __save_results(self, measure, results, save_to_file=False):
-        """ Save Measure results to internal representation. """
+        """Save Measure results to internal representation. """
         raise NotImplementedError()
+
+    """
+    if __class__.__name__ == "RobustnessTest":
+        pass
+        "do this" 
+    """
 
     @staticmethod
     def get_explanations(self):

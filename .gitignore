@@ -3,6 +3,8 @@
 
 # pytest
 .pytest_cache
+*.DS_Store
+__pycache__/
 
 # data files
 *.jpg
@@ -11,3 +13,6 @@
 *.npy
 *.npz
 *.csv
+
+# dev
+temp/

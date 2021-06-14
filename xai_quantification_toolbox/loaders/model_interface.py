@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class ModelInterface(ABC):
-    """ Abstract Interface of the Model Class
+    """Abstract Interface of the Model Class
     -----------
     Attributes
     -----------
@@ -28,7 +28,7 @@ class ModelInterface(ABC):
 
     @abstractmethod
     def predict(self, data):
-        """ Compute model predictions for the given data (model output).
+        """Compute model predictions for the given data (model output).
         Parameters:
             data: numpy array
                 numpy array of data to compute predictions for
@@ -39,16 +39,16 @@ class ModelInterface(ABC):
 
     @abstractmethod
     def get_layer_names(self, with_weights_only=False):
-        """ Get a list of model layer names.
-         Parameters:
-             with_weights_only: boolean
-                whether to include only layers containing weights
+        """Get a list of model layer names.
+        Parameters:
+            with_weights_only: boolean
+               whether to include only layers containing weights
         """
         return NotImplementedError
 
     @abstractmethod
     def randomize_layer_weights(self, layer_name):
-        """ Randomizes the weights of the chosen layer.
+        """Randomizes the weights of the chosen layer.
         Parameters:
             layer_name: str
                 name/key to the chosen layer
@@ -56,8 +56,10 @@ class ModelInterface(ABC):
         return NotImplementedError
 
     @abstractmethod
-    def attribute(self, batch, layer_names, neuron_selection, xai_method, additional_parameter):
-        """ Computes attributions for the given data and labels.
+    def attribute(
+        self, data, layer_names, neuron_selection, xai_method, additional_parameter
+    ):
+        """Computes attributions for the given data and labels.
         Parameters
             batch: numpy array
                 numpy array of data to compute attributions for
