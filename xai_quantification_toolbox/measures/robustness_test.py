@@ -12,10 +12,10 @@ class RobustnessTest(Measure):
     Implements basis functionality for the following evaluation measures:
 
         • Continuity (Montavon et al., 2018)
+        • IIR (Yang et al., 2019)
         • Estimated Lipschitz constant (Alvarez-Melis, 2019)
-        • Input independence (BAM)
         • avg-Sensitivity, max-Sensitivity (Yeh et al., 2019)
-        • Monotonicity (Nguyen et al., 2020)
+        • Stability (Alvarez-Melis, 2018)
 
     """
 
@@ -33,7 +33,6 @@ class RobustnessTest(Measure):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
-        device,
         **kwargs
     ):
         assert (
@@ -45,11 +44,11 @@ class RobustnessTest(Measure):
 
         if a_batch is None:
             explain(
-                model.to(device),
-                x,
-                y,
+                model.to(kwargs.get("device", None)),
+                x_batch,
+                y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
@@ -57,13 +56,13 @@ class RobustnessTest(Measure):
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Generate explanation based on perturbed input x.
-            x_perturbed = self.perturb_func(x.flatten())
+            x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
             a_perturbed = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_perturbed,
                 y,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             # model.attribute(batch=x_perturbed, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
@@ -88,6 +87,12 @@ class ContinuityTest(RobustnessTest):
     ||R(x) - R(x')||_1 / ||x - x'||_2
     where R(x) is the explanation for input x and x' is the perturbed input.
 
+    References:
+        Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
+        "Methods for interpreting and understanding deep neural networks."
+        Digital Signal Processing 73 (2018): 1-15.
+
+
     Current assumptions:
         • that input is squared
         • made an quantitative interpretation of visually determining how similar f(x) and R(x1) curves are
@@ -95,11 +100,18 @@ class ContinuityTest(RobustnessTest):
     """
 
     def __init__(self, *args, **kwargs):
-        """"""
+        """
 
+        Args:
+            *args:
+            **kwargs:
+
+        Returns:
+
+        """
         assert (
             kwargs.get("img_size", 224) % kwargs.get("nr_patches", 4) == 0
-        ), "Set nr_patches so that the modulo remainder returns 0 given the image size."
+        ), "Set 'nr_patches' so that the modulo remainder returns 0 given the image size."
 
         self.args = args
         self.kwargs = kwargs
@@ -116,7 +128,7 @@ class ContinuityTest(RobustnessTest):
 
         self.nr_patches = self.kwargs.get("nr_patches", 4)
         self.patch_size = (self.img_size * 2) // self.nr_patches
-        self.baseline_value = self.kwargs.get("baseline_value", 0.0)
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", 0.0)
         self.nr_steps = self.kwargs.get("nr_steps", 10)
         self.dx = self.img_size // self.nr_steps
 
@@ -128,7 +140,6 @@ class ContinuityTest(RobustnessTest):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
-        device,
         **kwargs
     ):
         assert (
@@ -140,11 +151,11 @@ class ContinuityTest(RobustnessTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
@@ -160,16 +171,16 @@ class ContinuityTest(RobustnessTest):
                 x_perturbed = self.perturb_func(
                     x,
                     **{
-                        "dx": (step + 1) * self.dx,
-                        "baseline_value": self.baseline_value,
+                        "perturb_dx": (step + 1) * self.dx,
+                        "perturb_baseline": self.perturb_baseline,
                     }
                 )
                 a_perturbed = explain(
-                    model.to(device),
+                    model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
                     explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=device,
+                    device=kwargs.get("device", None),
                 )
                 # model.attribute(batch=x_perturbed, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
@@ -182,7 +193,7 @@ class ContinuityTest(RobustnessTest):
                 y_pred = model(
                     torch.Tensor(x_perturbed)
                     .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                    .to(device)
+                    .to(kwargs.get("device", None))
                 )[:, y]
                 sub_results[self.nr_patches].append(y_pred)
 
@@ -235,12 +246,17 @@ class InputIndependenceRate(RobustnessTest):
     The test computes the input independence rate defined as the percentage of
     examples where the difference between x and x' is less than a threshold.
 
+    References:
+        Yang, Mengjiao, and Been Kim. "Benchmarking attribution methods with relative feature importance."
+        arXiv preprint arXiv:1907.09701 (2019).
+
     Current assumptions:
         • that perturbed sample x' is "functionally insignificant" for the model
 
-    Todo implementation:
+    TODO implementation:
         • optimization scheme for perturbing the image
-        • double-check correctness of code interpretation (https://github.com/google-research-datasets/bam/blob/master/bam/metrics.py)
+        • double-check correctness of code interpretation (https://github.com/
+        google-research-datasets/bam/blob/master/bam/metrics.py)
 
     """
 
@@ -264,7 +280,6 @@ class InputIndependenceRate(RobustnessTest):
             x_batch: np.array,
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
-            device,
             **kwargs
     ):
         assert (
@@ -276,11 +291,11 @@ class InputIndependenceRate(RobustnessTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
-                x,
-                y,
+                model.to(kwargs.get("device", None)),
+                x_batch,
+                y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
 
         counts_thres = 0.0
@@ -288,18 +303,18 @@ class InputIndependenceRate(RobustnessTest):
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Generate explanation based on perturbed input x.
-            x_perturbed = self.perturb_func(x.flatten())
+            x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
             a_perturbed = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_perturbed,
                 y,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             y_pred = int(model(
                 torch.Tensor(x_perturbed)
                     .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                    .to(device)
+                    .to(kwargs.get("device", None))
             ).max(1).indices)
 
             if (y_pred == y):
@@ -314,16 +329,26 @@ class InputIndependenceRate(RobustnessTest):
 
 
 
-class EstimatedLocalLipschitzConstant(RobustnessTest):
+class LocalLipschitzEstimate(RobustnessTest):
     """
-    Implementation of the Estimated Local Lipschitz constant test by Alvarez-Melis et al (2018).
+    Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al (2018a, 2018b).
 
+    This tests asks how consistent are the explanations for similar/neighboring examples.
     The test denotes a (weaker) empirical notion of stability based on discrete,
     finite-sample neighborhoods i.e., argmax_(||f(x) - f(x')||_2 / ||x - x'||_2)
     where f(x) is the explanation for input x and x' is the perturbed input.
 
-    Todo implementation:
-        • implement GP solver https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html to more efficiently find max of sample distance
+    References:
+        1) Alvarez-Melis, David, and Tommi S. Jaakkola. "On the robustness of interpretability methods."
+        arXiv preprint arXiv:1806.08049 (2018).
+
+        2) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
+        neural networks." arXiv preprint arXiv:1806.07538 (2018).
+
+
+    TODO implementation:
+        • implement GP solver https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html
+        to more efficiently find max of sample distance
 
     """
 
@@ -347,7 +372,6 @@ class EstimatedLocalLipschitzConstant(RobustnessTest):
             x_batch: np.array,
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
-            device,
             **kwargs
     ):
         assert (
@@ -359,11 +383,11 @@ class EstimatedLocalLipschitzConstant(RobustnessTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
-                x,
-                y,
+                model.to(kwargs.get("device", None)),
+                x_batch,
+                y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
 
         results = []
@@ -373,13 +397,13 @@ class EstimatedLocalLipschitzConstant(RobustnessTest):
             for i in range(self.nr_samples):
 
                 # Generate explanation based on perturbed input x.
-                x_perturbed = self.perturb_func(x.flatten())
+                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
                 a_perturbed = explain(
-                    model.to(device),
+                    model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
                     explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=device,
+                    device=kwargs.get("device", None),
                 )
 
                 similarity = self.similarity_func(
@@ -405,7 +429,11 @@ class SensitivityMax(RobustnessTest):
     Using Monte Carlo sampling-based approximation while measuing how explanations
     change under slight perturbation.
 
-    Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust
+    References:
+        Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
+        arXiv preprint arXiv:1901.09392 (2019).
+
+    Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
     def __init__(self, *args, **kwargs):
@@ -420,7 +448,7 @@ class SensitivityMax(RobustnessTest):
 
         #self.agg_func = self.kwargs.get("agg_func", np.max)
 
-        self.std = self.kwargs.get("perturb_radius", 0.02)
+        self.std = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 10)
 
         super(RobustnessTest, self).__init__()
@@ -431,7 +459,6 @@ class SensitivityMax(RobustnessTest):
             x_batch: np.array,
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
-            device,
             **kwargs
     ):
         assert (
@@ -443,11 +470,11 @@ class SensitivityMax(RobustnessTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
-                x,
-                y,
+                model.to(kwargs.get("device", None)),
+                x_batch,
+                y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
 
         results = []
@@ -457,13 +484,13 @@ class SensitivityMax(RobustnessTest):
             for i in range(self.nr_samples):
 
                 # Generate explanation based on perturbed input x.
-                x_perturbed = self.perturb_func(x.flatten())
+                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
                 a_perturbed = explain(
-                    model.to(device),
+                    model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
                     explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=device,
+                    device=kwargs.get("device", None),
                 )
 
                 sensitivities = self.similarity_func(a=a.flatten(),
