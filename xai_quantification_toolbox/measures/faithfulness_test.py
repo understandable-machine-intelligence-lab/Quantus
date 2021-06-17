@@ -254,7 +254,7 @@ class Infidelity(FaithfulnessTest):
         self.args = args
         self.kwargs = kwargs
         self.similarity_func = self.kwargs.get("similarity_func", mse)
-        self.perturb_func = self.kwargs.get("perturb_func", replacement_by_indices)
+        self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", 0.0)
         self.perturb_patch_sizes = self.kwargs.get("perturb_patch_sizes", list(np.arange(10, 30)))
 

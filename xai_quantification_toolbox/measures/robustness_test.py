@@ -79,7 +79,7 @@ class RobustnessTest(Measure):
         return results
 
 
-class ContinuityTest(RobustnessTest):
+class ContinuityTest(Measure):
     """
     Implementation of the Continuity test by Montavon et al (2018).
 
@@ -91,7 +91,6 @@ class ContinuityTest(RobustnessTest):
         Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
-
 
     Current assumptions:
         • that input is squared
@@ -132,7 +131,7 @@ class ContinuityTest(RobustnessTest):
         self.nr_steps = self.kwargs.get("nr_steps", 10)
         self.dx = self.img_size // self.nr_steps
 
-        super(RobustnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
         self,
