@@ -59,83 +59,225 @@ class LocalizationTest(Measure):
 
         return results
 
-    @staticmethod
-    def pointing_game(attribution, binary_mask):
-        """Implements the Pointing Game as described in
-        Zhang et. al., 2018, Top-Down Neural Attention by Exitation Backprop
-        """
-
-        assert binary_mask.shape == attribution.shape
-
-        # find index of max value
-        maxindex = np.where(attribution == np.max(attribution))
-
-        # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
-
-        # check if maximum of explanation is on target object class
-        # case max is at more than one pixel
-        if len(maxindex[0]) > 1:
-            hit = 0
-            for pixel in maxindex:
-                hit = hit or binary_mask[pixel[0], pixel[1]]
-        else:
-            hit = binary_mask[maxindex[0], maxindex[1]]
-
-        return hit
-
-    @staticmethod
-    def attribution_localization(attribution, binary_mask, weighted=False):
-        """Implements the Attribution Localization Quantification Method as described in
-        Kohlbrenner et. al., 2020, Towards Best Practice in Explaining Neural Network Decisions with LRP
-        """
-
-        assert not np.all((attribution < 0.0))
-        assert attribution.shape == binary_mask.shape
-        assert np.any(binary_mask)
-
-        # filter positive attribution values
-        attribution[attribution < 0.0] = 0.0
-
-        # compute inside/outside ratio
-        inside_attribution = np.sum(attribution[binary_mask])
-        total_attribution = np.sum(attribution)
-
-        size_bbox = float(np.sum(binary_mask))
-        size_data = float(np.shape(binary_mask)[0] * np.shape(binary_mask)[1])
-        ratio = size_bbox / size_data
-
-        if inside_attribution / total_attribution > 1.0:
-            print(
-                "inside explanation {} greater than total explanation {}".format(
-                    inside_attribution, total_attribution
-                )
-            )
-
-        inside_attribution_ratio = inside_attribution / total_attribution
-
-        if not weighted:
-            return inside_attribution_ratio
-
-        else:
-            weighted_inside_attribution_ratio = inside_attribution_ratio * (
-                size_data / size_bbox
-            )
-
-            return weighted_inside_attribution_ratio
+    # @staticmethod
+    # def pointing_game(attribution, binary_mask):
+    #     """Implements the Pointing Game as described in
+    #     Zhang et. al., 2018, Top-Down Neural Attention by Exitation Backprop
+    #     """
+    #
+    #     assert binary_mask.shape == attribution.shape
+    #
+    #     # find index of max value
+    #     maxindex = np.where(attribution == np.max(attribution))
+    #
+    #     # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+    #
+    #     # check if maximum of explanation is on target object class
+    #     # case max is at more than one pixel
+    #     if len(maxindex[0]) > 1:
+    #         hit = 0
+    #         for pixel in maxindex:
+    #             hit = hit or binary_mask[pixel[0], pixel[1]]
+    #     else:
+    #         hit = binary_mask[maxindex[0], maxindex[1]]
+    #
+    #     return hit
+    #
+    # @staticmethod
+    # def attribution_localization(attribution, binary_mask, weighted=False):
+    #     """Implements the Attribution Localization Quantification Method as described in
+    #     Kohlbrenner et. al., 2020, Towards Best Practice in Explaining Neural Network Decisions with LRP
+    #     """
+    #
+    #     assert not np.all((attribution < 0.0))
+    #     assert attribution.shape == binary_mask.shape
+    #     assert np.any(binary_mask)
+    #
+    #     # filter positive attribution values
+    #     attribution[attribution < 0.0] = 0.0
+    #
+    #     # compute inside/outside ratio
+    #     inside_attribution = np.sum(attribution[binary_mask])
+    #     total_attribution = np.sum(attribution)
+    #
+    #     size_bbox = float(np.sum(binary_mask))
+    #     size_data = float(np.shape(binary_mask)[0] * np.shape(binary_mask)[1])
+    #     ratio = size_bbox / size_data
+    #
+    #     if inside_attribution / total_attribution > 1.0:
+    #         print(
+    #             "inside explanation {} greater than total explanation {}".format(
+    #                 inside_attribution, total_attribution
+    #             )
+    #         )
+    #
+    #     inside_attribution_ratio = inside_attribution / total_attribution
+    #
+    #     if not weighted:
+    #         return inside_attribution_ratio
+    #
+    #     else:
+    #         weighted_inside_attribution_ratio = inside_attribution_ratio * (
+    #             size_data / size_bbox
+    #         )
+    #
+    #         return weighted_inside_attribution_ratio
 
 
 class PointingGame(LocalizationTest):
+    """
+    Implementation of the Pointing Game from Zhang et al. 2018,
+    that imlements the check if the maximal attribution is on target.
 
-    def __init__(self):
+    Current assumptions:
+    s_batch is binary and shapes are equal
+    """
 
+    def __init__(self, *args, **kwargs):
+
+        self.args = args
+        self.kwargs = kwargs
         super(PointingGame, self).__init__()
+
+    def __call__(
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            s_batch: np.array,
+            device,
+            **kwargs
+    ):
+        assert (
+                "explanation_func" in kwargs
+        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+        assert (
+                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+        ), "Inputs and attributions should include the same number of samples."
+        assert (
+            np.shape(x_batch)[0] == np.shape(s_batch)[0]
+        ), "Inputs and segmentation masks should include the same number of samples."
+
+        if a_batch is None:
+            explain(
+                model.to(device),
+                x_batch,
+                y_batch,
+                explanation_func=kwargs.get("explanation_func", "Gradient"),
+                device=device,
+            )
+
+        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
+        # ToDo: assert is binary mask for s_batch
+
+        results = []
+        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+            # find index of max value
+            maxindex = np.where(a == np.max(a))
+
+            # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+
+            # check if maximum of explanation is on target object class
+            # case max is at more than one pixel
+            if len(maxindex[0]) > 1:
+                hit = 0
+                for pixel in maxindex:
+                    hit = hit or s[pixel[0], pixel[1]]
+            else:
+                hit = s[maxindex[0], maxindex[1]]
+
+            results.append(hit)
+
+        return results
 
 
 class AttributionLocalization(LocalizationTest):
+    """
+    Implementation of the attribution localization from Kohlbrenner et al. 2020,
+    that imlements the ratio of attribution within target to the overall attribution.
 
-    def __init__(self):
+    Current assumptions:
+    s_batch is binary and shapes are equal
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        self.args = args
+        self.kwargs = kwargs
+        self.weighted = self.kwargs.get("weighted", False)
 
         super(AttributionLocalization, self).__init__()
+
+    def __call__(
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            s_batch: np.array,
+            device,
+            **kwargs
+    ):
+        assert (
+                "explanation_func" in kwargs
+        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+        assert (
+                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+        ), "Inputs and attributions should include the same number of samples."
+        assert (
+            np.shape(x_batch)[0] == np.shape(s_batch)[0]
+        ), "Inputs and segmentation masks should include the same number of samples."
+
+        if a_batch is None:
+            explain(
+                model.to(device),
+                x_batch,
+                y_batch,
+                explanation_func=kwargs.get("explanation_func", "Gradient"),
+                device=device,
+            )
+
+        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
+        # ToDo: assert is binary mask for s_batch
+
+        results = []
+        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            assert not np.all((a < 0.0))
+            assert np.any(s)
+
+            # filter positive attribution values
+            a[a < 0.0] = 0.0
+
+            # compute inside/outside ratio
+            inside_attribution = np.sum(a[s])
+            total_attribution = np.sum(a)
+
+            size_bbox = float(np.sum(s))
+            size_data = float(np.shape(s)[0] * np.shape(s)[1])
+            ratio = size_bbox / size_data
+
+            if inside_attribution / total_attribution > 1.0:
+                print(
+                    "inside explanation {} greater than total explanation {}".format(
+                        inside_attribution, total_attribution
+                    )
+                )
+
+            inside_attribution_ratio = inside_attribution / total_attribution
+
+            if not self.weighted:
+                results.append(inside_attribution_ratio)
+
+            else:
+                weighted_inside_attribution_ratio = inside_attribution_ratio * (
+                        size_data / size_bbox
+                )
+
+                results.append(weighted_inside_attribution_ratio)
+
+        return results
 
 
 class TopKIntersection(LocalizationTest):
@@ -149,6 +291,8 @@ class TopKIntersection(LocalizationTest):
 
     def __init__(self, *args, **kwargs):
 
+        self.args = args
+        self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
 
         super(TopKIntersection, self).__init__()
