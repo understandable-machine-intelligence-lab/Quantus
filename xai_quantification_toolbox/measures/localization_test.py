@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Union
+import warnings
 
 from .base import Measure
 from ..helpers.explanation_func import *
@@ -58,6 +59,36 @@ class LocalizationTest(Measure):
             results.append(self.agg_function(sub_results))
 
         return results
+
+    def check_assertions(self,
+                         model,
+                         x_batch: np.array,
+                         y_batch: Union[np.array, int],
+                         a_batch: Union[np.array, None],
+                         s_batch: np.array,
+                         **kwargs
+                         ):
+        assert (
+                "explanation_func" in kwargs
+        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+        if not isinstance(y_batch, int):
+            assert (
+                    np.shape(x_batch)[0] == np.shape(y_batch)[0]
+            ), "Target should by an Integer or a list with the same number of samples as the data."
+        assert (
+                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+        ), "Inputs and attributions should include the same number of samples."
+        assert (
+                np.shape(x_batch)[1] == np.shape(a_batch)[1]
+        ), "Data and attributions should have a corresponding shape."
+        assert (
+                np.shape(x_batch)[0] == np.shape(s_batch)[0]
+        ), "Inputs and segmentation masks should include the same number of samples."
+        assert (
+                np.shape(a_batch) == np.shape(s_batch)
+        ), "Attributions and segmentation masks should have the same shape."
+
+        return
 
     # @staticmethod
     # def pointing_game(attribution, binary_mask):
@@ -149,15 +180,6 @@ class PointingGame(LocalizationTest):
             device,
             **kwargs
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-        assert (
-            np.shape(x_batch)[0] == np.shape(s_batch)[0]
-        ), "Inputs and segmentation masks should include the same number of samples."
 
         if a_batch is None:
             explain(
@@ -167,8 +189,8 @@ class PointingGame(LocalizationTest):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 device=device,
             )
+        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
-        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
         # ToDo: assert is binary mask for s_batch
 
         results = []
@@ -195,6 +217,7 @@ class PointingGame(LocalizationTest):
 class AttributionLocalization(LocalizationTest):
     """
     Implementation of the attribution localization from Kohlbrenner et al. 2020,
+    (also Relevance Mass Accuracy by Arras et al. 2021)
     that imlements the ratio of attribution within target to the overall attribution.
 
     Current assumptions:
@@ -206,6 +229,7 @@ class AttributionLocalization(LocalizationTest):
         self.args = args
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
+        self.max_size = self.kwargs.get("max_size", 1.0)
 
         super(AttributionLocalization, self).__init__()
 
@@ -220,14 +244,8 @@ class AttributionLocalization(LocalizationTest):
             **kwargs
     ):
         assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-        assert (
-            np.shape(x_batch)[0] == np.shape(s_batch)[0]
-        ), "Inputs and segmentation masks should include the same number of samples."
+            (self.max_size > 0.) and (self.max_size <= 1.)
+        ), "max_size must be between 0. and 1."
 
         if a_batch is None:
             explain(
@@ -237,8 +255,8 @@ class AttributionLocalization(LocalizationTest):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 device=device,
             )
+        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
-        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
         # ToDo: assert is binary mask for s_batch
 
         results = []
@@ -258,24 +276,28 @@ class AttributionLocalization(LocalizationTest):
             size_data = float(np.shape(s)[0] * np.shape(s)[1])
             ratio = size_bbox / size_data
 
-            if inside_attribution / total_attribution > 1.0:
-                print(
-                    "inside explanation {} greater than total explanation {}".format(
-                        inside_attribution, total_attribution
+            if ratio <= self.max_size:
+                if inside_attribution / total_attribution > 1.0:
+                    print(
+                        "inside explanation {} greater than total explanation {}".format(
+                            inside_attribution, total_attribution
+                        )
                     )
-                )
 
-            inside_attribution_ratio = inside_attribution / total_attribution
+                inside_attribution_ratio = inside_attribution / total_attribution
 
-            if not self.weighted:
-                results.append(inside_attribution_ratio)
+                if not self.weighted:
+                    results.append(inside_attribution_ratio)
 
-            else:
-                weighted_inside_attribution_ratio = inside_attribution_ratio * (
-                        size_data / size_bbox
-                )
+                else:
+                    weighted_inside_attribution_ratio = inside_attribution_ratio * (
+                            size_data / size_bbox
+                    )
 
-                results.append(weighted_inside_attribution_ratio)
+                    results.append(weighted_inside_attribution_ratio)
+
+        if not results:
+            warnings.warn("Data contains no object with a size below max_size: Results are empty.")
 
         return results
 
@@ -307,15 +329,6 @@ class TopKIntersection(LocalizationTest):
             device,
             **kwargs
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-        assert (
-            np.shape(x_batch)[0] == np.shape(s_batch)[0]
-        ), "Inputs and segmentation masks should include the same number of samples."
 
         if a_batch is None:
             explain(
@@ -325,8 +338,8 @@ class TopKIntersection(LocalizationTest):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 device=device,
             )
+        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
-        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
         # ToDo: assert is binary mask for s_batch
 
         results = []
@@ -370,15 +383,6 @@ class RelevanceRankAccuracy(LocalizationTest):
             device,
             **kwargs
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-        assert (
-                np.shape(x_batch)[0] == np.shape(s_batch)[0]
-        ), "Inputs and segmentation masks should include the same number of samples."
 
         if a_batch is None:
             explain(
@@ -388,8 +392,8 @@ class RelevanceRankAccuracy(LocalizationTest):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 device=device,
             )
+        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
-        # ToDo: assert shapes equal for s_batch, a_batch, x_batch
         # ToDo: assert is binary mask for s_batch
 
         results = []
