@@ -45,7 +45,7 @@ class FaithfulnessTest(Measure):
                                self.img_size * self.img_size) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
             self.pixels_in_step = (self.img_size * self.img_size) / self.max_steps_per_input
 
-        super(FaithfulnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,
@@ -116,7 +116,7 @@ class FaithfulnessTest(Measure):
         return results
 
 
-class FaithfulnessEstimate(FaithfulnessTest):
+class FaithfulnessEstimate(Measure):
     """
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018.
 
@@ -154,7 +154,7 @@ class FaithfulnessEstimate(FaithfulnessTest):
                                self.img_size * self.img_size) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
             self.pixels_in_step = (self.img_size * self.img_size) / self.max_steps_per_input
 
-        super(FaithfulnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,
@@ -223,7 +223,7 @@ class FaithfulnessEstimate(FaithfulnessTest):
         return results
 
 
-class Infidelity(FaithfulnessTest):
+class Infidelity(Measure):
     """
     Implementation of infidelity by Yeh at el., 2019.
 
@@ -274,7 +274,7 @@ class Infidelity(FaithfulnessTest):
                            self.img_size * self.img_size) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
             self.pixels_in_step = (self.img_size * self.img_size) / self.max_steps_per_input
 
-        super(FaithfulnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,

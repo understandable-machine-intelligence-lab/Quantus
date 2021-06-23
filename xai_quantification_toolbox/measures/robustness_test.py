@@ -25,7 +25,7 @@ class RobustnessTest(Measure):
         self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
         self.similarity_func = self.kwargs.get("similarity_func", distance_euclidean)
 
-        super(RobustnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
         self,
@@ -238,7 +238,7 @@ class ContinuityTest(Measure):
         return results
 
 
-class InputIndependenceRate(RobustnessTest):
+class InputIndependenceRate(Measure):
     """
     Implementation of the Input Independence Rate test by Yang et al (2019).
 
@@ -271,7 +271,7 @@ class InputIndependenceRate(RobustnessTest):
 
         self.threshold = kwargs.get("threshold", 0.1)
 
-        super(RobustnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,
@@ -328,7 +328,7 @@ class InputIndependenceRate(RobustnessTest):
 
 
 
-class LocalLipschitzEstimate(RobustnessTest):
+class LocalLipschitzEstimate(Measure):
     """
     Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al (2018a, 2018b).
 
@@ -363,7 +363,7 @@ class LocalLipschitzEstimate(RobustnessTest):
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
 
-        super(RobustnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,
@@ -421,7 +421,7 @@ class LocalLipschitzEstimate(RobustnessTest):
         return results
 
 
-class SensitivityMax(RobustnessTest):
+class SensitivityMax(Measure):
     """
     Implementation of max-sensitivity of an explanation by Yeh at el., 2019.
 
@@ -450,7 +450,7 @@ class SensitivityMax(RobustnessTest):
         self.std = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 10)
 
-        super(RobustnessTest, self).__init__()
+        super(Measure, self).__init__()
 
     def __call__(
             self,
