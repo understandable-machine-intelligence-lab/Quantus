@@ -11,11 +11,11 @@ class RobustnessTest(Measure):
     """
     Implements basis functionality for the following evaluation measures:
 
-        • Continuity (Montavon et al., 2018)
-        • IIR (Yang et al., 2019)
-        • Estimated Lipschitz constant (Alvarez-Melis, 2019)
-        • avg-Sensitivity, max-Sensitivity (Yeh et al., 2019)
-        • Stability (Alvarez-Melis, 2018)
+        - Continuity (Montavon et al., 2018)
+        - IIR (Yang et al., 2019)
+        - Estimated Lipschitz constant (Alvarez-Melis, 2019)
+        - avg-Sensitivity, max-Sensitivity (Yeh et al., 2019)
+        - Stability (Alvarez-Melis, 2018)
 
     """
 
@@ -27,7 +27,8 @@ class RobustnessTest(Measure):
 
         super(Measure, self).__init__()
 
-    def __call__(
+    def __call__\
+                    (
         self,
         model,
         x_batch: np.array,
@@ -35,6 +36,27 @@ class RobustnessTest(Measure):
         a_batch: Union[np.array, None],
         **kwargs
     ):
+        """
+        - What the output mean
+
+        - What a high versus low value indicates
+
+        - Assumptions (to be concerned about)
+
+        - Further reading
+
+        Parameters
+        ----------
+        model
+        x_batch
+        y_batch
+        a_batch
+        kwargs
+
+        Returns
+        -------
+
+        """
         assert (
             "explanation_func" in kwargs
         ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
@@ -64,7 +86,6 @@ class RobustnessTest(Measure):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 device=kwargs.get("device", None),
             )
-            # model.attribute(batch=x_perturbed, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
             # Append similarity score.
             results.append(
@@ -93,9 +114,9 @@ class ContinuityTest(Measure):
         Digital Signal Processing 73 (2018): 1-15.
 
     Current assumptions:
-        • that input is squared
-        • made an quantitative interpretation of visually determining how similar f(x) and R(x1) curves are
-        • using torch for explanation and model
+        - that input is squared
+        - made an quantitative interpretation of visually determining how similar f(x) and R(x1) curves are
+        - using torch for explanation and model
     """
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +130,7 @@ class ContinuityTest(Measure):
 
         """
         assert (
-            kwargs.get("img_size", 224) % kwargs.get("nr_patches", 4) == 0
+                kwargs.get("img_size", 224) % kwargs.get("nr_patches", 4) == 0
         ), "Set 'nr_patches' so that the modulo remainder returns 0 given the image size."
 
         self.args = args
@@ -133,19 +154,20 @@ class ContinuityTest(Measure):
 
         super(Measure, self).__init__()
 
+
     def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        **kwargs
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            **kwargs
     ):
         assert (
-            "explanation_func" in kwargs
+                "explanation_func" in kwargs
         ), "To run ContinuityTest specify 'explanation_func' (str) e.g., 'Gradient'."
         assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
+                np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         if a_batch is None:
@@ -158,7 +180,7 @@ class ContinuityTest(Measure):
             )
             # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
-        results = []  # {k: None for k in range(len(x_batch))}
+        results = {k: None for k in range(len(x_batch))}  # []
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -189,29 +211,29 @@ class ContinuityTest(Measure):
                 # plt.show()
 
                 # Store the prediction score as the last element of the sub_results dictionary.
-                y_pred = model(
+                y_pred = float(model(
                     torch.Tensor(x_perturbed)
-                    .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                    .to(kwargs.get("device", None))
-                )[:, y]
+                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .to(kwargs.get("device", None))
+                )[:, y])
                 sub_results[self.nr_patches].append(y_pred)
 
                 ix_patch = 0
                 for i_x, top_left_x in enumerate(
-                    range(0, self.img_size, self.patch_size)
+                        range(0, self.img_size, self.patch_size)
                 ):
                     for i_y, top_left_y in enumerate(
-                        range(0, self.img_size, self.patch_size)
+                            range(0, self.img_size, self.patch_size)
                     ):
                         # Sum attributions for patch.
                         patch_sum = float(
                             a_perturbed[
-                                :,
-                                top_left_x : top_left_x + self.patch_size,
-                                top_left_y : top_left_y + self.patch_size,
+                            :,
+                            top_left_x: top_left_x + self.patch_size,
+                            top_left_y: top_left_y + self.patch_size,
                             ]
-                            .abs()
-                            .sum()
+                                .abs()
+                                .sum()
                         )
                         sub_results[ix_patch].append(patch_sum)
                         ix_patch += 1
@@ -221,21 +243,17 @@ class ContinuityTest(Measure):
                         # plt.imshow(a_perturbed_test.reshape(224, 224))
                         # plt.show()
 
-                ix_patch = 0
+            results[ix] = sub_results
 
-            # Append similarity score.
-            results.append(
-                np.mean(
-                    [
-                        self.similarity_func(
-                            sub_results[self.nr_patches], sub_results[ix_patch]
-                        )
-                        for ix_patch in range(self.nr_patches)
-                    ]
-                )
-            )  # results[ix] = sub_results
+        print(f"Continuity test correlation coefficient: {self.calculate_continutity_correlation_score(results):.4f}")
 
         return results
+
+
+    def calculate_continutity_correlation_score(self, results: dict):
+        return np.mean([self.similarity_func(results[sample][self.nr_patches],
+                                             results[sample][ix_patch])
+                        for ix_patch in range(self.nr_patches) for sample in results.keys()])
 
 
 class InputIndependenceRate(Measure):
@@ -250,11 +268,11 @@ class InputIndependenceRate(Measure):
         arXiv preprint arXiv:1907.09701 (2019).
 
     Current assumptions:
-        • that perturbed sample x' is "functionally insignificant" for the model
+        - that perturbed sample x' is "functionally insignificant" for the model
 
     TODO implementation:
-        • optimization scheme for perturbing the image
-        • double-check correctness of code interpretation (https://github.com/
+        - optimization scheme for perturbing the image
+        - double-check correctness of code interpretation (https://github.com/
         google-research-datasets/bam/blob/master/bam/metrics.py)
 
     """
@@ -272,6 +290,7 @@ class InputIndependenceRate(Measure):
         self.threshold = kwargs.get("threshold", 0.1)
 
         super(Measure, self).__init__()
+
 
     def __call__(
             self,
@@ -346,7 +365,7 @@ class LocalLipschitzEstimate(Measure):
 
 
     TODO implementation:
-        • implement GP solver https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html
+        - implement GP solver https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html
         to more efficiently find max of sample distance
 
     """
@@ -364,6 +383,7 @@ class LocalLipschitzEstimate(Measure):
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
 
         super(Measure, self).__init__()
+
 
     def __call__(
             self,
@@ -451,6 +471,7 @@ class SensitivityMax(Measure):
         self.nr_samples = self.kwargs.get("nr_samples", 10)
 
         super(Measure, self).__init__()
+
 
     def __call__(
             self,

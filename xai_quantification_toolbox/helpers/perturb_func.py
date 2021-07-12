@@ -4,6 +4,7 @@ import scipy
 import cv2
 import random
 
+
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input. """
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
@@ -39,23 +40,24 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     assert "top_left_x" in kwargs, "Specify a 'top_left_x' (int) to enable perturbation function to run."
 
     def _set_baseline(**kwargs) -> float:
-        """Set baseline based on string input."""
-        available_baselines = ["random", "black", "white", "mean", "neighbourhood"]
-        assert kwargs["perturb_baseline"] in available_baselines, f"Specify a perturb_baseline (str) that exist in {available_baselines}"
+        """Set baseline based on string input.
+        TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
 
         # Mask input with masking value.
-        if kwargs["perturb_baseline"].lower() == "random":
-            return float(random.random())
-        elif kwargs["perturb_baseline"].lower() == "black":
-            return 0.0
-        elif kwargs["perturb_baseline"].lower() == "white":
-            return 1.0
-        elif kwargs["perturb_baseline"].lower() == "mean":
-            return float(kwargs["patch"].mean())
-        elif kwargs["perturb_baseline"].lower() == "neighbourhood":
-            return float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max()))
-        else:
-            ValueError("Specify a perturb_baseline (str) that exist in {}.").__format__(available_baselines)
+        mask_dict = {"random": float(random.random()),
+                     "uniform": float(random.uniform(img.min(), img.max())),
+                     "black": float(img.min()),
+                     "white": float(img.max()),
+                     "mean": float(kwargs["patch"].mean()),
+                     "neighbourhood": float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max()))}
+
+        assert kwargs["perturb_baseline"] in list(
+            mask_dict.keys()), f"Specify a perturb_baseline (str) that exist in {mask_dict}"
+
+        try:
+            return mask_dict[kwargs["perturb_baseline"].lower()]
+        except ValueError("Specify a perturb_baseline (str) that exist in {}.").__format__(available_baselines)
+            return None
 
     #for c in range(kwargs.get("nr_channels", 3)):
     if not isinstance(kwargs.get("perturb_baseline", 0.0), (float, int)):

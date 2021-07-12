@@ -1,7 +1,7 @@
 from typing import Union, List
 import tensorflow as tf
 import torch
-from ..measures.base import Measure
+from xai_quantification_toolbox.xai_quantification_toolbox.measures.base import Measure
 
 
 def create_quantifier(
