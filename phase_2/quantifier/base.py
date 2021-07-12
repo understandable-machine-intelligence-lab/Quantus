@@ -4,7 +4,7 @@ import tensorflow as tf
 import torch
 import numpy as np
 
-from ..measures.base import Measure
+from xai_quantification_toolbox.xai_quantification_toolbox.measures.base import Measure
 
 
 class Quantifier:
