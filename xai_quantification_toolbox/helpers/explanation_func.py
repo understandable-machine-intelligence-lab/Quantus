@@ -6,7 +6,7 @@ from captum.attr import *
 from .utils import *
 
 
-def explain(model: Union[torchvision.models, torch.nn],
+def explain(model: torch.nn,
             inputs: Union[np.array, torch.Tensor],
             targets: Union[np.array, torch.Tensor],
             explanation_func: Callable,
@@ -14,7 +14,7 @@ def explain(model: Union[torchvision.models, torch.nn],
     """
     Explain inputs given a model, targets and an explanation method.
 
-    (batch_size, nr_channels, img_size, img_size) where batch_size = 1, 256
+    Expecting inputs to be shaped such as (batch_size, nr_channels, img_size, img_size)
     """
 
     if not isinstance(inputs, torch.Tensor):
@@ -28,7 +28,7 @@ def explain(model: Union[torchvision.models, torch.nn],
             ).to(kwargs.get("device", None))
         )
     if not isinstance(targets, torch.Tensor):
-        targets = torch.as_tensor(targets).to(kwargs.get("device", None))  # torch.nn.functional.one_hot(torch.Tensor(targets)).to(device) #torch.Tensor(targets).to(device)
+        targets = torch.as_tensor(targets).to(kwargs.get("device", None))
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 

@@ -1,7 +1,7 @@
 """Collection of similarity functions i..e, ways to measure the distance between two inputs (or explanations)."""
 from typing import Union
 import scipy
-import sklearn
+from sklearn import metrics
 import skimage
 import numpy as np
 
@@ -73,7 +73,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
 
 def mse(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate Mean Squared Error between two images (or explanations)."""
-    return sklearn.metrics.mean_squared_error(y_true=a, y_pred=b)
+    return metrics.mean_squared_error(y_true=a, y_pred=b)
 
 
 def difference(a: np.array, b: np.array, **kwargs) -> float:
