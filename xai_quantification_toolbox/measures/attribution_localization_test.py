@@ -17,6 +17,7 @@ class LocalizationTest(Measure):
 
         super(LocalizationTest, self).__init__()
 
+
     def __call__(
         self,
         model,
@@ -49,6 +50,7 @@ class LocalizationTest(Measure):
 
         return results
 
+
     @staticmethod
     def pointing_game(attribution, binary_mask):
         """Implements the Pointing Game as described in
@@ -72,6 +74,7 @@ class LocalizationTest(Measure):
             hit = binary_mask[maxindex[0], maxindex[1]]
 
         return hit
+
 
     @staticmethod
     def attribution_localization(attribution, binary_mask, weighted=False):
