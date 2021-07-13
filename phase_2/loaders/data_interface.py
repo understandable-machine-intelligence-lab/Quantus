@@ -56,7 +56,7 @@ class Dataset(ABC):
     @abstractmethod
     def __getitem__(self, index):
         """ Retrieves the element with the specified index. """
-        return NotImplementedError
+        raise NotImplementedError
 
     def set_mode(self, mode):
         """ Set the mode of the dataset to determine return values"""
@@ -68,7 +68,7 @@ class Dataset(ABC):
     @abstractmethod
     def classname_to_idx(self, class_name):
         """ convert a classname to an index. """
-        return NotImplementedError
+        raise NotImplementedError
 
     # @abstractmethod
     # def get_dataset_partition(self, startidx, endidx, batched=False):

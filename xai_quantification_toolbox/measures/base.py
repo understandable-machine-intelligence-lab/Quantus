@@ -21,6 +21,7 @@ class Measure:
         # self.name = name
         self.kwargs = kwargs
 
+
     def __call__(
         self,
         model,
@@ -28,51 +29,32 @@ class Measure:
         targets: Union[np.array, int],
         attributions: Union[np.array, None],
     ):
-        """Placeholder to compute measure for given data and attributions. Return float/Array per Sample. """
+        """Placeholder to compute measure for given data and attributions.
+        Return float/Array per Sample. """
 
         raise NotImplementedError("Implementation of the Measure is missing.")
 
-    # def __str__(self):
-    #    return '{self.name}'.format(self=self)
-    # raise NotImplementedError("Name of the of the Measure missing.")
+
+    @property
+    def README(self):
+        print(self.__call__.__doc__)
+
+
+    def __str__(self):
+        pass
+        # return '{self.name}'.format(self=self)
+        # NotImplementedError("Name of the Measure is missing."):
+
 
     @property
     def get_params(
         self,
     ) -> Dict[str, Union[Optional[str], Optional[int], Optional[float], List]]:
-        for k, v in self.params.items():
-            print(k, v)
-        return self.params
+        return self.__dict__
+        #for k, v in self.kwargs.items():
+        #    print(k, v)
+#
 
     def set_params(self, key: Optional[str], value: Any) -> Dict[str, Any]:
-        self.params[key] = value
-        return self.params
-
-
-class SequentialMeasure:
-    def __init__(self, *args: [Measure]):
-
-        for measure in args:
-            assert isinstance(measure, Measure)
-        self.measures = [measure for measure in args]
-
-    def __call__(
-        self,
-        model,
-        inputs: np.array,
-        targets: Union[np.array, int],
-        attributions: Union[np.array, None],
-    ):
-
-        results = {}
-
-        for measure in self.measures:
-
-            results[measure] = measure(model, inputs, targets, attributions)
-
-        return results
-
-    @property
-    def get_measures(self) -> List[Measure]:
-
-        return self.measures
+        self.kwargs[key] = value
+        return self.kwargs
