@@ -2,6 +2,17 @@ import numpy as np
 from typing import Union
 
 from .base import Measure
+from ..helpers import explain
+
+
+def get_layers(model, order="top_down"):
+    """ Checks a pytorch model for randomizable layers and returns them in a dict. """
+    layers = [tup[1] for tup in model.named_modules() if hasattr(tup[1], "reset_parameters")]
+
+    if order == "top_down":
+        return layers[::-1]
+    else:
+        return layers
 
 
 class ModelParameterRandomizationTest(Measure):
@@ -13,9 +24,11 @@ class ModelParameterRandomizationTest(Measure):
         self.params = params
         self.distance_measure = params.get("distance_measure", "spearman")
         self.layer_order = params.get("layer_order", "independent")
+        self.explanation_func = params.get("explanation_func", "Saliency")
+
+        assert self.layer_order in ["top_down", "bottom_up", "independent"]
 
         super(ModelParameterRandomizationTest, self).__init__()
-
 
     def __call__(
         self,
@@ -28,19 +41,22 @@ class ModelParameterRandomizationTest(Measure):
 
         results = []
 
+        # save state_dict
+        original_parameters = model.state_dict()
+
         for layer in get_layers(model, order=(self.layer_order == "top_down")):
 
             layer_results = []
 
-            model = randomize_layer(
-                model, layer, independent=(self.layer_order == "independent")
-            )
+            if self.layer_order == "independent":
+                model.load_state_dict(original_parameters)
 
-            for s, sample in enumerate(inputs):
+            # randomize layer
+            layer.reset_parameters()
 
-                original_attribution = attributions[s]
+            modified_attributions = explain(model, inputs, targets, explanation_func=self.explanation_func)
 
-                modified_attribution = model.attribute(...)
+            for original_attribution, modified_attribution in zip(attributions, modified_attributions):
 
                 # normalize attributions
                 original_attribution /= np.max(np.abs(original_attribution))
