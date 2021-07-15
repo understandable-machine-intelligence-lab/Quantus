@@ -56,7 +56,7 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
 
         try:
             return mask_dict[kwargs["perturb_baseline"].lower()]
-        except ValueError("Specify a perturb_baseline (str) that exist in {}.").__format__(available_baselines)
+        except ValueError("Specify a perturb_baseline (str) that exist in {}.".__format__(available_baselines)):
             return None
 
     #for c in range(kwargs.get("nr_channels", 3)):
