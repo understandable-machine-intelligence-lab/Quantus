@@ -21,50 +21,77 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
     )
 
 
+def get_baseline(img: np.array, **kwargs) -> float:
+    """Get baseline based on a uer-defined string or integer input.
+    TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
+    assert (
+            "perturb_baseline" in kwargs
+    ), "Specify a 'perturb_baseline' e.g., 0.0 or 'black' for pixel replacement."
+
+    if isinstance(kwargs["perturb_baseline"], (float, int)):
+        return kwargs["perturb_baseline"]
+    else:
+        mask_dict = {
+            "random": float(random.random()),
+            "uniform": float(random.uniform(img.min(), img.max())),
+            "black": float(img.min()),
+            "white": float(img.max()),
+        }
+
+        if "patch" in kwargs:
+            mask_dict["neighbourhood_mean"] = float(kwargs["patch"].mean()),
+            mask_dict["neighbourhood_random_min_max"] = float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
+
+        assert kwargs["perturb_baseline"] in list(
+            mask_dict.keys()
+        ), f"Specify 'perturb_baseline' (str) that exist in {list(mask_dict.keys())}"
+
+        try:
+            return mask_dict[kwargs["perturb_baseline"].lower()]
+        except:
+            pass
+
+
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    assert "index" in kwargs, "Specify an 'index' to enable perturbation function to run."
-    assert "perturb_baseline" in kwargs, "Specify a 'perturb_baseline' e.g., 0.0 for a black pixel replacement."
-    img[kwargs.get("index", 0)] = kwargs.get("perturb_baseline", 0.0)
+    assert (
+        "index" in kwargs
+    ), "Specify 'index' to enable perturbation function to run."
+
+    img[kwargs["index"]] = get_baseline(img, **kwargs)
     return img
 
 
 def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     """Replace a single patch in an image by given baseline."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert "patch_size" in kwargs, "Specify a 'patch_size' (int) to enable perturbation function to run."
-    assert "nr_channels" in kwargs, "Specify a 'nr_channels' (int) to enable perturbation function to run."
-    assert "nr_channels" in kwargs, "Specify a 'perturb_baseline' (int) to enable perturbation function to run."
-    assert "top_left_y" in kwargs, "Specify a 'top_left_y' (int) to enable perturbation function to run."
-    assert "top_left_x" in kwargs, "Specify a 'top_left_x' (int) to enable perturbation function to run."
+    assert (
+        "patch_size" in kwargs
+    ), "Specify 'patch_size' (int) to perturb the image."
+    assert (
+        "nr_channels" in kwargs
+    ), "Specify 'nr_channels' (int) to perturb the image."
+    assert (
+        "nr_channels" in kwargs
+    ), "Specify 'perturb_baseline' (int, float, str) to perturb the image."
+    assert (
+        "top_left_y" in kwargs
+    ), "Specify 'top_left_y' (int) to perturb the image."
+    assert (
+        "top_left_x" in kwargs
+    ), "Specify 'top_left_x' (int) to perturb the image."
 
-    def _set_baseline(**kwargs) -> float:
-        """Set baseline based on string input.
-        TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
+    # Preset patch for 'mean' and 'neighbourhood' choices.
+    kwargs["patch"] = img[:, kwargs["top_left_x"]: kwargs["top_left_x"] + kwargs["patch_size"],
+                      kwargs["top_left_y"]: kwargs["top_left_y"] + kwargs["patch_size"]]
 
-        # Mask input with masking value.
-        mask_dict = {"random": float(random.random()),
-                     "uniform": float(random.uniform(img.min(), img.max())),
-                     "black": float(img.min()),
-                     "white": float(img.max()),
-                     "mean": float(kwargs["patch"].mean()),
-                     "neighbourhood": float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max()))}
-
-        assert kwargs["perturb_baseline"] in list(
-            mask_dict.keys()), f"Specify a perturb_baseline (str) that exist in {mask_dict}"
-
-        try:
-            return mask_dict[kwargs["perturb_baseline"].lower()]
-        except ValueError("Specify a perturb_baseline (str) that exist in {}.").__format__(available_baselines)
-            return None
-
-    #for c in range(kwargs.get("nr_channels", 3)):
-    if not isinstance(kwargs.get("perturb_baseline", 0.0), (float, int)):
-        kwargs["patch"] = img[:, kwargs["top_left_x"]: kwargs["top_left_x"] + kwargs["patch_size"], kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"]]
-        kwargs["perturb_baseline"] = _set_baseline(**kwargs)
-
-    img[:, kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"], kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"]] = kwargs["perturb_baseline"]
+    # for c in range(kwargs.get("nr_channels", 3)):
+    img[
+        :,
+        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
+        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
+    ] = get_baseline(img, **kwargs)
 
     return img
 
@@ -72,12 +99,17 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
 def uniform_sampling(img: np.array, **kwargs) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    return img + np.random.uniform(-kwargs.get("perturb_radius", 0.02), kwargs.get("perturb_radius", 0.02), size=img.shape)
+    return img + np.random.uniform(
+        -kwargs.get("perturb_radius", 0.02),
+        kwargs.get("perturb_radius", 0.02),
+        size=img.shape,
+    )
 
 
 def rotation(img: np.array, **kwargs) -> np.array:
     """Rotate image by some given angle."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = cv2.getRotationMatrix2D(
         center=(kwargs.get("img_size", 224) / 2, kwargs.get("img_size", 224) / 2),
         angle=kwargs.get("perturb_angle", 10),
@@ -97,12 +129,13 @@ def rotation(img: np.array, **kwargs) -> np.array:
 def translation_x_direction(img: np.array, **kwargs) -> np.array:
     """Translate image by some given value in the x-direction."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = np.float32([[1, 0, kwargs.get("perturb_dx", 10)], [0, 1, 0]])
     return np.moveaxis(
         cv2.warpAffine(
             np.moveaxis(img, 0, 2),
             matrix,
-            (224, 224),
+            (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=kwargs.get("perturb_baseline", 0.75),
         ),
         2,
@@ -113,12 +146,13 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
 def translation_y_direction(img: np.array, **kwargs) -> np.array:
     """Translate image by some given value in the x-direction."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = np.float32([[1, 0, 0], [0, 1, kwargs.get("perturb_dy", 10)]])
     return np.moveaxis(
         cv2.warpAffine(
             np.moveaxis(img, 0, 2),
             matrix,
-            (224, 224),
+            (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=kwargs.get("perturb_baseline", 0.75),
         ),
         2,
@@ -144,5 +178,5 @@ PERTURBATION_FUNCTIONS = {
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
     "optimization_scheme": optimization_scheme,
-    "uniform_sampling": uniform_sampling
+    "uniform_sampling": uniform_sampling,
 }

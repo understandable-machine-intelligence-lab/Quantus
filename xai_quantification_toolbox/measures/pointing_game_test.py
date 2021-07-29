@@ -15,7 +15,6 @@ class PointingGameTest(Measure):
 
         super(PointingGameTest, self).__init__()
 
-
     def __call__(
         self,
         model,

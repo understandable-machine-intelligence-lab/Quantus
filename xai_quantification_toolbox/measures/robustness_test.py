@@ -7,102 +7,9 @@ from ..helpers.similarity_func import *
 from ..helpers.explanation_func import *
 
 
-class RobustnessTest(Measure):
-    """
-    Implements basis functionality for the following evaluation measures:
-
-        - Continuity (Montavon et al., 2018)
-        - IIR (Yang et al., 2019)
-        - Estimated Lipschitz constant (Alvarez-Melis, 2019)
-        - avg-Sensitivity, max-Sensitivity (Yeh et al., 2019)
-        - Stability (Alvarez-Melis, 2018)
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
-        self.similarity_func = self.kwargs.get("similarity_func", distance_euclidean)
-
-        super(Measure, self).__init__()
-
-    def __call__\
-                    (
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        **kwargs
-    ):
-        """
-        - What the output mean
-
-        - What a high versus low value indicates
-
-        - Assumptions (to be concerned about)
-
-        - Further reading
-
-        Parameters
-        ----------
-        model
-        x_batch
-        y_batch
-        a_batch
-        kwargs
-
-        Returns
-        -------
-
-        """
-        assert (
-            "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-
-        if a_batch is None:
-            explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
-            )
-            # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
-
-        results = []
-        for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
-
-            # Generate explanation based on perturbed input x.
-            x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
-            a_perturbed = explain(
-                model.to(kwargs.get("device", None)),
-                x_perturbed,
-                y,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
-            )
-
-            # Append similarity score.
-            results.append(
-                self.similarity_func(
-                    a=a.flatten(),
-                    b=a_perturbed.cpu().numpy().flatten(),
-                    c=x.flatten(),
-                    d=x_perturbed,
-                )
-            )
-
-        return results
-
-
 class ContinuityTest(Measure):
     """
-    Implementation of the Continuity test by Montavon et al (2018).
+    Implementation of the Continuity test by Montavon et al., 2018.
 
     The test measures the strongest variation of the explanation in the input domain i.e.,
     ||R(x) - R(x')||_1 / ||x - x'||_2
@@ -130,21 +37,16 @@ class ContinuityTest(Measure):
 
         """
         assert (
-                kwargs.get("img_size", 224) % kwargs.get("nr_patches", 4) == 0
+            kwargs.get("self.img_size", 224) % kwargs.get("nr_patches", 4) == 0
         ), "Set 'nr_patches' so that the modulo remainder returns 0 given the image size."
+
+        super(Measure, self).__init__()
 
         self.args = args
         self.kwargs = kwargs
 
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", translation_x_direction
-        )
-        self.similarity_func = self.kwargs.get(
-            "similarity_func", lipschitz_constant
-        )
-
-        self.img_size = self.kwargs.get("img_size", 224)
-        self.nr_channels = self.kwargs.get("nr_channels", 3)
+        self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
+        self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
 
         self.nr_patches = self.kwargs.get("nr_patches", 4)
         self.patch_size = (self.img_size * 2) // self.nr_patches
@@ -152,37 +54,43 @@ class ContinuityTest(Measure):
         self.nr_steps = self.kwargs.get("nr_steps", 10)
         self.dx = self.img_size // self.nr_steps
 
-        super(Measure, self).__init__()
+        self.last_results = []
+        self.all_results = []
+
+        self.img_size = None
+        self.nr_channels = None
 
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
         assert (
-                "explanation_func" in kwargs
+            "explanation_func" in kwargs
         ), "To run ContinuityTest specify 'explanation_func' (str) e.g., 'Gradient'."
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         if a_batch is None:
-            explain(
+            a_batch = explain(
                 model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+                **kwargs,
             )
             # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
-        results = {k: None for k in range(len(x_batch))}  # []
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = {k: None for k in range(len(x_batch))}  # []
 
-        for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -191,17 +99,16 @@ class ContinuityTest(Measure):
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(
                     x,
-                    **{
+                    **{**{
                         "perturb_dx": (step + 1) * self.dx,
                         "perturb_baseline": self.perturb_baseline,
-                    }
+                    }, **self.kwargs},
                 )
                 a_perturbed = explain(
                     model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
-                    explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=kwargs.get("device", None),
+                    **kwargs,
                 )
                 # model.attribute(batch=x_perturbed, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
@@ -210,30 +117,32 @@ class ContinuityTest(Measure):
                 # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
                 # plt.show()
 
-                # Store the prediction score as the last element of the sub_results dictionary.
-                y_pred = float(model(
-                    torch.Tensor(x_perturbed)
+                # Store the prediction score as the last element of the sub_self.last_results dictionary.
+                y_pred = float(
+                    model(
+                        torch.Tensor(x_perturbed)
                         .reshape(1, self.nr_channels, self.img_size, self.img_size)
                         .to(kwargs.get("device", None))
-                )[:, y])
+                    )[:, y]
+                )
                 sub_results[self.nr_patches].append(y_pred)
 
                 ix_patch = 0
                 for i_x, top_left_x in enumerate(
-                        range(0, self.img_size, self.patch_size)
+                    range(0, self.img_size, self.patch_size)
                 ):
                     for i_y, top_left_y in enumerate(
-                            range(0, self.img_size, self.patch_size)
+                        range(0, self.img_size, self.patch_size)
                     ):
                         # Sum attributions for patch.
                         patch_sum = float(
                             a_perturbed[
-                            :,
-                            top_left_x: top_left_x + self.patch_size,
-                            top_left_y: top_left_y + self.patch_size,
+                                :,
+                                top_left_x : top_left_x + self.patch_size,
+                                top_left_y : top_left_y + self.patch_size,
                             ]
-                                .abs()
-                                .sum()
+                            .abs()
+                            .sum()
                         )
                         sub_results[ix_patch].append(patch_sum)
                         ix_patch += 1
@@ -243,22 +152,29 @@ class ContinuityTest(Measure):
                         # plt.imshow(a_perturbed_test.reshape(224, 224))
                         # plt.show()
 
-            results[ix] = sub_results
+            self.last_results[sample] = sub_results
 
-        print(f"Continuity test correlation coefficient: {self.calculate_continutity_correlation_score(results):.4f}")
+        self.all_results.append(self.last_results)
 
-        return results
+        return self.last_results
 
-
-    def calculate_continutity_correlation_score(self, results: dict):
-        return np.mean([self.similarity_func(results[sample][self.nr_patches],
-                                             results[sample][ix_patch])
-                        for ix_patch in range(self.nr_patches) for sample in results.keys()])
+    @property
+    def aggregated_score(self):
+        """continuity_correlation_score"""
+        return np.mean(
+            [
+                self.similarity_func(
+                    self.last_results[sample][self.nr_patches], self.last_results[sample][ix_patch]
+                )
+                for ix_patch in range(self.nr_patches)
+                for sample in self.last_results.keys()
+            ]
+        )
 
 
 class InputIndependenceRate(Measure):
     """
-    Implementation of the Input Independence Rate test by Yang et al (2019).
+    Implementation of the Input Independence Rate test by Yang et al., 2019.
 
     The test computes the input independence rate defined as the percentage of
     examples where the difference between x and x' is less than a threshold.
@@ -278,43 +194,67 @@ class InputIndependenceRate(Measure):
     """
 
     def __init__(self, *args, **kwargs):
+
+        super(Measure, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
 
         self.perturb_func = self.kwargs.get("perturb_func", None)
         self.similarity_func = self.kwargs.get("similarity_func", abs_difference)
 
-        self.img_size = self.kwargs.get("img_size", 224)
-        self.nr_channels = self.kwargs.get("nr_channels", 3)
-
         self.threshold = kwargs.get("threshold", 0.1)
 
-        super(Measure, self).__init__()
+        self.last_results = []
+        self.all_results = []
+
+        self.img_size = None
+        self.nr_channels = None
 
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
+        """
+
+
+        Parameters
+        ----------
+        model
+        x_batch
+        y_batch
+        a_batch
+        kwargs
+
+        Returns
+        -------
+        A list with a single float.
+
+        """
         assert (
                 "explanation_func" in kwargs
         ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+
+        if a_batch is None:
+            a_batch = explain(
+                model=model.to(kwargs.get("device", None)),
+                inputs=x_batch,
+                targets=y_batch,
+                **kwargs,
+            )
+
         assert (
                 np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
-        if a_batch is None:
-            explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
-            )
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = []
 
         counts_thres = 0.0
         counts_corrs = 0.0
@@ -326,30 +266,38 @@ class InputIndependenceRate(Measure):
                 model.to(kwargs.get("device", None)),
                 x_perturbed,
                 y,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+                **kwargs,
             )
-            y_pred = int(model(
-                torch.Tensor(x_perturbed)
+            y_pred = int(
+                model(
+                    torch.Tensor(x_perturbed)
                     .reshape(1, self.nr_channels, self.img_size, self.img_size)
                     .to(kwargs.get("device", None))
-            ).max(1).indices)
+                )
+                .max(1)
+                .indices
+            )
 
-            if (y_pred == y):
+            if y_pred == y:
                 counts_corrs += 1
 
                 # Append similarity score.
-                similarity = self.similarity_func(a.flatten(), a_perturbed.cpu().numpy().flatten())
+                similarity = self.similarity_func(
+                    a.flatten(), a_perturbed.flatten()
+                )
                 if similarity < self.threshold:
                     counts_thres += 1
 
-        return float(counts_thres / counts_corrs)
+        self.last_results.append(float(counts_thres / counts_corrs))
+        self.all_results.append(self.last_results)
+
+        return self.last_results
 
 
 
 class LocalLipschitzEstimate(Measure):
     """
-    Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al (2018a, 2018b).
+    Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
     This tests asks how consistent are the explanations for similar/neighboring examples.
     The test denotes a (weaker) empirical notion of stability based on discrete,
@@ -371,49 +319,59 @@ class LocalLipschitzEstimate(Measure):
     """
 
     def __init__(self, *args, **kwargs):
+
+        super(Measure, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
 
         self.perturb_func = self.kwargs.get("perturb_func", lipschitz_constant)
         self.similarity_func = self.kwargs.get("similarity_func", gaussian_noise)
 
-        self.std = self.kwargs.get("std", 0.1)
-        self.nr_samples = self.kwargs.get("nr_samples", 100)
+        self.perturb_std = self.kwargs.get("perturb_std", 0.1)
+        self.nr_steps = self.kwargs.get("nr_steps", 100)
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
 
-        super(Measure, self).__init__()
+        self.last_results = []
+        self.all_results = []
+
+        self.img_size = None
+        self.nr_channels = None
 
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
         assert (
                 "explanation_func" in kwargs
         ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+
+        if a_batch is None:
+            a_batch = explain(
+                model=model.to(kwargs.get("device", None)),
+                inputs=x_batch,
+                targets=y_batch,
+                **kwargs,
+            )
+
         assert (
                 np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
-        if a_batch is None:
-            explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
-            )
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = []
 
-        results = []
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             similarity_max = 0.0
-            for i in range(self.nr_samples):
+            for i in range(self.nr_steps):
 
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
@@ -421,13 +379,12 @@ class LocalLipschitzEstimate(Measure):
                     model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
-                    explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=kwargs.get("device", None),
+                    **kwargs,
                 )
 
                 similarity = self.similarity_func(
                     a=a.flatten(),
-                    b=a_perturbed.cpu().numpy().flatten(),
+                    b=a_perturbed.flatten(),
                     c=x.flatten(),
                     d=x_perturbed,
                 )
@@ -436,12 +393,14 @@ class LocalLipschitzEstimate(Measure):
                     similarity_max = similarity
 
             # Append similarity score.
-            results.append(similarity_max)
+            self.last_results.append(similarity_max)
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results
 
 
-class SensitivityMax(Measure):
+class MaxSensitivity(Measure):
     """
     Implementation of max-sensitivity of an explanation by Yeh at el., 2019.
 
@@ -449,13 +408,18 @@ class SensitivityMax(Measure):
     change under slight perturbation.
 
     References:
-        Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
+        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
         arXiv preprint arXiv:1901.09392 (2019).
+        2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
+        feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
 
     Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
     def __init__(self, *args, **kwargs):
+
+        super(Measure, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
 
@@ -465,12 +429,117 @@ class SensitivityMax(Measure):
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
 
-        #self.agg_func = self.kwargs.get("agg_func", np.max)
+        # self.agg_func = self.kwargs.get("agg_func", np.max)
 
         self.std = self.kwargs.get("perturb_radius", 0.2)
-        self.nr_samples = self.kwargs.get("nr_samples", 10)
+        self.nr_steps = self.kwargs.get("nr_steps", 200)
+
+        self.last_results = []
+        self.all_results = []
+
+        self.img_size = None
+        self.nr_channels = None
+
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
+    ):
+        assert (
+                "explanation_func" in kwargs
+        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+
+        if a_batch is None:
+            a_batch = explain(
+                model=model.to(kwargs.get("device", None)),
+                inputs=x_batch,
+                targets=y_batch,
+                **kwargs,
+            )
+
+        assert (
+                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+        ), "Inputs and attributions should include the same number of samples."
+
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = []
+
+        for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+
+            sensitivities_norm_max = 0.0
+            for _ in range(self.nr_steps):
+
+                # Generate explanation based on perturbed input x.
+                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                a_perturbed = explain(
+                    model.to(kwargs.get("device", None)),
+                    x_perturbed,
+                    y,
+                    **kwargs,
+                )
+
+                sensitivities = self.similarity_func(
+                    a=a.flatten(), b=a_perturbed.flatten()
+                )
+                sensitivities_norm = self.norm_numerator(
+                    a=sensitivities
+                ) / self.norm_denominator(a=x.flatten())
+
+                if sensitivities_norm > sensitivities_norm_max:
+                    sensitivities_norm_max = sensitivities_norm
+
+            # Append max sensitivity score.
+            self.last_results.append(sensitivities_norm_max)
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+
+class AvgSensitivity(Measure):
+    """
+    Implementation of avg-sensitivity of an explanation by Yeh at el., 2019.
+
+    Using Monte Carlo sampling-based approximation while measuing how explanations
+    change under slight perturbation.
+
+    References:
+        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
+        arXiv preprint arXiv:1901.09392 (2019).
+        2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
+        feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
+
+    Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
+    """
+
+    def __init__(self, *args, **kwargs):
 
         super(Measure, self).__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+
+        self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
+        self.similarity_func = self.kwargs.get("similarity_func", difference)
+
+        self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
+        self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
+
+        # self.agg_func = self.kwargs.get("agg_func", np.max)
+
+        self.std = self.kwargs.get("perturb_radius", 0.2)
+        self.nr_steps = self.kwargs.get("nr_steps", 200)
+
+        self.last_results = []
+        self.all_results = []
+
+        self.img_size = None
+        self.nr_channels = None
 
 
     def __call__(
@@ -479,48 +548,53 @@ class SensitivityMax(Measure):
             x_batch: np.array,
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
-            **kwargs
+            **kwargs,
     ):
         assert (
                 "explanation_func" in kwargs
         ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+
+        if a_batch is None:
+            a_batch = explain(
+                model=model.to(kwargs.get("device", None)),
+                inputs=x_batch,
+                targets=y_batch,
+                **kwargs,
+            )
+
         assert (
                 np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
-        if a_batch is None:
-            explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
-            )
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = []
 
-        results = []
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
-            sensitivities_norm_max = 0.0
-            for i in range(self.nr_samples):
-
+            self.temp_results = []
+            for _ in range(self.nr_steps):
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
                 a_perturbed = explain(
                     model.to(kwargs.get("device", None)),
                     x_perturbed,
                     y,
-                    explanation_func=kwargs.get("explanation_func", "Gradient"),
-                    device=kwargs.get("device", None),
+                    **kwargs,
                 )
 
-                sensitivities = self.similarity_func(a=a.flatten(),
-                                                     b=a_perturbed.cpu().numpy().flatten())
-                sensitivities_norm = self.norm_numerator(a=sensitivities) / self.norm_denominator(a=x.flatten())
+                sensitivities = self.similarity_func(
+                    a=a.flatten(), b=a_perturbed.flatten()
+                )
+                sensitivities_norm = self.norm_numerator(
+                    a=sensitivities
+                ) / self.norm_denominator(a=x.flatten())
 
-                if sensitivities_norm > sensitivities_norm_max:
-                    sensitivities_norm_max = sensitivities_norm
+                self.temp_results.append(sensitivities_norm)
 
-            # Append similarity score.
-            results.append(sensitivities_norm_max)
+            # Append average sensitivity score.
+            self.last_results.append(float(np.mean(self.temp_results)))
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results

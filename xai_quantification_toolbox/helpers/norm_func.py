@@ -30,5 +30,5 @@ NORM_FUNCTIONS = {
     "fro_norm": fro_norm,
     "l2_norm": l2_norm,
     "l1_norm": l1_norm,
-    "inf_norm": linf_norm
+    "inf_norm": linf_norm,
 }
