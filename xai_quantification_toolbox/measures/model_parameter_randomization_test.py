@@ -16,7 +16,6 @@ class ModelParameterRandomizationTest(Measure):
 
         super(ModelParameterRandomizationTest, self).__init__()
 
-
     def __call__(
         self,
         model,
