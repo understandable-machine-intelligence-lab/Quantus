@@ -1,3 +1,4 @@
+from ..measures import *
 from .perturb_func import *
 from .similar_func import *
 
@@ -13,6 +14,49 @@ XAI_METHODS = {"Gradient",
                "Control Var. Sobel Filter",
                "Control Var. Constant"
                }
+
+
+MEASURES = {"Faithfulness": {
+                "Faithfulness Correlation": FaithfulnessCorrelation,
+                "Faithfulness Estimate": FaithfulnessEstimate,
+                "Pixel-Flipping": PixelFlipping,
+                "Region Segmentation": RegionPerturbation,
+                "Monotonicity Metric": MonotonicityMetric,
+                "Infidelity": Infidelity,
+                "Selectivity": Selectivity,
+                "SensitivityN": SensitivityN,
+                "IROF": IterativeRemovalOfFeatures
+            },
+            "Robustness": {
+                "Continuity Test": ContinuityTest,
+                "Input Independence Rate": InputIndependenceRate,
+                "Local Lipschitz Estimate": LocalLipschitzEstimate,
+                "Max-Sensitivity": MaxSensitivity,
+                "Avg-Sensitivity": AvgSensitivity,
+            },
+            "Localisation": {
+                "Pointing Game": "ADD",
+                "TKI": "ADD",
+                "Relevance Mass Accuracy": "ADD",
+                "Relevance Mass Ranking": "ADD",
+                "Attribution Localization ": "ADD",
+            },
+            "Complexity": {
+                "Sparseness Test": SparsenessTest,
+                "Complexity Test": ComplexityTest,
+            },
+            "Randomisation": {
+                "Model Parameter Randomisation Test": "ADD",
+                "Random Logit Test": "ADD",
+            },
+            "Axiomatic": {
+                "Completeness Test": CompletenessTest,
+                "Symmetry": Symmetry,
+                "InputInvariance": InputInvariance,
+                "Sensitivity": Sensitivity,
+                "Dummy": Dummy,
+            },
+            }
 
 
 PERTURBATION_FUNCTIONS = {
