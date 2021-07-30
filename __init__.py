@@ -1,1 +1,1 @@
-from .xai_quantification_toolbox import *
+from .quantus import *
