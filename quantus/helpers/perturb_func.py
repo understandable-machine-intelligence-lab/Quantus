@@ -24,12 +24,16 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
 def get_baseline(img: np.array, **kwargs) -> float:
     """Get baseline based on a uer-defined string or integer input.
     TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
-    assert (
-            "perturb_baseline" in kwargs
-    ), "Specify a 'perturb_baseline' e.g., 0.0 or 'black' for pixel replacement."
+    assert (("perturb_baseline" in kwargs) or ("replacement_values" in kwargs)), "Specify a 'perturb_baseline' \
+    e.g., 0.0 or 'black' for pixel replacement or 'replacement_values' containing an array with one value per \
+    index for replacement."
 
-    if isinstance(kwargs["perturb_baseline"], (float, int)):
+    if "replacement_values" in kwargs:
+        return kwargs["replacement_values"]
+
+    elif isinstance(kwargs.get("perturb_baseline", None), (float, int)):
         return kwargs["perturb_baseline"]
+
     else:
         mask_dict = {
             "random": float(random.random()),
@@ -49,7 +53,7 @@ def get_baseline(img: np.array, **kwargs) -> float:
         try:
             return mask_dict[kwargs["perturb_baseline"].lower()]
         except:
-            pass
+            return 0.0
 
 
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:

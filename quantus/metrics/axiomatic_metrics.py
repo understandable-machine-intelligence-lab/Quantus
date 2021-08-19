@@ -42,9 +42,6 @@ class CompletenessTest(Metric):
             a_batch: Union[np.array, None],
             **kwargs,
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(

@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 
 
-def initiate_warning(warning_text: str):
+def print_warning(warning_text: str):
     warnings.warn(message=warning_text, category=UserWarning)
 
 def assert_model_predictions_deviations(y_pred: torch.Tensor, y_pred_perturb: torch.Tensor, threshold: float = 0.01):
