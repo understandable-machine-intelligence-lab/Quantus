@@ -21,7 +21,7 @@ class ContinuityTest(Metric):
         Digital Signal Processing 73 (2018): 1-15.
 
     Current assumptions:
-        - that input is squared
+        - that input dimensions is of equal size
         - made an quantitative interpretation of visually determining how similar f(x) and R(x1) curves are
         - using torch for explanation and model
     """
@@ -110,12 +110,6 @@ class ContinuityTest(Metric):
                     y,
                     **kwargs,
                 )
-                # model.attribute(batch=x_perturbed, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
-
-                # DEBUG.
-                # a_perturbed_test = np.ones_like(a_perturbed.cpu().numpy())
-                # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
-                # plt.show()
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
                 y_pred = float(
@@ -236,9 +230,6 @@ class InputIndependenceRate(Metric):
         A list with a single float.
 
         """
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(
@@ -348,9 +339,6 @@ class LocalLipschitzEstimate(Metric):
         a_batch: Union[np.array, None],
         **kwargs,
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(
@@ -449,9 +437,6 @@ class MaxSensitivity(Metric):
         a_batch: Union[np.array, None],
         **kwargs,
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(
@@ -550,9 +535,6 @@ class AvgSensitivity(Metric):
             a_batch: Union[np.array, None],
             **kwargs,
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(

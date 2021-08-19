@@ -1,12 +1,11 @@
-from typing import Callable, Union
-import torch
-import torchvision
 import scipy
 import random
 import cv2
 from captum.attr import *
 from .utils import *
-from .constants import XAI_METHODS
+#from ..helpers.constants import XAI_METHODS
+from typing import Union
+import torch
 
 
 def explain(
@@ -23,9 +22,10 @@ def explain(
     Returns np.ndarray of same shape as inputs.
     """
 
-    assert (
-            "explanation_func" in kwargs
-    ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+    if "explanation_func" not in kwargs:
+        print_warning(warning_text=f"Using 'explain' function without specifying 'explanation_func' (str)"
+                                   f"in kwargs will produce 'Gradient' explanation.\n")
+
     explanation_func = kwargs.get("explanation_func", "Gradient").lower()
 
     # Set model in evaluate mode.
@@ -164,7 +164,7 @@ def explain(
         explanation = torch.Tensor().new_full(size=explanation.shape, fill_value=fill_value)
 
     else:
-        raise KeyError("Specify a XAI method that already has been implemented {}.").__format__(XAI_METHODS)
+        raise KeyError("Specify a XAI method that already has been implemented {}.").__format__("XAI_METHODS")
 
     if kwargs.get("abs", False):
         explanation = explanation.abs()

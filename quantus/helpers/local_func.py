@@ -2,11 +2,8 @@
 import numpy as np
 
 
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+def localisation(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate Spearman rank of two images (or explanations)."""
-    return scipy.stats.spearmanr(a, b)[0]
+    return None
 
 
-LOCALIZATION_FUNCTIONS = {
-    "gaussian_blur": gaussian_blur,
-}

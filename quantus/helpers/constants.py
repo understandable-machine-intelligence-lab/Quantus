@@ -1,6 +1,7 @@
 from ..metrics import *
 from .perturb_func import *
 from .similar_func import *
+from .local_func import *
 
 
 XAI_METHODS = {"Gradient",
@@ -88,5 +89,15 @@ SIMILARITY_FUNCTIONS = {
 }
 
 
+LOCALIZATION_FUNCTIONS = {
+    "localisation": localisation,
+}
 
 
+DEFAULT_METRICS = {
+    "Faithfulness": FaithfulnessCorrelation(),
+    "Max-Sensitivity": MaxSensitivity(),
+    "Complexity": ComplexityTest()
+}
+
+DEFAULT_XAI_METHODS = ["Saliency", "IntegratedGradients"]

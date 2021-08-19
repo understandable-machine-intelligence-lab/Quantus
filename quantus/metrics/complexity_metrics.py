@@ -42,9 +42,6 @@ class SparsenessTest(Metric):
             a_batch: Union[np.array, None],
             **kwargs,
     ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(
@@ -121,7 +118,7 @@ class ComplexityTest(Metric):
     ):
         assert (
                 "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
+        ), "To evaluate with this metric, specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
             a_batch = explain(
@@ -152,3 +149,15 @@ class ComplexityTest(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+
+class EffectiveComplexity:
+    """..."""
+
+
+    def __init__(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        pass
