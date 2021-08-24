@@ -181,7 +181,7 @@ See more examples and use cases in the `/tutorials` folder.
 
 * Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain 
 * Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change the evaluation outcome? 
-* Can you establish that your chosen metric is helpful e.g., include a random explanation (as a control variant) for verification?
+* Can you establish that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) for verification?
 
 ## Disclaimers
 
