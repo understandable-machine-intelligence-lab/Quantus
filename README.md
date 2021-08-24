@@ -1,15 +1,15 @@
 <h1 align="center"><b>Quantus</b></h1>
-<h3 align="center"><b>Quantus: a metrics toolbox to evaluate neural network explanations</b></h3>
+<h3 align="center"><b>A metrics toolbox to evaluate neural network explanations</b></h3>
 <p align="center">
   <i>Pytorch implementation</i>
 </p> 
  
 --------------
 
-**A library that helps you understand to what extent your XAI explanations are doing anything useful.**   
+<!--**A library that helps you understand to what extent your explanations.**-->   
 
 <p align="center">
-  <img src="samples/spider_image.png" alt="Visualization of how Quantus library can be used to highlight differences between explanation methods as well as the trade-offs between achieving a certain evaluation criteria." width="512"/>  
+  <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>  
 </p>
 
 ## Installation
@@ -20,7 +20,7 @@ To install requirements:
 pip install -r requirements.txt
 ```
 
-**Package requirements.**
+Package requirements.
 
 ```
 Python >= 3.6.9
@@ -31,8 +31,10 @@ Captum == 0.4.0
 ## Library
 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. 
-Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation/ unit or 6) axiomatic. 
-As such, the `quantus library contains implementations of the following evaluation measures:
+Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. 
+(Note that in literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
+
+The `quantus` library contains implementations of the following evaluation measures:
 
 <span style="color:#ff0000">List TBC.</span>
 
@@ -69,12 +71,11 @@ As such, the `quantus library contains implementations of the following evaluati
   * **Sensitivity**:
   * **Dummy**:
   * **Input Invariance**:
-    
-**Note.** To avoid confusion, note that the six categories are often mentioned under different naming conventions e.g., "Robustness" is often replaced for "Stability" or "Sensitivity" and "Faithfulness" is commonly changed for "Fidelity".
 
-**Scope.** There is a couple of metrics that are popular but have not been included in the first version of this library. Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of this project's first iteration.
+**Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library. 
+Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
 
-This implementation is primarily motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be explanation methods e.g., example-based methods where evaluation metrics in this library might not be suitable.   
+It is worth nothing that this implementation primarily is motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be useful.   
 
 ## Getting started
 
@@ -127,6 +128,7 @@ scores = metric_sensitivity(model=model,
                             a_batch=a_batch_saliency,
                             **{"device": device, "img_size": 224, "normalize": True})
 ````
+
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
 
