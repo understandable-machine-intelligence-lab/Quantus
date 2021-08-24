@@ -4,7 +4,7 @@ from .similar_func import *
 from .local_func import *
 
 
-XAI_METHODS = {"Gradient",
+AVAILABLE_XAI_METHODS = {"Gradient",
                "Saliency",
                "GradientShap",
                "IntegratedGradients",
@@ -17,50 +17,52 @@ XAI_METHODS = {"Gradient",
                }
 
 
-MEASURES = {"Faithfulness": {
-                "Faithfulness Correlation": FaithfulnessCorrelation,
-                "Faithfulness Estimate": FaithfulnessEstimate,
-                "Pixel-Flipping": PixelFlipping,
-                "Region Segmentation": RegionPerturbation,
-                "Monotonicity Metric": MonotonicityMetric,
-                "Infidelity": Infidelity,
-                "Selectivity": Selectivity,
-                "SensitivityN": SensitivityN,
-                "IROF": IterativeRemovalOfFeatures
-            },
-            "Robustness": {
-                "Continuity Test": ContinuityTest,
-                "Input Independence Rate": InputIndependenceRate,
-                "Local Lipschitz Estimate": LocalLipschitzEstimate,
-                "Max-Sensitivity": MaxSensitivity,
-                "Avg-Sensitivity": AvgSensitivity,
-            },
-            "Localisation": {
-                "Pointing Game": "ADD",
-                "TKI": "ADD",
-                "Relevance Mass Accuracy": "ADD",
-                "Relevance Mass Ranking": "ADD",
-                "Attribution Localization ": "ADD",
-            },
-            "Complexity": {
-                "Sparseness Test": SparsenessTest,
-                "Complexity Test": ComplexityTest,
-            },
-            "Randomisation": {
-                "Model Parameter Randomisation Test": "ADD",
-                "Random Logit Test": "ADD",
-            },
-            "Axiomatic": {
-                "Completeness Test": CompletenessTest,
-                "Symmetry": Symmetry,
-                "InputInvariance": InputInvariance,
-                "Sensitivity": Sensitivity,
-                "Dummy": Dummy,
-            },
-            }
+AVAILABLE_METRICS = {"Faithfulness": {
+            "Faithfulness Correlation": FaithfulnessCorrelation,
+            "Faithfulness Estimate": FaithfulnessEstimate,
+            "Pixel-Flipping": PixelFlipping,
+            "Region Segmentation": RegionPerturbation,
+            "Monotonicity 1": Monotonicity1,
+            "Monotonicity 2": Monotonicity2,
+            "Infidelity": Infidelity,
+            "Selectivity": Selectivity,
+            "SensitivityN": SensitivityN,
+            "IROF": IROF
+          },
+        "Robustness": {
+            "Continuity Test": Continuity,
+            "Input Independence Rate": InputIndependenceRate,
+            "Local Lipschitz Estimate": LocalLipschitzEstimate,
+            "Max-Sensitivity": MaxSensitivity,
+            "Avg-Sensitivity": AvgSensitivity,
+        },
+        "Localisation": {
+            "Pointing Game": "ADD",
+            "TKI": "ADD",
+            "Relevance Mass Accuracy": "ADD",
+            "Relevance Mass Ranking": "ADD",
+            "Attribution Localization ": "ADD",
+        },
+        "Complexity": {
+            "Sparseness Test": Sparseness,
+            "Complexity Test": Complexity,
+            "Effective Complexity": EffectiveComplexity,
+        },
+        "Randomisation": {
+            "Model Parameter Randomisation Test": "ADD",
+            "Random Logit Test": "ADD",
+        },
+        "Axiomatic": {
+            "Completeness Test": Completeness,
+            "Symmetry": Symmetry,
+            "InputInvariance": InputInvariance,
+            "Sensitivity": Sensitivity,
+            "Dummy": Dummy,
+        },
+        }
 
 
-PERTURBATION_FUNCTIONS = {
+AVAILABLE_PERTURBATION_FUNCTIONS = {
     "gaussian_blur": gaussian_blur,
     "gaussian_noise": gaussian_noise,
     "baseline_replacement_by_indices": baseline_replacement_by_indices,
@@ -73,7 +75,7 @@ PERTURBATION_FUNCTIONS = {
 }
 
 
-SIMILARITY_FUNCTIONS = {
+AVAILABLE_SIMILARITY_FUNCTIONS = {
     "correlation_spearman": correlation_spearman,
     "correlation_pearson": correlation_pearson,
     "correlation_kendall_tau": correlation_kendall_tau,
@@ -89,7 +91,7 @@ SIMILARITY_FUNCTIONS = {
 }
 
 
-LOCALIZATION_FUNCTIONS = {
+AVAILABLE_LOCALIZATION_FUNCTIONS = {
     "localisation": localisation,
 }
 
@@ -97,7 +99,7 @@ LOCALIZATION_FUNCTIONS = {
 DEFAULT_METRICS = {
     "Faithfulness": FaithfulnessCorrelation(),
     "Max-Sensitivity": MaxSensitivity(),
-    "Complexity": ComplexityTest()
+    "Complexity": Complexity()
 }
 
 DEFAULT_XAI_METHODS = ["Saliency", "IntegratedGradients"]

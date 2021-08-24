@@ -7,8 +7,10 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 
 
-class ContinuityTest(Metric):
+class Continuity(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the Continuity test by Montavon et al., 2018.
 
     The test measures the strongest variation of the explanation in the input domain i.e.,
@@ -44,6 +46,7 @@ class ContinuityTest(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
 
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
@@ -57,10 +60,6 @@ class ContinuityTest(Metric):
         self.last_results = []
         self.all_results = []
 
-        self.img_size = None
-        self.nr_channels = None
-
-
     def __call__(
         self,
         model,
@@ -69,6 +68,7 @@ class ContinuityTest(Metric):
         a_batch: Union[np.array, None],
         **kwargs,
     ):
+
         assert (
             "explanation_func" in kwargs
         ), "To run ContinuityTest specify 'explanation_func' (str) e.g., 'Gradient'."
@@ -84,13 +84,15 @@ class ContinuityTest(Metric):
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
                 **kwargs,
             )
-            # model.attribute(batch=x, neuron_selection=y, explanation_func=kwargs.get("explanation_func", "gradient"),)
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.last_results = {k: None for k in range(len(x_batch))}  # []
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+
+            if self.abs:
+                a = abs(a)
 
             sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -168,6 +170,8 @@ class ContinuityTest(Metric):
 
 class InputIndependenceRate(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the Input Independence Rate test by Yang et al., 2019.
 
     The test computes the input independence rate defined as the percentage of
@@ -193,6 +197,7 @@ class InputIndependenceRate(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
 
         self.perturb_func = self.kwargs.get("perturb_func", None)
         self.similarity_func = self.kwargs.get("similarity_func", abs_difference)
@@ -249,7 +254,11 @@ class InputIndependenceRate(Metric):
 
         counts_thres = 0.0
         counts_corrs = 0.0
+
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+
+            if self.abs:
+                a = abs(a)
 
             # Generate explanation based on perturbed input x.
             x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
@@ -288,6 +297,8 @@ class InputIndependenceRate(Metric):
 
 class LocalLipschitzEstimate(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
     This tests asks how consistent are the explanations for similar/neighboring examples.
@@ -315,6 +326,7 @@ class LocalLipschitzEstimate(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
 
         self.perturb_func = self.kwargs.get("perturb_func", lipschitz_constant)
         self.similarity_func = self.kwargs.get("similarity_func", gaussian_noise)
@@ -358,6 +370,9 @@ class LocalLipschitzEstimate(Metric):
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
+            if self.abs:
+                a = abs(a)
+
             similarity_max = 0.0
             for i in range(self.nr_steps):
 
@@ -390,6 +405,8 @@ class LocalLipschitzEstimate(Metric):
 
 class MaxSensitivity(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of max-sensitivity of an explanation by Yeh at el., 2019.
 
     Using Monte Carlo sampling-based approximation while measuing how explanations
@@ -410,6 +427,7 @@ class MaxSensitivity(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
 
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
@@ -456,6 +474,9 @@ class MaxSensitivity(Metric):
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
+            if self.abs:
+                a = abs(a)
+
             sensitivities_norm_max = 0.0
             for _ in range(self.nr_steps):
 
@@ -488,6 +509,8 @@ class MaxSensitivity(Metric):
 
 class AvgSensitivity(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of avg-sensitivity of an explanation by Yeh at el., 2019.
 
     Using Monte Carlo sampling-based approximation while measuing how explanations
@@ -508,6 +531,7 @@ class AvgSensitivity(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
 
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
@@ -553,6 +577,9 @@ class AvgSensitivity(Metric):
         self.last_results = []
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+
+            if self.abs:
+                a = abs(a.flatten())
 
             self.temp_results = []
             for _ in range(self.nr_steps):

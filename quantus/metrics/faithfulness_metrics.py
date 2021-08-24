@@ -9,6 +9,8 @@ from ..helpers.explanation_func import *
 
 class FaithfulnessCorrelation(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of faithfulness correlation by Bhatt et al., 2020.
 
     For each test sample, |S| features are randomly selected and replace them
@@ -31,6 +33,7 @@ class FaithfulnessCorrelation(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -44,6 +47,9 @@ class FaithfulnessCorrelation(Metric):
         self.last_results = []
         self.all_results = []
 
+        self.text = f"""\n\nThe Faithfulness Correlation metric is known to be sensitive to the choice of baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs for each input and explanation pair 'nr_runs'. \nGo over and select each hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call list_hyperparameters method. \nFor more reading, please see [INSERT CITATION]."""
+
+
     def __call__(
             self,
             model,
@@ -52,6 +58,9 @@ class FaithfulnessCorrelation(Metric):
             a_batch: Union[np.array, None],
             **kwargs,
     ):
+
+        # Generate warning.
+        self.print_warning(text=self.text)
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -71,7 +80,8 @@ class FaithfulnessCorrelation(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
 
             # Predict on input.
             with torch.no_grad():
@@ -108,8 +118,8 @@ class FaithfulnessCorrelation(Metric):
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
-                # Sum attributions.
-                att_means.append(np.mean(float(a[a_ix])))
+                # Average attributions of the subset.
+                att_means.append(np.mean(a[a_ix]))
 
             self.last_results.append(self.similarity_func(a=att_means, b=logit_deltas))
 
@@ -121,6 +131,8 @@ class FaithfulnessCorrelation(Metric):
 
 class FaithfulnessEstimate(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
     Computes the correlations of probability drops and the relevance scores on various points,
@@ -144,6 +156,7 @@ class FaithfulnessEstimate(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -151,17 +164,17 @@ class FaithfulnessEstimate(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
 
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", 1)
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
         assert (
             self.img_size * self.img_size
-        ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                 self.img_size * self.img_size
             ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                 self.img_size * self.img_size
             ) / self.max_steps_per_input
 
@@ -200,7 +213,8 @@ class FaithfulnessEstimate(Metric):
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(-a)
 
             # Predict on input.
@@ -216,11 +230,11 @@ class FaithfulnessEstimate(Metric):
             pred_deltas = []
             att_sums = []
 
-            for i_ix, a_ix in enumerate(a_indices[:: self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.pixels_in_step * i_ix) : (self.pixels_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
                 ]
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
@@ -253,6 +267,8 @@ class FaithfulnessEstimate(Metric):
 
 class Infidelity(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of infidelity by Yeh at el., 2019.
 
     "Explanation infidelity represents the expected mean-squared error between the explanation
@@ -290,6 +306,7 @@ class Infidelity(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.loss_func = self.kwargs.get("loss_func", mse)
         self.perturb_func = self.kwargs.get(
@@ -312,17 +329,17 @@ class Infidelity(Metric):
             i for i in self.perturb_patch_sizes if self.img_size % i == 0
         ]
 
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", 128)
+        self.features_in_step = self.kwargs.get("features_in_step", 128)
         assert (
             self.img_size * self.img_size
-        ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                 self.img_size * self.img_size
             ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                 self.img_size * self.img_size
             ) / self.max_steps_per_input
 
@@ -424,9 +441,8 @@ class Infidelity(Metric):
 
                             pred_deltas[i_x][i_y] = float(y_pred - y_pred_perturb)
 
-                    sub_results.append(
-                        self.loss_func(torch.mul(a=a.flatten(), np.transpose(x_perturbed).flatten()), b=pred_deltas.flatten())
-                    )
+                    sub_results.append(None)
+                        #self.loss_func(torch.mul(a=a.flatten(), np.transpose(x_perturbed).flatten()), b=pred_deltas.flatten())
 
                 sub_sub_results.append(np.mean(sub_results))
 
@@ -437,8 +453,10 @@ class Infidelity(Metric):
         return self.last_results
 
 
-class MonotonicityMetric1(Metric):
+class Monotonicity1(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Montonicity Metric by Arya at el., 2019.
 
     Montonicity tests if adding more positive evidence increases the probability of classification in the specified
@@ -459,23 +477,24 @@ class MonotonicityMetric1(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
 
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", )
+        self.features_in_step = self.kwargs.get("features_in_step", )
         assert (
             self.img_size * self.img_size
-        ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                 self.img_size * self.img_size
             ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                 self.img_size * self.img_size
             ) / self.max_steps_per_input
 
@@ -514,17 +533,18 @@ class MonotonicityMetric1(Metric):
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(a)
             preds = []
 
             x_perturbed = torch.Tensor().new_full(size=x.shape, fill_value=self.perturb_baseline).numpy().flatten()
 
-            for i_ix, a_ix in enumerate(a_indices[:: self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.pixels_in_step * i_ix) : (self.pixels_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
                 ]
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
@@ -554,8 +574,10 @@ class MonotonicityMetric1(Metric):
         return self.last_results
 
 
-class MonotonicityMetric2(Metric):
+class Monotonicity2(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Montonicity Metric by Nguyen at el., 2020.
 
     It captures attributions' faithfulness by incrementally adding each attribute
@@ -577,6 +599,7 @@ class MonotonicityMetric2(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get(
@@ -584,25 +607,23 @@ class MonotonicityMetric2(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         1
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", )
+        self.features_in_step = self.kwargs.get("features_in_step", )
+
         assert (
                        self.img_size * self.img_size
-               ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+               ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                            self.img_size * self.img_size
                    ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                                           self.img_size * self.img_size
                                   ) / self.max_steps_per_input
 
         self.last_results = []
         self.all_results = []
-
-        self.img_size = None
-        self.nr_channels = None
 
     def __call__(
             self,
@@ -632,17 +653,18 @@ class MonotonicityMetric2(Metric):
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(a)
 
             atts = []
             preds = []
 
-            for i_ix, a_ix in enumerate(a_indices[:: self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                       (self.pixels_in_step * i_ix): (self.pixels_in_step * (i_ix + 1))
+                       (self.features_in_step * i_ix): (self.features_in_step * (i_ix + 1))
                        ]
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
@@ -677,6 +699,8 @@ class MonotonicityMetric2(Metric):
 
 class PixelFlipping(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
     The basic idea is to compute a decomposition of a digit for a digit class
@@ -698,23 +722,24 @@ class PixelFlipping(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
 
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", 1)
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
         assert (
             self.img_size * self.img_size
-        ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                 self.img_size * self.img_size
             ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                 self.img_size * self.img_size
             ) / self.max_steps_per_input
 
@@ -753,17 +778,18 @@ class PixelFlipping(Metric):
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(a)
 
             preds = []
             x_perturbed = x.copy().flatten()
 
-            for i_ix, a_ix in enumerate(a_indices[:: self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.pixels_in_step * i_ix) : (self.pixels_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
                 ]
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
@@ -793,6 +819,8 @@ class PixelFlipping(Metric):
 
 class RegionPerturbation(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Region Perturbation by Samek et al., 2015.
 
     Consider a greedy iterative procedure that consists of measuring how the class
@@ -822,6 +850,7 @@ class RegionPerturbation(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -973,6 +1002,8 @@ class RegionPerturbation(Metric):
 
 class Selectivity(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Selectivity test by Montavan et al., 2018.
 
     At each iteration, a patch of size 4 x 4 corresponding to the region with
@@ -1000,6 +1031,7 @@ class Selectivity(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1138,6 +1170,8 @@ class Selectivity(Metric):
 
 class SensitivityN(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of Sensitivity-N test by Ancona et al., 2019.
 
     An attribution method satisfies Sensitivity-n when the sum of the attributions for any subset of features of
@@ -1169,6 +1203,7 @@ class SensitivityN(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -1177,19 +1212,19 @@ class SensitivityN(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
 
-        self.pixels_in_step = self.kwargs.get("pixels_in_step", 28)
-        self.max_features = int((0.8 * self.img_size * self.img_size) // self.pixels_in_step)
+        self.features_in_step = self.kwargs.get("features_in_step", 28)
+        self.max_features = int((0.8 * self.img_size * self.img_size) // self.features_in_step)
 
         assert (
                        self.img_size * self.img_size
-               ) % self.pixels_in_step == 0, "Set 'pixels_in_step' so that the modulo remainder returns 0 given the image size."
+               ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
                            self.img_size * self.img_size
                    ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
-            self.pixels_in_step = (
+            self.features_in_step = (
                                           self.img_size * self.img_size
                                   ) / self.max_steps_per_input
 
@@ -1231,7 +1266,8 @@ class SensitivityN(Metric):
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(-a)
 
             # Predict on x.
@@ -1250,12 +1286,12 @@ class SensitivityN(Metric):
             pred_deltas = []
             x_perturbed = x.copy().flatten()
 
-            for i_ix, a_ix in enumerate(a_indices[::self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[::self.features_in_step]):
 
                 if i_ix <= self.max_features:
                     # Perturb input by indices of attributions.
                     a_ix = a_indices[
-                           (self.pixels_in_step * i_ix): (self.pixels_in_step * (i_ix + 1))
+                           (self.features_in_step * i_ix): (self.features_in_step * (i_ix + 1))
                            ]
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
@@ -1304,9 +1340,11 @@ class SensitivityN(Metric):
         return self.last_result
 
 
-class IterativeRemovalOfFeatures(Metric):
+class IROF(Metric):
     """
-    Implementation of Iterative Removal of Features by Rieger at el., 2020.
+    TODO. Rewrite docstring.
+
+    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
     Description.
 
@@ -1321,6 +1359,7 @@ class IterativeRemovalOfFeatures(Metric):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
     def __call__(
             self,
@@ -1330,7 +1369,6 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch: Union[np.array, None],
             **kwargs
     ):
-
 
         if a_batch is None:
             a_batch = explain(
@@ -1351,15 +1389,16 @@ class IterativeRemovalOfFeatures(Metric):
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Get indices of sorted attributions (descending).
-            a = abs(a.flatten())
+            if self.abs:
+                a = abs(a.flatten())
             a_indices = np.argsort(a)
 
             preds = []
 
-            for i_ix, a_ix in enumerate(a_indices[::self.pixels_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[::self.features_in_step]):
 
                 # Perturb input by indices of attributions.
-                a_ix = a_indices[(self.pixels_in_step * i_ix):(self.pixels_in_step * (i_ix + 1))]
+                a_ix = a_indices[(self.features_in_step * i_ix):(self.features_in_step * (i_ix + 1))]
                 x_perturbed = self.perturb_func(img=x.flatten(),
                                                 **{"index": a_ix, "perturb_baseline": self.perturb_baseline})
                 # Predict on perturbed input x.
@@ -1369,6 +1408,6 @@ class IterativeRemovalOfFeatures(Metric):
                                            .to(kwargs.get("device", None))))[:, y])
                 preds.append(float(y_pred_i))
 
-            results.append(preds)
+            self.last_results.append(preds)
 
-        return results
+        return self.last_results
