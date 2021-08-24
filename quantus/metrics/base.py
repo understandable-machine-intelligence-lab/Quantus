@@ -1,6 +1,9 @@
 """This module implements the base class for creating evaluation measures."""
 from typing import Optional, Any, Union, List, Dict
+from termcolor import colored
 import numpy as np
+import time
+import warnings
 from ..helpers.utils import attr_check
 
 
@@ -14,14 +17,11 @@ class Metric:
     @attr_check
     def __init__(
         self,
-        # name: Optional[str] = "Measure",
         **kwargs: dict
     ):
         """ Initialize Measure. """
-        # assert isinstance(name, str)
-        assert isinstance(kwargs, dict)
-        self.name = "Base"
-        self.kwargs = kwargs
+        self.name = "Base Metric"
+
 
     def __call__(
         self,
@@ -33,34 +33,29 @@ class Metric:
         """Placeholder to compute measure for given data and attributions.
         Return float/Array per Sample."""
 
-        raise NotImplementedError("Implementation of the Measure is missing.")
-
     @property
-    def HOWTOREADSCORES(self):
+    def interpret_scores(self):
         """
         What the output mean:
         What a high versus low value indicates:
         Assumptions (to be concerned about):
         Further reading:
         """
-        print(self.__doc__)
-        #print(self.__call__.__doc__)
+        print(self.__doc__) #print(self.__call__.__doc__)
 
-    def __str__(self):
-        pass
-        # return '{self.name}'.format(self=self)
-        # NotImplementedError("Name of the Measure is missing."):
+    def print_warning(self, text: str = "") -> None:
+        time.sleep(2)
+        warnings.warn(colored(text=text, color="red"))
+
+    #@property
+    #def warning_text(self, text: str):
+    #    raise NotImplementedError(f"Warning text need to be set.")
 
     @property
-    def get_params(
-        self,
-    ) -> Dict[str, Union[Optional[str], Optional[int], Optional[float], List]]:
-        return self.__dict__
-        # for k, v in self.kwargs.items():
-        #    print(k, v)
+    def list_hyperparameters(self) -> dict:
+        attr_exclude = ["args", "kwargs", "all_results", "last_results", "img_size", "nr_channels", "text"]
+        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-    #
-
-    def set_params(self, key: Optional[str], value: Any) -> Dict[str, Any]:
+    def set_params(self, key: str, value: Any) -> dict:
         self.kwargs[key] = value
         return self.kwargs

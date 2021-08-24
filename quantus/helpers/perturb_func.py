@@ -4,6 +4,19 @@ import scipy
 import cv2
 import random
 
+# TODO. Rewrite to help user like here: https://captum.ai/api/_modules/captum/metrics/_core/infidelity.html#infidelity.
+"""
+def perturb_func (callable):
+    The perturbation function of model inputs. This function takes
+    model inputs and optionally baselines as input arguments and returns
+    either a tuple of perturbations and perturbed inputs or just
+    perturbed inputs. For example:
+
+    >>> def my_perturb_func(inputs):
+    >>>   <MY-LOGIC-HERE>
+    >>>   return perturbations, perturbed_inputs
+
+"""
 
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input. """

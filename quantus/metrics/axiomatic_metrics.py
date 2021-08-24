@@ -5,8 +5,9 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 
 
-class CompletenessTest(Metric):
+class Completeness(Metric):
     """
+    TODO. Rewrite docstring.
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
     Montavon et al., 2018.
@@ -28,6 +29,7 @@ class CompletenessTest(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
 
         self.output_transformation_func = self.kwargs.get("output_transformation_func", lambda x: x)
 
@@ -61,7 +63,10 @@ class CompletenessTest(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
-            if np.sum(np.abs(a)) == self.output_transformation_func(y):
+            if self.abs:
+                a = np.abs(a)
+
+            if np.sum(a) == self.output_transformation_func(y):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
@@ -72,16 +77,32 @@ class CompletenessTest(Metric):
 
 
 class Symmetry(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
     pass
 
 
 class InputInvariance(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
     pass
 
 
 class Sensitivity(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
     pass
 
 
 class Dummy(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
     pass
