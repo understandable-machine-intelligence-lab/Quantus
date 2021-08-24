@@ -177,13 +177,13 @@ See more examples and use cases in the `/tutorials` folder.
 
 ... and more!
 
-## User guideline
+## User guidelines
 
-Always read the original publication to understand the context that the metric was introduced in (it may not be applicable to your specific task and/ or data domain). 
-Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the baseline value fundamentally change the evaluation outcome? 
-Can we include a random explanation (as a control variant) to verify that indeed, the metric does reflect that such explanation is worse than other ones?
+* Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain 
+* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change the evaluation outcome? 
+* Can you establish that your chosen metric is helpful e.g., include a random explanation (as a control variant) for verification?
 
-**Disclaimers.**
+## Disclaimers
 
 1. Implementation may differ from the original author(s)
 
@@ -204,7 +204,7 @@ Pay careful attention to how your hyperparameters should be tuned; what is a pro
 
 ## Feature list
 
-For the next iteraiton of this library we will focus on:
+For the next iteration, focus will be on the following items.
 
 * Tensorflow compatibility
 * Build a 'Quantifier' class:
