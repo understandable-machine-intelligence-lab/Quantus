@@ -79,7 +79,7 @@ It is worth nothing that this implementation primarily is motivated by image cla
 
 ## Getting started
 
-To use the library, you'll need a couple of ingredients; a torch model, some input data and labels (to explain).
+To use the library, you'll need a couple of ingredients; a torch model, some input data and labels (to be explained).
 
 ```python
 import quantus
@@ -113,7 +113,7 @@ from captum.attr import Saliency, IntegratedGradients
 a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
 a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(inputs)).sum(axis=1)
 
-# You can use any function (not necessarily captum) to generate your explanation. 
+# You can use any function (not necessarily captum) to generate your explanations. 
 ```
 To evaluate explanations, there are two options. 
 
@@ -154,7 +154,7 @@ df = pd.DataFrame(results)
 df
 ```
 
-Other miscellaneous functionality.
+Other miscellaneous functionality of `quantus` library.
 
 ````python
 # Interpret scores.
@@ -167,7 +167,7 @@ sensitivity_scorer.list_hyperparameters
 quantus.available_metrics
 ````
 
-See more examples and use cases in the `/tutorials` folder.
+See more examples and use cases in the `/tutorials` folder. For example,
 
 
 * Compare explanation methods on different evalaution criteria (check out: `/tutorials/basic_example.ipynb`)
@@ -179,18 +179,22 @@ See more examples and use cases in the `/tutorials` folder.
 
 ## User guidelines
 
+Just 'throwing' some metrics at your XAI explanations and consider the job done, is an approach doomed to fail. 
+Before evaluating your explanations, make sure to:
+
 * Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain 
-* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change the evaluation outcome? 
-* Can you establish that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) for verification?
+* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores? 
+* Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric
+* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features 
 
 ## Disclaimers
 
 1. Implementation may differ from the original author(s)
 
 Any metric implementation in this library may differ from the original authors. 
-It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes mathematical definitions are missing and 3) description of hyperparameter choice is left out.
-   This leave room for (subjective) interpretation of the metric. 
-The implementations of metrics in this library have not been verified by the original authors.
+It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes the mathematical definition of the metric is missing and/ or 3) the description of hyperparameter choice was left out.
+This leave room for (subjective) interpretations. 
+Note that the implementations of metrics in this library have not been verified by the original authors.
 
 2. Discrepancy in operationalisation
 
