@@ -72,7 +72,9 @@ class LocalizationTest(Metric):
 class PointingGame(LocalizationTest):
     """
     Implementation of the Pointing Game from Zhang et al. 2018,
-    that imlements the check if the maximal attribution is on target.
+    that implements the check if the maximal attribution is on target.
+
+    High scores are desired as it means, that the maximal attributed pixel belongs to an object of the specified class.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -132,7 +134,9 @@ class AttributionLocalization(LocalizationTest):
     """
     Implementation of the attribution localization from Kohlbrenner et al. 2020,
     (also Relevance Mass Accuracy by Arras et al. 2021)
-    that imlements the ratio of attribution within target to the overall attribution.
+    that implements the ratio of attribution within target to the overall attribution.
+
+    High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -220,7 +224,10 @@ class AttributionLocalization(LocalizationTest):
 class TopKIntersection(LocalizationTest):
     """
     Implementation of the top-k intersection from Theiner et al. 2021,
-    that imlements the pixel-wise intersection between ground truth and an "explainer" mask.
+    that implements the pixel-wise intersection between ground truth and an "explainer" mask.
+
+    High scores are desired, as the overlap between the ground truth object mask
+    and the attribution mask should be maximal.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -283,6 +290,9 @@ class RelevanceRankAccuracy(LocalizationTest):
     """
     Implementation of the relevance rank accuracy from Arras et al. 2021,
     that measures the ratio of high intensity relevances within the ground truth mask.
+
+    High scores are desired, as the pixels with the highest positively attributed scores
+    should be within the bounding box of the targeted object.
 
     Current assumptions:
     s_batch is binary and shapes are equal

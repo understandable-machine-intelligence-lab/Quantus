@@ -9,7 +9,7 @@ from ..helpers.similar_func import *
 
 def get_layers(model, order="top_down"):
     """ Checks a pytorch model for randomizable layers and returns them in a dict. """
-    layers = [tup for tup in model.named_modules() if hasattr(tup[1], "reset_parameters")]
+    layers = [module for module in model.named_modules() if hasattr(module[1], "reset_parameters")]
 
     if order == "top_down":
         return layers[::-1]
@@ -77,10 +77,9 @@ class ModelParameterRandomization(Metric):
 
                 layer_results.append(distance)
 
+            # save results in a result dict
             for r, result in enumerate(layer_results):
                 results[r][layer_name] = result
-
-            # results.append(layer_results)  # how to save results ??
 
         return results
 
