@@ -2,31 +2,29 @@ import numpy as np
 from typing import Union
 import warnings
 
-from .base import Measure
+from .base import Metric
 from ..helpers.explanation_func import *
 
 
-class LocalizationTest(Measure):
-    """
-    Implements basis functionality for the following evaluation measures:
+class LocalizationTest(Metric):
+    """ Implements basis functionality for the following evaluation measures:
 
         • Pointing Game (Zhang et al., 2018)
         • Attribution Localization (Kohlbrenner et al., 2020)
         • TKI (Theiner et al., 2021)
         • Relevance Rank Accuracy (Arras et al., 2021)
         • Relevance Mass Accuracy (Arras et al., 2021)
-    """
+     """
 
     def __init__(self, *args, **kwargs):
+
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.perturb_func = self.kwargs.get("perturb_func", None)
-        # self.localization_func = self.kwargs.get(
-        #     "localization_func", "pointing_game"
-        # )
-        self.agg_function = kwargs.get("agg_function", np.mean)
 
-        super(LocalizationTest, self).__init__()
+        self.agg_function = kwargs.get("agg_function", np.mean)
 
     def __call__(
         self,
@@ -38,28 +36,7 @@ class LocalizationTest(Measure):
         **kwargs
     ):
 
-        results = []
-
-        for s, sample in enumerate(inputs):
-
-            sub_results = []
-
-            for target in targets:
-
-                binary_mask = get_binary_mask(sample, targets[s])
-
-            if self.perturbation_function:
-                attribution = self.perturbation_function(attributions[s])
-            else:
-                attribution = attributions[s]
-
-                sub_results.append(
-                    self.localization_function(sample, attribution, binary_mask)
-                )
-
-            results.append(self.agg_function(sub_results))
-
-        return results
+        raise NotImplementedError("Abstract Class, please specify a Localization Metric.")
 
     def check_assertions(self,
                          model,
@@ -89,7 +66,7 @@ class LocalizationTest(Measure):
                 np.shape(a_batch) == np.shape(s_batch)
         ), "Attributions and segmentation masks should have the same shape."
 
-        return
+        return True
 
 
 class PointingGame(LocalizationTest):
@@ -114,17 +91,16 @@ class PointingGame(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
@@ -178,7 +154,6 @@ class AttributionLocalization(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
         assert (
@@ -187,11 +162,11 @@ class AttributionLocalization(LocalizationTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
@@ -266,17 +241,16 @@ class TopKIntersection(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
@@ -324,17 +298,16 @@ class RelevanceRankAccuracy(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)

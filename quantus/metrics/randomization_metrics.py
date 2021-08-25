@@ -17,15 +17,15 @@ def get_layers(model, order="top_down"):
         return layers
 
 
-class ModelParameterRandomizationTest(Metric):
+class ModelParameterRandomization(Metric):
     """Implements the Model Parameter Randomization Method as described in
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 
     def __init__(self, *args, **kwargs):
     
-    	super(Metric, self).__init__()
-    	
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
         
@@ -34,7 +34,6 @@ class ModelParameterRandomizationTest(Metric):
         self.explanation_func = kwargs.get("explanation_func", "Saliency")
 
         assert self.layer_order in ["top_down", "bottom_up", "independent"]
-
 
     def __call__(
             self,
@@ -50,7 +49,7 @@ class ModelParameterRandomizationTest(Metric):
         # save state_dict
         original_parameters = model.state_dict()
 
-        for layer_name, layer in get_layers(model, order=(self.layer_order == "top_down")):
+        for layer_name, layer in get_layers(model, order=self.layer_order):
 
             layer_results = []
 
@@ -60,7 +59,10 @@ class ModelParameterRandomizationTest(Metric):
             # randomize layer
             layer.reset_parameters()
 
-            modified_attributions = explain(model, x_batch, y_batch, explanation_func=self.explanation_func).cpu().numpy()
+            modified_attributions = explain(model,
+                                            x_batch,
+                                            y_batch,
+                                            explanation_func=self.explanation_func).cpu().numpy()
 
             for original_attribution, modified_attribution in zip(a_batch, modified_attributions):
 
@@ -83,21 +85,20 @@ class ModelParameterRandomizationTest(Metric):
         return results
 
 
-class RandomLogitTest(Metric):
+class RandomLogit(Metric):
     """Implements the Random Logit Method as described in
     Sixt et. al., 2020, When Explanations lie
     """
 
     def __init__(self, *args, **kwargs):
     
-    	super(Metric, self).__init__()
-    	
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
 
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.max_class = self.kwargs.get("max_class", 10)
-
 
     def __call__(
             self,
@@ -145,7 +146,7 @@ class RandomLogitTest(Metric):
             device=kwargs.get("device", None)
         ).cpu().numpy()
 
-        results = np.array([self.similarity_func(a.flatten(), a_off.flatten()) for a, a_off in zip(a_batch, a_batch_off)])
+        results = np.array([self.similarity_func(a.flatten(), a_off.flatten())
+                            for a, a_off in zip(a_batch, a_batch_off)])
 
         return results
-
