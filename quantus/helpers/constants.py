@@ -5,16 +5,16 @@ from .local_func import *
 
 
 AVAILABLE_XAI_METHODS = {"Gradient",
-               "Saliency",
-               "GradientShap",
-               "IntegratedGradients",
-               "InputXGradient",
-               "Occlusion",
-               "FeatureAblation",
-               "GradCam",
-               "Control Var. Sobel Filter",
-               "Control Var. Constant"
-               }
+                         "Saliency",
+                         "GradientShap",
+                         "IntegratedGradients",
+                         "InputXGradient",
+                         "Occlusion",
+                         "FeatureAblation",
+                         "GradCam",
+                         "Control Var. Sobel Filter",
+                         "Control Var. Constant"
+                         }
 
 
 AVAILABLE_METRICS = {"Faithfulness": {
