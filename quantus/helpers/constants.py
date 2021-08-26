@@ -5,16 +5,16 @@ from .local_func import *
 
 
 AVAILABLE_XAI_METHODS = {"Gradient",
-               "Saliency",
-               "GradientShap",
-               "IntegratedGradients",
-               "InputXGradient",
-               "Occlusion",
-               "FeatureAblation",
-               "GradCam",
-               "Control Var. Sobel Filter",
-               "Control Var. Constant"
-               }
+                         "Saliency",
+                         "GradientShap",
+                         "IntegratedGradients",
+                         "InputXGradient",
+                         "Occlusion",
+                         "FeatureAblation",
+                         "GradCam",
+                         "Control Var. Sobel Filter",
+                         "Control Var. Constant"
+                         }
 
 
 AVAILABLE_METRICS = {"Faithfulness": {
@@ -37,11 +37,11 @@ AVAILABLE_METRICS = {"Faithfulness": {
             "Avg-Sensitivity": AvgSensitivity,
         },
         "Localisation": {
-            "Pointing Game": "ADD",
-            "TKI": "ADD",
+            "Pointing Game": PointingGame,
+            "TKI": TopKIntersection,
             "Relevance Mass Accuracy": "ADD",
-            "Relevance Mass Ranking": "ADD",
-            "Attribution Localization ": "ADD",
+            "Relevance Mass Ranking": RelevanceRankAccuracy,
+            "Attribution Localization ": AttributionLocalization,
         },
         "Complexity": {
             "Sparseness Test": Sparseness,
@@ -49,8 +49,8 @@ AVAILABLE_METRICS = {"Faithfulness": {
             "Effective Complexity": EffectiveComplexity,
         },
         "Randomisation": {
-            "Model Parameter Randomisation Test": "ADD",
-            "Random Logit Test": "ADD",
+            "Model Parameter Randomisation": ModelParameterRandomization,
+            "Random Logit": RandomLogit,
         },
         "Axiomatic": {
             "Completeness Test": Completeness,
