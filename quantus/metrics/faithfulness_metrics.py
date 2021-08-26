@@ -47,7 +47,7 @@ class FaithfulnessCorrelation(Metric):
         self.last_results = []
         self.all_results = []
 
-        self.text = f"""\n\nThe Faithfulness Correlation metric is known to be sensitive to the choice of baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs for each input and explanation pair 'nr_runs'. \nGo over and select each hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call list_hyperparameters method. \nFor more reading, please see [INSERT CITATION]."""
+        self.text = f"""\n\nThe Faithfulness Correlation metric is known to be sensitive to the choice of baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation pair) 'nr_runs'. \nGo over and select each hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call list_hyperparameters method. \nFor more reading, please see [INSERT CITATION]."""
 
 
     def __call__(
@@ -1411,3 +1411,4 @@ class IROF(Metric):
             self.last_results.append(preds)
 
         return self.last_results
+
