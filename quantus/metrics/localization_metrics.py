@@ -2,63 +2,41 @@ import numpy as np
 from typing import Union
 import warnings
 
-from .base import Measure
+from .base import Metric
 from ..helpers.explanation_func import *
 
 
-class LocalizationTest(Measure):
-    """
-    Implements basis functionality for the following evaluation measures:
+class LocalizationTest(Metric):
+    """ Implements basis functionality for the following evaluation measures:
 
         • Pointing Game (Zhang et al., 2018)
         • Attribution Localization (Kohlbrenner et al., 2020)
         • TKI (Theiner et al., 2021)
         • Relevance Rank Accuracy (Arras et al., 2021)
         • Relevance Mass Accuracy (Arras et al., 2021)
-    """
+     """
 
     def __init__(self, *args, **kwargs):
+
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.perturb_func = self.kwargs.get("perturb_func", None)
-        # self.localization_func = self.kwargs.get(
-        #     "localization_func", "pointing_game"
-        # )
-        self.agg_function = kwargs.get("agg_function", np.mean)
 
-        super(LocalizationTest, self).__init__()
+        self.agg_function = kwargs.get("agg_function", np.mean)
 
     def __call__(
         self,
         model,
-        inputs: np.array,
-        targets: Union[np.array, int, None],
-        attributions: Union[np.array, None],
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
         **kwargs
     ):
 
-        results = []
-
-        for s, sample in enumerate(inputs):
-
-            sub_results = []
-
-            for target in targets:
-
-                binary_mask = get_binary_mask(sample, targets[s])
-
-            if self.perturbation_function:
-                attribution = self.perturbation_function(attributions[s])
-            else:
-                attribution = attributions[s]
-
-                sub_results.append(
-                    self.localization_function(sample, attribution, binary_mask)
-                )
-
-            results.append(self.agg_function(sub_results))
-
-        return results
+        raise NotImplementedError("Abstract Class, please specify a Localization Metric.")
 
     def check_assertions(self,
                          model,
@@ -88,13 +66,15 @@ class LocalizationTest(Measure):
                 np.shape(a_batch) == np.shape(s_batch)
         ), "Attributions and segmentation masks should have the same shape."
 
-        return
+        return True
 
 
 class PointingGame(LocalizationTest):
     """
     Implementation of the Pointing Game from Zhang et al. 2018,
-    that imlements the check if the maximal attribution is on target.
+    that implements the check if the maximal attribution is on target.
+
+    High scores are desired as it means, that the maximal attributed pixel belongs to an object of the specified class.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -113,17 +93,16 @@ class PointingGame(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
@@ -155,7 +134,9 @@ class AttributionLocalization(LocalizationTest):
     """
     Implementation of the attribution localization from Kohlbrenner et al. 2020,
     (also Relevance Mass Accuracy by Arras et al. 2021)
-    that imlements the ratio of attribution within target to the overall attribution.
+    that implements the ratio of attribution within target to the overall attribution.
+
+    High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -177,7 +158,6 @@ class AttributionLocalization(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
         assert (
@@ -186,11 +166,11 @@ class AttributionLocalization(LocalizationTest):
 
         if a_batch is None:
             explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
@@ -244,7 +224,10 @@ class AttributionLocalization(LocalizationTest):
 class TopKIntersection(LocalizationTest):
     """
     Implementation of the top-k intersection from Theiner et al. 2021,
-    that imlements the pixel-wise intersection between ground truth and an "explainer" mask.
+    that implements the pixel-wise intersection between ground truth and an "explainer" mask.
+
+    High scores are desired, as the overlap between the ground truth object mask
+    and the attribution mask should be maximal.
 
     Current assumptions:
     s_batch is binary and shapes are equal
@@ -265,17 +248,16 @@ class TopKIntersection(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
@@ -309,6 +291,9 @@ class RelevanceRankAccuracy(LocalizationTest):
     Implementation of the relevance rank accuracy from Arras et al. 2021,
     that measures the ratio of high intensity relevances within the ground truth mask.
 
+    High scores are desired, as the pixels with the highest positively attributed scores
+    should be within the bounding box of the targeted object.
+
     Current assumptions:
     s_batch is binary and shapes are equal
     """
@@ -323,17 +308,16 @@ class RelevanceRankAccuracy(LocalizationTest):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
-            device,
             **kwargs
     ):
 
         if a_batch is None:
             a_batch = explain(
-                model.to(device),
+                model.to(kwargs.get("device", None)),
                 x_batch,
                 y_batch,
                 explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=device,
+                device=kwargs.get("device", None),
             )
             a_batch = a_batch.cpu().numpy()
         self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
