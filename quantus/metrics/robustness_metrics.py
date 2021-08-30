@@ -101,10 +101,13 @@ class Continuity(Metric):
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(
                     x,
-                    **{**{
-                        "perturb_dx": (step + 1) * self.dx,
-                        "perturb_baseline": self.perturb_baseline,
-                    }, **self.kwargs},
+                    **{
+                        **{
+                            "perturb_dx": (step + 1) * self.dx,
+                            "perturb_baseline": self.perturb_baseline,
+                        },
+                        **self.kwargs,
+                    },
                 )
                 a_perturbed = explain(
                     model.to(kwargs.get("device", None)),
@@ -160,7 +163,8 @@ class Continuity(Metric):
         return np.mean(
             [
                 self.similarity_func(
-                    self.last_results[sample][self.nr_patches], self.last_results[sample][ix_patch]
+                    self.last_results[sample][self.nr_patches],
+                    self.last_results[sample][ix_patch],
                 )
                 for ix_patch in range(self.nr_patches)
                 for sample in self.last_results.keys()
@@ -210,7 +214,6 @@ class InputIndependenceRate(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -245,7 +248,7 @@ class InputIndependenceRate(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -282,9 +285,7 @@ class InputIndependenceRate(Metric):
                 counts_corrs += 1
 
                 # Append similarity score.
-                similarity = self.similarity_func(
-                    a.flatten(), a_perturbed.flatten()
-                )
+                similarity = self.similarity_func(a.flatten(), a_perturbed.flatten())
                 if similarity < self.threshold:
                     counts_thres += 1
 
@@ -292,7 +293,6 @@ class InputIndependenceRate(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
 
 
 class LocalLipschitzEstimate(Metric):
@@ -342,7 +342,6 @@ class LocalLipschitzEstimate(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -361,7 +360,7 @@ class LocalLipschitzEstimate(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -446,7 +445,6 @@ class MaxSensitivity(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -465,7 +463,7 @@ class MaxSensitivity(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -482,6 +480,9 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+
+                # TODO. Kwargs need to have a callable called explanation_func ...
+                # Update on all Robustness metrics.
                 a_perturbed = explain(
                     model.to(kwargs.get("device", None)),
                     x_perturbed,
@@ -550,14 +551,13 @@ class AvgSensitivity(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         if a_batch is None:
@@ -569,7 +569,7 @@ class AvgSensitivity(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -607,3 +607,9 @@ class AvgSensitivity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+if __name__ == '__main__':
+
+    # Run tests!
+    pass

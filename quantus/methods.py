@@ -4,14 +4,16 @@ from .metrics import *
 from .helpers.constants import *
 
 
-def evaluate(evaluation_metrics: dict,
-             explanation_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
-             model: torch.nn,
-             x_batch: np.ndarray,
-             y_batch: np.ndarray,
-             a_batch: Union[np.ndarray, None] = None,
-             agg_func: Callable = lambda x: x,
-             **kwargs) -> dict:
+def evaluate(
+    evaluation_metrics: dict,
+    explanation_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
+    model: torch.nn,
+    x_batch: np.ndarray,
+    y_batch: np.ndarray,
+    a_batch: Union[np.ndarray, None] = None,
+    agg_func: Callable = lambda x: x,
+    **kwargs,
+) -> dict:
     """
     A methods to evaluate metrics given some explanation methods.
 
@@ -50,30 +52,42 @@ def evaluate(evaluation_metrics: dict,
                 if callable(method_func):
 
                     # TODO. Write placeholder function for explanations.
-                    a_batch = method_func(model=model,
-                                          inputs=x_batch,
-                                          targets=y_batch,
-                                          **{**kwargs, **{"explanation_func": method}})
+                    a_batch = method_func(
+                        model=model,
+                        inputs=x_batch,
+                        targets=y_batch,
+                        **{**kwargs, **{"explanation_func": method}},
+                    )
 
                 else:
 
                     if not isinstance(method_func, np.ndarray):
-                        raise TypeError("Explanations must be of type np.ndarray or a Callable function that outputs np.nparray.")
+                        raise TypeError(
+                            "Explanations must be of type np.ndarray or a Callable function that outputs np.nparray."
+                        )
 
-                results[metric][method] = agg_func(metric_func(model=model,
-                                                               x_batch=x_batch,
-                                                               y_batch=y_batch,
-                                                               a_batch=a_batch,
-                                                               **{**kwargs, **{"explanation_func": method}}))
+                results[metric][method] = agg_func(
+                    metric_func(
+                        model=model,
+                        x_batch=x_batch,
+                        y_batch=y_batch,
+                        a_batch=a_batch,
+                        **{**kwargs, **{"explanation_func": method}},
+                    )
+                )
 
         elif isinstance(explanation_methods, list):
 
             for method in explanation_methods:
-                results[metric][method] = agg_func(metric_func(model=model,
-                                                               x_batch=x_batch,
-                                                               y_batch=y_batch,
-                                                               a_batch=a_batch,
-                                                               **{**kwargs, **{"explanation_func": method}}))
+                results[metric][method] = agg_func(
+                    metric_func(
+                        model=model,
+                        x_batch=x_batch,
+                        y_batch=y_batch,
+                        a_batch=a_batch,
+                        **{**kwargs, **{"explanation_func": method}},
+                    )
+                )
 
     return results
 

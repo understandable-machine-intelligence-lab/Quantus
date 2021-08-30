@@ -47,16 +47,15 @@ class FaithfulnessCorrelation(Metric):
         self.last_results = []
         self.all_results = []
 
-        self.text = f"""\n\nThe Faithfulness Correlation metric is known to be sensitive to the choice of baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs for each input and explanation pair 'nr_runs'. \nGo over and select each hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call list_hyperparameters method. \nFor more reading, please see [INSERT CITATION]."""
-
+        self.text = f"""\n\nThe Faithfulness Correlation metric is known to be sensitive to the choice of baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation pair) 'nr_runs'. \nGo over and select each hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call list_hyperparameters method. \nFor more reading, please see [INSERT CITATION]."""
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         # Generate warning.
@@ -75,7 +74,7 @@ class FaithfulnessCorrelation(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -88,8 +87,8 @@ class FaithfulnessCorrelation(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                            .to(kwargs.get("device", None))
+                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .to(kwargs.get("device", None))
                     )[:, y]
                 )
 
@@ -111,8 +110,8 @@ class FaithfulnessCorrelation(Metric):
                     y_pred_perturb = float(
                         model(
                             torch.Tensor(x_perturbed)
-                                .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                                .to(kwargs.get("device", None))
+                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .to(kwargs.get("device", None))
                         )[:, y]
                     )
 
@@ -136,7 +135,7 @@ class FaithfulnessEstimate(Metric):
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
     Computes the correlations of probability drops and the relevance scores on various points,
-    and show the aggregate statistics.
+    showing the aggregate statistics.
 
     References:
         1) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
@@ -184,7 +183,6 @@ class FaithfulnessEstimate(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -207,7 +205,7 @@ class FaithfulnessEstimate(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -234,7 +232,9 @@ class FaithfulnessEstimate(Metric):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
                 ]
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
@@ -262,7 +262,6 @@ class FaithfulnessEstimate(Metric):
 
     def plot_aggregated_statistics(self):
         """Plot aggregated statistics of faithfulness scores."""
-
 
 
 class Infidelity(Metric):
@@ -298,8 +297,6 @@ class Infidelity(Metric):
 
     """
 
-
-
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -319,7 +316,7 @@ class Infidelity(Metric):
         self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
         self.multipy_by_inputs = self.kwargs.get("multipy_by_inputs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        #self.baseline = self.kwargs.get("baseline", "black")
+        # self.baseline = self.kwargs.get("baseline", "black")
 
         self.img_size = kwargs.get("img_size", 224)
         self.nr_channels = kwargs.get("nr_channels", 3)
@@ -346,7 +343,6 @@ class Infidelity(Metric):
         self.last_results = []
         self.all_results = []
 
-
     def __call__(
         self,
         model,
@@ -369,7 +365,7 @@ class Infidelity(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -402,7 +398,9 @@ class Infidelity(Metric):
 
                     for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
-                        for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
+                        for i_y, top_left_y in enumerate(
+                            range(0, x.shape[2], patch_size)
+                        ):
 
                             # Perturb input.
                             x_temp = x.copy()
@@ -418,9 +416,9 @@ class Infidelity(Metric):
                             )
 
                             if self.multipy_by_inputs:
-                                pass #x - x_perturbed
+                                pass  # x - x_perturbed
                             else:
-                                pass #(x - x_perturbed) / (x - self.baselines)
+                                pass  # (x - x_perturbed) / (x - self.baselines)
 
                             # Predict on perturbed input x.
                             with torch.no_grad():
@@ -442,7 +440,7 @@ class Infidelity(Metric):
                             pred_deltas[i_x][i_y] = float(y_pred - y_pred_perturb)
 
                     sub_results.append(None)
-                        #self.loss_func(torch.mul(a=a.flatten(), np.transpose(x_perturbed).flatten()), b=pred_deltas.flatten())
+                    # self.loss_func(torch.mul(a=a.flatten(), np.transpose(x_perturbed).flatten()), b=pred_deltas.flatten())
 
                 sub_sub_results.append(np.mean(sub_results))
 
@@ -484,7 +482,9 @@ class Monotonicity1(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
 
-        self.features_in_step = self.kwargs.get("features_in_step", )
+        self.features_in_step = self.kwargs.get(
+            "features_in_step",
+        )
         assert (
             self.img_size * self.img_size
         ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
@@ -503,7 +503,6 @@ class Monotonicity1(Metric):
 
         self.img_size = None
         self.nr_channels = None
-
 
     def __call__(
         self,
@@ -527,7 +526,7 @@ class Monotonicity1(Metric):
         self.last_results = []
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -538,13 +537,20 @@ class Monotonicity1(Metric):
             a_indices = np.argsort(a)
             preds = []
 
-            x_perturbed = torch.Tensor().new_full(size=x.shape, fill_value=self.perturb_baseline).numpy().flatten()
+            x_perturbed = (
+                torch.Tensor()
+                .new_full(size=x.shape, fill_value=self.perturb_baseline)
+                .numpy()
+                .flatten()
+            )
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
                 ]
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
@@ -557,10 +563,10 @@ class Monotonicity1(Metric):
                         torch.nn.Softmax()(
                             model(
                                 torch.Tensor(x_perturbed)
-                                    .reshape(
+                                .reshape(
                                     1, self.nr_channels, self.img_size, self.img_size
                                 )
-                                    .to(kwargs.get("device", None))
+                                .to(kwargs.get("device", None))
                             )
                         )[:, y]
                     )
@@ -607,31 +613,33 @@ class Monotonicity2(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         1
-        self.features_in_step = self.kwargs.get("features_in_step", )
+        self.features_in_step = self.kwargs.get(
+            "features_in_step",
+        )
 
         assert (
-                       self.img_size * self.img_size
-               ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
+            self.img_size * self.img_size
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
-                           self.img_size * self.img_size
-                   ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
+                self.img_size * self.img_size
+            ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
             self.features_in_step = (
-                                          self.img_size * self.img_size
-                                  ) / self.max_steps_per_input
+                self.img_size * self.img_size
+            ) / self.max_steps_per_input
 
         self.last_results = []
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         if a_batch is None:
@@ -647,7 +655,7 @@ class Monotonicity2(Metric):
         self.last_results = []
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -664,8 +672,10 @@ class Monotonicity2(Metric):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                       (self.features_in_step * i_ix): (self.features_in_step * (i_ix + 1))
-                       ]
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ]
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
@@ -677,10 +687,10 @@ class Monotonicity2(Metric):
                         torch.nn.Softmax()(
                             model(
                                 torch.Tensor(x_perturbed)
-                                    .reshape(
+                                .reshape(
                                     1, self.nr_channels, self.img_size, self.img_size
                                 )
-                                    .to(kwargs.get("device", None))
+                                .to(kwargs.get("device", None))
                             )
                         )[:, y]
                     )
@@ -688,9 +698,7 @@ class Monotonicity2(Metric):
                 atts.append(float(sum(a[a_ix])))
                 preds.append(y_pred_perturb)
 
-            self.last_results.append(
-                self.similarity_func(a=atts, b=preds)
-            )
+            self.last_results.append(self.similarity_func(a=atts, b=preds))
 
         self.all_results.append(self.last_results)
 
@@ -749,7 +757,6 @@ class PixelFlipping(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -772,7 +779,7 @@ class PixelFlipping(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
@@ -789,7 +796,9 @@ class PixelFlipping(Metric):
 
                 # Perturb input by indices of attributions.
                 a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
                 ]
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
@@ -872,7 +881,6 @@ class RegionPerturbation(Metric):
 
         self.img_size = None
         self.nr_channels = None
-
 
     def __call__(
         self,
@@ -1050,7 +1058,6 @@ class Selectivity(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
         self,
         model,
@@ -1164,7 +1171,10 @@ class Selectivity(Metric):
     def aggregated_score(self):
         """Calculate the area under the curve."""
         return np.mean(
-            [np.trapz(self.last_results[sample], dx=1000) for sample in self.last_results.keys()]
+            [
+                np.trapz(self.last_results[sample], dx=1000)
+                for sample in self.last_results.keys()
+            ]
         )
 
 
@@ -1213,20 +1223,22 @@ class SensitivityN(Metric):
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
 
         self.features_in_step = self.kwargs.get("features_in_step", 28)
-        self.max_features = int((0.8 * self.img_size * self.img_size) // self.features_in_step)
+        self.max_features = int(
+            (0.8 * self.img_size * self.img_size) // self.features_in_step
+        )
 
         assert (
-                       self.img_size * self.img_size
-               ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
+            self.img_size * self.img_size
+        ) % self.features_in_step == 0, "Set 'features_in_step' so that the modulo remainder returns 0 given the image size."
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
 
         if self.max_steps_per_input is not None:
             assert (
-                           self.img_size * self.img_size
-                   ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
+                self.img_size * self.img_size
+            ) % self.max_steps_per_input == 0, "Set 'max_steps_per_input' so that the modulo remainder returns 0 given the image size."
             self.features_in_step = (
-                                          self.img_size * self.img_size
-                                  ) / self.max_steps_per_input
+                self.img_size * self.img_size
+            ) / self.max_steps_per_input
 
         self.last_results = []
         self.all_results = []
@@ -1234,17 +1246,16 @@ class SensitivityN(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -1272,27 +1283,29 @@ class SensitivityN(Metric):
 
             # Predict on x.
             with torch.no_grad():
-                y_pred = float(torch.nn.Softmax()(
-                    model(
-                        torch.Tensor(x)
-                            .reshape(
-                            1, self.nr_channels, self.img_size, self.img_size
-                        )
+                y_pred = float(
+                    torch.nn.Softmax()(
+                        model(
+                            torch.Tensor(x)
+                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
                             .to(kwargs.get("device", None))
-                    )
-                )[:, y])
+                        )
+                    )[:, y]
+                )
 
             att_sums = []
             pred_deltas = []
             x_perturbed = x.copy().flatten()
 
-            for i_ix, a_ix in enumerate(a_indices[::self.features_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 if i_ix <= self.max_features:
                     # Perturb input by indices of attributions.
                     a_ix = a_indices[
-                           (self.features_in_step * i_ix): (self.features_in_step * (i_ix + 1))
-                           ]
+                        (self.features_in_step * i_ix) : (
+                            self.features_in_step * (i_ix + 1)
+                        )
+                    ]
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
                         **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
@@ -1310,10 +1323,13 @@ class SensitivityN(Metric):
                             torch.nn.Softmax()(
                                 model(
                                     torch.Tensor(x_perturbed)
-                                        .reshape(
-                                        1, self.nr_channels, self.img_size, self.img_size
+                                    .reshape(
+                                        1,
+                                        self.nr_channels,
+                                        self.img_size,
+                                        self.img_size,
                                     )
-                                        .to(kwargs.get("device", None))
+                                    .to(kwargs.get("device", None))
                                 )
                             )[:, y]
                         )
@@ -1333,8 +1349,12 @@ class SensitivityN(Metric):
                 sub_results_att_sums_l[k].append(sublist2[k])
 
         # Measure similarity for each n.
-        self.last_result = [self.similarity_func(a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]) for k in
-                            range(self.max_features)]
+        self.last_result = [
+            self.similarity_func(
+                a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
+            )
+            for k in range(self.max_features)
+        ]
         self.all_results.append(self.last_result)
 
         return self.last_result
@@ -1362,12 +1382,12 @@ class IROF(Metric):
         self.abs = self.kwargs.get("abs", True)
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         if a_batch is None:
@@ -1379,7 +1399,7 @@ class IROF(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -1395,19 +1415,39 @@ class IROF(Metric):
 
             preds = []
 
-            for i_ix, a_ix in enumerate(a_indices[::self.features_in_step]):
+            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
                 # Perturb input by indices of attributions.
-                a_ix = a_indices[(self.features_in_step * i_ix):(self.features_in_step * (i_ix + 1))]
-                x_perturbed = self.perturb_func(img=x.flatten(),
-                                                **{"index": a_ix, "perturb_baseline": self.perturb_baseline})
+                a_ix = a_indices[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ]
+                x_perturbed = self.perturb_func(
+                    img=x.flatten(),
+                    **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                )
                 # Predict on perturbed input x.
                 with torch.no_grad():
-                    y_pred_i = float(torch.nn.Softmax()(model(torch.Tensor(x_perturbed)
-                                           .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                                           .to(kwargs.get("device", None))))[:, y])
+                    y_pred_i = float(
+                        torch.nn.Softmax()(
+                            model(
+                                torch.Tensor(x_perturbed)
+                                .reshape(
+                                    1, self.nr_channels, self.img_size, self.img_size
+                                )
+                                .to(kwargs.get("device", None))
+                            )
+                        )[:, y]
+                    )
                 preds.append(float(y_pred_i))
 
             self.last_results.append(preds)
 
         return self.last_results
+
+
+if __name__ == '__main__':
+
+    # Run tests!
+    pass

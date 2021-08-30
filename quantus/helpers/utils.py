@@ -3,19 +3,23 @@ from typing import Union, Optional, List
 import numpy as np
 
 
-def assert_model_predictions_deviations(y_pred: torch.Tensor, y_pred_perturb: torch.Tensor, threshold: float = 0.01):
+def assert_model_predictions_deviations(
+    y_pred: torch.Tensor, y_pred_perturb: torch.Tensor, threshold: float = 0.01
+):
     # TODO. Implement.
     pass
 
 
-def assert_model_predictions_correct(y_pred: torch.Tensor, y_pred_perturb: torch.Tensor):
+def assert_model_predictions_correct(
+    y_pred: torch.Tensor, y_pred_perturb: torch.Tensor
+):
     # TODO. Implement.
     pass
 
 
 def attr_check(method):
     pass
-    #https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
+    # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
     """
     def attr_check(method):
         def inner(ref, name, age, service):
@@ -26,6 +30,7 @@ def attr_check(method):
 
         return inner
     """
+
 
 def normalize_heatmap(heatmap: np.array):
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
