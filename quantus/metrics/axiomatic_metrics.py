@@ -31,18 +31,20 @@ class Completeness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
 
-        self.output_transformation_func = self.kwargs.get("output_transformation_func", lambda x: x)
+        self.output_transformation_func = self.kwargs.get(
+            "output_transformation_func", lambda x: x
+        )
 
         self.last_results = []
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         if a_batch is None:
@@ -54,7 +56,7 @@ class Completeness(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -81,6 +83,7 @@ class Symmetry(Metric):
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
+
     pass
 
 
@@ -89,6 +92,7 @@ class InputInvariance(Metric):
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
+
     pass
 
 
@@ -97,6 +101,7 @@ class Sensitivity(Metric):
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
+
     pass
 
 
@@ -105,4 +110,10 @@ class Dummy(Metric):
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
+
+    pass
+
+if __name__ == '__main__':
+
+    # Run tests!
     pass

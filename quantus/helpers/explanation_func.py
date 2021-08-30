@@ -3,7 +3,8 @@ import random
 import cv2
 from captum.attr import *
 from .utils import *
-#from ..helpers.constants import XAI_METHODS
+
+# from ..helpers.constants import XAI_METHODS
 from typing import Union
 import torch
 
@@ -12,7 +13,7 @@ def explain(
     model: torch.nn,
     inputs: Union[np.array, torch.Tensor],
     targets: Union[np.array, torch.Tensor],
-    **kwargs
+    **kwargs,
 ) -> torch.Tensor:
     """
     Explain inputs given a model, targets and an explanation method.
@@ -23,8 +24,10 @@ def explain(
     """
 
     if "explanation_func" not in kwargs:
-        print_warning(warning_text=f"Using 'explain' function without specifying 'explanation_func' (str)"
-                                   f"in kwargs will produce 'Gradient' explanation.\n")
+        print_warning(
+            warning_text=f"Using 'explain' function without specifying 'explanation_func' (str)"
+            f"in kwargs will produce 'Gradient' explanation.\n"
+        )
 
     explanation_func = kwargs.get("explanation_func", "Gradient").lower()
 
@@ -133,20 +136,29 @@ def explain(
     elif explanation_func == "Control Var. Sobel Filter".lower():
         if len(explanation.shape) == 4:
             for i in range(len(explanation)):
-                explanation[i] = torch.reshape(input=torch.Tensor(np.clip(
-                    scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1).mean(axis=0)),
-                    shape=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)))
+                explanation[i] = torch.reshape(
+                    input=torch.Tensor(
+                        np.clip(
+                            scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1
+                        ).mean(axis=0)
+                    ),
+                    shape=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
+                )
         else:
-            explanation = torch.reshape(input=torch.Tensor(np.clip(scipy.ndimage.sobel(
-                inputs.cpu().numpy()), 0, 1).mean(axis=0)),
-                shape=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)))
-
+            explanation = torch.reshape(
+                input=torch.Tensor(
+                    np.clip(scipy.ndimage.sobel(inputs.cpu().numpy()), 0, 1).mean(
+                        axis=0
+                    )
+                ),
+                shape=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
+            )
 
     elif explanation_func == "Control Var. Constant".lower():
 
         # TODO. So that the fill_dict is not calculating on batch rather than on an invidiual sample basis.
         assert (
-                "fill_value" in kwargs
+            "fill_value" in kwargs
         ), "Specify a 'fill_value' e.g., 0.0 or 'black' for pixel replacement."
 
         fill_dict = {
@@ -161,10 +173,14 @@ def explain(
         else:
             fill_value = fill_dict[kwargs["fill_value"].lower()]
 
-        explanation = torch.Tensor().new_full(size=explanation.shape, fill_value=fill_value)
+        explanation = torch.Tensor().new_full(
+            size=explanation.shape, fill_value=fill_value
+        )
 
     else:
-        raise KeyError("Specify a XAI method that already has been implemented {}.").__format__("XAI_METHODS")
+        raise KeyError(
+            "Specify a XAI method that already has been implemented {}."
+        ).__format__("XAI_METHODS")
 
     if kwargs.get("abs", False):
         explanation = explanation.abs()
@@ -176,11 +192,10 @@ def explain(
         explanation[explanation > 0] = 0.0
 
     if kwargs.get("normalize", True):
-       explanation = normalize_heatmap(explanation)
+        explanation = normalize_heatmap(explanation)
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
             return explanation.cpu().detach().numpy()
         return explanation.cpu().numpy()
     return explanation
-

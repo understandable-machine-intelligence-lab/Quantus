@@ -18,6 +18,7 @@ def perturb_func (callable):
 
 """
 
+
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input. """
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
@@ -37,7 +38,9 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
 def get_baseline(img: np.array, **kwargs) -> float:
     """Get baseline based on a uer-defined string or integer input.
     TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
-    assert (("perturb_baseline" in kwargs) or ("replacement_values" in kwargs)), "Specify a 'perturb_baseline' \
+    assert ("perturb_baseline" in kwargs) or (
+        "replacement_values" in kwargs
+    ), "Specify a 'perturb_baseline' \
     e.g., 0.0 or 'black' for pixel replacement or 'replacement_values' containing an array with one value per \
     index for replacement."
 
@@ -56,8 +59,10 @@ def get_baseline(img: np.array, **kwargs) -> float:
         }
 
         if "patch" in kwargs:
-            mask_dict["neighbourhood_mean"] = float(kwargs["patch"].mean()),
-            mask_dict["neighbourhood_random_min_max"] = float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
+            mask_dict["neighbourhood_mean"] = (float(kwargs["patch"].mean()),)
+            mask_dict["neighbourhood_random_min_max"] = (
+                float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
+            )
 
         assert kwargs["perturb_baseline"] in list(
             mask_dict.keys()
@@ -72,9 +77,7 @@ def get_baseline(img: np.array, **kwargs) -> float:
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    assert (
-        "index" in kwargs
-    ), "Specify 'index' to enable perturbation function to run."
+    assert "index" in kwargs, "Specify 'index' to enable perturbation function to run."
 
     img[kwargs["index"]] = get_baseline(img, **kwargs)
     return img
@@ -83,25 +86,20 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
 def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     """Replace a single patch in an image by given baseline."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert (
-        "patch_size" in kwargs
-    ), "Specify 'patch_size' (int) to perturb the image."
-    assert (
-        "nr_channels" in kwargs
-    ), "Specify 'nr_channels' (int) to perturb the image."
+    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
+    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
     assert (
         "nr_channels" in kwargs
     ), "Specify 'perturb_baseline' (int, float, str) to perturb the image."
-    assert (
-        "top_left_y" in kwargs
-    ), "Specify 'top_left_y' (int) to perturb the image."
-    assert (
-        "top_left_x" in kwargs
-    ), "Specify 'top_left_x' (int) to perturb the image."
+    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
+    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
 
     # Preset patch for 'mean' and 'neighbourhood' choices.
-    kwargs["patch"] = img[:, kwargs["top_left_x"]: kwargs["top_left_x"] + kwargs["patch_size"],
-                      kwargs["top_left_y"]: kwargs["top_left_y"] + kwargs["patch_size"]]
+    kwargs["patch"] = img[
+        :,
+        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
+        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
+    ]
 
     # for c in range(kwargs.get("nr_channels", 3)):
     img[
@@ -184,4 +182,3 @@ def optimization_scheme(img: np.array, **kwargs) -> np.array:
     # within a small L2 distance of initialization ...
     # TODO. Implement optimization_scheme
     return gaussian_noise(img, **kwargs)
-

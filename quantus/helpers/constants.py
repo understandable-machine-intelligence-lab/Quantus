@@ -4,62 +4,64 @@ from .similar_func import *
 from .local_func import *
 
 
-AVAILABLE_XAI_METHODS = {"Gradient",
-               "Saliency",
-               "GradientShap",
-               "IntegratedGradients",
-               "InputXGradient",
-               "Occlusion",
-               "FeatureAblation",
-               "GradCam",
-               "Control Var. Sobel Filter",
-               "Control Var. Constant"
-               }
+AVAILABLE_XAI_METHODS = {
+    "Gradient",
+    "Saliency",
+    "GradientShap",
+    "IntegratedGradients",
+    "InputXGradient",
+    "Occlusion",
+    "FeatureAblation",
+    "GradCam",
+    "Control Var. Sobel Filter",
+    "Control Var. Constant",
+}
 
 
-AVAILABLE_METRICS = {"Faithfulness": {
-            "Faithfulness Correlation": FaithfulnessCorrelation,
-            "Faithfulness Estimate": FaithfulnessEstimate,
-            "Pixel-Flipping": PixelFlipping,
-            "Region Segmentation": RegionPerturbation,
-            "Monotonicity 1": Monotonicity1,
-            "Monotonicity 2": Monotonicity2,
-            "Infidelity": Infidelity,
-            "Selectivity": Selectivity,
-            "SensitivityN": SensitivityN,
-            "IROF": IROF
-          },
-        "Robustness": {
-            "Continuity Test": Continuity,
-            "Input Independence Rate": InputIndependenceRate,
-            "Local Lipschitz Estimate": LocalLipschitzEstimate,
-            "Max-Sensitivity": MaxSensitivity,
-            "Avg-Sensitivity": AvgSensitivity,
-        },
-        "Localisation": {
-            "Pointing Game": "ADD",
-            "TKI": "ADD",
-            "Relevance Mass Accuracy": "ADD",
-            "Relevance Mass Ranking": "ADD",
-            "Attribution Localization ": "ADD",
-        },
-        "Complexity": {
-            "Sparseness Test": Sparseness,
-            "Complexity Test": Complexity,
-            "Effective Complexity": EffectiveComplexity,
-        },
-        "Randomisation": {
-            "Model Parameter Randomisation Test": "ADD",
-            "Random Logit Test": "ADD",
-        },
-        "Axiomatic": {
-            "Completeness Test": Completeness,
-            "Symmetry": Symmetry,
-            "InputInvariance": InputInvariance,
-            "Sensitivity": Sensitivity,
-            "Dummy": Dummy,
-        },
-        }
+AVAILABLE_METRICS = {
+    "Faithfulness": {
+        "Faithfulness Correlation": FaithfulnessCorrelation,
+        "Faithfulness Estimate": FaithfulnessEstimate,
+        "Pixel-Flipping": PixelFlipping,
+        "Region Segmentation": RegionPerturbation,
+        "Monotonicity 1": Monotonicity1,
+        "Monotonicity 2": Monotonicity2,
+        "Infidelity": Infidelity,
+        "Selectivity": Selectivity,
+        "SensitivityN": SensitivityN,
+        "IROF": IROF,
+    },
+    "Robustness": {
+        "Continuity Test": Continuity,
+        "Input Independence Rate": InputIndependenceRate,
+        "Local Lipschitz Estimate": LocalLipschitzEstimate,
+        "Max-Sensitivity": MaxSensitivity,
+        "Avg-Sensitivity": AvgSensitivity,
+    },
+    "Localisation": {
+        "Pointing Game": "ADD",
+        "TKI": "ADD",
+        "Relevance Mass Accuracy": "ADD",
+        "Relevance Mass Ranking": "ADD",
+        "Attribution Localization ": "ADD",
+    },
+    "Complexity": {
+        "Sparseness Test": Sparseness,
+        "Complexity Test": Complexity,
+        "Effective Complexity": EffectiveComplexity,
+    },
+    "Randomisation": {
+        "Model Parameter Randomisation Test": "ADD",
+        "Random Logit Test": "ADD",
+    },
+    "Axiomatic": {
+        "Completeness Test": Completeness,
+        "Symmetry": Symmetry,
+        "InputInvariance": InputInvariance,
+        "Sensitivity": Sensitivity,
+        "Dummy": Dummy,
+    },
+}
 
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
@@ -99,7 +101,7 @@ AVAILABLE_LOCALIZATION_FUNCTIONS = {
 DEFAULT_METRICS = {
     "Faithfulness": FaithfulnessCorrelation(),
     "Max-Sensitivity": MaxSensitivity(),
-    "Complexity": Complexity()
+    "Complexity": Complexity(),
 }
 
 DEFAULT_XAI_METHODS = ["Saliency", "IntegratedGradients"]

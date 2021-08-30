@@ -5,5 +5,3 @@ import numpy as np
 def localisation(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate Spearman rank of two images (or explanations)."""
     return None
-
-
