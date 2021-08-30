@@ -34,14 +34,13 @@ class Sparseness(Metric):
         self.img_size = None
         self.nr_channels = None
 
-
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
 
         if a_batch is None:
@@ -53,7 +52,7 @@ class Sparseness(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -71,7 +70,9 @@ class Sparseness(Metric):
             a += 0.0000001  # values canot be 0.
             a = np.sort(a)
             self.last_results.append(
-                (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)) / (a.shape[0] * np.sum(a)))
+                (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a))
+                / (a.shape[0] * np.sum(a))
+            )
 
         self.all_results.append(self.last_results)
 
@@ -111,15 +112,15 @@ class Complexity(Metric):
         self.nr_channels = None
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
         assert (
-                "explanation_func" in kwargs
+            "explanation_func" in kwargs
         ), "To evaluate with this metric, specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
@@ -131,7 +132,7 @@ class Complexity(Metric):
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -139,12 +140,15 @@ class Complexity(Metric):
         self.last_results = []
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
-            a = np.abs(
-                np.array(
-                    np.reshape(a, (self.img_size * self.img_size,)),
-                    dtype=np.float64,
+            a = (
+                np.abs(
+                    np.array(
+                        np.reshape(a, (self.img_size * self.img_size,)),
+                        dtype=np.float64,
+                    )
                 )
-            ) / np.sum(np.abs(a))
+                / np.sum(np.abs(a))
+            )
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -153,12 +157,12 @@ class Complexity(Metric):
         return self.last_results
 
 
-
 class EffectiveComplexity:
     """
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
+
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -176,15 +180,15 @@ class EffectiveComplexity:
         self.nr_channels = None
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        **kwargs,
     ):
         assert (
-                "explanation_func" in kwargs
+            "explanation_func" in kwargs
         ), "To evaluate with this metric, specify 'explanation_func' (str) e.g., 'Gradient'."
 
         if a_batch is None:
@@ -196,7 +200,7 @@ class EffectiveComplexity:
             )
 
         assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
         ), "Inputs and attributions should include the same number of samples."
 
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -214,3 +218,7 @@ class EffectiveComplexity:
 
         return self.last_results
 
+if __name__ == '__main__':
+
+    # Run tests!
+    pass
