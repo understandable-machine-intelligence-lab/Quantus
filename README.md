@@ -185,7 +185,8 @@ Before evaluating your explanations, make sure to:
 * Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain 
 * Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores? 
 * Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric
-* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features 
+* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features
+* [INSERT SOMETHING ABOUT THE CONNNECTION WITH THE MODEL, e.g., robustness like https://dl.acm.org/doi/pdf/10.1145/3447548.3470806 and other papers]
 
 ## Disclaimers
 
@@ -205,6 +206,10 @@ Hence it may be a discrepency between what the author claims to measure by the p
 
 Metrics are often designed with a specific use case in mind and it is not always clear how to change the hyperparameters to make them suitable for another setting. 
 Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?
+
+4.
+
+Not all metrics are data or application independent.
 
 ## Feature list
 

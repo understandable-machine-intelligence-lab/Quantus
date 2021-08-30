@@ -79,4 +79,3 @@ def mse(a: np.array, b: np.array, **kwargs) -> float:
 def difference(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate the difference between two images (or explanations)."""
     return a - b
-
