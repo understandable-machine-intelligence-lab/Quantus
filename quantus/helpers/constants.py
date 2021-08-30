@@ -3,7 +3,6 @@ from .perturb_func import *
 from .similar_func import *
 from .local_func import *
 
-
 AVAILABLE_XAI_METHODS = {
     "Gradient",
     "Saliency",
@@ -39,11 +38,11 @@ AVAILABLE_METRICS = {
         "Avg-Sensitivity": AvgSensitivity,
     },
     "Localisation": {
-        "Pointing Game": "ADD",
-        "TKI": "ADD",
+        "Pointing Game": PointingGame,
+        "TKI": TopKIntersection,
         "Relevance Mass Accuracy": "ADD",
-        "Relevance Mass Ranking": "ADD",
-        "Attribution Localization ": "ADD",
+        "Relevance Mass Ranking": RelevanceRankAccuracy,
+        "Attribution Localization ": AttributionLocalization,
     },
     "Complexity": {
         "Sparseness Test": Sparseness,
