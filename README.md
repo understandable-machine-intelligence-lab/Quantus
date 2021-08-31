@@ -169,47 +169,12 @@ quantus.available_metrics
 
 See more examples and use cases in the `/tutorials` folder. For example,
 
-
 * Compare explanation methods on different evalaution criteria (check out: `/tutorials/basic_example.ipynb`)
 * Measure sensitivity of hyperparameter choice (check out: `/tutorials/hyperparameter_sensitivity.ipynb`)
 * Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/training_robustness.ipynb`)
 * Investigate to what extent metrics belonging to the same category score explanations similarliy (check out: `/tutorials/category_reliability.ipynb`)
 
 ... and more!
-
-## User guidelines
-
-Just 'throwing' some metrics at your XAI explanations and consider the job done, is an approach doomed to fail. 
-Before evaluating your explanations, make sure to:
-
-* Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain 
-* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores? 
-* Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric
-* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features
-* [INSERT SOMETHING ABOUT THE CONNNECTION WITH THE MODEL, e.g., robustness like https://dl.acm.org/doi/pdf/10.1145/3447548.3470806 and other papers]
-
-## Disclaimers
-
-1. Implementation may differ from the original author(s)
-
-Any metric implementation in this library may differ from the original authors. 
-It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes the mathematical definition of the metric is missing and/ or 3) the description of hyperparameter choice was left out.
-This leave room for (subjective) interpretations. 
-Note that the implementations of metrics in this library have not been verified by the original authors.
-
-2. Discrepancy in operationalisation
-
-Metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill. 
-Hence it may be a discrepency between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.   
-
-3. Hyperparameters may (and should) change depending on application/ task and dataset/ domain
-
-Metrics are often designed with a specific use case in mind and it is not always clear how to change the hyperparameters to make them suitable for another setting. 
-Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?
-
-4.
-
-Not all metrics are data or application independent.
 
 ## Feature list
 

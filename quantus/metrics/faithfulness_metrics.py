@@ -1315,7 +1315,7 @@ class SensitivityN(Metric):
                     # DEBUG.
                     # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
                     # plt.show()
-
+git s
                     # Sum attributions.
                     att_sums.append(float(a[a_ix].sum()))
 
