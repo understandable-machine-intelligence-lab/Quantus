@@ -1,10 +1,13 @@
+"""This module contains the collection of randomization metrics to evaluate attribution-based explanations of neural network models."""
 import numpy as np
 import random
 from typing import Union
-
 from .base import Metric
-from ..helpers.explanation_func import *
+from ..helpers.utils import *
+from ..helpers.norm_func import *
+from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
+from ..helpers.explanation_func import *
 
 
 def get_layers(model, order="top_down"):
