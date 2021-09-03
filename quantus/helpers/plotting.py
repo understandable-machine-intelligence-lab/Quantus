@@ -2,6 +2,7 @@ from typing import List, Union, Dict
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from skimage.segmentation import *
 
 
 def plot_pixel_flipping_experiment(
@@ -37,7 +38,7 @@ def plot_pixel_flipping_experiment(
     plt.show()
 
 
-def plot_selectivity_experiment(scores: Union[List[float], Dict[str, List[float]]]):
+def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float]]]):
     """
     Plot the selectivity experiment as done in paper:
 
@@ -45,17 +46,18 @@ def plot_selectivity_experiment(scores: Union[List[float], Dict[str, List[float]
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
-
-    # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
-    if isinstance(scores, dict):
-        for method, values in scores.items():
+    if isinstance(results, dict):
+        for method, scores in results.items():
             plt.plot(
-                np.arange(0, len(values[0])),
-                np.mean(np.array(list(values.values())), axis=0),
-                label=f"{str(method.capitalize())} ({len(list(values))} samples)",
+                np.arange(0, len(scores[0])),
+                np.mean(np.array(list(scores.values())), axis=0),
+                label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
             )
+    elif isinstance(results, list):
+        # TODO. Finish code if scores is a list.
+        pass
     plt.xlabel(f"# Patches removed")
     plt.ylabel(f"Average function value $f(x)$")
     plt.gca().set_yticklabels(
@@ -66,7 +68,7 @@ def plot_selectivity_experiment(scores: Union[List[float], Dict[str, List[float]
 
 
 def plot_region_perturbation_experiment(
-    scores: Union[List[float], Dict[str, List[float]]]
+    results: Union[List[float], Dict[str, List[float]]]
 ):
     """
     Plot the region perturbation experiment as done in paper:
@@ -77,15 +79,15 @@ def plot_region_perturbation_experiment(
           learning systems 28.11 (2016): 2660-2673.
     """
     fig = plt.figure(figsize=(8, 6))
-    if isinstance(scores, dict):
-        for method, values in scores.items():
+    if isinstance(results, dict):
+        for method, scores in results.items():
             plt.plot(
-                np.arange(0, len(values[0])),
-                np.mean(np.array(list(values.values())), axis=0),
+                np.arange(0, len(scores[0])),
+                np.mean(np.array(list(scores.values())), axis=0),
                 label=f"{str(method.capitalize())}",
             )
     else:
-        plt.plot(np.arange(0, len(scores)), np.mean(scores, axis=0))
+        plt.plot(np.arange(0, len(results)), np.mean(results, axis=0))
     plt.xlabel("Perturbation steps")
     plt.ylabel("AOPC relative to random")
     plt.gca().set_yticklabels(
@@ -95,7 +97,7 @@ def plot_region_perturbation_experiment(
     plt.show()
 
 
-def plot_sensitivity_n_experiment(scores: Union[List[float], Dict[str, List[float]]]):
+def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[float]]]):
     """
     Plot the sensitivity n experiment as done in paper:
 
@@ -106,17 +108,31 @@ def plot_sensitivity_n_experiment(scores: Union[List[float], Dict[str, List[floa
     # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
-    if isinstance(scores, dict):
-        for method, values in scores.items():
+    if isinstance(results, dict):
+        for method, scores in results.items():
             plt.plot(
-                np.linspace(0, 1, len(values[0])),
-                np.mean(np.array(list(values.values())), axis=0),
+                np.linspace(0, 1, len(scores[0])),
+                np.mean(np.array(list(scores.values())), axis=0),
                 label=f"{str(method.capitalize())}",
             )
+    else:
+        plt.plot(np.linspace(0, 1, len(results)), results)
     plt.xlabel(f"$n$")
     plt.ylabel(f"Correlation coefficient")
     plt.gca().set_yticklabels(
         ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
     )
     plt.legend()
+    plt.show()
+
+
+def plot_superpixel_segments(img: torch.Tensor,
+                             segments: np.ndarray,
+                             **kwargs):
+    fig = plt.figure(figsize=(6, 6))
+    plt.imshow(mark_boundaries(np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
+                               segments,
+                               mode="subpixel"))
+    plt.title("Segmentation outcome")
+    plt.grid(False)
     plt.show()

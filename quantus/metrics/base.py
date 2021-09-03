@@ -47,11 +47,11 @@ class Metric:
     """
 
     @attr_check
-    def __init__(self, **kwargs: dict):
+    def __init__(self, *args, **kwargs):
         """ Initialize Measure. """
         self.name = "Base Metric"
 
-        self.text = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
+        self.text_warning = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
         'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
         pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
         misinterpretation of scores. \nTo view all relevant hyperparameters call .list_hyperparameters method. \nFor 
@@ -66,6 +66,10 @@ class Metric:
         **kwargs,
     ) -> Union[int, float, list, dict]:
         """
+        • What the metrics tests
+        • What the output mean
+        • What a high versus low value indicates
+
 
         Parameters
         ----------
@@ -81,12 +85,15 @@ class Metric:
         """
 
     @property
-    def interpret_scores(self):
+    def interpret_scores(self) -> None:
         """
-        • What the output mean
-        • What a high versus low value indicates
+
+        Returns
+        -------
+
         """
-        print(self.__init__.__doc__) #print(self.__doc__)
+
+        print(self.__call__.__doc__.split("callable.")[1].split("Parameters")[0])
 
     def print_warning(self, text: str = "") -> None:
         """
@@ -100,7 +107,7 @@ class Metric:
 
         """
         time.sleep(2)
-        warnings.warn(colored(text=text, color="red"))
+        warnings.warn(colored(text=text, color="blue"), category=Warning)
 
     @property
     def list_hyperparameters(self) -> dict:
