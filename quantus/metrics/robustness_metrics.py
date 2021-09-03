@@ -376,17 +376,15 @@ class LocalLipschitzEstimate(Metric):
                 # Generate explanation based on perturbed input x.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
                 a_perturbed = self.explain_func(model=model,
-                                                inputs=x_batch,
-                                                targets=y_batch,
+                                                inputs=x_perturbed,
+                                                targets=y,
                                                 **self.kwargs)
 
                 # Measure similarity.
-                similarity = self.similarity_func(
-                    a=a.flatten(),
-                    b=a_perturbed.flatten(),
-                    c=x.flatten(),
-                    d=x_perturbed,
-                )
+                similarity = self.similarity_func(a=a.flatten(),
+                                                  b=a_perturbed.flatten(),
+                                                  c=x.flatten(),
+                                                  d=x_perturbed.flatten())
 
                 if similarity > similarity_max:
                     similarity_max = similarity
