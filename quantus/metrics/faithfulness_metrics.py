@@ -45,11 +45,12 @@ class FaithfulnessCorrelation(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
-        self.text_warning = f'''\n\tThe Faithfulness correlation metric is known to be sensitive to the choice of\ 
-        baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and\
-        explanation pair) 'nr_runs'. Go over and select each hyperparameter of the SelectivityN metric carefully\
-        to avoid misinterpretation of scores. To view all relevant hyperparameters call .list_hyperparameters\
-        method. For futher reading, please see [CITATION].\n'''
+        self.text_warning = "\nThe Faithfulness correlation metric is known to be sensitive to the choice of " \
+                            "baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of " \
+                            "runs (for each input and explanation pair) 'nr_runs'. Go over and select each " \
+                            "hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of " \
+                            "scores. To view all relevant hyperparameters call .list_hyperparameters method. For " \
+                            "further reading, please see [CITATION].\n"
         self.last_results = []
         self.all_results = []
 
@@ -83,9 +84,9 @@ class FaithfulnessCorrelation(Metric):
         """
 
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -211,9 +212,9 @@ class FaithfulnessEstimate(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -364,9 +365,9 @@ class Infidelity(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -529,9 +530,9 @@ class MonotonicityArya(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -654,9 +655,9 @@ class MonotonicityNguyen(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -799,9 +800,9 @@ class PixelFlipping(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_result = []
 
         if a_batch is None:
@@ -924,9 +925,9 @@ class RegionPerturbation(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_results = {k: None for k in range(len(x_batch))}
 
         if a_batch is None:
@@ -1102,9 +1103,9 @@ class Selectivity(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_results = {k: None for k in range(len(x_batch))}
 
         if a_batch is None:
@@ -1299,10 +1300,10 @@ class SensitivityN(Metric):
 
         """
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.last_results = []
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_result = []
 
         if a_batch is None:
 
@@ -1451,10 +1452,10 @@ class IROF(Metric):
         **kwargs,
     ):
         # Update kwargs.
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.last_results = []
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_result = []
 
         if a_batch is None:
 
