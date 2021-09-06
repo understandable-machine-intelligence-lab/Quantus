@@ -101,6 +101,10 @@ class ModelParameterRandomization(Metric):
 
         return self.last_results
 
+    @property
+    def aggregated_score(self):
+        # TODO. Implement a class method that plots or takes the similarity scores and make something useful from it.
+        pass
 
 class RandomLogit(Metric):
     """

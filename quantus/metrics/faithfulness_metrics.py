@@ -866,6 +866,40 @@ class PixelFlipping(Metric):
 
         return self.last_results
 
+    def plot(self,
+             y_batch: Union[np.array, int],
+             results: List[float],
+             single_class: Union[int, None] = None
+    ):
+        """
+        Plot the pixel-flippng experiment as done in paper:
+
+        References:
+            1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
+            decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
+
+        # TODO. Finish code if scores is a list.
+        """
+        fig = plt.figure(figsize=(8, 6))
+        if single_class is None:
+            for c in np.unique(y_batch):
+                indices = np.where(y_batch == c)
+                plt.plot(
+                    np.linspace(0, 1, len(results[0])),
+                    np.mean(np.array(results)[results], axis=0),
+                    label=f"target: {str(c)} ({results[0].size} samples)",
+                )
+        plt.xlabel("Fraction of pixels flipped")
+        plt.ylabel("Mean Prediction")
+        plt.gca().set_yticklabels(
+            ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
+        )
+        plt.gca().set_xticklabels(
+            ["{:.0f}%".format(x * 100) for x in plt.gca().get_xticks()]
+        )
+        plt.legend()
+        plt.show()
+
 
 class RegionPerturbation(Metric):
     """
