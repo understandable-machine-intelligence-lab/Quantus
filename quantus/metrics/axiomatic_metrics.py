@@ -24,6 +24,7 @@ class Completeness(Metric):
         4)
 
     """
+    # TODO. Verify
 
     def __init__(self, *args, **kwargs):
 
@@ -31,12 +32,8 @@ class Completeness(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
-
-        self.output_transformation_func = self.kwargs.get(
-            "output_transformation_func", lambda x: x
-        )
-
+        self.abs = self.kwargs.get("abs", False)
+        self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.last_results = []
         self.all_results = []
 
@@ -49,28 +46,46 @@ class Completeness(Metric):
         **kwargs,
     ):
 
-        if a_batch is None:
-            a_batch = explain(
-                model=model.to(kwargs.get("device", None)),
-                inputs=x_batch,
-                targets=y_batch,
-                **kwargs,
-            )
-
-        assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-
+        # Update kwargs.
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a)
 
-            if np.sum(a) == self.output_transformation_func(y):
+            # Predict on input.
+            with torch.no_grad():
+                y_pred = float(
+                        model(
+                            torch.Tensor(x)
+                                .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                                .to(self.kwargs.get("device", None))
+                        )[:, y]
+                    #torch.nn.Softmax()()
+                )
+
+            if np.sum(a) == self.output_func(y_pred):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
@@ -105,7 +120,7 @@ class Sensitivity(Metric):
     """
 
     pass
-
+Completeness
 
 class Dummy(Metric):
     """

@@ -5,6 +5,54 @@ import numpy as np
 from skimage.segmentation import *
 
 
+
+def get_layers(model,
+               order: str = "top_down"):
+    """ Checks a pytorch model for randomizable layers and returns them in a dict. """
+    layers = [module for module in model.named_modules() if hasattr(module[1], "reset_parameters")]
+
+    if order == "top_down":
+        return layers[::-1]
+    else:
+        return layers
+
+
+def assert_layer_order(layer_order: str) -> None:
+    assert layer_order in ["top_down", "bottom_up", "independent"]
+
+def check_assertions(model,
+                     x_batch: np.array,
+                     y_batch: Union[np.array, int],
+                     a_batch: Union[np.array, None],
+                     s_batch: np.array,
+                     **kwargs
+                     ):
+    """Check several assertions."""
+
+    if not isinstance(y_batch, int):
+        assert (
+                np.shape(x_batch)[0] == np.shape(y_batch)[0]
+        ), "Target should by an Integer or a list with the same number of samples as the data."
+    assert (
+            np.shape(x_batch)[0] == np.shape(a_batch)[0]
+    ), "Inputs and attributions should include the same number of samples."
+    assert (
+            np.shape(x_batch)[1] == np.shape(a_batch)[1]
+    ), "Data and attributions should have a corresponding shape."
+    assert (
+            np.shape(x_batch)[0] == np.shape(s_batch)[0]
+    ), "Inputs and segmentation masks should include the same number of samples."
+    assert (
+            np.shape(a_batch) == np.shape(s_batch)
+    ), "Attributions and segmentation masks should have the same shape."
+
+    return True
+
+
+def assert_max_size(max_size: float) -> None:
+    assert ((max_size > 0.) and (max_size <= 1.)), "Set 'max_size' must be between 0. and 1."
+
+
 def get_superpixel_segments(img: torch.Tensor,
                     method: str,
                     **kwargs) -> np.ndarray:
@@ -32,9 +80,9 @@ def get_baseline_value(choice: Union[float, int, str, None],
     """Get the baseline value (float) to fill tensor with."""
 
     if choice is None:
-        assert ("perturb_baseline" in kwargs) or ("fixed_values" in kwargs) or ("constant_value" in kwargs), "Specify \
-        a 'perturb_baseline' or 'constant_value e.g., 0.0 or 'black' for pixel replacement or 'baseline_values' containing \
-        an array with one value per index for replacement."
+        assert ("perturb_baseline" in kwargs) or ("fixed_values" in kwargs) or ("constant_value" in kwargs), "Specify" \
+        "a 'perturb_baseline' or 'constant_value e.g., 0.0 or 'black' for pixel replacement or 'baseline_values' " \
+        "containing an array with one value per index for replacement."
 
     if "fixed_values" in kwargs:
         return kwargs["fixed_values"]
@@ -68,17 +116,23 @@ def get_baseline_dict(img: torch.Tensor, **kwargs) -> dict:
 
 
 def assert_model_predictions_deviations(
-    y_pred: torch.Tensor, y_pred_perturb: torch.Tensor, threshold: float = 0.01
+    y_pred: float, y_pred_perturb: float, threshold: float = 0.01
 ):
-    # TODO. Implement.
-    pass
+    """Check that model predictions does not deviate more than a given threshold."""
+    if abs(y_pred - y_pred_perturb) > threshold:
+        return True
+    else:
+        return False
 
 
 def assert_model_predictions_correct(
-    y_pred: torch.Tensor, y_pred_perturb: torch.Tensor
+    y_pred: float, y_pred_perturb: float,
 ):
-    # TODO. Implement.
-    pass
+    """Assert that model predictions are the same."""
+    if y_pred == y_pred_perturb:
+        return True
+    else:
+        return False
 
 
 def attr_check(metric):
@@ -138,8 +192,8 @@ def assert_atts(a_batch: np.array,
 
 
 def assert_explain_func(explain_func: Callable) -> None:
-    assert callable(explain_func), "Make sure 'explain_func' is a callable that takes model, x_batch, \
-                            y_batch and **kwargs as arguments."
+    pass #assert callable(explain_func), "Make sure 'explain_func' is a callable that takes model, x_batch, " \
+         #                          "y_batch and **kwargs as arguments."
 
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list,
