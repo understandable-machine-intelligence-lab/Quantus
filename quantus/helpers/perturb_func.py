@@ -3,6 +3,7 @@ import numpy as np
 import scipy
 import cv2
 import random
+from .utils import *
 
 # TODO. Rewrite to help user like here: https://captum.ai/api/_modules/captum/metrics/_core/infidelity.html#infidelity.
 """
@@ -35,51 +36,15 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
     )
 
 
-def get_baseline(img: np.array, **kwargs) -> float:
-    """Get baseline based on a uer-defined string or integer input.
-    TODO. Remove hardcoded dictionary and allow user to flexibly specify its own replacement."""
-    assert ("perturb_baseline" in kwargs) or (
-        "replacement_values" in kwargs
-    ), "Specify a 'perturb_baseline' \
-    e.g., 0.0 or 'black' for pixel replacement or 'replacement_values' containing an array with one value per \
-    index for replacement."
-
-    if "replacement_values" in kwargs:
-        return kwargs["replacement_values"]
-
-    elif isinstance(kwargs.get("perturb_baseline", None), (float, int)):
-        return kwargs["perturb_baseline"]
-
-    else:
-        mask_dict = {
-            "random": float(random.random()),
-            "uniform": float(random.uniform(img.min(), img.max())),
-            "black": float(img.min()),
-            "white": float(img.max()),
-        }
-
-        if "patch" in kwargs:
-            mask_dict["neighbourhood_mean"] = (float(kwargs["patch"].mean()),)
-            mask_dict["neighbourhood_random_min_max"] = (
-                float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
-            )
-
-        assert kwargs["perturb_baseline"] in list(
-            mask_dict.keys()
-        ), f"Specify 'perturb_baseline' (str) that exist in {list(mask_dict.keys())}"
-
-        try:
-            return mask_dict[kwargs["perturb_baseline"].lower()]
-        except:
-            return 0.0
-
-
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     assert "index" in kwargs, "Specify 'index' to enable perturbation function to run."
-
-    img[kwargs["index"]] = get_baseline(img, **kwargs)
+    if "fixed_values" in kwargs:
+        choice = kwargs["fixed_values"]
+    elif "perturb_baseline" in kwargs:
+        choice = kwargs["perturb_baseline"]
+    img[kwargs["index"]] = get_baseline_value(choice=choice, img=img, **kwargs)
     return img
 
 
@@ -106,7 +71,7 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
         :,
         kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
         kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ] = get_baseline(img, **kwargs)
+    ] = get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs)
 
     return img
 
@@ -151,7 +116,7 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=kwargs.get("perturb_baseline", 0.75),
+            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
         ),
         2,
         0,
@@ -168,7 +133,7 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=kwargs.get("perturb_baseline", 0.75),
+            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
         ),
         2,
         0,

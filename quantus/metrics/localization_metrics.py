@@ -1,76 +1,19 @@
+"""This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
+import warnings
 import numpy as np
 from typing import Union
-import warnings
-
 from .base import Metric
+from ..helpers.utils import *
+from ..helpers.norm_func import *
+from ..helpers.perturb_func import *
+from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 
 
-class LocalizationTest(Metric):
-    """ Implements basis functionality for the following evaluation measures:
-
-        • Pointing Game (Zhang et al., 2018)
-        • Attribution Localization (Kohlbrenner et al., 2020)
-        • TKI (Theiner et al., 2021)
-        • Relevance Rank Accuracy (Arras et al., 2021)
-        • Relevance Mass Accuracy (Arras et al., 2021)
-     """
-
-    def __init__(self, *args, **kwargs):
-
-        super(Metric, self).__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.perturb_func = self.kwargs.get("perturb_func", None)
-
-        self.agg_function = kwargs.get("agg_function", np.mean)
-
-    def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        s_batch: np.array,
-        **kwargs
-    ):
-
-        raise NotImplementedError("Abstract Class, please specify a Localization Metric.")
-
-    def check_assertions(self,
-                         model,
-                         x_batch: np.array,
-                         y_batch: Union[np.array, int],
-                         a_batch: Union[np.array, None],
-                         s_batch: np.array,
-                         **kwargs
-                         ):
-        assert (
-                "explanation_func" in kwargs
-        ), "To run RobustnessTest specify 'explanation_func' (str) e.g., 'Gradient'."
-        if not isinstance(y_batch, int):
-            assert (
-                    np.shape(x_batch)[0] == np.shape(y_batch)[0]
-            ), "Target should by an Integer or a list with the same number of samples as the data."
-        assert (
-                np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-        assert (
-                np.shape(x_batch)[1] == np.shape(a_batch)[1]
-        ), "Data and attributions should have a corresponding shape."
-        assert (
-                np.shape(x_batch)[0] == np.shape(s_batch)[0]
-        ), "Inputs and segmentation masks should include the same number of samples."
-        assert (
-                np.shape(a_batch) == np.shape(s_batch)
-        ), "Attributions and segmentation masks should have the same shape."
-
-        return True
-
-
-class PointingGame(LocalizationTest):
+class PointingGame(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the Pointing Game from Zhang et al. 2018,
     that implements the check if the maximal attribution is on target.
 
@@ -82,9 +25,12 @@ class PointingGame(LocalizationTest):
 
     def __init__(self, *args, **kwargs):
 
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
-        super(PointingGame, self).__init__()
+        self.last_results = []
+        self.all_results = []
 
     def __call__(
             self,
@@ -96,22 +42,35 @@ class PointingGame(LocalizationTest):
             **kwargs
     ):
 
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
+
         if a_batch is None:
-            a_batch = explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
-            a_batch = a_batch.cpu().numpy()
-        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
         # ToDo: assert is binary mask for s_batch
 
-        results = []
-        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
-            # find index of max value
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            # Find index of max value
             maxindex = np.where(a == np.max(a))
 
             # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
@@ -125,13 +84,17 @@ class PointingGame(LocalizationTest):
             else:
                 hit = s[maxindex[0][0], maxindex[1][0]]
 
-            results.append(hit)
+            self.last_results.append(hit)
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results
 
 
-class AttributionLocalization(LocalizationTest):
+class AttributionLocalization(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the attribution localization from Kohlbrenner et al. 2020,
     (also Relevance Mass Accuracy by Arras et al. 2021)
     that implements the ratio of attribution within target to the overall attribution.
@@ -144,12 +107,17 @@ class AttributionLocalization(LocalizationTest):
 
     def __init__(self, *args, **kwargs):
 
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
+        self.last_results = []
+        self.all_results = []
 
-        super(AttributionLocalization, self).__init__()
+        # Asserts.
+        assert_max_size(max_size=self.max_size)
 
     def __call__(
             self,
@@ -160,24 +128,34 @@ class AttributionLocalization(LocalizationTest):
             s_batch: np.array,
             **kwargs
     ):
-        assert (
-            (self.max_size > 0.) and (self.max_size <= 1.)
-        ), "max_size must be between 0. and 1."
+
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
 
         if a_batch is None:
-            explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
-        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
         # ToDo: assert is binary mask for s_batch
 
-        results = []
-        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             assert not np.all((a < 0.0))
             assert np.any(s)
@@ -206,23 +184,27 @@ class AttributionLocalization(LocalizationTest):
                 inside_attribution_ratio = inside_attribution / total_attribution
 
                 if not self.weighted:
-                    results.append(inside_attribution_ratio)
+                    self.last_results.append(inside_attribution_ratio)
 
                 else:
                     weighted_inside_attribution_ratio = inside_attribution_ratio * (
                             size_data / size_bbox
                     )
 
-                    results.append(weighted_inside_attribution_ratio)
+                    self.last_results.append(weighted_inside_attribution_ratio)
 
-        if not results:
+        if not self.last_results:
             warnings.warn("Data contains no object with a size below max_size: Results are empty.")
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results
 
 
-class TopKIntersection(LocalizationTest):
+class TopKIntersection(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the top-k intersection from Theiner et al. 2021,
     that implements the pixel-wise intersection between ground truth and an "explainer" mask.
 
@@ -235,11 +217,13 @@ class TopKIntersection(LocalizationTest):
 
     def __init__(self, *args, **kwargs):
 
+        super(Metric, self).__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
-
-        super(TopKIntersection, self).__init__()
+        self.last_results = []
+        self.all_results = []
 
     def __call__(
             self,
@@ -251,23 +235,36 @@ class TopKIntersection(LocalizationTest):
             **kwargs
     ):
 
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
+
         if a_batch is None:
-            a_batch = explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
-            a_batch = a_batch.cpu().numpy()
-        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
         # ToDo: assert is binary mask for s_batch
 
-        results = []
-        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             top_k_binary_mask = np.zeros(a.shape)
+
             # ToDo: e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None)
@@ -281,13 +278,17 @@ class TopKIntersection(LocalizationTest):
             # concept influence (with size of object normalized tki score)
             ci = (s.shape[0]*s.shape[1])/np.sum(s) * tki    # ToDo: incorporate into results
 
-            results.append(tki)
+            self.last_results.append(tki)
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results
 
 
-class RelevanceRankAccuracy(LocalizationTest):
+class RelevanceRankAccuracy(Metric):
     """
+    TODO. Rewrite docstring.
+
     Implementation of the relevance rank accuracy from Arras et al. 2021,
     that measures the ratio of high intensity relevances within the ground truth mask.
 
@@ -297,9 +298,15 @@ class RelevanceRankAccuracy(LocalizationTest):
     Current assumptions:
     s_batch is binary and shapes are equal
     """
-    def __init__(self):
 
-        super(RelevanceRankAccuracy, self).__init__()
+    def __init__(self, *args, **kwargs):
+
+        super(Metric, self).__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.last_results = []
+        self.all_results = []
 
     def __call__(
             self,
@@ -311,21 +318,33 @@ class RelevanceRankAccuracy(LocalizationTest):
             **kwargs
     ):
 
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
+
         if a_batch is None:
-            a_batch = explain(
-                model.to(kwargs.get("device", None)),
-                x_batch,
-                y_batch,
-                explanation_func=kwargs.get("explanation_func", "Gradient"),
-                device=kwargs.get("device", None),
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
-            a_batch = a_batch.cpu().numpy()
-        self.check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
 
         # ToDo: assert is binary mask for s_batch
 
-        results = []
-        for ix, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             k = np.sum(s)   # size of ground truth mask
 
@@ -335,6 +354,8 @@ class RelevanceRankAccuracy(LocalizationTest):
 
             rank_accuracy = np.sum(hits)/float(k)
 
-            results.append(rank_accuracy)
+            self.last_results.append(rank_accuracy)
 
-        return results
+        self.all_results.append(self.last_results)
+
+        return self.last_results
