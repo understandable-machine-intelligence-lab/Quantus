@@ -1,4 +1,6 @@
+"""This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
 from .base import Metric
+from ..helpers.utils import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
@@ -16,6 +18,9 @@ class Sparseness(Metric):
     contributions. It is quantified using the Gini Index applied to the
     vector of absolute values.
 
+    # Based on authors' implementation:
+            # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
+
     References:
         1) Chalasani, Prasad, et al. "Concise explanations of neural
         networks using adversarial training." International Conference on Machine Learning. PMLR, 2020.
@@ -27,12 +32,8 @@ class Sparseness(Metric):
 
         self.args = args
         self.kwargs = kwargs
-
         self.last_results = []
         self.all_results = []
-
-        self.img_size = None
-        self.nr_channels = None
 
     def __call__(
         self,
@@ -43,31 +44,38 @@ class Sparseness(Metric):
         **kwargs,
     ):
 
-        if a_batch is None:
-            a_batch = explain(
-                model=model.to(kwargs.get("device", None)),
-                inputs=x_batch,
-                targets=y_batch,
-                **kwargs,
-            )
-
-        assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-
+        # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_results = []
 
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
+
         for x, y, a in zip(x_batch, y_batch, a_batch):
-            # Based upon authors' implementation: https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
+
             a = np.abs(
                 np.array(
                     np.reshape(a, (self.img_size * self.img_size,)),
                     dtype=np.float64,
                 )
             )
-            a += 0.0000001  # values canot be 0.
+            a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
                 (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a))
@@ -104,40 +112,39 @@ class Complexity(Metric):
 
         self.args = args
         self.kwargs = kwargs
-
         self.last_results = []
         self.all_results = []
 
-        self.img_size = None
-        self.nr_channels = None
-
     def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            **kwargs,
     ):
-        assert (
-            "explanation_func" in kwargs
-        ), "To evaluate with this metric, specify 'explanation_func' (str) e.g., 'Gradient'."
 
-        if a_batch is None:
-            a_batch = explain(
-                model=model.to(kwargs.get("device", None)),
-                inputs=x_batch,
-                targets=y_batch,
-                **kwargs,
-            )
-
-        assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-
+        # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_results = []
+
+        if a_batch is None:
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
             a = (
@@ -169,48 +176,46 @@ class EffectiveComplexity:
 
         self.args = args
         self.kwargs = kwargs
-
         self.abs = self.kwargs.get("abs", True)
         self.eps = self.kwargs.get("eps", 1e-5)
-
         self.last_results = []
         self.all_results = []
 
-        self.img_size = None
-        self.nr_channels = None
-
     def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            **kwargs,
     ):
-        assert (
-            "explanation_func" in kwargs
-        ), "To evaluate with this metric, specify 'explanation_func' (str) e.g., 'Gradient'."
 
-        if a_batch is None:
-            a_batch = explain(
-                model=model.to(kwargs.get("device", None)),
-                inputs=x_batch,
-                targets=y_batch,
-                **kwargs,
-            )
-
-        assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-        ), "Inputs and attributions should include the same number of samples."
-
+        # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
         self.last_results = []
+
+        if a_batch is None:
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_atts(a_batch=a_batch, x_batch=x_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
-                a = abs(a.flatten())
+                a = np.abs(a.flatten())
 
             self.last_results.append(int(np.sum(a > self.eps)))
 

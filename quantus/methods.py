@@ -92,32 +92,25 @@ def evaluate(
     return results
 
 
-def available_categories():
-    for c in AVAILABLE_METRICS.keys():
-        print(f"Category {c}")
+def available_categories() -> list:
+    return [c for c in AVAILABLE_METRICS.keys()]
 
 
-def available_metrics():
-    for c in AVAILABLE_METRICS.keys():
-        for m in AVAILABLE_METRICS[c].keys():
-            print(f"\tMetric {m} ({c} category)")
+def available_metrics() -> dict:
+    return {c : list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
-def available_methods():
-    for xai in AVAILABLE_XAI_METHODS.keys():
-        print(f"Method {xai}")
+def available_methods() -> list:
+    return [c for c in AVAILABLE_XAI_METHODS.keys()]
 
 
-def available_perturbation_functions():
-    for func in AVAILABLE_PERTURBATION_FUNCTIONS.keys():
-        print(f"Perturbation function - {func}")
+def available_perturbation_functions() -> list:
+    return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
 
 
-def available_similarity_functions():
-    for func in AVAILABLE_SIMILARITY_FUNCTIONS.keys():
-        print(f"Similarity function - {func}")
+def available_similarity_functions() -> list:
+    return [c for c in AVAILABLE_SIMILARITY_FUNCTIONS.keys()]
 
 
-def available_localization_functions():
-    for func in AVAILABLE_LOCALIZATION_FUNCTIONS.keys():
-        print(f"Localization function - {func}")
+def available_localization_functions() -> list:
+    return [c for c in AVAILABLE_LOCALIZATION_FUNCTIONS.keys()]

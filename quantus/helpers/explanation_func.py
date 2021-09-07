@@ -1,12 +1,14 @@
+from typing import Union
+import torch
 import scipy
 import random
 import cv2
 from captum.attr import *
+import warnings
 from .utils import *
 
 # from ..helpers.constants import XAI_METHODS
-from typing import Union
-import torch
+
 
 
 def explain(
@@ -23,15 +25,14 @@ def explain(
     Returns np.ndarray of same shape as inputs.
     """
 
-    if "explanation_func" not in kwargs:
-        print_warning(
-            warning_text=f"Using 'explain' function without specifying 'explanation_func' (str)"
-            f"in kwargs will produce 'Gradient' explanation.\n"
-        )
+    if "method" not in kwargs:
+        warnings.warn(f"Using quantus 'explain' function as an explainer without specifying 'method' (str)"
+            f"in kwargs will produce a vanilla 'Gradient' explanation.\n", category=Warning)
 
-    explanation_func = kwargs.get("explanation_func", "Gradient").lower()
+    method = kwargs.get("method", "Gradient").lower()
 
     # Set model in evaluate mode.
+    model.to(kwargs.get("device", None))
     model.eval()
 
     if not isinstance(inputs, torch.Tensor):
@@ -50,7 +51,7 @@ def explain(
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
-    if explanation_func == "GradientShap".lower():
+    if method == "GradientShap".lower():
         explanation = (
             GradientShap(model)
             .attribute(
@@ -61,7 +62,7 @@ def explain(
             .sum(axis=1)
         )
 
-    elif explanation_func == "IntegratedGradients".lower():
+    elif method == "IntegratedGradients".lower():
         explanation = (
             IntegratedGradients(model)
             .attribute(
@@ -74,26 +75,26 @@ def explain(
             .sum(axis=1)
         )
 
-    elif explanation_func == "InputXGradient".lower():
+    elif method == "InputXGradient".lower():
         explanation = (
             InputXGradient(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
-    elif explanation_func == "Saliency".lower():
+    elif method == "Saliency".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
             .sum(axis=1)
         )
 
-    elif explanation_func == "Gradient".lower():
+    elif method == "Gradient".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=False)
             .sum(axis=1)
         )
 
-    elif explanation_func == "Occlusion".lower():
+    elif method == "Occlusion".lower():
 
         assert (
             "sliding_window" in kwargs
@@ -109,13 +110,13 @@ def explain(
             .sum(axis=1)
         )
 
-    elif explanation_func == "FeatureAblation".lower():
+    elif method == "FeatureAblation".lower():
 
         explanation = (
             FeatureAblation(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
-    elif explanation_func == "GradCam".lower():
+    elif method == "GradCam".lower():
 
         assert (
             "gc_layer" in kwargs
@@ -133,7 +134,7 @@ def explain(
             )
         )
 
-    elif explanation_func == "Control Var. Sobel Filter".lower():
+    elif method == "Control Var. Sobel Filter".lower():
         if len(explanation.shape) == 4:
             for i in range(len(explanation)):
                 explanation[i] = torch.reshape(
@@ -154,27 +155,19 @@ def explain(
                 shape=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             )
 
-    elif explanation_func == "Control Var. Constant".lower():
+    elif method == "Control Var. Constant".lower():
 
-        # TODO. So that the fill_dict is not calculating on batch rather than on an invidiual sample basis.
         assert (
-            "fill_value" in kwargs
-        ), "Specify a 'fill_value' e.g., 0.0 or 'black' for pixel replacement."
+            "constant_value" in kwargs
+        ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
 
-        fill_dict = {
-            "random": float(random.random()),
-            "uniform": float(random.uniform(explanation.min(), explanation.max())),
-            "black": float(explanation.min()),
-            "white": float(explanation.max()),
-        }
+        explanation = torch.zeros_like(explanation)
 
-        if isinstance(kwargs["fill_value"], (float, int)):
-            fill_value = kwargs["fill_value"]
-        else:
-            fill_value = fill_dict[kwargs["fill_value"].lower()]
-
-        explanation = torch.Tensor().new_full(
-            size=explanation.shape, fill_value=fill_value
+        # Update the tensor with values per input x.
+        for i in range(explanation.shape[0]):
+            constant_value = get_baseline_value(perturb_baseline=kwargs["constant_value"], x=inputs[i])
+            explanation[i] = torch.Tensor().new_full(
+            size=explanation.shape, fill_value=constant_value
         )
 
     else:
