@@ -3,6 +3,8 @@ from sklearn.metrics import auc
 import numpy as np
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
@@ -30,7 +32,7 @@ class FaithfulnessCorrelation(Metric):
     Current assumptions:
 
     """
-    @attr_check
+    @attributes_check
     def __init__(self,
                  *args,
                  **kwargs):
@@ -40,6 +42,9 @@ class FaithfulnessCorrelation(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -53,6 +58,9 @@ class FaithfulnessCorrelation(Metric):
                             "further reading, please see [CITATION].\n"
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        # TODO. Add here.
 
     #@set_warn
     def __call__(
@@ -110,6 +118,9 @@ class FaithfulnessCorrelation(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Predict on input.
             with torch.no_grad():
@@ -178,7 +189,7 @@ class FaithfulnessEstimate(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -186,6 +197,9 @@ class FaithfulnessEstimate(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
@@ -239,6 +253,10 @@ class FaithfulnessEstimate(Metric):
             # Get indices of sorted attributions (descending).
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
             a_indices = np.argsort(-a)
 
             # Predict on input.
@@ -325,7 +343,7 @@ class Infidelity(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -333,6 +351,9 @@ class Infidelity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.loss_func = self.kwargs.get("loss_func", mse)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
@@ -416,6 +437,9 @@ class Infidelity(Metric):
                     if self.abs:
                         a = np.abs(a)
 
+                    if self.normalize:
+                        a = self.normalize_func(a)
+
                     for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
                         for i_y, top_left_y in enumerate(
@@ -497,7 +521,7 @@ class MonotonicityArya(Metric):
     TODO. Double-check Luss interpretation; does it align with Nguyen implementation?
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -505,6 +529,9 @@ class MonotonicityArya(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.img_size = self.kwargs.get("img_size", 224)
@@ -556,6 +583,9 @@ class MonotonicityArya(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -620,7 +650,7 @@ class MonotonicityNguyen(Metric):
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -628,6 +658,9 @@ class MonotonicityNguyen(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
@@ -646,6 +679,7 @@ class MonotonicityNguyen(Metric):
             self.set_features_in_step = set_features_in_step(max_steps_per_input=self.max_steps_per_input,
                                                              img_size=self.img_size)
     #@set_warn
+
     def __call__(
         self,
         model,
@@ -698,6 +732,9 @@ class MonotonicityNguyen(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -767,7 +804,7 @@ class PixelFlipping(Metric):
         - Using 8 pixel at a time instead of one single pixel when we use ImageNet.
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -775,6 +812,9 @@ class PixelFlipping(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_pixel_flipping_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.img_size = self.kwargs.get("img_size", 224)
@@ -826,6 +866,9 @@ class PixelFlipping(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -894,7 +937,7 @@ class RegionPerturbation(Metric):
     # TODO. Make curves relative to baseline (computed as the AOPC curves for random heatmaps (i.e., random ordering O)).
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -902,6 +945,9 @@ class RegionPerturbation(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_region_perturbation_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
@@ -963,6 +1009,9 @@ class RegionPerturbation(Metric):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             patches = []
             sub_results = []
@@ -1075,7 +1124,7 @@ class Selectivity(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -1083,6 +1132,9 @@ class Selectivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_selectivity_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 32)
@@ -1141,6 +1193,9 @@ class Selectivity(Metric):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             patches = []
             sub_results = []
@@ -1248,7 +1303,7 @@ class SensitivityN(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
         super(Metric, self).__init__()
@@ -1256,6 +1311,9 @@ class SensitivityN(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_sensitivity_n_experiment
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
@@ -1273,7 +1331,6 @@ class SensitivityN(Metric):
             assert_max_steps(max_steps_per_input=self.max_steps_per_input, img_size=self.img_size)
             self.set_features_in_step = set_features_in_step(max_steps_per_input=self.max_steps_per_input,
                                                              img_size=self.img_size)
-
 
     #@set_warn
     def __call__(
@@ -1329,6 +1386,9 @@ class SensitivityN(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -1391,7 +1451,7 @@ class SensitivityN(Metric):
             sub_results_att_sums[sample] = att_sums
             sub_results_pred_deltas[sample] = pred_deltas
 
-        # Re-arange sublists.
+        # Re-arrange sublists so that they are sorted by n.
         sub_results_pred_deltas_l = {k: [] for k in range(self.max_features)}
         sub_results_att_sums_l = {k: [] for k in range(self.max_features)}
 
@@ -1429,16 +1489,21 @@ class IROF(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
 
         # TODO. Implement area over the curve not under the curve.
 
@@ -1478,6 +1543,9 @@ class IROF(Metric):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Predict on x.
             with torch.no_grad():

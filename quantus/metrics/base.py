@@ -4,8 +4,11 @@ from termcolor import colored
 import numpy as np
 import time
 import warnings
-from ..helpers.utils import attr_check
+from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 import matplotlib.pyplot as plt
+
 
 class Metric:
     """
@@ -49,13 +52,19 @@ class Metric:
     @attr_check
     def __init__(self, *args, **kwargs):
         """ Initialize Measure. """
-        self.name = "Base Metric"
-
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.text_warning = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
         'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
         pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
         misinterpretation of scores. \nTo view all relevant hyperparameters call .list_hyperparameters method. \nFor 
         more reading, please see [INSERT CITATION]."""
+        self.last_results = []
+        self.all_results = []
 
     def __call__(
         self,
@@ -143,16 +152,22 @@ class Metric:
         self.kwargs[key] = value
         return self.kwargs
 
-    
+
     def plot(self,
-             plot_func: Callable,
+             plot_func: Union[Callable, None] = None,
              show: bool = True,
              path_to_save: Union[str, None] = None,
              *args,
              **kwargs) -> None:
 
-        assert callable(plot_func), "Make sure that 'plot_func' is a callable."
+        # Get plotting func if not provided.
+        if plot_func is None:
+            plot_func = kwargs.get("plot_func", self.default_plot_func)
 
+        # Asserts.
+        assert_plot_func(plot_func=plot_func)
+
+        # Plot!
         plot_func(*args, **kwargs)
 
         if show:
@@ -162,6 +177,7 @@ class Metric:
             plt.savefig(fname=path_to_save, dpi=400)
 
         return None
+
 
 if __name__ == '__main__':
 

@@ -1,6 +1,8 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
@@ -32,6 +34,10 @@ class Sparseness(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -65,9 +71,16 @@ class Sparseness(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
 
             a = np.abs(
                 np.array(
@@ -112,6 +125,87 @@ class Complexity(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
+        self.last_results = []
+        self.all_results = []
+
+    def __call__(
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            **kwargs,
+    ):
+
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", None)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
+            a = (
+                np.abs(
+                    np.array(
+                        np.reshape(a, (self.img_size * self.img_size,)),
+                        dtype=np.float64,
+                    )
+                )
+                / np.sum(np.abs(a))
+            )
+
+            self.last_results.append(scipy.stats.entropy(pk=a))
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+
+class EffectiveComplexity(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        super(Metric, self).__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.eps = self.kwargs.get("eps", 1e-5)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -147,75 +241,12 @@ class Complexity(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
-            a = (
-                np.abs(
-                    np.array(
-                        np.reshape(a, (self.img_size * self.img_size,)),
-                        dtype=np.float64,
-                    )
-                )
-                / np.sum(np.abs(a))
-            )
-
-            self.last_results.append(scipy.stats.entropy(pk=a))
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
-
-
-class EffectiveComplexity(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        super(Metric, self).__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
-        self.eps = self.kwargs.get("eps", 1e-5)
-        self.last_results = []
-        self.all_results = []
-
-    def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
-    ):
-
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
-        self.last_results = []
-
-        if a_batch is None:
-            # Asserts.
-            explain_func = kwargs.get("explain_func", None)
-            assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-
-        # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-
-        for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             self.last_results.append(int(np.sum(a > self.eps)))
 
