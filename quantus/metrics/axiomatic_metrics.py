@@ -120,7 +120,6 @@ class InputInvariance(Metric):
 class NonSensitivity(Metric):
     """
     TODO. Rewrite docstring.
-    TODO. Implement metric.
     """
     def __init__(self, *args, **kwargs):
 
@@ -173,7 +172,7 @@ class NonSensitivity(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            non_features = set(list(np.argwhere(a).flatten() < self.eps).flatten())
+            non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
             for a_i in range(len(a)):
@@ -195,7 +194,7 @@ class NonSensitivity(Metric):
 
                     vars.append(np.var(preds))
 
-            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps).flatten())
+            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
             self.last_results.append(len(non_features_vars.symmetric_difference(non_features)))
 
         self.all_results.append(self.last_results)

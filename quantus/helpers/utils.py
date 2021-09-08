@@ -20,33 +20,36 @@ def get_layers(model,
 def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
-def check_assertions(model,
-                     x_batch: np.array,
-                     y_batch: Union[np.array, int],
-                     a_batch: Union[np.array, None],
-                     s_batch: np.array,
-                     **kwargs
-                     ):
-    """Check several assertions."""
 
+def assert_targets(x_batch: np.array,
+                   y_batch: Union[np.array, int],) -> None:
     if not isinstance(y_batch, int):
-        assert (
-                np.shape(x_batch)[0] == np.shape(y_batch)[0]
-        ), "Target should by an Integer or a list with the same number of samples as the data."
+        assert (np.shape(x_batch)[0] == np.shape(y_batch)[0]), "The 'y_batch' should by an integer or a list with " \
+                                                               "the same number of samples as the 'x_batch' input."
+
+def assert_atts(a_batch: np.array,
+                x_batch: np.array) -> None:
+    """Asserts on attributions."""
     assert (
             np.shape(x_batch)[0] == np.shape(a_batch)[0]
     ), "Inputs and attributions should include the same number of samples."
-    assert (
-            np.shape(x_batch)[1] == np.shape(a_batch)[1]
-    ), "Data and attributions should have a corresponding shape."
-    assert (
-            np.shape(x_batch)[0] == np.shape(s_batch)[0]
-    ), "Inputs and segmentation masks should include the same number of samples."
-    assert (
-            np.shape(a_batch) == np.shape(s_batch)
-    ), "Attributions and segmentation masks should have the same shape."
 
-    return True
+
+
+def assert_attributions(x_batch: np.array,
+                        a_batch: np.array) -> None:
+    """Asserts on attributions."""
+    assert type(a_batch) == np.ndarray, "Attributions 'a_batch' should be of type np.ndarray."
+    assert (np.shape(x_batch)[0] == np.shape(a_batch)[0]), "The inputs 'x_batch' and attributions 'a_batch' should include the same number of samples."
+    assert (np.shape(x_batch)[1] == np.shape(a_batch)[1]), "The inputs 'x_batch' and attributions 'a_batch' should share the same dimensions."
+
+
+def assert_segmentations(x_batch: np.array,
+                         s_batch: np.array) -> None:
+    """Asserts on segmentations."""
+    assert type(s_batch) == np.ndarray, "Segmentations 's_batch' should be of type np.ndarray."
+    assert (np.shape(x_batch)[0] == np.shape(s_batch)[0]), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
+    assert (np.shape(x_batch)[1] == np.shape(s_batch)[1]), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
 
 
 def assert_max_size(max_size: float) -> None:
@@ -54,18 +57,18 @@ def assert_max_size(max_size: float) -> None:
 
 
 def get_superpixel_segments(img: torch.Tensor,
-                    method: str,
-                    **kwargs) -> np.ndarray:
+                            segmentation_method: str,
+                            **kwargs) -> np.ndarray:
     """Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels."""
     assert len(img.shape) == 3, "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
-    assert method in ["slic", "felzenszwalb"], "Segmentation method must be either 'slic' or 'felzenszwalb'."
+    assert segmentation_method in ["slic", "felzenszwalb"], "Segmentation method must be either 'slic' or 'felzenszwalb'."
 
-    if method == "slic":
+    if segmentation_method == "slic":
         return slic(img,
                     n_segments=kwargs.get("slic_n_segments", 224),
                     compactness=kwargs.get("slic_compactness", 0.05),
                     sigma=kwargs.get("slic_sigma", 0.1))
-    elif method == "felzenszwalb":
+    elif segmentation_method == "felzenszwalb":
         return felzenszwalb(img,
                             scale=kwargs.get("felzenszwalb_scale", 448),
                             sigma=kwargs.get("felzenszwalb_sigma", 0.1),
@@ -180,15 +183,6 @@ def assert_max_steps(max_steps_per_input: int,
 def assert_patch_size(patch_size: int, img_size: int) -> None:
     """Assert that patch size that are not compatible with input size."""
     assert (img_size % patch_size == 0), "Set 'patch_size' so that the modulo remainder returns 0 given the image size."
-
-
-def assert_atts(a_batch: np.array,
-                x_batch: np.array) -> None:
-    """Asserts on attributions."""
-    assert (
-            np.shape(x_batch)[0] == np.shape(a_batch)[0]
-    ), "Inputs and attributions should include the same number of samples."
-    assert type(a_batch) == np.ndarray, "Attributions should be of type np.ndarray."
 
 
 def assert_explain_func(explain_func: Callable) -> None:

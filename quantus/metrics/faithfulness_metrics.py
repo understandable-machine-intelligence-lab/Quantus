@@ -104,7 +104,7 @@ class FaithfulnessCorrelation(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -232,7 +232,7 @@ class FaithfulnessEstimate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -385,7 +385,7 @@ class Infidelity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -550,7 +550,7 @@ class MonotonicityArya(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -675,7 +675,7 @@ class MonotonicityNguyen(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -820,7 +820,7 @@ class PixelFlipping(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -865,40 +865,6 @@ class PixelFlipping(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
-    def plot(self,
-             y_batch: Union[np.array, int],
-             results: List[float],
-             single_class: Union[int, None] = None
-    ):
-        """
-        Plot the pixel-flippng experiment as done in paper:
-
-        References:
-            1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
-            decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
-
-        # TODO. Finish code if scores is a list.
-        """
-        fig = plt.figure(figsize=(8, 6))
-        if single_class is None:
-            for c in np.unique(y_batch):
-                indices = np.where(y_batch == c)
-                plt.plot(
-                    np.linspace(0, 1, len(results[0])),
-                    np.mean(np.array(results)[results], axis=0),
-                    label=f"target: {str(c)} ({results[0].size} samples)",
-                )
-        plt.xlabel("Fraction of pixels flipped")
-        plt.ylabel("Mean Prediction")
-        plt.gca().set_yticklabels(
-            ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
-        )
-        plt.gca().set_xticklabels(
-            ["{:.0f}%".format(x * 100) for x in plt.gca().get_xticks()]
-        )
-        plt.legend()
-        plt.show()
 
 
 class RegionPerturbation(Metric):
@@ -979,7 +945,7 @@ class RegionPerturbation(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -1157,7 +1123,7 @@ class Selectivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -1354,7 +1320,7 @@ class SensitivityN(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch))}
@@ -1506,7 +1472,7 @@ class IROF(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -1527,7 +1493,7 @@ class IROF(Metric):
 
             # Segment image.
             segments = get_superpixel_segments(img=np.moveaxis(x, 0, -1).astype("double"),
-                                               method=kwargs.get("segmentation_method", "slic"), **kwargs)
+                                               segmentation_method=kwargs.get("segmentation_method", "slic"), **kwargs)
             nr_segments = segments.max()
 
             # Calculate average attribution of each segment.

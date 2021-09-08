@@ -61,7 +61,7 @@ class ModelParameterRandomization(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Save state_dict.
         original_parameters = model.state_dict()
@@ -152,7 +152,7 @@ class RandomLogit(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Randomly select off class labels.
         if isinstance(y_batch, np.ndarray):

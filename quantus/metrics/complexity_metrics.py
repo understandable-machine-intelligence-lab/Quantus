@@ -144,7 +144,7 @@ class Complexity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
             a = (
@@ -164,7 +164,7 @@ class Complexity(Metric):
         return self.last_results
 
 
-class EffectiveComplexity:
+class EffectiveComplexity(Metric):
     """
     TODO. Rewrite docstring.
     TODO. Implement metric.
