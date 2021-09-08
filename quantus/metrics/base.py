@@ -1,11 +1,11 @@
 """This module implements the base class for creating evaluation measures."""
-from typing import Optional, Any, Union, List, Dict
+from typing import Optional, Any, Union, List, Dict, Callable
 from termcolor import colored
 import numpy as np
 import time
 import warnings
 from ..helpers.utils import attr_check
-
+import matplotlib.pyplot as plt
 
 class Metric:
     """
@@ -142,6 +142,26 @@ class Metric:
         """
         self.kwargs[key] = value
         return self.kwargs
+
+    
+    def plot(self,
+             plot_func: Callable,
+             show: bool = True,
+             path_to_save: Union[str, None] = None,
+             *args,
+             **kwargs) -> None:
+
+        assert callable(plot_func), "Make sure that 'plot_func' is a callable."
+
+        plot_func(*args, **kwargs)
+
+        if show:
+            plt.show()
+
+        if path_to_save:
+            plt.savefig(fname=path_to_save, dpi=400)
+
+        return None
 
 if __name__ == '__main__':
 

@@ -81,7 +81,7 @@ class LocalLipschitzEstimate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -179,7 +179,7 @@ class MaxSensitivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -280,7 +280,7 @@ class AvgSensitivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -392,7 +392,7 @@ class Continuity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -563,7 +563,7 @@ class InputIndependenceRate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         counts_thres = 0.0
         counts_corrs = 0.0

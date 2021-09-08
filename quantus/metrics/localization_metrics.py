@@ -63,8 +63,8 @@ class PointingGame(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -149,8 +149,8 @@ class AttributionLocalization(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -256,8 +256,8 @@ class TopKIntersection(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -339,8 +339,8 @@ class RelevanceRankAccuracy(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
