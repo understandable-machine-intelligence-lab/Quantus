@@ -1,6 +1,8 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
@@ -33,6 +35,9 @@ class Completeness(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.last_results = []
         self.all_results = []
@@ -67,12 +72,15 @@ class Completeness(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Predict on input.
             with torch.no_grad():
@@ -127,8 +135,11 @@ class NonSensitivity(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
         self.eps = self.kwargs.get("eps", 1e-5)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.last_results = []
@@ -164,13 +175,16 @@ class NonSensitivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 

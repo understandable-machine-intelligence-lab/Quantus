@@ -4,6 +4,8 @@ import numpy as np
 from typing import Union
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
@@ -29,6 +31,10 @@ class PointingGame(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -113,6 +119,10 @@ class AttributionLocalization(Metric):
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -222,6 +232,10 @@ class TopKIntersection(Metric):
         self.args = args
         self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -305,6 +319,10 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
