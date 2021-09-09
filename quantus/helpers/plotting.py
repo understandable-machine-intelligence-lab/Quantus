@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
 
+# TODO. Implement density plots for aggregated scores e.g., violin plots or boxplots.
+
 def plot_pixel_flipping_experiment(
     y_batch: torch.Tensor, scores: List[float], single_class: Union[int, None] = None
 ):

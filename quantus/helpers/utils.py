@@ -1,14 +1,9 @@
+"""This module contains the utils functions of the library."""
 import torch
 import random
 from typing import Union, Optional, List, Callable
 import numpy as np
 from skimage.segmentation import *
-
-
-def normalize_by_max(a: np.ndarray) -> np.ndarray:
-    """"Normalize attributions by the maximum absolute value of the explanation."""
-    a /= np.max(np.abs(a))
-    return a
 
 
 def get_layers(model,

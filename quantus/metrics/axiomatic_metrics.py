@@ -7,6 +7,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class Completeness(Metric):
@@ -28,9 +29,10 @@ class Completeness(Metric):
     """
     # TODO. Adapt with baseline.
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -60,7 +62,7 @@ class Completeness(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -129,9 +131,11 @@ class NonSensitivity(Metric):
     """
     TODO. Rewrite docstring.
     """
+
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -163,7 +167,7 @@ class NonSensitivity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.

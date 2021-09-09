@@ -7,3 +7,4 @@ from .norm_func import *
 from .similar_func import *
 from .explanation_func import *
 from .local_func import *
+from .normalize_func import *
