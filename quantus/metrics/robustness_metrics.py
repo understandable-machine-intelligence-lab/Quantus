@@ -9,6 +9,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class LocalLipschitzEstimate(Metric):
@@ -36,9 +37,10 @@ class LocalLipschitzEstimate(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -50,7 +52,7 @@ class LocalLipschitzEstimate(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", lipschitz_constant)
         self.similarity_func = self.kwargs.get("similarity_func", gaussian_noise)
         self.last_results = []
@@ -146,9 +148,10 @@ class MaxSensitivity(Metric):
     Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -160,12 +163,11 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
-        # self.agg_func = self.kwargs.get("agg_func", np.max)
 
         # Asserts.
         assert_explain_func(explain_func=self.explain_func)
@@ -258,9 +260,10 @@ class AvgSensitivity(Metric):
     Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -272,12 +275,11 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
-        # self.agg_func = self.kwargs.get("agg_func", np.max)
 
         # Asserts.
         assert_explain_func(explain_func=self.explain_func)
@@ -373,6 +375,7 @@ class Continuity(Metric):
         - using torch for explanation and model
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
         """
 
@@ -383,7 +386,7 @@ class Continuity(Metric):
         Returns:
 
         """
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -397,7 +400,7 @@ class Continuity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.dx = self.img_size // self.nr_steps
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.last_results = []
@@ -556,9 +559,10 @@ class InputIndependenceRate(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -567,8 +571,8 @@ class InputIndependenceRate(Metric):
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
         self.threshold = kwargs.get("threshold", 0.1)
-        self.explain_func = self.kwargs.get("explain_func", None)
-        self.perturb_func = self.kwargs.get("perturb_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
+        self.perturb_func = self.kwargs.get("perturb_func", Callable)
         self.similarity_func = self.kwargs.get("similarity_func", abs_difference)
         self.last_results = []
         self.all_results = []

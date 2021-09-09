@@ -10,6 +10,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class PointingGame(Metric):
@@ -25,9 +26,10 @@ class PointingGame(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -57,7 +59,7 @@ class PointingGame(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -111,9 +113,10 @@ class AttributionLocalization(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -147,7 +150,7 @@ class AttributionLocalization(Metric):
 
         if a_batch is None:
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -225,9 +228,10 @@ class TopKIntersection(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -258,7 +262,7 @@ class TopKIntersection(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -313,9 +317,10 @@ class RelevanceRankAccuracy(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -345,7 +350,7 @@ class RelevanceRankAccuracy(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.

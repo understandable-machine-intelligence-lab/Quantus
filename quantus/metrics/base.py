@@ -4,10 +4,11 @@ from termcolor import colored
 import numpy as np
 import time
 import warnings
+import matplotlib.pyplot as plt
 from ..helpers.utils import *
 from ..helpers.asserts import *
 from ..helpers.plotting import *
-import matplotlib.pyplot as plt
+from ..helpers.normalize_func import *
 
 
 class Metric:
@@ -49,7 +50,7 @@ class Metric:
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
         """ Initialize Measure. """
         self.args = args
@@ -159,6 +160,22 @@ class Metric:
              path_to_save: Union[str, None] = None,
              *args,
              **kwargs) -> None:
+        """
+        Plotting functionality for Metric class. The user provides a plot_func (Callable) that contains the
+        actual plotting logic (but returns None).
+
+        Parameters
+        ----------
+        plot_func
+        show
+        path_to_save
+        args
+        kwargs
+
+        Returns
+        -------
+
+        """
 
         # Get plotting func if not provided.
         if plot_func is None:

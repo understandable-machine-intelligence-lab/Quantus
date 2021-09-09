@@ -2,6 +2,23 @@ import numpy as np
 from typing import Union, Callable
 
 
+def attributes_check(metric):
+    # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
+    attr = metric.__dict__
+    if "perturb_func" in attr:
+        if not callable(attr["perturb_func"]):
+            raise TypeError("The 'perturb_func' must be a callable.")
+    if "similarity_func" in attr:
+        assert callable(attr["similarity_func"]), "The 'similarity_func' must be a callable."
+    if "explain_func" in attr:
+        assert callable(attr["explain_func"]), "The 'explain_func' must be a callable."
+    if "normalize_func" in attr:
+        assert callable(attr["normalize_func"]), "The 'normalize_func' must be a callable."
+    if "text_warning" in attr:
+        assert isinstance(attr["text_warning"], str), "The 'text_warning' function must be a string."
+    return metric
+
+
 def assert_model_predictions_deviations(
     y_pred: float, y_pred_perturb: float, threshold: float = 0.01
 ):
@@ -20,21 +37,6 @@ def assert_model_predictions_correct(
         return True
     else:
         return False
-
-
-def attributes_check(metric):
-    # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
-    attr = metric.__dict__
-    if "perturb_func" in attr:
-        if not callable(attr["perturb_func"]):
-            raise TypeError("The 'perturb_func' must be a callable.")
-    if "similarity_func" in attr:
-        assert callable(attr["similarity_func"]), "The 'similarity_func' must be a callable."
-    if "normalize_func" in attr:
-        assert callable(attr["normalize_func"]), "The 'normalize_func' must be a callable."
-    if "text_warning" in attr:
-        assert isinstance(attr["text_warning"], str), "The 'text_warning' function must be a string."
-    return metric
 
 
 def set_warn(call):
@@ -71,15 +73,6 @@ def assert_patch_size(patch_size: int, img_size: int) -> None:
     assert (img_size % patch_size == 0), "Set 'patch_size' so that the modulo remainder returns 0 given the image size."
 
 
-def assert_explain_func(explain_func: Callable) -> None:
-    pass #assert callable(explain_func), "Make sure 'explain_func' is a callable that takes model, x_batch, " \
-         #                          "y_batch and **kwargs as arguments."
-
-
-def assert_normalize_func(normalize_func: Callable) -> None:
-    assert callable(normalize_func), "Make sure that 'plot_func' is a callable."
-
-
 def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
@@ -91,13 +84,12 @@ def assert_targets(x_batch: np.array,
                                                                "the same number of samples as the 'x_batch' input."
 
 
-
 def assert_attributions(x_batch: np.array,
                         a_batch: np.array) -> None:
     """Asserts on attributions."""
     assert type(a_batch) == np.ndarray, "Attributions 'a_batch' should be of type np.ndarray."
     assert (np.shape(x_batch)[0] == np.shape(a_batch)[0]), "The inputs 'x_batch' and attributions 'a_batch' should include the same number of samples."
-    assert (np.shape(x_batch)[1] == np.shape(a_batch)[1]), "The inputs 'x_batch' and attributions 'a_batch' should share the same dimensions."
+    assert (np.shape(x_batch)[-1] == np.shape(a_batch)[-1]), "The inputs 'x_batch' and attributions 'a_batch' should share the same dimensions."
 
 
 def assert_segmentations(x_batch: np.array,
@@ -105,8 +97,17 @@ def assert_segmentations(x_batch: np.array,
     """Asserts on segmentations."""
     assert type(s_batch) == np.ndarray, "Segmentations 's_batch' should be of type np.ndarray."
     assert (np.shape(x_batch)[0] == np.shape(s_batch)[0]), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
-    assert (np.shape(x_batch)[1] == np.shape(s_batch)[1]), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
+    assert (np.shape(x_batch)[-1] == np.shape(s_batch)[-1]), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
 
 
 def assert_max_size(max_size: float) -> None:
     assert ((max_size > 0.) and (max_size <= 1.)), "Set 'max_size' must be between 0. and 1."
+
+
+def assert_plot_func(plot_func: Callable) -> None:
+    assert callable(plot_func), "Make sure that 'plot_func' is a callable."
+
+
+def assert_explain_func(explain_func: Callable) -> None:
+    assert callable(explain_func), "Make sure 'explain_func' is a Callable that takes model, x_batch, " \
+                                   "y_batch and **kwargs as arguments."

@@ -9,6 +9,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class FaithfulnessCorrelation(Metric):
@@ -37,7 +38,7 @@ class FaithfulnessCorrelation(Metric):
                  *args,
                  **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -75,8 +76,9 @@ class FaithfulnessCorrelation(Metric):
         This implementation represents the main logic behind the metric and makes the metric class object callable.
 
         Faithfulness correlation scores shows to what extent the predicted logits of each modified test point and
-        the average explanation attribution for only the subset of features are (linearly) correlated, returning the
-        average over multiple runs and test samples. The scores range between -1 and 1, where higher scores are better.
+        the average explanation attribution for only the subset of features are (linearly) correlated, taking the
+        average over multiple runs and test samples. The metric returns one float per input-attribution pair that
+        ranges between -1 and 1, where higher scores are better.
 
         Parameters
         ----------
@@ -100,7 +102,7 @@ class FaithfulnessCorrelation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -192,7 +194,7 @@ class FaithfulnessEstimate(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -234,7 +236,7 @@ class FaithfulnessEstimate(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -346,7 +348,7 @@ class Infidelity(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -394,7 +396,7 @@ class Infidelity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -524,7 +526,7 @@ class MonotonicityArya(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -565,7 +567,7 @@ class MonotonicityArya(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -653,7 +655,7 @@ class MonotonicityNguyen(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -665,7 +667,7 @@ class MonotonicityNguyen(Metric):
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.eps = self.kwargs.get("eps", 1e-5)
-        self.n_samples = self.kwargs.get("n_samples", 100)
+        self.nr_samples = self.kwargs.get("nr_samples", 100)
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
@@ -697,7 +699,7 @@ class MonotonicityNguyen(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -753,7 +755,7 @@ class MonotonicityNguyen(Metric):
 
                 y_pred_perturbs = []
 
-                for n in range(self.n_samples):
+                for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
@@ -807,7 +809,7 @@ class PixelFlipping(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -848,7 +850,7 @@ class PixelFlipping(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -940,7 +942,7 @@ class RegionPerturbation(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -979,7 +981,7 @@ class RegionPerturbation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1127,7 +1129,7 @@ class Selectivity(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -1163,7 +1165,7 @@ class Selectivity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1306,7 +1308,7 @@ class SensitivityN(Metric):
     @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -1365,7 +1367,7 @@ class SensitivityN(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1491,6 +1493,9 @@ class IROF(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
+
+        super().__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
@@ -1525,7 +1530,7 @@ class IROF(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.

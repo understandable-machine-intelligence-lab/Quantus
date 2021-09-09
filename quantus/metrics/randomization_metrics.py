@@ -10,6 +10,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class ModelParameterRandomization(Metric):
@@ -20,9 +21,10 @@ class ModelParameterRandomization(Metric):
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
     
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -33,7 +35,7 @@ class ModelParameterRandomization(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
 
@@ -125,9 +127,10 @@ class RandomLogit(Metric):
     Sixt et. al., 2020, When Explanations lie
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
     
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -137,9 +140,12 @@ class RandomLogit(Metric):
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.max_class = self.kwargs.get("max_class", 10)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        # TODO. Add here.
 
     def __call__(
             self,

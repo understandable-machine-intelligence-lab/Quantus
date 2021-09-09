@@ -7,6 +7,7 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class Sparseness(Metric):
@@ -28,9 +29,10 @@ class Sparseness(Metric):
         networks using adversarial training." International Conference on Machine Learning. PMLR, 2020.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -59,7 +61,7 @@ class Sparseness(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -119,9 +121,10 @@ class Complexity(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -150,7 +153,7 @@ class Complexity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -195,9 +198,10 @@ class EffectiveComplexity(Metric):
     TODO. Implement metric.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
@@ -226,7 +230,7 @@ class EffectiveComplexity(Metric):
 
         if a_batch is None:
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
