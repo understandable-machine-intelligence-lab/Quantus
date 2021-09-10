@@ -38,12 +38,12 @@ def explain(
     if not isinstance(inputs, torch.Tensor):
         inputs = (
             torch.Tensor(inputs)
-            #.reshape(
-            #    -1,
-            #    kwargs.get("nr_channels", 3),
-            #    kwargs.get("img_size", 224),
-            #    kwargs.get("img_size", 224),
-            #)
+            .reshape(
+                -1,
+                kwargs.get("nr_channels", 3),
+                kwargs.get("img_size", 224),
+                kwargs.get("img_size", 224),
+            )
             .to(kwargs.get("device", None))
         )
     if not isinstance(targets, torch.Tensor):

@@ -37,17 +37,14 @@ def check_assertions(model,
             np.shape(x_batch)[0] == np.shape(a_batch)[0]
     ), "Inputs and attributions should include the same number of samples."
     assert (
-            np.shape(x_batch)[2:] == np.shape(a_batch)[1:]
-    ), "Data and attributions should have a corresponding shape. {} != {}"\
-        .format(np.shape(x_batch)[2:], np.shape(a_batch)[1:])
+            np.shape(x_batch)[1] == np.shape(a_batch)[1]
+    ), "Data and attributions should have a corresponding shape."
     assert (
             np.shape(x_batch)[0] == np.shape(s_batch)[0]
-    ), "Inputs and segmentation masks should include the same number of samples. {} != {}"\
-        .format(np.shape(x_batch)[0], np.shape(s_batch)[0])
+    ), "Inputs and segmentation masks should include the same number of samples."
     assert (
             np.shape(a_batch) == np.shape(s_batch)
-    ), "Attributions and segmentation masks should have the same shape. {} != {}"\
-        .format(np.shape(a_batch), np.shape(s_batch))
+    ), "Attributions and segmentation masks should have the same shape."
 
     return True
 
