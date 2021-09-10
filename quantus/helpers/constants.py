@@ -57,7 +57,7 @@ AVAILABLE_METRICS = {
         "Completeness Test": Completeness,
         "Symmetry": Symmetry,
         "InputInvariance": InputInvariance,
-        "NonSensitivity": NonSensitivity,
+        "Sensitivity": Sensitivity,
         "Dummy": Dummy,
     },
 }
