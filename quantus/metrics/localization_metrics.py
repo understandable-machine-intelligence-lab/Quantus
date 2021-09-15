@@ -4,10 +4,13 @@ import numpy as np
 from typing import Union
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class PointingGame(Metric):
@@ -23,12 +26,17 @@ class PointingGame(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -51,7 +59,7 @@ class PointingGame(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -63,8 +71,8 @@ class PointingGame(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -105,14 +113,19 @@ class AttributionLocalization(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -137,7 +150,7 @@ class AttributionLocalization(Metric):
 
         if a_batch is None:
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -149,8 +162,8 @@ class AttributionLocalization(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -215,13 +228,18 @@ class TopKIntersection(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -244,7 +262,7 @@ class TopKIntersection(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -256,8 +274,8 @@ class TopKIntersection(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 
@@ -299,12 +317,17 @@ class RelevanceRankAccuracy(Metric):
     s_batch is binary and shapes are equal
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -327,7 +350,7 @@ class RelevanceRankAccuracy(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -339,8 +362,8 @@ class RelevanceRankAccuracy(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
-        check_assertions(model, x_batch, y_batch, a_batch, s_batch, **kwargs)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # ToDo: assert is binary mask for s_batch
 

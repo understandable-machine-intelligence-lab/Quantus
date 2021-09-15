@@ -3,10 +3,13 @@ import numpy as np
 from typing import Union
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class LocalLipschitzEstimate(Metric):
@@ -34,18 +37,22 @@ class LocalLipschitzEstimate(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", lipschitz_constant)
         self.similarity_func = self.kwargs.get("similarity_func", gaussian_noise)
         self.last_results = []
@@ -81,12 +88,15 @@ class LocalLipschitzEstimate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             similarity_max = 0.0
             for i in range(self.nr_samples):
@@ -97,6 +107,11 @@ class LocalLipschitzEstimate(Metric):
                                                 inputs=x_perturbed,
                                                 targets=y,
                                                 **self.kwargs)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
+                if self.normalize:
+                    a_perturbed = self.normalize_func(a_perturbed)
 
                 # Measure similarity.
                 similarity = self.similarity_func(a=a.flatten(),
@@ -133,23 +148,26 @@ class MaxSensitivity(Metric):
     Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.std = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
-        # self.agg_func = self.kwargs.get("agg_func", np.max)
 
         # Asserts.
         assert_explain_func(explain_func=self.explain_func)
@@ -179,12 +197,15 @@ class MaxSensitivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             sensitivities_norm_max = 0.0
             for _ in range(self.nr_samples):
@@ -195,6 +216,12 @@ class MaxSensitivity(Metric):
                                                 inputs=x_perturbed,
                                                 targets=y,
                                                 **self.kwargs)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
+
+                if self.normalize:
+                    a_perturbed = self.normalize_func(a_perturbed)
 
                 # Measure sensitivity.
                 sensitivities = self.similarity_func(
@@ -233,23 +260,26 @@ class AvgSensitivity(Metric):
     Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.std = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
-        # self.agg_func = self.kwargs.get("agg_func", np.max)
 
         # Asserts.
         assert_explain_func(explain_func=self.explain_func)
@@ -280,12 +310,15 @@ class AvgSensitivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             self.temp_results = []
             for _ in range(self.nr_samples):
@@ -296,6 +329,12 @@ class AvgSensitivity(Metric):
                                                 inputs=x_perturbed,
                                                 targets=y,
                                                 **self.kwargs)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
+
+                if self.normalize:
+                    a_perturbed = self.normalize_func(a_perturbed)
 
                 sensitivities = self.similarity_func(
                     a=a.flatten(), b=a_perturbed.flatten()
@@ -336,6 +375,7 @@ class Continuity(Metric):
         - using torch for explanation and model
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
         """
 
@@ -346,18 +386,21 @@ class Continuity(Metric):
         Returns:
 
         """
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.img_size = self.kwargs.get("img_size", 224)
         self.nr_patches = self.kwargs.get("nr_patches", 4)
         self.patch_size = (self.img_size * 2) // self.nr_patches
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.dx = self.img_size // self.nr_steps
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.last_results = []
@@ -392,12 +435,15 @@ class Continuity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -420,6 +466,12 @@ class Continuity(Metric):
                                         inputs=x_perturbed,
                                         targets=y,
                                         **self.kwargs)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
+
+                if self.normalize:
+                    a_perturbed = self.normalize_func(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
                 y_pred = float(
@@ -444,6 +496,9 @@ class Continuity(Metric):
                                             ]
                         if self.abs:
                             a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
+
+                        if self.normalize:
+                            a_perturbed_patch = self.normalize_func(a_perturbed_patch.flatten())
 
                         # DEBUG.
                         #a_perturbed[:,
@@ -504,16 +559,20 @@ class InputIndependenceRate(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.threshold = kwargs.get("threshold", 0.1)
-        self.explain_func = self.kwargs.get("explain_func", None)
-        self.perturb_func = self.kwargs.get("perturb_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
+        self.perturb_func = self.kwargs.get("perturb_func", Callable)
         self.similarity_func = self.kwargs.get("similarity_func", abs_difference)
         self.last_results = []
         self.all_results = []
@@ -563,7 +622,7 @@ class InputIndependenceRate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         counts_thres = 0.0
         counts_corrs = 0.0
@@ -573,12 +632,22 @@ class InputIndependenceRate(Metric):
             if self.abs:
                 a = np.abs(a)
 
+            if self.normalize:
+                a = self.normalize_func(a)
+
             # Generate explanation based on perturbed input x.
             x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
             a_perturbed = self.explain_func(model=model,
                                             x_batch=x_perturbed,
                                             y_batch=y_batch,
                                             **self.kwargs)
+
+            if self.abs:
+                a_perturbed = np.abs(a_perturbed)
+
+            if self.normalize:
+                a_perturbed = self.normalize_func(a_perturbed)
+
             y_pred_perturbed = int(model(torch.Tensor(x_perturbed)
                                          .reshape(1, self.nr_channels, self.img_size, self.img_size)
                                          .to(kwargs.get("device", None))).max(1).indices)

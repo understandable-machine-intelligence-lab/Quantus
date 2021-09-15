@@ -1,10 +1,14 @@
 """This module implements the base class for creating evaluation measures."""
-from typing import Optional, Any, Union, List, Dict
+from typing import Optional, Any, Union, List, Dict, Callable
 from termcolor import colored
 import numpy as np
 import time
 import warnings
-from ..helpers.utils import attr_check
+import matplotlib.pyplot as plt
+from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
+from ..helpers.normalize_func import *
 
 
 class Metric:
@@ -46,16 +50,22 @@ class Metric:
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
         """ Initialize Measure. """
-        self.name = "Base Metric"
-
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.text_warning = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
         'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
         pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
         misinterpretation of scores. \nTo view all relevant hyperparameters call .list_hyperparameters method. \nFor 
         more reading, please see [INSERT CITATION]."""
+        self.last_results = []
+        self.all_results = []
 
     def __call__(
         self,
@@ -142,6 +152,49 @@ class Metric:
         """
         self.kwargs[key] = value
         return self.kwargs
+
+
+    def plot(self,
+             plot_func: Union[Callable, None] = None,
+             show: bool = True,
+             path_to_save: Union[str, None] = None,
+             *args,
+             **kwargs) -> None:
+        """
+        Plotting functionality for Metric class. The user provides a plot_func (Callable) that contains the
+        actual plotting logic (but returns None).
+
+        Parameters
+        ----------
+        plot_func
+        show
+        path_to_save
+        args
+        kwargs
+
+        Returns
+        -------
+
+        """
+
+        # Get plotting func if not provided.
+        if plot_func is None:
+            plot_func = kwargs.get("plot_func", self.default_plot_func)
+
+        # Asserts.
+        assert_plot_func(plot_func=plot_func)
+
+        # Plot!
+        plot_func(*args, **kwargs)
+
+        if show:
+            plt.show()
+
+        if path_to_save:
+            plt.savefig(fname=path_to_save, dpi=400)
+
+        return None
+
 
 if __name__ == '__main__':
 

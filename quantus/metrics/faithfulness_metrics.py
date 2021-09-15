@@ -3,10 +3,13 @@ from sklearn.metrics import auc
 import numpy as np
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class FaithfulnessCorrelation(Metric):
@@ -30,16 +33,19 @@ class FaithfulnessCorrelation(Metric):
     Current assumptions:
 
     """
-    @attr_check
+    @attributes_check
     def __init__(self,
                  *args,
                  **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -54,6 +60,9 @@ class FaithfulnessCorrelation(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        # TODO. Add here.
+
     #@set_warn
     def __call__(
         self,
@@ -67,8 +76,9 @@ class FaithfulnessCorrelation(Metric):
         This implementation represents the main logic behind the metric and makes the metric class object callable.
 
         Faithfulness correlation scores shows to what extent the predicted logits of each modified test point and
-        the average explanation attribution for only the subset of features are (linearly) correlated, returning the
-        average over multiple runs and test samples. The scores range between -1 and 1, where higher scores are better.
+        the average explanation attribution for only the subset of features are (linearly) correlated, taking the
+        average over multiple runs and test samples. The metric returns one float per input-attribution pair that
+        ranges between -1 and 1, where higher scores are better.
 
         Parameters
         ----------
@@ -92,7 +102,7 @@ class FaithfulnessCorrelation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -104,12 +114,15 @@ class FaithfulnessCorrelation(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Predict on input.
             with torch.no_grad():
@@ -178,14 +191,17 @@ class FaithfulnessEstimate(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
@@ -220,7 +236,7 @@ class FaithfulnessEstimate(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -232,13 +248,17 @@ class FaithfulnessEstimate(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Get indices of sorted attributions (descending).
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
             a_indices = np.argsort(-a)
 
             # Predict on input.
@@ -325,14 +345,17 @@ class Infidelity(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.loss_func = self.kwargs.get("loss_func", mse)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
@@ -373,7 +396,7 @@ class Infidelity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -385,7 +408,7 @@ class Infidelity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -415,6 +438,9 @@ class Infidelity(Metric):
 
                     if self.abs:
                         a = np.abs(a)
+
+                    if self.normalize:
+                        a = self.normalize_func(a)
 
                     for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
@@ -497,14 +523,17 @@ class MonotonicityArya(Metric):
     TODO. Double-check Luss interpretation; does it align with Nguyen implementation?
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.img_size = self.kwargs.get("img_size", 224)
@@ -538,7 +567,7 @@ class MonotonicityArya(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -550,12 +579,15 @@ class MonotonicityArya(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -620,19 +652,22 @@ class MonotonicityNguyen(Metric):
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.eps = self.kwargs.get("eps", 1e-5)
-        self.n_samples = self.kwargs.get("n_samples", 100)
+        self.nr_samples = self.kwargs.get("nr_samples", 100)
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
@@ -646,6 +681,7 @@ class MonotonicityNguyen(Metric):
             self.set_features_in_step = set_features_in_step(max_steps_per_input=self.max_steps_per_input,
                                                              img_size=self.img_size)
     #@set_warn
+
     def __call__(
         self,
         model,
@@ -663,7 +699,7 @@ class MonotonicityNguyen(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -675,7 +711,7 @@ class MonotonicityNguyen(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
@@ -699,6 +735,9 @@ class MonotonicityNguyen(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
+            if self.normalize:
+                a = self.normalize_func(a)
+
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
 
@@ -716,7 +755,7 @@ class MonotonicityNguyen(Metric):
 
                 y_pred_perturbs = []
 
-                for n in range(self.n_samples):
+                for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
@@ -767,14 +806,17 @@ class PixelFlipping(Metric):
         - Using 8 pixel at a time instead of one single pixel when we use ImageNet.
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_pixel_flipping_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.img_size = self.kwargs.get("img_size", 224)
@@ -808,7 +850,7 @@ class PixelFlipping(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -820,12 +862,15 @@ class PixelFlipping(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -866,40 +911,6 @@ class PixelFlipping(Metric):
 
         return self.last_results
 
-    def plot(self,
-             y_batch: Union[np.array, int],
-             results: List[float],
-             single_class: Union[int, None] = None
-    ):
-        """
-        Plot the pixel-flippng experiment as done in paper:
-
-        References:
-            1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
-            decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
-
-        # TODO. Finish code if scores is a list.
-        """
-        fig = plt.figure(figsize=(8, 6))
-        if single_class is None:
-            for c in np.unique(y_batch):
-                indices = np.where(y_batch == c)
-                plt.plot(
-                    np.linspace(0, 1, len(results[0])),
-                    np.mean(np.array(results)[results], axis=0),
-                    label=f"target: {str(c)} ({results[0].size} samples)",
-                )
-        plt.xlabel("Fraction of pixels flipped")
-        plt.ylabel("Mean Prediction")
-        plt.gca().set_yticklabels(
-            ["{:.0f}%".format(x * 100) for x in plt.gca().get_yticks()]
-        )
-        plt.gca().set_xticklabels(
-            ["{:.0f}%".format(x * 100) for x in plt.gca().get_xticks()]
-        )
-        plt.legend()
-        plt.show()
-
 
 class RegionPerturbation(Metric):
     """
@@ -928,14 +939,17 @@ class RegionPerturbation(Metric):
     # TODO. Make curves relative to baseline (computed as the AOPC curves for random heatmaps (i.e., random ordering O)).
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_region_perturbation_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
@@ -967,7 +981,7 @@ class RegionPerturbation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -979,7 +993,7 @@ class RegionPerturbation(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -997,6 +1011,9 @@ class RegionPerturbation(Metric):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             patches = []
             sub_results = []
@@ -1109,14 +1126,17 @@ class Selectivity(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_selectivity_experiment
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 32)
@@ -1145,7 +1165,7 @@ class Selectivity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1157,7 +1177,7 @@ class Selectivity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -1175,6 +1195,9 @@ class Selectivity(Metric):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             patches = []
             sub_results = []
@@ -1282,14 +1305,17 @@ class SensitivityN(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = plot_sensitivity_n_experiment
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_patch)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
@@ -1307,7 +1333,6 @@ class SensitivityN(Metric):
             assert_max_steps(max_steps_per_input=self.max_steps_per_input, img_size=self.img_size)
             self.set_features_in_step = set_features_in_step(max_steps_per_input=self.max_steps_per_input,
                                                              img_size=self.img_size)
-
 
     #@set_warn
     def __call__(
@@ -1342,7 +1367,7 @@ class SensitivityN(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1354,7 +1379,7 @@ class SensitivityN(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch))}
@@ -1363,6 +1388,9 @@ class SensitivityN(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -1425,7 +1453,7 @@ class SensitivityN(Metric):
             sub_results_att_sums[sample] = att_sums
             sub_results_pred_deltas[sample] = pred_deltas
 
-        # Re-arange sublists.
+        # Re-arrange sublists so that they are sorted by n.
         sub_results_pred_deltas_l = {k: [] for k in range(self.max_features)}
         sub_results_att_sums_l = {k: [] for k in range(self.max_features)}
 
@@ -1463,16 +1491,24 @@ class IROF(Metric):
 
     """
 
-    @attr_check
+    @attributes_check
     def __init__(self, *args, **kwargs):
+
+        super().__init__()
+
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
 
         # TODO. Implement area over the curve not under the curve.
 
@@ -1494,7 +1530,7 @@ class IROF(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1506,12 +1542,15 @@ class IROF(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Predict on x.
             with torch.no_grad():
@@ -1527,7 +1566,7 @@ class IROF(Metric):
 
             # Segment image.
             segments = get_superpixel_segments(img=np.moveaxis(x, 0, -1).astype("double"),
-                                               method=kwargs.get("segmentation_method", "slic"), **kwargs)
+                                               segmentation_method=kwargs.get("segmentation_method", "slic"), **kwargs)
             nr_segments = segments.max()
 
             # Calculate average attribution of each segment.
