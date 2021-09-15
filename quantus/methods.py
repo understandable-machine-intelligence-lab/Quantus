@@ -10,7 +10,7 @@ def evaluate(
     model: torch.nn,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    a_batch: Union[np.ndarray, None] = None,
+    s_batch: np.ndarray,
     agg_func: Callable = lambda x: x,
     **kwargs,
 ) -> dict:
@@ -24,7 +24,7 @@ def evaluate(
     model
     x_batch
     y_batch
-    a_batch
+    s_batch
     agg_func
     kwargs
 
@@ -49,15 +49,24 @@ def evaluate(
 
             for method, method_func in explanation_methods.items():
 
+                a_batch = method_func
+
                 if callable(method_func):
 
-                    # TODO. Write placeholder function for explanations.
-                    a_batch = method_func(
+                    # Asserts.
+                    explain_func = kwargs.get("explain_func", Callable)
+                    assert_explain_func(explain_func=explain_func)
+
+                    # Generate explanations.
+                    a_batch = explain_func(
                         model=model,
                         inputs=x_batch,
                         targets=y_batch,
-                        **{**kwargs, **{"explanation_func": method}},
+                        **kwargs,
                     )
+
+                    # Asserts.
+                    assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
                 else:
 
@@ -72,7 +81,8 @@ def evaluate(
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
-                        **{**kwargs, **{"explanation_func": method}},
+                        s_batch=s_batch,
+                        **{**kwargs, **{"explain_func": method}},
                     )
                 )
 
@@ -85,7 +95,8 @@ def evaluate(
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
-                        **{**kwargs, **{"explanation_func": method}},
+                        s_batch=s_batch,
+                        **{**kwargs, **{"explain_func": method}},
                     )
                 )
 
