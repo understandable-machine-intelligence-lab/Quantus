@@ -13,6 +13,7 @@ __pycache__/
 *.npy
 *.npz
 *.csv
+*.pth
 
 # dev
 temp/
