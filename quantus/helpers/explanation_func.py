@@ -7,8 +7,8 @@ from captum.attr import *
 import warnings
 from .utils import *
 
+from ..helpers.normalize_func import *
 # from ..helpers.constants import XAI_METHODS
-
 
 
 def explain(
@@ -185,7 +185,7 @@ def explain(
         explanation[explanation > 0] = 0.0
 
     if kwargs.get("normalize", True):
-        explanation = normalize_heatmap(explanation)
+        explanation = normalize_by_max(explanation)
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:

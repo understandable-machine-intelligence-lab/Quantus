@@ -70,6 +70,7 @@ class FaithfulnessCorrelation(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         """
@@ -225,6 +226,7 @@ class FaithfulnessEstimate(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -385,6 +387,7 @@ class Infidelity(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -556,6 +559,7 @@ class MonotonicityArya(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -688,6 +692,7 @@ class MonotonicityNguyen(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -839,6 +844,7 @@ class PixelFlipping(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -970,6 +976,7 @@ class RegionPerturbation(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -1154,6 +1161,7 @@ class Selectivity(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -1341,6 +1349,7 @@ class SensitivityN(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         """
@@ -1519,6 +1528,7 @@ class IROF(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.

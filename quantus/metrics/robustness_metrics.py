@@ -68,6 +68,7 @@ class LocalLipschitzEstimate(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
 
@@ -178,6 +179,7 @@ class MaxSensitivity(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -291,6 +293,7 @@ class AvgSensitivity(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -416,6 +419,7 @@ class Continuity(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         # Update kwargs.
@@ -586,6 +590,7 @@ class InputIndependenceRate(Metric):
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
     ):
         """

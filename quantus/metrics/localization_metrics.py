@@ -47,6 +47,7 @@ class PointingGame(Metric):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
+            *args,
             **kwargs
     ):
 
@@ -139,6 +140,7 @@ class AttributionLocalization(Metric):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
+            *args,
             **kwargs
     ):
 
@@ -250,6 +252,7 @@ class TopKIntersection(Metric):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
+            *args,
             **kwargs
     ):
 
@@ -338,6 +341,7 @@ class RelevanceRankAccuracy(Metric):
             y_batch: Union[np.array, int],
             a_batch: Union[np.array, None],
             s_batch: np.array,
+            *args,
             **kwargs
     ):
 
