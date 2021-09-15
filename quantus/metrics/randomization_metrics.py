@@ -4,10 +4,13 @@ import random
 from typing import Union
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class ModelParameterRandomization(Metric):
@@ -18,16 +21,21 @@ class ModelParameterRandomization(Metric):
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
     
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
 
@@ -61,7 +69,7 @@ class ModelParameterRandomization(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Save state_dict.
         original_parameters = model.state_dict()
@@ -73,23 +81,27 @@ class ModelParameterRandomization(Metric):
             if self.layer_order == "independent":
                 model.load_state_dict(original_parameters)
 
-            # randomize layer
+            # Randomize layer.
             layer.reset_parameters()
 
-            modified_attributions = self.explain_func(model=model,
-                                                      inputs=x_batch,
-                                                      targets=y_batch,
-                                                      **self.kwargs)
+            # Generate an explanation with perturbed model.
+            a_perturbed = self.explain_func(model=model,
+                                            inputs=x_batch,
+                                            targets=y_batch,
+                                            **self.kwargs)
 
-            for att_ori, att_modi in zip(a_batch, modified_attributions):
+            for a, a_per in zip(a_batch, a_perturbed):
 
-                # Normalize attributions
+                if self.abs:
+                    a = np.abs(a)
+                    a_per = np.abs(a_per)
+
                 if self.normalize:
-                    att_ori /= np.max(np.abs(att_ori))
-                    att_modi /= np.max(np.abs(att_modi))
+                    a = self.normalize_func(a)
+                    a_per = self.normalize_func(a_per)
 
                 # Compute distance measure.
-                distance = self.similarity_func(att_modi.flatten(), att_ori.flatten())
+                distance = self.similarity_func(a_per.flatten(), a.flatten())
 
                 similarity_scores.append(distance)
 
@@ -106,6 +118,7 @@ class ModelParameterRandomization(Metric):
         # TODO. Implement a class method that plots or takes the similarity scores and make something useful from it.
         pass
 
+
 class RandomLogit(Metric):
     """
     TODO. Rewrite docstring.
@@ -114,17 +127,25 @@ class RandomLogit(Metric):
     Sixt et. al., 2020, When Explanations lie
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
     
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.default_plot_func = Callable
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.max_class = self.kwargs.get("max_class", 10)
-        self.explain_func = self.kwargs.get("explain_func", None)
+        self.explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        # TODO. Add here.
 
     def __call__(
             self,
@@ -152,7 +173,13 @@ class RandomLogit(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+
+        if self.abs:
+            a_batch = np.abs(a_batch)
+
+        if self.normalize:
+            a_batch = self.normalize_func(a_batch)
 
         # Randomly select off class labels.
         if isinstance(y_batch, np.ndarray):
@@ -172,15 +199,21 @@ class RandomLogit(Metric):
             y_range.remove(y_batch)
             y_batch_off = np.array([random.choice(y_range) for x in range(x_batch.shape[0])])
 
-        a_batch_off = self.explain_func(
+        a_perturbed = self.explain_func(
             model=model,
             inputs=x_batch,
             targets=y_batch_off,
             **self.kwargs,
         )
 
-        self.last_results = np.array([self.similarity_func(a.flatten(), a_off.flatten())
-                            for a, a_off in zip(a_batch, a_batch_off)])
+        if self.abs:
+            a_perturbed = np.abs(a_perturbed)
+
+        if self.normalize:
+            a_perturbed = self.normalize_func(a_perturbed)
+
+        self.last_results = np.array([self.similarity_func(a.flatten(), a_per.flatten())
+                            for a, a_per in zip(a_batch, a_perturbed)])
 
         self.all_results.append(self.last_results)
 

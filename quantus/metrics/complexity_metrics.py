@@ -1,10 +1,13 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
 from .base import Metric
 from ..helpers.utils import *
+from ..helpers.asserts import *
+from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
+from ..helpers.normalize_func import *
 
 
 class Sparseness(Metric):
@@ -26,12 +29,17 @@ class Sparseness(Metric):
         networks using adversarial training." International Conference on Machine Learning. PMLR, 2020.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -53,7 +61,7 @@ class Sparseness(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -65,9 +73,16 @@ class Sparseness(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
 
             a = np.abs(
                 np.array(
@@ -106,12 +121,17 @@ class Complexity(Metric):
 
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -131,8 +151,9 @@ class Complexity(Metric):
         self.last_results = []
 
         if a_batch is None:
+
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -144,9 +165,16 @@ class Complexity(Metric):
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
             a = (
                 np.abs(
                     np.array(
@@ -164,20 +192,24 @@ class Complexity(Metric):
         return self.last_results
 
 
-class EffectiveComplexity:
+class EffectiveComplexity(Metric):
     """
     TODO. Rewrite docstring.
     TODO. Implement metric.
     """
 
+    @attributes_check
     def __init__(self, *args, **kwargs):
 
-        super(Metric, self).__init__()
+        super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
         self.eps = self.kwargs.get("eps", 1e-5)
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
@@ -198,7 +230,7 @@ class EffectiveComplexity:
 
         if a_batch is None:
             # Asserts.
-            explain_func = kwargs.get("explain_func", None)
+            explain_func = kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -210,12 +242,15 @@ class EffectiveComplexity:
             )
 
         # Asserts.
-        assert_atts(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a.flatten())
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             self.last_results.append(int(np.sum(a > self.eps)))
 
