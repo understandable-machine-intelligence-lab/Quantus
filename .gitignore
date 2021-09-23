@@ -15,7 +15,7 @@ __pycache__/
 *.csv
 *.pth
 tutorials/assets/data/
-tutorials/assets/models_big/
+tutorials/assets/model_objs/
 
 # dev
 temp/
