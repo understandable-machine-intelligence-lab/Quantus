@@ -57,7 +57,7 @@ class ModelParameterRandomization(Metric):
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
-        self.last_results = {}
+        self.last_results = []
 
         if a_batch is None:
 
@@ -91,7 +91,7 @@ class ModelParameterRandomization(Metric):
                                             targets=y_batch,
                                             **self.kwargs)
 
-            for a, a_per in zip(a_batch, a_perturbed):
+            for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
                 if self.abs:
                     a = np.abs(a)
