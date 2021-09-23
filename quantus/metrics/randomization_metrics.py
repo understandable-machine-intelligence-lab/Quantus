@@ -36,7 +36,7 @@ class ModelParameterRandomization(Metric):
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
         self.explain_func = self.kwargs.get("explain_func", Callable)
-        self.last_results = []
+        self.last_results = {}
         self.all_results = []
 
         # Asserts and checks.
