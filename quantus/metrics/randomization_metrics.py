@@ -57,7 +57,7 @@ class ModelParameterRandomization(Metric):
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
-        self.last_results = [dict() for _ in x_batch]
+        self.last_results = {}
 
         if a_batch is None:
 
@@ -107,8 +107,7 @@ class ModelParameterRandomization(Metric):
                 similarity_scores.append(distance)
 
             # Save similarity scores in a dictionary.
-            for r, result in enumerate(similarity_scores):
-                self.last_results[r][layer_name] = result
+            self.last_results[layer_name] = similarity_scores
 
         self.all_results.append(self.last_results)
 
@@ -140,6 +139,7 @@ class RandomLogit(Metric):
         self.default_plot_func = Callable
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
+        self.num_classes = self.kwargs.get("num_classes", 1000)
         self.max_class = self.kwargs.get("max_class", 10)
         self.explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
@@ -189,7 +189,7 @@ class RandomLogit(Metric):
             y_batch_off = []
 
             for idx in y_batch:
-                y_range = list(np.arange(0, self.max_class))
+                y_range = list(np.arange(0, self.num_classes))
                 y_range.remove(idx)
                 y_batch_off.append(random.choice(y_range))
 
@@ -197,7 +197,7 @@ class RandomLogit(Metric):
 
         else:
 
-            y_range = list(np.arange(0, self.max_class))
+            y_range = list(np.arange(0, self.num_classes))
             y_range.remove(y_batch)
             y_batch_off = np.array([random.choice(y_range) for x in range(x_batch.shape[0])])
 

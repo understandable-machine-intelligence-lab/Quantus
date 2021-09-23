@@ -138,3 +138,40 @@ def plot_superpixel_segments(img: torch.Tensor,
     plt.title("Segmentation outcome")
     plt.grid(False)
     plt.show()
+
+
+def plot_model_parameter_randomization_experiment(results: Union[List[float], Dict[str, List[float]]], methods=None):
+    """
+    Plot the model parameter randomization experiment as done in paper:
+     References:
+        1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
+         neural network has learned." IEEE transactions on neural networks and
+          learning systems 28.11 (2016): 2660-2673.
+    """
+
+    fig = plt.figure(figsize=(8, 6))
+
+    if methods:
+        for method in methods:
+            scores = []
+            layers = list(results[method].keys())
+            for layer in layers:
+                scores.append(np.mean(results[method][layer]))
+
+            plt.plot(layers, scores)
+
+    else:
+        scores = []
+        layers = list(results.keys())
+        for layer in layers:
+            scores.append(np.mean(results[layer]))
+
+        plt.plot(layers, scores)
+
+    plt.xticks(rotation=90)
+    plt.xlabel("Layers")
+    plt.ylabel("Score")
+
+    if methods:
+        plt.legend(methods)
+    plt.show()

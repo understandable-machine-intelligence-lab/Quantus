@@ -81,15 +81,22 @@ def assert_targets(x_batch: np.array,
                    y_batch: Union[np.array, int],) -> None:
     if not isinstance(y_batch, int):
         assert (np.shape(x_batch)[0] == np.shape(y_batch)[0]), "The 'y_batch' should by an integer or a list with " \
-                                                               "the same number of samples as the 'x_batch' input."
+                                                               "the same number of samples as the 'x_batch' input" \
+                "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
 
 
 def assert_attributions(x_batch: np.array,
                         a_batch: np.array) -> None:
     """Asserts on attributions."""
     assert type(a_batch) == np.ndarray, "Attributions 'a_batch' should be of type np.ndarray."
-    assert (np.shape(x_batch)[0] == np.shape(a_batch)[0]), "The inputs 'x_batch' and attributions 'a_batch' should include the same number of samples."
-    assert (np.shape(x_batch)[-1] == np.shape(a_batch)[-1]), "The inputs 'x_batch' and attributions 'a_batch' should share the same dimensions."
+    assert (np.shape(x_batch)[0] == np.shape(a_batch)[0]), "The inputs 'x_batch' and attributions 'a_batch' should " \
+                                                           "include the same number of samples." \
+                "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
+
+    assert (np.shape(x_batch)[-1] == np.shape(a_batch)[-1]), "The inputs 'x_batch' and attributions 'a_batch' " \
+                                                             "should share the same dimensions." \
+                                                            "{} != {}".format(np.shape(x_batch)[-1],
+                                                                              np.shape(a_batch)[-1])
 
 
 def assert_segmentations(x_batch: np.array,

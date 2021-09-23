@@ -1,4 +1,4 @@
-""" Collection of perturbation functions i..e, ways to perturb an input or an explanation."""
+"""This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import numpy as np
 import scipy
 import cv2

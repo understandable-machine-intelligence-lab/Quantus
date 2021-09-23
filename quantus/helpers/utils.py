@@ -61,7 +61,7 @@ def get_baseline_value(choice: Union[float, int, str, None],
         raise print("Specify 'perturb_baseline' or 'constant_value' as a string, integer or float.")
 
 
-def get_baseline_dict(img: torch.Tensor, **kwargs) -> dict:
+def get_baseline_dict(img: Union[torch.Tensor, None], **kwargs) -> dict:
     """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
     fill_dict = {
         "mean": float(img.mean()),
@@ -76,6 +76,7 @@ def get_baseline_dict(img: torch.Tensor, **kwargs) -> dict:
             float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
         )
     return fill_dict
+
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list,
                                    img_size: int) -> list:
