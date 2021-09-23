@@ -92,6 +92,7 @@ def load_pretrained_model(path: str = "../../tutorials/assets/test_model",
 
     return model
 
+
 def train_model(model,
                 train_data: torchvision.datasets,
                 test_data: torchvision.datasets,
