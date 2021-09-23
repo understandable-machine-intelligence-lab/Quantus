@@ -1,7 +1,6 @@
 """Collection of norm functions i..e, ways to measure the norm of a input- (or explanation) vector."""
 import numpy as np
 
-
 def fro_norm(a: np.array) -> float:
     """Calculate Froberius norm for an array."""
     assert a.ndim == 1, "Check that 'perturb_func' receives a 1D array."

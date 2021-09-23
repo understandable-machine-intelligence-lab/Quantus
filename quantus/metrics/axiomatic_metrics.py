@@ -63,7 +63,7 @@ class Completeness(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -169,7 +169,7 @@ class NonSensitivity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.

@@ -60,7 +60,7 @@ class PointingGame(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -78,6 +78,15 @@ class PointingGame(Metric):
         # ToDo: assert is binary mask for s_batch
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
+            # Reshape segmentation heatmap from 3 channels to 1.
+            s = s.mean(axis=0)
 
             # Find index of max value
             maxindex = np.where(a == np.max(a))
@@ -152,7 +161,7 @@ class AttributionLocalization(Metric):
 
         if a_batch is None:
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -169,18 +178,25 @@ class AttributionLocalization(Metric):
 
         # ToDo: assert is binary mask for s_batch
 
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
-            assert not np.all((a < 0.0))
-            assert np.any(s)
+            if self.abs:
+                a = np.abs(a)
 
-            # filter positive attribution values
-            a[a < 0.0] = 0.0
+            if self.normalize:
+                a = self.normalize_func(a)
 
+            # Reshape segmentation heatmap from 3 channels to 1.
+            s = s.mean(axis=0)
             s = s.astype(bool)
 
-            # compute inside/outside ratio
+            assert not np.all((a < 0.0)), "Attributions should not all be less than zero."
+            assert np.any(s), "Segmentation mask should have some values in its array that is not zero."
+
+            # Filter positive attribution values.
+            a[a < 0.0] = 0.0
+
+            # Compute inside/outside ratio.
             inside_attribution = np.sum(a[s])
             total_attribution = np.sum(a)
 
@@ -191,7 +207,7 @@ class AttributionLocalization(Metric):
             if ratio <= self.max_size:
                 if inside_attribution / total_attribution > 1.0:
                     print(
-                        "inside explanation {} greater than total explanation {}".format(
+                        "The inside explanation {} greater than total explanation {}".format(
                             inside_attribution, total_attribution
                         )
                     )
@@ -265,7 +281,7 @@ class TopKIntersection(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -283,6 +299,12 @@ class TopKIntersection(Metric):
         # ToDo: assert is binary mask for s_batch
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             top_k_binary_mask = np.zeros(a.shape)
 
@@ -354,7 +376,7 @@ class RelevanceRankAccuracy(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -373,11 +395,17 @@ class RelevanceRankAccuracy(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
             k = np.sum(s)   # size of ground truth mask
 
             # ToDo: e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
-            hits = np.take_along_axis(s, sorted_indices[-k:], axis=None)
+            hits = np.take_along_axis(s, sorted_indices[-int(k):], axis=None)
 
             rank_accuracy = np.sum(hits)/float(k)
 

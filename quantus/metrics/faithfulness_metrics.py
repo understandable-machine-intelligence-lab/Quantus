@@ -10,6 +10,7 @@ from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalize_func import *
+from ..helpers.test_func import *
 
 
 class FaithfulnessCorrelation(Metric):
@@ -103,7 +104,7 @@ class FaithfulnessCorrelation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -238,7 +239,7 @@ class FaithfulnessEstimate(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -399,7 +400,7 @@ class Infidelity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -571,7 +572,7 @@ class MonotonicityArya(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -704,7 +705,7 @@ class MonotonicityNguyen(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -856,7 +857,7 @@ class PixelFlipping(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -988,7 +989,7 @@ class RegionPerturbation(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1173,7 +1174,7 @@ class Selectivity(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1376,7 +1377,7 @@ class SensitivityN(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1540,7 +1541,7 @@ class IROF(Metric):
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -1632,5 +1633,37 @@ class IROF(Metric):
 
 if __name__ == '__main__':
 
-    # Run tests!
-    pass
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # Load model.
+    model = load_pretrained_model(path="../../tutorials/assets/test_model",
+                                  **{"device": device})
+
+    # Load data.
+    _, test_loader = load_datasets()
+
+    # Load a batch of inputs and outputs to use for evaluation.
+    x_batch, y_batch = iter(test_loader).next()
+    x_batch, y_batch = x_batch.to(device), y_batch.to(device)
+
+    # Recompute some Saliency explanations.
+    a_batch = explain(inputs=x_batch, targets=y_batch, method="Saliency")
+
+    # Metric class expects numpy arrays.
+    x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+    scores = FaithfulnessCorrelation({'abs': True,
+                                      'normalize': True,
+                                      'normalize_func': normalize_by_max,
+                                      'nr_runs': 100,
+                                      'perturb_baseline': "black",
+                                      'perturb_func': baseline_replacement_by_indices,
+                                      'similarity_func': correlation_pearson,
+                                      'subset_size': 32})(model=model.cuda(),
+                                                          x_batch=x_batch,
+                                                          y_batch=y_batch,
+                                                          a_batch=a_batch,
+                                                          **{"device": device})
+    print(f"Faithfulness scores: {np.mean(scores)} {np.std(scores):.2f}")
+
+

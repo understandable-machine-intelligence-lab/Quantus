@@ -157,7 +157,7 @@ class MaxSensitivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize = self.kwargs.get("normalize", False)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
         self.std = self.kwargs.get("perturb_radius", 0.2)
@@ -270,7 +270,7 @@ class AvgSensitivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize = self.kwargs.get("normalize", False)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
         self.std = self.kwargs.get("perturb_radius", 0.2)
