@@ -14,6 +14,8 @@ __pycache__/
 *.npz
 *.csv
 *.pth
+tutorials/assets/data/
+tutorials/assets/models_big/
 
 # dev
 temp/
