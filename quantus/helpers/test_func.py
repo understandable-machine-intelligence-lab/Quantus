@@ -97,9 +97,9 @@ def train_model(model,
                 train_data: torchvision.datasets,
                 test_data: torchvision.datasets,
                 device: torch.device,
+                criterion: torch.nn,
+                optimizer: torch.optim,
                 epochs: int = 20,
-                criterion: torch.nn = torch.nn.CrossEntropyLoss(),
-                optimizer: torch.optim = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9),
                 evaluate: bool = False):
     """Train torch model."""
 
