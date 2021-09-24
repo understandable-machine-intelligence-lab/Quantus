@@ -282,6 +282,9 @@ class TopKIntersection(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            # Remove "color" channel
+            s = s.mean(axis=0).astype(bool)
+
             top_k_binary_mask = np.zeros(a.shape)
 
             # ToDo: e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
@@ -371,6 +374,9 @@ class RelevanceRankAccuracy(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            # Remove "color" channel
+            s = s.mean(axis=0).astype(bool)
+
             k = np.sum(s)   # size of ground truth mask
 
             # ToDo: e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
@@ -451,6 +457,9 @@ class RelevanceMassAccuracy(Metric):
         # ToDo: assert is binary mask for s_batch
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+            
+            # Remove "color" channel
+            s = s.mean(axis=0).astype(bool)
 
             assert not np.all((a < 0.0))
             assert np.any(s)
