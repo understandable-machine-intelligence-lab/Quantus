@@ -236,6 +236,7 @@ class TopKIntersection(Metric):
         self.args = args
         self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
+        self.concept_influence = self.kwargs.get("concept_influence", False)
         self.abs = self.kwargs.get("abs", True)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
@@ -294,7 +295,8 @@ class TopKIntersection(Metric):
             tki = 1./self.k * np.sum(np.logical_and(s, top_k_binary_mask))
 
             # concept influence (with size of object normalized tki score)
-            ci = (s.shape[0]*s.shape[1])/np.sum(s) * tki    # ToDo: incorporate into results
+            if self.concept_influence:
+                tki = (s.shape[0]*s.shape[1])/np.sum(s) * tki
 
             self.last_results.append(tki)
 
@@ -378,6 +380,93 @@ class RelevanceRankAccuracy(Metric):
             rank_accuracy = np.sum(hits)/float(k)
 
             self.last_results.append(rank_accuracy)
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+
+class RelevanceMassAccuracy(Metric):
+    """
+    TODO. Rewrite docstring.
+
+    Implementation of the relevance mass accuracy from Arras et al. 2021,
+    that computes the ratio of relevance inside the bounding box to the sum of the overall relevance.
+
+    High scores are desired, as the pixels with the highest positively attributed scores
+    should be within the bounding box of the targeted object.
+
+    Current assumptions:
+    s_batch is binary and shapes are equal
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
+        self.last_results = []
+        self.all_results = []
+
+    def __call__(
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: Union[np.array, int],
+            a_batch: Union[np.array, None],
+            s_batch: np.array,
+            **kwargs
+    ):
+
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+
+        # ToDo: assert is binary mask for s_batch
+
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            assert not np.all((a < 0.0))
+            assert np.any(s)
+
+            # filter positive attribution values
+            a[a < 0.0] = 0.0
+
+            s = s.astype(bool)
+
+            # compute inside/outside ratio
+            R_within = np.sum(a[s])
+            R_total = np.sum(a)
+
+            mass_accuracy = R_within / R_total
+
+            self.last_results.append(mass_accuracy)
 
         self.all_results.append(self.last_results)
 
