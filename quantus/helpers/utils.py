@@ -16,6 +16,7 @@ def get_layers(model,
     else:
         return layers
 
+
 def get_superpixel_segments(img: torch.Tensor,
                             segmentation_method: str,
                             **kwargs) -> np.ndarray:
@@ -28,6 +29,7 @@ def get_superpixel_segments(img: torch.Tensor,
                     n_segments=kwargs.get("slic_n_segments", 224),
                     compactness=kwargs.get("slic_compactness", 0.05),
                     sigma=kwargs.get("slic_sigma", 0.1))
+
     elif segmentation_method == "felzenszwalb":
         return felzenszwalb(img,
                             scale=kwargs.get("felzenszwalb_scale", 448),
