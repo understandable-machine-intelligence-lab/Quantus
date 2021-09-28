@@ -1,4 +1,5 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
+from typing import Union, List, Dict
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -51,7 +52,7 @@ class Sparseness(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -144,7 +145,7 @@ class Complexity(Metric):
             a_batch: Union[np.array, None],
             *args,
             **kwargs,
-    ):
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -197,7 +198,6 @@ class Complexity(Metric):
 class EffectiveComplexity(Metric):
     """
     TODO. Rewrite docstring.
-    TODO. Implement metric.
     """
 
     @attributes_check
@@ -223,7 +223,7 @@ class EffectiveComplexity(Metric):
             a_batch: Union[np.array, None],
             *args,
             **kwargs,
-    ):
+    ) -> List[int]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])

@@ -1,4 +1,5 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
+from typing import Union, List, Dict
 from sklearn.metrics import auc
 import numpy as np
 from .base import Metric
@@ -73,7 +74,7 @@ class FaithfulnessCorrelation(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         """
         This implementation represents the main logic behind the metric and makes the metric class object callable.
 
@@ -161,7 +162,7 @@ class FaithfulnessCorrelation(Metric):
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
-                # Average attributions of the subset.
+                # Average attributions of the random subset.
                 att_means.append(np.mean(a[a_ix]))
 
             self.last_results.append(self.similarity_func(a=att_means, b=logit_deltas))
@@ -229,7 +230,7 @@ class FaithfulnessEstimate(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -390,7 +391,7 @@ class Infidelity(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -562,7 +563,7 @@ class MonotonicityArya(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[bool]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -695,7 +696,7 @@ class MonotonicityNguyen(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -847,7 +848,7 @@ class PixelFlipping(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -979,7 +980,7 @@ class RegionPerturbation(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> Dict[int, List[float]]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1164,7 +1165,7 @@ class Selectivity(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> Dict[int, List[float]]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1352,7 +1353,7 @@ class SensitivityN(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         """
         Area over the curve score, averages for all samples in the batch.
 
@@ -1531,7 +1532,7 @@ class IROF(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[float]:
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])

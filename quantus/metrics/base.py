@@ -1,5 +1,5 @@
 """This module implements the base class for creating evaluation measures."""
-from typing import Optional, Any, Union, List, Dict, Callable
+from typing import Union, List, Dict, Any
 from termcolor import colored
 import numpy as np
 import time

@@ -93,7 +93,7 @@ def assert_attributions(x_batch: np.array,
                                                            "include the same number of samples." \
                 "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
 
-    assert (np.shape(x_batch)[-1] == np.shape(a_batch)[-1]), "The inputs 'x_batch' and attributions 'a_batch' " \
+    assert (np.shape(x_batch)[-2:] == np.shape(a_batch)[-2:]), "The inputs 'x_batch' and attributions 'a_batch' " \
                                                              "should share the same dimensions." \
                                                             "{} != {}".format(np.shape(x_batch)[-1],
                                                                               np.shape(a_batch)[-1])
@@ -104,7 +104,8 @@ def assert_segmentations(x_batch: np.array,
     """Asserts on segmentations."""
     assert type(s_batch) == np.ndarray, "Segmentations 's_batch' should be of type np.ndarray."
     assert (np.shape(x_batch)[0] == np.shape(s_batch)[0]), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
-    assert (np.shape(x_batch)[-1] == np.shape(s_batch)[-1]), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
+    assert (np.shape(x_batch)[-2:] == np.shape(s_batch)[-2:]), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
+    assert (np.shape(s_batch)[1] == 1), "The second dimension of the segmentations 's_batch' should be equal to 1."
 
 
 def assert_max_size(max_size: float) -> None:

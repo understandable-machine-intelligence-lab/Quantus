@@ -1,4 +1,5 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
+from typing import Union, List, Dict
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -52,7 +53,7 @@ class Completeness(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[bool]:
 
         # Update kwargs.
         self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
@@ -141,6 +142,7 @@ class NonSensitivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.eps = self.kwargs.get("eps", 1e-5)
+        self.n_samples = self.kwargs.get("n_samples", 100)
         self.abs = self.kwargs.get("abs", True)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
@@ -158,7 +160,7 @@ class NonSensitivity(Metric):
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
-    ):
+    ) -> List[int]:
 
         # Update kwargs.
         self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}

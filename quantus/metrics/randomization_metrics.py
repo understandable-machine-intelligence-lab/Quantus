@@ -1,7 +1,7 @@
 """This module contains the collection of randomization metrics to evaluate attribution-based explanations of neural network models."""
 import numpy as np
 import random
-from typing import Union
+from typing import Union, List, Dict
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -35,13 +35,13 @@ class ModelParameterRandomization(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
-        self.explain_func = self.kwargs.get("explain_func", Callable)
+        #explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and checks.
         assert_layer_order(layer_order=self.layer_order)
-        assert_explain_func(explain_func=self.explain_func)
+
 
     def __call__(
             self,
@@ -51,7 +51,7 @@ class ModelParameterRandomization(Metric):
             a_batch: Union[np.array, None],
             *args,
             **kwargs
-    ):
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -61,8 +61,12 @@ class ModelParameterRandomization(Metric):
 
         if a_batch is None:
 
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
+
             # Generate explanations.
-            a_batch = self.explain_func(
+            a_batch = explain_func(
                 model=model,
                 inputs=x_batch,
                 targets=y_batch,
@@ -71,6 +75,7 @@ class ModelParameterRandomization(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_explain_func(explain_func=explain_func)
 
         # Save state_dict.
         original_parameters = model.state_dict()
@@ -86,7 +91,7 @@ class ModelParameterRandomization(Metric):
             layer.reset_parameters()
 
             # Generate an explanation with perturbed model.
-            a_perturbed = self.explain_func(model=model,
+            a_perturbed = explain_func(model=model,
                                             inputs=x_batch,
                                             targets=y_batch,
                                             **self.kwargs)
@@ -141,7 +146,7 @@ class RandomLogit(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
         self.max_class = self.kwargs.get("max_class", 10)
-        self.explain_func = self.kwargs.get("explain_func", Callable)
+        #explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
 
@@ -156,7 +161,7 @@ class RandomLogit(Metric):
             a_batch: Union[np.array, None],
             *args,
             **kwargs
-    ):
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -165,9 +170,12 @@ class RandomLogit(Metric):
         self.last_results = [dict() for _ in x_batch]
 
         if a_batch is None:
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
-            a_batch = self.explain_func(
+            a_batch = explain_func(
                 model=model,
                 inputs=x_batch,
                 targets=y_batch,
@@ -176,6 +184,7 @@ class RandomLogit(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_explain_func(explain_func=explain_func)
 
         if self.abs:
             a_batch = np.abs(a_batch)
@@ -201,7 +210,7 @@ class RandomLogit(Metric):
             y_range.remove(y_batch)
             y_batch_off = np.array([random.choice(y_range) for x in range(x_batch.shape[0])])
 
-        a_perturbed = self.explain_func(
+        a_perturbed = explain_func(
             model=model,
             inputs=x_batch,
             targets=y_batch_off,
@@ -214,8 +223,8 @@ class RandomLogit(Metric):
         if self.normalize:
             a_perturbed = self.normalize_func(a_perturbed)
 
-        self.last_results = np.array([self.similarity_func(a.flatten(), a_per.flatten())
-                            for a, a_per in zip(a_batch, a_perturbed)])
+        self.last_results =[self.similarity_func(a.flatten(), a_per.flatten())
+                            for a, a_per in zip(a_batch, a_perturbed)]
 
         self.all_results.append(self.last_results)
 
