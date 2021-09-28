@@ -8,6 +8,7 @@ import warnings
 from .utils import *
 
 from ..helpers.normalize_func import *
+
 # from ..helpers.constants import XAI_METHODS
 
 
@@ -27,8 +28,11 @@ def explain(
     """
 
     if "method" not in kwargs:
-        warnings.warn(f"Using quantus 'explain' function as an explainer without specifying 'method' (str)"
-            f"in kwargs will produce a vanilla 'Gradient' explanation.\n", category=Warning)
+        warnings.warn(
+            f"Using quantus 'explain' function as an explainer without specifying 'method' (str)"
+            f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
+            category=Warning,
+        )
 
     method = kwargs.get("method", "Gradient").lower()
 
@@ -135,12 +139,16 @@ def explain(
 
     elif method == "Control Var. Sobel Filter".lower():
 
-        explanation = torch.zeros(size=(inputs.shape[0], inputs.shape[2], inputs.shape[3]))
+        explanation = torch.zeros(
+            size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
+        )
 
         for i in range(len(explanation)):
-            explanation[i] = torch.Tensor(np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1).mean(axis=0).reshape(
-                    kwargs.get("img_size", 224), kwargs.get("img_size", 224)))
-
+            explanation[i] = torch.Tensor(
+                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
+                .mean(axis=0)
+                .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
+            )
 
     elif method == "Control Var. Constant".lower():
 
@@ -148,21 +156,24 @@ def explain(
             "constant_value" in kwargs
         ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
 
-        #explanation = torch.zeros_like(explanation)
-        explanation = torch.zeros(size=(inputs.shape[0], inputs.shape[2], inputs.shape[3]))
+        # explanation = torch.zeros_like(explanation)
+        explanation = torch.zeros(
+            size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
+        )
 
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
-            constant_value = get_baseline_value(perturb_baseline=kwargs["constant_value"], x=inputs[i])
+            constant_value = get_baseline_value(
+                perturb_baseline=kwargs["constant_value"], x=inputs[i]
+            )
             explanation[i] = torch.Tensor().new_full(
-            size=explanation.shape, fill_value=constant_value
-        )
+                size=explanation.shape, fill_value=constant_value
+            )
 
     else:
         raise KeyError(
             "Specify a XAI method that already has been implemented {}."
         ).__format__("XAI_METHODS")
-
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:

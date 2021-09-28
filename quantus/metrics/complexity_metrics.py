@@ -57,7 +57,10 @@ class Sparseness(Metric):
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -84,7 +87,6 @@ class Sparseness(Metric):
 
             if self.normalize:
                 a = self.normalize_func(a)
-
 
             a = np.abs(
                 np.array(
@@ -138,19 +140,22 @@ class Complexity(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            *args,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -216,19 +221,22 @@ class EffectiveComplexity(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            *args,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
     ) -> List[int]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -262,7 +270,8 @@ class EffectiveComplexity(Metric):
 
         return self.last_results
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     # Run tests!
     pass

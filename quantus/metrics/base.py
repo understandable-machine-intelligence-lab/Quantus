@@ -153,13 +153,14 @@ class Metric:
         self.kwargs[key] = value
         return self.kwargs
 
-
-    def plot(self,
-             plot_func: Union[Callable, None] = None,
-             show: bool = True,
-             path_to_save: Union[str, None] = None,
-             *args,
-             **kwargs) -> None:
+    def plot(
+        self,
+        plot_func: Union[Callable, None] = None,
+        show: bool = True,
+        path_to_save: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """
         Plotting functionality for Metric class. The user provides a plot_func (Callable) that contains the
         actual plotting logic (but returns None).
@@ -196,7 +197,7 @@ class Metric:
         return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Run tests!
     pass
