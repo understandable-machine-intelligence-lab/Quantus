@@ -45,9 +45,11 @@ def evaluate(
 
     if isinstance(explanation_methods, list):
 
-        assert a_batch is not None, "If 'explanation_methods' is a list of methods as strings, " \
-                                    "then a_batch arguments should provide the necessary attributions corresponding " \
-                                    "to each input."
+        assert a_batch is not None, (
+            "If 'explanation_methods' is a list of methods as strings, "
+            "then a_batch arguments should provide the necessary attributions corresponding "
+            "to each input."
+        )
 
         for method in explanation_methods:
 
@@ -126,7 +128,7 @@ def available_categories() -> list:
 
 
 def available_metrics() -> dict:
-    return {c : list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
+    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
 def available_methods() -> list:

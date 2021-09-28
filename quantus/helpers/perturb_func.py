@@ -116,7 +116,9 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
+            borderValue=get_baseline_value(
+                choice=kwargs["perturb_baseline"], img=img, **kwargs
+            ),
         ),
         2,
         0,
@@ -133,7 +135,9 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
+            borderValue=get_baseline_value(
+                choice=kwargs["perturb_baseline"], img=img, **kwargs
+            ),
         ),
         2,
         0,

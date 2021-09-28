@@ -42,20 +42,23 @@ class PointingGame(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -140,20 +143,23 @@ class AttributionLocalization(Metric):
         assert_max_size(max_size=self.max_size)
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -188,8 +194,12 @@ class AttributionLocalization(Metric):
             s = s.astype(bool)
 
             # Asserts on attributions.
-            assert not np.all((a < 0.0)), "Attributions should not all be less than zero."
-            assert np.any(s), "Segmentation mask should have some values in its array that is not zero."
+            assert not np.all(
+                (a < 0.0)
+            ), "Attributions should not all be less than zero."
+            assert np.any(
+                s
+            ), "Segmentation mask should have some values in its array that is not zero."
 
             # Filter positive attribution values.
             a[a < 0.0] = 0.0
@@ -217,13 +227,15 @@ class AttributionLocalization(Metric):
 
                 else:
                     weighted_inside_attribution_ratio = inside_attribution_ratio * (
-                            size_data / size_bbox
+                        size_data / size_bbox
                     )
 
                     self.last_results.append(weighted_inside_attribution_ratio)
 
         if not self.last_results:
-            warnings.warn("Data contains no object with a size below max_size: Results are empty.")
+            warnings.warn(
+                "Data contains no object with a size below max_size: Results are empty."
+            )
 
         self.all_results.append(self.last_results)
 
@@ -261,20 +273,23 @@ class TopKIntersection(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -309,13 +324,15 @@ class TopKIntersection(Metric):
 
             # TODO. e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
-            np.put_along_axis(top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None)
+            np.put_along_axis(
+                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
+            )
 
             s = s.astype(bool)
             top_k_binary_mask.astype(bool)
 
             # Top-k intersection.
-            tki = 1./self.k * np.sum(np.logical_and(s, top_k_binary_mask))
+            tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
 
             # Concept influence (with size of object normalized tki score).
             if self.concept_influence:
@@ -357,20 +374,23 @@ class RelevanceRankAccuracy(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -401,13 +421,13 @@ class RelevanceRankAccuracy(Metric):
             if self.normalize:
                 a = self.normalize_func(a)
 
-            k = np.sum(s)   # size of ground truth mask
+            k = np.sum(s)  # size of ground truth mask
 
             # TODO. e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
-            hits = np.take_along_axis(s, sorted_indices[-int(k):], axis=None)
+            hits = np.take_along_axis(s, sorted_indices[-int(k) :], axis=None)
 
-            rank_accuracy = np.sum(hits)/float(k)
+            rank_accuracy = np.sum(hits) / float(k)
 
             self.last_results.append(rank_accuracy)
 
@@ -441,20 +461,23 @@ class AUC(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -524,19 +547,22 @@ class RelevanceMassAccuracy(Metric):
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            s_batch: np.array,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        **kwargs
     ):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -562,8 +588,12 @@ class RelevanceMassAccuracy(Metric):
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             # Asserts on attributions.
-            assert not np.all((a < 0.0)), "Attributions should not all be less than zero."
-            assert np.any(s), "Segmentation mask should have some values in its array that is not zero."
+            assert not np.all(
+                (a < 0.0)
+            ), "Attributions should not all be less than zero."
+            assert np.any(
+                s
+            ), "Segmentation mask should have some values in its array that is not zero."
 
             # Filter positive attribution values.
             a[a < 0.0] = 0.0

@@ -7,10 +7,14 @@ from skimage.segmentation import *
 
 # TODO. Implement density plots for aggregated scores e.g., violin plots or boxplots.
 
-def plot_pixel_flipping_experiment(y_batch: torch.Tensor, scores: List[float],
-                                   single_class: Union[int, None] = None,
-                                   *args,
-                                   **kwargs) -> None:
+
+def plot_pixel_flipping_experiment(
+    y_batch: torch.Tensor,
+    scores: List[float],
+    single_class: Union[int, None] = None,
+    *args,
+    **kwargs,
+) -> None:
     """
     Plot the pixel-flippng experiment as done in paper:
 
@@ -41,9 +45,9 @@ def plot_pixel_flipping_experiment(y_batch: torch.Tensor, scores: List[float],
     plt.show()
 
 
-def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float]]],
-                                *args,
-                                **kwargs) -> None:
+def plot_selectivity_experiment(
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the selectivity experiment as done in paper:
 
@@ -72,9 +76,9 @@ def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float
     plt.show()
 
 
-def plot_region_perturbation_experiment(results: Union[List[float], Dict[str, List[float]]],
-                                        *args,
-                                        **kwargs) -> None:
+def plot_region_perturbation_experiment(
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the region perturbation experiment as done in paper:
 
@@ -102,9 +106,9 @@ def plot_region_perturbation_experiment(results: Union[List[float], Dict[str, Li
     plt.show()
 
 
-def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[float]]],
-                                  *args,
-                                  **kwargs) -> None:
+def plot_sensitivity_n_experiment(
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the sensitivity n experiment as done in paper:
 
@@ -133,23 +137,25 @@ def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[flo
     plt.show()
 
 
-def plot_superpixel_segments(img: torch.Tensor,
-                             segments: np.ndarray,
-                             *args,
-                             **kwargs) -> None:
+def plot_superpixel_segments(
+    img: torch.Tensor, segments: np.ndarray, *args, **kwargs
+) -> None:
     fig = plt.figure(figsize=(6, 6))
-    plt.imshow(mark_boundaries(np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
-                               segments,
-                               mode="subpixel"))
+    plt.imshow(
+        mark_boundaries(
+            np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
+            segments,
+            mode="subpixel",
+        )
+    )
     plt.title("Segmentation outcome")
     plt.grid(False)
     plt.show()
 
 
-def plot_model_parameter_randomization_experiment(results: Union[List[float], Dict[str, List[float]]],
-                                                  methods=None,
-                                                  *args,
-                                                  **kwargs) -> None:
+def plot_model_parameter_randomization_experiment(
+    results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs
+) -> None:
     """
     Plot the model parameter randomization experiment as done in paper:
      References:

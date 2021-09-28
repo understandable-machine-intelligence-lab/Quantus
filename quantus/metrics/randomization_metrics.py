@@ -23,7 +23,7 @@ class ModelParameterRandomization(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-    
+
         super().__init__()
 
         self.args = args
@@ -35,28 +35,30 @@ class ModelParameterRandomization(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
-        #explain_func = self.kwargs.get("explain_func", Callable)
+        # explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and checks.
         assert_layer_order(layer_order=self.layer_order)
 
-
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
@@ -91,10 +93,9 @@ class ModelParameterRandomization(Metric):
             layer.reset_parameters()
 
             # Generate an explanation with perturbed model.
-            a_perturbed = explain_func(model=model,
-                                            inputs=x_batch,
-                                            targets=y_batch,
-                                            **self.kwargs)
+            a_perturbed = explain_func(
+                model=model, inputs=x_batch, targets=y_batch, **self.kwargs
+            )
 
             for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
@@ -134,7 +135,7 @@ class RandomLogit(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-    
+
         super().__init__()
 
         self.args = args
@@ -146,7 +147,7 @@ class RandomLogit(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
         self.max_class = self.kwargs.get("max_class", 10)
-        #explain_func = self.kwargs.get("explain_func", Callable)
+        # explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
 
@@ -154,19 +155,22 @@ class RandomLogit(Metric):
         # TODO. Add here.
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            *args,
-            **kwargs
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs
     ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = [dict() for _ in x_batch]
 
         if a_batch is None:
@@ -208,7 +212,9 @@ class RandomLogit(Metric):
 
             y_range = list(np.arange(0, self.num_classes))
             y_range.remove(y_batch)
-            y_batch_off = np.array([random.choice(y_range) for x in range(x_batch.shape[0])])
+            y_batch_off = np.array(
+                [random.choice(y_range) for x in range(x_batch.shape[0])]
+            )
 
         a_perturbed = explain_func(
             model=model,
@@ -223,8 +229,10 @@ class RandomLogit(Metric):
         if self.normalize:
             a_perturbed = self.normalize_func(a_perturbed)
 
-        self.last_results =[self.similarity_func(a.flatten(), a_per.flatten())
-                            for a, a_per in zip(a_batch, a_perturbed)]
+        self.last_results = [
+            self.similarity_func(a.flatten(), a_per.flatten())
+            for a, a_per in zip(a_batch, a_perturbed)
+        ]
 
         self.all_results.append(self.last_results)
 
