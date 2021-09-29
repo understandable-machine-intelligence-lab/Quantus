@@ -42,9 +42,9 @@ AVAILABLE_METRICS = {
     "Axiomatic": {
         "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
-        "Symmetry": Symmetry,
-        "InputInvariance": InputInvariance,
-        "Dummy": Dummy,
+        #"Symmetry": Symmetry,
+        #"InputInvariance": InputInvariance,
+        #"Dummy": Dummy,
     },
 }
 
