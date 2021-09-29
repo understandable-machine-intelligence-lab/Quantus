@@ -62,11 +62,11 @@ class ModelParameterRandomization(Metric):
         }
         self.last_results = []
 
-        if a_batch is None:
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        if a_batch is None:
 
             # Generate explanations.
             a_batch = explain_func(
@@ -78,7 +78,6 @@ class ModelParameterRandomization(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         # Save state_dict.
         original_parameters = model.state_dict()
@@ -174,11 +173,11 @@ class RandomLogit(Metric):
         }
         self.last_results = [dict() for _ in x_batch]
 
-        if a_batch is None:
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
+        if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
                 model=model,
@@ -189,7 +188,6 @@ class RandomLogit(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         if self.abs:
             a_batch = np.abs(a_batch)
