@@ -23,7 +23,7 @@ class Sparseness(Metric):
     vector of absolute values.
 
     # Based on authors' implementation:
-            # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
+    # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
 
     References:
         1) Chalasani, Prasad, et al. "Concise explanations of neural
@@ -43,6 +43,10 @@ class Sparseness(Metric):
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -84,16 +88,15 @@ class Sparseness(Metric):
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)
 
-            a = np.abs(
-                np.array(
-                    np.reshape(a, (self.img_size * self.img_size,)),
-                    dtype=np.float64,
-                )
-            )
+            a = np.array(np.reshape(a, (self.img_size * self.img_size,)), dtype=np.float64)
             a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
@@ -139,7 +142,12 @@ class Complexity(Metric):
         self.last_results = []
         self.all_results = []
 
-    def __call__(
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
+
+def __call__(
         self,
         model,
         x_batch: np.array,
@@ -179,19 +187,17 @@ class Complexity(Metric):
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)
 
-            a = (
-                np.abs(
-                    np.array(
-                        np.reshape(a, (self.img_size * self.img_size,)),
-                        dtype=np.float64,
-                    )
-                )
-                / np.sum(np.abs(a))
-            )
+
+            a = (np.array(np.reshape(a, (self.img_size * self.img_size,)),
+                          dtype=np.float64,) / np.sum(np.abs(a)))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -219,6 +225,10 @@ class EffectiveComplexity(Metric):
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -260,6 +270,10 @@ class EffectiveComplexity(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)

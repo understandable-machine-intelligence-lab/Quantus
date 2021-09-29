@@ -35,11 +35,12 @@ class ModelParameterRandomization(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalize = kwargs.get("normalize", True)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_layer_order(layer_order=self.layer_order)
 
     def __call__(
@@ -147,12 +148,12 @@ class RandomLogit(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
         self.max_class = self.kwargs.get("max_class", 10)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        # TODO. Add here.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,

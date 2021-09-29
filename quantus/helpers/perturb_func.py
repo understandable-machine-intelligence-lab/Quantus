@@ -149,5 +149,5 @@ def optimization_scheme(img: np.array, **kwargs) -> np.array:
     # https://github.com/google-research-datasets/bam/blob/master/scripts/construct_delta_patch.py
     # Use gradient descent to optimize for a perturbation that modifies those pixels
     # within a small L2 distance of initialization ...
-    # TODO. Implement optimization_scheme
+    # TODO. Implement optimization_scheme.
     return gaussian_noise(img, **kwargs)

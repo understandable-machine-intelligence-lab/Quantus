@@ -66,7 +66,8 @@ class FaithfulnessCorrelation(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        # TODO. Add here.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     # @set_warn
     def __call__(
@@ -223,6 +224,8 @@ class FaithfulnessEstimate(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -233,6 +236,7 @@ class FaithfulnessEstimate(Metric):
             self.set_features_in_step = set_features_in_step(
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
+
 
     # @set_warn
     def __call__(
@@ -394,6 +398,8 @@ class Infidelity(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -581,6 +587,8 @@ class MonotonicityArya(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -726,6 +734,8 @@ class MonotonicityNguyen(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -895,6 +905,8 @@ class PixelFlipping(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1041,6 +1053,8 @@ class RegionPerturbation(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     # @set_warn
@@ -1238,6 +1252,8 @@ class Selectivity(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     # @set_warn
@@ -1435,6 +1451,8 @@ class SensitivityN(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1627,6 +1645,8 @@ class IROF(Metric):
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
         # TODO. Implement area over the curve not under the curve.
 

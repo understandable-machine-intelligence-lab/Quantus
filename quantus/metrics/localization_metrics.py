@@ -41,6 +41,10 @@ class PointingGame(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
         self,
         model,
@@ -91,14 +95,14 @@ class PointingGame(Metric):
 
             # Reshape segmentation heatmap from 3 channels to 1.
             s = s.mean(axis=0)
+            s = s.astype(bool)
 
             # Find index of max value
             maxindex = np.where(a == np.max(a))
 
-            # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+            # Ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
 
-            # check if maximum of explanation is on target object class
-            # case max is at more than one pixel
+            # Check if maximum of explanation is on target object class.
             if len(maxindex[0]) > 1:
                 hit = 0
                 for pixel in maxindex:
@@ -139,7 +143,9 @@ class AttributionLocalization(Metric):
         self.last_results = []
         self.all_results = []
 
-        # Asserts.
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_max_size(max_size=self.max_size)
 
     def __call__(
@@ -272,6 +278,10 @@ class TopKIntersection(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
         self,
         model,
@@ -310,8 +320,6 @@ class TopKIntersection(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        # TODO. assert is binary mask for s_batch
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
@@ -322,7 +330,6 @@ class TopKIntersection(Metric):
 
             top_k_binary_mask = np.zeros(a.shape)
 
-            # TODO. e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
                 top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
@@ -373,6 +380,10 @@ class RelevanceRankAccuracy(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
         self,
         model,
@@ -421,6 +432,7 @@ class RelevanceRankAccuracy(Metric):
             if self.normalize:
                 a = self.normalize_func(a)
 
+            s = s.astype(bool)
             k = np.sum(s)  # size of ground truth mask
 
             # TODO. e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
@@ -460,6 +472,10 @@ class AUC(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
         self,
         model,
@@ -498,8 +514,6 @@ class AUC(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        # TODO. assert is binary mask for s_batch
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
@@ -509,6 +523,7 @@ class AUC(Metric):
                 a = self.normalize_func(a)
 
             s = s.flatten()
+            s = s.astype(bool)
             a = a.flatten()
 
             fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
@@ -545,6 +560,10 @@ class RelevanceMassAccuracy(Metric):
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -586,6 +605,12 @@ class RelevanceMassAccuracy(Metric):
         # TODO. Assert is binary mask for s_batch.
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
 
             # Asserts on attributions.
             assert not np.all(

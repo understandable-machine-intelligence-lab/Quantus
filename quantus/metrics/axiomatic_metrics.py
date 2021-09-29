@@ -19,7 +19,7 @@ class Completeness(Metric):
     Montavon et al., 2018.
 
     Attribution completeness asks that the total attribution is proportional to
-    the explainable evidence at the output/ or some function of the model output
+    the explainable evidence at the output/ or some function of the model output.
 
     References:
         1)
@@ -43,8 +43,14 @@ class Completeness(Metric):
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
         self.output_func = self.kwargs.get("output_func", lambda x: x)
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -90,6 +96,12 @@ class Completeness(Metric):
             if self.normalize:
                 a = self.normalize_func(a)
 
+            x_perturbed = x.flatten()
+            x_perturbed = self.perturb_func(
+                img=x_perturbed,
+                **{"index": np.arange(x, len(x)), "perturb_baseline": self.perturb_baseline},
+            )
+
             # Predict on input.
             with torch.no_grad():
                 y_pred = float(
@@ -98,14 +110,19 @@ class Completeness(Metric):
                         .reshape(1, self.nr_channels, self.img_size, self.img_size)
                         .to(self.kwargs.get("device", None))
                     )[:, y]
-                    # torch.nn.Softmax()()
                 )
 
-            # res[m] = np.float(np.abs(target_value - baseline - np.sum(attributions)))
-            # if np.abs(target_value) > 0:
-            # res[m + '_relative'] = float(res[m] / np.abs(target_value))
+            # Predict on baseline.
+            with torch.no_grad():
+                y_pred_baseline = float(
+                    model(
+                        torch.Tensor(x)
+                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .to(self.kwargs.get("device", None))
+                    )[:, y]
+                )
 
-            if np.sum(a) == self.output_func(y_pred):
+            if np.sum(a) == self.output_func(y_pred-y_pred_baseline):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
@@ -113,24 +130,6 @@ class Completeness(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
-
-class Symmetry(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    pass
-
-
-class InputInvariance(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    pass
 
 
 class NonSensitivity(Metric):
@@ -157,6 +156,10 @@ class NonSensitivity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.last_results = []
         self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -244,6 +247,24 @@ class NonSensitivity(Metric):
 
         return self.last_results
 
+
+
+class Symmetry(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
+
+    pass
+
+
+class InputInvariance(Metric):
+    """
+    TODO. Rewrite docstring.
+    TODO. Implement metric.
+    """
+
+    pass
 
 class Dummy(Metric):
     """

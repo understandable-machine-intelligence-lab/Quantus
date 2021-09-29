@@ -52,14 +52,14 @@ class LocalLipschitzEstimate(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_numerator", distance_euclidean)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", lipschitz_constant)
         self.similarity_func = self.kwargs.get("similarity_func", gaussian_noise)
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        assert_explain_func(explain_func=explain_func)
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -172,14 +172,14 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
 
-        # Asserts.
-        # assert_explain_func(explain_func=explain_func)
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -292,14 +292,14 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
 
-        # Asserts.
-        # assert_explain_func(explain_func=explain_func)
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
@@ -423,15 +423,16 @@ class Continuity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.dx = self.img_size // self.nr_steps
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        # assert_explain_func(explain_func=explain_func)
+
 
     def __call__(
         self,
@@ -603,14 +604,14 @@ class InputIndependenceRate(Metric):
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
         self.threshold = kwargs.get("threshold", 0.1)
-        # explain_func = self.kwargs.get("explain_func", Callable)
         self.perturb_func = self.kwargs.get("perturb_func", Callable)
         self.similarity_func = self.kwargs.get("similarity_func", abs_difference)
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        # assert_explain_func(explain_func=explain_func)
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
     def __call__(
         self,
