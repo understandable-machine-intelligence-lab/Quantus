@@ -80,11 +80,11 @@ class LocalLipschitzEstimate(Metric):
         }
         self.last_result = []
 
-        if a_batch is None:
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        if a_batch is None:
 
             # Generate explanations.
             a_batch = explain_func(
@@ -94,9 +94,8 @@ class LocalLipschitzEstimate(Metric):
                 **self.kwargs,
             )
 
-        # Asserts.
+        # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -190,6 +189,7 @@ class MaxSensitivity(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -199,11 +199,11 @@ class MaxSensitivity(Metric):
         }
         self.last_result = []
 
-        if a_batch is None:
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        if a_batch is None:
 
             # Generate explanations.
             a_batch = explain_func(
@@ -213,9 +213,8 @@ class MaxSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Asserts.
+        # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -310,6 +309,7 @@ class AvgSensitivity(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -319,10 +319,11 @@ class AvgSensitivity(Metric):
         }
         self.last_result = []
 
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
+
         if a_batch is None:
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -334,7 +335,6 @@ class AvgSensitivity(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -443,6 +443,7 @@ class Continuity(Metric):
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -452,11 +453,11 @@ class Continuity(Metric):
         }
         self.last_results = {k: None for k in range(len(x_batch))}
 
-        if a_batch is None:
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        if a_batch is None:
 
             # Generate explanations.
             a_batch = explain_func(
@@ -468,7 +469,6 @@ class Continuity(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
@@ -647,11 +647,11 @@ class InputIndependenceRate(Metric):
         }
         self.last_result = []
 
-        if a_batch is None:
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+        if a_batch is None:
 
             # Generate explanations.
             a_batch = explain_func(
@@ -661,9 +661,8 @@ class InputIndependenceRate(Metric):
                 **self.kwargs,
             )
 
-        # Asserts.
+        # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_explain_func(explain_func=explain_func)
 
         counts_thres = 0.0
         counts_corrs = 0.0

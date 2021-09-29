@@ -498,7 +498,7 @@ class AUC(Metric):
 
         if a_batch is None:
 
-            # Asserts.
+            # Get explanation function and make asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
@@ -512,7 +512,6 @@ class AUC(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
@@ -586,8 +585,8 @@ class RelevanceMassAccuracy(Metric):
 
         if a_batch is None:
 
-            # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            # Get explanation function and make asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -600,7 +599,6 @@ class RelevanceMassAccuracy(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         # TODO. Assert is binary mask for s_batch.
 
