@@ -41,26 +41,26 @@ The `quantus` library contains implementations of the following evaluation measu
 * *Faithfulness:*
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: insert description
   * **[Faithfulness Estimate](insert) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
-  * **Infidelity (Yeh at el., 2019)**:
+  * **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: The explanation infidelity represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input.
   * **Monotonicity Metric Arya (Arya et al., 2019)**:
-  * **Monotonicity Metric Nguyen (Nguyen et al., 2020)**: insert description
-  * **Pixel Flipping (Bach et al., 2015)**: 
-  * **Region Perturbation (Samek et al., 2015)**: 
-  * **Selectivity (Montavan et al., 2018)**: 
-  * **SensitivityN (Ancona et al., 2019)**:
-  * **IROF (Iterative Removal of Features) (Rieger et al., 2020)**:
+  * **[Monotonicity Metric Nguyen](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: The Nguyen Monotonicity measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation.
+  * **[Pixel Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140) (Bach et al., 2015)**: In Pixelflipping the impact of perturbing pixels in descending order according to the attributed value on the classification score is measured.
+  * **[Region Perturbation](https://arxiv.org/pdf/1509.06321.pdf) (Samek et al., 2015)**: The region perturbation is the extension of Pixelflipping to flip an area rather than a single pixel.
+  * **[Selectivity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: The selectivity measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values.
+  * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**:
+  * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**:
 * *Robustness:*
   * **Continuity (Montavon et al., 2018)**:
   * **Input Independence Rate (Yang et al., 2019)**: input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
   * **Local Lipschitz Estimate (Alvarez-Melis et al., 2018a, 2018b)**:
-  * **Max-Sensitivity (Yeh at el., 2019)**:
-  * **Avg-Sensitivity (Yeh at el., 2019)**:
+  * **Max-Sensitivity (Yeh et al., 2019)**:
+  * **Avg-Sensitivity (Yeh et al., 2019)**:
 * *Localisation:*
   * **[Pointing Game](https://link.springer.com/article/10.1007/s11263-017-1059-x) (Zhang et al., 2018)**: The Pointing Game checks, if the attribution with the highest score is located within the targeted object.
   * **[Attribution Localization](https://ieeexplore.ieee.org/abstract/document/9206975) (Kohlbrenner et al., 2020)**: The Attribution Localization measures the ratio of positive attributions within the targeted object towards the total positive attributions.
   * **[TKI](https://arxiv.org/pdf/2104.14995.pdf) (Theiner et al., 2021)**: The top-k intersection measures the intersection between a ground truth mask and the binarized explanation at the top k feature locations.
-  * **[Relevance Rank Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**:
-  * **[Relevance Mass Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**:
+  * **[Relevance Rank Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**: The Relevance Rank Accuracy measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask.
+  * **[Relevance Mass Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**: The Relevance Mass Accuracy measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions.
   * **AUC ()**:
 * *Complexity:*
   * **Sparseness (Chalasani et al., 2020)**:
