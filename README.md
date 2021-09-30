@@ -40,15 +40,15 @@ The `quantus` library contains implementations of the following evaluation measu
 
 * *Faithfulness:*
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: insert description
-  * **[Faithfulness Estimate](insert) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
+  * **[Faithfulness Estimate](https://arxiv.org/pdf/1806.07538.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: The Faithfulness Estimate computes the correlation between probability drops and attribution scores on various points.
   * **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: The explanation infidelity represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input.
-  * **Monotonicity Metric Arya (Arya et al., 2019)**:
+  * **Monotonicity Metric Arya (Arya et al., 2019)**: tbd.
   * **[Monotonicity Metric Nguyen](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: The Nguyen Monotonicity measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation.
   * **[Pixel Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140) (Bach et al., 2015)**: In Pixelflipping the impact of perturbing pixels in descending order according to the attributed value on the classification score is measured.
   * **[Region Perturbation](https://arxiv.org/pdf/1509.06321.pdf) (Samek et al., 2015)**: The region perturbation is the extension of Pixelflipping to flip an area rather than a single pixel.
   * **[Selectivity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: The selectivity measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values.
-  * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**:
-  * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**:
+  * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**: tbd.
+  * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**: tbd.
 * *Robustness:*
   * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: The continuity measures the strongest variation in explanation of an input and it's perturbed version.
   * **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: The input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect the explanations significantly.
@@ -61,11 +61,11 @@ The `quantus` library contains implementations of the following evaluation measu
   * **[TKI](https://arxiv.org/pdf/2104.14995.pdf) (Theiner et al., 2021)**: The top-k intersection measures the intersection between a ground truth mask and the binarized explanation at the top k feature locations.
   * **[Relevance Rank Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**: The Relevance Rank Accuracy measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask.
   * **[Relevance Mass Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**: The Relevance Mass Accuracy measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions.
-  * **AUC ()**:
+  * **AUC ()**: tbd.
 * *Complexity:*
   * **[Sparseness](https://arxiv.org/pdf/1810.06583.pdf) (Chalasani et al., 2020)**: The Sparseness uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output.
   * **[Complexity](https://arxiv.org/pdf/2005.00631.pdf) (Bhatt et al., 2020)**: The Complexity measures the entropy of the fractional contribution of all features to the total magnitude of the attribution individually.
-  * **[Effective Complexity](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**:
+  * **[Effective Complexity](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: tbd.
 * *Randomisation:*
   * **[Model Parameter Randomisation](https://proceedings.neurips.cc/paper/2018/file/294a8ed24b1ad22ec2e7efea049b8737-Paper.pdf) (Adebayo et al., 2018)**: The Model Parameter Randomization randomizes the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
   * **[Random Logit](http://proceedings.mlr.press/v119/sixt20a.html) (Sixt et al., 2020)**: The Random Logit Measure is a meter for the distance between the original explanation and the explanation for a random other class.
