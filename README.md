@@ -42,11 +42,13 @@ The `quantus` library contains implementations of the following evaluation measu
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: insert description
   * **[Faithfulness Estimate](insert) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
   * **Infidelity (Yeh at el., 2019)**:
-  * **Monotonicity Metric (Nguyen at el., 2020)**: insert description
+  * **Monotonicity Metric Arya (Arya et al., 2019)**:
+  * **Monotonicity Metric Nguyen (Nguyen et al., 2020)**: insert description
   * **Pixel Flipping (Bach et al., 2015)**: 
   * **Region Perturbation (Samek et al., 2015)**: 
   * **Selectivity (Montavan et al., 2018)**: 
   * **SensitivityN (Ancona et al., 2019)**:
+  * **IROF (Iterative Removal of Features) (Rieger et al., 2020)**:
 * *Robustness:*
   * **Continuity (Montavon et al., 2018)**:
   * **Input Independence Rate (Yang et al., 2019)**: input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
@@ -54,23 +56,25 @@ The `quantus` library contains implementations of the following evaluation measu
   * **Max-Sensitivity (Yeh at el., 2019)**:
   * **Avg-Sensitivity (Yeh at el., 2019)**:
 * *Localisation:*
-  * **Pointing Game (Zhang et al., 2018)**:
-  * **Attribution Localization (Kohlbrenner et al., 2020)**:
-  * **TKI (Theiner et al., 2021)**:
-  * **Relevance Rank Accuracy (Arras et al., 2021)**:
-  * **Relevance Mass Accuracy (Arras et al., 2021)**:
+  * **[Pointing Game](https://link.springer.com/article/10.1007/s11263-017-1059-x) (Zhang et al., 2018)**: The Pointing Game checks, if the attribution with the highest score is located within the targeted object.
+  * **[Attribution Localization](https://ieeexplore.ieee.org/abstract/document/9206975) (Kohlbrenner et al., 2020)**: The Attribution Localization measures the ratio of positive attributions within the targeted object towards the total positive attributions.
+  * **[TKI](https://arxiv.org/pdf/2104.14995.pdf) (Theiner et al., 2021)**: The top-k intersection measures the intersection between a ground truth mask and the binarized explanation at the top k feature locations.
+  * **[Relevance Rank Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**:
+  * **[Relevance Mass Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**:
+  * **AUC ()**:
 * *Complexity:*
-  * **Sparseness Test (Chalasani et al., 2020)**:
-  * **Complexity Test (Bhatt et al., 2020)**:
+  * **Sparseness (Chalasani et al., 2020)**:
+  * **Complexity (Bhatt et al., 2020)**:
+  * **Effective Complexity ()**:
 * *Randomisation:*
-  * **Model Parameter Randomisation Test**:
-  * **Random Logit Test**:
+  * **[Model Parameter Randomisation](https://proceedings.neurips.cc/paper/2018/file/294a8ed24b1ad22ec2e7efea049b8737-Paper.pdf) (Adebayo et al., 2018)**: The Model Parameter Randomization randomizes the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+  * **[Random Logit](http://proceedings.mlr.press/v119/sixt20a.html) (Sixt et al., 2020)**: The Random Logit Measure is a meter for the distance between the original explanation and the explanation for a random other class.
 * *Axiomatic:*
   * **Completeness (Sundararajan et al., 2017; **:
-  * **Symmetry**:
-  * **Sensitivity**:
-  * **Dummy**:
-  * **Input Invariance**:
+  * **Symmetry**: TBD
+  * **(Non)Sensitivity**:
+  * **Dummy**: TBD
+  * **Input Invariance**: TBD
 
 **Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library. 
 Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
