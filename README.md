@@ -50,11 +50,11 @@ The `quantus` library contains implementations of the following evaluation measu
   * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**:
   * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**:
 * *Robustness:*
-  * **Continuity (Montavon et al., 2018)**:
-  * **Input Independence Rate (Yang et al., 2019)**: input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
-  * **Local Lipschitz Estimate (Alvarez-Melis et al., 2018a, 2018b)**:
-  * **Max-Sensitivity (Yeh et al., 2019)**:
-  * **Avg-Sensitivity (Yeh et al., 2019)**:
+  * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: The continuity measures the strongest variation in explanation of an input and it's perturbed version.
+  * **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: The input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect the explanations significantly.
+  * **[Local Lipschitz Estimate](https://arxiv.org/pdf/1806.08049.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: The Local Lipschitz Estimate measures the consistency in the explanation between adjacent examples.
+  * **[Max-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: Max-Sensitivity measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation.
+  * **[Avg-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: Avg-Sensitivity measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation.
 * *Localisation:*
   * **[Pointing Game](https://link.springer.com/article/10.1007/s11263-017-1059-x) (Zhang et al., 2018)**: The Pointing Game checks, if the attribution with the highest score is located within the targeted object.
   * **[Attribution Localization](https://ieeexplore.ieee.org/abstract/document/9206975) (Kohlbrenner et al., 2020)**: The Attribution Localization measures the ratio of positive attributions within the targeted object towards the total positive attributions.
@@ -63,16 +63,16 @@ The `quantus` library contains implementations of the following evaluation measu
   * **[Relevance Mass Accuracy](https://arxiv.org/pdf/2003.07258.pdf) (Arras et al., 2021)**: The Relevance Mass Accuracy measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions.
   * **AUC ()**:
 * *Complexity:*
-  * **Sparseness (Chalasani et al., 2020)**:
-  * **Complexity (Bhatt et al., 2020)**:
-  * **Effective Complexity ()**:
+  * **[Sparseness](https://arxiv.org/pdf/1810.06583.pdf) (Chalasani et al., 2020)**: The Sparseness uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output.
+  * **[Complexity](https://arxiv.org/pdf/2005.00631.pdf) (Bhatt et al., 2020)**: The Complexity measures the entropy of the fractional contribution of all features to the total magnitude of the attribution individually.
+  * **[Effective Complexity](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**:
 * *Randomisation:*
   * **[Model Parameter Randomisation](https://proceedings.neurips.cc/paper/2018/file/294a8ed24b1ad22ec2e7efea049b8737-Paper.pdf) (Adebayo et al., 2018)**: The Model Parameter Randomization randomizes the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
   * **[Random Logit](http://proceedings.mlr.press/v119/sixt20a.html) (Sixt et al., 2020)**: The Random Logit Measure is a meter for the distance between the original explanation and the explanation for a random other class.
 * *Axiomatic:*
-  * **Completeness (Sundararajan et al., 2017; **:
+  * **[Completeness](https://arxiv.org/pdf/1703.01365.pdf) (Sundararajan et al., 2017; **: The completeness measures whether the total attribution is proportional to the explainable evidence at the model output.
   * **Symmetry**: TBD
-  * **(Non)Sensitivity**:
+  * **[(Non)Sensitivity](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: The NonSensitivity measures, if zero-importance is only assigned to features, that the model is not functionally dependent on.
   * **Dummy**: TBD
   * **Input Invariance**: TBD
 
