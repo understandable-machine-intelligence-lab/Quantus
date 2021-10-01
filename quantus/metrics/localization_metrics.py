@@ -326,7 +326,7 @@ class RelevanceRankAccuracy(Metric):
     References:
         Arras, Leila, Osman, Ahmed, and Samek, Wojciech.
             "Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI."
-            arXiv preprint, arXiv:2003.07258v2
+            arXiv preprint, arXiv:2003.07258v2 (2021).
     """
 
     @attributes_check
@@ -411,7 +411,7 @@ class RelevanceMassAccuracy(Metric):
     References:
         Arras, Leila, Osman, Ahmed, and Samek, Wojciech.
             "Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI."
-            arXiv preprint, arXiv:2003.07258v2
+            arXiv preprint, arXiv:2003.07258v2 (2021).
     """
 
     @attributes_check
