@@ -15,15 +15,18 @@ from ..helpers.normalize_func import *
 
 class PointingGame(Metric):
     """
-    TODO. Rewrite docstring.
+    TODO. Check docstring.
 
-    Implementation of the Pointing Game from Zhang et al. 2018,
-    that implements the check if the maximal attribution is on target.
+    Implementation of the Pointing Game by Zhang et al., 2018.
 
-    High scores are desired as it means, that the maximal attributed pixel belongs to an object of the specified class.
+    The Pointing Game implements a check whether the point of maximal attribution is on target,
+    denoted by a binary mask.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan.
+            "Top-Down Neural Attention by Excitation Backprop."
+            International Journal of Computer Vision (2018) 126:1084-1102.
+
     """
 
     @attributes_check
@@ -101,16 +104,17 @@ class PointingGame(Metric):
 
 class AttributionLocalization(Metric):
     """
-    TODO. Rewrite docstring.
+    TODO. Check docstring.
 
-    Implementation of the attribution localization from Kohlbrenner et al. 2020,
-    (also Relevance Mass Accuracy by Arras et al. 2021)
-    that implements the ratio of attribution within target to the overall attribution.
+    Implementation of the Attribution Localization by Kohlbrenner et al., 2020.
 
-    High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
+    The Attribution Localization implements the ratio of positive attributions within the target to the overall
+    attribution.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S.
+            "Towards Best Practice in Explaining Neural Network Decisions with LRP."
+            arXiv preprint arXiv:1910.09840v2 (2020).
     """
 
     @attributes_check
@@ -216,16 +220,17 @@ class AttributionLocalization(Metric):
 
 class TopKIntersection(Metric):
     """
-    TODO. Rewrite docstring.
+    TODO. Check docstring.
 
-    Implementation of the top-k intersection from Theiner et al. 2021,
-    that implements the pixel-wise intersection between ground truth and an "explainer" mask.
+    Implementation of the top-k intersection by Theiner et al., 2021.
 
-    High scores are desired, as the overlap between the ground truth object mask
-    and the attribution mask should be maximal.
+    The TopKIntersection implements the pixel-wise intersection between a ground truth target object mask and
+    an "explainer" mask, the binarized version of the explanation.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph.
+            "Interpretable Semantic Photo Geolocalization."
+            arXiv preprint arXiv:2104.14995 (2021).
     """
 
     @attributes_check
@@ -310,16 +315,18 @@ class TopKIntersection(Metric):
 
 class RelevanceRankAccuracy(Metric):
     """
-    TODO. Rewrite docstring.
+    TODO. Check docstring.
 
-    Implementation of the relevance rank accuracy from Arras et al. 2021,
-    that measures the ratio of high intensity relevances within the ground truth mask.
+    Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
 
-    High scores are desired, as the pixels with the highest positively attributed scores
-    should be within the bounding box of the targeted object.
+    The Relevance Rank Accuracy measures the ratio of high intensity relevances within the ground truth mask GT.
+    With P_top-k  being the set of pixels sorted by thery relevance in decreasing order until the k-th pixels,
+    the rank accuracy is computed as: rank accuracy = (|P_top-k intersect GT|) / |GT|.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        Arras, Leila, Osman, Ahmed, and Samek, Wojciech.
+            "Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI."
+            arXiv preprint, arXiv:2003.07258v2
     """
 
     @attributes_check
@@ -394,16 +401,17 @@ class RelevanceRankAccuracy(Metric):
 
 class RelevanceMassAccuracy(Metric):
     """
-    TODO. Rewrite docstring.
+    TODO. Check docstring.
 
-    Implementation of the relevance mass accuracy from Arras et al. 2021,
-    that computes the ratio of relevance inside the bounding box to the sum of the overall relevance.
+    Implementation of the Relevance Mass Accuracy by Arras et al., 2021.
 
-    High scores are desired, as the pixels with the highest positively attributed scores
-    should be within the bounding box of the targeted object.
+    The Relevance Mass Accuracy computes the ratio of positive attributions inside the bounding box to
+    the sum of overall positive attributions.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        Arras, Leila, Osman, Ahmed, and Samek, Wojciech.
+            "Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI."
+            arXiv preprint, arXiv:2003.07258v2
     """
 
     @attributes_check
