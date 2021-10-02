@@ -7,7 +7,7 @@ Before evaluating your explanations, make sure to:
 * Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores?   
 * Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric  
 * Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features  
-* Ensure that your model is well-trained, a poor behaving model e.g., a non-robust model will have useless explanations https://dl.acm.org/doi/pdf/10.1145/3447548.3470806 and other papers]  
+* Ensure that your model is well-trained, a poor behaving model e.g., a non-robust model will have useless explanations  
   
 ## Disclaimers  
   
@@ -21,20 +21,20 @@ Note that the implementations of metrics in this library have not been verified 
 2. Discrepancy in operationalisation is likely
   
 Metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill.   
-Hence it may be a discrepency between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.     
+Hence it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.     
   
 3. Hyperparameters may (and should) change depending on application/ task and dataset/ domain  
   
-Metrics are often designed with a specific use case in mind and it is not always clear how to change the hyperparameters to make them suitable for another setting.   
+Metrics are often designed with a specific use case in mind e.g., in an image classification setting. Thus it is not always clear how to change the hyperparameters to make them suitable for another setting.   
 Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?  
   
 4.  Evaluation of explanations must be understood in its context; its application of and of its kind. The importance of defining what attribution quality means for each separate application and data domain. 
   
-What evaluation metric to use is completely dependent on: 1) the type of explanation (explanation by example cannot be evaluated the same way as attribution-based/ feature-importance methods), 2) the application/ task: we may not require the explanations to fulfil certain criteria in some context compared to others e.g., multi-label vs single label classification 3) the dataset/ domain: text vs images e.g, different dependency structures between features exist, and preprocessing of the data, leading to differences on what the model may perceive, and how attribution methods can react to that (prime example: MNIST in range  [0,1] vs [-1,1] and any NN. and 5. the user (most evaluation metrics are founded from principles of what a user want from its explanation e.g., even in the seemingly objective measures we are enforcing our preferences e.g., in TCAV "explain in a language we can understand", object localisation "explain over objects we think are important", robustness "explain similarly over things we think looks similar" etc etc..)
+What evaluation metric to use is completely dependent on: 1) the type of explanation (explanation by example cannot be evaluated the same way as attribution-based/ feature-importance methods), 2) the application/ task: we may not require the explanations to fulfil certain criteria in some context compared to others e.g., multi-label vs single label classification 3) the dataset/ domain: text vs images e.g, different dependency structures between features exist, and preprocessing of the data, leading to differences on what the model may perceive, and how attribution methods can react to that (prime example: MNIST in range  [0,1] vs [-1,1] and any NN and 4) the user (most evaluation metrics are founded from principles of what a user want from its explanation e.g., even in the seemingly objective measures we are enforcing our preferences e.g., in TCAV "explain in a language we can understand", object localisation "explain over objects we think are important", robustness "explain similarly over things we think looks similar" etc etc..)
 
 5. Evaluation (and explanations) will be unreliable if the model is not robust
    
-Evaluation will fail if you explain with a poor model. If the model is not robust, then explanations cannot be expect to be meaningful (Concise paper, Graph paper, Bansal paper)
+Evaluation will fail if you explain with a poor model. If the model is not robust, then explanations cannot be expected to be meaningful.
 Other metrics like Localisation metrics would also fail if the model achieves a high performance, but for the wrong reason (e.g., Clever Hans, Backdoor issues).
 
 6. Evaluation outcomes can be true to data or true to model
