@@ -1,4 +1,4 @@
-"""Collection of similarity functions i..e, ways to measure the distance between two inputs (or explanations)."""
+"""This module holds a collection of similarity functions i..e, ways to measure the distance between two inputs (or explanations)."""
 from typing import Union
 import scipy
 from sklearn import metrics
