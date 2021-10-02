@@ -1,4 +1,4 @@
-"""This module contains the collection of randomization metrics to evaluate attribution-based explanations of neural network models."""
+"""This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
 import numpy as np
 import random
 from typing import Union, List, Dict
@@ -13,9 +13,9 @@ from ..helpers.explanation_func import *
 from ..helpers.normalize_func import *
 
 
-class ModelParameterRandomization(Metric):
+class ModelParameterRandomisation(Metric):
     """
-    Implements the Model Parameter Randomization Method as described in
+    Implements the Model Parameter Randomisation Method as described in
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 

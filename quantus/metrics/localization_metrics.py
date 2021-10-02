@@ -114,10 +114,10 @@ class PointingGame(Metric):
         return self.last_results
 
 
-class AttributionLocalization(Metric):
+class AttributionLocalisation(Metric):
     """
 
-    Implementation of the attribution localization from Kohlbrenner et al. 2020,
+    Implementation of the attribution localisation from Kohlbrenner et al. 2020,
     that implements the ratio of attribution within target to the overall attribution.
 
     High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
