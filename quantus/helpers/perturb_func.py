@@ -6,6 +6,7 @@ import random
 from .utils import *
 
 
+
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input. """
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."

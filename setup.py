@@ -1,13 +1,13 @@
 from setuptools import setup
 
 setup(
-    name="xai-quantification-toolbox",
+    name="Quantus",
     version="0.1",
-    description="A toolbox for evaluating the quality of XAI methods.",
-    url="http://github.com/xai-quantification-toolbox/xai-quantification-toolbox",
-    author="INSERT",
-    author_email="anna.hedstroem@tu-berlin.de",
+    description="A toolbox to evaluate the quality of XAI methods.",
+    url="http://github.com/understandable-machine-intelligence-lab/quantus",
+    author="Anna Hedström",
+    author_email="hedstroem.anna@gmail.com",
     license="MIT",
-    packages=["xai-quantification-toolbox"],
+    packages=["quantus"],
     zip_safe=False,
 )
