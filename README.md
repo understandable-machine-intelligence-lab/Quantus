@@ -13,17 +13,15 @@
   <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>
 </p>
 -->
-**Quantus is currently is currently under active development!**
+__Quantus is currently under active development!__
 
-## Library
+## Library content
 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research.
 Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics.
 It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
 
 The library contains implementations of the following evaluation metrics:
-
-<span style="color:#ff0000">List TBC.</span>
 
 * *Faithfulness:*
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output
@@ -62,6 +60,8 @@ The library contains implementations of the following evaluation metrics:
   <!--* **Symmetry**:-->
   <!--* **Dummy**:-->
   <!--* **Input Invariance**:-->
+
+Additional metrics will be included in future releases.
 
 **Scope.** There is a couple of metrics that are popular but have not been included in the first version of this library.
 Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
@@ -115,7 +115,7 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using `quantus` library.
+Next, we generate some explanations for some test set samples that we wish to evaluate using `Quantus` library.
 
 ```python
 import captum
@@ -165,7 +165,7 @@ df = pd.DataFrame(results)
 df
 ```
 
-Other miscellaneous functionality of `quantus` library.
+Other miscellaneous functionality of `Quantus` library.
 
 ````python
 # Interpret scores.
@@ -211,14 +211,17 @@ For the next iteration, focus will be on the following items.
 To cite this paper use following Bibtex annotation:
 
 	@misc{quantus,
-	      title={Quantus: a metrics toolbox to evaluate neural network explanations},
+	      title={Quantus: A Comprehensive Toolbox for Responsible Evaluation of Neural Network Explanations},
 	      author={},
 	      year={2021},
 	      eprint={2106.10185},
 	      archivePrefix={arXiv},
 	      primaryClass={cs.LG}}
+
+### Citations of metrics
+
 -->
 
 
-### Citations of metrics
+
 
