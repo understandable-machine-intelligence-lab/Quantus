@@ -16,7 +16,6 @@ from ..helpers.normalize_func import *
 
 class PointingGame(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the Pointing Game from Zhang et al. 2018,
     that implements the check if the maximal attribution is on target.
@@ -83,8 +82,6 @@ class PointingGame(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        # TODO. assert is binary mask for s_batch
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
@@ -119,7 +116,6 @@ class PointingGame(Metric):
 
 class AttributionLocalization(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the attribution localization from Kohlbrenner et al. 2020,
     that implements the ratio of attribution within target to the overall attribution.
@@ -185,8 +181,6 @@ class AttributionLocalization(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        # TODO. assert is binary mask for s_batch
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
@@ -250,7 +244,6 @@ class AttributionLocalization(Metric):
 
 class TopKIntersection(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the top-k intersection from Theiner et al. 2021,
     that implements the pixel-wise intersection between ground truth and an "explainer" mask.
@@ -354,7 +347,6 @@ class TopKIntersection(Metric):
 
 class RelevanceRankAccuracy(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the relevance rank accuracy from Arras et al. 2021,
     that measures the ratio of high intensity relevances within the ground truth mask.
@@ -422,8 +414,6 @@ class RelevanceRankAccuracy(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        # TODO. assert is binary mask for s_batch
-
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
@@ -433,10 +423,11 @@ class RelevanceRankAccuracy(Metric):
                 a = self.normalize_func(a)
 
             s = s.astype(bool)
-            k = np.sum(s)  # size of ground truth mask
 
-            # TODO. e.g. for sign independent xai methods take the abs of the attribution before ordering the indices
             sorted_indices = np.argsort(a, axis=None)
+
+            # Size of the ground truth mask.
+            k = np.sum(s)
             hits = np.take_along_axis(s, sorted_indices[-int(k) :], axis=None)
 
             rank_accuracy = np.sum(hits) / float(k)
@@ -450,7 +441,6 @@ class RelevanceRankAccuracy(Metric):
 
 class AUC(Metric):
     """
-    TODO. Rewrite docstring.
 
     AUC metric.
 
@@ -537,7 +527,6 @@ class AUC(Metric):
 
 class RelevanceMassAccuracy(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of the relevance mass accuracy from Arras et al. 2021,
     that computes the ratio of relevance inside the bounding box to the sum of the overall relevance.
     High scores are desired, as the pixels with the highest positively attributed scores
@@ -599,8 +588,6 @@ class RelevanceMassAccuracy(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
-
-        # TODO. Assert is binary mask for s_batch.
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 

@@ -13,7 +13,6 @@ from ..helpers.normalize_func import *
 
 class Completeness(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
     Montavon et al., 2018.
@@ -28,8 +27,6 @@ class Completeness(Metric):
         4)
 
     """
-
-    # TODO. Adapt with baseline.
 
     @attributes_check
     def __init__(self, *args, **kwargs):
@@ -134,7 +131,6 @@ class Completeness(Metric):
 
 class NonSensitivity(Metric):
     """
-    TODO. Rewrite docstring.
     """
 
     @attributes_check
@@ -249,30 +245,6 @@ class NonSensitivity(Metric):
 
 
 
-class Symmetry(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    pass
-
-
-class InputInvariance(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    pass
-
-class Dummy(Metric):
-    """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
-    """
-
-    pass
 
 
 if __name__ == "__main__":

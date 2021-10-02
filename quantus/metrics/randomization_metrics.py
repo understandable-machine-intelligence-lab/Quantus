@@ -15,8 +15,6 @@ from ..helpers.normalize_func import *
 
 class ModelParameterRandomization(Metric):
     """
-    TODO. Rewrite docstring.
-
     Implements the Model Parameter Randomization Method as described in
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
@@ -119,15 +117,9 @@ class ModelParameterRandomization(Metric):
 
         return self.last_results
 
-    @property
-    def aggregated_score(self):
-        # TODO. Implement a class method that plots or takes the similarity scores and make something useful from it.
-        pass
-
 
 class RandomLogit(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implements the Random Logit Method as described in
     Sixt et. al., 2020, When Explanations lie

@@ -13,7 +13,6 @@ from ..helpers.normalize_func import *
 
 class Sparseness(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of Sparseness metric by Chalasani et al., 2020.
 
     The sparseness test asks of explanations to have only the features that are
@@ -111,7 +110,6 @@ class Sparseness(Metric):
 
 class Complexity(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of Complexity metric by Bhatt et al., 2020.
 
     "A complex explanation is one that uses all d features in its explanation of
@@ -208,7 +206,6 @@ def __call__(
 
 class EffectiveComplexity(Metric):
     """
-    TODO. Rewrite docstring.
     """
 
     @attributes_check

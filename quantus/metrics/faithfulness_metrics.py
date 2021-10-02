@@ -16,7 +16,6 @@ from ..helpers.test_func import *
 
 class FaithfulnessCorrelation(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of faithfulness correlation by Bhatt et al., 2020.
 
@@ -145,7 +144,7 @@ class FaithfulnessCorrelation(Metric):
                 )
 
             logit_deltas = []
-            att_means = []
+            att_sums = []
 
             # For each test data point, execute a couple of runs.
             for i_ix in range(self.nr_runs):
@@ -169,10 +168,10 @@ class FaithfulnessCorrelation(Metric):
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
-                # Average attributions of the random subset.
-                att_means.append(np.mean(a[a_ix]))
+                # Sum attributions of the random subset.
+                att_sums.append(np.sum(a[a_ix]))
 
-            self.last_results.append(self.similarity_func(a=att_means, b=logit_deltas))
+            self.last_results.append(self.similarity_func(a=att_sums, b=logit_deltas))
 
         self.last_results = [np.mean(self.last_results)]
         self.all_results.append(self.last_results)
@@ -182,7 +181,6 @@ class FaithfulnessCorrelation(Metric):
 
 class FaithfulnessEstimate(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
@@ -337,7 +335,6 @@ class FaithfulnessEstimate(Metric):
 
 class Infidelity(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of infidelity by Yeh at el., 2019.
 
@@ -544,7 +541,6 @@ class Infidelity(Metric):
 
 class MonotonicityArya(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Montonicity Metric by Arya at el., 2019.
 
@@ -700,7 +696,6 @@ class MonotonicityArya(Metric):
 
 class MonotonicityNguyen(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Montonicity Metric by Nguyen at el., 2020.
 
@@ -866,7 +861,6 @@ class MonotonicityNguyen(Metric):
 
 class PixelFlipping(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
@@ -1004,7 +998,6 @@ class PixelFlipping(Metric):
 
 class RegionPerturbation(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Region Perturbation by Samek et al., 2015.
 
@@ -1208,7 +1201,6 @@ class RegionPerturbation(Metric):
 
 class Selectivity(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Selectivity test by Montavan et al., 2018.
 
@@ -1397,7 +1389,6 @@ class Selectivity(Metric):
 
 class SensitivityN(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of Sensitivity-N test by Ancona et al., 2019.
 
@@ -1611,7 +1602,6 @@ class SensitivityN(Metric):
 
 class IROF(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
@@ -1619,9 +1609,6 @@ class IROF(Metric):
 
     References:
         1)
-
-
-    Todo. Write test.
 
     """
 
