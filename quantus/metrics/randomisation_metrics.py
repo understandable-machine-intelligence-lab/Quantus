@@ -1,4 +1,4 @@
-"""This module contains the collection of randomization metrics to evaluate attribution-based explanations of neural network models."""
+"""This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
 import numpy as np
 import random
 from typing import Union, List, Dict
@@ -13,9 +13,9 @@ from ..helpers.explanation_func import *
 from ..helpers.normalize_func import *
 
 
-class ModelParameterRandomization(Metric):
+class ModelParameterRandomisation(Metric):
     """
-    Implements the Model Parameter Randomization Method as described in
+    Implements the Model Parameter Randomisation Method as described in
     Adebayo et. al., 2018, Sanity Checks for Saliency Maps
     """
 
@@ -26,7 +26,7 @@ class ModelParameterRandomization(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -132,7 +132,7 @@ class RandomLogit(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.default_plot_func = Callable
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)

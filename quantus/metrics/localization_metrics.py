@@ -33,7 +33,7 @@ class PointingGame(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -114,10 +114,10 @@ class PointingGame(Metric):
         return self.last_results
 
 
-class AttributionLocalization(Metric):
+class AttributionLocalisation(Metric):
     """
 
-    Implementation of the attribution localization from Kohlbrenner et al. 2020,
+    Implementation of the attribution localisation from Kohlbrenner et al. 2020,
     that implements the ratio of attribution within target to the overall attribution.
 
     High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
@@ -132,7 +132,7 @@ class AttributionLocalization(Metric):
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -264,7 +264,7 @@ class TopKIntersection(Metric):
         self.kwargs = kwargs
         self.k = self.kwargs.get("k", 1000)
         self.concept_influence = self.kwargs.get("concept_influence", False)
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -365,7 +365,7 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -455,7 +455,7 @@ class AUC(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -542,7 +542,7 @@ class RelevanceMassAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
