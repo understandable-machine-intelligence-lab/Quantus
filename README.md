@@ -5,23 +5,23 @@
 </p>
 
 --------------
-<img src="quantus.png" alt="drawing" width="200"/>
+<!--<img src="quantus.png" alt="drawing" width="200"/>-->
 
 <!--**A library that helps you understand your XAI explanations..**-->
-
+<!--
 <p align="center">
   <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>
 </p>
-
+-->
 **Quantus is currently is currently under active development!**
 
 ## Library
 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research.
 Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics.
-(Note that in literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
+It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
 
-The `quantus` library contains implementations of the following evaluation metrics:
+The library contains implementations of the following evaluation metrics:
 
 <span style="color:#ff0000">List TBC.</span>
 
@@ -31,7 +31,7 @@ The `quantus` library contains implementations of the following evaluation metri
   * **[Infidelity](https://arxiv.org/abs/1901.09392) (Yeh at el., 2019)**:
   * **[Monotonicity-Arya](https://arxiv.org/abs/1909.03012) (Arya at el., 2019)**: insert description
   * **[Monotonicity-Nguyen](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**: insert description
-  * **[Pixel-Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140 (Bach et al., 2015)**:
+  * **[Pixel-Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140) (Bach et al., 2015)**:
   * **[Region Perturbation](https://arxiv.org/abs/1509.06321) (Samek et al., 2015)**:
   * **[Selectivity](https://arxiv.org/abs/1706.07979) (Montavan et al., 2018)**:
   * **[SensitivityN](https://arxiv.org/abs/1711.06104) (Ancona et al., 2019)**:
@@ -62,10 +62,12 @@ The `quantus` library contains implementations of the following evaluation metri
   <!--* **Dummy**:-->
   <!--* **Input Invariance**:-->
 
-**Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library.
+**Scope.** There is a couple of metrics that are popular but have not been included in the first version of this library.
 Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
 
-It is worth nothing that this implementation primarily is motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be useful.
+It is worth nothing that this implementation primarily is motivated by image classification tasks.
+Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation).
+As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable.
 
 
 ## Installation
@@ -175,14 +177,16 @@ sensitivity_scorer.list_hyperparameters
 quantus.available_metrics
 ````
 
-See more examples and use cases in the `/tutorials` folder. For example,
+See more examples and use cases in the `/tutorials` folder. For example
 
-* Compare explanation methods on different evaluation criteria (check out: `/tutorials/basic_example.ipynb`)
+* Compare explanation methods on different evaluation criteria (check out: `/tutorials/basic_example_all_metrics.ipynb`)
 * Measure sensitivity of hyperparameter choice (check out: `/tutorials/hyperparameter_sensitivity.ipynb`)
-* Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/training_robustness.ipynb`)
-* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)
+* Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/model_training_explanation_sensitvitiy.ipynb`)
+<!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
 
 ... and more!
+
+<!--
 
 ## Feature list
 
@@ -200,7 +204,6 @@ For the next iteration, focus will be on the following items.
     Perturbation outlier test, or detecting out-of-distribution samples
   * Smarter segmentation of images to perform SDC and SSC
 
-<!--
 
 ## Cite this paper
 
