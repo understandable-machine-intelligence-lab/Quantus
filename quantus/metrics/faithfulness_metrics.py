@@ -42,7 +42,7 @@ class FaithfulnessCorrelation(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -206,7 +206,7 @@ class FaithfulnessEstimate(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -373,7 +373,7 @@ class Infidelity(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -884,7 +884,7 @@ class PixelFlipping(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = plot_pixel_flipping_experiment
@@ -1029,7 +1029,7 @@ class RegionPerturbation(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = plot_region_perturbation_experiment
@@ -1230,7 +1230,7 @@ class Selectivity(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = plot_selectivity_experiment
@@ -1422,7 +1422,7 @@ class SensitivityN(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = plot_sensitivity_n_experiment
@@ -1619,7 +1619,7 @@ class IROF(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
