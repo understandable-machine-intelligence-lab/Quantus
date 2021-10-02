@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
 
-# TODO. Implement density plots for aggregated scores e.g., violin plots or boxplots.
-
-
 def plot_pixel_flipping_experiment(
     y_batch: torch.Tensor,
     scores: List[float],
@@ -22,7 +19,6 @@ def plot_pixel_flipping_experiment(
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
-    # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
     if single_class is None:
@@ -65,7 +61,6 @@ def plot_selectivity_experiment(
                 label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
             )
     elif isinstance(results, list):
-        # TODO. Finish code if scores is a list.
         pass
     plt.xlabel(f"# Patches removed")
     plt.ylabel(f"Average function value $f(x)$")
@@ -116,7 +111,6 @@ def plot_sensitivity_n_experiment(
         1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
         methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
 
-    # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):

@@ -14,7 +14,6 @@ from ..helpers.normalize_func import *
 
 class LocalLipschitzEstimate(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -140,7 +139,6 @@ class LocalLipschitzEstimate(Metric):
 
 class MaxSensitivity(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of max-sensitivity of an explanation by Yeh at el., 2019.
 
@@ -260,7 +258,6 @@ class MaxSensitivity(Metric):
 
 class AvgSensitivity(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of avg-sensitivity of an explanation by Yeh at el., 2019.
 
@@ -378,8 +375,6 @@ class AvgSensitivity(Metric):
 
 class Continuity(Metric):
     """
-    TODO. Rewrite docstring.
-    TODO. Fix this to work with != 4 patches. Can't get why?
 
     Implementation of the Continuity test by Montavon et al., 2018.
 
@@ -571,7 +566,6 @@ class Continuity(Metric):
 
 class InputIndependenceRate(Metric):
     """
-    TODO. Rewrite docstring.
 
     Implementation of the Input Independence Rate test by Yang et al., 2019.
 
@@ -584,11 +578,6 @@ class InputIndependenceRate(Metric):
 
     Current assumptions:
         - that perturbed sample x' is "functionally insignificant" for the model
-
-    TODO implementation:
-        - optimization scheme for perturbing the image
-        - double-check correctness of code interpretation (https://github.com/
-        google-research-datasets/bam/blob/master/bam/metrics.py)
 
     """
 

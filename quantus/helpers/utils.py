@@ -113,7 +113,6 @@ def set_features_in_step(max_steps_per_input: int, img_size: int):
 
 def normalize_heatmap(heatmap: np.array):
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
-    # TODO. Debug this function so that it works with batches.
     if heatmap.min() >= 0.0:
         return heatmap / heatmap.max()
     if heatmap.max() <= 0.0:

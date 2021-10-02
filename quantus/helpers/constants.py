@@ -11,7 +11,6 @@ AVAILABLE_METRICS = {
         "Region Segmentation": RegionPerturbation,
         "Monotonicity Arya": MonotonicityArya,
         "Monotonicity Nguyen": MonotonicityNguyen,
-        "Infidelity": Infidelity,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
         "IROF": IROF,
@@ -21,6 +20,7 @@ AVAILABLE_METRICS = {
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
+        "InputIndependenceRate": InputIndependenceRate,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
@@ -42,9 +42,6 @@ AVAILABLE_METRICS = {
     "Axiomatic": {
         "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
-        #"Symmetry": Symmetry,
-        #"InputInvariance": InputInvariance,
-        #"Dummy": Dummy,
     },
 }
 
