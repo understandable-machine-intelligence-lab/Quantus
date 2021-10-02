@@ -14,7 +14,7 @@ __pycache__/
 *.npz
 *.csv
 *.pth
-tutorials/ongoing/
+tutorials/progress/
 tutorials/assets/data/
 tutorials/assets/model_objs/
 

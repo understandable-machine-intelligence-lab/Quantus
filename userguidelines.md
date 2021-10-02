@@ -13,20 +13,16 @@ Before evaluating your explanations, make sure to:
   
 1. Implementation may differ from the original author(s)  
   
-Any metric implementation in this library may differ from the original authors.   
-It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes the mathematical definition of the metric is missing and/ or 3) the description of hyperparameter choice was left out.  
-This leave room for (subjective) interpretations.   
-Note that the implementations of metrics in this library have not been verified by the original authors.  
+Note that the implementations of metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes the mathematical definition of the metric is missing and/ or 3) the description of hyperparameter choice was left out. This leave room for (subjective) interpretations.   
+  
   
 2. Discrepancy in operationalisation is likely
   
-Metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill.   
-Hence it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.     
+Metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill. Hence it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.     
   
 3. Hyperparameters may (and should) change depending on application/ task and dataset/ domain  
   
-Metrics are often designed with a specific use case in mind e.g., in an image classification setting. Thus it is not always clear how to change the hyperparameters to make them suitable for another setting.   
-Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?  
+Metrics are often designed with a specific use case in mind e.g., in an image classification setting. Thus it is not always clear how to change the hyperparameters to make them suitable for another setting. Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?  
   
 4.  Evaluation of explanations must be understood in its context; its application of and of its kind. The importance of defining what attribution quality means for each separate application and data domain. 
   
@@ -34,9 +30,8 @@ What evaluation metric to use is completely dependent on: 1) the type of explana
 
 5. Evaluation (and explanations) will be unreliable if the model is not robust
    
-Evaluation will fail if you explain with a poor model. If the model is not robust, then explanations cannot be expected to be meaningful.
-Other metrics like Localisation metrics would also fail if the model achieves a high performance, but for the wrong reason (e.g., Clever Hans, Backdoor issues).
+Evaluation will fail if you explain with a poor model. If the model is not robust, then explanations cannot be expected to be meaningful or interpretable. Other metrics like Localisation metrics would also fail if the model achieves a high performance, but for the wrong reason (e.g., Clever Hans, Backdoor issues).
 
 6. Evaluation outcomes can be true to data or true to model
    
-Interpretation of evaluation will differ depending on if we want to be faithful to data or to the model. Faithful to data or model? A model is trained to use only one of two highly correlated features. The explanation might rightly point out that the model was trained so that one feature is important but the other correlated feature is not. But if we re-train the model, it might now pick the other feature and with the previous attributions, we might now think that the attributions are not good.
+Interpretation of evaluation will differ depending on if we want to be faithful to data or to the model. Imagine if a model is trained to use only one of two highly correlated features. The explanation might then rightly point out that the model was trained so that one feature is important and the other correlated feature is not. But we were to re-train the model, it might now pick the other feature and with the previous attributions. If we recompute explanations, we might now think that the attributions are not stable although according to the dataset they can both exclusively be considered important.
