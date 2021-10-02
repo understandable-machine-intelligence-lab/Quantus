@@ -7,4 +7,3 @@ skimage
 scipy
 cv2
 captum
-pandas

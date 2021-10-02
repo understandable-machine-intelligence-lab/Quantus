@@ -1,9 +1,9 @@
 """This module implements the base class for creating evaluation measures."""
-from typing import Union, List, Dict, Any
-from termcolor import colored
-import numpy as np
 import time
 import warnings
+import numpy as np
+from typing import Union, List, Dict, Any
+from termcolor import colored
 import matplotlib.pyplot as plt
 from ..helpers.utils import *
 from ..helpers.asserts import *
