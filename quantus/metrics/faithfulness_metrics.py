@@ -1608,7 +1608,8 @@ class IROF(Metric):
     Description.
 
     References:
-        1)
+        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
+        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
 
     """
 

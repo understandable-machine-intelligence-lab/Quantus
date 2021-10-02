@@ -131,6 +131,11 @@ class Completeness(Metric):
 
 class NonSensitivity(Metric):
     """
+    Implementation of NonSensitivity by Nguyen at el., 2020.
+
+    References:
+        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 
     @attributes_check

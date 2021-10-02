@@ -15,8 +15,18 @@ from ..helpers.normalize_func import *
 
 class ModelParameterRandomisation(Metric):
     """
-    Implements the Model Parameter Randomisation Method as described in
-    Adebayo et. al., 2018, Sanity Checks for Saliency Maps
+    Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
+
+    The Model Parameter Randomization measures the distance between the original attribution and a newly computed
+    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
+    at a time.
+
+    References:
+        1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
+        arXiv preprint, arXiv:1810.073292v3 (2018)
+
+    In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
+    HOG and SSIM. We have set Spearman as the default value.
     """
 
     @attributes_check
@@ -120,9 +130,14 @@ class ModelParameterRandomisation(Metric):
 
 class RandomLogit(Metric):
     """
+    Implementation of the Random Logit Metric by Sixt et al., 2020.
 
-    Implements the Random Logit Method as described in
-    Sixt et. al., 2020, When Explanations lie
+    The Random Logit Metric computes the distance between the original explanation and a reference explanation regarding
+    a randomly chosen non-target class.
+
+    References:
+        1) Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "When Explanations Lie: Why Many Modified BP
+        Attributions Fail."arXiv preprint, arXiv:1912.09818v6 (2020)
     """
 
     @attributes_check
