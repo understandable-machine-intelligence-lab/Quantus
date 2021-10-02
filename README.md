@@ -2,36 +2,22 @@
 <h3 align="center"><b>A metrics toolbox to evaluate neural network explanations</b></h3>
 <p align="center">
   <i>Pytorch implementation</i>
-</p> 
- 
---------------
-
-<!--**A library that helps you understand to what extent your explanations.**-->   
-
-<p align="center">
-  <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>  
 </p>
 
-## Installation
+--------------
 
-To install requirements:
+<!--**A library that helps you understand your XAI explanations..**-->
 
-```setup
-pip install -r requirements.txt
-```
+<p align="center">
+  <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>
+</p>
 
-Package requirements.
-
-```
-Python >= 3.6.9
-PyTorch >= 1.8
-Captum == 0.4.0
-```
+**Quantus is currently is currently under active development!**
 
 ## Library
 
-This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. 
-Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. 
+This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research.
+Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics.
 (Note that in literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
 
 The `quantus` library contains implementations of the following evaluation measures:
@@ -43,9 +29,9 @@ The `quantus` library contains implementations of the following evaluation measu
   * **[Faithfulness Estimate](insert) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
   * **Infidelity (Yeh at el., 2019)**:
   * **Monotonicity Metric (Nguyen at el., 2020)**: insert description
-  * **Pixel Flipping (Bach et al., 2015)**: 
-  * **Region Perturbation (Samek et al., 2015)**: 
-  * **Selectivity (Montavan et al., 2018)**: 
+  * **Pixel Flipping (Bach et al., 2015)**:
+  * **Region Perturbation (Samek et al., 2015)**:
+  * **Selectivity (Montavan et al., 2018)**:
   * **SensitivityN (Ancona et al., 2019)**:
 * *Robustness:*
   * **Continuity (Montavon et al., 2018)**:
@@ -72,10 +58,28 @@ The `quantus` library contains implementations of the following evaluation measu
   * **Dummy**:
   * **Input Invariance**:
 
-**Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library. 
+**Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library.
 Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
 
-It is worth nothing that this implementation primarily is motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be useful.   
+It is worth nothing that this implementation primarily is motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be useful.
+
+
+## Installation
+
+To install requirements:
+
+```setup
+pip install -r requirements.txt
+```
+
+Package requirements.
+
+```
+Python >= 3.6.9
+PyTorch >= 1.8
+Captum == 0.4.0
+```
+
 
 ## Getting started
 
@@ -91,7 +95,7 @@ model = torchvision.models.resnet18(pretrained=True)
 model.eval()
 
 # Load datasets and make loaders.
-test_set = torchvision.datasets.Caltech256(root='./sample_data', 
+test_set = torchvision.datasets.Caltech256(root='./sample_data',
                                            download=True,
                                            transform=torchvision.transforms.Compose([torchvision.transforms.Resize(256),
                                                                                      torchvision.transforms.CenterCrop((224, 224)),
@@ -113,9 +117,9 @@ from captum.attr import Saliency, IntegratedGradients
 a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
 a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(inputs)).sum(axis=1)
 
-# You can use any function (not necessarily captum) to generate your explanations. 
+# You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
-To evaluate explanations, there are two options. 
+To evaluate explanations, there are two options.
 
 1) Either evaluate your explanations in a one-liner - by calling the instance of the metric class.
 
@@ -123,10 +127,10 @@ To evaluate explanations, there are two options.
 
 metric_sensitivity = quantus.MaxSensitivity()
 scores = metric_sensitivity(model=model,
-                            x_batch=x_batch, 
+                            x_batch=x_batch,
                             y_batch=y_batch,
                             a_batch=a_batch_saliency,
-                            **{"device": device, "img_size": 224, "normalize": True})
+                            **{"explain_func": quantus.explain, "device": device, "img_size": 224, "normalize": True})
 ````
 
 
@@ -142,14 +146,14 @@ xai_methods = {"Saliency": a_batch_saliency,
                 "IntegratedGradients": a_batch_intgrad}
 
 results = quantus.evaluate(evaluation_metrics=metrics,
-                           explanation_methods=xai_methods, 
+                           explanation_methods=xai_methods,
                            model=model,
-                           x_batch=x_batch, 
-                           y_batch=y_batch), 
+                           x_batch=x_batch,
+                           y_batch=y_batch),
                            agg_func=np.mean,
                            **{"device": device, "img_size": 224, "normalize": True})
 
-# Summarise in a dataframe.      
+# Summarise in a dataframe.
 df = pd.DataFrame(results)
 df
 ```
@@ -169,10 +173,10 @@ quantus.available_metrics
 
 See more examples and use cases in the `/tutorials` folder. For example,
 
-* Compare explanation methods on different evalaution criteria (check out: `/tutorials/basic_example.ipynb`)
+* Compare explanation methods on different evaluation criteria (check out: `/tutorials/basic_example.ipynb`)
 * Measure sensitivity of hyperparameter choice (check out: `/tutorials/hyperparameter_sensitivity.ipynb`)
 * Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/training_robustness.ipynb`)
-* Investigate to what extent metrics belonging to the same category score explanations similarliy (check out: `/tutorials/category_reliability.ipynb`)
+* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)
 
 ... and more!
 
@@ -184,22 +188,29 @@ For the next iteration, focus will be on the following items.
 * Build a 'Quantifier' class:
   * Handling of cache, writing to file, saving output, hdf5
   * Parallelization capability
-* Post-processing 
+* Post-processing
   * Providing plots
   * Populating table/ overview graphs of various scores
 * Other functionality
   * Incorporate dataset wide measures e.g., like SpRAy compatibility
     Perturbation outlier test, or detecting out-of-distribution samples
-  * Smarter segmentation of images to perform SDC and SSC 
+  * Smarter segmentation of images to perform SDC and SSC
+
+<!--
 
 ## Cite this paper
 
 To cite this paper use following Bibtex annotation:
 
 	@misc{quantus,
-	      title={Quantus: a metrics toolbox to evaluate neural network explanations}, 
+	      title={Quantus: a metrics toolbox to evaluate neural network explanations},
 	      author={},
 	      year={2021},
 	      eprint={2106.10185},
 	      archivePrefix={arXiv},
 	      primaryClass={cs.LG}}
+-->
+
+
+### Citations of metrics
+

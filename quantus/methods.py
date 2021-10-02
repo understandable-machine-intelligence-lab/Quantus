@@ -11,7 +11,9 @@ def evaluate(
     x_batch: np.ndarray,
     y_batch: np.ndarray,
     a_batch: Union[np.ndarray, None] = None,
+    s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
+    progress: bool = False,
     **kwargs,
 ) -> dict:
     """
@@ -24,7 +26,7 @@ def evaluate(
     model
     x_batch
     y_batch
-    a_batch
+    s_batch
     agg_func
     kwargs
 
@@ -41,51 +43,80 @@ def evaluate(
 
     results = {}
 
-    for metric, metric_func in evaluation_metrics.items():
+    if isinstance(explanation_methods, list):
 
-        results[metric] = {}
+        assert a_batch is not None, (
+            "If 'explanation_methods' is a list of methods as strings, "
+            "then a_batch arguments should provide the necessary attributions corresponding "
+            "to each input."
+        )
 
-        if isinstance(explanation_methods, dict):
+        for method in explanation_methods:
 
-            for method, method_func in explanation_methods.items():
+            results[method] = {}
 
-                if callable(method_func):
+            for metric, metric_func in evaluation_metrics.items():
 
-                    # TODO. Write placeholder function for explanations.
-                    a_batch = method_func(
-                        model=model,
-                        inputs=x_batch,
-                        targets=y_batch,
-                        **{**kwargs, **{"explanation_func": method}},
-                    )
+                if progress:
+                    print(f"Evaluating {method} explanations on {metric} metric...")
 
-                else:
-
-                    if not isinstance(method_func, np.ndarray):
-                        raise TypeError(
-                            "Explanations must be of type np.ndarray or a Callable function that outputs np.nparray."
-                        )
-
-                results[metric][method] = agg_func(
+                results[method][metric] = agg_func(
                     metric_func(
                         model=model,
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
-                        **{**kwargs, **{"explanation_func": method}},
+                        s_batch=s_batch,
+                        **{**kwargs, **{"method": method}},
                     )
                 )
 
-        elif isinstance(explanation_methods, list):
+    elif isinstance(explanation_methods, dict):
 
-            for method in explanation_methods:
-                results[metric][method] = agg_func(
+        for method, method_func in explanation_methods.items():
+
+            results[method] = {}
+
+            if callable(method_func):
+
+                # Asserts.
+                assert_explain_func(explain_func=method_func)
+
+                # Generate explanations.
+                a_batch = method_func(
+                    model=model,
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **kwargs,
+                )
+
+                # Asserts.
+                assert_attributions(a_batch=a_batch, x_batch=x_batch)
+
+            elif isinstance(method_func, np.ndarray):
+
+                a_batch = method_func
+
+            else:
+
+                if not isinstance(method_func, np.ndarray):
+                    raise TypeError(
+                        "Explanations must be of type np.ndarray or a Callable function that outputs np.nparray."
+                    )
+
+            for metric, metric_func in evaluation_metrics.items():
+
+                if progress:
+                    print(f"Evaluating {method} explanations on {metric} metric...")
+
+                results[method][metric] = agg_func(
                     metric_func(
                         model=model,
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
-                        **{**kwargs, **{"explanation_func": method}},
+                        s_batch=s_batch,
+                        **{**kwargs, **{"method": method}},
                     )
                 )
 
@@ -97,7 +128,7 @@ def available_categories() -> list:
 
 
 def available_metrics() -> dict:
-    return {c : list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
+    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
 def available_methods() -> list:

@@ -1,23 +1,9 @@
-""" Collection of perturbation functions i..e, ways to perturb an input or an explanation."""
+"""This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import numpy as np
 import scipy
 import cv2
 import random
 from .utils import *
-
-# TODO. Rewrite to help user like here: https://captum.ai/api/_modules/captum/metrics/_core/infidelity.html#infidelity.
-"""
-def perturb_func (callable):
-    The perturbation function of model inputs. This function takes
-    model inputs and optionally baselines as input arguments and returns
-    either a tuple of perturbations and perturbed inputs or just
-    perturbed inputs. For example:
-
-    >>> def my_perturb_func(inputs):
-    >>>   <MY-LOGIC-HERE>
-    >>>   return perturbations, perturbed_inputs
-
-"""
 
 
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
@@ -116,7 +102,9 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
+            borderValue=get_baseline_value(
+                choice=kwargs["perturb_baseline"], img=img, **kwargs
+            ),
         ),
         2,
         0,
@@ -133,17 +121,10 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
             np.moveaxis(img, 0, 2),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            borderValue=get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs),
+            borderValue=get_baseline_value(
+                choice=kwargs["perturb_baseline"], img=img, **kwargs
+            ),
         ),
         2,
         0,
     )
-
-
-def optimization_scheme(img: np.array, **kwargs) -> np.array:
-    assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    # https://github.com/google-research-datasets/bam/blob/master/scripts/construct_delta_patch.py
-    # Use gradient descent to optimize for a perturbation that modifies those pixels
-    # within a small L2 distance of initialization ...
-    # TODO. Implement optimization_scheme
-    return gaussian_noise(img, **kwargs)

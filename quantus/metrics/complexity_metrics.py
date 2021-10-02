@@ -1,4 +1,5 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
+from typing import Union, List, Dict
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -12,7 +13,6 @@ from ..helpers.normalize_func import *
 
 class Sparseness(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of Sparseness metric by Chalasani et al., 2020.
 
     The sparseness test asks of explanations to have only the features that are
@@ -22,7 +22,7 @@ class Sparseness(Metric):
     vector of absolute values.
 
     # Based on authors' implementation:
-            # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
+    # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
 
     References:
         1) Chalasani, Prasad, et al. "Concise explanations of neural
@@ -43,25 +43,33 @@ class Sparseness(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
         self,
         model,
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
+        *args,
         **kwargs,
-    ):
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -79,17 +87,15 @@ class Sparseness(Metric):
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)
 
-
-            a = np.abs(
-                np.array(
-                    np.reshape(a, (self.img_size * self.img_size,)),
-                    dtype=np.float64,
-                )
-            )
+            a = np.array(np.reshape(a, (self.img_size * self.img_size,)), dtype=np.float64)
             a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
@@ -104,7 +110,6 @@ class Sparseness(Metric):
 
 class Complexity(Metric):
     """
-    TODO. Rewrite docstring.
     Implementation of Complexity metric by Bhatt et al., 2020.
 
     "A complex explanation is one that uses all d features in its explanation of
@@ -135,25 +140,34 @@ class Complexity(Metric):
         self.last_results = []
         self.all_results = []
 
-    def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
-    ):
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
+
+def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[float]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -171,19 +185,17 @@ class Complexity(Metric):
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)
 
-            a = (
-                np.abs(
-                    np.array(
-                        np.reshape(a, (self.img_size * self.img_size,)),
-                        dtype=np.float64,
-                    )
-                )
-                / np.sum(np.abs(a))
-            )
+
+            a = (np.array(np.reshape(a, (self.img_size * self.img_size,)),
+                          dtype=np.float64,) / np.sum(np.abs(a)))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -194,8 +206,6 @@ class Complexity(Metric):
 
 class EffectiveComplexity(Metric):
     """
-    TODO. Rewrite docstring.
-    TODO. Implement metric.
     """
 
     @attributes_check
@@ -213,24 +223,33 @@ class EffectiveComplexity(Metric):
         self.last_results = []
         self.all_results = []
 
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: Union[np.array, int],
-            a_batch: Union[np.array, None],
-            **kwargs,
-    ):
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[int]:
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {**kwargs, **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]}}
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
         self.last_results = []
 
         if a_batch is None:
+
             # Asserts.
-            explain_func = kwargs.get("explain_func", Callable)
+            explain_func = self.kwargs.get("explain_func", Callable)
             assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -248,6 +267,10 @@ class EffectiveComplexity(Metric):
 
             if self.abs:
                 a = np.abs(a.flatten())
+            else:
+                a = np.abs(a)
+                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                      "since it is required by the metric.")
 
             if self.normalize:
                 a = self.normalize_func(a)
@@ -258,7 +281,8 @@ class EffectiveComplexity(Metric):
 
         return self.last_results
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     # Run tests!
     pass

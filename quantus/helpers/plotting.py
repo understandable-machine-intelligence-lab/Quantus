@@ -5,11 +5,13 @@ import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
 
-# TODO. Implement density plots for aggregated scores e.g., violin plots or boxplots.
-
 def plot_pixel_flipping_experiment(
-    y_batch: torch.Tensor, scores: List[float], single_class: Union[int, None] = None
-):
+    y_batch: torch.Tensor,
+    scores: List[float],
+    single_class: Union[int, None] = None,
+    *args,
+    **kwargs,
+) -> None:
     """
     Plot the pixel-flippng experiment as done in paper:
 
@@ -17,7 +19,6 @@ def plot_pixel_flipping_experiment(
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
-    # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
     if single_class is None:
@@ -40,7 +41,9 @@ def plot_pixel_flipping_experiment(
     plt.show()
 
 
-def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float]]]):
+def plot_selectivity_experiment(
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the selectivity experiment as done in paper:
 
@@ -58,7 +61,6 @@ def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float
                 label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
             )
     elif isinstance(results, list):
-        # TODO. Finish code if scores is a list.
         pass
     plt.xlabel(f"# Patches removed")
     plt.ylabel(f"Average function value $f(x)$")
@@ -70,8 +72,8 @@ def plot_selectivity_experiment(results: Union[List[float], Dict[str, List[float
 
 
 def plot_region_perturbation_experiment(
-    results: Union[List[float], Dict[str, List[float]]]
-):
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the region perturbation experiment as done in paper:
 
@@ -99,7 +101,9 @@ def plot_region_perturbation_experiment(
     plt.show()
 
 
-def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[float]]]):
+def plot_sensitivity_n_experiment(
+    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+) -> None:
     """
     Plot the sensitivity n experiment as done in paper:
 
@@ -107,7 +111,6 @@ def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[flo
         1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
         methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
 
-    # TODO. Finish code if scores is a list.
     """
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
@@ -128,13 +131,61 @@ def plot_sensitivity_n_experiment(results: Union[List[float], Dict[str, List[flo
     plt.show()
 
 
-def plot_superpixel_segments(img: torch.Tensor,
-                             segments: np.ndarray,
-                             **kwargs):
+def plot_superpixel_segments(
+    img: torch.Tensor, segments: np.ndarray, *args, **kwargs
+) -> None:
     fig = plt.figure(figsize=(6, 6))
-    plt.imshow(mark_boundaries(np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
-                               segments,
-                               mode="subpixel"))
+    plt.imshow(
+        mark_boundaries(
+            np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
+            segments,
+            mode="subpixel",
+        )
+    )
     plt.title("Segmentation outcome")
     plt.grid(False)
+    plt.show()
+
+
+def plot_model_parameter_randomization_experiment(
+    results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs
+) -> None:
+    """
+    Plot the model parameter randomization experiment as done in paper:
+     References:
+        1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
+         neural network has learned." IEEE transactions on neural networks and
+          learning systems 28.11 (2016): 2660-2673.
+    """
+
+    fig = plt.figure(figsize=(8, 6))
+
+    if methods:
+        for method in methods:
+            for _ in results[method]:
+                layers = list(results[method][0].keys())
+                scores = {k: [] for k in layers}
+                samples = len(results[method])
+                for s in range(samples):
+                    for layer in layers:
+                        scores[layer].append(results[method][s][layer])
+
+            plt.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
+    else:
+
+        layers = list(results[0].keys())
+        scores = {k: [] for k in layers}
+        samples = len(results)
+        for s in range(samples):
+            for layer in layers:
+                scores[layer].append(results[layer])
+
+        plt.plot(layers, [np.mean(v) for k, v in scores.items()])
+
+    plt.xticks(rotation=90)
+    plt.xlabel("Layers")
+    plt.ylabel(kwargs.get("similarity_metric", "Score"))
+
+    if methods:
+        plt.legend(methods)
     plt.show()

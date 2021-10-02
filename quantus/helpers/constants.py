@@ -3,20 +3,6 @@ from .perturb_func import *
 from .similar_func import *
 from .local_func import *
 
-AVAILABLE_XAI_METHODS = {
-    "Gradient",
-    "Saliency",
-    "GradientShap",
-    "IntegratedGradients",
-    "InputXGradient",
-    "Occlusion",
-    "FeatureAblation",
-    "GradCam",
-    "Control Var. Sobel Filter",
-    "Control Var. Constant",
-}
-
-
 AVAILABLE_METRICS = {
     "Faithfulness": {
         "Faithfulness Correlation": FaithfulnessCorrelation,
@@ -25,40 +11,37 @@ AVAILABLE_METRICS = {
         "Region Segmentation": RegionPerturbation,
         "Monotonicity Arya": MonotonicityArya,
         "Monotonicity Nguyen": MonotonicityNguyen,
-        "Infidelity": Infidelity,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
         "IROF": IROF,
     },
     "Robustness": {
         "Continuity Test": Continuity,
-        "Input Independence Rate": InputIndependenceRate,
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
+        "InputIndependenceRate": InputIndependenceRate,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
         "TKI": TopKIntersection,
-        "Relevance Mass Accuracy": "ADD",
+        "Relevance Mass Accuracy": RelevanceMassAccuracy,
         "Relevance Mass Ranking": RelevanceRankAccuracy,
         "Attribution Localization ": AttributionLocalization,
+        "AUC": AUC,
     },
     "Complexity": {
-        "Sparseness Test": Sparseness,
-        "Complexity Test": Complexity,
+        "Sparseness": Sparseness,
+        "Complexity": Complexity,
         "Effective Complexity": EffectiveComplexity,
     },
     "Randomisation": {
-        "Model Parameter Randomisation Test": "ADD",
-        "Random Logit Test": "ADD",
+        "Model Parameter Randomization": ModelParameterRandomization,
+        "Random Logit": RandomLogit,
     },
     "Axiomatic": {
-        "Completeness Test": Completeness,
-        "Symmetry": Symmetry,
-        "InputInvariance": InputInvariance,
+        "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
-        "Dummy": Dummy,
     },
 }
 
@@ -96,6 +79,19 @@ AVAILABLE_LOCALIZATION_FUNCTIONS = {
     "localisation": localisation,
 }
 
+
+AVAILABLE_XAI_METHODS = {
+    "Gradient",
+    "Saliency",
+    "GradientShap",
+    "IntegratedGradients",
+    "InputXGradient",
+    "Occlusion",
+    "FeatureAblation",
+    "GradCam",
+    "Control Var. Sobel Filter",
+    "Control Var. Constant",
+}
 
 DEFAULT_METRICS = {
     "Faithfulness": FaithfulnessCorrelation(),
