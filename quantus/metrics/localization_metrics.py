@@ -16,14 +16,17 @@ from ..helpers.normalize_func import *
 
 class PointingGame(Metric):
     """
+    Implementation of the Pointing Game by Zhang et al., 2018.
 
-    Implementation of the Pointing Game from Zhang et al. 2018,
-    that implements the check if the maximal attribution is on target.
+    The Pointing Game implements a check whether the point of maximal attribution is on target,
+    denoted by a binary mask. High scores are desired as it means, that the maximal attributed pixel belongs to
+    an object of the specified class.
 
-    High scores are desired as it means, that the maximal attributed pixel belongs to an object of the specified class.
+    References:
+        1) Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan.
+            "Top-Down Neural Attention by Excitation Backprop."
+            International Journal of Computer Vision (2018) 126:1084-1102.
 
-    Current assumptions:
-    s_batch is binary and shapes are equal
     """
 
     @attributes_check
@@ -116,11 +119,17 @@ class PointingGame(Metric):
 
 class AttributionLocalisation(Metric):
     """
+    Implementation of the Attribution Localization by Kohlbrenner et al., 2020.
 
-    Implementation of the attribution localisation from Kohlbrenner et al. 2020,
-    that implements the ratio of attribution within target to the overall attribution.
+    The Attribution Localization implements the ratio of positive attributions within the target to the overall
+    attribution. High scores are desired, as it means, that the positively attributed pixels belong to the
+    targeted object class.
 
-    High scores are desired, as it means, that the positively attributed pixels belong to the targeted object class.
+    References:
+        1) Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S.
+            "Towards Best Practice in Explaining Neural Network Decisions with LRP."
+            arXiv preprint arXiv:1910.09840v2 (2020).
+
     """
 
     @attributes_check
@@ -244,15 +253,15 @@ class AttributionLocalisation(Metric):
 
 class TopKIntersection(Metric):
     """
+    Implementation of the top-k intersection by Theiner et al., 2021.
 
-    Implementation of the top-k intersection from Theiner et al. 2021,
-    that implements the pixel-wise intersection between ground truth and an "explainer" mask.
+    The TopKIntersection implements the pixel-wise intersection between a ground truth target object mask and
+    an "explainer" mask, the binarized version of the explanation. High scores are desired, as the
+    overlap between the ground truth object mask and the attribution mask should be maximal.
 
-    High scores are desired, as the overlap between the ground truth object mask
-    and the attribution mask should be maximal.
-
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        1) Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph.
+        "Interpretable Semantic Photo Geolocalization." arXiv preprint arXiv:2104.14995 (2021).
     """
 
     @attributes_check
@@ -347,15 +356,16 @@ class TopKIntersection(Metric):
 
 class RelevanceRankAccuracy(Metric):
     """
+    Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
 
-    Implementation of the relevance rank accuracy from Arras et al. 2021,
-    that measures the ratio of high intensity relevances within the ground truth mask.
+    The Relevance Rank Accuracy measures the ratio of high intensity relevances within the ground truth mask GT.
+    With P_top-k  being the set of pixels sorted by thery relevance in decreasing order until the k-th pixels,
+    the rank accuracy is computed as: rank accuracy = (|P_top-k intersect GT|) / |GT|. High scores are desired,
+    as the pixels with the highest positively attributed scores should be within the bounding box of the targeted object.
 
-    High scores are desired, as the pixels with the highest positively attributed scores
-    should be within the bounding box of the targeted object.
-
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    References:
+        1) Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "Ground Truth Evaluation of Neural Network Explanations
+        with CLEVR-XAI." arXiv preprint, arXiv:2003.07258v2 (2021)
     """
 
     @attributes_check
@@ -439,100 +449,17 @@ class RelevanceRankAccuracy(Metric):
         return self.last_results
 
 
-class AUC(Metric):
-    """
-
-    AUC metric.
-
-    Current assumptions:
-    s_batch is binary and shapes are equal
-    """
-
-    @attributes_check
-    def __init__(self, *args, **kwargs):
-
-        super().__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
-        self.default_plot_func = Callable
-        self.last_results = []
-        self.all_results = []
-
-        # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
-
-    def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        s_batch: np.array,
-        *args,
-        **kwargs
-    ) -> List[float]:
-
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Get explanation function and make asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-
-        # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
-
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalize:
-                a = self.normalize_func(a)
-
-            s = s.flatten()
-            s = s.astype(bool)
-            a = a.flatten()
-
-            fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
-            score = auc(x=fpr, y=tpr)
-
-            self.last_results.append(score)
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
-
-
 class RelevanceMassAccuracy(Metric):
     """
-    Implementation of the relevance mass accuracy from Arras et al. 2021,
-    that computes the ratio of relevance inside the bounding box to the sum of the overall relevance.
-    High scores are desired, as the pixels with the highest positively attributed scores
-    should be within the bounding box of the targeted object.
-    Current assumptions:
-    s_batch is binary and shapes are equal
+    Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
+
+    The Relevance Mass Accuracy computes the ratio of positive attributions inside the bounding box to
+    the sum of overall positive attributions. High scores are desired, as the pixels with the highest positively
+    attributed scores should be within the bounding box of the targeted object.
+
+    References:
+        1) Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "Ground Truth Evaluation of Neural Network Explanations
+        with CLEVR-XAI." arXiv preprint, arXiv:2003.07258v2 (2021)
     """
 
     @attributes_check
@@ -618,6 +545,95 @@ class RelevanceMassAccuracy(Metric):
             mass_accuracy = r_within / r_total
 
             self.last_results.append(mass_accuracy)
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+
+
+
+class AUC(Metric):
+    """
+
+    Implementation of AUC metric by X et al., 20XX.
+
+    References:
+        1)
+
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalize = self.kwargs.get("normalize", True)
+        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.default_plot_func = Callable
+        self.last_results = []
+        self.all_results = []
+
+        # Asserts and checks.
+        if self.abs or self.normalize:
+            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        s_batch: np.array,
+        *args,
+        **kwargs
+    ) -> List[float]:
+
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Get explanation function and make asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalize:
+                a = self.normalize_func(a)
+
+            s = s.flatten()
+            s = s.astype(bool)
+            a = a.flatten()
+
+            fpr, tpr, _ = roc_curve(y_true=s, y_score=a)
+            score = auc(x=fpr, y=tpr)
+
+            self.last_results.append(score)
 
         self.all_results.append(self.last_results)
 
