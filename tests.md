@@ -1,6 +1,4 @@
-### Tests
-
-
+### Tests cases
 
 PointingGame
 key params: None
