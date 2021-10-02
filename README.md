@@ -5,6 +5,7 @@
 </p>
 
 --------------
+<img src="quantus.png" alt="drawing" width="200"/>
 
 <!--**A library that helps you understand your XAI explanations..**-->
 
@@ -20,43 +21,46 @@ This project started with the goal of collecting existing evaluation metrics tha
 Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics.
 (Note that in literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
 
-The `quantus` library contains implementations of the following evaluation measures:
+The `quantus` library contains implementations of the following evaluation metrics:
 
 <span style="color:#ff0000">List TBC.</span>
 
 * *Faithfulness:*
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: insert description
-  * **[Faithfulness Estimate](insert) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
-  * **Infidelity (Yeh at el., 2019)**:
-  * **Monotonicity Metric (Nguyen at el., 2020)**: insert description
-  * **Pixel Flipping (Bach et al., 2015)**:
-  * **Region Perturbation (Samek et al., 2015)**:
-  * **Selectivity (Montavan et al., 2018)**:
-  * **SensitivityN (Ancona et al., 2019)**:
+  * **[Faithfulness Estimate](https://arxiv.org/abs/1806.07538) (Alvarez-Melis et al., 2018a, 2018b)**: insert description
+  * **[Infidelity](https://arxiv.org/abs/1901.09392) (Yeh at el., 2019)**:
+  * **[Monotonicity-Arya](https://arxiv.org/abs/1909.03012) (Arya at el., 2019)**: insert description
+  * **[Monotonicity-Nguyen](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**: insert description
+  * **[Pixel-Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140 (Bach et al., 2015)**:
+  * **[Region Perturbation](https://arxiv.org/abs/1509.06321) (Samek et al., 2015)**:
+  * **[Selectivity](https://arxiv.org/abs/1706.07979) (Montavan et al., 2018)**:
+  * **[SensitivityN](https://arxiv.org/abs/1711.06104) (Ancona et al., 2019)**:
+  * **[IterativeRemovalOfFeatures](https://arxiv.org/abs/2003.08747) (Rieger et al., 2019)**:
 * *Robustness:*
-  * **Continuity (Montavon et al., 2018)**:
-  * **Input Independence Rate (Yang et al., 2019)**: input independence measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
-  * **Local Lipschitz Estimate (Alvarez-Melis et al., 2018a, 2018b)**:
-  * **Max-Sensitivity (Yeh at el., 2019)**:
-  * **Avg-Sensitivity (Yeh at el., 2019)**:
+  * **[Local Lipschitz Estimate](https://arxiv.org/abs/1806.07538) (Alvarez-Melis et al., 2018a, 2018b)**:
+  * **[Max-Sensitivity](https://arxiv.org/abs/1901.09392) (Yeh at el., 2019)**:
+  * **[Avg-Sensitivity](https://arxiv.org/abs/1901.09392) (Yeh at el., 2019)**:
+  * **[Continuity](https://arxiv.org/abs/1706.07979) (Montavon et al., 2018)**:
+  * **[Input Independence Rate](https://arxiv.org/abs/1907.09701) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
 * *Localisation:*
-  * **Pointing Game (Zhang et al., 2018)**:
-  * **Attribution Localization (Kohlbrenner et al., 2020)**:
-  * **TKI (Theiner et al., 2021)**:
-  * **Relevance Rank Accuracy (Arras et al., 2021)**:
-  * **Relevance Mass Accuracy (Arras et al., 2021)**:
+  * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**:
+  * **[Attribution Localization](https://arxiv.org/abs/1910.09840) (Kohlbrenner et al., 2020)**:
+  * **[TKI](https://arxiv.org/abs/2104.14995) (Theiner et al., 2021)**:
+  * **[Relevance Rank Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**:
+  * **[Relevance Mass Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**:
 * *Complexity:*
-  * **Sparseness Test (Chalasani et al., 2020)**:
-  * **Complexity Test (Bhatt et al., 2020)**:
+  * **[Sparseness](https://arxiv.org/abs/1810.06583) (Chalasani et al., 2020)**:
+  * **[Complexity](https://arxiv.org/abs/2005.00631) (Bhatt et al., 2020)**:
+  * **[Effective Complexity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**:
 * *Randomisation:*
-  * **Model Parameter Randomisation Test**:
-  * **Random Logit Test**:
+  * **[Model Parameter Randomization](https://arxiv.org/abs/1810.03292) (Adebayo et al., 2018)**:
+  * **[Random Logit Test](https://arxiv.org/abs/1912.09818) (Sixt et. al., 2020)**:
 * *Axiomatic:*
-  * **Completeness (Sundararajan et al., 2017; **:
-  * **Symmetry**:
-  * **Sensitivity**:
-  * **Dummy**:
-  * **Input Invariance**:
+  * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and also, Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**:
+  * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**:
+  <!--* **Symmetry**:-->
+  <!--* **Dummy**:-->
+  <!--* **Input Invariance**:-->
 
 **Scope.** There is a couple of metrics that are popular but have not been included in the first version of the library.
 Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
