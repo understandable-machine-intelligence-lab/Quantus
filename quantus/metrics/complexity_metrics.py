@@ -275,7 +275,7 @@ class EffectiveComplexity(Metric):
             if self.normalize:
                 a = self.normalize_func(a)
 
-            self.last_results.append(int(np.sum(a > self.eps)))
+            self.last_results.append(np.sum(a > self.eps)) # int operation?
 
         self.all_results.append(self.last_results)
 
