@@ -29,11 +29,6 @@ class LocalLipschitzEstimate(Metric):
         2) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
         neural networks." arXiv preprint arXiv:1806.07538 (2018).
 
-
-    TODO implementation:
-        - implement GP solver https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html
-        to more efficiently find max of sample distance
-
     """
 
     @attributes_check
@@ -139,8 +134,7 @@ class LocalLipschitzEstimate(Metric):
 
 class MaxSensitivity(Metric):
     """
-
-    Implementation of max-sensitivity of an explanation by Yeh at el., 2019.
+    Implementation of max-sensitivity by Yeh at el., 2019.
 
     Using Monte Carlo sampling-based approximation while measuing how explanations
     change under slight perturbation.
@@ -150,8 +144,6 @@ class MaxSensitivity(Metric):
         arXiv preprint arXiv:1901.09392 (2019).
         2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
         feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
-
-    Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
     @attributes_check
@@ -258,8 +250,7 @@ class MaxSensitivity(Metric):
 
 class AvgSensitivity(Metric):
     """
-
-    Implementation of avg-sensitivity of an explanation by Yeh at el., 2019.
+    Implementation of avg-sensitivity by Yeh at el., 2019.
 
     Using Monte Carlo sampling-based approximation while measuing how explanations
     change under slight perturbation.
@@ -270,7 +261,6 @@ class AvgSensitivity(Metric):
         2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
         feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
 
-    Note that Similar to EstimatedLocalLipschitzConstant, but may be considered more robust.
     """
 
     @attributes_check
