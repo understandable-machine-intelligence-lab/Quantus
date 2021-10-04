@@ -147,13 +147,13 @@ metrics = {"Faithfulness correlation": quantus.FaithfulnessCorrelation(**{"subse
            "max-Sensitivity": quantus.MaxSensitivity()}
 
 xai_methods = {"Saliency": a_batch_saliency,
-                "IntegratedGradients": a_batch_intgrad}
+               "IntegratedGradients": a_batch_intgrad}
 
 results = quantus.evaluate(evaluation_metrics=metrics,
                            explanation_methods=xai_methods,
                            model=model,
                            x_batch=x_batch,
-                           y_batch=y_batch),
+                           y_batch=y_batch,
                            agg_func=np.mean,
                            **{"device": device, "img_size": 224, "normalize": True})
 

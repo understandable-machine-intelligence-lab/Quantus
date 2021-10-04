@@ -16,10 +16,10 @@ from ..helpers.test_func import *
 
 class FaithfulnessCorrelation(Metric):
     """
-
     Implementation of faithfulness correlation by Bhatt et al., 2020.
 
-    The Faithfulness Correlation metric intend to capture an explanation's relative faithfulness (or 'fidelity') with respect to the model behaviour.
+    The Faithfulness Correlation metric intend to capture an explanation's relative faithfulness
+    (or 'fidelity') with respect to the model behaviour.
 
     For each test sample, |S| features are randomly selected and replace them
     with baseline values (zero baseline or average of set). Thereafter,
@@ -29,9 +29,8 @@ class FaithfulnessCorrelation(Metric):
     several test samples.
 
     References:
-        1) Bhatt ...
-
-    Current assumptions:
+        1) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating feature-based model
+        explanations." arXiv preprint arXiv:2005.00631 (2020).
 
     """
 
@@ -42,7 +41,7 @@ class FaithfulnessCorrelation(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalize = self.kwargs.get("normalize", True)
         self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
         self.default_plot_func = Callable
@@ -181,7 +180,6 @@ class FaithfulnessCorrelation(Metric):
 
 class FaithfulnessEstimate(Metric):
     """
-
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
     Computes the correlations of probability drops and the relevance scores on various points,
@@ -190,13 +188,6 @@ class FaithfulnessEstimate(Metric):
     References:
         1) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
         neural networks." arXiv preprint arXiv:1806.07538 (2018).
-
-    Current additions:
-        - To reduce the number of steps x nr_pixels we iterate/ remove 128 pixels at a time
-
-    Current assumptions:
-        - Choice of correlation metric; Pearson correlation coefficient.
-
     """
 
     @attributes_check
@@ -328,220 +319,10 @@ class FaithfulnessEstimate(Metric):
 
         return self.last_results
 
-    def plot_aggregated_statistics(self):
-        """Plot aggregated statistics of faithfulness scores."""
-        # TODO. Implement aggregated statistics plot.
-
-
-class Infidelity(Metric):
-    """
-
-    Implementation of infidelity by Yeh at el., 2019.
-
-    "Explanation infidelity represents the expected mean-squared error between the explanation
-    multiplied by a meaningful input perturbation and the differences between the predictor function
-    at its input and perturbed input."
-
-    "Our infidelity measure is defined as the expected difference between the two terms:
-    (a) the dot product of the input perturbation to the explanation and
-    (b) the output perturbation (i.e., the difference in function values after significant
-    perturbations on the input)."
-
-    References:
-        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
-        arXiv preprint arXiv:1901.09392 (2019).
-
-    Current assumptions:
-        - original implementation support perturbation of Gaussian noise and using squares
-            "We thus propose a modified subset distribution from that described in Proposition 2.5
-            where the perturbation Z has a uniform distribution over square patches with predefined
-            length, which is in spirit similar to the work of [49]"
-            (https://github.com/chihkuanyeh/saliency_evaluation/blob/master/infid_sen_utils.py)
-        - assumes inputs are squared
-
-    # TODO. Verify implementation - I^T x attr.
-    # TODO. Implement multipy_by_inputs.
-    # TODO. Normalization implement.
-    # TODO. Reinterpret this one https://captum.ai/api/_modules/captum/metrics/_core/infidelity.html#infidelity.
-
-    """
-
-    @attributes_check
-    def __init__(self, *args, **kwargs):
-
-        super().__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
-        self.default_plot_func = Callable
-        self.loss_func = self.kwargs.get("loss_func", mse)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
-        )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.perturb_patch_sizes = self.kwargs.get(
-            "perturb_patch_sizes", list(np.arange(10, 30))
-        )
-        self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
-        self.multipy_by_inputs = self.kwargs.get("multipy_by_inputs", False)
-        self.normalise = self.kwargs.get("normalise", False)
-        self.img_size = self.kwargs.get("img_size", 224)
-        self.features_in_step = self.kwargs.get("features_in_step", 128)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.last_results = []
-        self.all_results = []
-
-        # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-        self.perturb_patch_sizes = filter_compatible_patch_sizes(
-            perturb_patch_sizes=self.perturb_patch_sizes, img_size=self.img_size
-        )
-
-    # @set_warn
-    def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> List[float]:
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-        self.last_result = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-
-        # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-
-        for x, y, a in zip(x_batch, y_batch, a_batch):
-
-            # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
-
-            sub_sub_results = []
-
-            for _ in range(self.n_perturb_samples):
-
-                sub_results = []
-
-                for patch_size in self.perturb_patch_sizes:
-
-                    pred_deltas = np.zeros(
-                        (int(a.shape[0] / patch_size), int(a.shape[1] / patch_size))
-                    )
-
-                    if self.abs:
-                        a = np.abs(a)
-
-                    if self.normalize:
-                        a = self.normalize_func(a)
-
-                    for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
-
-                        for i_y, top_left_y in enumerate(
-                            range(0, x.shape[2], patch_size)
-                        ):
-
-                            # Perturb input.
-                            x_temp = x.copy()
-                            x_perturbed = self.perturb_func(
-                                x_temp,
-                                **{
-                                    "patch_size": patch_size,
-                                    "nr_channels": self.nr_channels,
-                                    "perturb_baseline": self.perturb_baseline,
-                                    "top_left_y": top_left_y,
-                                    "top_left_x": top_left_x,
-                                },
-                            )
-
-                            baseline_value = get_baseline_value(
-                                choice=self.perturb_baseline, img=x, **kwargs
-                            )
-
-                            # TODO. Validate this interpretation.
-                            # if self.multipy_by_inputs:
-                            #    x_perturbed = x - x_perturbed
-                            # else:
-                            #    x_perturbed = (x - x_perturbed) / (x - torch.Tensor().new_full(size=x.shape, fill_value=baseline_value))
-
-                            # Predict on perturbed input x.
-                            with torch.no_grad():
-                                y_pred_perturb = float(
-                                    torch.nn.Softmax()(
-                                        model(
-                                            torch.Tensor(x_perturbed)
-                                            .reshape(
-                                                1,
-                                                self.nr_channels,
-                                                self.img_size,
-                                                self.img_size,
-                                            )
-                                            .to(self.kwargs.get("device", None))
-                                        )
-                                    )[:, y]
-                                )
-
-                            pred_deltas[i_x][i_y] = float(y_pred - y_pred_perturb)
-
-                    sub_results.append(self.loss_func(a=pred_deltas.flatten(), b=None))
-                    # self.loss_func(torch.mul(a=a.flatten(), np.transpose(x_perturbed).flatten()), b=pred_deltas.flatten())
-
-                sub_sub_results.append(np.mean(sub_results))
-
-            self.last_results.append(np.mean(sub_sub_results))
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
 
 class MonotonicityArya(Metric):
     """
-
     Implementation of Montonicity Metric by Arya at el., 2019.
 
     Montonicity tests if adding more positive evidence increases the probability of classification in the specified
@@ -557,8 +338,6 @@ class MonotonicityArya(Metric):
         techniques." arXiv preprint arXiv:1909.03012 (2019).
         2) Luss, Ronny, et al. "Generating contrastive explanations with monotonic attribute functions."
         arXiv preprint arXiv:1905.12698 (2019).
-
-    TODO. Double-check Luss interpretation; does it align with Nguyen implementation?
     """
 
     @attributes_check
@@ -686,7 +465,6 @@ class MonotonicityArya(Metric):
 
                 preds.append(y_pred_perturb)
 
-            # TODO. a_indices will be longer than preds if features_in_step > 0, fix.
             self.last_results.append(np.all(np.diff(preds) >= 0))
 
         self.all_results.append(self.last_results)
@@ -1019,7 +797,6 @@ class RegionPerturbation(Metric):
         - they called it "area over the MoRF perturbation curve" but for me it
         looks like a simple deduction of function outputs?
 
-    # TODO. Make curves relative to baseline (computed as the AOPC curves for random heatmaps (i.e., random ordering O)).
     """
 
     @attributes_check
@@ -1183,21 +960,6 @@ class RegionPerturbation(Metric):
 
         return self.last_results
 
-    @property
-    def aggregated_score(self):
-        """Calculate the area over the perturbation curve (AOPC) score for several test samples."""
-        # TODO. Implement area over the curve not under the curve.
-        # area = trapz(y, dx=1000)
-        return [
-            np.mean(
-                [
-                    np.array(results[sample]) / self.regions_evaluation
-                    for sample in results.keys()
-                ]
-            )
-            for results in self.all_results
-        ]
-
 
 class Selectivity(Metric):
     """
@@ -1347,10 +1109,6 @@ class Selectivity(Metric):
                     },
                 )
 
-                # DEBUG.
-                # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
-                # plt.show()
-
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 with torch.no_grad():
                     y_pred_perturb = float(
@@ -1372,19 +1130,6 @@ class Selectivity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
-    @property
-    def aggregated_score(self):
-        """Calculate the area under the curve (AUC) score for several test samples."""
-        return [
-            np.mean(
-                [
-                    np.trapz(np.array(results[sample]), dx=1.0)
-                    for sample in results.keys()
-                ]
-            )
-            for results in self.all_results
-        ]
 
 
 class SensitivityN(Metric):
@@ -1636,8 +1381,6 @@ class IROF(Metric):
         if self.abs or self.normalize:
             warn_normalize_abs(normalize=self.normalize, abs=self.abs)
 
-        # TODO. Implement area over the curve not under the curve.
-
     # @set_warn
     def __call__(
         self,
@@ -1755,42 +1498,4 @@ class IROF(Metric):
 
 if __name__ == "__main__":
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    # Load model.
-    model = load_pretrained_model(
-        path="../../tutorials/assets/test_model", **{"device": device}
-    )
-
-    # Load data.
-    _, test_loader = load_datasets()
-
-    # Load a batch of inputs and outputs to use for evaluation.
-    x_batch, y_batch = iter(test_loader).next()
-    x_batch, y_batch = x_batch.to(device), y_batch.to(device)
-
-    # Recompute some Saliency explanations.
-    a_batch = explain(inputs=x_batch, targets=y_batch, method="Saliency")
-
-    # Metric class expects numpy arrays.
-    x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
-
-    scores = FaithfulnessCorrelation(
-        {
-            "abs": True,
-            "normalize": True,
-            "normalize_func": normalize_by_max,
-            "nr_runs": 100,
-            "perturb_baseline": "black",
-            "perturb_func": baseline_replacement_by_indices,
-            "similarity_func": correlation_pearson,
-            "subset_size": 32,
-        }
-    )(
-        model=model.cuda(),
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **{"device": device},
-    )
-    print(f"Faithfulness scores: {np.mean(scores)} {np.std(scores):.2f}")
+    pass
