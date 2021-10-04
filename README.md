@@ -25,7 +25,7 @@ The library contains implementations of the following evaluation metrics:
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output
   * **[Faithfulness Estimate](https://arxiv.org/pdf/1806.07538.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: computes the correlation between probability drops and attribution scores on various points
   * **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input
-  * **Monotonicity Metric Arya (Arya et al., 2019)**: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
+  * **[Monotonicity Metric Arya](https://arxiv.org/abs/1909.03012) (Arya et al., 2019)**: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
   * **[Monotonicity Metric Nguyen](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
   * **[Pixel Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140) (Bach et al., 2015)**: captures the impact of perturbing pixels in descending order according to the attributed value on the classification score
   * **[Region Perturbation](https://arxiv.org/pdf/1509.06321.pdf) (Samek et al., 2015)**: is an extension of Pixel-Flipping to flip an area rather than a single pixel
@@ -147,13 +147,13 @@ metrics = {"Faithfulness correlation": quantus.FaithfulnessCorrelation(**{"subse
            "max-Sensitivity": quantus.MaxSensitivity()}
 
 xai_methods = {"Saliency": a_batch_saliency,
-                "IntegratedGradients": a_batch_intgrad}
+               "IntegratedGradients": a_batch_intgrad}
 
 results = quantus.evaluate(evaluation_metrics=metrics,
                            explanation_methods=xai_methods,
                            model=model,
                            x_batch=x_batch,
-                           y_batch=y_batch),
+                           y_batch=y_batch,
                            agg_func=np.mean,
                            **{"device": device, "img_size": 224, "normalize": True})
 
@@ -182,7 +182,7 @@ See more examples and use cases in the `/tutorials` folder. For example
 * Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/model_training_explanation_sensitvitiy.ipynb`)
 <!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
 
-... and more!
+... and more.
 
 <!--
 
