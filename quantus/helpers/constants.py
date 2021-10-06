@@ -20,7 +20,6 @@ AVAILABLE_METRICS = {
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
-        "InputIndependenceRate": InputIndependenceRate,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
@@ -54,7 +53,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    #"optimization_scheme": optimization_scheme,
+    # "optimization_scheme": optimization_scheme,
     "uniform_sampling": uniform_sampling,
 }
 

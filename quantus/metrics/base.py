@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from ..helpers.utils import *
 from ..helpers.asserts import *
 from ..helpers.plotting import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
+from ..helpers.warn_func import *
 
 
 class Metric:
@@ -18,12 +19,12 @@ class Metric:
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-        """ Initialize Metric. """
+        """Initialize Metric."""
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.text_warning = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
         'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
