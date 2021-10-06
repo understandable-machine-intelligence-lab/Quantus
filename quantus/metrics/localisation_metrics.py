@@ -11,7 +11,8 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
+from ..helpers.warn_func import *
 
 
 class PointingGame(Metric):
@@ -37,15 +38,15 @@ class PointingGame(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -90,8 +91,8 @@ class PointingGame(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Reshape segmentation heatmap from 3 channels to 1.
             s = s.mean(axis=0)
@@ -142,15 +143,15 @@ class AttributionLocalisation(Metric):
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_max_size(max_size=self.max_size)
 
     def __call__(
@@ -195,8 +196,8 @@ class AttributionLocalisation(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Reshape segmentation heatmap from 3 channels to 1.
             s = s.mean(axis=0)
@@ -274,15 +275,15 @@ class TopKIntersection(Metric):
         self.k = self.kwargs.get("k", 1000)
         self.concept_influence = self.kwargs.get("concept_influence", False)
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -327,8 +328,8 @@ class TopKIntersection(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             top_k_binary_mask = np.zeros(a.shape)
 
@@ -343,7 +344,7 @@ class TopKIntersection(Metric):
             # Top-k intersection.
             tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
 
-            # Concept influence (with size of object normalized tki score).
+            # Concept influence (with size of object normalised tki score).
             if self.concept_influence:
                 tki = (s.shape[1] * s.shape[2]) / np.sum(s) * tki
 
@@ -376,15 +377,15 @@ class RelevanceRankAccuracy(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -429,8 +430,8 @@ class RelevanceRankAccuracy(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             s = s.astype(bool)
 
@@ -470,15 +471,15 @@ class RelevanceMassAccuracy(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -521,8 +522,8 @@ class RelevanceMassAccuracy(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Asserts on attributions.
             assert not np.all(
@@ -551,8 +552,6 @@ class RelevanceMassAccuracy(Metric):
         return self.last_results
 
 
-
-
 class AUC(Metric):
     """
 
@@ -571,15 +570,15 @@ class AUC(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -623,8 +622,8 @@ class AUC(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             s = s.flatten()
             s = s.astype(bool)

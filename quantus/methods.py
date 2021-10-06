@@ -1,4 +1,5 @@
 from typing import Union, Callable, Dict
+import torch
 import numpy as np
 from .metrics import *
 from .helpers.constants import *

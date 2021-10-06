@@ -8,7 +8,8 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
+from ..helpers.warn_func import *
 
 
 class Completeness(Metric):
@@ -21,10 +22,12 @@ class Completeness(Metric):
     the explainable evidence at the output/ or some function of the model output.
 
     References:
-        1)
-        2)
-        3)
-        4)
+        1) Completeness - Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. "Axiomatic attribution for deep networks."
+         International Conference on Machine Learning. PMLR, 2017.
+        2) Summation to delta - Shrikumar, Avanti, Peyton Greenside, and Anshul Kundaje. "Learning important
+        features through propagating activation differences." International Conference on Machine Learning. PMLR, 2017.
+        3) Conservation - Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting
+        and understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
     """
 
@@ -36,18 +39,20 @@ class Completeness(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -90,13 +95,16 @@ class Completeness(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             x_perturbed = x.flatten()
             x_perturbed = self.perturb_func(
                 img=x_perturbed,
-                **{"index": np.arange(x, len(x)), "perturb_baseline": self.perturb_baseline},
+                **{
+                    "index": np.arange(x, len(x)),
+                    "perturb_baseline": self.perturb_baseline,
+                },
             )
 
             # Predict on input.
@@ -114,13 +122,14 @@ class Completeness(Metric):
                 y_pred_baseline = float(
                     model(
                         torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                            .to(self.kwargs.get("device", None))
+                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
 
-            if np.sum(a) == self.output_func(y_pred-y_pred_baseline):
+            if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
                 self.last_results.append(True)
+
             else:
                 self.last_results.append(False)
 
@@ -148,8 +157,8 @@ class NonSensitivity(Metric):
         self.eps = self.kwargs.get("eps", 1e-5)
         self.n_samples = self.kwargs.get("n_samples", 100)
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -159,8 +168,8 @@ class NonSensitivity(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -203,8 +212,8 @@ class NonSensitivity(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
@@ -247,9 +256,6 @@ class NonSensitivity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
-
-
 
 
 if __name__ == "__main__":

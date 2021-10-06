@@ -6,9 +6,8 @@ import random
 from .utils import *
 
 
-
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
-    """Inject gaussian blur to the input. """
+    """Inject gaussian blur to the input."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     return scipy.ndimage.gaussian_filter(
         img, sigma=kwargs.get("perturb_sigma", 0.1) * np.max(img)
@@ -16,7 +15,7 @@ def gaussian_blur(img: np.array, **kwargs) -> np.array:
 
 
 def gaussian_noise(img: np.array, **kwargs) -> np.array:
-    """Add gaussian noise to the input. """
+    """Add gaussian noise to the input."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     return img + np.random.normal(
         kwargs.get("mean", 0.0), kwargs.get("perturb_std", 0.01), size=img.size
