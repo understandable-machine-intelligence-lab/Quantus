@@ -169,7 +169,7 @@ Other miscellaneous functionality of `Quantus` library.
 sensitivity_scorer.interpret_scores
 
 # Understand what hyperparameters to tune.
-sensitivity_scorer.list_hyperparameters
+sensitivity_scorer.get_params
 
 # To list available metrics
 quantus.available_metrics
