@@ -8,7 +8,8 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
+from ..helpers.warn_func import *
 
 
 class Sparseness(Metric):
@@ -37,15 +38,15 @@ class Sparseness(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -89,13 +90,17 @@ class Sparseness(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                      "since it is required by the metric.")
+                print(
+                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                    "since it is required by the metric."
+                )
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
-            a = np.array(np.reshape(a, (self.img_size * self.img_size,)), dtype=np.float64)
+            a = np.array(
+                np.reshape(a, (self.img_size * self.img_size,)), dtype=np.float64
+            )
             a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
@@ -134,79 +139,84 @@ class Complexity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
 
 def __call__(
-        self,
-        model,
-        x_batch: np.array,
-        y_batch: Union[np.array, int],
-        a_batch: Union[np.array, None],
-        *args,
+    self,
+    model,
+    x_batch: np.array,
+    y_batch: Union[np.array, int],
+    a_batch: Union[np.array, None],
+    *args,
+    **kwargs,
+) -> List[float]:
+
+    # Update kwargs.
+    self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+    self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+    self.kwargs = {
         **kwargs,
-    ) -> List[float]:
+        **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+    }
+    self.last_results = []
 
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
+    if a_batch is None:
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        explain_func = self.kwargs.get("explain_func", Callable)
+        assert_explain_func(explain_func=explain_func)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        # Generate explanations.
+        a_batch = explain_func(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **self.kwargs,
+        )
 
-            if self.abs:
-                a = np.abs(a)
-            else:
-                a = np.abs(a)
-                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                      "since it is required by the metric.")
+    # Asserts.
+    assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+    for x, y, a in zip(x_batch, y_batch, a_batch):
 
+        if self.abs:
+            a = np.abs(a)
+        else:
+            a = np.abs(a)
+            print(
+                "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                "since it is required by the metric."
+            )
 
-            a = (np.array(np.reshape(a, (self.img_size * self.img_size,)),
-                          dtype=np.float64,) / np.sum(np.abs(a)))
+        if self.normalise:
+            a = self.normalise_func(a)
 
-            self.last_results.append(scipy.stats.entropy(pk=a))
+        a = (
+            np.array(
+                np.reshape(a, (self.img_size * self.img_size,)),
+                dtype=np.float64,
+            )
+            / np.sum(np.abs(a))
+        )
 
-        self.all_results.append(self.last_results)
+        self.last_results.append(scipy.stats.entropy(pk=a))
 
-        return self.last_results
+    self.all_results.append(self.last_results)
+
+    return self.last_results
 
 
 class EffectiveComplexity(Metric):
-    """
-    """
+    """ """
 
     @attributes_check
     def __init__(self, *args, **kwargs):
@@ -217,15 +227,15 @@ class EffectiveComplexity(Metric):
         self.kwargs = kwargs
         self.eps = self.kwargs.get("eps", 1e-5)
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -268,14 +278,16 @@ class EffectiveComplexity(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
             else:
-                a = np.abs(a)
-                print("An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                      "since it is required by the metric.")
+                a = np.abs(a.flatten())
+                print(
+                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                    "since it is required by the metric."
+                )
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
-            self.last_results.append(np.sum(a > self.eps)) # int operation?
+            self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
 
         self.all_results.append(self.last_results)
 

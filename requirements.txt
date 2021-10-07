@@ -3,7 +3,8 @@ torchvision
 numpy
 matplotlib
 scikit-learn
-skimage
+scikit-image
 scipy
-cv2
+opencv-python
 captum
+pytest

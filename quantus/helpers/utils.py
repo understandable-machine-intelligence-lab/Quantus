@@ -7,7 +7,7 @@ from skimage.segmentation import *
 
 
 def get_layers(model, order: str = "top_down"):
-    """ Checks a pytorch model for randomizable layers and returns them in a dict. """
+    """Checks a pytorch model for randomizable layers and returns them in a dict."""
     layers = [
         module
         for module in model.named_modules()
@@ -149,7 +149,7 @@ def denormalize_image(
 
 
 def check_if_fitted(m) -> Optional[bool]:
-    """Checks if a measure is fitted by the presence of """
+    """Checks if a measure is fitted by the presence of"""
     if not hasattr(m, "fit"):
         raise TypeError(f"{m} is not an instance.")
     return True

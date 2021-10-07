@@ -1,7 +1,6 @@
 from ..metrics import *
 from .perturb_func import *
 from .similar_func import *
-from .local_func import *
 
 AVAILABLE_METRICS = {
     "Faithfulness": {
@@ -20,7 +19,6 @@ AVAILABLE_METRICS = {
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
-        "InputIndependenceRate": InputIndependenceRate,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
@@ -54,7 +52,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    #"optimization_scheme": optimization_scheme,
+    # "optimization_scheme": optimization_scheme,
     "uniform_sampling": uniform_sampling,
 }
 
@@ -72,11 +70,6 @@ AVAILABLE_SIMILARITY_FUNCTIONS = {
     "cosine": cosine,
     "ssim": ssim,
     "mse": mse,
-}
-
-
-AVAILABLE_LOCALIZATION_FUNCTIONS = {
-    "localisation": localisation,
 }
 
 

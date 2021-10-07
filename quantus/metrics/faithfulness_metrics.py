@@ -10,8 +10,9 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
 from ..helpers.test_func import *
+from ..helpers.warn_func import *
 
 
 class FaithfulnessCorrelation(Metric):
@@ -42,8 +43,8 @@ class FaithfulnessCorrelation(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
@@ -64,8 +65,8 @@ class FaithfulnessCorrelation(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     # @set_warn
     def __call__(
@@ -129,8 +130,8 @@ class FaithfulnessCorrelation(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Predict on input.
             with torch.no_grad():
@@ -198,8 +199,8 @@ class FaithfulnessEstimate(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
@@ -213,8 +214,8 @@ class FaithfulnessEstimate(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -225,7 +226,6 @@ class FaithfulnessEstimate(Metric):
             self.set_features_in_step = set_features_in_step(
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
-
 
     # @set_warn
     def __call__(
@@ -269,8 +269,8 @@ class FaithfulnessEstimate(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             a_indices = np.argsort(-a)
 
@@ -320,7 +320,6 @@ class FaithfulnessEstimate(Metric):
         return self.last_results
 
 
-
 class MonotonicityArya(Metric):
     """
     Implementation of Montonicity Metric by Arya at el., 2019.
@@ -348,8 +347,8 @@ class MonotonicityArya(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -362,8 +361,8 @@ class MonotonicityArya(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -416,8 +415,8 @@ class MonotonicityArya(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -490,8 +489,8 @@ class MonotonicityNguyen(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get(
@@ -507,8 +506,8 @@ class MonotonicityNguyen(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -577,8 +576,8 @@ class MonotonicityNguyen(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -663,8 +662,8 @@ class PixelFlipping(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = plot_pixel_flipping_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -677,8 +676,8 @@ class PixelFlipping(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -731,8 +730,8 @@ class PixelFlipping(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -807,8 +806,8 @@ class RegionPerturbation(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = plot_region_perturbation_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -823,8 +822,8 @@ class RegionPerturbation(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     # @set_warn
@@ -880,8 +879,8 @@ class RegionPerturbation(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             patches = []
             sub_results = []
@@ -993,8 +992,8 @@ class Selectivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = plot_selectivity_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1006,8 +1005,8 @@ class Selectivity(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     # @set_warn
@@ -1063,8 +1062,8 @@ class Selectivity(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             patches = []
             sub_results = []
@@ -1168,8 +1167,8 @@ class SensitivityN(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = plot_sensitivity_n_experiment
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -1187,8 +1186,8 @@ class SensitivityN(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1259,8 +1258,8 @@ class SensitivityN(Metric):
             if self.abs:
                 a = np.abs(a.flatten())
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -1366,8 +1365,8 @@ class IROF(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
@@ -1378,8 +1377,8 @@ class IROF(Metric):
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     # @set_warn
     def __call__(
@@ -1422,8 +1421,8 @@ class IROF(Metric):
             if self.abs:
                 a = np.abs(a)
 
-            if self.normalize:
-                a = self.normalize_func(a)
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Predict on x.
             with torch.no_grad():
