@@ -24,13 +24,6 @@ def attributes_check(metric):
         ), "The 'text_warning' function must be a string."
     return metric
 
-
-def warn_normalize_abs(normalize: bool, abs: bool) -> None:
-    print(f"Normalizing or taking the absolute values of attributions may destroy or skew information "
-          f"in the explanation and as a result, affect the overall evaluation outcome. "
-          f"Normalization is set to {normalize} and absolute value is set to {abs}")
-
-
 def assert_model_predictions_deviations(
     y_pred: float, y_pred_perturb: float, threshold: float = 0.01
 ):
@@ -143,9 +136,13 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
         np.shape(s_batch)[1] == 1
     ), "The second dimension of the segmentations 's_batch' should be equal to 1."
     # TODO.
-    assert len(np.nonzero(s_batch)) > 0, "The segmentation 's_batch' must contain non-zero elements."
-    assert np.isin(s_batch.flatten(), [0, 1]).all() or np.isin(s_batch.flatten(), [True, False]).all(), "The " \
-                                                                                                        "segmentation 's_batch' should only contain [1‚0] or [True, False]."
+    assert (
+        len(np.nonzero(s_batch)) > 0
+    ), "The segmentation 's_batch' must contain non-zero elements."
+    assert (
+        np.isin(s_batch.flatten(), [0, 1]).all()
+        or np.isin(s_batch.flatten(), [True, False]).all()
+    ), ("The " "segmentation 's_batch' should only contain [1‚0] or [True, False].")
 
 
 def assert_max_size(max_size: float) -> None:

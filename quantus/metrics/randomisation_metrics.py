@@ -10,7 +10,8 @@ from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
-from ..helpers.normalize_func import *
+from ..helpers.normalise_func import *
+from ..helpers.warn_func import *
 
 
 class ModelParameterRandomisation(Metric):
@@ -37,18 +38,18 @@ class ModelParameterRandomisation(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
-        self.normalize = kwargs.get("normalize", True)
+        self.normalise = kwargs.get("normalise", True)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
         assert_layer_order(layer_order=self.layer_order)
 
     def __call__(
@@ -111,14 +112,14 @@ class ModelParameterRandomisation(Metric):
                     a = np.abs(a)
                     a_per = np.abs(a_per)
 
-                if self.normalize:
-                    a = self.normalize_func(a)
-                    a_per = self.normalize_func(a_per)
+                if self.normalise:
+                    a = self.normalise_func(a)
+                    a_per = self.normalise_func(a_per)
 
                 # Compute distance measure.
-                distance = self.similarity_func(a_per.flatten(), a.flatten())
+                similarity = self.similarity_func(a_per.flatten(), a.flatten())
 
-                similarity_scores.append(distance)
+                similarity_scores.append(similarity)
 
             # Save similarity scores in a dictionary.
             self.last_results[layer_name] = similarity_scores
@@ -148,18 +149,17 @@ class RandomLogit(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.normalize = self.kwargs.get("normalize", True)
+        self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
-        self.normalize_func = self.kwargs.get("normalize_func", normalize_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
-        self.max_class = self.kwargs.get("max_class", 10)
         self.last_results = []
         self.all_results = []
 
         # Asserts and checks.
-        if self.abs or self.normalize:
-            warn_normalize_abs(normalize=self.normalize, abs=self.abs)
+        if self.abs or self.normalise:
+            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -199,8 +199,8 @@ class RandomLogit(Metric):
         if self.abs:
             a_batch = np.abs(a_batch)
 
-        if self.normalize:
-            a_batch = self.normalize_func(a_batch)
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch)
 
         # Randomly select off class labels.
         if isinstance(y_batch, np.ndarray):
@@ -232,9 +232,10 @@ class RandomLogit(Metric):
         if self.abs:
             a_perturbed = np.abs(a_perturbed)
 
-        if self.normalize:
-            a_perturbed = self.normalize_func(a_perturbed)
+        if self.normalise:
+            a_perturbed = self.normalise_func(a_perturbed)
 
+        # Check this.
         self.last_results = [
             self.similarity_func(a.flatten(), a_per.flatten())
             for a, a_per in zip(a_batch, a_perturbed)

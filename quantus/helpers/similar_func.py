@@ -43,15 +43,18 @@ def lipschitz_constant(
     d: Union[np.array, None],
     **kwargs
 ) -> float:
-    """Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x."""
+    """Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.
 
-    d1 = kwargs.get("distance_numerator", distance_manhattan)
-    d2 = kwargs.get("distance_denominator", distance_euclidean)
+    For numerical stability, a small value is added to division."""
+    eps = 1e-10
+
+    d1 = kwargs.get("norm_numerator", distance_manhattan)
+    d2 = kwargs.get("norm_denominator", distance_euclidean)
 
     if np.shape(a) == ():
-        return float(abs(a - b) / d2(c, d))
+        return float(abs(a - b) / (d2(c, d) + eps))
     else:
-        return float(d1(a, b) / d2(a=c, b=d))
+        return float(d1(a, b) / (d2(a=c, b=d) + eps))
 
 
 def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
