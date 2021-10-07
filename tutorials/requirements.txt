@@ -3,8 +3,11 @@ torchvision
 numpy
 matplotlib
 scikit-learn
-skimage
+scikit-image
 scipy
-cv2
+opencv-python
 captum
 pandas
+collections
+xmltodict
+xml

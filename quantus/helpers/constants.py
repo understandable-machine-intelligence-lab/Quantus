@@ -1,7 +1,6 @@
 from ..metrics import *
 from .perturb_func import *
 from .similar_func import *
-from .local_func import *
 
 AVAILABLE_METRICS = {
     "Faithfulness": {
@@ -71,11 +70,6 @@ AVAILABLE_SIMILARITY_FUNCTIONS = {
     "cosine": cosine,
     "ssim": ssim,
     "mse": mse,
-}
-
-
-AVAILABLE_LOCALIZATION_FUNCTIONS = {
-    "localisation": localisation,
 }
 
 
