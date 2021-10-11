@@ -206,6 +206,17 @@ As result, we observe that the max-Sensitivity scores are lower for Integrated G
 
 To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
 
+### Other examples
+
+More examples are located in the `/tutorials` folder. For example,
+
+* Compare explanation methods on different evaluation criteria (`/tutorials/basic_example_all_metrics.ipynb`)
+* Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
+* Understand how sensitivity of explanations change when a model is learning (`/tutorials/model_training_explanation_robustness.ipynb`)
+<!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
+
+... and more.
+
 Other miscellaneous functionality of Quantus library.
 
 ````python
@@ -218,17 +229,6 @@ sensitivity_scorer.get_params
 # To list available metrics.
 quantus.available_metrics
 ````
-
-#### Use cases
-
-More examples are located in the `/tutorials` folder. For example,
-
-* Compare explanation methods on different evaluation criteria (`/tutorials/basic_example_all_metrics.ipynb`)
-* Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
-* Understand how sensitivity of explanations change when a model is learning (`/tutorials/model_training_explanation_robustness.ipynb`)
-<!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
-
-... and more.
 
 <!--
 
