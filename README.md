@@ -200,11 +200,8 @@ df = pd.DataFrame(results)
 df
 ```
 
-As result, we observe that the max-Sensitivity scores are lower for Integrated Gradients, compared to Saliency explanations.
- • Saliency = 0.41 (0.15).
- • Integrated Gradients = 0.17 (0.05).
-
-To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
+As result, the max-Sensitivity scores for Saliency = 0.41 (0.15) and Integrated Gradients = 0.17 (0.05). Lower scores are considered better, which means that in this experimental setting,
+Integrated Gradients can be considered more robust than Saliency explanations. To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
 
 ### Other examples
 
