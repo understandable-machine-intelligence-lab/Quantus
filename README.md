@@ -128,11 +128,11 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
-<img src="tutorials/assets/mnist_example.png", width="200"/>
+<img src="tutorials/assets/mnist_example.png" alt="drawing" width="200"/>
 
-The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - it is hard to draw conclusions about what they might be telling us. we lack what a ground truth explanation look like.
+The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see.
 
-To quantitatively evaluate the explanation we can use Quantus. As a starter we may be interested in measuring how sensitive the explanations are to very slight perturbations. For this, we apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, there are two options.
+To quantitatively evaluate the explanation we can use apply Quantus. As a starter we may be interested in measuring how sensitive the explanations are to very slight perturbations. For this, we apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, there are two options.
 
 1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
@@ -149,7 +149,8 @@ scores_saliency = quantus.MaxSensitivity(**{
    x_batch=x_batch,
    y_batch=y_batch,
    a_batch=a_batch_saliency,
-   **{"explain_func": quantus.explain, "method": "Saliency", "device": device, "img_size": 28, "normalise": False, "abs": False})
+   **{"explain_func": quantus.explain, "method": "Saliency", "device": device,
+   "img_size": 28, "normalise": False, "abs": False})
 ```
 
 We also score the Integrated Gradient explanations.
@@ -165,7 +166,8 @@ scores_intgrad = quantus.MaxSensitivity(**{
    x_batch=x_batch,
    y_batch=y_batch,
    a_batch=a_batch_intgrad,
-   **{"explain_func": quantus.explain, "method": "IntegratedGradients", "device": device, "img_size": 28, "normalise": False, "abs": False})
+   **{"explain_func": quantus.explain, "method": "IntegratedGradients",
+   "device": device, "img_size": 28, "normalise": False, "abs": False})
 ```
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
@@ -189,28 +191,20 @@ results = quantus.evaluate(evaluation_metrics=metrics,
                            x_batch=x_batch,
                            y_batch=y_batch,
                            agg_func=np.mean,
-                           **{"explain_func": quantus.explain, "device": device, "img_size": 28, "normalise": False, "abs": False})
-```
-
-```python
-print(f"max-Sensitivity scores by Yeh et al., 2019\n" \
-      f"\n • Saliency = {np.mean(scores_saliency):.2f} ({np.std(scores_saliency):.2f})." \
-      f"\n • Integrated Gradients = {np.mean(scores_intgrad):.2f} ({np.std(scores_intgrad):.2f})."
-      )
-```
-max-Sensitivity scores by Yeh et al., 2019
-
- • Saliency = 0.41 (0.15).
- • Integrated Gradients = 0.17 (0.05).
-
-Or we can summarise results in a dataframe.
-```python
+                           **{"explain_func": quantus.explain, "device": device,
+                           "img_size": 28, "normalise": False, "abs": False})
+# Summarise results in a dataframe.
 df = pd.DataFrame(results)
 df
 ```
+
+As result, we observe that the max-Sensitivity scores are lower for Integrated Gradients, compared to Saliency explanations.
+ • Saliency = 0.41 (0.15).
+ • Integrated Gradients = 0.17 (0.05).
+
 To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
 
-Other miscellaneous functionality of `Quantus` library.
+Other miscellaneous functionality of Quantus library.
 
 ````python
 # Interpret scores.
@@ -219,15 +213,17 @@ sensitivity_scorer.interpret_scores
 # Understand what hyperparameters to tune.
 sensitivity_scorer.get_params
 
-# To list available metrics
+# To list available metrics.
 quantus.available_metrics
 ````
 
-More examples are located in the `/tutorials` folder. For example
+#### Use cases
 
-* Compare explanation methods on different evaluation criteria (check out: `/tutorials/basic_example_all_metrics.ipynb`)
-* Measure sensitivity of hyperparameter choice (check out: `/tutorials/sensitivity_parameterisation.ipynb`)
-* Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/model_training_explanation_robustness.ipynb`)
+More examples are located in the `/tutorials` folder. For example,
+
+* Compare explanation methods on different evaluation criteria (`/tutorials/basic_example_all_metrics.ipynb`)
+* Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
+* Understand how sensitivity of explanations change when a model is learning (`/tutorials/model_training_explanation_robustness.ipynb`)
 <!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
 
 ... and more.
