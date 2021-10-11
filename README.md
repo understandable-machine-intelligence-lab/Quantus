@@ -44,7 +44,7 @@ The library contains implementations of the following evaluation metrics:
   * **[Top-K Intersection](https://arxiv.org/abs/2104.14995) (Theiner et al., 2021)**: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
   * **[Relevance Rank Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
   * **[Relevance Mass Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
-  * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Arras et al., 2021)**: compares the ranking between attributions and a given ground-truth mask
+  * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Fawcett et al., 206)**: compares the ranking between attributions and a given ground-truth mask
 * *Complexity:*
   * **[Sparseness](https://arxiv.org/abs/1810.06583) (Chalasani et al., 2020)**: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
   * **[Complexity](https://arxiv.org/abs/2005.00631) (Bhatt et al., 2020)**: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
@@ -94,57 +94,91 @@ import quantus
 import torch
 import torchvision
 
-# Load a pre-trained classification model.
-model = torchvision.models.resnet18(pretrained=True)
-model.eval()
+# Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+model = LeNet()
+model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
 # Load datasets and make loaders.
-test_set = torchvision.datasets.Caltech256(root='./sample_data',
-                                           download=True,
-                                           transform=torchvision.transforms.Compose([torchvision.transforms.Resize(256),
-                                                                                     torchvision.transforms.CenterCrop((224, 224)),
-                                                                                     torchvision.transforms.ToTensor(),
-                                                                                     torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]))
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=12)
+test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for evaluation.
 x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+# Enable GPU.
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using `Quantus` library.
+Next, we generate some explanations for some test set samples that we wish to evaluate using quantus library.
 
 ```python
 import captum
 from captum.attr import Saliency, IntegratedGradients
 
-a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(inputs)).sum(axis=1)
+# Generate Integrated Gradients attributions of the first batch of the test set.
+a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1).cpu().numpy()
+a_batch_intgrad = IntegratedGradients(model).attribute(inputs=x_batch, target=y_batch, baselines=torch.zeros_like(x_batch)).sum(axis=1).cpu().numpy()
+
+# Save x_batch and y_batch as numpy arrays that will be used to call metric instances.
+x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+# Quick assert.
+assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
-To evaluate explanations, there are two options.
+<img src="tutorials/assets/mnist_example.png", width="200"/>
 
-1) Either evaluate your explanations in a one-liner - by calling the instance of the metric class.
+The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - it is hard to draw conclusions about what they might be telling us. we lack what a ground truth explanation look like.
 
-````python
+To quantitatively evaluate the explanation we can use Quantus. As a starter we may be interested in measuring how sensitive the explanations are to very slight perturbations. For this, we apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, there are two options.
 
-metric_sensitivity = quantus.MaxSensitivity()
-scores = metric_sensitivity(model=model,
-                            x_batch=x_batch,
-                            y_batch=y_batch,
-                            a_batch=a_batch_saliency,
-                            **{"explain_func": quantus.explain, "device": device, "img_size": 224, "normalize": True})
-````
+1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
+```python
+# Return max sensitivity scores in an one-liner - by calling the metric instance.
+scores_saliency = quantus.MaxSensitivity(**{
+    "nr_samples": 10,
+    "perturb_radius": 0.1,
+    "norm_numerator": quantus.fro_norm,
+    "norm_denominator": quantus.fro_norm,
+    "perturb_func": quantus.uniform_sampling,
+    "similarity_func": quantus.difference,
+})(model=model,
+   x_batch=x_batch,
+   y_batch=y_batch,
+   a_batch=a_batch_saliency,
+   **{"explain_func": quantus.explain, "method": "Saliency", "device": device, "img_size": 28, "normalise": False, "abs": False})
+```
+
+We also score the Integrated Gradient explanations.
+```python
+scores_intgrad = quantus.MaxSensitivity(**{
+    "nr_samples": 10,
+    "perturb_radius": 0.1,
+    "norm_numerator": quantus.fro_norm,
+    "norm_denominator": quantus.fro_norm,
+    "perturb_func": quantus.uniform_sampling,
+    "similarity_func": quantus.difference,
+})(model=model,
+   x_batch=x_batch,
+   y_batch=y_batch,
+   a_batch=a_batch_intgrad,
+   **{"explain_func": quantus.explain, "method": "IntegratedGradients", "device": device, "img_size": 28, "normalise": False, "abs": False})
+```
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
 
 ```python
 import numpy as np
 
-metrics = {"Faithfulness correlation": quantus.FaithfulnessCorrelation(**{"subset_size": 32}),
-           "max-Sensitivity": quantus.MaxSensitivity()}
+metrics = {"max-Sensitivity": quantus.MaxSensitivity(**{"nr_samples": 10,
+                                                        "perturb_radius": 0.1,
+                                                        "norm_numerator": quantus.fro_norm,
+                                                        "norm_denominator": quantus.fro_norm,
+                                                        "perturb_func": quantus.uniform_sampling,
+                                                        "similarity_func": quantus.difference})}
 
 xai_methods = {"Saliency": a_batch_saliency,
                "IntegratedGradients": a_batch_intgrad}
@@ -155,12 +189,26 @@ results = quantus.evaluate(evaluation_metrics=metrics,
                            x_batch=x_batch,
                            y_batch=y_batch,
                            agg_func=np.mean,
-                           **{"device": device, "img_size": 224, "normalize": True})
+                           **{"explain_func": quantus.explain, "device": device, "img_size": 28, "normalise": False, "abs": False})
+```
 
-# Summarise in a dataframe.
+```python
+print(f"max-Sensitivity scores by Yeh et al., 2019\n" \
+      f"\n • Saliency = {np.mean(scores_saliency):.2f} ({np.std(scores_saliency):.2f})." \
+      f"\n • Integrated Gradients = {np.mean(scores_intgrad):.2f} ({np.std(scores_intgrad):.2f})."
+      )
+```
+max-Sensitivity scores by Yeh et al., 2019
+
+ • Saliency = 0.41 (0.15).
+ • Integrated Gradients = 0.17 (0.05).
+
+Or we can summarise results in a dataframe.
+```python
 df = pd.DataFrame(results)
 df
 ```
+To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
 
 Other miscellaneous functionality of `Quantus` library.
 
@@ -175,11 +223,11 @@ sensitivity_scorer.get_params
 quantus.available_metrics
 ````
 
-See more examples and use cases in the `/tutorials` folder. For example
+More examples are located in the `/tutorials` folder. For example
 
 * Compare explanation methods on different evaluation criteria (check out: `/tutorials/basic_example_all_metrics.ipynb`)
-* Measure sensitivity of hyperparameter choice (check out: `/tutorials/hyperparameter_sensitivity.ipynb`)
-* Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/model_training_explanation_sensitvitiy.ipynb`)
+* Measure sensitivity of hyperparameter choice (check out: `/tutorials/sensitivity_parameterisation.ipynb`)
+* Understand how sensitivity of explanations change when a model is learning (check out: `/tutorials/model_training_explanation_robustness.ipynb`)
 <!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
 
 ... and more.
