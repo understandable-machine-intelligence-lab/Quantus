@@ -128,7 +128,7 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
-<img src="tutorials/assets/mnist_example.png" alt="drawing" width="200"/>
+<img src="tutorials/assets/mnist_example.png" alt="drawing" width="600"/>
 
 The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see.
 
