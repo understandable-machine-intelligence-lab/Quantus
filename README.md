@@ -5,7 +5,7 @@
 </p>
 
 --------------
-<!--<img src="quantus.png" alt="drawing" width="200"/>-->
+<!--<img src="quantus.png" alt="drawing" width="600"/>-->
 
 <!--**A library that helps you understand your XAI explanations..**-->
 <!--
