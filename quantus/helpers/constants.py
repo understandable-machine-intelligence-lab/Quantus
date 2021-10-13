@@ -85,11 +85,3 @@ AVAILABLE_XAI_METHODS = {
     "Control Var. Sobel Filter",
     "Control Var. Constant",
 }
-
-DEFAULT_METRICS = {
-    "Faithfulness": FaithfulnessCorrelation(),
-    "Max-Sensitivity": MaxSensitivity(),
-    "Complexity": Complexity(),
-}
-
-DEFAULT_XAI_METHODS = ["Saliency", "IntegratedGradients"]
