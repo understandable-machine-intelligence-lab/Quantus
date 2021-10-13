@@ -26,8 +26,9 @@ class ModelParameterRandomisation(Metric):
         1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
         arXiv preprint, arXiv:1810.073292v3 (2018)
 
-    In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
-    HOG and SSIM. We have set Spearman as the default value.
+    Assumptions:
+        In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
+        HOG and SSIM. We have set Spearman as the default value.
     """
 
     @attributes_check
@@ -44,6 +45,15 @@ class ModelParameterRandomisation(Metric):
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalise = kwargs.get("normalise", True)
+        self.text_warning = (
+            "\nThe Model parameter randomisation metric is likely to be sensitive to the choice of "
+            "similarity metric 'similarity_func' and the order of layer randomisation 'layer_order'. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Adebayo, J., Gilmer, J., Muelly, M., "
+            "Goodfellow, I., Hardt, M., and Kim, B. 'Sanity Checks for Saliency Maps.' arXiv preprint, "
+            "arXiv:1810.073292v3 (2018).\n"
+        )
         self.last_results = {}
         self.all_results = []
 
@@ -154,6 +164,15 @@ class RandomLogit(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
+        self.text_warning = (
+            "\nThe Random Logit metric is likely to be sensitive to the choice of "
+            "similarity metric 'similarity_func'."
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
+            "'When Explanations Lie: Why Many Modified BP Attributions Fail.' arXiv preprint, "
+            "arXiv:1912.09818v6 (2020).\n"
+        )
         self.last_results = []
         self.all_results = []
 
