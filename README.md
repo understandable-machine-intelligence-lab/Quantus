@@ -39,12 +39,12 @@ The library contains implementations of the following evaluation metrics:
   * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: captures the strongest variation in explanation of an input and it's perturbed version
   * **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
 * *Localisation:*
-  * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**:  checks, if the attribution with the highest score is located within the targeted object.
+  * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**: checks whether attribution with the highest score is located within the targeted object
   * **[Attribution Localization](https://arxiv.org/abs/1910.09840) (Kohlbrenner et al., 2020)**: measures the ratio of positive attributions within the targeted object towards the total positive attributions
   * **[Top-K Intersection](https://arxiv.org/abs/2104.14995) (Theiner et al., 2021)**: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
   * **[Relevance Rank Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
   * **[Relevance Mass Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
-  * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Fawcett et al., 206)**: compares the ranking between attributions and a given ground-truth mask
+  * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Fawcett et al., 2006)**: compares the ranking between attributions and a given ground-truth mask
 * *Complexity:*
   * **[Sparseness](https://arxiv.org/abs/1810.06583) (Chalasani et al., 2020)**: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
   * **[Complexity](https://arxiv.org/abs/2005.00631) (Bhatt et al., 2020)**: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
@@ -203,11 +203,11 @@ df
 As result, the max-Sensitivity scores for Saliency = 0.41 (0.15) and Integrated Gradients = 0.17 (0.05). Lower scores are considered better, which means that in this experimental setting,
 Integrated Gradients can be considered more robust than Saliency explanations. To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
 
-### Other examples
+### Tutorials
 
 More examples are located in the `/tutorials` folder. For example,
 
-* Compare explanation methods on different evaluation criteria (`/tutorials/basic_example_all_metrics.ipynb`)
+* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet••
 * Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
 * Understand how sensitivity of explanations change when a model is learning (`/tutorials/model_training_explanation_robustness.ipynb`)
 <!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
@@ -226,6 +226,10 @@ sensitivity_scorer.get_params
 # To list available metrics.
 quantus.available_metrics
 ````
+
+### Contributing
+
+If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
 
 <!--
 

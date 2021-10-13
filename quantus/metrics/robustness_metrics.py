@@ -49,6 +49,18 @@ class LocalLipschitzEstimate(Metric):
         self.norm_denominator = self.kwargs.get("norm_denominator", distance_euclidean)
         self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.text_warning = (
+            "\nThe Local lipschitz estimate metric is likely to be sensitive to the choice of "
+            "amount of noise added 'perturb_std', the number of samples iterated over 'nr_samples', the function"
+            "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
+            "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
+            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. "
+            "'On the robustness of interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
+            "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability with "
+            "self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -139,8 +151,8 @@ class MaxSensitivity(Metric):
     """
     Implementation of max-sensitivity by Yeh at el., 2019.
 
-    Using Monte Carlo sampling-based approximation while measuing how explanations
-    change under slight perturbation.
+    Using Monte Carlo sampling-based approximation while measuring how explanations
+    change under slight perturbation - the maximum sensitivity is captured.
 
     References:
         1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
@@ -166,6 +178,16 @@ class MaxSensitivity(Metric):
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
+        self.text_warning = (
+            "\nThe max-Sensitivity metric is likely to be sensitive to the choice of "
+            "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
+            "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
+            "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
+            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -257,8 +279,8 @@ class AvgSensitivity(Metric):
     """
     Implementation of avg-sensitivity by Yeh at el., 2019.
 
-    Using Monte Carlo sampling-based approximation while measuing how explanations
-    change under slight perturbation.
+    Using Monte Carlo sampling-based approximation while measuring how explanations
+    change under slight perturbation - the average sensitivity is captured.
 
     References:
         1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
@@ -285,6 +307,16 @@ class AvgSensitivity(Metric):
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
         self.similarity_func = self.kwargs.get("similarity_func", difference)
+        self.text_warning = (
+            "\nThe avg-Sensitivity metric is likely to be sensitive to the choice of "
+            "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
+            "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
+            "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
+            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -383,10 +415,8 @@ class Continuity(Metric):
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
 
-    Current assumptions:
-        - that input dimensions is of equal size
-        - made an quantitative interpretation of visually determining how similar f(x) and R(x1) curves are
-        - using torch for explanation and model
+    Assumptions:
+        In this implementation, we assume that height and width dimensions are equally sized.
     """
 
     @attributes_check
@@ -416,6 +446,16 @@ class Continuity(Metric):
         self.dx = self.img_size // self.nr_steps
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.text_warning = (
+            "\nThe max-Sensitivity metric is likely to be sensitive to the choice of "
+            "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
+            "to perturb the input 'perturb_func' as well as norm "
+            "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
+            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -538,8 +578,9 @@ class Continuity(Metric):
 
     @property
     def aggregated_score(self):
-        """Implements a continuity correlation score (an addition to original method) to evaluate the
-        relationship between change in explanation and change in function output."""
+        """Implements a continuity correlation score (an addition to the original method) to evaluate the
+        relationship between change in explanation and change in function output. It can be seen as an
+        quantitative interpretation of visually determining how similar f(x) and R(x1) curves are."""
         return np.mean(
             [
                 self.similarity_func(

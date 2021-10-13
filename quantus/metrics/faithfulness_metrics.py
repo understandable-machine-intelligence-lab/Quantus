@@ -54,12 +54,14 @@ class FaithfulnessCorrelation(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.text_warning = (
-            "\nThe Faithfulness correlation metric is known to be sensitive to the choice of "
+            "\nThe Faithfulness correlation metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of "
             "runs (for each input and explanation pair) 'nr_runs'. Go over and select each "
-            "hyperparameter of the SelectivityN metric carefully to avoid misinterpretation of "
-            "scores. To view all relevant hyperparameters call .list_hyperparameters method. For "
-            "further reading, please see [CITATION].\n"
+            "hyperparameter of the metric carefully to avoid misinterpretation of "
+            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For "
+            "further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
+            "and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020).\n"
         )
         self.last_results = []
         self.all_results = []
@@ -210,6 +212,15 @@ class FaithfulnessEstimate(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.text_warning = (
+            "\nThe Faithfulness estimate metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline' and similarity function 'similarity_func'. Go over and select each "
+            "hyperparameter of the metric carefully to avoid misinterpretation of "
+            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For "
+            "further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
+            "interpretability with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -327,7 +338,7 @@ class MonotonicityArya(Metric):
     Montonicity tests if adding more positive evidence increases the probability of classification in the specified
     class.
 
-     It captures attributions' faithfulness by incrementally adding each attribute
+    It captures attributions' faithfulness by incrementally adding each attribute
     in order of increasing importance and evaluating the effect on model performance.
     As more features are added, the performance of the model is expected to increase
     and thus result in monotonically increasing model performance.
@@ -357,6 +368,16 @@ class MonotonicityArya(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.text_warning = (
+            "\nThe Monotonicity metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline'. Go over and select each "
+            "hyperparameter of the metric carefully to avoid misinterpretation of "
+            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For "
+            "further reading, please see: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
+            "and taxonomy of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019).\n"
+        )
+
         self.last_results = []
         self.all_results = []
 
@@ -473,8 +494,11 @@ class MonotonicityArya(Metric):
 
 class MonotonicityNguyen(Metric):
     """
-
     Implementation of Montonicity Metric by Nguyen at el., 2020.
+
+    Monotonicity measures the (Spearman’s) correlation coefficient of the absolute values of the attributions
+    and the uncertainty in probability estimation. The paper argues that if attributions are not monotonic
+    then they are not providing the correct importance of the feature.
 
     References:
         1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
@@ -502,6 +526,15 @@ class MonotonicityNguyen(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.text_warning = (
+            "\nThe Monotonicity metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline', threshold value 'eps' and number of samples to iterate over "
+            "'nr_samples'. Go over and select each hyperparameter of the metric carefully to avoid misinterpretation"
+            " of scores. To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For "
+            "further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
+            "interpretability.' arXiv preprint arXiv:2007.07584 (2020).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -638,7 +671,6 @@ class MonotonicityNguyen(Metric):
 
 class PixelFlipping(Metric):
     """
-
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
     The basic idea is to compute a decomposition of a digit for a digit class
@@ -649,9 +681,6 @@ class PixelFlipping(Metric):
     References:
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
-
-    Current assumptions:
-        - Using 8 pixel at a time instead of one single pixel when we use ImageNet.
     """
 
     @attributes_check
@@ -672,6 +701,15 @@ class PixelFlipping(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.text_warning = (
+            "\nThe Pixel-flipping metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline'. Go over and select each hyperparameter of the metric carefully "
+            "to avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For "
+            "further reading, please see: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
+            " classifier decisions by layer - wise relevance propagation. ' PloS one 10.7 (2015): e0130140..\n"
+        )
+
         self.last_results = []
         self.all_results = []
 
@@ -785,15 +823,15 @@ class RegionPerturbation(Metric):
 
     References:
         1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
-         neural network has learned." IEEE transactions on neural networks and
-          learning systems 28.11 (2016): 2660-2673.
+        neural network has learned." IEEE transactions on neural networks and
+        learning systems 28.11 (2016): 2660-2673.
 
     Current assumptions:
         -Done according to Most Relevant First (MoRF) and Area Over the Perturbation Curve
         (AOPC).
         - 9 x 9 patch sizes was used in the paper as regions, but using 8 x 8
         to make sure non-overlapping
-        - they called it "area over the MoRF perturbation curve" but for me it
+        - they called it "area over the MoRF perturbation curve" it
         looks like a simple deduction of function outputs?
 
     """
@@ -818,6 +856,16 @@ class RegionPerturbation(Metric):
         self.random_order = self.kwargs.get("random_order", False)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.img_size = self.kwargs.get("img_size", 224)
+        self.text_warning = (
+            "\nThe Region perturbation metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline', the patch size for masking 'patch_size' and number of regions to"
+            " evaluate 'regions_evaluation'. "
+            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For further reading, please see: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
+            "deep neural network has learned.' IEEE transactions on neural networks and learning "
+            "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140.\n"
+        )
         self.last_results = {}
         self.all_results = []
 
@@ -962,26 +1010,17 @@ class RegionPerturbation(Metric):
 
 class Selectivity(Metric):
     """
-
     Implementation of Selectivity test by Montavan et al., 2018.
 
     At each iteration, a patch of size 4 x 4 corresponding to the region with
     highest relevance is set to black. The plot keeps track of the function value
     as the features are being progressively removed and computes an average over
-     a large number of examples.
+    a large number of examples.
 
     References:
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
-
-    Current assumptions:
-         - In the paper, they showcase a MNIST experiment where
-         4x4 patches with black baseline value. Since we are taking ImageNet as dataset,
-         we take 224/28=8 i.e., 8 times bigger patches to replicate the same analysis
-         * Also, instead of replacing with a black pixel we take the mean of the
-         neighborhood, so not to distort the image distribution completely.
-
     """
 
     @attributes_check
@@ -999,8 +1038,17 @@ class Selectivity(Metric):
             "perturb_func", baseline_replacement_by_patch
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get("patch_size", 32)
+        self.patch_size = self.kwargs.get("patch_size", 8)
         self.img_size = self.kwargs.get("img_size", 224)
+        self.text_warning = (
+            "\nThe Selectivity metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline' and the patch size for masking 'patch_size'. "
+            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For further reading, please see: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
+            "'Methods for interpreting and understanding deep neural networks.' Digital Signal Processing 73 "
+            "(2018): 1-15.\n"
+        )
         self.last_results = {}
         self.all_results = []
 
@@ -1182,6 +1230,15 @@ class SensitivityN(Metric):
             (0.8 * self.img_size * self.img_size) // self.features_in_step
         )
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.text_warning = (
+            "\nThe SensitivityN metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline', the patch size for masking 'patch_size', similarity function "
+            "'similarity_func' and the number of features to iteratively evaluate 'n_max_percentage'. "
+            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For further reading, please see: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+            "attribution methods for deep neural networks.' arXiv preprint arXiv:1711.06104 (2017).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -1349,7 +1406,9 @@ class IROF(Metric):
 
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
-    Description.
+    The metric computes the area over the curve per class for sorted mean importances
+    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
+    averaged over several test samples.
 
     References:
         1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
@@ -1372,6 +1431,14 @@ class IROF(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
+        )
+        self.text_warning = (
+            "\nThe IROF metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline' and the method to segment the image 'segmentation_method'. "
+            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "To view all relevant hyperparameters call .get_params of the metric instance. "
+            "For further reading, please see: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
+            " metric for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)..\n"
         )
         self.last_results = []
         self.all_results = []
