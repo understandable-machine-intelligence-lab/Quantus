@@ -48,19 +48,19 @@ class ModelParameterRandomisation(Metric):
         self.text_warning = (
             "\nThe Model parameter randomisation metric is likely to be sensitive to the choice of "
             "similarity metric 'similarity_func' and the order of layer randomisation 'layer_order'. "
-            "Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Adebayo, J., Gilmer, J., Muelly, M., "
+            "\nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nor further reading, please see: Adebayo, J., Gilmer, J., Muelly, M., "
             "Goodfellow, I., Hardt, M., and Kim, B. 'Sanity Checks for Saliency Maps.' arXiv preprint, "
-            "arXiv:1810.073292v3 (2018).\n"
+            "arXiv:1810.073292v3 (2018)."
         )
         self.last_results = {}
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
         assert_layer_order(layer_order=self.layer_order)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -167,18 +167,18 @@ class RandomLogit(Metric):
         self.text_warning = (
             "\nThe Random Logit metric is likely to be sensitive to the choice of "
             "similarity metric 'similarity_func'."
-            "Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
+            "\nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
             "'When Explanations Lie: Why Many Modified BP Attributions Fail.' arXiv preprint, "
-            "arXiv:1912.09818v6 (2020).\n"
+            "arXiv:1912.09818v6 (2020)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

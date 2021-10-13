@@ -54,21 +54,21 @@ class LocalLipschitzEstimate(Metric):
             "amount of noise added 'perturb_std', the number of samples iterated over 'nr_samples', the function"
             "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
             "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
-            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. "
+            "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. "
             "'On the robustness of interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
             "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability with "
-            "self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018).\n"
+            "self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
-        if self.perturb_std == 0.0:
-            warn_noise_zero(noise=self.perturb_std)
+        # Asserts and warnings.
+        warn_noise_zero(noise=self.perturb_std)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
+
 
     def __call__(
         self,
@@ -183,19 +183,18 @@ class MaxSensitivity(Metric):
             "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
             "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
             "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
-            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
-            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+            "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
-        if self.perturb_radius == 0.0:
-            warn_noise_zero(noise=self.perturb_radius)
+        # Asserts and warnings.
+        warn_noise_zero(noise=self.perturb_radius)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -301,7 +300,7 @@ class AvgSensitivity(Metric):
         self.normalise = self.kwargs.get("normalise", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
-        self.std = self.kwargs.get("perturb_radius", 0.2)
+        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
@@ -312,19 +311,18 @@ class AvgSensitivity(Metric):
             "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
             "to perturb the input 'perturb_func', the similarity metric 'similarity_func' as well as norm "
             "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
-            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
-            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+            "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
-        if self.perturb_radius == 0.0:
-            warn_noise_zero(noise=self.perturb_radius)
+        # Asserts and warnings.
+        warn_noise_zero(noise=self.perturb_radius)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -451,18 +449,18 @@ class Continuity(Metric):
             "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
             "to perturb the input 'perturb_func' as well as norm "
             "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
-            "'norm_denominator'. Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
-            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019).\n"
+            "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

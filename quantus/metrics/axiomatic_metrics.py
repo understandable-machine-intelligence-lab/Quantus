@@ -52,18 +52,18 @@ class Completeness(Metric):
         self.text_warning = (
             "\nThe Completeness metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline' and the function to modify the model response 'output_func'. "
-            "Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Completeness - Sundararajan, Mukund, Ankur Taly, "
+            "\nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Completeness - Sundararajan, Mukund, Ankur Taly, "
             "and Qiqi Yan. 'Axiomatic attribution for deep networks.' International Conference on "
-            "Machine Learning. PMLR, 2017.\n"
+            "Machine Learning. PMLR, 2017."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -179,17 +179,17 @@ class NonSensitivity(Metric):
             "\nThe Non-sensitivity metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', the number of samples to iterate over 'n_samples' and the threshold"
             " value function for the feature to be considered having an insignificant contribution to the model. "
-            "Go over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
-            "metric instance. For further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
-            "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020).\n"
+            "\nGo over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
+            "metric instance. \nFor further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
+            "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
