@@ -29,6 +29,8 @@ class Completeness(Metric):
         3) Conservation - Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting
         and understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
+    Assumptions:
+        This implementation does completeness test against logits, not softmax.
     """
 
     @attributes_check
@@ -46,6 +48,15 @@ class Completeness(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
+        )
+        self.text_warning = (
+            "\nThe Completeness metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline' and the function to modify the model response 'output_func'. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Completeness - Sundararajan, Mukund, Ankur Taly, "
+            "and Qiqi Yan. 'Axiomatic attribution for deep networks.' International Conference on "
+            "Machine Learning. PMLR, 2017.\n"
         )
         self.last_results = []
         self.all_results = []
@@ -164,6 +175,15 @@ class NonSensitivity(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.text_warning = (
+            "\nThe Non-sensitivity metric is likely to be sensitive to the choice of "
+            "baseline value 'perturb_baseline', the number of samples to iterate over 'n_samples' and the threshold"
+            " value function for the feature to be considered having an insignificant contribution to the model. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
+            "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020).\n"
+        )
         self.last_results = []
         self.all_results = []
 
