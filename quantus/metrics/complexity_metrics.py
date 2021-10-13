@@ -22,12 +22,14 @@ class Sparseness(Metric):
     contributions. It is quantified using the Gini Index applied to the
     vector of absolute values.
 
-    # Based on authors' implementation:
-    # https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
-
     References:
-        1) Chalasani, Prasad, et al. "Concise explanations of neural
-        networks using adversarial training." International Conference on Machine Learning. PMLR, 2020.
+        1) Chalasani, Prasad, et al. "Concise explanations of neural networks using adversarial training."
+        International Conference on Machine Learning. PMLR, 2020.
+
+    Assumptions:
+        Based on authors' implementation as found on the following link:
+        https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
+
     """
 
     @attributes_check
@@ -41,6 +43,14 @@ class Sparseness(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Sparseness metric is likely to be sensitive to the choice of normalising 'normalise' (and "
+            "'normalise_func') and if taking absolute values of attributions 'abs'. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Chalasani, Prasad, et al. Concise explanations of "
+            "neural networks using adversarial training.' International Conference on Machine Learning. PMLR, 2020.\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -142,6 +152,14 @@ class Complexity(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Complexity metric is likely to be sensitive to the choice of normalising 'normalise' (and "
+            "'normalise_func') and if taking absolute values of attributions 'abs'. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. "
+            "'Evaluating and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -149,70 +167,69 @@ class Complexity(Metric):
         if self.abs or self.normalise:
             warn_normalise_abs(normalise=self.normalise, abs=self.abs)
 
-
-def __call__(
-    self,
-    model,
-    x_batch: np.array,
-    y_batch: Union[np.array, int],
-    a_batch: Union[np.array, None],
-    *args,
-    **kwargs,
-) -> List[float]:
-
-    # Update kwargs.
-    self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-    self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
-    self.kwargs = {
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
         **kwargs,
-        **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-    }
-    self.last_results = []
+    ) -> List[float]:
 
-    if a_batch is None:
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
 
         # Asserts.
-        explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        # Generate explanations.
-        a_batch = explain_func(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **self.kwargs,
-        )
+        for x, y, a in zip(x_batch, y_batch, a_batch):
 
-    # Asserts.
-    assert_attributions(x_batch=x_batch, a_batch=a_batch)
+            if self.abs:
+                a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print(
+                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
+                    "since it is required by the metric."
+                )
 
-    for x, y, a in zip(x_batch, y_batch, a_batch):
+            if self.normalise:
+                a = self.normalise_func(a)
 
-        if self.abs:
-            a = np.abs(a)
-        else:
-            a = np.abs(a)
-            print(
-                "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                "since it is required by the metric."
+            a = (
+                np.array(
+                    np.reshape(a, (self.img_size * self.img_size,)),
+                    dtype=np.float64,
+                )
+                / np.sum(np.abs(a))
             )
 
-        if self.normalise:
-            a = self.normalise_func(a)
+            self.last_results.append(scipy.stats.entropy(pk=a))
 
-        a = (
-            np.array(
-                np.reshape(a, (self.img_size * self.img_size,)),
-                dtype=np.float64,
-            )
-            / np.sum(np.abs(a))
-        )
+        self.all_results.append(self.last_results)
 
-        self.last_results.append(scipy.stats.entropy(pk=a))
-
-    self.all_results.append(self.last_results)
-
-    return self.last_results
+        return self.last_results
 
 
 class EffectiveComplexity(Metric):
@@ -230,6 +247,13 @@ class EffectiveComplexity(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Effective complexity metric is likely to be sensitive to the choice of threshold 'eps'. "
+            "Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
+            "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020).\n"
+        )
         self.last_results = []
         self.all_results = []
 

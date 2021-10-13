@@ -25,8 +25,8 @@ class PointingGame(Metric):
 
     References:
         1) Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan.
-            "Top-Down Neural Attention by Excitation Backprop."
-            International Journal of Computer Vision (2018) 126:1084-1102.
+           "Top-Down Neural Attention by Excitation Backprop." International Journal of Computer Vision
+           (2018) 126:1084-1102.
 
     """
 
@@ -41,6 +41,16 @@ class PointingGame(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Pointing game metric is likely to be sensitive to the choice of ground truth mask i.e., the 's_batch'"
+            "input on the model call as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
+            "or taking absolute values of such 'abs'. Go over and select "
+            "each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, "
+            "Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by "
+            "Excitation Backprop.' International Journal of Computer Vision (2018) 126:1084-1102.\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -128,8 +138,8 @@ class AttributionLocalisation(Metric):
 
     References:
         1) Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S.
-            "Towards Best Practice in Explaining Neural Network Decisions with LRP."
-            arXiv preprint arXiv:1910.09840v2 (2020).
+           "Towards Best Practice in Explaining Neural Network Decisions with LRP."
+           arXiv preprint arXiv:1910.09840v2 (2020).
 
     """
 
@@ -146,6 +156,16 @@ class AttributionLocalisation(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Attribution localisation metric is likely to be sensitive to the choice of ground truth "
+            "mask i.e., the 's_batch' input on the model call, if size of the ground truth mask is taking into "
+            "account 'weighted' as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
+            "or taking absolute values of such 'abs'. Go over and select each hyperparameter of the metric carefully to"
+            " avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Kohlbrenner M., Bauer A., Nakajima S., Binder A., "
+            "Wojciech S., Lapuschkin S. 'Towards Best Practice in Explaining Neural Network Decisions with LRP.' "
+            "arXiv preprint arXiv:1910.09840v2 (2020).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -261,8 +281,8 @@ class TopKIntersection(Metric):
     overlap between the ground truth object mask and the attribution mask should be maximal.
 
     References:
-        1) Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph.
-        "Interpretable Semantic Photo Geolocalization." arXiv preprint arXiv:2104.14995 (2021).
+        1) Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. "Interpretable Semantic Photo
+        Geolocalization." arXiv preprint arXiv:2104.14995 (2021).
     """
 
     @attributes_check
@@ -278,6 +298,16 @@ class TopKIntersection(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Top-k intersection metric is likely to be sensitive to the choice of ground truth "
+            "mask i.e., the 's_batch' input on the model call, the number of features to consider 'k',"
+            "if size of the ground truth mask is taking into account 'concept_influence' as well as "
+            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
+            "values of such 'abs'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Theiner, Jonas, Müller-Budack Eric, and Ewerth, "
+            "Ralph. 'Interpretable Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -360,9 +390,10 @@ class RelevanceRankAccuracy(Metric):
     Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
 
     The Relevance Rank Accuracy measures the ratio of high intensity relevances within the ground truth mask GT.
-    With P_top-k  being the set of pixels sorted by thery relevance in decreasing order until the k-th pixels,
+    With P_top-k being the set of pixels sorted by there relevance in decreasing order until the k-th pixels,
     the rank accuracy is computed as: rank accuracy = (|P_top-k intersect GT|) / |GT|. High scores are desired,
-    as the pixels with the highest positively attributed scores should be within the bounding box of the targeted object.
+    as the pixels with the highest positively attributed scores should be within the bounding box of the targeted
+    object.
 
     References:
         1) Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "Ground Truth Evaluation of Neural Network Explanations
@@ -380,6 +411,16 @@ class RelevanceRankAccuracy(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Relevance rank accuracy metric is likely to be sensitive to the choice of ground truth "
+            "mask i.e., the 's_batch' input on the model call as well as "
+            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
+            "values of such 'abs'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
+            "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
+            "arXiv preprint, arXiv:2003.07258v2 (2021).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -474,6 +515,16 @@ class RelevanceMassAccuracy(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe Relevance mass accuracy metric is likely to be sensitive to the choice of ground truth "
+            "mask i.e., the 's_batch' input on the model call as well as "
+            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
+            "values of such 'abs'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
+            "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
+            "arXiv preprint, arXiv:2003.07258v2 (2021).\n"
+        )
         self.last_results = []
         self.all_results = []
 
@@ -554,11 +605,12 @@ class RelevanceMassAccuracy(Metric):
 
 class AUC(Metric):
     """
+    Implementation of AUC metric by Fawcett et al., 2006.
 
-    Implementation of AUC metric by X et al., 20XX.
+    AUC is a ranking metric and  compares the ranking between attributions and a given ground-truth mask
 
     References:
-        1)
+        1) Fawcett, Tom. 'An introduction to ROC analysis' "Pattern Recognition Letters" Vol 27, Issue 8, 2006
 
     """
 
@@ -573,6 +625,14 @@ class AUC(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
+        self.text_warning = (
+            "\nThe AUC metric is likely to be sensitive to the choice of ground truth "
+            "mask i.e., the 's_batch' input on the model call as well as if absolute values are taken on the "
+            "attributions 'abs'. Go over and select each hyperparameter of the metric carefully to "
+            "avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the "
+            "metric instance. For further reading, please see: Fawcett, Tom. 'An introduction to ROC analysis' "
+            "Pattern Recognition Letters Vol 27, Issue 8, (2006).\n"
+        )
         self.last_results = []
         self.all_results = []
 
