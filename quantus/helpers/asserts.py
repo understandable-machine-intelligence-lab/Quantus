@@ -24,6 +24,7 @@ def attributes_check(metric):
         ), "The 'text_warning' function must be a string."
     return metric
 
+
 def assert_model_predictions_deviations(
     y_pred: float, y_pred_perturb: float, threshold: float = 0.01
 ):

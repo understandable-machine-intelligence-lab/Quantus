@@ -37,10 +37,10 @@ def evaluate(
     """
 
     if explanation_methods is None:
-        explanation_methods = DEFAULT_XAI_METHODS
+       print("Define the explanation methods that you want to evaluate.")
 
     if evaluation_metrics is None:
-        evaluation_metrics = DEFAULT_METRICS
+        print("Define the Quantus evaluation metrics that you want to evaluate the explanations against.")
 
     results = {}
 

@@ -1,9 +1,7 @@
 """This module implements the base class for creating evaluation measures."""
-import time
 import warnings
 import numpy as np
 from typing import Union, List, Dict, Any
-from termcolor import colored
 import matplotlib.pyplot as plt
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -26,13 +24,16 @@ class Metric:
         self.normalise = self.kwargs.get("normalise", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
-        self.text_warning = f"""\n\nThe [METRIC NAME] metric is known to be sensitive to the choice of baseline value 
+        self.text_warning = f"""\n\nThe [METRIC NAME] metric is likely to be sensitive to the choice of baseline value 
         'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
         pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
-        misinterpretation of scores. \nTo view all relevant hyperparameters call .list_hyperparameters method. \nFor 
+        misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params method. \nFor 
         more reading, please see [INSERT CITATION]."""
         self.last_results = []
         self.all_results = []
+
+        # Print warning at metric initialisation.
+        #self.print_warning(text=self.text_warning)
 
 
     def __call__(
@@ -74,22 +75,6 @@ class Metric:
 
         print(self.__call__.__doc__.split("callable.")[1].split("Parameters")[0])
 
-
-    def print_warning(self, text: str = "") -> None:
-        """
-
-        Parameters
-        ----------
-        text
-
-        Returns
-        -------
-
-        """
-        time.sleep(2)
-        warnings.warn(colored(text=text, color="blue"), category=Warning)
-
-
     @property
     def get_params(self) -> dict:
         """
@@ -109,7 +94,6 @@ class Metric:
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-
     def set_params(self, key: str, value: Any) -> dict:
         """
         Set a parameter of a metric.
@@ -124,7 +108,6 @@ class Metric:
         """
         self.kwargs[key] = value
         return self.kwargs
-
 
     def plot(
         self,
