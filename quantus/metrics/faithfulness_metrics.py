@@ -56,21 +56,19 @@ class FaithfulnessCorrelation(Metric):
         self.text_warning = (
             "\nThe Faithfulness correlation metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of "
-            "runs (for each input and explanation pair) 'nr_runs'. Go over and select each "
+            "runs (for each input and explanation pair) 'nr_runs'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For "
-            "further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
-            "and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020).\n"
+            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
+            "and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -214,19 +212,18 @@ class FaithfulnessEstimate(Metric):
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.text_warning = (
             "\nThe Faithfulness estimate metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline' and similarity function 'similarity_func'. Go over and select each "
+            "baseline value 'perturb_baseline' and similarity function 'similarity_func'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For "
-            "further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
-            "interpretability with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018).\n"
+            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
+            "interpretability with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -238,7 +235,6 @@ class FaithfulnessEstimate(Metric):
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -248,6 +244,7 @@ class FaithfulnessEstimate(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -370,20 +367,19 @@ class MonotonicityArya(Metric):
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.text_warning = (
             "\nThe Monotonicity metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline'. Go over and select each "
+            "baseline value 'perturb_baseline'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For "
-            "further reading, please see: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
-            "and taxonomy of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019).\n"
+            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
+            "and taxonomy of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)."
         )
 
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -395,7 +391,6 @@ class MonotonicityArya(Metric):
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -405,6 +400,7 @@ class MonotonicityArya(Metric):
         *args,
         **kwargs,
     ) -> List[bool]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -529,18 +525,17 @@ class MonotonicityNguyen(Metric):
         self.text_warning = (
             "\nThe Monotonicity metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', threshold value 'eps' and number of samples to iterate over "
-            "'nr_samples'. Go over and select each hyperparameter of the metric carefully to avoid misinterpretation"
-            " of scores. To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For "
-            "further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
-            "interpretability.' arXiv preprint arXiv:2007.07584 (2020).\n"
+            "'nr_samples'. \nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation"
+            " of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
+            "interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -552,8 +547,6 @@ class MonotonicityNguyen(Metric):
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
-    # @set_warn
-
     def __call__(
         self,
         model,
@@ -563,6 +556,7 @@ class MonotonicityNguyen(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -703,19 +697,18 @@ class PixelFlipping(Metric):
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.text_warning = (
             "\nThe Pixel-flipping metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline'. Go over and select each hyperparameter of the metric carefully "
-            "to avoid misinterpretation of scores. To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For "
-            "further reading, please see: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
-            " classifier decisions by layer - wise relevance propagation. ' PloS one 10.7 (2015): e0130140..\n"
+            "baseline value 'perturb_baseline'. \nGo over and select each hyperparameter of the metric carefully "
+            "to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
+            " classifier decisions by layer - wise relevance propagation. ' PloS one 10.7 (2015): e0130140."
         )
 
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -727,7 +720,6 @@ class PixelFlipping(Metric):
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -737,6 +729,7 @@ class PixelFlipping(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -860,21 +853,20 @@ class RegionPerturbation(Metric):
             "\nThe Region perturbation metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', the patch size for masking 'patch_size' and number of regions to"
             " evaluate 'regions_evaluation'. "
-            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For further reading, please see: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
+            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
             "deep neural network has learned.' IEEE transactions on neural networks and learning "
-            "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140.\n"
+            "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140."
         )
         self.last_results = {}
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -884,6 +876,7 @@ class RegionPerturbation(Metric):
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1043,21 +1036,20 @@ class Selectivity(Metric):
         self.text_warning = (
             "\nThe Selectivity metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline' and the patch size for masking 'patch_size'. "
-            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For further reading, please see: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
+            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
             "'Methods for interpreting and understanding deep neural networks.' Digital Signal Processing 73 "
-            "(2018): 1-15.\n"
+            "(2018): 1-15."
         )
         self.last_results = {}
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -1067,6 +1059,7 @@ class Selectivity(Metric):
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1234,17 +1227,17 @@ class SensitivityN(Metric):
             "\nThe SensitivityN metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline', the patch size for masking 'patch_size', similarity function "
             "'similarity_func' and the number of features to iteratively evaluate 'n_max_percentage'. "
-            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For further reading, please see: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
-            "attribution methods for deep neural networks.' arXiv preprint arXiv:1711.06104 (2017).\n"
+            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+            "attribution methods for deep neural networks.' arXiv preprint arXiv:1711.06104 (2017)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1256,7 +1249,6 @@ class SensitivityN(Metric):
                 max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -1281,6 +1273,7 @@ class SensitivityN(Metric):
         -------
 
         """
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1435,19 +1428,18 @@ class IROF(Metric):
         self.text_warning = (
             "\nThe IROF metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline' and the method to segment the image 'segmentation_method'. "
-            "Go over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "To view all relevant hyperparameters call .get_params of the metric instance. "
-            "For further reading, please see: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
-            " metric for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)..\n"
+            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
+            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
+            "\nFor further reading, please see: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
+            " metric for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)."
         )
         self.last_results = []
         self.all_results = []
 
-        # Asserts and checks.
-        if self.abs or self.normalise:
-            warn_normalise_abs(normalise=self.normalise, abs=self.abs)
+        # Asserts and warnings.
+        warn_parameterisation(text=self.text_warning)
+        warn_attributions(normalise=self.normalise, abs=self.abs)
 
-    # @set_warn
     def __call__(
         self,
         model,
@@ -1457,6 +1449,7 @@ class IROF(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
