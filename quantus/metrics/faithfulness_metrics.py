@@ -59,7 +59,7 @@ class FaithfulnessCorrelation(Metric):
             "runs (for each input and explanation pair) 'nr_runs'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
             "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
+            "\nFor further reading: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
             "and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)."
         )
         self.last_results = []
@@ -215,7 +215,7 @@ class FaithfulnessEstimate(Metric):
             "baseline value 'perturb_baseline' and similarity function 'similarity_func'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
             "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
+            "\nFor further reading: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
             "interpretability with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)."
         )
         self.last_results = []
@@ -370,7 +370,7 @@ class MonotonicityArya(Metric):
             "baseline value 'perturb_baseline'. \nGo over and select each "
             "hyperparameter of the metric carefully to avoid misinterpretation of "
             "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
+            "\nFor further reading: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
             "and taxonomy of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)."
         )
 
@@ -527,7 +527,7 @@ class MonotonicityNguyen(Metric):
             "baseline value 'perturb_baseline', threshold value 'eps' and number of samples to iterate over "
             "'nr_samples'. \nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation"
             " of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
+            "\nFor further reading: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
             "interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
         )
         self.last_results = []
@@ -699,7 +699,7 @@ class PixelFlipping(Metric):
             "\nThe Pixel-flipping metric is likely to be sensitive to the choice of "
             "baseline value 'perturb_baseline'. \nGo over and select each hyperparameter of the metric carefully "
             "to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
+            "\nFor further reading: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
             " classifier decisions by layer - wise relevance propagation. ' PloS one 10.7 (2015): e0130140."
         )
 
@@ -855,7 +855,7 @@ class RegionPerturbation(Metric):
             " evaluate 'regions_evaluation'. "
             "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
             "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
+            "\nFor further reading: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
             "deep neural network has learned.' IEEE transactions on neural networks and learning "
             "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140."
         )
@@ -1038,7 +1038,7 @@ class Selectivity(Metric):
             "baseline value 'perturb_baseline' and the patch size for masking 'patch_size'. "
             "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
             "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
+            "\nFor further reading: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
             "'Methods for interpreting and understanding deep neural networks.' Digital Signal Processing 73 "
             "(2018): 1-15."
         )
@@ -1229,7 +1229,7 @@ class SensitivityN(Metric):
             "'similarity_func' and the number of features to iteratively evaluate 'n_max_percentage'. "
             "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
             "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+            "\nFor further reading: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
             "attribution methods for deep neural networks.' arXiv preprint arXiv:1711.06104 (2017)."
         )
         self.last_results = []
@@ -1430,7 +1430,7 @@ class IROF(Metric):
             "baseline value 'perturb_baseline' and the method to segment the image 'segmentation_method'. "
             "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
             "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading, please see: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
+            "\nFor further reading: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
             " metric for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)."
         )
         self.last_results = []

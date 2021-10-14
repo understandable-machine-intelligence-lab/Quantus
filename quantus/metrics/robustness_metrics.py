@@ -56,7 +56,7 @@ class LocalLipschitzEstimate(Metric):
             "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
             "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Alvarez-Melis, David, and Tommi S. Jaakkola. "
+            "metric instance. \nFor further reading: Alvarez-Melis, David, and Tommi S. Jaakkola. "
             "'On the robustness of interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
             "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability with "
             "self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)."
@@ -68,7 +68,6 @@ class LocalLipschitzEstimate(Metric):
         warn_noise_zero(noise=self.perturb_std)
         warn_parameterisation(text=self.text_warning)
         warn_attributions(normalise=self.normalise, abs=self.abs)
-
 
     def __call__(
         self,
@@ -185,7 +184,7 @@ class MaxSensitivity(Metric):
             "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
             "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "metric instance. \nFor further reading: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
             "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []
@@ -313,7 +312,7 @@ class AvgSensitivity(Metric):
             "calculations on the numerator and denominator of the sensitivity equation i.e., 'norm_numerator' and "
             "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "metric instance. \nFor further reading: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
             "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []
@@ -451,7 +450,7 @@ class Continuity(Metric):
             "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
             "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
+            "metric instance. \nFor further reading: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
             "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."
         )
         self.last_results = []

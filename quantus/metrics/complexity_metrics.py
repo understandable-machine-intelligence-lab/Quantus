@@ -48,7 +48,7 @@ class Sparseness(Metric):
             "'normalise_func') and if taking absolute values of attributions 'abs'. "
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Chalasani, Prasad, et al. Concise explanations of "
+            "metric instance. \nFor further reading: Chalasani, Prasad, et al. Concise explanations of "
             "neural networks using adversarial training.' International Conference on Machine Learning. PMLR, 2020."
         )
         self.last_results = []
@@ -57,7 +57,6 @@ class Sparseness(Metric):
         # Asserts and warnings.
         warn_parameterisation(text=self.text_warning)
         warn_attributions(normalise=self.normalise, abs=self.abs)
-
 
     def __call__(
         self,
@@ -158,7 +157,7 @@ class Complexity(Metric):
             "'normalise_func') and if taking absolute values of attributions 'abs'. "
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Bhatt, Umang, Adrian Weller, and José MF Moura. "
+            "metric instance. \nFor further reading: Bhatt, Umang, Adrian Weller, and José MF Moura. "
             "'Evaluating and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)\n"
         )
         self.last_results = []
@@ -252,7 +251,7 @@ class EffectiveComplexity(Metric):
             "\nThe Effective complexity metric is likely to be sensitive to the choice of threshold 'eps'. "
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
+            "metric instance. \nFor further reading: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
             "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
         )
         self.last_results = []
