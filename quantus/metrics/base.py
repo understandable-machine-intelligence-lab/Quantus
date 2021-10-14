@@ -33,8 +33,7 @@ class Metric:
         self.all_results = []
 
         # Print warning at metric initialisation.
-        #self.print_warning(text=self.text_warning)
-
+        # self.print_warning(text=self.text_warning)
 
     def __call__(
         self,
