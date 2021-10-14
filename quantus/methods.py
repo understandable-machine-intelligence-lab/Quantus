@@ -37,10 +37,12 @@ def evaluate(
     """
 
     if explanation_methods is None:
-       print("Define the explanation methods that you want to evaluate.")
+        print("Define the explanation methods that you want to evaluate.")
 
     if evaluation_metrics is None:
-        print("Define the Quantus evaluation metrics that you want to evaluate the explanations against.")
+        print(
+            "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
+        )
 
     results = {}
 

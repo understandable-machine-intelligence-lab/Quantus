@@ -50,7 +50,7 @@ class ModelParameterRandomisation(Metric):
             "similarity metric 'similarity_func' and the order of layer randomisation 'layer_order'. "
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nor further reading, please see: Adebayo, J., Gilmer, J., Muelly, M., "
+            "metric instance. \nor further reading: Adebayo, J., Gilmer, J., Muelly, M., "
             "Goodfellow, I., Hardt, M., and Kim, B. 'Sanity Checks for Saliency Maps.' arXiv preprint, "
             "arXiv:1810.073292v3 (2018)."
         )
@@ -169,7 +169,7 @@ class RandomLogit(Metric):
             "similarity metric 'similarity_func'."
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
+            "metric instance. \nFor further reading: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
             "'When Explanations Lie: Why Many Modified BP Attributions Fail.' arXiv preprint, "
             "arXiv:1912.09818v6 (2020)."
         )
