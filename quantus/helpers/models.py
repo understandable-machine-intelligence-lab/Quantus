@@ -3,6 +3,7 @@ import torch
 
 class LeNet(torch.nn.Module):
     """Network architecture from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch."""
+
     def __init__(self):
         super().__init__()
         self.conv_1 = torch.nn.Conv2d(1, 6, 5)
@@ -25,4 +26,3 @@ class LeNet(torch.nn.Module):
         x = self.relu_4(self.fc_2(x))
         x = self.fc_3(x)
         return x
-

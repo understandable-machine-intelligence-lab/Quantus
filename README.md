@@ -24,7 +24,7 @@ The library contains implementations of the following evaluation metrics:
 * *Faithfulness:*
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output
   * **[Faithfulness Estimate](https://arxiv.org/pdf/1806.07538.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: computes the correlation between probability drops and attribution scores on various points
-  * **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input
+  <!--* **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input-->
   * **[Monotonicity Metric Arya](https://arxiv.org/abs/1909.03012) (Arya et al., 2019)**: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
   * **[Monotonicity Metric Nguyen](https://arxiv.org/pdf/2007.07584.pdf) (Nguyen et al., 2020)**: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
   * **[Pixel Flipping](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140) (Bach et al., 2015)**: captures the impact of perturbing pixels in descending order according to the attributed value on the classification score
@@ -37,7 +37,7 @@ The library contains implementations of the following evaluation metrics:
   * **[Max-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Avg-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: captures the strongest variation in explanation of an input and it's perturbed version
-  * **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly
+  <!--* **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly-->
 * *Localisation:*
   * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**: checks whether attribution with the highest score is located within the targeted object
   * **[Attribution Localization](https://arxiv.org/abs/1910.09840) (Kohlbrenner et al., 2020)**: measures the ratio of positive attributions within the targeted object towards the total positive attributions
@@ -81,9 +81,8 @@ Package requirements.
 ```
 Python >= 3.6.9
 PyTorch >= 1.8
-Captum == 0.4.0
+Captum >= 0.9.0
 ```
-
 
 ## Getting started
 
@@ -155,23 +154,6 @@ scores_saliency = quantus.MaxSensitivity(**{
    "img_size": 28, "normalise": False, "abs": False})
 ```
 
-We also score the Integrated Gradient explanations.
-```python
-scores_intgrad = quantus.MaxSensitivity(**{
-    "nr_samples": 10,
-    "perturb_radius": 0.1,
-    "norm_numerator": quantus.fro_norm,
-    "norm_denominator": quantus.fro_norm,
-    "perturb_func": quantus.uniform_sampling,
-    "similarity_func": quantus.difference,
-})(model=model,
-   x_batch=x_batch,
-   y_batch=y_batch,
-   a_batch=a_batch_intgrad,
-   **{"explain_func": quantus.explain, "method": "IntegratedGradients",
-   "device": device, "img_size": 28, "normalise": False, "abs": False})
-```
-
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
 
 ```python
@@ -200,12 +182,11 @@ df = pd.DataFrame(results)
 df
 ```
 
-As result, the max-Sensitivity scores for Saliency = 0.41 (0.15) and Integrated Gradients = 0.17 (0.05). Lower scores are considered better, which means that in this experimental setting,
-Integrated Gradients can be considered more robust than Saliency explanations. To replicate this example please find notebook under `/tutorials/getting_started.ipynb`.
+When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To get a more comprehensive view, we would use Quantus to verify to what extent this results are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over 'nr_samples'. With Quantus, we would further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation. To replicate this simple example please find a dedicated notebook under `/tutorials/getting_started.ipynb`.
 
 ### Tutorials
 
-More examples are located in the `/tutorials` folder. For example,
+For more examples, please see notebooks in `/tutorials` folder. We have included some preliminary use cases such as:
 
 * [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet••
 * Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
@@ -214,11 +195,11 @@ More examples are located in the `/tutorials` folder. For example,
 
 ... and more.
 
-Other miscellaneous functionality of Quantus library.
+In addition to the `evaluate` method that allows the user to evaluate multiple explanation methods over several metrics at once, there are also other miscellaneous functionality of Quantus library that might be helpful:
 
 ````python
 # Interpret scores.
-sensitivity_scorer.interpret_scores
+metric_instance.interpret_scores
 
 # Understand what hyperparameters to tune.
 sensitivity_scorer.get_params

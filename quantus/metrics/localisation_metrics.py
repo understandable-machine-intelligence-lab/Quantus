@@ -47,7 +47,7 @@ class PointingGame(Metric):
             "or taking absolute values of such 'abs'. \nGo over and select "
             "each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, "
+            "metric instance. \nFor further reading: Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, "
             "Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by "
             "Excitation Backprop.' International Journal of Computer Vision (2018) 126:1084-1102."
         )
@@ -162,7 +162,7 @@ class AttributionLocalisation(Metric):
             "account 'weighted' as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
             "or taking absolute values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to"
             " avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Kohlbrenner M., Bauer A., Nakajima S., Binder A., "
+            "metric instance. \nFor further reading: Kohlbrenner M., Bauer A., Nakajima S., Binder A., "
             "Wojciech S., Lapuschkin S. 'Towards Best Practice in Explaining Neural Network Decisions with LRP.' "
             "arXiv preprint arXiv:1910.09840v2 (2020)."
         )
@@ -305,7 +305,7 @@ class TopKIntersection(Metric):
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Theiner, Jonas, Müller-Budack Eric, and Ewerth, "
+            "metric instance. \nFor further reading: Theiner, Jonas, Müller-Budack Eric, and Ewerth, "
             "Ralph. 'Interpretable Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)."
         )
         self.last_results = []
@@ -417,7 +417,7 @@ class RelevanceRankAccuracy(Metric):
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
+            "metric instance. \nFor further reading: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
             "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
             "arXiv preprint, arXiv:2003.07258v2 (2021)."
         )
@@ -521,7 +521,7 @@ class RelevanceMassAccuracy(Metric):
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
+            "metric instance. \nFor further reading: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
             "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
             "arXiv preprint, arXiv:2003.07258v2 (2021)."
         )
@@ -630,7 +630,7 @@ class AUC(Metric):
             "mask i.e., the 's_batch' input on the model call as well as if absolute values are taken on the "
             "attributions 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading, please see: Fawcett, Tom. 'An introduction to ROC analysis' "
+            "metric instance. \nFor further reading: Fawcett, Tom. 'An introduction to ROC analysis' "
             "Pattern Recognition Letters Vol 27, Issue 8, (2006)."
         )
         self.last_results = []
