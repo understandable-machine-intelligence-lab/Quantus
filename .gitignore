@@ -17,6 +17,7 @@ __pycache__/
 tutorials/progress/
 tutorials/assets/data/
 tutorials/assets/model_objs/
+tests/test_scenarios.md
 
 # dev
 temp/
