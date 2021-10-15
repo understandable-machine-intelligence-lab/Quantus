@@ -214,18 +214,6 @@ quantus.available_metrics
 
 If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
 
-
-## User guidelines
-
-Just 'throwing' some metrics at your XAI explanations and consider the job done, is an approach not very productive.
-Before evaluating your explanations, make sure to:
-
-* Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain
-* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores?
-* Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric
-* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features
-* Ensure that your model is well-trained, a poor behaving model e.g., a non-robust model will have useless explanations
-
 ## Disclaimers
 
 1. Implementation may differ from the original author(s)
@@ -250,8 +238,7 @@ Evaluation will fail if you explain a poorly trained model. If the model is not 
 
 6. Evaluation outcomes can be true to data or true to model
 
-Interpretation of evaluation outcome will differ depending on if we prioritise that attributions are faithful to data or to the model [5, 6]. Imagine if a model is trained to use only one of two highly correlated features. The explanation might then rightly point out that the model was trained so that one feature is important and the other correlated feature is not. But we were to re-train the model, it might now pick the other feature and with the previous attributions. If we recompute explanations, we might now think that the attributions are not stable although according to the dataset they can both exclusively be considered important.
-
+Interpretation of evaluation outcome will differ depending on if we prioritise that attributions are faithful to data or to the model [5, 6]. Imagine if a model is trained to use only one of two highly correlated features. The explanation might then rightly point out that the model was trained so that one feature is important and the other correlated feature is not. But if we were to re-train the model, it might now pick the other feature for which the explanation now tells another story - the other feature is important. We might now believe that the explanation function is not stable as its outcomes are inconsistent with respect to the data, while in fact, for the model the attributions remain faithful.
 
 ### References
 
