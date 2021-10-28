@@ -212,7 +212,7 @@ quantus.available_metrics
 
 ### Contributing
 
-If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
+If you would like to contribute to this project or add your metric to evaluate explainable methods - please open an issue or submit a pull request.
 
 ## Disclaimers
 
