@@ -42,7 +42,7 @@ class FaithfulnessCorrelation(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
@@ -127,8 +127,10 @@ class FaithfulnessCorrelation(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -273,13 +275,15 @@ class FaithfulnessEstimate(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
-            # Get indices of sorted attributions (descending).
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
 
+            # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
 
             # Predict on input.
@@ -429,8 +433,10 @@ class MonotonicityArya(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -600,8 +606,10 @@ class MonotonicityNguyen(Metric):
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
             inv_pred = inv_pred ** 2
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -758,8 +766,10 @@ class PixelFlipping(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -1305,8 +1315,10 @@ class SensitivityN(Metric):
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)

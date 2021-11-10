@@ -444,11 +444,10 @@ class Continuity(Metric):
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.text_warning = (
-            "\nThe max-Sensitivity metric is likely to be sensitive to the choice of "
-            "amount of noise added 'perturb_radius', the number of samples iterated over 'nr_samples', the function"
-            "to perturb the input 'perturb_func' as well as norm "
-            "calculations on the numerator and denominator of the lipschitz equation i.e., 'norm_numerator' and "
-            "'norm_denominator'. \nGo over and select each hyperparameter of the metric carefully to "
+            "\nThe Continuity metric is likely to be sensitive to the choice of "
+            "how many patches to split the input image to 'nr_patches', the number of steps to iterate over 'nr_steps' "
+            "the value to replace the masking with 'perturb_baseline' and in what direction to translate the image "
+            "'perturb_func'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
             "metric instance. \nFor further reading: Yeh, Chih-Kuan, et al. 'On the (in) fidelity and "
             "sensitivity for explanations.' arXiv preprint arXiv:1901.09392 (2019)."

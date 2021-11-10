@@ -98,32 +98,34 @@ class PointingGame(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            # Reshape.
+            a = a.flatten()
+            s = s.reshape(self.img_size, self.img_size).flatten().astype(bool)
+
             if self.abs:
                 a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
 
-            # Reshape segmentation heatmap from 3 channels to 1.
-            s = s.mean(axis=0)
-            s = s.astype(bool)
-
-            # Find index of max value
-            maxindex = np.where(a == np.max(a))
-
-            # Ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+            # Find index of max value.
+            max_index = np.where(a == np.max(a))[0]
 
             # Check if maximum of explanation is on target object class.
-            if len(maxindex[0]) > 1:
-                hit = 0
-                for pixel in maxindex:
-                    hit = hit or s[pixel[0], pixel[1]]
+            if len(max_index) > 1:
+                hit = False
+                for pixel in max_index:
+                    hit = hit or s[pixel]
             else:
-                hit = s[maxindex[0][0], maxindex[1][0]]
+                hit = s[max_index]
 
             self.last_results.append(hit)
 
+            # Ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+
         self.all_results.append(self.last_results)
+
+
 
         return self.last_results
 
@@ -213,15 +215,15 @@ class AttributionLocalisation(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            # Reshape.
+            a = a.flatten()
+            s = s.reshape(self.img_size, self.img_size).flatten().astype(bool)
+
             if self.abs:
                 a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
-
-            # Reshape segmentation heatmap from 3 channels to 1.
-            s = s.mean(axis=0)
-            s = s.astype(bool)
 
             # Asserts on attributions.
             assert not np.all(
@@ -234,33 +236,27 @@ class AttributionLocalisation(Metric):
             # Filter positive attribution values.
             a[a < 0.0] = 0.0
 
+            # Compute ratio.
+            size_bbox = float(np.sum(s))
+            size_data = float(self.img_size * self.img_size)
+            ratio = size_bbox / size_data
+
             # Compute inside/outside ratio.
             inside_attribution = np.sum(a[s])
             total_attribution = np.sum(a)
-
-            size_bbox = float(np.sum(s))
-            size_data = float(np.shape(s)[0] * np.shape(s)[1])
-            ratio = size_bbox / size_data
+            inside_attribution_ratio = float(inside_attribution / total_attribution)
 
             if ratio <= self.max_size:
-                if inside_attribution / total_attribution > 1.0:
+                if inside_attribution_ratio > 1.0:
                     print(
                         "The inside explanation {} greater than total explanation {}".format(
                             inside_attribution, total_attribution
                         )
                     )
-
-                inside_attribution_ratio = inside_attribution / total_attribution
-
                 if not self.weighted:
                     self.last_results.append(inside_attribution_ratio)
-
                 else:
-                    weighted_inside_attribution_ratio = inside_attribution_ratio * (
-                        size_data / size_bbox
-                    )
-
-                    self.last_results.append(weighted_inside_attribution_ratio)
+                    self.last_results.append(float(inside_attribution_ratio * ratio))
 
         if not self.last_results:
             warnings.warn(
@@ -369,14 +365,14 @@ class TopKIntersection(Metric):
             )
 
             s = s.astype(bool)
-            top_k_binary_mask.astype(bool)
+            top_k_binary_mask = top_k_binary_mask.astype(bool)
 
             # Top-k intersection.
             tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
 
             # Concept influence (with size of object normalised tki score).
             if self.concept_influence:
-                tki = (s.shape[1] * s.shape[2]) / np.sum(s) * tki
+                tki = (self.img_size * self.img_size) / np.sum(s) * tki
 
             self.last_results.append(tki)
 
@@ -476,11 +472,12 @@ class RelevanceRankAccuracy(Metric):
 
             s = s.astype(bool)
 
+            # Sort in descending order.
             sorted_indices = np.argsort(a, axis=None)
 
             # Size of the ground truth mask.
             k = np.sum(s)
-            hits = np.take_along_axis(s, sorted_indices[-int(k) :], axis=None)
+            hits = np.take_along_axis(s, sorted_indices[-int(k):], axis=None)
 
             rank_accuracy = np.sum(hits) / float(k)
 
@@ -587,8 +584,8 @@ class RelevanceMassAccuracy(Metric):
             # Filter positive attribution values.
             a[a < 0.0] = 0.0
 
-            s = s.reshape(self.img_size, self.img_size)
-            s = s.astype(bool)
+            # Reshape.
+            s = s.reshape(self.img_size, self.img_size).astype(bool)
 
             # Compute inside/outside ratio.
             r_within = np.sum(a[s])
