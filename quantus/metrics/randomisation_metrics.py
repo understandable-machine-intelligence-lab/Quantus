@@ -50,7 +50,7 @@ class ModelParameterRandomisation(Metric):
             "similarity metric 'similarity_func' and the order of layer randomisation 'layer_order'. "
             "\nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nor further reading: Adebayo, J., Gilmer, J., Muelly, M., "
+            "metric instance. \nFor further reading: Adebayo, J., Gilmer, J., Muelly, M., "
             "Goodfellow, I., Hardt, M., and Kim, B. 'Sanity Checks for Saliency Maps.' arXiv preprint, "
             "arXiv:1810.073292v3 (2018)."
         )
@@ -79,7 +79,7 @@ class ModelParameterRandomisation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = []
+        self.last_results = {}
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
