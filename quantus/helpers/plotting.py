@@ -147,7 +147,7 @@ def plot_superpixel_segments(
     plt.show()
 
 
-def plot_model_parameter_randomization_experiment(
+def plot_model_parameter_randomisation_experiment(
     results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs
 ) -> None:
     """
@@ -173,7 +173,7 @@ def plot_model_parameter_randomization_experiment(
             plt.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
     else:
 
-        layers = list(results[0].keys())
+        layers = list(results.keys())
         scores = {k: [] for k in layers}
         samples = len(results)
         for s in range(samples):
