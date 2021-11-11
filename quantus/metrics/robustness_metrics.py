@@ -15,7 +15,6 @@ from ..helpers.warn_func import *
 
 class LocalLipschitzEstimate(Metric):
     """
-
     Implementation of the Local Lipschitz Estimated (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
     This tests asks how consistent are the explanations for similar/neighboring examples.
@@ -78,6 +77,47 @@ class LocalLipschitzEstimate(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -204,6 +244,46 @@ class MaxSensitivity(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = MaxSensitivity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -332,6 +412,46 @@ class AvgSensitivity(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = AvgSensitivity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -408,9 +528,8 @@ class Continuity(Metric):
     where R(x) is the explanation for input x and x' is the perturbed input.
 
     References:
-        Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
-        "Methods for interpreting and understanding deep neural networks."
-        Digital Signal Processing 73 (2018): 1-15.
+        1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting and
+        understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
     Assumptions:
         In this implementation, we assume that height and width dimensions are equally sized.
@@ -418,15 +537,7 @@ class Continuity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-        """
 
-        Args:
-            *args:
-            **kwargs:
-
-        Returns:
-
-        """
         super().__init__()
 
         self.args = args
@@ -469,6 +580,46 @@ class Continuity(Metric):
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Continuity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -574,9 +725,11 @@ class Continuity(Metric):
 
     @property
     def aggregated_score(self):
-        """Implements a continuity correlation score (an addition to the original method) to evaluate the
+        """
+        Implements a continuity correlation score (an addition to the original method) to evaluate the
         relationship between change in explanation and change in function output. It can be seen as an
-        quantitative interpretation of visually determining how similar f(x) and R(x1) curves are."""
+        quantitative interpretation of visually determining how similar f(x) and R(x1) curves are.
+        """
         return np.mean(
             [
                 self.similarity_func(
@@ -587,9 +740,3 @@ class Continuity(Metric):
                 for sample in self.last_results.keys()
             ]
         )
-
-
-if __name__ == "__main__":
-
-    # Run tests!
-    pass

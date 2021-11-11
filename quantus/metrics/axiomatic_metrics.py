@@ -18,12 +18,13 @@ class Completeness(Metric):
     to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
     Montavon et al., 2018.
 
-    Attribution completeness asks that the total attribution is proportional to
-    the explainable evidence at the output/ or some function of the model output.
+    Attribution completeness asks that the total attribution is proportional to the explainable
+    evidence at the output/ or some function of the model output. Or, that the attributions
+    add up to the difference between the model output F at the input x and the baseline b.
 
     References:
         1) Completeness - Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. "Axiomatic attribution for deep networks."
-         International Conference on Machine Learning. PMLR, 2017.
+        International Conference on Machine Learning. PMLR, 2017.
         2) Summation to delta - Shrikumar, Avanti, Peyton Greenside, and Anshul Kundaje. "Learning important
         features through propagating activation differences." International Conference on Machine Learning. PMLR, 2017.
         3) Conservation - Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting
@@ -74,6 +75,46 @@ class Completeness(Metric):
         *args,
         **kwargs,
     ) -> List[bool]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Completeness(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.kwargs = {
@@ -153,9 +194,17 @@ class NonSensitivity(Metric):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 
+    Non- sensitivity measures measures if zero-importance is only assigned to features, that the model is not
+    functionally dependent on.
+
     References:
         1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
+        2) Ancona, Marco, et al. "Explaining Deep Neural Networks with a Polynomial Time Algorithm for Shapley
+        Values Approximation." arXiv preprint arXiv:1903.10992 (2019).
+        3) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting and
+        understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
+
     """
 
     @attributes_check
@@ -200,6 +249,46 @@ class NonSensitivity(Metric):
         *args,
         **kwargs,
     ) -> List[int]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = NonSensitivity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.kwargs = {
@@ -277,8 +366,3 @@ class NonSensitivity(Metric):
 
         return self.last_results
 
-
-if __name__ == "__main__":
-
-    # Run tests!
-    pass
