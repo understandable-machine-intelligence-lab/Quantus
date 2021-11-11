@@ -54,9 +54,8 @@ The library contains implementations of the following evaluation metrics:
   * **[Random Logit Test](https://arxiv.org/abs/1912.09818) (Sixt et. al., 2020)**: computes for the distance between the original explanation and the explanation for a random other class
 * *Axiomatic:*
   * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and also, Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**: measures whether the total attribution is proportional to the explainable evidence at the model output
-  * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**: measures, if zero-importance is only assigned to features, that the model is not functionally dependent on
+  * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)** (and also, Null Player, Ancona et al., 2019), Dummy (Montavon et al., 2018)): measures if zero-importance is only assigned to features that the model is not functionally dependent on
   <!--* **Symmetry**:-->
-  <!--* **Dummy**:-->
   <!--* **Input Invariance**:-->
 
 Additional metrics will be included in future releases.
@@ -101,7 +100,7 @@ model.load_state_dict(torch.load("tutorials/assets/mnist"))
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-# Load a batch of inputs and outputs to use for evaluation.
+# Load a batch of inputs and outputs to use for XAI evaluation.
 x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 

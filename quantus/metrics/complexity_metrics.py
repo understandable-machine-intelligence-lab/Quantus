@@ -16,11 +16,9 @@ class Sparseness(Metric):
     """
     Implementation of Sparseness metric by Chalasani et al., 2020.
 
-    The sparseness test asks of explanations to have only the features that are
-    truly predictive of the output F(x) should have significant contributions,
-    and irrelevant or weakly-relevant features should have negligible
-    contributions. It is quantified using the Gini Index applied to the
-    vector of absolute values.
+    Sparseness is quantified using the Gini Index applied to the vector of the absolute values of attributions. The
+    test asks that features that are truly predictive of the output F(x) should have significant contributions, and
+    similarly, that irrelevant (or weakly-relevant) features should have negligible contributions.
 
     References:
         1) Chalasani, Prasad, et al. "Concise explanations of neural networks using adversarial training."
@@ -67,6 +65,46 @@ class Sparseness(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Sparseness(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -127,13 +165,10 @@ class Complexity(Metric):
     """
     Implementation of Complexity metric by Bhatt et al., 2020.
 
-    "A complex explanation is one that uses all d features in its explanation of
-    which features of x are important to f. Though this explanation may be
-    faithful to the model (as defined above), it may be too difficult for the user
-    to understand (especially if d is large.
-
-    "Let Pg(i) denote the fractional contribution of feature xi to the total
-    magnitude of the attribution. We define complexity as the entropy of Pg."
+    Complexity of attributions is defined as the entropy of the fractional contribution of feature x_i to the total
+    magnitude of the attribution. A complex explanation is one that uses all features in its explanation to explain
+    some decision. Even though such an explanation may be faithful to the model output, if the number of features is
+    too large it may be too difficult for the user to understand the explanations, rendering it useless.
 
     References:
         1) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
@@ -176,6 +211,46 @@ class Complexity(Metric):
         *args,
         **kwargs,
     ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Complexity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -233,8 +308,16 @@ class Complexity(Metric):
 
 
 class EffectiveComplexity(Metric):
-    """ """
+    """
+    Implementation of Effective complexity metric by Nguyen at el., 2020.
 
+    Effective complexity measures how many attributions in absolute values are exceeding a certain threshold (eps)
+    where a value above the specified threshold implies that the features are important and under indicates it is not.
+
+    References:
+        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        interpretability." arXiv preprint arXiv:2007.07584 (2020).
+    """
     @attributes_check
     def __init__(self, *args, **kwargs):
 
@@ -270,6 +353,46 @@ class EffectiveComplexity(Metric):
         *args,
         **kwargs,
     ) -> List[int]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = EffectiveComplexity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
@@ -317,8 +440,3 @@ class EffectiveComplexity(Metric):
 
         return self.last_results
 
-
-if __name__ == "__main__":
-
-    # Run tests!
-    pass
