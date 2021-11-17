@@ -195,7 +195,7 @@ class AttributionLocalisation(Metric):
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
@@ -297,12 +297,17 @@ class AttributionLocalisation(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
-            # Reshape.
             a = a.flatten()
             s = s.flatten().astype(bool)
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print(
+                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
+                    "since inconsistent results can be expected otherwise."
+                )
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -523,7 +528,7 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
@@ -630,6 +635,12 @@ class RelevanceRankAccuracy(Metric):
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print(
+                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
+                    "since inconsistent results can be expected otherwise."
+                )
 
             if self.normalise:
                 a = self.normalise_func(a)

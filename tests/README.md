@@ -3,5 +3,5 @@
 All tests
 > pytest
 
-A group of tests e.g., localisation
+A group of pytest.mark tests e.g., localisation
 > pytest -m localisation -s
