@@ -53,8 +53,8 @@ The library contains implementations of the following evaluation metrics:
   * **[Model Parameter Randomisation](https://arxiv.org/abs/1810.03292) (Adebayo et al., 2018)**: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
   * **[Random Logit Test](https://arxiv.org/abs/1912.09818) (Sixt et. al., 2020)**: computes for the distance between the original explanation and the explanation for a random other class
 * *Axiomatic:*
-  * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and also, Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**: measures whether the total attribution is proportional to the explainable evidence at the model output
-  * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)** (and also, Null Player, Ancona et al., 2019), Dummy (Montavon et al., 2018)): measures if zero-importance is only assigned to features that the model is not functionally dependent on
+  * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**: measures whether the total attribution is proportional to the explainable evidence at the model output
+  * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020) (and referred to as Null Player, Ancona et al., 2019), Dummy (Montavon et al., 2018))**: measures if zero-importance is only assigned to features that the model is not functionally dependent on
   <!--* **Symmetry**:-->
   <!--* **Input Invariance**:-->
 
