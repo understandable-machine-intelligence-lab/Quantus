@@ -6,7 +6,7 @@ import cv2
 from captum.attr import *
 import warnings
 from .utils import *
-from ..helpers.normalise_func import *
+from .normalise_func import *
 
 
 def explain(
