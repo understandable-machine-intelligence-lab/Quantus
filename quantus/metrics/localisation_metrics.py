@@ -43,7 +43,7 @@ class PointingGame(Metric):
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe Pointing game metric is likely to be sensitive to the choice of ground truth mask i.e., the 's_batch'"
-            "input on the model call as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
+            "input as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
             "or taking absolute values of such 'abs'. \nGo over and select "
             "each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
@@ -195,13 +195,13 @@ class AttributionLocalisation(Metric):
         self.kwargs = kwargs
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe Attribution localisation metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' input on the model call, if size of the ground truth mask is taking into "
+            "mask i.e., the 's_batch', if size of the ground truth mask is taking into "
             "account 'weighted' as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
             "or taking absolute values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to"
             " avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
@@ -297,12 +297,17 @@ class AttributionLocalisation(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
-            # Reshape.
             a = a.flatten()
-            s = s.reshape(self.img_size, self.img_size).flatten().astype(bool)
+            s = s.flatten().astype(bool)
 
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print(
+                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
+                    "since inconsistent results can be expected otherwise."
+                )
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -314,9 +319,6 @@ class AttributionLocalisation(Metric):
             assert np.any(
                 s
             ), "Segmentation mask should have some values in its array that is not zero."
-
-            # Filter positive attribution values.
-            a[a < 0.0] = 0.0
 
             # Compute ratio.
             size_bbox = float(np.sum(s))
@@ -378,7 +380,7 @@ class TopKIntersection(Metric):
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe Top-k intersection metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' input on the model call, the number of features to consider 'k',"
+            "mask i.e., the 's_batch', the number of features to consider 'k',"
             "if size of the ground truth mask is taking into account 'concept_influence' as well as "
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
@@ -526,13 +528,13 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe Relevance rank accuracy metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' input on the model call as well as "
+            "mask i.e., the 's_batch' as well as "
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
@@ -628,22 +630,34 @@ class RelevanceRankAccuracy(Metric):
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
+            a = a.flatten()
+            s = np.where(s.flatten().astype(bool))[0]
+
             if self.abs:
                 a = np.abs(a)
+            else:
+                a = np.abs(a)
+                print(
+                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
+                    "since inconsistent results can be expected otherwise."
+                )
 
             if self.normalise:
                 a = self.normalise_func(a)
 
-            s = s.astype(bool)
+            # Size of the ground truth mask.
+            k = len(s)
 
             # Sort in descending order.
-            sorted_indices = np.argsort(a, axis=None)
+            a_sorted = np.argsort(a)[-int(k):]
 
-            # Size of the ground truth mask.
-            k = np.sum(s)
-            hits = np.take_along_axis(s, sorted_indices[-int(k):], axis=None)
+            # Calculate hits.
+            hits = len(np.intersect1d(s, a_sorted))
 
-            rank_accuracy = np.sum(hits) / float(k)
+            if hits != 0:
+                rank_accuracy = hits / float(k)
+            else:
+                rank_accuracy = 0.0
 
             self.last_results.append(rank_accuracy)
 
@@ -678,7 +692,7 @@ class RelevanceMassAccuracy(Metric):
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe Relevance mass accuracy metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' input on the model call as well as "
+            "mask i.e., the 's_batch' as well as "
             "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
             "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
@@ -769,8 +783,11 @@ class RelevanceMassAccuracy(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+
+            a = a.flatten()
 
             if self.abs:
                 a = np.abs(a)
@@ -786,11 +803,8 @@ class RelevanceMassAccuracy(Metric):
                 s
             ), "Segmentation mask should have some values in its array that is not zero."
 
-            # Filter positive attribution values.
-            a[a < 0.0] = 0.0
-
             # Reshape.
-            s = s.reshape(self.img_size, self.img_size).astype(bool)
+            s = s.flatten().astype(bool)
 
             # Compute inside/outside ratio.
             r_within = np.sum(a[s])
@@ -829,7 +843,7 @@ class AUC(Metric):
         self.default_plot_func = Callable
         self.text_warning = (
             "\nThe AUC metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' input on the model call as well as if absolute values are taken on the "
+            "mask i.e., the 's_batch' as well as if absolute values are taken on the "
             "attributions 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
             "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
             "metric instance. \nFor further reading: Fawcett, Tom. 'An introduction to ROC analysis' "
@@ -919,6 +933,7 @@ class AUC(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
         for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 

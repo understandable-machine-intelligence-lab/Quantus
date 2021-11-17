@@ -134,13 +134,15 @@ class Sparseness(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
+            a = a.flatten()
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
                 print(
-                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                    "since it is required by the metric."
+                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter)"
+                    "since otherwise inconsistent results can be expected."
                 )
 
             if self.normalise:
@@ -422,13 +424,15 @@ class EffectiveComplexity(Metric):
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
+            a = a.flatten()
+
             if self.abs:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
             else:
-                a = np.abs(a.flatten())
+                a = np.abs(a)
                 print(
-                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                    "since it is required by the metric."
+                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter)"
+                    "since otherwise inconsistent results can be expected."
                 )
 
             if self.normalise:
