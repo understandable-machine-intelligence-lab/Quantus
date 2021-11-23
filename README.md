@@ -21,7 +21,7 @@ This project started with the goal of collecting existing evaluation metrics tha
 
 The library contains implementations of the following evaluation metrics:
 
-* *Faithfulness:*
+* **Faithfulness:** quantifies to what extent explanations follow the predictive behaviour of the model (asserting that more important features play a larger role in model outcomes)
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output
   * **[Faithfulness Estimate](https://arxiv.org/pdf/1806.07538.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: computes the correlation between probability drops and attribution scores on various points
   <!--* **[Infidelity](https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf) (Yeh at el., 2019)**: represents the expected mean-squared error between the explanation multiplied by a meaningful input perturbation and the differences between the predictor function at its input and perturbed input-->
@@ -32,27 +32,27 @@ The library contains implementations of the following evaluation metrics:
   * **[Selectivity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
   * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**: computes the corerlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
   * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**: computes the area over the curve per class for sorted mean importances of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected), averaged over several test samples
-* *Robustness:*
+* **Robustness:** measures to what extent explanations are stable when subject to slight perturbations of the input
   * **[Local Lipschitz Estimate](https://arxiv.org/pdf/1806.08049.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: tests the consistency in the explanation between adjacent examples
   * **[Max-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Avg-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: captures the strongest variation in explanation of an input and it's perturbed version
   <!--* **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly-->
-* *Localisation:*
+* **Localisation:** test if the explainable evidence is centered around the object of interest (as defined by a bounding box)
   * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**: checks whether attribution with the highest score is located within the targeted object
   * **[Attribution Localization](https://arxiv.org/abs/1910.09840) (Kohlbrenner et al., 2020)**: measures the ratio of positive attributions within the targeted object towards the total positive attributions
   * **[Top-K Intersection](https://arxiv.org/abs/2104.14995) (Theiner et al., 2021)**: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
   * **[Relevance Rank Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
   * **[Relevance Mass Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
   * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Fawcett et al., 2006)**: compares the ranking between attributions and a given ground-truth mask
-* *Complexity:*
+* **Complexity:** captures to what extent explanations are concise i.e., few features are used to explain a prediction
   * **[Sparseness](https://arxiv.org/abs/1810.06583) (Chalasani et al., 2020)**: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
   * **[Complexity](https://arxiv.org/abs/2005.00631) (Bhatt et al., 2020)**: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
   * **[Effective Complexity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**: measures how many attributions in absolute values are exceeding a certain threshold
-* *Randomisation:*
+* **Randomisation:** tests how explanations deteriorate as model parameters are increasingly randomised
   * **[Model Parameter Randomisation](https://arxiv.org/abs/1810.03292) (Adebayo et al., 2018)**: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
   * **[Random Logit Test](https://arxiv.org/abs/1912.09818) (Sixt et. al., 2020)**: computes for the distance between the original explanation and the explanation for a random other class
-* *Axiomatic:*
+* **Axiomatic:** assess if explanations fulfill certain axiomatic properties
   * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**: measures whether the total attribution is proportional to the explainable evidence at the model output
   * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020) (and referred to as Null Player, Ancona et al., 2019), Dummy (Montavon et al., 2018))**: measures if zero-importance is only assigned to features that the model is not functionally dependent on
   <!--* **Symmetry**:-->
