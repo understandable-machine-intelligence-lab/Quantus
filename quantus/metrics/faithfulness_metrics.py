@@ -1,17 +1,12 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
-from sklearn.metrics import auc
-import numpy as np
 from .base import Metric
-from ..helpers.utils import *
 from ..helpers.asserts import *
 from ..helpers.plotting import *
-from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
-from ..helpers.test_func import *
+from quantus.temp.test_func import *
 from ..helpers.warn_func import *
 
 
