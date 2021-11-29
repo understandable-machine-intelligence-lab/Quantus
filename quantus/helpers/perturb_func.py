@@ -5,6 +5,8 @@ import cv2
 import random
 from .utils import *
 
+#### TODO. Insert how to extend this list.
+### Use img as argument and return an mutated img object
 
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input."""
@@ -39,9 +41,6 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
     assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
-    assert (
-        "nr_channels" in kwargs
-    ), "Specify 'perturb_baseline' (int, float, str) to perturb the image."
     assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
     assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
 
