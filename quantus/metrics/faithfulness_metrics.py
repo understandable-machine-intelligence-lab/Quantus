@@ -6,7 +6,6 @@ from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
-from quantus.temp.test_func import *
 from ..helpers.warn_func import *
 
 
