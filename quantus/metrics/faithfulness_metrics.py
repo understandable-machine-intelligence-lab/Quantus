@@ -700,7 +700,6 @@ class MonotonicityNguyen(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
-
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -1886,5 +1885,3 @@ class IROF(Metric):
     def aggregated_score(self):
         """Calculate the area over the curve (AOC) score for several test samples."""
         return [np.mean(results) for results in self.all_results]
-
-
