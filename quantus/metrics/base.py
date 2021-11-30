@@ -20,9 +20,9 @@ class Metric:
         """
         Initialise the Metric base class.
 
-        Each of the defined metrics in Qunatus, inherits from Metric base class.
+        Each of the defined metrics in Quantus, inherits from Metric base class.
 
-        To add new metric classes to the library, make sure to incorporate the following attributes.
+        To add a new metric classes to the library, the minimum set of attributes that should be included are:
 
             args: a arguments (optional)
             kwargs: a dictionary of key, value pairs (optional)
