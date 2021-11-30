@@ -365,4 +365,3 @@ class NonSensitivity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-

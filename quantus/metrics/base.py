@@ -175,4 +175,3 @@ class Metric:
             plt.savefig(fname=path_to_save, dpi=400)
 
         return None
-

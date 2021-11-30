@@ -166,8 +166,6 @@ class PointingGame(Metric):
 
         self.all_results.append(self.last_results)
 
-
-
         return self.last_results
 
 
@@ -649,7 +647,7 @@ class RelevanceRankAccuracy(Metric):
             k = len(s)
 
             # Sort in descending order.
-            a_sorted = np.argsort(a)[-int(k):]
+            a_sorted = np.argsort(a)[-int(k) :]
 
             # Calculate hits.
             hits = len(np.intersect1d(s, a_sorted))

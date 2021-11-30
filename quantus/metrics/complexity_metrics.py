@@ -320,6 +320,7 @@ class EffectiveComplexity(Metric):
         1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
+
     @attributes_check
     def __init__(self, *args, **kwargs):
 
@@ -443,4 +444,3 @@ class EffectiveComplexity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-
