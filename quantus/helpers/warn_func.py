@@ -1,13 +1,13 @@
 """This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import time
 from termcolor import colored
-
+from .utils import get_name
 
 def warn_attributions(normalise: bool, abs: bool) -> None:
     if not normalise and not abs:
         pass
     else:
-        text = ""
+        text = "\n"
         if normalise:
             text += "Normalising attributions"
             if abs:
@@ -30,9 +30,18 @@ def warn_noise_zero(noise: float) -> None:
         )
 
 
-def warn_parameterisation(text: str):
+def warn_parameterisation(metric_name: str = "Metric",
+                          sensitive_params: str = "X, Y and Z.",
+                          citation: str = "INSERT CITATION"):
     time.sleep(2)
     print("WARNINGS.")
+    text = (
+        f"\nThe {get_name(metric_name)} metric is likely to be sensitive to the choice of "
+        f"{sensitive_params}. \nTo avoid misinterpretation of scores, consider all relevant hyperparameters of "
+        f"the metric (by calling .get_params of the metric instance). \nFor further reading see {citation}."
+    )
     print(
         colored(text=text)
     )  # warnings.warn(colored(text=text, color="blue"), category=Warning)
+
+

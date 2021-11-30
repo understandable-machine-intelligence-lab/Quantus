@@ -41,7 +41,7 @@ class FaithfulnessCorrelation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
@@ -50,20 +50,16 @@ class FaithfulnessCorrelation(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.text_warning = (
-            "\nThe Faithfulness correlation metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', size of subset |S| 'subset_size' and the number of "
-            "runs (for each input and explanation pair) 'nr_runs'. \nGo over and select each "
-            "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating "
-            "and aggregating feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=( "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
+                                                 " and the number of runs (for each input and explanation pair) "
+                                                 "'nr_runs'"),
+                              citation=("Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating "
+                                        "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -219,7 +215,7 @@ class FaithfulnessEstimate(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
@@ -229,19 +225,15 @@ class FaithfulnessEstimate(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.text_warning = (
-            "\nThe Faithfulness estimate metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline' and similarity function 'similarity_func'. \nGo over and select each "
-            "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust "
-            "interpretability with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline' and similarity function "
+                                                "'similarity_func'"),
+                              citation=("Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
+                              " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
@@ -417,7 +409,7 @@ class MonotonicityArya(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -426,20 +418,14 @@ class MonotonicityArya(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.text_warning = (
-            "\nThe Monotonicity metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline'. \nGo over and select each "
-            "hyperparameter of the metric carefully to avoid misinterpretation of "
-            "scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Arya, Vijay, et al. 'One explanation does not fit all: A toolkit "
-            "and taxonomy of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)."
-        )
-
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline'"),
+                              citation=("Arya, Vijay, et al. 'One explanation does not fit all: A toolkit and taxonomy"
+                                        " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
@@ -613,7 +599,7 @@ class MonotonicityNguyen(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get(
@@ -625,19 +611,15 @@ class MonotonicityNguyen(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.text_warning = (
-            "\nThe Monotonicity metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', threshold value 'eps' and number of samples to iterate over "
-            "'nr_samples'. \nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation"
-            " of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of model"
-            "interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=( "baseline value 'perturb_baseline', threshold value 'eps' and number "
+                                                 "of samples to iterate over 'nr_samples'"),
+                              citation=("Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                                        "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
@@ -831,7 +813,7 @@ class PixelFlipping(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_pixel_flipping_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -840,19 +822,15 @@ class PixelFlipping(Metric):
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.text_warning = (
-            "\nThe Pixel-flipping metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline'. \nGo over and select each hyperparameter of the metric carefully "
-            "to avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear"
-            " classifier decisions by layer - wise relevance propagation. ' PloS one 10.7 (2015): e0130140."
-        )
-
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline'"),
+                              citation=("Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                                        " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
+                                        "e0130140."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
@@ -1025,7 +1003,7 @@ class RegionPerturbation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_region_perturbation_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1051,7 +1029,11 @@ class RegionPerturbation(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline'"),
+                              citation=("Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                                        " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
+                                        "e0130140"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -1252,7 +1234,7 @@ class Selectivity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_selectivity_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1260,21 +1242,17 @@ class Selectivity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.img_size = self.kwargs.get("img_size", 224)
-        self.text_warning = (
-            "\nThe Selectivity metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline' and the patch size for masking 'patch_size'. "
-            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "
-            "'Methods for interpreting and understanding deep neural networks.' Digital Signal Processing 73 "
-            "(2018): 1-15."
-        )
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline' and the patch size for masking"
+                                                " 'patch_size'"),
+                              citation=("Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
+                                        "interpreting and understanding deep neural networks.' Digital Signal "
+                                        "Processing 73 (2018): 1-15"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -1475,7 +1453,7 @@ class SensitivityN(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_sensitivity_n_experiment
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -1489,20 +1467,17 @@ class SensitivityN(Metric):
             (0.8 * self.img_size * self.img_size) // self.features_in_step
         )
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.text_warning = (
-            "\nThe SensitivityN metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', the patch size for masking 'patch_size', similarity function "
-            "'similarity_func' and the number of features to iteratively evaluate 'n_max_percentage'. "
-            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Ancona, Marco, et al. 'Towards better understanding of gradient-based "
-            "attribution methods for deep neural networks.' arXiv preprint arXiv:1711.06104 (2017)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline', the patch size for masking "
+                                                "'patch_size', similarity function 'similarity_func' and the number "
+                                                "of features to iteratively evaluate 'n_max_percentage'"),
+                              citation=("Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+                                        "attribution methods for deep neural networks.' arXiv preprint "
+                                        "arXiv:1711.06104 (2017)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
@@ -1710,26 +1685,20 @@ class IROF(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
-        )
-        self.text_warning = (
-            "\nThe IROF metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline' and the method to segment the image 'segmentation_method'. "
-            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation"
-            " metric for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)."
-        )
+        self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline' and the method to segment "
+                                                "the image 'segmentation_method'"),
+                              citation=("Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
+                                        "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
