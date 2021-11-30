@@ -22,18 +22,13 @@ class Metric:
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = f"""\n\nThe [METRIC NAME] metric is likely to be sensitive to the choice of baseline value 
-        'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
-        pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
-        misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params method. \nFor 
-        more reading, please see [INSERT CITATION]."""
         self.last_results = []
         self.all_results = []
 
         # Print warning at metric initialisation.
-        # self.print_warning(text=self.text_warning)
+        #warn_parameterisation(metric_name=self.__class__.__name__, sensitive_params=("X, Y and Z."), citation=("CITATION"))
 
     def __call__(
         self,

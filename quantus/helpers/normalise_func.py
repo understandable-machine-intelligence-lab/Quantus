@@ -9,7 +9,7 @@ def normalise_by_max(a: np.ndarray) -> np.ndarray:
     return a
 
 
-def normalise_if_negative(a: np.ndarray) -> np.ndarray:
+def normalise_by_negative(a: np.ndarray) -> np.ndarray:
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
     if a.min() >= 0.0:
         return a / a.max()

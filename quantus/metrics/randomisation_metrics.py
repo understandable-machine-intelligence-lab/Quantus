@@ -40,26 +40,22 @@ class ModelParameterRandomisation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.normalise = kwargs.get("normalise", True)
-        self.text_warning = (
-            "\nThe Model parameter randomisation metric is likely to be sensitive to the choice of "
-            "similarity metric 'similarity_func' and the order of layer randomisation 'layer_order'. "
-            "\nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Adebayo, J., Gilmer, J., Muelly, M., "
-            "Goodfellow, I., Hardt, M., and Kim, B. 'Sanity Checks for Saliency Maps.' arXiv preprint, "
-            "arXiv:1810.073292v3 (2018)."
-        )
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
         assert_layer_order(layer_order=self.layer_order)
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("similarity metric 'similarity_func' and the order of "
+                                                "the layer randomisation 'layer_order'"),
+                              citation=("Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
+                                        "'Sanity Checks for Saliency Maps.' arXiv preprint,"
+                                        " arXiv:1810.073292v3 (2018)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -201,23 +197,18 @@ class RandomLogit(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
-        self.text_warning = (
-            "\nThe Random Logit metric is likely to be sensitive to the choice of "
-            "similarity metric 'similarity_func'."
-            "\nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "
-            "'When Explanations Lie: Why Many Modified BP Attributions Fail.' arXiv preprint, "
-            "arXiv:1912.09818v6 (2020)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("similarity metric 'similarity_func'"),
+                              citation=("Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. 'When Explanations Lie: "
+                                        "Why Many Modified BP Attributions Fail.' arXiv preprint, "
+                                        "arXiv:1912.09818v6 (2020)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(

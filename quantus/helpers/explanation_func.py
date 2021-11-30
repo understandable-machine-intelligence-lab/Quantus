@@ -179,15 +179,13 @@ def explain(
             explanation = explanation.cpu().numpy()
 
     if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_max)(explanation)
+        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
     if kwargs.get("abs", False):
         explanation = np.abs(explanation)
-
-    if kwargs.get("pos_only", False):
+    elif kwargs.get("pos_only", False):
         explanation[explanation < 0] = 0.0
-
-    if kwargs.get("neg_only", False):
+    elif kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
 
     return explanation
