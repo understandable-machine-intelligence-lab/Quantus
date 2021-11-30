@@ -123,9 +123,6 @@ class Metric:
             "kwargs",
             "all_results",
             "last_results",
-            "img_size",
-            "nr_channels",
-            "text",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
