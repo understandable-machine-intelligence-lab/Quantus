@@ -17,7 +17,23 @@ class Metric:
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-        """Initialize Metric."""
+        """
+        Initialise the Metric base class.
+
+        Each of the defined metrics in Qunatus, inherits from Metric base class.
+
+        To add new metric classes to the library, make sure to incorporate the following attributes.
+
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: Callable that make a normalising transformation of the attributions
+            default_plot_func: Callable that plots the metrics result
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+
+        """
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
@@ -28,7 +44,7 @@ class Metric:
         self.all_results = []
 
         # Print warning at metric initialisation.
-        #warn_parameterisation(metric_name=self.__class__.__name__, sensitive_params=("X, Y and Z."), citation=("CITATION"))
+        #warn_parameterisation()
 
     def __call__(
         self,
