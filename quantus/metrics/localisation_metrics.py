@@ -39,23 +39,19 @@ class PointingGame(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe Pointing game metric is likely to be sensitive to the choice of ground truth mask i.e., the 's_batch'"
-            "input as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
-            "or taking absolute values of such 'abs'. \nGo over and select "
-            "each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, "
-            "Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by "
-            "Excitation Backprop.' International Journal of Computer Vision (2018) 126:1084-1102."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch' input as well as if "
+                                                "the attributions are normalised 'normalise' (and 'normalise_func') "
+                                                "and/ or taking absolute values of such 'abs'"),
+                              citation=("Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, "
+                                        "Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by Excitation "
+                                        "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -166,8 +162,6 @@ class PointingGame(Metric):
 
         self.all_results.append(self.last_results)
 
-
-
         return self.last_results
 
 
@@ -197,24 +191,21 @@ class AttributionLocalisation(Metric):
         self.max_size = self.kwargs.get("max_size", 1.0)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe Attribution localisation metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch', if size of the ground truth mask is taking into "
-            "account 'weighted' as well as if attributions are normalised 'normalise' (and 'normalise_func') and/ "
-            "or taking absolute values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to"
-            " avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Kohlbrenner M., Bauer A., Nakajima S., Binder A., "
-            "Wojciech S., Lapuschkin S. 'Towards Best Practice in Explaining Neural Network Decisions with LRP.' "
-            "arXiv preprint arXiv:1910.09840v2 (2020)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         assert_max_size(max_size=self.max_size)
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch', if size of the ground truth "
+                                                "mask is taking into account 'weighted' as well as if attributions"
+                                                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                                                "the absolute values of such 'abs'"),
+                              citation=("Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S. "
+                                        "'Towards Best Practice in Explaining Neural Network Decisions with LRP."
+                                        "arXiv preprint arXiv:1910.09840v2 (2020)."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -376,23 +367,20 @@ class TopKIntersection(Metric):
         self.concept_influence = self.kwargs.get("concept_influence", False)
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe Top-k intersection metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch', the number of features to consider 'k',"
-            "if size of the ground truth mask is taking into account 'concept_influence' as well as "
-            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
-            "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Theiner, Jonas, Müller-Budack Eric, and Ewerth, "
-            "Ralph. 'Interpretable Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch', the number of features to "
+                                                "consider 'k', if size of the ground truth mask is taking into account"
+                                                " 'concept_influence' as well as if attributions are normalised "
+                                                "'normalise' (and 'normalise_func') and/ or taking absolute values "
+                                                "of such 'abs'"),
+                              citation=("Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. 'Interpretable "
+                                        "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -530,23 +518,19 @@ class RelevanceRankAccuracy(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe Relevance rank accuracy metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' as well as "
-            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
-            "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
-            "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
-            "arXiv preprint, arXiv:2003.07258v2 (2021)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch' as well as if the attributions"
+                                                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                                                "absolute values of such 'abs'"),
+                              citation=("Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
+                                        "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
+                                        "arXiv:2003.07258v2 (2021)."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -649,7 +633,7 @@ class RelevanceRankAccuracy(Metric):
             k = len(s)
 
             # Sort in descending order.
-            a_sorted = np.argsort(a)[-int(k):]
+            a_sorted = np.argsort(a)[-int(k) :]
 
             # Calculate hits.
             hits = len(np.intersect1d(s, a_sorted))
@@ -688,23 +672,19 @@ class RelevanceMassAccuracy(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe Relevance mass accuracy metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' as well as "
-            "if attributions are normalised 'normalise' (and 'normalise_func') and/ or taking absolute "
-            "values of such 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "
-            "'Ground Truth Evaluation of Neural Network Explanations with CLEVR-XAI.' "
-            "arXiv preprint, arXiv:2003.07258v2 (2021)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch' as well as if the attributions"
+                                                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                                                "absolute values of such 'abs'"),
+                              citation=("Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
+                                        "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
+                                        "arXiv:2003.07258v2 (2021)."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -839,21 +819,17 @@ class AUC(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = (
-            "\nThe AUC metric is likely to be sensitive to the choice of ground truth "
-            "mask i.e., the 's_batch' as well as if absolute values are taken on the "
-            "attributions 'abs'. \nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Fawcett, Tom. 'An introduction to ROC analysis' "
-            "Pattern Recognition Letters Vol 27, Issue 8, (2006)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("ground truth mask i.e., the 's_batch' input as well as if "
+                                                "absolute values 'abs' are taken of the attributions "),
+                              citation=("Fawcett, Tom. 'An introduction to ROC analysis' Pattern Recognition Letters"
+                                        " Vol 27, Issue 8, (2006)"))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(

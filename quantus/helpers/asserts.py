@@ -117,16 +117,22 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "should share the same dimensions."
         "{} != {}".format(np.shape(x_batch)[-1], np.shape(a_batch)[-1])
     )
-    assert not np.all((a_batch == 0)), "The elements in the attribution vector are all equal to zero, " \
-                                       "which may cause inconsistent results since many metrics rely on ordering. " \
-                                       "Recompute the explanations."
-    assert not np.all((a_batch == 1.0)), "The elements in the attribution vector are all equal to one, " \
-                                         "which may cause inconsistent results since many metrics rely on ordering. " \
-                                         "Recompute the explanations."
-    assert (len(set(a_batch.flatten().tolist())) > 1), "The attributions are uniformly distributed, " \
-                                                       "which may cause inconsistent results since many " \
-                                                       "metrics rely on ordering." \
-                                                       "Recompute the explanations."
+    assert not np.all((a_batch == 0)), (
+        "The elements in the attribution vector are all equal to zero, "
+        "which may cause inconsistent results since many metrics rely on ordering. "
+        "Recompute the explanations."
+    )
+    assert not np.all((a_batch == 1.0)), (
+        "The elements in the attribution vector are all equal to one, "
+        "which may cause inconsistent results since many metrics rely on ordering. "
+        "Recompute the explanations."
+    )
+    assert len(set(a_batch.flatten().tolist())) > 1, (
+        "The attributions are uniformly distributed, "
+        "which may cause inconsistent results since many "
+        "metrics rely on ordering."
+        "Recompute the explanations."
+    )
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:

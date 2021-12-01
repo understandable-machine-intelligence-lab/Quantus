@@ -43,27 +43,22 @@ class Completeness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.text_warning = (
-            "\nThe Completeness metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline' and the function to modify the model response 'output_func'. "
-            "\nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Completeness - Sundararajan, Mukund, Ankur Taly, "
-            "and Qiqi Yan. 'Axiomatic attribution for deep networks.' International Conference on "
-            "Machine Learning. PMLR, 2017."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline' and the function to modify the "
+                                                "model response 'output_func'"),
+                              citation=("Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
+                                        "deep networks.' International Conference on Machine Learning. PMLR, (2017)."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -218,26 +213,22 @@ class NonSensitivity(Metric):
         self.n_samples = self.kwargs.get("n_samples", 100)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.text_warning = (
-            "\nThe Non-sensitivity metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', the number of samples to iterate over 'n_samples' and the threshold"
-            " value function for the feature to be considered having an insignificant contribution to the model. "
-            "\nGo over and select each hyperparameter of the metric carefully to "
-            "avoid misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params of the "
-            "metric instance. \nFor further reading: Nguyen, An-phi, and María Rodríguez Martínez. 'On "
-            "quantitative aspects of model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
-        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(text=self.text_warning)
+        warn_parameterisation(metric_name=self.__class__.__name__,
+                              sensitive_params=("baseline value 'perturb_baseline', the number of samples to iterate"
+                                                " over 'n_samples' and the threshold value function for the feature"
+                                                " to be considered having an insignificant contribution to the model"),
+                              citation=("Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                                        "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."))
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -365,4 +356,3 @@ class NonSensitivity(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
-

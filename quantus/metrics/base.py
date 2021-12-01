@@ -17,23 +17,34 @@ class Metric:
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-        """Initialize Metric."""
+        """
+        Initialise the Metric base class.
+
+        Each of the defined metrics in Quantus, inherits from Metric base class.
+
+        To add a new metric classes to the library, the minimum set of attributes that should be included are:
+
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: Callable that make a normalising transformation of the attributions
+            default_plot_func: Callable that plots the metrics result
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+
+        """
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_max)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
-        self.text_warning = f"""\n\nThe [METRIC NAME] metric is likely to be sensitive to the choice of baseline value 
-        'perturb_baseline', size of subset |S| 'subset_size' and the number of runs (for each input and explanation 
-        pair) 'nr_runs'. \nGo over and select each hyperparameter of the [METRIC NAME] metric carefully to avoid 
-        misinterpretation of scores. \nTo view all relevant hyperparameters call .get_params method. \nFor 
-        more reading, please see [INSERT CITATION]."""
         self.last_results = []
         self.all_results = []
 
         # Print warning at metric initialisation.
-        # self.print_warning(text=self.text_warning)
+        #warn_parameterisation()
 
     def __call__(
         self,
@@ -112,9 +123,6 @@ class Metric:
             "kwargs",
             "all_results",
             "last_results",
-            "img_size",
-            "nr_channels",
-            "text",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
@@ -175,4 +183,3 @@ class Metric:
             plt.savefig(fname=path_to_save, dpi=400)
 
         return None
-
