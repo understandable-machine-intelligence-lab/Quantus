@@ -1,4 +1,5 @@
 """This module contains the utils functions of the library."""
+import re
 import torch
 import random
 from typing import Union, Optional, List, Callable
@@ -101,6 +102,10 @@ def get_baseline_dict(img: Union[torch.Tensor, None], **kwargs) -> dict:
         )
     return fill_dict
 
+
+def get_name(str: str):
+    """Get the name of the class object"""
+    return ' '.join(re.sub(r"([A-Z])", r" \1", str).split())
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
     """Remove patch sizes that are not compatible with input size."""

@@ -8,6 +8,7 @@ from .utils import *
 #### TODO. Insert how to extend this list.
 ### Use img as argument and return an mutated img object
 
+
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."

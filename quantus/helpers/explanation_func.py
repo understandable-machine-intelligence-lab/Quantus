@@ -161,10 +161,10 @@ def explain(
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                perturb_baseline=kwargs["constant_value"], x=inputs[i]
+                choice=kwargs["constant_value"], img=inputs[i]
             )
             explanation[i] = torch.Tensor().new_full(
-                size=explanation.shape, fill_value=constant_value
+                size=explanation[0].shape, fill_value=constant_value
             )
 
     else:
@@ -174,19 +174,18 @@ def explain(
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
-            return explanation.cpu().detach().numpy()
-        return explanation.cpu().numpy()
+            explanation = explanation.cpu().detach().numpy()
+        else:
+            explanation = explanation.cpu().numpy()
+
+    if kwargs.get("normalise", False):
+        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
     if kwargs.get("abs", False):
-        explanation = explanation.abs()
-
-    if kwargs.get("pos_only", False):
+        explanation = np.abs(explanation)
+    elif kwargs.get("pos_only", False):
         explanation[explanation < 0] = 0.0
-
-    if kwargs.get("neg_only", False):
+    elif kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
-
-    if kwargs.get("normalize", True):
-        explanation = kwargs.get("normalize_func", normalize_by_max)(explanation)
 
     return explanation
