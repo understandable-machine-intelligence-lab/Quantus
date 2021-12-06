@@ -39,18 +39,26 @@ class Sparseness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("normalising 'normalise' (and 'normalise_func') and if taking absolute"
-                                                " values of attributions 'abs'"),
-                              citation=("Chalasani, Prasad, et al. Concise explanations of neural networks using "
-                                        "adversarial training.' International Conference on Machine Learning. PMLR, "
-                                        "(2020)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "normalising 'normalise' (and 'normalise_func') and if taking absolute"
+                " values of attributions 'abs'"
+            ),
+            citation=(
+                "Chalasani, Prasad, et al. Concise explanations of neural networks using "
+                "adversarial training.' International Conference on Machine Learning. PMLR, "
+                "(2020)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -108,7 +116,11 @@ class Sparseness(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = []
 
@@ -146,12 +158,17 @@ class Sparseness(Metric):
                 a = self.normalise_func(a)
 
             a = np.array(
-                np.reshape(a, (self.img_size * self.img_size,)), dtype=np.float64
+                np.reshape(a, (self.img_size * self.img_size,)),
+                dtype=np.float64,
             )
             a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
-                (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a))
+                (
+                    np.sum(
+                        (2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a
+                    )
+                )
                 / (a.shape[0] * np.sum(a))
             )
 
@@ -184,17 +201,25 @@ class Complexity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("normalising 'normalise' (and 'normalise_func') and if taking absolute"
-                                                " values of attributions 'abs'"),
-                              citation=("Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating"
-                                        " feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "normalising 'normalise' (and 'normalise_func') and if taking absolute"
+                " values of attributions 'abs'"
+            ),
+            citation=(
+                "Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating"
+                " feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -252,7 +277,11 @@ class Complexity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = []
 
@@ -324,17 +353,25 @@ class EffectiveComplexity(Metric):
         self.eps = self.kwargs.get("eps", 1e-5)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("normalising 'normalise' (and 'normalise_func') and if taking absolute"
-                                                " values of attributions 'abs' and the choice of threshold 'eps'"),
-                              citation=("Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
-                                        "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "normalising 'normalise' (and 'normalise_func') and if taking absolute"
+                " values of attributions 'abs' and the choice of threshold 'eps'"
+            ),
+            citation=(
+                "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -392,7 +429,11 @@ class EffectiveComplexity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = []
 
@@ -429,7 +470,9 @@ class EffectiveComplexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
+            self.last_results.append(
+                int(np.sum(a > self.eps))
+            )  # int operation?
 
         self.all_results.append(self.last_results)
 
