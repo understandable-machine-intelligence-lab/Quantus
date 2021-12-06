@@ -40,30 +40,45 @@ class LocalLipschitzEstimate(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
+        self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
-        self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
-        self.norm_denominator = self.kwargs.get("norm_denominator", distance_euclidean)
+        self.norm_numerator = self.kwargs.get(
+            "norm_numerator", distance_euclidean
+        )
+        self.norm_denominator = self.kwargs.get(
+            "norm_denominator", distance_euclidean
+        )
         self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
-        self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", lipschitz_constant
+        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         warn_noise_zero(noise=self.perturb_std)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("amount of noise added 'perturb_std', the number of samples iterated "
-                                                "over 'nr_samples', the function to perturb the input 'perturb_func',"
-                                                " the similarity metric 'similarity_func' as well as norm "
-                                                "calculations on the numerator and denominator of the lipschitz "
-                                                "equation i.e., 'norm_numerator' and 'norm_denominator'"),
-                              citation=("Alvarez-Melis, David, and Tommi S. Jaakkola. 'On the robustness of "
-                                        "interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
-                                        "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
-                                        " with self-explaining neural networks.' arXiv preprint "
-                                        "arXiv:1806.07538 (2018)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "amount of noise added 'perturb_std', the number of samples iterated "
+                "over 'nr_samples', the function to perturb the input 'perturb_func',"
+                " the similarity metric 'similarity_func' as well as norm "
+                "calculations on the numerator and denominator of the lipschitz "
+                "equation i.e., 'norm_numerator' and 'norm_denominator'"
+            ),
+            citation=(
+                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'On the robustness of "
+                "interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
+                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
+                " with self-explaining neural networks.' arXiv preprint "
+                "arXiv:1806.07538 (2018)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -121,7 +136,11 @@ class LocalLipschitzEstimate(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -206,7 +225,9 @@ class MaxSensitivity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
@@ -220,14 +241,20 @@ class MaxSensitivity(Metric):
 
         # Asserts and warnings.
         warn_noise_zero(noise=self.perturb_radius)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("amount of noise added 'perturb_radius', the number of samples "
-                                                "iterated over 'nr_samples', the function to perturb the input "
-                                                "'perturb_func', the similarity metric 'similarity_func' as well as "
-                                                "norm calculations on the numerator and denominator of the sensitivity"
-                                                " equation i.e., 'norm_numerator' and 'norm_denominator'"),
-                              citation=("Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
-                                        ".' arXiv preprint arXiv:1901.09392 (2019)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "amount of noise added 'perturb_radius', the number of samples "
+                "iterated over 'nr_samples', the function to perturb the input "
+                "'perturb_func', the similarity metric 'similarity_func' as well as "
+                "norm calculations on the numerator and denominator of the sensitivity"
+                " equation i.e., 'norm_numerator' and 'norm_denominator'"
+            ),
+            citation=(
+                "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
+                ".' arXiv preprint arXiv:1901.09392 (2019)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -285,7 +312,11 @@ class MaxSensitivity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -372,7 +403,9 @@ class AvgSensitivity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
@@ -385,14 +418,20 @@ class AvgSensitivity(Metric):
 
         # Asserts and warnings.
         warn_noise_zero(noise=self.perturb_radius)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("amount of noise added 'perturb_radius', the number of samples "
-                                                "iterated over 'nr_samples', the function to perturb the input "
-                                                "'perturb_func', the similarity metric 'similarity_func' as well as "
-                                                "norm calculations on the numerator and denominator of the sensitivity"
-                                                " equation i.e., 'norm_numerator' and 'norm_denominator'"),
-                              citation=("Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
-                                        ".' arXiv preprint arXiv:1901.09392 (2019)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "amount of noise added 'perturb_radius', the number of samples "
+                "iterated over 'nr_samples', the function to perturb the input "
+                "'perturb_func', the similarity metric 'similarity_func' as well as "
+                "norm calculations on the numerator and denominator of the sensitivity"
+                " equation i.e., 'norm_numerator' and 'norm_denominator'"
+            ),
+            citation=(
+                "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
+                ".' arXiv preprint arXiv:1901.09392 (2019)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -450,7 +489,11 @@ class AvgSensitivity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -536,7 +579,9 @@ class Continuity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.img_size = self.kwargs.get("img_size", 224)
         self.nr_patches = self.kwargs.get("nr_patches", 4)
@@ -544,21 +589,31 @@ class Continuity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.dx = self.img_size // self.nr_steps
-        self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
-        self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", translation_x_direction
+        )
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", lipschitz_constant
+        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("how many patches to split the input image to 'nr_patches', "
-                                                "the number of steps to iterate over 'nr_steps', the value to replace"
-                                                " the masking with 'perturb_baseline' and in what direction to "
-                                                "translate the image 'perturb_func'"),
-                              citation=("Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
-                                        "interpreting and understanding deep neural networks.' Digital Signal "
-                                        "Processing 73, 1-15 (2018"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "how many patches to split the input image to 'nr_patches', "
+                "the number of steps to iterate over 'nr_steps', the value to replace"
+                " the masking with 'perturb_baseline' and in what direction to "
+                "translate the image 'perturb_func'"
+            ),
+            citation=(
+                "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
+                "interpreting and understanding deep neural networks.' Digital Signal "
+                "Processing 73, 1-15 (2018"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -616,7 +671,11 @@ class Continuity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = {k: None for k in range(len(x_batch))}
 
@@ -676,7 +735,9 @@ class Continuity(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x_perturbed)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .reshape(
+                            1, self.nr_channels, self.img_size, self.img_size
+                        )
                         .to(kwargs.get("device", None))
                     )[:, y]
                 )
@@ -695,7 +756,9 @@ class Continuity(Metric):
                             top_left_y : top_left_y + self.patch_size,
                         ]
                         if self.abs:
-                            a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
+                            a_perturbed_patch = np.abs(
+                                a_perturbed_patch.flatten()
+                            )
 
                         if self.normalise:
                             a_perturbed_patch = self.normalise_func(

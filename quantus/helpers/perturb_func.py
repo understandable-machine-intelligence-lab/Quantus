@@ -21,14 +21,16 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
     """Add gaussian noise to the input."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     return img + np.random.normal(
-        kwargs.get("mean", 0.0), kwargs.get("perturb_std", 0.01), size=img.size
+        kwargs.get("perturb_mean", 0.0), kwargs.get("perturb_std", 0.01), size=img.size
     )
 
 
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    assert "index" in kwargs, "Specify 'index' to enable perturbation function to run."
+    assert (
+        "index" in kwargs
+    ), "Specify 'index' to enable perturbation function to run."
     if "fixed_values" in kwargs:
         choice = kwargs["fixed_values"]
     elif "perturb_baseline" in kwargs:
@@ -40,10 +42,18 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
 def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     """Replace a single patch in an image by given baseline."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
-    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
-    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
-    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
+    assert (
+        "patch_size" in kwargs
+    ), "Specify 'patch_size' (int) to perturb the image."
+    assert (
+        "nr_channels" in kwargs
+    ), "Specify 'nr_channels' (int) to perturb the image."
+    assert (
+        "top_left_y" in kwargs
+    ), "Specify 'top_left_y' (int) to perturb the image."
+    assert (
+        "top_left_x" in kwargs
+    ), "Specify 'top_left_x' (int) to perturb the image."
 
     # Preset patch for 'mean' and 'neighbourhood' choices.
     kwargs["patch"] = img[
@@ -57,7 +67,9 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
         :,
         kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
         kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ] = get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs)
+    ] = get_baseline_value(
+        choice=kwargs["perturb_baseline"], img=img, **kwargs
+    )
 
     return img
 
@@ -77,7 +89,10 @@ def rotation(img: np.array, **kwargs) -> np.array:
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = cv2.getRotationMatrix2D(
-        center=(kwargs.get("img_size", 224) / 2, kwargs.get("img_size", 224) / 2),
+        center=(
+            kwargs.get("img_size", 224) / 2,
+            kwargs.get("img_size", 224) / 2,
+        ),
         angle=kwargs.get("perturb_angle", 10),
         scale=1,
     )

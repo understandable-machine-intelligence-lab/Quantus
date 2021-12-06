@@ -41,12 +41,16 @@ class FaithfulnessCorrelation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", correlation_pearson
+        )
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -54,12 +58,18 @@ class FaithfulnessCorrelation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=( "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
-                                                 " and the number of runs (for each input and explanation pair) "
-                                                 "'nr_runs'"),
-                              citation=("Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating "
-                                        "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
+                " and the number of runs (for each input and explanation pair) "
+                "'nr_runs'"
+            ),
+            citation=(
+                "Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating "
+                "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -117,7 +127,11 @@ class FaithfulnessCorrelation(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -153,7 +167,9 @@ class FaithfulnessCorrelation(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .reshape(
+                            1, self.nr_channels, self.img_size, self.img_size
+                        )
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -165,10 +181,15 @@ class FaithfulnessCorrelation(Metric):
             for i_ix in range(self.nr_runs):
 
                 # Randomly mask by subset size.
-                a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
+                a_ix = np.random.choice(
+                    a.shape[0], self.subset_size, replace=False
+                )
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
-                    **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                    **{
+                        "index": a_ix,
+                        "perturb_baseline": self.perturb_baseline,
+                    },
                 )
 
                 # Predict on perturbed input x.
@@ -176,7 +197,12 @@ class FaithfulnessCorrelation(Metric):
                     y_pred_perturb = float(
                         model(
                             torch.Tensor(x_perturbed)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )[:, y]
                     )
@@ -186,7 +212,9 @@ class FaithfulnessCorrelation(Metric):
                 # Sum attributions of the random subset.
                 att_sums.append(np.sum(a[a_ix]))
 
-            self.last_results.append(self.similarity_func(a=att_sums, b=logit_deltas))
+            self.last_results.append(
+                self.similarity_func(a=att_sums, b=logit_deltas)
+            )
 
         self.last_results = [np.mean(self.last_results)]
         self.all_results.append(self.last_results)
@@ -215,10 +243,14 @@ class FaithfulnessEstimate(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", correlation_pearson
+        )
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -229,21 +261,29 @@ class FaithfulnessEstimate(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline' and similarity function "
-                                                "'similarity_func'"),
-                              citation=("Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
-                              " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline' and similarity function "
+                "'similarity_func'"
+            ),
+            citation=(
+                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
+                " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
 
     def __call__(
@@ -301,7 +341,11 @@ class FaithfulnessEstimate(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -340,7 +384,9 @@ class FaithfulnessEstimate(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .reshape(
+                            1, self.nr_channels, self.img_size, self.img_size
+                        )
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -358,14 +404,22 @@ class FaithfulnessEstimate(Metric):
                 ]
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
-                    **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                    **{
+                        "index": a_ix,
+                        "perturb_baseline": self.perturb_baseline,
+                    },
                 )
                 # Predict on perturbed input x.
                 with torch.no_grad():
                     y_pred_perturb = float(
                         model(
                             torch.Tensor(x_perturbed)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )[:, y]
                     )
@@ -374,7 +428,9 @@ class FaithfulnessEstimate(Metric):
                 # Sum attributions.
                 att_sums.append(a[a_ix].sum())
 
-            self.last_results.append(self.similarity_func(a=att_sums, b=pred_deltas))
+            self.last_results.append(
+                self.similarity_func(a=att_sums, b=pred_deltas)
+            )
 
         self.all_results.append(self.last_results)
 
@@ -409,7 +465,9 @@ class MonotonicityArya(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -422,20 +480,26 @@ class MonotonicityArya(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline'"),
-                              citation=("Arya, Vijay, et al. 'One explanation does not fit all: A toolkit and taxonomy"
-                                        " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=("baseline value 'perturb_baseline'"),
+            citation=(
+                "Arya, Vijay, et al. 'One explanation does not fit all: A toolkit and taxonomy"
+                " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
 
     def __call__(
@@ -493,7 +557,11 @@ class MonotonicityArya(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -561,7 +629,10 @@ class MonotonicityArya(Metric):
                             model(
                                 torch.Tensor(x_baseline)
                                 .reshape(
-                                    1, self.nr_channels, self.img_size, self.img_size
+                                    1,
+                                    self.nr_channels,
+                                    self.img_size,
+                                    self.img_size,
                                 )
                                 .to(self.kwargs.get("device", None))
                             )
@@ -599,9 +670,13 @@ class MonotonicityNguyen(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", correlation_spearman
+        )
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -615,21 +690,29 @@ class MonotonicityNguyen(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=( "baseline value 'perturb_baseline', threshold value 'eps' and number "
-                                                 "of samples to iterate over 'nr_samples'"),
-                              citation=("Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
-                                        "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline', threshold value 'eps' and number "
+                "of samples to iterate over 'nr_samples'"
+            ),
+            citation=(
+                "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
 
     def __call__(
@@ -687,7 +770,11 @@ class MonotonicityNguyen(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -716,13 +803,20 @@ class MonotonicityNguyen(Metric):
                     torch.nn.Softmax()(
                         model(
                             torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )
                     )[:, y]
                 )
 
-            inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
+            inv_pred = (
+                1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
+            )
             inv_pred = inv_pred ** 2
 
             a = a.flatten()
@@ -754,7 +848,10 @@ class MonotonicityNguyen(Metric):
 
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
-                        **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "index": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                        },
                     )
 
                     # Predict on perturbed input x.
@@ -777,7 +874,9 @@ class MonotonicityNguyen(Metric):
 
                 vars.append(
                     float(
-                        np.mean((np.array(y_pred_perturb) - np.array(y_pred)) ** 2)
+                        np.mean(
+                            (np.array(y_pred_perturb) - np.array(y_pred)) ** 2
+                        )
                         * inv_pred
                     )
                 )
@@ -813,7 +912,9 @@ class PixelFlipping(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = plot_pixel_flipping_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -826,21 +927,27 @@ class PixelFlipping(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline'"),
-                              citation=("Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                                        " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                                        "e0130140."))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=("baseline value 'perturb_baseline'"),
+            citation=(
+                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
+                "e0130140."
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
 
     def __call__(
@@ -898,7 +1005,11 @@ class PixelFlipping(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -945,7 +1056,10 @@ class PixelFlipping(Metric):
                 ]
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
-                    **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                    **{
+                        "index": a_ix,
+                        "perturb_baseline": self.perturb_baseline,
+                    },
                 )
                 # Predict on perturbed input x.
                 with torch.no_grad():
@@ -954,7 +1068,10 @@ class PixelFlipping(Metric):
                             model(
                                 torch.Tensor(x_perturbed)
                                 .reshape(
-                                    1, self.nr_channels, self.img_size, self.img_size
+                                    1,
+                                    self.nr_channels,
+                                    self.img_size,
+                                    self.img_size,
                                 )
                                 .to(self.kwargs.get("device", None))
                             )
@@ -1003,7 +1120,9 @@ class RegionPerturbation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = plot_region_perturbation_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1029,11 +1148,15 @@ class RegionPerturbation(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline'"),
-                              citation=("Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                                        " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
-                                        "e0130140"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=("baseline value 'perturb_baseline'"),
+            citation=(
+                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
+                "e0130140"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -1091,7 +1214,11 @@ class RegionPerturbation(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = {k: None for k in range(len(x_batch))}
 
@@ -1120,7 +1247,12 @@ class RegionPerturbation(Metric):
                     model(
                         torch.nn.Softmax()(
                             torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )
                     )[:, y]
@@ -1137,12 +1269,19 @@ class RegionPerturbation(Metric):
             x_perturbed = x.copy()
 
             att_sums = np.zeros(
-                (int(a.shape[0] / self.patch_size), int(a.shape[1] / self.patch_size))
+                (
+                    int(a.shape[0] / self.patch_size),
+                    int(a.shape[1] / self.patch_size),
+                )
             )
 
             # Get patch indices of sorted attributions (descending).
-            for i_x, top_left_x in enumerate(range(0, x.shape[1], self.patch_size)):
-                for i_y, top_left_y in enumerate(range(0, x.shape[2], self.patch_size)):
+            for i_x, top_left_x in enumerate(
+                range(0, x.shape[1], self.patch_size)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(0, x.shape[2], self.patch_size)
+                ):
                     # Sum attributions for patch.
                     att_sums[i_x][i_y] = a[
                         top_left_x : top_left_x + self.patch_size,
@@ -1154,14 +1293,18 @@ class RegionPerturbation(Metric):
 
                 # Order attributions according to the most relevant first.
                 patch_order = {
-                    k: v for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
+                    k: v
+                    for k, v in zip(
+                        np.argsort(att_sums, axis=None)[::-1], patches
+                    )
                 }
 
             else:
 
                 # Order attributions according to the least relevant first.
                 patch_order = {
-                    k: v for k, v in zip(np.argsort(att_sums, axis=None), patches)
+                    k: v
+                    for k, v in zip(np.argsort(att_sums, axis=None), patches)
                 }
 
             # Increasingly perturb the input and store the decrease in function value.
@@ -1194,7 +1337,10 @@ class RegionPerturbation(Metric):
                             model(
                                 torch.Tensor(x_perturbed)
                                 .reshape(
-                                    1, self.nr_channels, self.img_size, self.img_size
+                                    1,
+                                    self.nr_channels,
+                                    self.img_size,
+                                    self.img_size,
                                 )
                                 .to(self.kwargs.get("device", None))
                             )
@@ -1234,7 +1380,9 @@ class Selectivity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = plot_selectivity_experiment
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
@@ -1247,12 +1395,18 @@ class Selectivity(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline' and the patch size for masking"
-                                                " 'patch_size'"),
-                              citation=("Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
-                                        "interpreting and understanding deep neural networks.' Digital Signal "
-                                        "Processing 73 (2018): 1-15"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline' and the patch size for masking"
+                " 'patch_size'"
+            ),
+            citation=(
+                "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
+                "interpreting and understanding deep neural networks.' Digital Signal "
+                "Processing 73 (2018): 1-15"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -1310,7 +1464,11 @@ class Selectivity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_results = {k: None for k in range(len(x_batch))}
 
@@ -1339,7 +1497,12 @@ class Selectivity(Metric):
                     model(
                         torch.nn.Softmax()(
                             torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )
                     )[:, y]
@@ -1356,7 +1519,10 @@ class Selectivity(Metric):
             x_perturbed = x.copy()
 
             att_sums = np.zeros(
-                (int(a.shape[0] / self.patch_size), int(a.shape[1] / self.patch_size))
+                (
+                    int(a.shape[0] / self.patch_size),
+                    int(a.shape[1] / self.patch_size),
+                )
             )
 
             # DEBUG.
@@ -1364,8 +1530,12 @@ class Selectivity(Metric):
             # plt.show()
 
             # Get patch indices of sorted attributions (descending).
-            for i_x, top_left_x in enumerate(range(0, x.shape[1], self.patch_size)):
-                for i_y, top_left_y in enumerate(range(0, x.shape[2], self.patch_size)):
+            for i_x, top_left_x in enumerate(
+                range(0, x.shape[1], self.patch_size)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(0, x.shape[2], self.patch_size)
+                ):
 
                     # Sum attributions for patch.
                     att_sums[i_x][i_y] = a[
@@ -1375,7 +1545,8 @@ class Selectivity(Metric):
                     patches.append([top_left_y, top_left_x])
 
             patch_order = {
-                k: v for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
+                k: v
+                for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
             }
 
             # Increasingly perturb the input and store the decrease in function value.
@@ -1401,7 +1572,10 @@ class Selectivity(Metric):
                             model(
                                 torch.Tensor(x_perturbed)
                                 .reshape(
-                                    1, self.nr_channels, self.img_size, self.img_size
+                                    1,
+                                    self.nr_channels,
+                                    self.img_size,
+                                    self.img_size,
                                 )
                                 .to(self.kwargs.get("device", None))
                             )
@@ -1453,9 +1627,13 @@ class SensitivityN(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = plot_sensitivity_n_experiment
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", correlation_pearson
+        )
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
@@ -1471,23 +1649,31 @@ class SensitivityN(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline', the patch size for masking "
-                                                "'patch_size', similarity function 'similarity_func' and the number "
-                                                "of features to iteratively evaluate 'n_max_percentage'"),
-                              citation=("Ancona, Marco, et al. 'Towards better understanding of gradient-based "
-                                        "attribution methods for deep neural networks.' arXiv preprint "
-                                        "arXiv:1711.06104 (2017)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline', the patch size for masking "
+                "'patch_size', similarity function 'similarity_func' and the number "
+                "of features to iteratively evaluate 'n_max_percentage'"
+            ),
+            citation=(
+                "Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+                "attribution methods for deep neural networks.' arXiv preprint "
+                "arXiv:1711.06104 (2017)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+                max_steps_per_input=self.max_steps_per_input,
+                img_size=self.img_size,
             )
 
     def __call__(
@@ -1545,7 +1731,11 @@ class SensitivityN(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -1588,7 +1778,12 @@ class SensitivityN(Metric):
                     torch.nn.Softmax()(
                         model(
                             torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )
                     )[:, y]
@@ -1610,7 +1805,10 @@ class SensitivityN(Metric):
                     ]
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
-                        **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "index": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                        },
                     )
 
                     # DEBUG.
@@ -1662,7 +1860,7 @@ class SensitivityN(Metric):
         return self.last_result
 
 
-class IROF(Metric):
+class IterativeRemovalOfFeatures(Metric):
     """
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
@@ -1685,20 +1883,32 @@ class IROF(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
-        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
+        self.segmentation_method = self.kwargs.get(
+            "segmentation_method", "slic"
+        )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
-        self.perturb_func = self.kwargs.get("perturb_func", baseline_replacement_by_indices)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline' and the method to segment "
-                                                "the image 'segmentation_method'"),
-                              citation=("Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
-                                        "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline' and the method to segment "
+                "the image 'segmentation_method'"
+            ),
+            citation=(
+                "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
+                "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -1756,7 +1966,11 @@ class IROF(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.last_result = []
 
@@ -1791,7 +2005,12 @@ class IROF(Metric):
                     torch.nn.Softmax()(
                         model(
                             torch.Tensor(x)
-                            .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                            .reshape(
+                                1,
+                                self.nr_channels,
+                                self.img_size,
+                                self.img_size,
+                            )
                             .to(self.kwargs.get("device", None))
                         )
                     )[:, y]
@@ -1818,11 +2037,16 @@ class IROF(Metric):
             for i_ix, s_ix in enumerate(s_indices):
 
                 # Perturb input by indices of attributions.
-                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), 3))[0]
+                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), 3))[
+                    0
+                ]
 
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
-                    **{"index": a_ix, "perturb_baseline": self.perturb_baseline},
+                    **{
+                        "index": a_ix,
+                        "perturb_baseline": self.perturb_baseline,
+                    },
                 )
                 # Predict on perturbed input x.
                 with torch.no_grad():
@@ -1831,7 +2055,10 @@ class IROF(Metric):
                             model(
                                 torch.Tensor(x_perturbed)
                                 .reshape(
-                                    1, self.nr_channels, self.img_size, self.img_size
+                                    1,
+                                    self.nr_channels,
+                                    self.img_size,
+                                    self.img_size,
                                 )
                                 .to(self.kwargs.get("device", None))
                             )
