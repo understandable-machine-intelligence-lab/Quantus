@@ -13,7 +13,9 @@ def attributes_check(metric):
             attr["similarity_func"]
         ), "The 'similarity_func' must be a callable."
     if "explain_func" in attr:
-        assert callable(attr["explain_func"]), "The 'explain_func' must be a callable."
+        assert callable(
+            attr["explain_func"]
+        ), "The 'explain_func' must be a callable."
     if "normalize_func" in attr:
         assert callable(
             attr["normalize_func"]
@@ -156,7 +158,10 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), ("The " "segmentation 's_batch' should not only contain [1‚0] or [True, False].")
+    ), (
+        "The "
+        "segmentation 's_batch' should not only contain [1‚0] or [True, False]."
+    )
 
 
 def assert_max_size(max_size: float) -> None:

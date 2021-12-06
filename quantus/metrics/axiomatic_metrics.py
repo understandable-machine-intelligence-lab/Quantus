@@ -43,7 +43,9 @@ class Completeness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -54,11 +56,17 @@ class Completeness(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline' and the function to modify the "
-                                                "model response 'output_func'"),
-                              citation=("Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
-                                        "deep networks.' International Conference on Machine Learning. PMLR, (2017)."))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline' and the function to modify the "
+                "model response 'output_func'"
+            ),
+            citation=(
+                "Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
+                "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -114,7 +122,11 @@ class Completeness(Metric):
         # Update kwargs.
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -159,7 +171,9 @@ class Completeness(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .reshape(
+                            1, self.nr_channels, self.img_size, self.img_size
+                        )
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -169,7 +183,9 @@ class Completeness(Metric):
                 y_pred_baseline = float(
                     model(
                         torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
+                        .reshape(
+                            1, self.nr_channels, self.img_size, self.img_size
+                        )
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -213,7 +229,9 @@ class NonSensitivity(Metric):
         self.n_samples = self.kwargs.get("n_samples", 100)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -223,12 +241,18 @@ class NonSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(metric_name=self.__class__.__name__,
-                              sensitive_params=("baseline value 'perturb_baseline', the number of samples to iterate"
-                                                " over 'n_samples' and the threshold value function for the feature"
-                                                " to be considered having an insignificant contribution to the model"),
-                              citation=("Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
-                                        "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."))
+        warn_parameterisation(
+            metric_name=self.__class__.__name__,
+            sensitive_params=(
+                "baseline value 'perturb_baseline', the number of samples to iterate"
+                " over 'n_samples' and the threshold value function for the feature"
+                " to be considered having an insignificant contribution to the model"
+            ),
+            citation=(
+                "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
+            ),
+        )
         warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
@@ -284,7 +308,11 @@ class NonSensitivity(Metric):
         # Update kwargs.
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -325,7 +353,10 @@ class NonSensitivity(Metric):
 
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
-                        **{"index": a_i, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "index": a_i,
+                            "perturb_baseline": self.perturb_baseline,
+                        },
                     )
 
                     # Predict on perturbed input x.
@@ -348,7 +379,9 @@ class NonSensitivity(Metric):
 
                     vars.append(np.var(preds))
 
-            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
+            non_features_vars = set(
+                list(np.argwhere(vars).flatten() < self.eps)
+            )
             self.last_results.append(
                 len(non_features_vars.symmetric_difference(non_features))
             )
