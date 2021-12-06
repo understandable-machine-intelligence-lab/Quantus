@@ -39,5 +39,7 @@ def denormalise(
     elif isinstance(img, np.ndarray):
         return (img * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
     else:
-        print("Make image either a np.array or torch.Tensor before denormalising.")
+        print(
+            "Make image either a np.array or torch.Tensor before denormalising."
+        )
         return img

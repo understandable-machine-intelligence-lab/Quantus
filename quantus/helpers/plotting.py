@@ -137,7 +137,9 @@ def plot_superpixel_segments(
     fig = plt.figure(figsize=(6, 6))
     plt.imshow(
         mark_boundaries(
-            np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
+            np.reshape(
+                img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))
+            ),
             segments,
             mode="subpixel",
         )
@@ -148,7 +150,10 @@ def plot_superpixel_segments(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs
+    results: Union[List[float], Dict[str, List[float]]],
+    methods=None,
+    *args,
+    **kwargs,
 ) -> None:
     """
     Plot the model parameter randomization experiment as done in paper:
@@ -170,7 +175,9 @@ def plot_model_parameter_randomisation_experiment(
                     for layer in layers:
                         scores[layer].append(results[method][s][layer])
 
-            plt.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
+            plt.plot(
+                layers, [np.mean(v) for k, v in scores.items()], label=method
+            )
     else:
 
         layers = list(results.keys())

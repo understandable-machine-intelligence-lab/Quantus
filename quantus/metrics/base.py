@@ -38,13 +38,15 @@ class Metric:
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.normalise_func = self.kwargs.get(
+            "normalise_func", normalise_by_negative
+        )
         self.default_plot_func = Callable
         self.last_results = []
         self.all_results = []
 
         # Print warning at metric initialisation.
-        #warn_parameterisation()
+        # warn_parameterisation()
 
     def __call__(
         self,
@@ -124,7 +126,9 @@ class Metric:
             "all_results",
             "last_results",
         ]
-        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+        return {
+            k: v for k, v in self.__dict__.items() if k not in attr_exclude
+        }
 
     def set_params(self, key: str, value: Any) -> dict:
         """

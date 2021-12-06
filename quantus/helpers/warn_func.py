@@ -3,6 +3,7 @@ import time
 from termcolor import colored
 from .utils import get_name
 
+
 def warn_attributions(normalise: bool, abs: bool) -> None:
     if not normalise and not abs:
         pass
@@ -30,9 +31,11 @@ def warn_noise_zero(noise: float) -> None:
         )
 
 
-def warn_parameterisation(metric_name: str = "Metric",
-                          sensitive_params: str = "X, Y and Z.",
-                          citation: str = "INSERT CITATION"):
+def warn_parameterisation(
+    metric_name: str = "Metric",
+    sensitive_params: str = "X, Y and Z.",
+    citation: str = "INSERT CITATION",
+):
     time.sleep(2)
     print("WARNINGS.")
     text = (
@@ -43,5 +46,3 @@ def warn_parameterisation(metric_name: str = "Metric",
     print(
         colored(text=text)
     )  # warnings.warn(colored(text=text, color="blue"), category=Warning)
-
-

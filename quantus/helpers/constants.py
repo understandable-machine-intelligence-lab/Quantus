@@ -12,7 +12,7 @@ AVAILABLE_METRICS = {
         "Monotonicity Nguyen": MonotonicityNguyen,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
-        "IROF": IROF,
+        "IROF": IterativeRemovalOfFeatures,
     },
     "Robustness": {
         "Continuity Test": Continuity,
