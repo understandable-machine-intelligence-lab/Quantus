@@ -54,6 +54,9 @@ class FaithfulnessCorrelation(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.return_aggregate = self.kwargs.get(
+            "return_aggregate", True
+        )
         self.last_results = []
         self.all_results = []
 
@@ -216,7 +219,11 @@ class FaithfulnessCorrelation(Metric):
                 self.similarity_func(a=att_sums, b=logit_deltas)
             )
 
-        self.last_results = [np.mean(self.last_results)]
+        if self.return_aggregate:
+            self.last_results = [np.mean(self.last_results)]
+        else:
+            self.last_results = self.last_results
+
         self.all_results.append(self.last_results)
 
         return self.last_results
