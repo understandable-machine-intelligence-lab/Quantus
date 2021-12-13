@@ -48,7 +48,6 @@ class ModelParameterRandomisation(Metric):
             "similarity_func", correlation_spearman
         )
         self.layer_order = kwargs.get("layer_order", "independent")
-        self.normalise = kwargs.get("normalise", True)
         self.last_results = {}
         self.all_results = []
 
