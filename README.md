@@ -222,7 +222,11 @@ sensitivity_scorer.get_params
 # To list available metrics.
 quantus.available_metrics
 ````
+With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
+        
+```disable_warnings = True```
 
+in the params of the metric initalisation.
 
 ## Disclaimers
 
