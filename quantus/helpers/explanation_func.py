@@ -1,9 +1,4 @@
-"""
-This module
-
-def explanation_func -> np.ndarray:
-    return ...
-"""
+"""This modules contains explainer functions which can be used in conjunction with the metrics in the library."""
 from typing import Union
 import torch
 import scipy
