@@ -54,7 +54,7 @@ class ModelParameterRandomisation(Metric):
 
         # Asserts and warnings.
         assert_layer_order(layer_order=self.layer_order)
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
             metric_name=self.__class__.__name__,
             sensitive_params=(
@@ -222,7 +222,7 @@ class RandomLogit(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("similarity metric 'similarity_func'"),

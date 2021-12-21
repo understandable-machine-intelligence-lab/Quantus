@@ -62,7 +62,7 @@ class LocalLipschitzEstimate(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -243,7 +243,7 @@ class MaxSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -422,7 +422,7 @@ class AvgSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -606,7 +606,7 @@ class Continuity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(

@@ -62,7 +62,7 @@ class FaithfulnessCorrelation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -192,7 +192,7 @@ class FaithfulnessCorrelation(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "index": a_ix,
+                        "indices": a_ix,
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
@@ -271,7 +271,7 @@ class FaithfulnessEstimate(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -416,7 +416,7 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "index": a_ix,
+                        "indices": a_ix,
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
@@ -492,7 +492,7 @@ class MonotonicityArya(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
@@ -632,7 +632,7 @@ class MonotonicityArya(Metric):
                 ]
                 x_baseline = self.perturb_func(
                     img=x_baseline,
-                    **{"index": a_ix, "fixed_values": x.flatten()[a_ix]},
+                    **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -704,7 +704,7 @@ class MonotonicityNguyen(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -864,7 +864,7 @@ class MonotonicityNguyen(Metric):
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
-                            "index": a_ix,
+                            "indices": a_ix,
                             "perturb_baseline": self.perturb_baseline,
                         },
                     )
@@ -942,7 +942,7 @@ class PixelFlipping(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
@@ -1073,7 +1073,7 @@ class PixelFlipping(Metric):
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
                     **{
-                        "index": a_ix,
+                        "indices": a_ix,
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
@@ -1164,7 +1164,7 @@ class RegionPerturbation(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
@@ -1412,7 +1412,7 @@ class Selectivity(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -1667,7 +1667,7 @@ class SensitivityN(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -1825,7 +1825,7 @@ class SensitivityN(Metric):
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
                         **{
-                            "index": a_ix,
+                            "indices": a_ix,
                             "perturb_baseline": self.perturb_baseline,
                         },
                     )
@@ -1918,7 +1918,7 @@ class IterativeRemovalOfFeatures(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -2065,7 +2065,7 @@ class IterativeRemovalOfFeatures(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "index": a_ix,
+                        "indices": a_ix,
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )

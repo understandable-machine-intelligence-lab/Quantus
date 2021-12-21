@@ -198,11 +198,12 @@ def explain(
         explanation = kwargs.get("normalise_func", normalise_by_negative)(
             explanation
         )
-
     if kwargs.get("abs", False):
         explanation = np.abs(explanation)
+
     elif kwargs.get("pos_only", False):
         explanation[explanation < 0] = 0.0
+
     elif kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
 
