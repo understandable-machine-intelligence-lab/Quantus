@@ -151,20 +151,28 @@ To quantitatively evaluate the explanation we can use apply Quantus. As a starte
 1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
 ```python
-# Return max sensitivity scores in an one-liner - by calling the metric instance.
-scores_saliency = quantus.MaxSensitivity(**{
+# Define params for evaluation.
+params_eval = {
     "nr_samples": 10,
     "perturb_radius": 0.1,
     "norm_numerator": quantus.fro_norm,
     "norm_denominator": quantus.fro_norm,
     "perturb_func": quantus.uniform_sampling,
     "similarity_func": quantus.difference,
-})(model=model,
-   x_batch=x_batch,
-   y_batch=y_batch,
-   a_batch=a_batch_saliency,
-   **{"explain_func": quantus.explain, "method": "Saliency", "device": device,
-   "img_size": 28, "normalise": False, "abs": False})
+    "disable_warnings": True,
+}
+
+# Return max sensitivity scores in an one-liner - by calling the metric instance.
+scores_saliency = quantus.MaxSensitivity(**params_eval)(model=model,
+                                                        x_batch=x_batch,
+                                                        y_batch=y_batch,
+                                                        a_batch=a_batch_saliency,
+                                                        **{"explain_func": quantus.explain, 
+                                                           "method": "Saliency", 
+                                                           "device": device,
+                                                           "img_size": 28, 
+                                                           "normalise": False, 
+                                                           "abs": False})
 ```
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
@@ -172,12 +180,7 @@ scores_saliency = quantus.MaxSensitivity(**{
 ```python
 import numpy as np
 
-metrics = {"max-Sensitivity": quantus.MaxSensitivity(**{"nr_samples": 10,
-                                                        "perturb_radius": 0.1,
-                                                        "norm_numerator": quantus.fro_norm,
-                                                        "norm_denominator": quantus.fro_norm,
-                                                        "perturb_func": quantus.uniform_sampling,
-                                                        "similarity_func": quantus.difference})}
+metrics = {"max-Sensitivity": quantus.MaxSensitivity(**params_eval)}
 
 xai_methods = {"Saliency": a_batch_saliency,
                "IntegratedGradients": a_batch_intgrad}
@@ -210,7 +213,34 @@ For more use cases, please see notebooks in `/tutorials` folder which includes e
 
 ... and more.
 
-In addition to the `evaluate` method that allows the user to evaluate multiple explanation methods over several metrics at once, there are also other miscellaneous functionality built-into Quantus that might be helpful:
+
+## Misc functionality
+
+With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one. 
+If you are replacing a function within the Quantus framework, make sure that your new function:
+- returns the same datatype (e.g., np.ndarray or float) and,
+- employs the same arguments (e.g., img=x, a=a)
+as the function you’re intending to replace.
+
+Details on what datatypes and arguments that should be used for the different functions can be found in the respective function typing in`quantus/helpers`. For example, if you want to replace `similar_func` in your evaluation, you can do as follows.
+
+````python
+import scipy
+import numpy as np
+
+def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+    """Calculate Spearman rank of two images (or explanations)."""
+    return scipy.stats.spearmanr(a, b)[0]
+
+def my_similar_func(a: np.array, b: np.array, **kwargs) -> float:
+    """Calculate the similarity of a and b by subtraction."""
+    return a - b
+
+# Simply initalise the metric with your own function.
+metric = LocalLipschitzEstimate(similar_func=my_similar_func)
+````
+
+Besides the `evaluate` method in Quantus that allows the user to evaluate multiple explanation methods over several metrics at once, there are also other miscellaneous functionality built-into Quantus that might be helpful:
 
 ````python
 # Interpret scores.
@@ -221,8 +251,14 @@ sensitivity_scorer.get_params
 
 # To list available metrics.
 quantus.available_metrics
-````
 
+...
+````
+With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
+        
+```disable_warnings = True```
+
+in the params of the metric initalisation.
 
 ## Disclaimers
 

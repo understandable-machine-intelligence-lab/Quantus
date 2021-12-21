@@ -1,7 +1,9 @@
 ### How to run tests
 
-All tests
-> pytest
+Run all tests at once.
 
-A group of pytest.mark tests e.g., localisation
-> pytest -m localisation -s
+```pytest```
+
+Run a group of pytest.mark tests e.g., localisation metrics (see available markers in the test files).
+
+```pytest -m localisation -s```
