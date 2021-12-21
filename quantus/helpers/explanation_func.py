@@ -1,3 +1,9 @@
+"""
+This module
+
+def explanation_func -> np.ndarray:
+    return ...
+"""
 from typing import Union
 import torch
 import scipy
@@ -7,6 +13,7 @@ from captum.attr import *
 import warnings
 from .utils import *
 from .normalise_func import *
+
 
 
 def explain(
