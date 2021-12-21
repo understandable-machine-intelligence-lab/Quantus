@@ -5,9 +5,6 @@ import cv2
 import random
 from .utils import *
 
-#### TODO. Insert how to extend this list.
-### Use img as argument and return an mutated img object
-
 
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input."""
@@ -29,13 +26,13 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     assert (
-        "index" in kwargs
-    ), "Specify 'index' to enable perturbation function to run."
+        "indices" in kwargs
+    ), "Specify 'indices' to enable perturbation function to run."
     if "fixed_values" in kwargs:
         choice = kwargs["fixed_values"]
     elif "perturb_baseline" in kwargs:
         choice = kwargs["perturb_baseline"]
-    img[kwargs["index"]] = get_baseline_value(choice=choice, img=img, **kwargs)
+    img[kwargs["indices"]] = get_baseline_value(choice=choice, img=img, **kwargs)
     return img
 
 

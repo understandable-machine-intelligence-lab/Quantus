@@ -44,17 +44,18 @@ class ModelParameterRandomisation(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.similarity_func = self.kwargs.get(
             "similarity_func", correlation_spearman
         )
         self.layer_order = kwargs.get("layer_order", "independent")
-        self.normalise = kwargs.get("normalise", True)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
         assert_layer_order(layer_order=self.layer_order)
-        warn_parameterisation(
+        if not self.disable_warnings:
+            warn_parameterisation(
             metric_name=self.__class__.__name__,
             sensitive_params=(
                 "similarity metric 'similarity_func' and the order of "
@@ -64,9 +65,9 @@ class ModelParameterRandomisation(Metric):
                 "Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
                 "'Sanity Checks for Saliency Maps.' arXiv preprint,"
                 " arXiv:1810.073292v3 (2018)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -211,6 +212,7 @@ class RandomLogit(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.normalise_func = self.kwargs.get(
             "normalise_func", normalise_by_negative
         )
@@ -220,16 +222,17 @@ class RandomLogit(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=("similarity metric 'similarity_func'"),
-            citation=(
-                "Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. 'When Explanations Lie: "
-                "Why Many Modified BP Attributions Fail.' arXiv preprint, "
-                "arXiv:1912.09818v6 (2020)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("similarity metric 'similarity_func'"),
+                citation=(
+                    "Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. 'When Explanations Lie: "
+                    "Why Many Modified BP Attributions Fail.' arXiv preprint, "
+                    "arXiv:1912.09818v6 (2020)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

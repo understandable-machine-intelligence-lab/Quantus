@@ -44,6 +44,7 @@ class LocalLipschitzEstimate(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
         self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
@@ -61,25 +62,26 @@ class LocalLipschitzEstimate(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_noise_zero(noise=self.perturb_std)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "amount of noise added 'perturb_std', the number of samples iterated "
-                "over 'nr_samples', the function to perturb the input 'perturb_func',"
-                " the similarity metric 'similarity_func' as well as norm "
-                "calculations on the numerator and denominator of the lipschitz "
-                "equation i.e., 'norm_numerator' and 'norm_denominator'"
-            ),
-            citation=(
-                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'On the robustness of "
-                "interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
-                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
-                " with self-explaining neural networks.' arXiv preprint "
-                "arXiv:1806.07538 (2018)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "amount of noise added 'perturb_std', the number of samples iterated "
+                    "over 'nr_samples', the function to perturb the input 'perturb_func',"
+                    " the similarity metric 'similarity_func' as well as norm "
+                    "calculations on the numerator and denominator of the lipschitz "
+                    "equation i.e., 'norm_numerator' and 'norm_denominator'"
+                ),
+                citation=(
+                    "Alvarez-Melis, David, and Tommi S. Jaakkola. 'On the robustness of "
+                    "interpretability methods.' arXiv preprint arXiv:1806.08049 (2018). and "
+                    "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
+                    " with self-explaining neural networks.' arXiv preprint "
+                    "arXiv:1806.07538 (2018)"
+                ),
+            )
+            warn_noise_zero(noise=self.perturb_std)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -229,6 +231,7 @@ class MaxSensitivity(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
@@ -240,22 +243,23 @@ class MaxSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_noise_zero(noise=self.perturb_radius)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "amount of noise added 'perturb_radius', the number of samples "
-                "iterated over 'nr_samples', the function to perturb the input "
-                "'perturb_func', the similarity metric 'similarity_func' as well as "
-                "norm calculations on the numerator and denominator of the sensitivity"
-                " equation i.e., 'norm_numerator' and 'norm_denominator'"
-            ),
-            citation=(
-                "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
-                ".' arXiv preprint arXiv:1901.09392 (2019)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "amount of noise added 'perturb_radius', the number of samples "
+                    "iterated over 'nr_samples', the function to perturb the input "
+                    "'perturb_func', the similarity metric 'similarity_func' as well as "
+                    "norm calculations on the numerator and denominator of the sensitivity"
+                    " equation i.e., 'norm_numerator' and 'norm_denominator'"
+                ),
+                citation=(
+                    "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
+                    ".' arXiv preprint arXiv:1901.09392 (2019)"
+                ),
+            )
+            warn_noise_zero(noise=self.perturb_radius)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -407,6 +411,7 @@ class AvgSensitivity(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
@@ -417,22 +422,23 @@ class AvgSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_noise_zero(noise=self.perturb_radius)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "amount of noise added 'perturb_radius', the number of samples "
-                "iterated over 'nr_samples', the function to perturb the input "
-                "'perturb_func', the similarity metric 'similarity_func' as well as "
-                "norm calculations on the numerator and denominator of the sensitivity"
-                " equation i.e., 'norm_numerator' and 'norm_denominator'"
-            ),
-            citation=(
-                "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
-                ".' arXiv preprint arXiv:1901.09392 (2019)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "amount of noise added 'perturb_radius', the number of samples "
+                    "iterated over 'nr_samples', the function to perturb the input "
+                    "'perturb_func', the similarity metric 'similarity_func' as well as "
+                    "norm calculations on the numerator and denominator of the sensitivity"
+                    " equation i.e., 'norm_numerator' and 'norm_denominator'"
+                ),
+                citation=(
+                    "Yeh, Chih-Kuan, et al. 'On the (in) fidelity and sensitivity for explanations"
+                    ".' arXiv preprint arXiv:1901.09392 (2019)"
+                ),
+            )
+            warn_noise_zero(noise=self.perturb_radius)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -583,6 +589,7 @@ class Continuity(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.img_size = self.kwargs.get("img_size", 224)
         self.nr_patches = self.kwargs.get("nr_patches", 4)
         self.patch_size = (self.img_size * 2) // self.nr_patches
@@ -599,22 +606,23 @@ class Continuity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "how many patches to split the input image to 'nr_patches', "
+                    "the number of steps to iterate over 'nr_steps', the value to replace"
+                    " the masking with 'perturb_baseline' and in what direction to "
+                    "translate the image 'perturb_func'"
+                ),
+                citation=(
+                    "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
+                    "interpreting and understanding deep neural networks.' Digital Signal "
+                    "Processing 73, 1-15 (2018"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "how many patches to split the input image to 'nr_patches', "
-                "the number of steps to iterate over 'nr_steps', the value to replace"
-                " the masking with 'perturb_baseline' and in what direction to "
-                "translate the image 'perturb_func'"
-            ),
-            citation=(
-                "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
-                "interpreting and understanding deep neural networks.' Digital Signal "
-                "Processing 73, 1-15 (2018"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

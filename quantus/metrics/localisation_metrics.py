@@ -43,24 +43,26 @@ class PointingGame(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch' input as well as if "
-                "the attributions are normalised 'normalise' (and 'normalise_func') "
-                "and/ or taking absolute values of such 'abs'"
-            ),
-            citation=(
-                "Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, "
-                "Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by Excitation "
-                "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch' input as well as if "
+                    "the attributions are normalised 'normalise' (and 'normalise_func') "
+                    "and/ or taking absolute values of such 'abs'"
+                ),
+                citation=(
+                    "Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, "
+                    "Xiaohui, and Sclaroff, Stan. 'Top-Down Neural Attention by Excitation "
+                    "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -168,7 +170,7 @@ class PointingGame(Metric):
                 for pixel in max_index:
                     hit = hit or s[pixel]
             else:
-                hit = s[max_index]
+                hit = bool(s[max_index])
 
             self.last_results.append(hit)
 
@@ -209,26 +211,28 @@ class AttributionLocalisation(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         assert_max_size(max_size=self.max_size)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch', if size of the ground truth "
-                "mask is taking into account 'weighted' as well as if attributions"
-                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
-                "the absolute values of such 'abs'"
-            ),
-            citation=(
-                "Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S. "
-                "'Towards Best Practice in Explaining Neural Network Decisions with LRP."
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch', if size of the ground truth "
+                    "mask is taking into account 'weighted' as well as if attributions"
+                    " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                    "the absolute values of such 'abs'"
+                ),
+                citation=(
+                    "Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S. "
+                    "'Towards Best Practice in Explaining Neural Network Decisions with LRP."
                 "arXiv preprint arXiv:1910.09840v2 (2020)."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -403,25 +407,27 @@ class TopKIntersection(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch', the number of features to "
-                "consider 'k', if size of the ground truth mask is taking into account"
-                " 'concept_influence' as well as if attributions are normalised "
-                "'normalise' (and 'normalise_func') and/ or taking absolute values "
-                "of such 'abs'"
-            ),
-            citation=(
-                "Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. 'Interpretable "
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch', the number of features to "
+                    "consider 'k', if size of the ground truth mask is taking into account"
+                    " 'concept_influence' as well as if attributions are normalised "
+                    "'normalise' (and 'normalise_func') and/ or taking absolute values "
+                    "of such 'abs'"
+                ),
+                citation=(
+                    "Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. 'Interpretable "
                 "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -568,24 +574,26 @@ class RelevanceRankAccuracy(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch' as well as if the attributions"
-                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
-                "absolute values of such 'abs'"
-            ),
-            citation=(
-                "Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
-                "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
-                "arXiv:2003.07258v2 (2021)."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch' as well as if the attributions"
+                    " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                    "absolute values of such 'abs'"
+                ),
+                citation=(
+                    "Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
+                    "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
+                    "arXiv:2003.07258v2 (2021)."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -736,24 +744,26 @@ class RelevanceMassAccuracy(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch' as well as if the attributions"
-                " are normalised 'normalise' (and 'normalise_func') and/ or taking "
-                "absolute values of such 'abs'"
-            ),
-            citation=(
-                "Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
-                "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
-                "arXiv:2003.07258v2 (2021)."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch' as well as if the attributions"
+                    " are normalised 'normalise' (and 'normalise_func') and/ or taking "
+                    "absolute values of such 'abs'"
+                ),
+                citation=(
+                    "Arras, Leila, Osman, Ahmed, and Samek, Wojciech. 'Ground Truth Evaluation "
+                    "of Neural Network Explanations with CLEVR-XAI.' arXiv preprint, "
+                    "arXiv:2003.07258v2 (2021)."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -897,22 +907,24 @@ class AUC(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "ground truth mask i.e., the 's_batch' input as well as if "
-                "absolute values 'abs' are taken of the attributions "
-            ),
-            citation=(
-                "Fawcett, Tom. 'An introduction to ROC analysis' Pattern Recognition Letters"
-                " Vol 27, Issue 8, (2006)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "ground truth mask i.e., the 's_batch' input as well as if "
+                    "absolute values 'abs' are taken of the attributions "
+                ),
+                citation=(
+                    "Fawcett, Tom. 'An introduction to ROC analysis' Pattern Recognition Letters"
+                    " Vol 27, Issue 8, (2006)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
