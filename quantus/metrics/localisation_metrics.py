@@ -170,7 +170,7 @@ class PointingGame(Metric):
                 for pixel in max_index:
                     hit = hit or s[pixel]
             else:
-                hit = s[max_index]
+                hit = bool(s[max_index])
 
             self.last_results.append(hit)
 
