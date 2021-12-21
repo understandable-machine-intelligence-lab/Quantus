@@ -45,6 +45,7 @@ class FaithfulnessCorrelation(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -61,19 +62,20 @@ class FaithfulnessCorrelation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
-                " and the number of runs (for each input and explanation pair) "
-                "'nr_runs'"
-            ),
-            citation=(
-                "Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating "
-                "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
-            ),
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
+                    " and the number of runs (for each input and explanation pair) "
+                    "'nr_runs'"
+                ),
+                citation=(
+                    "Bhatt, Umang, Adrian Weller, and José MF Moura. 'Evaluating and aggregating "
+                    "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
+                ),
         )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -254,6 +256,7 @@ class FaithfulnessEstimate(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get(
             "similarity_func", correlation_pearson
@@ -268,18 +271,19 @@ class FaithfulnessEstimate(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline' and similarity function "
-                "'similarity_func'"
-            ),
-            citation=(
-                "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
-                " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and similarity function "
+                    "'similarity_func'"
+                ),
+                citation=(
+                    "Alvarez-Melis, David, and Tommi S. Jaakkola. 'Towards robust interpretability"
+                    " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -476,6 +480,7 @@ class MonotonicityArya(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -487,15 +492,16 @@ class MonotonicityArya(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=("baseline value 'perturb_baseline'"),
-            citation=(
-                "Arya, Vijay, et al. 'One explanation does not fit all: A toolkit and taxonomy"
-                " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=(
+                    "Arya, Vijay, et al. 'One explanation does not fit all: A toolkit and taxonomy"
+                    " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -681,6 +687,7 @@ class MonotonicityNguyen(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.similarity_func = self.kwargs.get(
             "similarity_func", correlation_spearman
         )
@@ -697,18 +704,19 @@ class MonotonicityNguyen(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline', threshold value 'eps' and number "
-                "of samples to iterate over 'nr_samples'"
-            ),
-            citation=(
-                "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
-                "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', threshold value 'eps' and number "
+                    "of samples to iterate over 'nr_samples'"
+                ),
+                citation=(
+                    "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                    "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -934,16 +942,17 @@ class PixelFlipping(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=("baseline value 'perturb_baseline'"),
-            citation=(
-                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                "e0130140."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=(
+                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
+                    "e0130140."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1155,16 +1164,17 @@ class RegionPerturbation(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=("baseline value 'perturb_baseline'"),
-            citation=(
-                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
-                "e0130140"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=(
+                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
+                    "e0130140"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1402,19 +1412,20 @@ class Selectivity(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline' and the patch size for masking"
-                " 'patch_size'"
-            ),
-            citation=(
-                "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
-                "interpreting and understanding deep neural networks.' Digital Signal "
-                "Processing 73 (2018): 1-15"
-            ),
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and the patch size for masking"
+                    " 'patch_size'"
+                ),
+                citation=(
+                    "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "
+                    "interpreting and understanding deep neural networks.' Digital Signal "
+                    "Processing 73 (2018): 1-15"
+                ),
         )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1656,20 +1667,21 @@ class SensitivityN(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline', the patch size for masking "
-                "'patch_size', similarity function 'similarity_func' and the number "
-                "of features to iteratively evaluate 'n_max_percentage'"
-            ),
-            citation=(
-                "Ancona, Marco, et al. 'Towards better understanding of gradient-based "
-                "attribution methods for deep neural networks.' arXiv preprint "
-                "arXiv:1711.06104 (2017)"
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', the patch size for masking "
+                    "'patch_size', similarity function 'similarity_func' and the number "
+                    "of features to iteratively evaluate 'n_max_percentage'"
+                ),
+                citation=(
+                    "Ancona, Marco, et al. 'Towards better understanding of gradient-based "
+                    "attribution methods for deep neural networks.' arXiv preprint "
+                    "arXiv:1711.06104 (2017)"
             ),
         )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_attributions(normalise=self.normalise, abs=self.abs)
         assert_features_in_step(
             features_in_step=self.features_in_step, img_size=self.img_size
         )
@@ -1894,6 +1906,7 @@ class IterativeRemovalOfFeatures(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.segmentation_method = self.kwargs.get(
             "segmentation_method", "slic"
         )
@@ -1905,18 +1918,19 @@ class IterativeRemovalOfFeatures(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline' and the method to segment "
-                "the image 'segmentation_method'"
-            ),
-            citation=(
-                "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
-                "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and the method to segment "
+                    "the image 'segmentation_method'"
+                ),
+                citation=(
+                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
+                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

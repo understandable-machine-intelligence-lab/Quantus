@@ -47,6 +47,7 @@ class Completeness(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
@@ -56,18 +57,19 @@ class Completeness(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline' and the function to modify the "
-                "model response 'output_func'"
-            ),
-            citation=(
-                "Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
-                "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and the function to modify the "
+                    "model response 'output_func'"
+                ),
+                citation=(
+                    "Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 'Axiomatic attribution for "
+                    "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -233,6 +235,7 @@ class NonSensitivity(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -241,19 +244,20 @@ class NonSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "baseline value 'perturb_baseline', the number of samples to iterate"
-                " over 'n_samples' and the threshold value function for the feature"
-                " to be considered having an insignificant contribution to the model"
-            ),
-            citation=(
-                "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
-                "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
-            ),
-        )
-        warn_attributions(normalise=self.normalise, abs=self.abs)
+        if self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', the number of samples to iterate"
+                    " over 'n_samples' and the threshold value function for the feature"
+                    " to be considered having an insignificant contribution to the model"
+                ),
+                citation=(
+                    "Nguyen, An-phi, and María Rodríguez Martínez. 'On quantitative aspects of "
+                    "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
