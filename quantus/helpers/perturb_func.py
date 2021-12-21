@@ -5,9 +5,6 @@ import cv2
 import random
 from .utils import *
 
-#### TODO. Insert how to extend this list.
-### Use img as argument and return an mutated img object
-
 
 def gaussian_blur(img: np.array, **kwargs) -> np.array:
     """Inject gaussian blur to the input."""
