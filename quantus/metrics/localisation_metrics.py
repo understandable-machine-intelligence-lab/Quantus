@@ -48,7 +48,7 @@ class PointingGame(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -217,7 +217,7 @@ class AttributionLocalisation(Metric):
 
         # Asserts and warnings.
         assert_max_size(max_size=self.max_size)
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -412,7 +412,7 @@ class TopKIntersection(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -579,7 +579,7 @@ class RelevanceRankAccuracy(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -749,7 +749,7 @@ class RelevanceMassAccuracy(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -912,7 +912,7 @@ class AUC(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(

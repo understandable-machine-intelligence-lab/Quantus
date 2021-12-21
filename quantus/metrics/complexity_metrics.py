@@ -48,7 +48,7 @@ class Sparseness(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -212,7 +212,7 @@ class Complexity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -366,7 +366,7 @@ class EffectiveComplexity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(

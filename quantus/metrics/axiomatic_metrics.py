@@ -57,7 +57,7 @@ class Completeness(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -159,11 +159,10 @@ class Completeness(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            x_perturbed = x.flatten()
             x_perturbed = self.perturb_func(
-                img=x_perturbed,
+                img=x.flatten(),
                 **{
-                    "index": np.arange(x, len(x)),
+                    "indices": np.arange(0, len(x)),
                     "perturb_baseline": self.perturb_baseline,
                 },
             )
@@ -244,7 +243,7 @@ class NonSensitivity(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        if self.disable_warnings:
+        if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
@@ -358,7 +357,7 @@ class NonSensitivity(Metric):
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
-                            "index": a_i,
+                            "indices": a_i,
                             "perturb_baseline": self.perturb_baseline,
                         },
                     )
