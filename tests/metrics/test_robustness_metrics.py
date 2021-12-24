@@ -5,16 +5,19 @@ from ..fixtures import *
 from ...quantus.metrics import *
 
 
-# TODO. Finish test.
-@pytest.mark.latest
+@pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected", [({"perturb_std": 0.0, "nr_samples": 10}, 1.0),],
+    "params,expected", [({"perturb_std": 0.1, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
+                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
+                         {"min": 0.0, "max": 1.0}),
+                        ],
 )
 def test_local_lipschitz_estimate(
-   params: dict, expected: Union[float, dict], load_mnist_images, load_mnist_model
+   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
+    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    explain = params["explain_func"]
     a_batch = explain(
         model=model,
         inputs=x_batch,
@@ -26,82 +29,105 @@ def test_local_lipschitz_estimate(
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
+        **params,
     )
-    if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
-    else:
-        assert all(
-            ((s > expected["min"]) & (s < expected["max"])) for s in scores
-        ), "Test failed."
+    assert scores is not None, "Test failed."
 
 
-# TODO. Finish test.
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "data,params,expected",
-    [
-        (lazy_fixture("almost_uniform"), {"normalise": True}, 1.0),
-        (lazy_fixture("almost_uniform"), {"normalise": False}, 1.0),
-    ],
+    "params,expected", [({"perturb_radius": 0.2, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
+                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
+                         {"min": 0.0, "max": 1.0}),
+                        ],
 )
-def test_non_max_sensitivity(data: dict, params: dict, expected: Union[float, dict]):
+def test_max_sensitivity(
+   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+):
+    model = load_mnist_model
+    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    explain = params["explain_func"]
+    a_batch = explain(
+        model=model,
+        inputs=x_batch,
+        targets=y_batch,
+        **params,
+    )
     scores = MaxSensitivity(**params)(
-        model=None,
-        x_batch=data["x_batch"],
-        y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
     )
+
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert all(
-            ((s > expected["min"]) & (s < expected["max"])) for s in scores
+        assert np.all(
+            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
         ), "Test failed."
 
 
-# TODO. Finish test.
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "data,params,expected",
-    [
-        (lazy_fixture("almost_uniform"), {"normalise": True}, 1.0),
-        (lazy_fixture("almost_uniform"), {"normalise": False}, 1.0),
-    ],
+    "params,expected", [({"perturb_radius": 0.2, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
+                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
+                         {"min": 0.0, "max": 1.0}),
+                        ],
 )
-def test_non_avg_sensitivity(data: dict, params: dict, expected: Union[float, dict]):
+def test_avg_sensitivity(
+   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+):
+    model = load_mnist_model
+    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    explain = params["explain_func"]
+    a_batch = explain(
+        model=model,
+        inputs=x_batch,
+        targets=y_batch,
+        **params,
+    )
     scores = AvgSensitivity(**params)(
-        model=None,
-        x_batch=data["x_batch"],
-        y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert all(
-            ((s > expected["min"]) & (s < expected["max"])) for s in scores
+        assert np.all(
+            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
         ), "Test failed."
 
 
-# TODO. Finish test.
-@pytest.mark.robustness
+@pytest.mark.fixing
 @pytest.mark.parametrize(
-    "data,params,expected",
-    [
-        (lazy_fixture("almost_uniform"), {"normalise": True}, 1.0),
-        (lazy_fixture("almost_uniform"), {"normalise": False}, 1.0),
-    ],
+    "params,expected", [({"nr_steps": 10, "patch_size": 7, "img_size": 28, "nr_channels": 1,
+                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
+                         {"min": 0.0, "max": 1.0}),
+                        ],
 )
-def test_non_avg_continuity(data: dict, params: dict, expected: Union[float, dict]):
-    scores = Continuity(**params)(
-        model=None,
-        x_batch=data["x_batch"],
-        y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+def test_continuity(
+   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+):
+    model = load_mnist_model
+    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    explain = params["explain_func"]
+    a_batch = explain(
+        model=model,
+        inputs=x_batch,
+        targets=y_batch,
+        **params,
     )
-    if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
-    else:
-        assert all(
-            ((s > expected["min"]) & (s < expected["max"])) for s in scores
-        ), "Test failed."
+    scores = Continuity(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
+    assert scores is not None, "Test failed."
+

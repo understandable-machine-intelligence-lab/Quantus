@@ -20,7 +20,7 @@ def get_model(autouse=True):
 @pytest.fixture
 def segmentation_setup():
     return {
-        "img": np.random.uniform(0, 0.1, size=(1, 3, 224, 224)),
+        "img": np.random.uniform(0, 0.1, size=(3, 224, 224)),
         "segmentation_method": "slic",
     }
 
@@ -50,30 +50,30 @@ def baseline_mean():
     return {"choice": "mean", "img": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
 
 
-@pytest.mark.utils_func
+@pytest.mark.utils
 @pytest.mark.parametrize(
     "data,params,expected", [(lazy_fixture("get_model"), {}, list)]
 )
-def test_get_layers(data: np.ndarray, params: dict, expected: Union[float, dict]):
+def test_get_layers(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     model = data
     out = get_layers(model=model)
     assert isinstance(out, expected), "Test failed."
 
 
-@pytest.mark.utils_func
+@pytest.mark.utils
 @pytest.mark.parametrize(
     "data,params,expected", [(lazy_fixture("segmentation_setup"), {}, np.ndarray)]
 )
 def test_get_superpixel_segments(
-    data: np.ndarray, params: dict, expected: Union[float, dict]
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = get_superpixel_segments(
         img=data["img"], segmentation_method=data["segmentation_method"]
     )
-    assert isinstance(out, expected), "Test failed."
+    assert out is not None, "Test failed."
 
 
-@pytest.mark.utils_func
+@pytest.mark.utils
 @pytest.mark.parametrize(
     "data,params,expected",
     [
@@ -83,7 +83,7 @@ def test_get_superpixel_segments(
     ],
 )
 def test_get_baseline_value(
-    data: np.ndarray, params: dict, expected: Union[float, dict]
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = get_baseline_value(choice=data["choice"], img=data["img"])
     assert round(out, 2) == expected, "Test failed."

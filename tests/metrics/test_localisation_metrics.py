@@ -145,16 +145,6 @@ def half_in_gt_zeros_bigger():
     }
 
 
-@pytest.fixture
-def almost_uniform():
-    a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224, 224))
-    return {
-        "x_batch": np.random.randn(10, 3, 224, 224),
-        "y_batch": np.random.randint(0, 10, size=10),
-        "a_batch": a_batch,
-    }
-
-
 @pytest.mark.localisation
 @pytest.mark.parametrize(
     "data,params,expected",
@@ -164,7 +154,7 @@ def almost_uniform():
         (lazy_fixture("half_in_gt"), {}, True),
     ],
 )
-def test_pointing_game(data: dict, params: dict, expected: Union[float, dict]):
+def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
     scores = PointingGame(**params)(
         model=None,
         x_batch=data["x_batch"],
@@ -172,8 +162,8 @@ def test_pointing_game(data: dict, params: dict, expected: Union[float, dict]):
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
     )
-
-    if isinstance(expected, float):
+    print(scores)
+    if isinstance(expected, bool):
         assert all(s == expected for s in scores), "Test failed."
     else:
         assert all(
@@ -193,7 +183,7 @@ def test_pointing_game(data: dict, params: dict, expected: Union[float, dict]):
         (lazy_fixture("half_in_gt_zeros"), {"k": 1250}, {"min": 0.5, "max": 1.0}),
     ],
 )
-def test_top_k_intersection(data: dict, params: dict, expected: Union[float, dict]):
+def test_top_k_intersection(data: dict, params: dict, expected: Union[float, dict, bool]):
     scores = TopKIntersection(**params)(
         model=None,
         x_batch=data["x_batch"],
@@ -220,7 +210,7 @@ def test_top_k_intersection(data: dict, params: dict, expected: Union[float, dic
     ],
 )
 def test_relevance_rank_accuracy(
-    data: dict, params: dict, expected: Union[float, dict]
+    data: dict, params: dict, expected: Union[float, dict, bool]
 ):
     scores = RelevanceRankAccuracy(**params)(
         model=None,
@@ -248,7 +238,7 @@ def test_relevance_rank_accuracy(
     ],
 )
 def test_relevance_mass_accuracy(
-    data: dict, params: dict, expected: Union[float, dict]
+    data: dict, params: dict, expected: Union[float, dict, bool]
 ):
     scores = RelevanceMassAccuracy(**params)(
         model=None,
@@ -274,7 +264,7 @@ def test_relevance_mass_accuracy(
         (lazy_fixture("none_in_gt_fourth"), {}, 0.33333333333333337),
     ],
 )
-def test_auc(data: dict, params: dict, expected: Union[float, dict]):
+def test_auc(data: dict, params: dict, expected: Union[float, dict, bool]):
     scores = AUC(**params)(
         model=None,
         x_batch=data["x_batch"],
@@ -301,7 +291,7 @@ def test_auc(data: dict, params: dict, expected: Union[float, dict]):
     ],
 )
 def test_attribution_localisation(
-    data: dict, params: dict, expected: Union[float, dict]
+    data: dict, params: dict, expected: Union[float, dict, bool]
 ):
     scores = AttributionLocalisation(**params)(
         model=None,
