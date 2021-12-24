@@ -159,7 +159,7 @@ class Completeness(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            x_perturbed = self.perturb_func(
+            x_baseline = self.perturb_func(
                 img=x.flatten(),
                 **{
                     "indices": np.arange(0, len(x)),
@@ -183,7 +183,7 @@ class Completeness(Metric):
             with torch.no_grad():
                 y_pred_baseline = float(
                     model(
-                        torch.Tensor(x)
+                        torch.Tensor(x_baseline)
                         .reshape(
                             1, self.nr_channels, self.img_size, self.img_size
                         )
