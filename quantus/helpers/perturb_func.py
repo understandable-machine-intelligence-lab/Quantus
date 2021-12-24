@@ -2,24 +2,18 @@
 import numpy as np
 import scipy
 import cv2
+import copy
 import random
 from .utils import *
-
-
-def gaussian_blur(img: np.array, **kwargs) -> np.array:
-    """Inject gaussian blur to the input."""
-    assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    return scipy.ndimage.gaussian_filter(
-        img, sigma=kwargs.get("perturb_sigma", 0.1) * np.max(img)
-    )
 
 
 def gaussian_noise(img: np.array, **kwargs) -> np.array:
     """Add gaussian noise to the input."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    return img + np.random.normal(
-        kwargs.get("perturb_mean", 0.0), kwargs.get("perturb_std", 0.01), size=img.size
+    img_perturbed = img + np.random.normal(
+        kwargs.get("perturb_mean", 0.0), kwargs.get("perturb_std", 0.01)
     )
+    return img_perturbed
 
 
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
@@ -32,8 +26,11 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
         choice = kwargs["fixed_values"]
     elif "perturb_baseline" in kwargs:
         choice = kwargs["perturb_baseline"]
-    img[kwargs["indices"]] = get_baseline_value(choice=choice, img=img, **kwargs)
-    return img
+
+    img_perturbed = copy.copy(img)
+    img_perturbed[kwargs["indices"]] = get_baseline_value(choice=choice, img=img, **kwargs)
+
+    return img_perturbed
 
 
 def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
@@ -60,7 +57,8 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     ]
 
     # for c in range(kwargs.get("nr_channels", 3)):
-    img[
+    img_perturbed = copy.copy(img)
+    img_perturbed[
         :,
         kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
         kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
@@ -68,17 +66,18 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
         choice=kwargs["perturb_baseline"], img=img, **kwargs
     )
 
-    return img
+    return img_perturbed
 
 
 def uniform_sampling(img: np.array, **kwargs) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    return img + np.random.uniform(
+    img_perturbed = img + np.random.uniform(
         -kwargs.get("perturb_radius", 0.02),
         kwargs.get("perturb_radius", 0.02),
         size=img.shape,
     )
+    return img_perturbed
 
 
 def rotation(img: np.array, **kwargs) -> np.array:
@@ -93,7 +92,7 @@ def rotation(img: np.array, **kwargs) -> np.array:
         angle=kwargs.get("perturb_angle", 10),
         scale=1,
     )
-    return np.moveaxis(
+    img_perturbed = np.moveaxis(
         cv2.warpAffine(
             np.moveaxis(img, 0, 2),
             matrix,
@@ -102,6 +101,7 @@ def rotation(img: np.array, **kwargs) -> np.array:
         2,
         0,
     )
+    return img_perturbed
 
 
 def translation_x_direction(img: np.array, **kwargs) -> np.array:
@@ -109,18 +109,19 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = np.float32([[1, 0, kwargs.get("perturb_dx", 10)], [0, 1, 0]])
-    return np.moveaxis(
+    img_perturbed = np.moveaxis(
         cv2.warpAffine(
-            np.moveaxis(img, 0, 2),
+            np.moveaxis(img, 0, -1),
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=get_baseline_value(
                 choice=kwargs["perturb_baseline"], img=img, **kwargs
             ),
         ),
-        2,
+        -1,
         0,
     )
+    return img_perturbed
 
 
 def translation_y_direction(img: np.array, **kwargs) -> np.array:
@@ -128,7 +129,7 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = np.float32([[1, 0, 0], [0, 1, kwargs.get("perturb_dy", 10)]])
-    return np.moveaxis(
+    img_perturbed = np.moveaxis(
         cv2.warpAffine(
             np.moveaxis(img, 0, 2),
             matrix,
@@ -140,3 +141,10 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
         2,
         0,
     )
+    return img_perturbed
+
+
+def no_perturbation(img: np.array, **kwargs) -> np.array:
+    """Apply no perturbation to input."""
+    img_perturbed = img
+    return img_perturbed
