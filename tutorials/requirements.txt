@@ -11,4 +11,4 @@ pandas
 collections
 xmltodict
 xml
-pytest_lazyfixture
+pytest-lazy-fixture
