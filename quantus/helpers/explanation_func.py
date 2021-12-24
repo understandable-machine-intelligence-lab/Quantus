@@ -27,7 +27,7 @@ def explain(
 
     if "method" not in kwargs:
         warnings.warn(
-            f"Using quantus 'explain' function as an explainer without specifying 'method' (str)"
+            f"Using quantus 'explain' function as an explainer without specifying 'method' (str) "
             f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
             category=Warning,
         )
@@ -41,17 +41,18 @@ def explain(
     if not isinstance(inputs, torch.Tensor):
         inputs = (
             torch.Tensor(inputs)
-            .reshape(
-                -1,
-                kwargs.get("nr_channels", 3),
-                kwargs.get("img_size", 224),
-                kwargs.get("img_size", 224),
-            )
             .to(kwargs.get("device", None))
         )
 
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(kwargs.get("device", None))
+
+    inputs = inputs.reshape(
+                -1,
+                kwargs.get("nr_channels", 3),
+                kwargs.get("img_size", 224),
+                kwargs.get("img_size", 224),
+            )
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 

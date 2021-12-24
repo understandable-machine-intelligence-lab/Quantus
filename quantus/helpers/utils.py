@@ -36,17 +36,12 @@ def get_superpixel_segments(
     if segmentation_method == "slic":
         return slic(
             img,
-            n_segments=kwargs.get("slic_n_segments", 224),
-            compactness=kwargs.get("slic_compactness", 0.05),
-            sigma=kwargs.get("slic_sigma", 0.1),
+            start_label=0,
         )
 
     elif segmentation_method == "felzenszwalb":
         return felzenszwalb(
             img,
-            scale=kwargs.get("felzenszwalb_scale", 448),
-            sigma=kwargs.get("felzenszwalb_sigma", 0.1),
-            min_size=kwargs.get("felzenszwalb_min_size", 112),
         )
     else:
         print(
