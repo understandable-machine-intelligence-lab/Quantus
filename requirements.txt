@@ -8,3 +8,4 @@ scipy
 opencv-python
 captum
 pytest
+termcolor
