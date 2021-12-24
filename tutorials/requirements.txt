@@ -11,4 +11,5 @@ pandas
 collections
 xmltodict
 xml
+termcolor
 pytest-lazy-fixture

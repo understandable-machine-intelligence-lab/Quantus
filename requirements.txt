@@ -9,3 +9,4 @@ opencv-python
 captum
 pytest
 termcolor
+pytest-lazy-fixture
