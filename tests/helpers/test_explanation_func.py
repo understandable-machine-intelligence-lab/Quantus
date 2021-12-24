@@ -12,15 +12,17 @@ from ...quantus.helpers import *
 @pytest.mark.parametrize(
     "params,expected",
     [
-        ({"method": "Saliency"}, {"min": 0}),
-        ({"method": "Gradient", "pos_only": True}, {"min": 0}),
-        ({"method": "Gradient", "abs": True}, {"min": 0}),
-        ({"method": "Control Var. Constant", "constant_value": 0.0}, {"value": 0.0}),
+        ({"method": "Saliency", "img_size": 28, "nr_channels": 1}, {"min": 0}),
+        ({"method": "Gradient", "img_size": 28, "nr_channels": 1, "pos_only": True}, {"min": 0}),
+        ({"method": "Gradient", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0}),
+        ({"method": "Control Var. Constant", "img_size": 28, "nr_channels": 1, "constant_value": 0.0}, {"value": 0.0}),
         (
             {
                 "method": "Gradient",
                 "normalise": True,
                 "normalise_func": normalise_by_negative,
+                "img_size": 28,
+                "nr_channels": 1,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -30,13 +32,15 @@ from ...quantus.helpers import *
                 "normalise": True,
                 "abs": True,
                 "normalise_func": normalise_by_max,
+                "img_size": 28,
+                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
     ],
 )
 def test_explain_func(
-    params: dict, expected: Union[float, dict], load_mnist_images, load_mnist_model
+    params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
 ):
     a_batch = explain(
         model=load_mnist_model,
