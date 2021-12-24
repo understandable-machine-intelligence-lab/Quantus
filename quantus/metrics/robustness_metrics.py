@@ -150,6 +150,7 @@ class LocalLipschitzEstimate(Metric):
         explain_func = self.kwargs.get("explain_func", Callable)
         assert_explain_func(explain_func=explain_func)
 
+        print("check sizes", self.nr_channels, self.img_size)
         if a_batch is None:
 
             # Generate explanations.
@@ -174,8 +175,11 @@ class LocalLipschitzEstimate(Metric):
             similarity_max = 0.0
             for i in range(self.nr_samples):
 
-                # Generate explanation based on perturbed input x.
+                # Perturb input.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model, inputs=x_perturbed, targets=y, **self.kwargs
                 )
@@ -352,8 +356,11 @@ class MaxSensitivity(Metric):
             sensitivities_norm_max = 0.0
             for _ in range(self.nr_samples):
 
-                # Generate explanation based on perturbed input x.
+                # Perturb input.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model, inputs=x_perturbed, targets=y, **self.kwargs
                 )
@@ -531,8 +538,11 @@ class AvgSensitivity(Metric):
             self.temp_results = []
             for _ in range(self.nr_samples):
 
-                # Generate explanation based on perturbed input x.
+                # Perturb input.
                 x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model, inputs=x_perturbed, targets=y, **self.kwargs
                 )
@@ -591,8 +601,8 @@ class Continuity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.img_size = self.kwargs.get("img_size", 224)
-        self.nr_patches = self.kwargs.get("nr_patches", 4)
-        self.patch_size = (self.img_size * 2) // self.nr_patches
+        self.patch_size = self.kwargs.get("patch_size", 7)
+        self.nr_patches = int((self.img_size/self.patch_size)**2)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.dx = self.img_size // self.nr_steps
@@ -727,6 +737,12 @@ class Continuity(Metric):
                         **self.kwargs,
                     },
                 )
+                # DEBUG.
+                #plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
+                #plt.show()
+                # DEBUG.
+                # plt.imshow(a.reshape(224, 224), cmap="seismic")
+                # plt.show()
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
@@ -749,6 +765,7 @@ class Continuity(Metric):
                         .to(kwargs.get("device", None))
                     )[:, y]
                 )
+
                 sub_results[self.nr_patches].append(y_pred)
 
                 ix_patch = 0

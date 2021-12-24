@@ -45,15 +45,14 @@ AVAILABLE_METRICS = {
 
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
-    "gaussian_blur": gaussian_blur,
     "gaussian_noise": gaussian_noise,
     "baseline_replacement_by_indices": baseline_replacement_by_indices,
     "baseline_replacement_by_patch": baseline_replacement_by_patch,
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    # "optimization_scheme": optimization_scheme,
     "uniform_sampling": uniform_sampling,
+    "no_perturbation": no_perturbation,
 }
 
 
@@ -70,6 +69,12 @@ AVAILABLE_SIMILARITY_FUNCTIONS = {
     "cosine": cosine,
     "ssim": ssim,
     "mse": mse,
+}
+
+AVAILABLE_NORMALISATION_FUNCTIONS = {
+    "normalise_by_negative": normalise_by_negative,
+    "normalise_by_max": normalise_by_max,
+    "denormalise": denormalise,
 }
 
 

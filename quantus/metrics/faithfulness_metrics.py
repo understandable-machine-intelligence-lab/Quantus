@@ -196,6 +196,7 @@ class FaithfulnessCorrelation(Metric):
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 with torch.no_grad():
@@ -420,6 +421,8 @@ class FaithfulnessEstimate(Metric):
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
                 # Predict on perturbed input x.
                 with torch.no_grad():
                     y_pred_perturb = float(
@@ -452,8 +455,8 @@ class MonotonicityArya(Metric):
     """
     Implementation of Montonicity Metric by Arya at el., 2019.
 
-    Montonicity tests if adding more positive evidence increases the probability of classification in the specified
-    class.
+    Montonicity tests if adding more positive evidence increases the probability
+    of classification in the specified class.
 
     It captures attributions' faithfulness by incrementally adding each attribute
     in order of increasing importance and evaluating the effect on model performance.
@@ -868,6 +871,7 @@ class MonotonicityNguyen(Metric):
                             "perturb_baseline": self.perturb_baseline,
                         },
                     )
+                    assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
                     with torch.no_grad():
@@ -931,6 +935,7 @@ class PixelFlipping(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = plot_pixel_flipping_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -1077,6 +1082,8 @@ class PixelFlipping(Metric):
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
                 # Predict on perturbed input x.
                 with torch.no_grad():
                     y_pred_perturb = float(
@@ -1140,6 +1147,7 @@ class RegionPerturbation(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = plot_region_perturbation_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
@@ -1164,6 +1172,7 @@ class RegionPerturbation(Metric):
 
         # Asserts and warnings.
         assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
+        assert_attributions_order(order=self.order)
         if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -1346,6 +1355,7 @@ class RegionPerturbation(Metric):
                         "top_left_x": top_left_x,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 with torch.no_grad():
@@ -1401,6 +1411,7 @@ class Selectivity(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = plot_selectivity_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
@@ -1543,10 +1554,6 @@ class Selectivity(Metric):
                 )
             )
 
-            # DEBUG.
-            # plt.imshow(a.reshape(224, 224), cmap="seismic")
-            # plt.show()
-
             # Get patch indices of sorted attributions (descending).
             for i_x, top_left_x in enumerate(
                 range(0, x.shape[1], self.patch_size)
@@ -1582,6 +1589,7 @@ class Selectivity(Metric):
                         "top_left_x": top_left_x,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 with torch.no_grad():
@@ -1649,11 +1657,12 @@ class SensitivityN(Metric):
             "normalise_func", normalise_by_negative
         )
         self.default_plot_func = plot_sensitivity_n_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.similarity_func = self.kwargs.get(
             "similarity_func", correlation_pearson
         )
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
@@ -1829,10 +1838,7 @@ class SensitivityN(Metric):
                             "perturb_baseline": self.perturb_baseline,
                         },
                     )
-
-                    # DEBUG.
-                    # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
-                    # plt.show()
+                    assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Sum attributions.
                     att_sums.append(float(a[a_ix].sum()))
@@ -1923,7 +1929,7 @@ class IterativeRemovalOfFeatures(Metric):
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the method to segment "
-                    "the image 'segmentation_method'"
+                    "the image 'segmentation_method' (including all its associated hyperparameters)"
                 ),
                 citation=(
                     "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
@@ -2040,10 +2046,10 @@ class IterativeRemovalOfFeatures(Metric):
             # Segment image.
             segments = get_superpixel_segments(
                 img=np.moveaxis(x, 0, -1).astype("double"),
-                segmentation_method=kwargs.get("segmentation_method", "slic"),
                 **kwargs,
             )
             nr_segments = segments.max()
+            assert_nr_segments(nr_segments=nr_segments)
 
             # Calculate average attribution of each segment.
             att_segs = np.zeros(nr_segments)
@@ -2058,9 +2064,7 @@ class IterativeRemovalOfFeatures(Metric):
             for i_ix, s_ix in enumerate(s_indices):
 
                 # Perturb input by indices of attributions.
-                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), 3))[
-                    0
-                ]
+                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), self.nr_channels))[0]
 
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
@@ -2069,6 +2073,8 @@ class IterativeRemovalOfFeatures(Metric):
                         "perturb_baseline": self.perturb_baseline,
                     },
                 )
+                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
                 # Predict on perturbed input x.
                 with torch.no_grad():
                     y_pred_perturb = float(

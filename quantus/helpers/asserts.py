@@ -87,7 +87,25 @@ def assert_patch_size(patch_size: int, img_size: int) -> None:
     ), "Set 'patch_size' so that the modulo remainder returns 0 given the image size."
 
 
+def assert_attributions_order(order: str) -> None:
+    """Assert that order is in pre-defined list."""
+    assert order in ["morf", "lorf"], "The order of sorting the attributions must be either morf or lorf-"
+
+
+def assert_nr_segments(nr_segments: int) -> None:
+    """Assert that the number of segments given the segementation algorithm is more than one."""
+    assert nr_segments > 1, "The number of segments from the segmentation algorithm must be more than one."
+
+
+def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
+    """Assert that perturbation applied to input caused change so that input and perturbed input is not the smae."""
+    assert (x.flatten() != x_perturbed.flatten()).any(), "The settings for perturbing input e.g., 'perturb_func' and " \
+                                                         "'perturb_baseline' didn't cause change in input. " \
+                                                         "Reconsider the parameter settings."
+
+
 def assert_layer_order(layer_order: str) -> None:
+    """Assert that layer order is in pre-defined list."""
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 

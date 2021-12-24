@@ -41,8 +41,8 @@ def warn_parameterisation(
     text = (
         f"\nThe {get_name(metric_name)} metric is likely to be sensitive to the choice of "
         f"{sensitive_params}. \nTo avoid misinterpretation of scores, consider all relevant hyperparameters of "
-        f"the metric (by calling .get_params of the metric instance). \nFor further reading see {citation}."
-        f"\nTo disable warnings set disable_warnings=True in the initialisation of metric instance."
+        f"the metric (by calling .get_params of the metric instance). \nFor further reading see: {citation}."
+        f"\nTo disable warnings set 'disable_warnings'=True in the initialisation of the metric instance.\n"
     )
     print(
         colored(text=text)
