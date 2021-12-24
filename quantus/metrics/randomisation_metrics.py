@@ -194,7 +194,7 @@ class RandomLogit(Metric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
 
-    The Random Logit Metric computes the distance between the original explanation and a reference explanation regarding
+    The Random Logit Metric computes the distance between the original explanation and a reference explanation of
     a randomly chosen non-target class.
 
     References:
@@ -313,32 +313,24 @@ class RandomLogit(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
+        print(self.num_classes, y_batch)
         if self.abs:
             a_batch = np.abs(a_batch)
 
         if self.normalise:
             a_batch = self.normalise_func(a_batch)
 
-        # Randomly select off class labels.
-        if isinstance(y_batch, np.ndarray):
-
-            y_batch_off = []
-
-            for idx in y_batch:
-                y_range = list(np.arange(0, self.num_classes))
-                y_range.remove(idx)
-                y_batch_off.append(random.choice(y_range))
-
-            y_batch_off = np.array(y_batch_off)
-
+        # Randomly select off-class labels.
+        if isinstance(y_batch, (np.ndarray, list, torch.Tensor)):
+            y_batch_off = np.array([random.choice([y for y in list(np.arange(0, self.num_classes))
+                                                   if y != y_true]) for y_true in y_batch])
+        elif isinstance(y_batch, (float, int)):
+            y_batch_off = np.array([random.choice([y for y in list(np.arange(0, self.num_classes))
+                                                   if y != y_batch])])
         else:
+            raise ValueError('User should provide y_batch as either a list, np.ndarray, torch.Tensor, int or float.')
 
-            y_range = list(np.arange(0, self.num_classes))
-            y_range.remove(y_batch)
-            y_batch_off = np.array(
-                [random.choice(y_range) for x in range(x_batch.shape[0])]
-            )
-
+        # Explain against a random class.
         a_perturbed = explain_func(
             model=model,
             inputs=x_batch,
