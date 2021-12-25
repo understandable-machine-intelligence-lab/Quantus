@@ -21,3 +21,9 @@ tests/test_scenarios.md
 
 # dev
 temp/
+
+# code coverage
+*.gcno
+*.gcda
+*.gcov
+test
