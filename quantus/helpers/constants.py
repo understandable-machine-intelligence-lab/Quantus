@@ -2,6 +2,7 @@ from ..metrics import *
 from .perturb_func import *
 from .similar_func import *
 
+
 AVAILABLE_METRICS = {
     "Faithfulness": {
         "Faithfulness Correlation": FaithfulnessCorrelation,

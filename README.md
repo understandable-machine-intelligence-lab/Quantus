@@ -144,9 +144,7 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
     <img src="tutorials/assets/mnist_example.png" alt="drawing" width="450"/>
 </p>
 
-The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see.
-
-To quantitatively evaluate the explanation we can use apply Quantus. As a starter we may be interested in measuring how sensitive the explanations are to very slight perturbations. For this, we apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, there are two options.
+The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
 
 1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
@@ -198,17 +196,17 @@ df = pd.DataFrame(results)
 df
 ```
 
-When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook under `/tutorials/getting_started.ipynb`.
+When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_getting_started.ipynb).
 
 ## Tutorials
 
-To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results --- that Integrated Gradients "wins" over Saliency --- are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
+To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
 
 For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
 
-* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet••
-* Measure sensitivity of hyperparameter choice (`/tutorials/sensitivity_parameterisation.ipynb`)
-* Understand how sensitivity of explanations change when a model is learning (`/tutorials/model_training_explanation_robustness.ipynb`)
+* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
+* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_sensitivity_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
+* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
 <!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
 
 ... and more.
@@ -240,19 +238,32 @@ def my_similar_func(a: np.array, b: np.array, **kwargs) -> float:
 metric = LocalLipschitzEstimate(similar_func=my_similar_func)
 ````
 
-Besides the `evaluate` method in Quantus that allows the user to evaluate multiple explanation methods over several metrics at once, there are also other miscellaneous functionality built-into Quantus that might be helpful:
+To evaluate multiple explanation methods over several metrics at oncewe user can leverage the `evaluate` method in Quantus. There are also other miscellaneous functionality built-into Quantus that might be helpful:
 
 ````python
 # Interpret scores.
+quantus.evaluate
+
+# Interpret scores of a given metric.
 metric_instance.interpret_scores
 
-# Understand what hyperparameters to tune.
+# Understand what hyperparameters of a metric to tune.
 sensitivity_scorer.get_params
 
-# To list available metrics.
-quantus.available_metrics
+# To list available metrics (and their corresponding categories).
+quantus.AVAILABLE_METRICS
 
-...
+# To list available explainable methods.
+quantus.AVAILABLE_XAI_METHODS
+
+# To list available perturbation functions.
+quantus.AVAILABLE_SIMILARITY_FUNCTIONS
+
+# To list available similarity functions.
+quantus.AVAILABLE_PERTURBATION_FUNCTIONS
+
+# To list available normalisation function.
+quantus.AVAILABLE_NORMALISATION_FUNCTIONS
 ````
 With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
         
