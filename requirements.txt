@@ -10,3 +10,4 @@ captum
 pytest
 termcolor
 pytest-lazy-fixture
+coverage
