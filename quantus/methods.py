@@ -154,5 +154,5 @@ def available_similarity_functions() -> list:
     return [c for c in AVAILABLE_SIMILARITY_FUNCTIONS.keys()]
 
 
-def available_localisation_functions() -> list:
-    return [c for c in AVAILABLE_LOCALISATION_FUNCTIONS.keys()]
+def available_normalisation_functions() -> list:
+    return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]
