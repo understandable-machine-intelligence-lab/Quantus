@@ -43,9 +43,7 @@ class Completeness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
@@ -124,11 +122,7 @@ class Completeness(Metric):
         # Update kwargs.
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -172,9 +166,7 @@ class Completeness(Metric):
                 y_pred = float(
                     model(
                         torch.Tensor(x)
-                        .reshape(
-                            1, self.nr_channels, self.img_size, self.img_size
-                        )
+                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -184,9 +176,7 @@ class Completeness(Metric):
                 y_pred_baseline = float(
                     model(
                         torch.Tensor(x_baseline)
-                        .reshape(
-                            1, self.nr_channels, self.img_size, self.img_size
-                        )
+                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
                         .to(self.kwargs.get("device", None))
                     )[:, y]
                 )
@@ -230,9 +220,7 @@ class NonSensitivity(Metric):
         self.n_samples = self.kwargs.get("n_samples", 100)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.perturb_func = self.kwargs.get(
@@ -311,11 +299,7 @@ class NonSensitivity(Metric):
         # Update kwargs.
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
@@ -382,9 +366,7 @@ class NonSensitivity(Metric):
 
                     vars.append(np.var(preds))
 
-            non_features_vars = set(
-                list(np.argwhere(vars).flatten() < self.eps)
-            )
+            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
             self.last_results.append(
                 len(non_features_vars.symmetric_difference(non_features))
             )

@@ -39,9 +39,7 @@ class PointingGame(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -121,11 +119,7 @@ class PointingGame(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -147,9 +141,7 @@ class PointingGame(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             # Reshape.
             a = a.flatten()
@@ -207,9 +199,7 @@ class AttributionLocalisation(Metric):
         self.max_size = self.kwargs.get("max_size", 1.0)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -229,7 +219,7 @@ class AttributionLocalisation(Metric):
                 citation=(
                     "Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S. "
                     "'Towards Best Practice in Explaining Neural Network Decisions with LRP."
-                "arXiv preprint arXiv:1910.09840v2 (2020)."
+                    "arXiv preprint arXiv:1910.09840v2 (2020)."
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -291,11 +281,7 @@ class AttributionLocalisation(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -316,9 +302,7 @@ class AttributionLocalisation(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
             s = s.flatten().astype(bool)
@@ -351,9 +335,7 @@ class AttributionLocalisation(Metric):
             # Compute inside/outside ratio.
             inside_attribution = np.sum(a[s])
             total_attribution = np.sum(a)
-            inside_attribution_ratio = float(
-                inside_attribution / total_attribution
-            )
+            inside_attribution_ratio = float(inside_attribution / total_attribution)
 
             if ratio <= self.max_size:
                 if inside_attribution_ratio > 1.0:
@@ -365,9 +347,7 @@ class AttributionLocalisation(Metric):
                 if not self.weighted:
                     self.last_results.append(inside_attribution_ratio)
                 else:
-                    self.last_results.append(
-                        float(inside_attribution_ratio * ratio)
-                    )
+                    self.last_results.append(float(inside_attribution_ratio * ratio))
 
         if not self.last_results:
             warnings.warn(
@@ -403,9 +383,7 @@ class TopKIntersection(Metric):
         self.concept_influence = self.kwargs.get("concept_influence", False)
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -424,7 +402,7 @@ class TopKIntersection(Metric):
                 ),
                 citation=(
                     "Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. 'Interpretable "
-                "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
+                    "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -486,11 +464,7 @@ class TopKIntersection(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -512,9 +486,7 @@ class TopKIntersection(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -570,9 +542,7 @@ class RelevanceRankAccuracy(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -652,11 +622,7 @@ class RelevanceRankAccuracy(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -678,9 +644,7 @@ class RelevanceRankAccuracy(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
             s = np.where(s.flatten().astype(bool))[0]
@@ -740,9 +704,7 @@ class RelevanceMassAccuracy(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -821,11 +783,7 @@ class RelevanceMassAccuracy(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -847,9 +805,7 @@ class RelevanceMassAccuracy(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
 
@@ -903,9 +859,7 @@ class AUC(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -983,11 +937,7 @@ class AUC(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -1009,9 +959,7 @@ class AUC(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(
-            zip(x_batch, y_batch, a_batch, s_batch)
-        ):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
 
             if self.abs:
                 a = np.abs(a)

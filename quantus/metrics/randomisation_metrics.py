@@ -40,14 +40,10 @@ class ModelParameterRandomisation(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.similarity_func = self.kwargs.get(
-            "similarity_func", correlation_spearman
-        )
+        self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.last_results = {}
         self.all_results = []
@@ -56,15 +52,15 @@ class ModelParameterRandomisation(Metric):
         assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
             warn_parameterisation(
-            metric_name=self.__class__.__name__,
-            sensitive_params=(
-                "similarity metric 'similarity_func' and the order of "
-                "the layer randomisation 'layer_order'"
-            ),
-            citation=(
-                "Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
-                "'Sanity Checks for Saliency Maps.' arXiv preprint,"
-                " arXiv:1810.073292v3 (2018)"
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "similarity metric 'similarity_func' and the order of "
+                    "the layer randomisation 'layer_order'"
+                ),
+                citation=(
+                    "Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
+                    "'Sanity Checks for Saliency Maps.' arXiv preprint,"
+                    " arXiv:1810.073292v3 (2018)"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -124,11 +120,7 @@ class ModelParameterRandomisation(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = {}
 
@@ -213,9 +205,7 @@ class RandomLogit(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
         self.last_results = []
@@ -289,11 +279,7 @@ class RandomLogit(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = [dict() for _ in x_batch]
 
@@ -322,13 +308,30 @@ class RandomLogit(Metric):
 
         # Randomly select off-class labels.
         if isinstance(y_batch, (np.ndarray, list, torch.Tensor)):
-            y_batch_off = np.array([random.choice([y for y in list(np.arange(0, self.num_classes))
-                                                   if y != y_true]) for y_true in y_batch])
+            y_batch_off = np.array(
+                [
+                    random.choice(
+                        [y for y in list(np.arange(0, self.num_classes)) if y != y_true]
+                    )
+                    for y_true in y_batch
+                ]
+            )
         elif isinstance(y_batch, (float, int)):
-            y_batch_off = np.array([random.choice([y for y in list(np.arange(0, self.num_classes))
-                                                   if y != y_batch])])
+            y_batch_off = np.array(
+                [
+                    random.choice(
+                        [
+                            y
+                            for y in list(np.arange(0, self.num_classes))
+                            if y != y_batch
+                        ]
+                    )
+                ]
+            )
         else:
-            raise ValueError('User should provide y_batch as either a list, np.ndarray, torch.Tensor, int or float.')
+            raise ValueError(
+                "User should provide y_batch as either a list, np.ndarray, torch.Tensor, int or float."
+            )
 
         # Explain against a random class.
         a_perturbed = explain_func(

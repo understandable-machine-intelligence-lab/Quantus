@@ -13,9 +13,7 @@ def attributes_check(metric):
             attr["similarity_func"]
         ), "The 'similarity_func' must be a callable."
     if "explain_func" in attr:
-        assert callable(
-            attr["explain_func"]
-        ), "The 'explain_func' must be a callable."
+        assert callable(attr["explain_func"]), "The 'explain_func' must be a callable."
     if "normalize_func" in attr:
         assert callable(
             attr["normalize_func"]
@@ -89,19 +87,26 @@ def assert_patch_size(patch_size: int, img_size: int) -> None:
 
 def assert_attributions_order(order: str) -> None:
     """Assert that order is in pre-defined list."""
-    assert order in ["morf", "lorf"], "The order of sorting the attributions must be either morf or lorf-"
+    assert order in [
+        "morf",
+        "lorf",
+    ], "The order of sorting the attributions must be either morf or lorf-"
 
 
 def assert_nr_segments(nr_segments: int) -> None:
     """Assert that the number of segments given the segementation algorithm is more than one."""
-    assert nr_segments > 1, "The number of segments from the segmentation algorithm must be more than one."
+    assert (
+        nr_segments > 1
+    ), "The number of segments from the segmentation algorithm must be more than one."
 
 
 def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
     """Assert that perturbation applied to input caused change so that input and perturbed input is not the smae."""
-    assert (x.flatten() != x_perturbed.flatten()).any(), "The settings for perturbing input e.g., 'perturb_func' and " \
-                                                         "'perturb_baseline' didn't cause change in input. " \
-                                                         "Reconsider the parameter settings."
+    assert (x.flatten() != x_perturbed.flatten()).any(), (
+        "The settings for perturbing input e.g., 'perturb_func' and "
+        "'perturb_baseline' didn't cause change in input. "
+        "Reconsider the parameter settings."
+    )
 
 
 def assert_layer_order(layer_order: str) -> None:
@@ -176,10 +181,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), (
-        "The "
-        "segmentation 's_batch' should not only contain [1‚0] or [True, False]."
-    )
+    ), ("The " "segmentation 's_batch' should not only contain [1‚0] or [True, False].")
 
 
 def assert_max_size(max_size: float) -> None:

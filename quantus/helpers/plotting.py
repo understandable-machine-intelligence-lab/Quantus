@@ -137,9 +137,7 @@ def plot_superpixel_segments(
     fig = plt.figure(figsize=(6, 6))
     plt.imshow(
         mark_boundaries(
-            np.reshape(
-                img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))
-            ),
+            np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
             segments,
             mode="subpixel",
         )
@@ -170,20 +168,18 @@ def plot_model_parameter_randomisation_experiment(
             for _ in results[method]:
                 layers = list(results[method].keys())
                 scores = {k: [] for k in layers}
-                #samples = len(results[method])
-                #for s in range(samples):
+                # samples = len(results[method])
+                # for s in range(samples):
                 for layer in layers:
                     scores[layer].append(results[method][layer])
 
-            plt.plot(
-                layers, [np.mean(v) for k, v in scores.items()], label=method
-            )
+            plt.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
     else:
 
         layers = list(results.keys())
         scores = {k: [] for k in layers}
-        #samples = len(results)
-        #for s in range(samples):
+        # samples = len(results)
+        # for s in range(samples):
         for layer in layers:
             scores[layer].append(results[layer])
 

@@ -7,9 +7,7 @@ from .helpers.constants import *
 
 def evaluate(
     evaluation_metrics: dict,
-    explanation_methods: Union[
-        Dict[str, Callable], Dict[str, np.ndarray], list
-    ],
+    explanation_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
     model: torch.nn,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
@@ -63,9 +61,7 @@ def evaluate(
             for metric, metric_func in evaluation_metrics.items():
 
                 if progress:
-                    print(
-                        f"Evaluating {method} explanations on {metric} metric..."
-                    )
+                    print(f"Evaluating {method} explanations on {metric} metric...")
 
                 results[method][metric] = agg_func(
                     metric_func(
@@ -114,9 +110,7 @@ def evaluate(
             for metric, metric_func in evaluation_metrics.items():
 
                 if progress:
-                    print(
-                        f"Evaluating {method} explanations on {metric} metric..."
-                    )
+                    print(f"Evaluating {method} explanations on {metric} metric...")
 
                 results[method][metric] = agg_func(
                     metric_func(
@@ -137,9 +131,7 @@ def available_categories() -> list:
 
 
 def available_metrics() -> dict:
-    return {
-        c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()
-    }
+    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
 def available_methods() -> list:

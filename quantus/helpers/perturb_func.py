@@ -28,7 +28,9 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
         choice = kwargs["perturb_baseline"]
 
     img_perturbed = copy.copy(img)
-    img_perturbed[kwargs["indices"]] = get_baseline_value(choice=choice, img=img, **kwargs)
+    img_perturbed[kwargs["indices"]] = get_baseline_value(
+        choice=choice, img=img, **kwargs
+    )
 
     return img_perturbed
 
@@ -36,18 +38,10 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
 def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     """Replace a single patch in an image by given baseline."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert (
-        "patch_size" in kwargs
-    ), "Specify 'patch_size' (int) to perturb the image."
-    assert (
-        "nr_channels" in kwargs
-    ), "Specify 'nr_channels' (int) to perturb the image."
-    assert (
-        "top_left_y" in kwargs
-    ), "Specify 'top_left_y' (int) to perturb the image."
-    assert (
-        "top_left_x" in kwargs
-    ), "Specify 'top_left_x' (int) to perturb the image."
+    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
+    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
+    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
+    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
 
     # Preset patch for 'mean' and 'neighbourhood' choices.
     kwargs["patch"] = img[
@@ -62,9 +56,7 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
         :,
         kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
         kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ] = get_baseline_value(
-        choice=kwargs["perturb_baseline"], img=img, **kwargs
-    )
+    ] = get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs)
 
     return img_perturbed
 

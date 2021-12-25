@@ -93,9 +93,7 @@ def get_baseline_dict(img: Union[torch.Tensor, None], **kwargs) -> dict:
     if "patch" in kwargs:
         fill_dict["neighbourhood_mean"] = (float(kwargs["patch"].mean()),)
         fill_dict["neighbourhood_random_min_max"] = (
-            float(
-                random.uniform(kwargs["patch"].min(), kwargs["patch"].max())
-            ),
+            float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
         )
     return fill_dict
 
@@ -105,9 +103,7 @@ def get_name(str: str):
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
 
 
-def filter_compatible_patch_sizes(
-    perturb_patch_sizes: list, img_size: int
-) -> list:
+def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
     """Remove patch sizes that are not compatible with input size."""
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
