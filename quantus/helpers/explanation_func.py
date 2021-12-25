@@ -39,20 +39,17 @@ def explain(
     model.eval()
 
     if not isinstance(inputs, torch.Tensor):
-        inputs = (
-            torch.Tensor(inputs)
-            .to(kwargs.get("device", None))
-        )
+        inputs = torch.Tensor(inputs).to(kwargs.get("device", None))
 
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(kwargs.get("device", None))
 
     inputs = inputs.reshape(
-                -1,
-                kwargs.get("nr_channels", 3),
-                kwargs.get("img_size", 224),
-                kwargs.get("img_size", 224),
-            )
+        -1,
+        kwargs.get("nr_channels", 3),
+        kwargs.get("img_size", 224),
+        kwargs.get("img_size", 224),
+    )
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
@@ -82,9 +79,7 @@ def explain(
 
     elif method == "InputXGradient".lower():
         explanation = (
-            InputXGradient(model)
-            .attribute(inputs=inputs, target=targets)
-            .sum(axis=1)
+            InputXGradient(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
     elif method == "Saliency".lower():
@@ -117,9 +112,7 @@ def explain(
     elif method == "FeatureAblation".lower():
 
         explanation = (
-            FeatureAblation(model)
-            .attribute(inputs=inputs, target=targets)
-            .sum(axis=1)
+            FeatureAblation(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
     elif method == "GradCam".lower():
@@ -153,9 +146,7 @@ def explain(
             explanation[i] = torch.Tensor(
                 np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
                 .mean(axis=0)
-                .reshape(
-                    kwargs.get("img_size", 224), kwargs.get("img_size", 224)
-                )
+                .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
 
     elif method == "Control Var. Constant".lower():
@@ -190,9 +181,7 @@ def explain(
             explanation = explanation.cpu().numpy()
 
     if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(
-            explanation
-        )
+        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
     if kwargs.get("abs", False):
         explanation = np.abs(explanation)
 

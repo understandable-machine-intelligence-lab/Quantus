@@ -39,9 +39,7 @@ class Sparseness(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -118,11 +116,7 @@ class Sparseness(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -166,11 +160,7 @@ class Sparseness(Metric):
             a += 0.0000001
             a = np.sort(a)
             self.last_results.append(
-                (
-                    np.sum(
-                        (2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a
-                    )
-                )
+                (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a))
                 / (a.shape[0] * np.sum(a))
             )
 
@@ -203,9 +193,7 @@ class Complexity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -281,11 +269,7 @@ class Complexity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -357,9 +341,7 @@ class EffectiveComplexity(Metric):
         self.eps = self.kwargs.get("eps", 1e-5)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get(
-            "normalise_func", normalise_by_negative
-        )
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.last_results = []
@@ -435,11 +417,7 @@ class EffectiveComplexity(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
         self.kwargs = {
             **kwargs,
-            **{
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
         self.last_results = []
 
@@ -476,9 +454,7 @@ class EffectiveComplexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            self.last_results.append(
-                int(np.sum(a > self.eps))
-            )  # int operation?
+            self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
 
         self.all_results.append(self.last_results)
 
