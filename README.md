@@ -1,10 +1,11 @@
-<h1 align="center"><b>Quantus</b></h1>
+<p align="center">
+  <img width="350" height="200" src="https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus_logo.png">
+</p>
+<!--<h1 align="center"><b>Quantus</b></h1>-->
 <h3 align="center"><b>A metrics toolbox to evaluate neural network explanations</b></h3>
 <p align="center">
-  <i>Pytorch implementation</i>
+  <i>PyTorch implementation</i>
 </p>
-
-______
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 ![Python version](https://img.shields.io/badge/python-%20%7C%203.9-blue.svg) <!--python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg-->
@@ -15,7 +16,7 @@ ______
 <!--[![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)-->
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
-<!--<img src="quantus.png" alt="drawing" width="600"/>-->
+<!--![](quantus_logo.png)-->
 
 <!--**A library that helps you understand your XAI explanations..**-->
 <!--
