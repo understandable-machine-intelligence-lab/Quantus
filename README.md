@@ -1,8 +1,8 @@
 <p align="center">
-  <img width="350" height="200" src="https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/quantus_logo.png">
+  <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/master/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b>A metrics toolbox to evaluate neural network explanations</b></h3>
+<h3 align="center"><b>A metrics toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
   <i>PyTorch implementation</i>
 </p>
@@ -94,13 +94,19 @@ Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018)
 
 ## Installation
 
+Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/):
+
+```setup
+pip install quantus
+````
+
 To install requirements:
 
 ```setup
 pip install -r requirements.txt
 ```
 
-Package requirements.
+Package requirements:
 
 ```
 Python >= 3.6.9
@@ -162,13 +168,17 @@ The qualitative aspects of the Saliency and Integrated Gradients explanations ma
 ```python
 # Define params for evaluation.
 params_eval = {
-    "nr_samples": 10,
-    "perturb_radius": 0.1,
-    "norm_numerator": quantus.fro_norm,
-    "norm_denominator": quantus.fro_norm,
-    "perturb_func": quantus.uniform_sampling,
-    "similarity_func": quantus.difference,
-    "disable_warnings": True,
+  "nr_samples": 10,
+  "perturb_radius": 0.1,
+  "norm_numerator": quantus.fro_norm,
+  "norm_denominator": quantus.fro_norm,
+  "perturb_func": quantus.uniform_sampling,
+  "similarity_func": quantus.difference,
+  "img_size": 28, 
+  "nr_channels": 1,
+  "normalise": False, 
+  "abs": False,
+  "disable_warnings": True,
 }
 
 # Return max sensitivity scores in an one-liner - by calling the metric instance.
@@ -178,10 +188,7 @@ scores_saliency = quantus.MaxSensitivity(**params_eval)(model=model,
                                                         a_batch=a_batch_saliency,
                                                         **{"explain_func": quantus.explain, 
                                                            "method": "Saliency", 
-                                                           "device": device,
-                                                           "img_size": 28, 
-                                                           "normalise": False, 
-                                                           "abs": False})
+                                                           "device": device})
 ```
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
@@ -189,19 +196,19 @@ scores_saliency = quantus.MaxSensitivity(**params_eval)(model=model,
 ```python
 import numpy as np
 
-metrics = {"max-Sensitivity": quantus.MaxSensitivity(**params_eval)}
+metrics = {"max-Sensitivity": quantus.MaxSensitivity(**params_eval),
+           }
 
 xai_methods = {"Saliency": a_batch_saliency,
                "IntegratedGradients": a_batch_intgrad}
 
-results = quantus.evaluate(evaluation_metrics=metrics,
-                           explanation_methods=xai_methods,
+results = quantus.evaluate(metrics=metrics,
+                           xai_methods=xai_methods,
                            model=model,
                            x_batch=x_batch,
                            y_batch=y_batch,
                            agg_func=np.mean,
-                           **{"explain_func": quantus.explain, "device": device,
-                           "img_size": 28, "normalise": False, "abs": False})
+                           **{"explain_func": quantus.explain, "device": device})
 # Summarise results in a dataframe.
 df = pd.DataFrame(results)
 df
