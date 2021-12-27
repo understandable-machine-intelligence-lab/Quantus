@@ -6,8 +6,8 @@ from .helpers.constants import *
 
 
 def evaluate(
-    evaluation_metrics: dict,
-    explanation_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
+    metrics: dict,
+    xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
     model: torch.nn,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
@@ -22,8 +22,8 @@ def evaluate(
 
     Parameters
     ----------
-    evaluation_metrics
-    explanation_methods
+    metrics
+    xai_methods
     model
     x_batch
     y_batch
@@ -36,17 +36,17 @@ def evaluate(
 
     """
 
-    if explanation_methods is None:
+    if xai_methods is None:
         print("Define the explanation methods that you want to evaluate.")
 
-    if evaluation_metrics is None:
+    if metrics is None:
         print(
             "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
         )
 
     results = {}
 
-    if isinstance(explanation_methods, list):
+    if isinstance(xai_methods, list):
 
         assert a_batch is not None, (
             "If 'explanation_methods' is a list of methods as strings, "
@@ -54,11 +54,11 @@ def evaluate(
             "to each input."
         )
 
-        for method in explanation_methods:
+        for method in xai_methods:
 
             results[method] = {}
 
-            for metric, metric_func in evaluation_metrics.items():
+            for metric, metric_func in metrics.items():
 
                 if progress:
                     print(f"Evaluating {method} explanations on {metric} metric...")
@@ -74,9 +74,9 @@ def evaluate(
                     )
                 )
 
-    elif isinstance(explanation_methods, dict):
+    elif isinstance(xai_methods, dict):
 
-        for method, method_func in explanation_methods.items():
+        for method, method_func in xai_methods.items():
 
             results[method] = {}
 
@@ -107,7 +107,7 @@ def evaluate(
                         "Explanations must be of type np.ndarray or a Callable function that outputs np.nparray."
                     )
 
-            for metric, metric_func in evaluation_metrics.items():
+            for metric, metric_func in metrics.items():
 
                 if progress:
                     print(f"Evaluating {method} explanations on {metric} metric...")

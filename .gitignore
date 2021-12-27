@@ -27,3 +27,8 @@ temp/
 *.gcda
 *.gcov
 test
+
+# build
+dist/
+*/*.egg-info/
+*.egg-info/
