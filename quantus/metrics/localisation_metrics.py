@@ -153,16 +153,13 @@ class PointingGame(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            # Find index of max value.
-            max_index = np.where(a == np.max(a))[0]
+            # Find index of all maximum points, there might be several.
+            max_idxs = np.argwhere(a == np.amax(a))
+            # Randomly chose one of the maximum points.
+            max_idx_h, max_idx_w = tuple(max_idxs[np.random.randint(0, len(max_idxs), size=(1,))[0]])
 
-            # Check if maximum of explanation is on target object class.
-            if len(max_index) > 1:
-                hit = False
-                for pixel in max_index:
-                    hit = hit or s[pixel]
-            else:
-                hit = bool(s[max_index])
+            # Check value of mask at maximum point. Either 0 or 1.
+            hit = s[max_idx_h, max_idx_w]
 
             self.last_results.append(hit)
 
