@@ -12,7 +12,7 @@ jobs:
         fetch-depth: '2'
 
     - name: Setup Python
-      uses: actions/setup-python@master
+      uses: actions/setup-python@main
       with:
         python-version: 3.9
         
