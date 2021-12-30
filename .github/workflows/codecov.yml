@@ -2,11 +2,11 @@ name: codecov
 on: [pull_request]
 jobs:
   run:
-    #runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     #env:
     #  OS: ubuntu-latest
     #  PYTHON: '3.9'
-    #steps:
+    steps:
     #- uses: checkout@v2
     #  with:
     #    fetch-depth: '2'
