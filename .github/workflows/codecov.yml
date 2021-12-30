@@ -1,5 +1,5 @@
 name: codecov
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -8,7 +8,7 @@ jobs:
         uses: actions/checkout@master
       - name: Test
         run: |
-          pip install coverage
+          pip install coverage pytest
           coverage run -m pytest
       - name: Upload
         uses: codecov/codecov-action@v1
