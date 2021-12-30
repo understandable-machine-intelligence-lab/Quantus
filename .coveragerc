@@ -1,6 +1,5 @@
 [run]
 source = quantus
-include = */quantus/*
 omit = 
     tutorials/*
     tests/* 
