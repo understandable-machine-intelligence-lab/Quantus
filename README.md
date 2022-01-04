@@ -9,6 +9,7 @@
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 ![Python version](https://img.shields.io/badge/python-%20%7C%203.9-blue.svg) <!--python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg-->
+[![codecov](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
 
 <!--[![Build Status](https://github.com/understandable-machine-intelligence-lab/Quantus/workflows/CI/badge.svg?branch=master)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions?query=workflow%3A%22CI%22)-->
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
