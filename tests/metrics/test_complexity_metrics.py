@@ -9,8 +9,16 @@ from ...quantus.metrics import *
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("almost_uniform"), {"normalise": True, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
-        (lazy_fixture("almost_uniform"), {"normalise": False, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": True, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": False, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_sparseness(data: dict, params: dict, expected: Union[float, dict, bool]):
@@ -32,8 +40,16 @@ def test_sparseness(data: dict, params: dict, expected: Union[float, dict, bool]
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("almost_uniform"), {"normalise": True, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
-        (lazy_fixture("almost_uniform"), {"normalise": False, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": True, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": False, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_complexity(data: dict, params: dict, expected: Union[float, dict, bool]):
@@ -50,11 +66,21 @@ def test_complexity(data: dict, params: dict, expected: Union[float, dict, bool]
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("almost_uniform"), {"normalise": True, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
-        (lazy_fixture("almost_uniform"), {"normalise": False, "disable_warnings": True}, {"max": 1.0, "min": 0.0}),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": True, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("almost_uniform"),
+            {"normalise": False, "disable_warnings": True},
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
-def test_effective_complexity(data: dict, params: dict, expected: Union[float, dict, bool]):
+def test_effective_complexity(
+    data: dict, params: dict, expected: Union[float, dict, bool]
+):
     scores = EffectiveComplexity(**params)(
         model=None,
         x_batch=data["x_batch"],

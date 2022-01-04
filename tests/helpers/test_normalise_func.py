@@ -31,7 +31,9 @@ def atts_denormalise():
         )
     ],
 )
-def test_normalise_by_max(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_normalise_by_max(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = normalise_by_max(a=data)
     assert all(o == e for o, e in zip(out, expected)), "Test failed."
 
@@ -65,7 +67,9 @@ def test_normalise_if_negative(
         )
     ],
 )
-def test_denormalise(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_denormalise(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = denormalise(img=data)
     assert all(
         o == e for o, e in zip(out.flatten(), expected.flatten())

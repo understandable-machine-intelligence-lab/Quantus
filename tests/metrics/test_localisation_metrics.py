@@ -183,7 +183,9 @@ def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
         (lazy_fixture("half_in_gt_zeros"), {"k": 1250}, {"min": 0.5, "max": 1.0}),
     ],
 )
-def test_top_k_intersection(data: dict, params: dict, expected: Union[float, dict, bool]):
+def test_top_k_intersection(
+    data: dict, params: dict, expected: Union[float, dict, bool]
+):
     scores = TopKIntersection(**params)(
         model=None,
         x_batch=data["x_batch"],
