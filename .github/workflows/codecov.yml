@@ -8,7 +8,7 @@ jobs:
         uses: actions/checkout@master
       - name: Test
         run: |
-          pip install coverage pytest
+          pip install coverage pytest pytest-cov
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
           #coverage run -m pytest
       - name: Upload
