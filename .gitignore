@@ -27,6 +27,8 @@ temp/
 *.gcda
 *.gcov
 test
+.coverage
+coverage.xml
 
 # build
 dist/

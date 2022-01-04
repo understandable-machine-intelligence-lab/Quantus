@@ -111,7 +111,7 @@ Package requirements:
 ```
 Python >= 3.6.9
 PyTorch >= 1.8
-Captum >= 0.9.0
+Captum >= 0.4.0
 ```
 
 ## Getting started
