@@ -219,7 +219,9 @@ def test_lipschitz_constant(
         (lazy_fixture("atts_half"), {}, 1.0),
     ],
 )
-def test_abs_difference(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_abs_difference(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = abs_difference(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 

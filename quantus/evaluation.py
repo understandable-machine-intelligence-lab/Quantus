@@ -15,6 +15,7 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
+    *args,
     **kwargs,
 ) -> dict:
     """
@@ -124,27 +125,3 @@ def evaluate(
                 )
 
     return results
-
-
-def available_categories() -> list:
-    return [c for c in AVAILABLE_METRICS.keys()]
-
-
-def available_metrics() -> dict:
-    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
-
-
-def available_methods() -> list:
-    return [c for c in AVAILABLE_XAI_METHODS.keys()]
-
-
-def available_perturbation_functions() -> list:
-    return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
-
-
-def available_similarity_functions() -> list:
-    return [c for c in AVAILABLE_SIMILARITY_FUNCTIONS.keys()]
-
-
-def available_normalisation_functions() -> list:
-    return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]

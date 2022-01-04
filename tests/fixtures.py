@@ -29,6 +29,7 @@ def load_mnist_images():
     y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
+
 @pytest.fixture
 def almost_uniform(scope="session", autouse=True):
     a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224, 224))

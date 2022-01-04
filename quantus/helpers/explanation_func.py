@@ -29,7 +29,7 @@ def explain(
         warnings.warn(
             f"Using quantus 'explain' function as an explainer without specifying 'method' (str) "
             f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
-            category=Warning,
+            category=UserWarning,
         )
 
     method = kwargs.get("method", "Gradient").lower()
@@ -83,7 +83,6 @@ def explain(
         )
 
     elif method == "Saliency".lower():
-
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
@@ -98,7 +97,6 @@ def explain(
         )
 
     elif method == "Occlusion".lower():
-
         explanation = (
             Occlusion(model)
             .attribute(
@@ -110,16 +108,17 @@ def explain(
         )
 
     elif method == "FeatureAblation".lower():
-
         explanation = (
             FeatureAblation(model).attribute(inputs=inputs, target=targets).sum(axis=1)
         )
 
     elif method == "GradCam".lower():
-
         assert (
             "gc_layer" in kwargs
         ), "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+
+        if isinstance(kwargs["gc_layer"], str):
+            kwargs["gc_layer"] = eval(kwargs["gc_layer"])
 
         explanation = (
             LayerGradCam(model, layer=kwargs["gc_layer"])
@@ -137,7 +136,6 @@ def explain(
         )
 
     elif method == "Control Var. Sobel Filter".lower():
-
         explanation = torch.zeros(
             size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
         )
@@ -150,12 +148,10 @@ def explain(
             )
 
     elif method == "Control Var. Constant".lower():
-
         assert (
             "constant_value" in kwargs
         ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
 
-        # explanation = torch.zeros_like(explanation)
         explanation = torch.zeros(
             size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
         )
@@ -182,6 +178,7 @@ def explain(
 
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
+
     if kwargs.get("abs", False):
         explanation = np.abs(explanation)
 

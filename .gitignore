@@ -28,7 +28,6 @@ temp/
 *.gcov
 test
 .coverage
-coverage.xml
 
 # build
 dist/
