@@ -7,16 +7,33 @@ from ...quantus.metrics import *
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected", [({"perturb_std": 0.1, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
-                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
-                         {"min": 0.0, "max": 1.0}),
-                        ],
+    "params,expected",
+    [
+        (
+            {
+                "perturb_std": 0.1,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
 )
 def test_local_lipschitz_estimate(
-   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
     explain = params["explain_func"]
     a_batch = explain(
         model=model,
@@ -36,16 +53,33 @@ def test_local_lipschitz_estimate(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected", [({"perturb_radius": 0.2, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
-                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
-                         {"min": 0.0, "max": 1.0}),
-                        ],
+    "params,expected",
+    [
+        (
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
 )
 def test_max_sensitivity(
-   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
     explain = params["explain_func"]
     a_batch = explain(
         model=model,
@@ -71,16 +105,33 @@ def test_max_sensitivity(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected", [({"perturb_radius": 0.2, "nr_samples": 10, "img_size": 28, "nr_channels": 1,
-                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
-                         {"min": 0.0, "max": 1.0}),
-                        ],
+    "params,expected",
+    [
+        (
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
 )
 def test_avg_sensitivity(
-   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
     explain = params["explain_func"]
     a_batch = explain(
         model=model,
@@ -105,16 +156,33 @@ def test_avg_sensitivity(
 
 @pytest.mark.fixing
 @pytest.mark.parametrize(
-    "params,expected", [({"nr_steps": 10, "patch_size": 7, "img_size": 28, "nr_channels": 1,
-                          "explain_func": explain, "method": "Saliency", "disable_warnings": True},
-                         {"min": 0.0, "max": 1.0}),
-                        ],
+    "params,expected",
+    [
+        (
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
 )
 def test_continuity(
-   params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
     explain = params["explain_func"]
     a_batch = explain(
         model=model,
@@ -130,4 +198,3 @@ def test_continuity(
         **params,
     )
     assert scores is not None, "Test failed."
-

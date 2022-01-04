@@ -13,17 +13,72 @@ from ...quantus.helpers import *
     "params,expected",
     [
         ({"method": "Saliency", "img_size": 28, "nr_channels": 1}, {"min": 0.0}),
-        ({"method": "GradientShap", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0.0}),
-        ({"method": "IntegratedGradients", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0.0}),
-        ({"method": "InputXGradient", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0.0}),
-        ({"method": "Occlusion", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0.0}),
-        ({"method": "FeatureAblation", "img_size": 28, "nr_channels": 1, "neg_only": True}, {"max": 0.0}),
-        ({"method": "GradCam", "img_size": 28, "nr_channels": 1, "gc_layer": "model._modules.get('conv_2')",
-          "abs": True}, {"min": 0}),
-        ({"method": "Control Var. Sobel Filter", "img_size": 28, "nr_channels": 1, "neg_only": True}, {"max": 0.0}),
-        ({"method": "Gradient", "img_size": 28, "nr_channels": 1, "pos_only": True}, {"min": 0.0}),
-        ({"method": "Gradient", "img_size": 28, "nr_channels": 1, "abs": True}, {"min": 0.0}),
-        ({"method": "Control Var. Constant", "img_size": 28, "nr_channels": 1, "constant_value": 0.0}, {"value": 0.0}),
+        (
+            {"method": "GradientShap", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            {
+                "method": "IntegratedGradients",
+                "img_size": 28,
+                "nr_channels": 1,
+                "abs": True,
+            },
+            {"min": 0.0},
+        ),
+        (
+            {"method": "InputXGradient", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            {"method": "Occlusion", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            {
+                "method": "FeatureAblation",
+                "img_size": 28,
+                "nr_channels": 1,
+                "neg_only": True,
+            },
+            {"max": 0.0},
+        ),
+        (
+            {
+                "method": "GradCam",
+                "img_size": 28,
+                "nr_channels": 1,
+                "gc_layer": "model._modules.get('conv_2')",
+                "abs": True,
+            },
+            {"min": 0},
+        ),
+        (
+            {
+                "method": "Control Var. Sobel Filter",
+                "img_size": 28,
+                "nr_channels": 1,
+                "neg_only": True,
+            },
+            {"max": 0.0},
+        ),
+        (
+            {"method": "Gradient", "img_size": 28, "nr_channels": 1, "pos_only": True},
+            {"min": 0.0},
+        ),
+        (
+            {"method": "Gradient", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            {
+                "method": "Control Var. Constant",
+                "img_size": 28,
+                "nr_channels": 1,
+                "constant_value": 0.0,
+            },
+            {"value": 0.0},
+        ),
         (
             {
                 "method": "Gradient",
@@ -48,10 +103,16 @@ from ...quantus.helpers import *
     ],
 )
 def test_explain_func(
-    params: dict, expected: Union[float, dict, bool], load_mnist_images, load_mnist_model
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
 ):
     model = load_mnist_model
-    x_batch, y_batch = load_mnist_images["x_batch"].numpy(), load_mnist_images["y_batch"].numpy()
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
 
     a_batch = explain(
         model=model,
