@@ -8,16 +8,14 @@
 </p>
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
+[![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
 ![Python version](https://img.shields.io/badge/python-%20%7C%203.9-blue.svg) <!--python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg-->
-[![codecov](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
+[![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 
 <!--[![Build Status](https://github.com/understandable-machine-intelligence-lab/Quantus/workflows/CI/badge.svg?branch=master)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions?query=workflow%3A%22CI%22)-->
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
-<!--[![codecov](https://codecov.io/gh/understandable-machine-intelligence-lab/Quantus/branch/master/graph/badge.svg)](https://codecov.io/gh/understandable-machine-intelligence-lab/Quantus)-->
-<!--[![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)-->
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
-<!--![](quantus_logo.png)-->
 
 <!--**A library that helps you understand your XAI explanations..**-->
 <!--
