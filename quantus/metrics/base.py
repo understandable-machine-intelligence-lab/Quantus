@@ -98,7 +98,7 @@ class Metric:
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        return None
+        raise NotImplementedError
 
     @property
     def interpret_scores(self) -> None:

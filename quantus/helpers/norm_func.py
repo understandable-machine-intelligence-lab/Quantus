@@ -11,13 +11,7 @@ def fro_norm(a: np.array) -> float:
 def l2_norm(a: np.array) -> float:
     """Calculate L2-norm for an array."""
     assert a.ndim == 1, "Check that 'l2_norm' receives a 1D array."
-    return np.linalg.norm(a, ord="2")
-
-
-def l1_norm(a: np.array) -> float:
-    """Calculate L1-norm for an array."""
-    assert a.ndim == 1, "Check that 'l1_norm' receives a 1D array."
-    return np.linalg.norm(a, ord="1")
+    return np.linalg.norm(a)
 
 
 def linf_norm(a: np.array) -> float:
