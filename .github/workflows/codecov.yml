@@ -9,7 +9,8 @@ jobs:
       - name: Test
         run: |
           pip install coverage pytest
-          coverage run -m pytest
+          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+          #coverage run -m pytest
       - name: Upload
         uses: codecov/codecov-action@v1
         with:
