@@ -1,22 +1,14 @@
 [run]
 source = quantus
 omit = 
-    tutorials/*
-    tests/*
+    /tutorials/*
+    /tests/*
     quantus/helpers/asserts.py
     quantus/helpers/warn_func.py
     quantus/helpers/models.py
     quantus/helpers/constants.py
     quantus/helpers/plotting.py
     quantus/metrics/base.py
-#branch = True
 
 [report]
-#exclude_lines =
-#    if self.debug:
-#    pragma: no cover
-#    raise NotImplementedError
-#    if __name__ == .__main__.:
 ignore_errors = True
-omit =
-    tests/*

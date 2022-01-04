@@ -24,7 +24,9 @@ def input_pert_3d():
 @pytest.mark.parametrize(
     "data,params,expected", [(lazy_fixture("input_pert_1d"), {}, True)]
 )
-def test_gaussian_noise(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_gaussian_noise(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = gaussian_noise(img=data, **params)
     assert any(out != data) == expected, "Test failed."
 
@@ -38,7 +40,9 @@ def test_baseline_replacement_by_indices(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = baseline_replacement_by_indices(img=data, **params)
-    assert any(out[params["indices"]] != data[params["indices"]]) == expected, "Test failed."
+    assert (
+        any(out[params["indices"]] != data[params["indices"]]) == expected
+    ), "Test failed."
 
 
 @pytest.mark.perturb_func
@@ -70,7 +74,9 @@ def test_baseline_replacement_by_patch(
     "data,params,expected",
     [(lazy_fixture("input_pert_1d"), {"perturb_radius": 0.02}, True)],
 )
-def test_uniform_sampling(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_uniform_sampling(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = uniform_sampling(img=data, **params)
     assert np.any(out != data) == expected, "Test failed."
 
@@ -87,8 +93,14 @@ def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
 
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
-    "data,params,expected", [(lazy_fixture("input_pert_3d"), {"perturb_dx": 20, "perturb_baseline": "black",
-                                                              "img_size": 224}, True)]
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_pert_3d"),
+            {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
+            True,
+        )
+    ],
 )
 def test_translation_x_direction(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
@@ -99,8 +111,14 @@ def test_translation_x_direction(
 
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
-    "data,params,expected", [(lazy_fixture("input_pert_3d"), {"perturb_dx": 20, "perturb_baseline": "black",
-                                                              "img_size": 224}, True)]
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_pert_3d"),
+            {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
+            True,
+        )
+    ],
 )
 def test_translation_y_direction(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]

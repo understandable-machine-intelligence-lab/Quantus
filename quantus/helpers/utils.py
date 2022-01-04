@@ -100,26 +100,10 @@ def get_baseline_dict(img: Union[torch.Tensor, None], **kwargs) -> dict:
 
 def get_name(str: str):
     """Get the name of the class object"""
+    if str.isupper():
+        return str
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
-
-
-def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
-    """Remove patch sizes that are not compatible with input size."""
-    return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
 def set_features_in_step(max_steps_per_input: int, img_size: int):
     return (img_size * img_size) / max_steps_per_input
-
-
-def check_if_fitted(m) -> Optional[bool]:
-    """Checks if a measure is fitted by the presence of"""
-    if not hasattr(m, "fit"):
-        raise TypeError(f"{m} is not an instance.")
-    return True
-
-
-"""
-    if not check_if_fitted:
-     print(f"This {Measure.name} is instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.")
-"""
