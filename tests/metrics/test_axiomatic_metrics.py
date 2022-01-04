@@ -13,6 +13,10 @@ from ...quantus.metrics import *
           "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
         ({"normalise": False, "disable_warnings": True, "explain_func": explain,
           "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
+        ({"abs": True, "disable_warnings": True, "explain_func": explain,
+          "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
+        ({"abs": False, "disable_warnings": True, "explain_func": explain,
+          "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
     ],
 )
 def test_completeness(
@@ -33,7 +37,7 @@ def test_completeness(
         y_batch=y_batch,
         a_batch=a_batch,
     )
-    print(scores)
+
     assert scores is not None, "Test failed."
 
 
@@ -43,7 +47,11 @@ def test_completeness(
     [
         ({"n_samples": 1, "normalise": True, "disable_warnings": True, "explain_func": explain,
           "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
-        ({"n_samples": 10, "normalise": False, "disable_warnings": True, "explain_func": explain,
+        ({"n_samples": 1, "eps": 1e-10, "normalise": True, "disable_warnings": True, "explain_func": explain,
+          "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
+        ({"n_samples": 1, "eps": 1e-2, "normalise": True, "disable_warnings": True, "explain_func": explain,
+          "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
+        ({"n_samples": 2, "normalise": False, "disable_warnings": True, "explain_func": explain,
           "method": "Saliency", "img_size": 28, "nr_channels": 1}, 1.0),
     ],
 )
