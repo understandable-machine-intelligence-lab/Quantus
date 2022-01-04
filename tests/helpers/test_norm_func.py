@@ -40,18 +40,16 @@ def test_linf_norm(data: np.ndarray, params: dict, expected: Union[float, dict, 
     out = linf_norm(a=data)
     assert out == expected, "Test failed."
 
-
-"""
+@pytest.mark.norm_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (lazy_fixture("atts_norm_ones"), {}, 3.1622776601683795),
+        (lazy_fixture("atts_norm_fill"), {}, 11.40175425099138),
+    ],
+)
 def test_l2_norm(data: dict,
                   params: dict,
                   expected: Union[float, dict, bool]):
-    out = linf_norm(a=data)
+    out = l2_norm(a=data)
     assert out == expected, "Test failed."
-
-
-def test_l1_norm(data: dict,
-                  params: dict,
-                  expected: Union[float, dict, bool]):
-    out = linf_norm(a=data)
-    assert out == expected, "Test failed."
-"""
