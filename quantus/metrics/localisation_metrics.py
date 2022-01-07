@@ -145,7 +145,7 @@ class PointingGame(Metric):
 
             # Reshape.
             a = a.flatten()
-            s = s.reshape(self.img_size, self.img_size).flatten().astype(bool)
+            s = s.squeeze().flatten().astype(bool)
 
             if self.abs:
                 a = np.abs(a)
