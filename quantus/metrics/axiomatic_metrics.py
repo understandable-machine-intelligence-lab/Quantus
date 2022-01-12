@@ -142,6 +142,10 @@ class Completeness(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
@@ -162,24 +166,22 @@ class Completeness(Metric):
             )
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(
+                    x_input, self.kwargs.get("device", None)
+                )[:, y]
+            )
 
             # Predict on baseline.
-            with torch.no_grad():
-                y_pred_baseline = float(
-                    model(
-                        torch.Tensor(x_baseline)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+            y_pred_baseline = float(
+                scipy.special.softmax(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None)
+                    )
+                )[:, y]
+            )
 
             if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
                 self.last_results.append(True)
@@ -319,6 +321,10 @@ class NonSensitivity(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
@@ -347,22 +353,14 @@ class NonSensitivity(Metric):
                     )
 
                     # Predict on perturbed input x.
-                    with torch.no_grad():
-                        y_pred_perturbed = float(
-                            torch.nn.Softmax()(
-                                model(
-                                    torch.Tensor(x_perturbed)
-                                    .reshape(
-                                        1,
-                                        self.nr_channels,
-                                        self.img_size,
-                                        self.img_size,
-                                    )
-                                    .to(self.kwargs.get("device", None))
-                                )
-                            )[:, y]
-                        )
-                        preds.append(y_pred_perturbed)
+                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    y_pred_perturbed = float(
+                        scipy.special.softmax(
+                            model.predict(
+                                x_input, self.kwargs.get("device", None))
+                        )[:, y]
+                    )
+                    preds.append(y_pred_perturbed)
 
                     vars.append(np.var(preds))
 
