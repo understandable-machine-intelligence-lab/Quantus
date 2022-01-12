@@ -119,13 +119,16 @@ class Completeness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.last_results = []
 
         if a_batch is None:
@@ -142,14 +145,10 @@ class Completeness(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a)
@@ -298,13 +297,16 @@ class NonSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.last_results = []
 
         if a_batch is None:
@@ -321,14 +323,10 @@ class NonSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch)
+        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             if self.abs:
                 a = np.abs(a)

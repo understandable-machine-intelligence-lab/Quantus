@@ -125,9 +125,12 @@ class LocalLipschitzEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -149,14 +152,10 @@ class LocalLipschitzEstimate(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Get explanation function and make asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for ix, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -305,9 +304,12 @@ class MaxSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -328,14 +330,10 @@ class MaxSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Get explanation function and make asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -485,9 +483,12 @@ class AvgSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -508,14 +509,10 @@ class AvgSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -666,14 +663,17 @@ class Continuity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = {k: None for k in range(len(x_batch))}
+        self.last_results = {k: None for k in range(len(x_batch_s))}
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -689,14 +689,10 @@ class Continuity(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)

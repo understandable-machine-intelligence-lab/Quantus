@@ -114,9 +114,12 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow Tensor:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -137,15 +140,11 @@ class PointingGame(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             # Reshape.
             a = a.flatten()
@@ -280,9 +279,12 @@ class AttributionLocalisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow Tensor:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -302,15 +304,11 @@ class AttributionLocalisation(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
             s = s.flatten().astype(bool)
@@ -467,9 +465,12 @@ class TopKIntersection(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow Tensor:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -490,15 +491,11 @@ class TopKIntersection(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -629,9 +626,12 @@ class RelevanceRankAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow Tensor:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -652,15 +652,11 @@ class RelevanceRankAccuracy(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
             s = np.where(s.flatten().astype(bool))[0]
@@ -794,9 +790,12 @@ class RelevanceMassAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
 
+        # Reshape TensorFlow Tensor:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -817,15 +816,11 @@ class RelevanceMassAccuracy(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             a = a.flatten()
 
@@ -952,9 +947,12 @@ class AUC(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
 
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -975,15 +973,11 @@ class AUC(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
 
             if self.abs:
                 a = np.abs(a)
