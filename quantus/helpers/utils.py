@@ -109,9 +109,9 @@ def set_features_in_step(max_steps_per_input: int, img_size: int):
     return (img_size * img_size) / max_steps_per_input
 
 
-def get_compatible_array_shape(x: np.array, img_size: int, nr_channels: int):
-    if np.shape(x)[1:] == (img_size, img_size, nr_channels):
+def get_compatible_shape_batch(x: np.array):
+    if np.shape(x)[1] == np.shape(x)[2]:
         return np.moveaxis(x, -1, 1)
-    if np.shape(x)[1:] == (nr_channels, img_size, img_size):
+    if np.shape(x)[-1] == np.shape(x)[-2]:
         return x
     raise ValueError('Input dimension mismatch')

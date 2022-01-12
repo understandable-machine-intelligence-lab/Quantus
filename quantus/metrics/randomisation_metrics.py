@@ -114,10 +114,13 @@ class ModelParameterRandomisation(Metric):
             >> metric = ModelParameterRandomisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -138,12 +141,8 @@ class ModelParameterRandomisation(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # Save state_dict.
         original_parameters = model.state_dict()
@@ -277,15 +276,18 @@ class RandomLogit(Metric):
             >> metric = RandomLogit(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        
+        # Reshape TensorFlow input batch:
+        x_batch_s = get_compatible_shape_batch(x_batch)
+        
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = [dict() for _ in x_batch]
+        self.last_results = [dict() for _ in x_batch_s]
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -300,12 +302,8 @@ class RandomLogit(Metric):
                 **self.kwargs,
             )
 
-        # Reshape TensorFlow Tensor:
-        x_batch = get_compatible_array_shape(x_batch, self.img_size,
-                                             self.nr_channels)
-
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         print(self.num_classes, y_batch)
         if self.abs:
