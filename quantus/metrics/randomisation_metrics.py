@@ -132,11 +132,15 @@ class ModelParameterRandomisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -144,8 +148,9 @@ class ModelParameterRandomisation(Metric):
         # Save state_dict.
         original_parameters = model.state_dict()
 
-        for layer_name, layer in get_layers(model, order=self.layer_order):
+        for layer_name, layer in model.get_layers(order=self.layer_order):
 
+            # TODO: adjust for TensorFlow
             similarity_scores = []
 
             if self.layer_order == "independent":
@@ -156,7 +161,7 @@ class ModelParameterRandomisation(Metric):
 
             # Generate an explanation with perturbed model.
             a_perturbed = explain_func(
-                model=model, inputs=x_batch, targets=y_batch, **self.kwargs
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
             for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
@@ -290,11 +295,15 @@ class RandomLogit(Metric):
         if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -335,7 +344,7 @@ class RandomLogit(Metric):
 
         # Explain against a random class.
         a_perturbed = explain_func(
-            model=model,
+            model=model.get_model(),
             inputs=x_batch,
             targets=y_batch_off,
             **self.kwargs,

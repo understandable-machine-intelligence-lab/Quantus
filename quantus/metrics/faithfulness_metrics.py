@@ -138,7 +138,7 @@ class FaithfulnessCorrelation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -340,7 +340,7 @@ class FaithfulnessEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -545,7 +545,7 @@ class MonotonicityArya(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -747,7 +747,7 @@ class MonotonicityNguyen(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -961,7 +961,7 @@ class PixelFlipping(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -1164,7 +1164,7 @@ class RegionPerturbation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -1391,7 +1391,7 @@ class Selectivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -1631,7 +1631,7 @@ class SensitivityN(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -1844,7 +1844,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,

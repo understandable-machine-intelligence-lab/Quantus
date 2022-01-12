@@ -16,3 +16,15 @@ class TensorFlowModel(ModelInterface):
 
     def get_model(self):
         return self.model
+
+    def state_dict(self):
+        # TODO: implement
+        return None
+
+    def load_state_dict(self, original_parameters):
+        # TODO: implement
+        return None
+
+    def get_layers(self, order):
+        # TODO: implement
+        return None

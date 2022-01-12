@@ -136,7 +136,7 @@ class Completeness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -315,7 +315,7 @@ class NonSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
