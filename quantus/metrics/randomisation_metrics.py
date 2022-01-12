@@ -150,14 +150,13 @@ class ModelParameterRandomisation(Metric):
 
         for layer_name, layer in model.get_layers(order=self.layer_order):
 
-            # TODO: adjust for TensorFlow
             similarity_scores = []
 
             if self.layer_order == "independent":
                 model.load_state_dict(original_parameters)
 
             # Randomize layer.
-            layer.reset_parameters()
+            model.randomize_layer(layer_name)
 
             # Generate an explanation with perturbed model.
             a_perturbed = explain_func(
