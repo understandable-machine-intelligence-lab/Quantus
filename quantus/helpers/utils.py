@@ -107,3 +107,11 @@ def get_name(str: str):
 
 def set_features_in_step(max_steps_per_input: int, img_size: int):
     return (img_size * img_size) / max_steps_per_input
+
+
+def get_compatible_array_shape(x: np.array, img_size: int, nr_channels: int):
+    if np.shape(x)[1:] == (img_size, img_size, nr_channels):
+        return np.moveaxis(x, -1, 1)
+    if np.shape(x)[1:] == (nr_channels, img_size, img_size):
+        return x
+    raise ValueError('Input dimension mismatch')

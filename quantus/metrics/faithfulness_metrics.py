@@ -144,6 +144,10 @@ class FaithfulnessCorrelation(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -158,14 +162,12 @@ class FaithfulnessCorrelation(Metric):
                 a = self.normalise_func(a)
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(
+                    x_input, self.kwargs.get("device", None)
+                )[:, y]
+            )
 
             logit_deltas = []
             att_sums = []
@@ -185,19 +187,12 @@ class FaithfulnessCorrelation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        model(
-                            torch.Tensor(x_perturbed)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None)
+                    )[:, y]
+                )
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
@@ -351,6 +346,10 @@ class FaithfulnessEstimate(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -368,14 +367,12 @@ class FaithfulnessEstimate(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(
+                    x_input, self.kwargs.get("device", None)
+                )[:, y]
+            )
 
             pred_deltas = []
             att_sums = []
@@ -398,19 +395,12 @@ class FaithfulnessEstimate(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        model(
-                            torch.Tensor(x_perturbed)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None)
+                    )[:, y]
+                )
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions.
@@ -561,6 +551,10 @@ class MonotonicityArya(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -585,9 +579,7 @@ class MonotonicityArya(Metric):
 
             # Copy the input x but fill with baseline values.
             x_baseline = (
-                torch.Tensor()
-                .new_full(size=x.shape, fill_value=baseline_value)
-                .numpy()
+                np.full(x.shape, baseline_value)
                 .flatten()
             )
 
@@ -605,21 +597,14 @@ class MonotonicityArya(Metric):
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_baseline)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    scipy.special.softmax(
+                        model.predict(
+                            x_input, self.kwargs.get("device", None)
+                        )
+                    )[:, y]
+                )
 
                 preds.append(y_pred_perturb)
 
@@ -768,27 +753,22 @@ class MonotonicityNguyen(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size, 
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for x, y, a in zip(x_batch, y_batch, a_batch):
 
             # Predict on input x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                scipy.special.softmax(
+                    model.predict(x_input, self.kwargs.get("device", None))
+                )[:, y]
+            )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
             inv_pred = inv_pred ** 2
@@ -830,21 +810,12 @@ class MonotonicityNguyen(Metric):
                     assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
-                    with torch.no_grad():
-                        y_pred_perturb = float(
-                            torch.nn.Softmax()(
-                                model(
-                                    torch.Tensor(x_perturbed)
-                                    .reshape(
-                                        1,
-                                        self.nr_channels,
-                                        self.img_size,
-                                        self.img_size,
-                                    )
-                                    .to(self.kwargs.get("device", None))
-                                )
-                            )[:, y]
-                        )
+                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    y_pred_perturb = float(
+                        scipy.special.softmax(
+                            model.predict(x_input, self.kwargs.get("device", None))
+                        )[:, y]
+                    )
                     y_pred_perturbs.append(y_pred_perturb)
 
                 vars.append(
@@ -996,6 +967,10 @@ class PixelFlipping(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size, 
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -1033,21 +1008,12 @@ class PixelFlipping(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    scipy.special.softmax(
+                        model.predict(x_input, self.kwargs.get("device", None))
+                    )[:, y]
+                )
                 preds.append(y_pred_perturb)
 
             self.last_results.append(preds)
@@ -1204,27 +1170,23 @@ class RegionPerturbation(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size, 
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.nn.Softmax()(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                scipy.special.softmax(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None))
+                )[:, y]
+            )
 
             if self.abs:
                 a = np.abs(a)
@@ -1292,21 +1254,13 @@ class RegionPerturbation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    scipy.special.softmax(
+                        model.predict(
+                            x_input, self.kwargs.get("device", None))
+                    )[:, y]
+                )
 
                 sub_results.append(y_pred - y_pred_perturb)
 
@@ -1443,27 +1397,23 @@ class Selectivity(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.nn.Softmax()(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                scipy.special.softmax(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None))
+                )[:, y]
+            )
 
             if self.abs:
                 a = np.abs(a)
@@ -1515,21 +1465,12 @@ class Selectivity(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    scipy.special.softmax(
+                        model.predict(x_input, self.kwargs.get("device", None))
+                    )[:, y]
+                )
 
                 sub_results.append(y_pred_perturb)
 
@@ -1696,6 +1637,10 @@ class SensitivityN(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -1716,21 +1661,12 @@ class SensitivityN(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                scipy.special.softmax(
+                    model.predict(x_input, self.kwargs.get("device", None))
+                )[:, y]
+            )
 
             att_sums = []
             pred_deltas = []
@@ -1758,21 +1694,13 @@ class SensitivityN(Metric):
                     # Sum attributions.
                     att_sums.append(float(a[a_ix].sum()))
 
-                    with torch.no_grad():
-                        y_pred_perturb = float(
-                            torch.nn.Softmax()(
-                                model(
-                                    torch.Tensor(x_perturbed)
-                                    .reshape(
-                                        1,
-                                        self.nr_channels,
-                                        self.img_size,
-                                        self.img_size,
-                                    )
-                                    .to(self.kwargs.get("device", None))
-                                )
-                            )[:, y]
-                        )
+                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    y_pred_perturb = float(
+                        scipy.special.softmax(
+                            model.predict(
+                                x_input, self.kwargs.get("device", None))
+                        )[:,y]
+                    )
                     pred_deltas.append(y_pred - y_pred_perturb)
 
             sub_results_att_sums[sample] = att_sums
@@ -1922,6 +1850,10 @@ class IterativeRemovalOfFeatures(Metric):
                 **self.kwargs,
             )
 
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
+
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
@@ -1934,21 +1866,13 @@ class IterativeRemovalOfFeatures(Metric):
                 a = self.normalise_func(a)
 
             # Predict on x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                scipy.special.softmax(
+                    model.predict(
+                        x_input, self.kwargs.get("device", None))
+                )[:, y]
+            )
 
             # Segment image.
             segments = get_superpixel_segments(
@@ -1985,22 +1909,13 @@ class IterativeRemovalOfFeatures(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
-
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    scipy.special.softmax(
+                        model.predict(
+                            x_input, self.kwargs.get("device", None))
+                    )[:, y]
+                )
                 # Normalise the scores to be within [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))
 

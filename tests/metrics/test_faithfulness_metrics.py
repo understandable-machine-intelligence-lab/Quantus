@@ -3,6 +3,7 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers.pytorch_model import PyTorchModel
 
 
 @pytest.mark.faithfulness
@@ -46,14 +47,14 @@ def test_faithfulness_correlation(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -126,14 +127,14 @@ def test_faithfulness_estimate(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -205,14 +206,14 @@ def test_monotonicity_arya(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -256,14 +257,14 @@ def test_monotonicity_nguyen(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -343,14 +344,14 @@ def test_pixel_flipping(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -408,14 +409,14 @@ def test_region_segmentation(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -469,14 +470,14 @@ def test_selectivity(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -551,7 +552,7 @@ def test_sensitivity_n(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
@@ -559,7 +560,7 @@ def test_sensitivity_n(
 
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -615,14 +616,14 @@ def test_iterative_removal_of_features(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
