@@ -28,3 +28,7 @@ class TensorFlowModel(ModelInterface):
     def get_layers(self, order):
         # TODO: implement
         return None
+
+    def randomize_layer(self, layer_name):
+        # TODO: implement
+        return None

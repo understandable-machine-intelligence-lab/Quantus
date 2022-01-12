@@ -26,3 +26,7 @@ class PyTorchModel(ModelInterface):
 
     def get_layers(self, order):
         return get_layers(self.model, order=order)
+
+    def randomize_layer(self, layer_name):
+        layer = getattr(self.get_model(), layer_name)
+        layer.reset_parameters()
