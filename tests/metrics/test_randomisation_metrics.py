@@ -3,7 +3,7 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
-
+from ...quantus.helpers.pytorch_model import PyTorchModel
 
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
@@ -43,14 +43,14 @@ def test_model_parameter_randomisation(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -110,14 +110,14 @@ def test_random_logit(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
+    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
         load_mnist_images["x_batch"].numpy(),
         load_mnist_images["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model,
+        model=model.get_model(),
         inputs=x_batch,
         targets=y_batch,
         **params,

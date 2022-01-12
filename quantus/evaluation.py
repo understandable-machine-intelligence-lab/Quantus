@@ -3,12 +3,12 @@ import torch
 import numpy as np
 from .metrics import *
 from .helpers.constants import *
-
+from .helpers.model_interface import ModelInterface
 
 def evaluate(
     metrics: dict,
     xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
-    model: torch.nn,
+    model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
     a_batch: Union[np.ndarray, None] = None,
@@ -88,7 +88,7 @@ def evaluate(
 
                 # Generate explanations.
                 a_batch = method_func(
-                    model=model,
+                    model=model.get_model(),
                     inputs=x_batch,
                     targets=y_batch,
                     **kwargs,

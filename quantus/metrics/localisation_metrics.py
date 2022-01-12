@@ -131,11 +131,15 @@ class PointingGame(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -292,11 +296,15 @@ class AttributionLocalisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -476,11 +484,15 @@ class TopKIntersection(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -634,11 +646,15 @@ class RelevanceRankAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -795,11 +811,15 @@ class RelevanceMassAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -949,11 +969,15 @@ class AUC(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)

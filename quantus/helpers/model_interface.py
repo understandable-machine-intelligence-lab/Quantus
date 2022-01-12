@@ -16,3 +16,15 @@ class ModelInterface(ABC):
     @abstractmethod
     def get_model(self):
         raise NotImplementedError
+
+    @abstractmethod
+    def state_dict(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_state_dict(self, original_parameters):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_layers(self, order):
+        raise NotImplementedError

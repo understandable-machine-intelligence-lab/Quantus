@@ -143,11 +143,15 @@ class LocalLipschitzEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -169,7 +173,7 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model, inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
                 )
 
                 if self.abs:
@@ -318,11 +322,15 @@ class MaxSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -344,7 +352,7 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model, inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
                 )
 
                 if self.abs:
@@ -494,11 +502,15 @@ class AvgSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -520,7 +532,7 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model, inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
                 )
 
                 if self.abs:
@@ -671,11 +683,15 @@ class Continuity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Reshape TensorFlow Tensor:
+        x_batch = get_compatible_array_shape(x_batch, self.img_size,
+                                             self.nr_channels)
 
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
@@ -712,7 +728,7 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model, inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
                 )
 
                 if self.abs:
@@ -722,11 +738,10 @@ class Continuity(Metric):
                     a_perturbed = self.normalise_func(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
+                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred = float(
-                    model(
-                        torch.Tensor(x_perturbed)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(kwargs.get("device", None))
+                    model.predict(
+                        x_input, self.kwargs.get("device", None)
                     )[:, y]
                 )
 

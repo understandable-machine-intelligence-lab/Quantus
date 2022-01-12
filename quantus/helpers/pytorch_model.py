@@ -1,5 +1,6 @@
 from ..helpers.model_interface import ModelInterface
 import torch
+from ..helpers.utils import get_layers
 
 
 class PyTorchModel(ModelInterface):
@@ -16,3 +17,12 @@ class PyTorchModel(ModelInterface):
 
     def get_model(self):
         return self.model
+
+    def state_dict(self):
+        return self.model.state_dict()
+
+    def load_state_dict(self, original_parameters):
+        self.model.load_state_dict(original_parameters)
+
+    def get_layers(self, order):
+        return get_layers(self.model, order=order)
