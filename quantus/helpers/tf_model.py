@@ -1,6 +1,10 @@
 from ..helpers.model_interface import ModelInterface
 from ..metrics import *
 import numpy as np
+from tensorflow.keras.activations import linear
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense
+from tensorflow.keras import Model
 
 
 class TensorFlowModel(ModelInterface):
@@ -8,6 +12,17 @@ class TensorFlowModel(ModelInterface):
         super().__init__(model)
 
     def predict(self, x, device=None):
+        # Remove activation from last layer to get logits
+        if self.model.layers[-1].activation != linear:
+            config = self.model.layers[-1].get_config()
+            weights = [x.numpy() for x in self.model.layers[-1].weights]
+
+            config['activation'] = linear
+            config['name'] = 'logits'
+
+            output_layer = Dense(**config)(self.model.layers[-2].output)
+            self.model = Model(inputs=[self.model.input], outputs=[output_layer])
+            self.model.layers[-1].set_weights(weights)
         return self.model(x, training=False).numpy()
 
     def shape_input(self, x, img_size, nr_channels):
