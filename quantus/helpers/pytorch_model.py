@@ -23,22 +23,24 @@ class PyTorchModel(ModelInterface):
     def state_dict(self):
         return self.model.state_dict()
 
-    def load_state_dict(self, parameters):
-        self.model.load_state_dict(parameters)
+    def load_state_dict(self, original_parameters):
+        self.model.load_state_dict(original_parameters)
 
-    def get_layers(self, order: str = "top_down"):
-        """Checks a pytorch model for randomizable layers and returns them in a dict."""
-        layers = [
-            module
-            for module in self.model.named_modules()
-            if hasattr(module[1], "reset_parameters")
-        ]
+    def get_random_layer_generator(self, order: str = "top_down"):
+        original_parameters = self.state_dict()
+        modules = [l for l in self.model.named_modules() if (
+            hasattr(l[1], "reset_parameters"))]
 
         if order == "top_down":
-            return layers[::-1]
-        else:
-            return layers
+            modules = modules[::-1]
 
-    def randomize_layer(self, layer_name):
-        layer = getattr(self.get_model(), layer_name)
-        layer.reset_parameters()
+        for module in modules:
+            if order == "independent":
+                self.load_state_dict(original_parameters)
+            module[1].reset_parameters()
+            yield module[0], self.model
+
+        self.load_state_dict(original_parameters)
+
+
+

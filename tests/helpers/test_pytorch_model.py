@@ -69,6 +69,41 @@ def test_shape_input(
 
 
 @pytest.mark.pytorch_model
+@pytest.mark.parametrize("expected", [torch.nn.Module])
+def test_get_model(
+        expected: Union[float, dict, bool],
+        load_mnist_model
+):
+    model = PyTorchModel(load_mnist_model)
+    out = model.get_model()
+    x = model.state_dict()
+    assert isinstance(out, expected), "Test failed."
+
+
+@pytest.mark.pytorch_model
+@pytest.mark.parametrize("expected", [OrderedDict])
+def test_state_dict(
+        expected: Union[float, dict, bool],
+        load_mnist_model
+):
+    model = PyTorchModel(load_mnist_model)
+    out = model.state_dict()
+    assert isinstance(out, expected), "Test failed."
+
+
+@pytest.mark.pytorch_model
+def test_get_random_layer_generator(
+        load_mnist_model
+):
+    model = PyTorchModel(load_mnist_model)
+    for layer_name, random_layer_model in model.get_random_layer_generator():
+        layer = getattr(model.get_model(), layer_name).parameters()
+        new_layer = getattr(random_layer_model, layer_name).parameters()
+        assert (layer != new_layer), "Test failed."
+
+
+'''
+@pytest.mark.pytorch_model
 @pytest.mark.parametrize("expected", [list])
 def test_get_layers(
         expected: Union[float, dict, bool],
@@ -91,6 +126,7 @@ def test_randomize_layer(
 ):
     model = PyTorchModel(load_mnist_model)
     layer = getattr(model.get_model(), params["layer_name"]).parameters()
-    model.randomize_layer(**params)
+    model.randomize_layer(layer, params["layer_name"])
     new_layer = getattr(model.get_model(), params["layer_name"]).parameters()
     assert (layer != new_layer), "Test failed."
+'''

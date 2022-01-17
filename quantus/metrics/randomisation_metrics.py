@@ -144,22 +144,15 @@ class ModelParameterRandomisation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # Save state_dict.
-        original_parameters = model.state_dict()
-
-        for layer_name, layer in model.get_layers(order=self.layer_order):
+        for layer_name, random_layer_model in model.get_random_layer_generator(
+                order=self.layer_order
+        ):
 
             similarity_scores = []
 
-            if self.layer_order == "independent":
-                model.load_state_dict(original_parameters)
-
-            # Randomize layer.
-            model.randomize_layer(layer_name)
-
             # Generate an explanation with perturbed model.
             a_perturbed = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+                model=random_layer_model, inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
             for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
