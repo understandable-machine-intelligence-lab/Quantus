@@ -22,7 +22,7 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_state_dict(self, original_parameters):
+    def load_state_dict(self, parameters):
         raise NotImplementedError
 
     @abstractmethod

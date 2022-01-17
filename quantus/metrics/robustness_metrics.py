@@ -11,6 +11,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.pytorch_model import PyTorchModel
 
 
 class LocalLipschitzEstimate(Metric):
@@ -737,7 +738,7 @@ class Continuity(Metric):
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred = float(
                     model.predict(
-                        x_input, self.kwargs.get("device", None)
+                        x_input, softmax_act=False, **self.kwargs
                     )[:, y]
                 )
 

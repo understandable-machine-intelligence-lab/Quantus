@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import pickle
 from typing import Union
@@ -47,12 +48,14 @@ def baseline_mean():
     return {"choice": "mean", "img": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
 
 
-@pytest.mark.utils
-@pytest.mark.parametrize("data,expected", [(lazy_fixture("get_model"), list)])
-def test_get_layers(data: np.ndarray, expected: Union[float, dict, bool]):
-    model = data
-    out = get_layers(model=model)
-    assert isinstance(out, expected), "Test failed."
+@pytest.fixture
+def mock_input_torch_array():
+    return {"x": np.zeros((1, 1, 28, 28))}
+
+
+@pytest.fixture
+def mock_input_tf_array():
+    return {"x": np.zeros((1, 28, 28, 1))}
 
 
 @pytest.mark.utils
@@ -125,3 +128,16 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
         max_steps_per_input=data["max_steps_per_input"], img_size=data["img_size"]
     )
     assert out == expected, "Test failed."
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "data,expected",
+    [
+        (lazy_fixture("mock_input_tf_array"), np.zeros((1, 1, 28, 28))),
+        (lazy_fixture("mock_input_torch_array"), np.zeros((1, 1, 28, 28))),
+    ],
+)
+def test_get_compatible_shape_batch(data: np.ndarray, expected: Union[float, dict, bool]):
+    out = get_compatible_shape_batch(data["x"])
+    assert np.array_equal(out, expected), "Test failed."
