@@ -7,6 +7,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.pytorch_model import PyTorchModel
 
 
 class FaithfulnessCorrelation(Metric):
@@ -164,7 +165,7 @@ class FaithfulnessCorrelation(Metric):
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
                 model.predict(
-                    x_input, self.kwargs.get("device", None)
+                    x_input, softmax_act=False, **self.kwargs
                 )[:, y]
             )
 
@@ -189,7 +190,7 @@ class FaithfulnessCorrelation(Metric):
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
                     model.predict(
-                        x_input, self.kwargs.get("device", None)
+                        x_input, softmax_act=False, **self.kwargs
                     )[:, y]
                 )
 
@@ -368,7 +369,7 @@ class FaithfulnessEstimate(Metric):
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
                 model.predict(
-                    x_input, self.kwargs.get("device", None)
+                    x_input, softmax_act=False, **self.kwargs
                 )[:, y]
             )
 
@@ -396,7 +397,7 @@ class FaithfulnessEstimate(Metric):
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
                     model.predict(
-                        x_input, self.kwargs.get("device", None)
+                        x_input, softmax_act=False, **self.kwargs
                     )[:, y]
                 )
                 pred_deltas.append(float(y_pred - y_pred_perturb))
@@ -596,10 +597,8 @@ class MonotonicityArya(Metric):
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
                 x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    scipy.special.softmax(
-                        model.predict(
-                            x_input, self.kwargs.get("device", None)
-                        )
+                    model.predict(
+                        x_input, softmax_act=True, **self.kwargs
                     )[:, y]
                 )
 
@@ -761,8 +760,8 @@ class MonotonicityNguyen(Metric):
             # Predict on input x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                scipy.special.softmax(
-                    model.predict(x_input, self.kwargs.get("device", None))
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -808,8 +807,8 @@ class MonotonicityNguyen(Metric):
                     # Predict on perturbed input x.
                     x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                     y_pred_perturb = float(
-                        scipy.special.softmax(
-                            model.predict(x_input, self.kwargs.get("device", None))
+                        model.predict(
+                            x_input, softmax_act=True, **self.kwargs
                         )[:, y]
                     )
                     y_pred_perturbs.append(y_pred_perturb)
@@ -1005,8 +1004,8 @@ class PixelFlipping(Metric):
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    scipy.special.softmax(
-                        model.predict(x_input, self.kwargs.get("device", None))
+                    model.predict(
+                        x_input, softmax_act=True, **self.kwargs
                     )[:, y]
                 )
                 preds.append(y_pred_perturb)
@@ -1176,9 +1175,8 @@ class RegionPerturbation(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                scipy.special.softmax(
-                    model.predict(
-                        x_input, self.kwargs.get("device", None))
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -1250,9 +1248,8 @@ class RegionPerturbation(Metric):
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    scipy.special.softmax(
-                        model.predict(
-                            x_input, self.kwargs.get("device", None))
+                    model.predict(
+                        x_input, softmax_act=True, **self.kwargs
                     )[:, y]
                 )
 
@@ -1402,9 +1399,8 @@ class Selectivity(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                scipy.special.softmax(
-                    model.predict(
-                        x_input, self.kwargs.get("device", None))
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -1460,8 +1456,8 @@ class Selectivity(Metric):
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    scipy.special.softmax(
-                        model.predict(x_input, self.kwargs.get("device", None))
+                    model.predict(
+                        x_input, softmax_act=True, **self.kwargs
                     )[:, y]
                 )
 
@@ -1655,8 +1651,8 @@ class SensitivityN(Metric):
             # Predict on x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                scipy.special.softmax(
-                    model.predict(x_input, self.kwargs.get("device", None))
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -1688,10 +1684,9 @@ class SensitivityN(Metric):
 
                     x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                     y_pred_perturb = float(
-                        scipy.special.softmax(
-                            model.predict(
-                                x_input, self.kwargs.get("device", None))
-                        )[:,y]
+                        model.predict(
+                            x_input, softmax_act=True, **self.kwargs
+                        )[:, y]
                     )
                     pred_deltas.append(y_pred - y_pred_perturb)
 
@@ -1859,9 +1854,8 @@ class IterativeRemovalOfFeatures(Metric):
             # Predict on x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                scipy.special.softmax(
-                    model.predict(
-                        x_input, self.kwargs.get("device", None))
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -1902,9 +1896,8 @@ class IterativeRemovalOfFeatures(Metric):
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    scipy.special.softmax(
-                        model.predict(
-                            x_input, self.kwargs.get("device", None))
+                    model.predict(
+                        x_input, softmax_act=True, **self.kwargs
                     )[:, y]
                 )
                 # Normalise the scores to be within [0, 1].

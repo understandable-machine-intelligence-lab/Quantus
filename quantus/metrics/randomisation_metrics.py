@@ -12,7 +12,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
-
+from ..helpers.pytorch_model import PyTorchModel
 
 class ModelParameterRandomisation(Metric):
     """
@@ -276,7 +276,7 @@ class RandomLogit(Metric):
             >> metric = RandomLogit(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        
+
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
         

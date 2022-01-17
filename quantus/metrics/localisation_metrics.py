@@ -13,6 +13,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.pytorch_model import PyTorchModel
 
 
 class PointingGame(Metric):

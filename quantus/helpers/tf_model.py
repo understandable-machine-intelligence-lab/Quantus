@@ -1,8 +1,8 @@
 from ..helpers.model_interface import ModelInterface
 from ..metrics import *
 import numpy as np
-from tensorflow.keras.activations import linear
-from tensorflow.keras.layers import Dense
+#import tensorflow as tf
+from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 
@@ -11,19 +11,23 @@ class TensorFlowModel(ModelInterface):
     def __init__(self, model):
         super().__init__(model)
 
-    def predict(self, x, device=None):
-        # Remove activation from last layer to get logits
-        if self.model.layers[-1].activation != linear:
-            config = self.model.layers[-1].get_config()
-            weights = [x.numpy() for x in self.model.layers[-1].weights]
+    def predict(self, x, softmax_act=False, **kwargs):
+        output_act = self.model.layers[-1].activation
+        target_act = softmax if softmax_act else linear
 
-            config['activation'] = linear
-            config['name'] = 'logits'
+        if output_act == target_act:
+            return self.model(x, training=False).numpy()
 
-            output_layer = Dense(**config)(self.model.layers[-2].output)
-            self.model = Model(inputs=[self.model.input], outputs=[output_layer])
-            self.model.layers[-1].set_weights(weights)
-        return self.model(x, training=False).numpy()
+        config = self.model.layers[-1].get_config()
+        config['activation'] = target_act
+
+        weights = [x.numpy() for x in self.model.layers[-1].weights]
+
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+        new_model.layers[-1].set_weights(weights)
+
+        return new_model(x, training=False).numpy()
 
     def shape_input(self, x, img_size, nr_channels):
         x = x.reshape(1, nr_channels, img_size, img_size)

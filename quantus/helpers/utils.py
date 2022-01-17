@@ -7,20 +7,6 @@ import numpy as np
 from skimage.segmentation import *
 
 
-def get_layers(model, order: str = "top_down"):
-    """Checks a pytorch model for randomizable layers and returns them in a dict."""
-    layers = [
-        module
-        for module in model.named_modules()
-        if hasattr(module[1], "reset_parameters")
-    ]
-
-    if order == "top_down":
-        return layers[::-1]
-    else:
-        return layers
-
-
 def get_superpixel_segments(
     img: torch.Tensor, segmentation_method: str, **kwargs
 ) -> np.ndarray:
@@ -110,6 +96,8 @@ def set_features_in_step(max_steps_per_input: int, img_size: int):
 
 
 def get_compatible_shape_batch(x: np.array):
+    if np.shape(x)[1] == np.shape(x)[2] == np.shape(x)[3]:
+        raise ValueError('Ambiguous input shape')
     if np.shape(x)[1] == np.shape(x)[2]:
         return np.moveaxis(x, -1, 1)
     if np.shape(x)[-1] == np.shape(x)[-2]:

@@ -10,7 +10,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
-
+from ..helpers.pytorch_model import PyTorchModel
 
 class Completeness(Metric):
     """
@@ -168,17 +168,15 @@ class Completeness(Metric):
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
                 model.predict(
-                    x_input, self.kwargs.get("device", None)
+                    x_input, softmax_act=False, **self.kwargs
                 )[:, y]
             )
 
             # Predict on baseline.
             x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
             y_pred_baseline = float(
-                scipy.special.softmax(
-                    model.predict(
-                        x_input, self.kwargs.get("device", None)
-                    )
+                model.predict(
+                    x_input, softmax_act=True, **self.kwargs
                 )[:, y]
             )
 
@@ -353,9 +351,8 @@ class NonSensitivity(Metric):
                     # Predict on perturbed input x.
                     x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
                     y_pred_perturbed = float(
-                        scipy.special.softmax(
-                            model.predict(
-                                x_input, self.kwargs.get("device", None))
+                        model.predict(
+                            x_input, softmax_act=True, **self.kwargs
                         )[:, y]
                     )
                     preds.append(y_pred_perturbed)
