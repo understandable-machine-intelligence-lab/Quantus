@@ -10,6 +10,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF
 from tensorflow.keras.models import load_model
 import tensorflow_datasets as tfds
 import tensorflow as tf
+from tensorflow.image import grayscale_to_rgb
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -57,7 +58,7 @@ def load_mnist_images_tf():
     for images, labels in ds_test.take(1):
         x_batch = images.numpy()
         y_batch = labels.numpy()
-    return {"x_batch": x_batch, "y_batch": y_batch}
+    return {"x_batch": to_rgb(x_batch), "y_batch": y_batch}
 
 
 @pytest.fixture
@@ -72,3 +73,7 @@ def almost_uniform(scope="session", autouse=True):
 
 def normalize_img(image, label):
     return tf.cast(image, tf.float32) / 255., label
+
+
+def to_rgb(x):
+    return grayscale_to_rgb(tf.expand_dims(x, axis=3))

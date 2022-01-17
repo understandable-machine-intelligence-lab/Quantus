@@ -26,9 +26,5 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_layers(self, order):
-        raise NotImplementedError
-
-    @abstractmethod
-    def randomize_layer(self, layer):
+    def get_random_layer_generator(self):
         raise NotImplementedError

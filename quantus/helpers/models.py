@@ -31,11 +31,11 @@ class LeNet(torch.nn.Module):
 
 
 class LeNetTF(Sequential):
-    """Network architecture from: https://www.tensorflow.org/datasets/keras_example."""
+    """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
 
     def __init__(self):
         super().__init__([
-            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(10)
         ])
