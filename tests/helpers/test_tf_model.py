@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
-import pickle
+from functools import reduce
+from operator import and_
 from typing import Union
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
 from ...quantus.helpers import *
 from ...quantus.helpers.tf_model import TensorFlowModel
-from functools import reduce
-from operator import and_
 
 
 @pytest.fixture
@@ -44,8 +44,6 @@ def test_predict(
         load_mnist_model_tf
 ):
     model = TensorFlowModel(load_mnist_model_tf)
-    p = model.state_dict()
-    model.load_state_dict(p)
     out = model.predict(
         x=data["x"],
         **params
@@ -84,4 +82,26 @@ def test_get_random_layer_generator(
 
         new = random_layer_model.get_layer(layer_name).get_weights()
 
-        assert reduce(and_, [not np.allclose(x, y) for x, y in zip(old, new)])
+        assert reduce(and_, [not np.allclose(x, y) for x, y in zip(old, new)]), "Test failed."
+
+
+@pytest.mark.tf_model
+def test_load_state_dict(
+        load_mnist_model_tf
+):
+    tf_model = load_mnist_model_tf
+    model = TensorFlowModel(tf_model)
+    before = model.state_dict()
+
+    alayer = [
+            layer
+            for layer in tf_model.layers
+            if len(layer.get_weights()) > 0
+    ][0]
+    weights = alayer.get_weights()
+    alayer.set_weights([np.random.permutation(w) for w in weights])
+
+    model.load_state_dict(before)
+    after = model.state_dict()
+
+    assert reduce(and_, [np.allclose(x, y) for x, y in zip(before, after)]), "Test failed."

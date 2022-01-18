@@ -3,13 +3,17 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
-from ...quantus.helpers.pytorch_model import PyTorchModel
+from ...quantus.helpers.model_interface import ModelInterface
+
+
 
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "top_down",
                 "similarity_func": correlation_spearman,
@@ -23,6 +27,8 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "bottom_up",
                 "similarity_func": correlation_pearson,
@@ -38,15 +44,14 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
     ],
 )
 def test_model_parameter_randomisation(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        data["x_batch"].numpy(),
+        data["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -76,9 +81,11 @@ def test_model_parameter_randomisation(
 
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
                 "normalise": True,
@@ -91,6 +98,8 @@ def test_model_parameter_randomisation(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
                 "normalise": False,
@@ -105,15 +114,14 @@ def test_model_parameter_randomisation(
     ],
 )
 def test_random_logit(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        data["x_batch"].numpy(),
+        data["y_batch"].numpy(),
     )
     explain = params["explain_func"]
     a_batch = explain(

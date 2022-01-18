@@ -24,7 +24,7 @@ class TensorFlowModel(ModelInterface):
         config = self.model.layers[-1].get_config()
         config['activation'] = target_act
 
-        weights = [x.numpy() for x in self.model.layers[-1].weights]
+        weights = self.model.layers[-1].get_weights()
 
         output_layer = Dense(**config)(self.model.layers[-2].output)
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
@@ -40,15 +40,10 @@ class TensorFlowModel(ModelInterface):
         return self.model
 
     def state_dict(self):
-        # TODO: research less questionable approach
-        bytes_file = io.BytesIO()
-        with h5py.File(bytes_file, 'w') as f:
-            hdf5_format.save_weights_to_hdf5_group(f, self.model.layers)
-        return bytes_file
+        return self.model.get_weights()
 
     def load_state_dict(self, original_parameters):
-        with h5py.File(original_parameters, 'r') as f:
-            hdf5_format.load_weights_from_hdf5_group(f, self.model.layers)
+        self.model.set_weights(original_parameters)
 
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
@@ -56,8 +51,7 @@ class TensorFlowModel(ModelInterface):
         layers = [
             layer
             for layer in self.model.layers
-            if (hasattr(layer, 'kernel_initializer') or
-                hasattr(layer, 'bias_initializer'))
+            if len(layer.get_weights()) > 0
         ]
 
         if order == "top_down":

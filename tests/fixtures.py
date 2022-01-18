@@ -10,7 +10,8 @@ from ..quantus.helpers.models import LeNet, LeNetTF
 from tensorflow.keras.models import load_model
 import tensorflow_datasets as tfds
 import tensorflow as tf
-from tensorflow.image import grayscale_to_rgb
+from ..quantus.helpers.pytorch_model import PyTorchModel
+from ..quantus.helpers.tf_model import TensorFlowModel
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,21 +45,13 @@ def load_mnist_images():
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images_tf():
-    # TODO: save data in the assets folder and load just one batch
-    (ds_train, ds_test), ds_info = tfds.load(
-        'mnist',
-        split=['train', 'test'],
-        shuffle_files=True,
-        as_supervised=True,
-        with_info=True,
-    )
-    ds_test = ds_test.map(
-        normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-    ds_test = ds_test.batch(124)
-    for images, labels in ds_test.take(1):
-        x_batch = images.numpy()
-        y_batch = labels.numpy()
-    return {"x_batch": to_rgb(x_batch), "y_batch": y_batch}
+    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    x_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        dtype=torch.float,
+    ).numpy()
+    y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64).numpy()
+    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
 
 
 @pytest.fixture
@@ -71,9 +64,18 @@ def almost_uniform(scope="session", autouse=True):
     }
 
 
-def normalize_img(image, label):
-    return tf.cast(image, tf.float32) / 255., label
+@pytest.fixture(scope="session", autouse=True)
+def get_wrapped_tf_model():
+    model = LeNetTF()
+    model.load_weights('tutorials/assets/mnist_tf_weights/')
+    return TensorFlowModel(model)
 
 
-def to_rgb(x):
-    return grayscale_to_rgb(tf.expand_dims(x, axis=3))
+@pytest.fixture(scope="session", autouse=True)
+def get_wrapped_torch_model():
+    model = LeNet()
+    model.load_state_dict(
+        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+    )
+    return PyTorchModel(model)
+
