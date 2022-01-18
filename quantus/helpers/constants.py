@@ -14,7 +14,7 @@ AVAILABLE_METRICS = {
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
         "IROF": IterativeRemovalOfFeatures,
-        "Infidelity": Infidelity,
+        #"Infidelity": Infidelity,
     },
     "Robustness": {
         "Continuity Test": Continuity,
