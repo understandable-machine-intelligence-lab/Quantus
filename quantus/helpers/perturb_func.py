@@ -26,11 +26,21 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
         choice = kwargs["fixed_values"]
     elif "perturb_baseline" in kwargs:
         choice = kwargs["perturb_baseline"]
+    elif "input_shift" in kwargs:
+        choice = kwargs["input_shift"]
 
     img_perturbed = copy.copy(img)
-    img_perturbed[kwargs["indices"]] = get_baseline_value(
-        choice=choice, img=img, **kwargs
-    )
+    baseline_value = get_baseline_value(choice=choice, img=img, **kwargs)
+
+    if "input_shift" in kwargs:
+        img_shifted = copy.copy(img)
+        img_shifted = np.multiply(
+            img_shifted,
+            np.full(shape=img.shape, fill_value=baseline_value, dtype=float),
+        )
+        img_perturbed[kwargs["indices"]] = img_shifted[kwargs["indices"]]
+    else:
+        img_perturbed[kwargs["indices"]] = baseline_value
 
     return img_perturbed
 
@@ -50,7 +60,6 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
         kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
     ]
 
-    # for c in range(kwargs.get("nr_channels", 3)):
     img_perturbed = copy.copy(img)
     img_perturbed[
         :,
