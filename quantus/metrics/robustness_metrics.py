@@ -572,7 +572,7 @@ class Continuity(Metric):
         understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
     Assumptions:
-        In this implementation, we assume that height and width dimensions are equally sized.
+        - In this implementation, we assume that height and width dimensions are equally sized.
     """
 
     @attributes_check
@@ -720,12 +720,6 @@ class Continuity(Metric):
                         **self.kwargs,
                     },
                 )
-                # DEBUG.
-                # plt.imshow(np.moveaxis(x_perturbed.reshape(3, 224, 224), 0, 2))
-                # plt.show()
-                # DEBUG.
-                # plt.imshow(a.reshape(224, 224), cmap="seismic")
-                # plt.show()
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(

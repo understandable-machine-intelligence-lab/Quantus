@@ -9,11 +9,12 @@ AVAILABLE_METRICS = {
         "Faithfulness Estimate": FaithfulnessEstimate,
         "Pixel-Flipping": PixelFlipping,
         "Region Segmentation": RegionPerturbation,
-        "Monotonicity Arya": MonotonicityArya,
-        "Monotonicity Nguyen": MonotonicityNguyen,
+        "Monotonicity-Arya": MonotonicityArya,
+        "Monotonicity-Nguyen": MonotonicityNguyen,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
         "IROF": IterativeRemovalOfFeatures,
+        #"Infidelity": Infidelity,
     },
     "Robustness": {
         "Continuity Test": Continuity,
@@ -41,6 +42,7 @@ AVAILABLE_METRICS = {
     "Axiomatic": {
         "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
+        "InputInvariance": InputInvariance,
     },
 }
 

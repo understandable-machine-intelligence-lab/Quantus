@@ -49,10 +49,11 @@ def get_baseline_value(
             ("perturb_baseline" in kwargs)
             or ("fixed_values" in kwargs)
             or ("constant_value" in kwargs)
+            or ("input_shift" in kwargs)
         ), (
             "Specify"
-            "a 'perturb_baseline' or 'constant_value e.g., 0.0 or 'black' for pixel replacement or 'baseline_values' "
-            "containing an array with one value per index for replacement."
+            "a 'perturb_baseline', 'fixed_values', 'constant_value' or 'input_shift' e.g., 0.0 or 'black' for "
+            "pixel replacement or 'baseline_values' containing an array with one value per index for replacement."
         )
 
     if "fixed_values" in kwargs:
@@ -99,14 +100,9 @@ def set_features_in_step(max_steps_per_input: int, img_size: int):
     return (img_size * img_size) / max_steps_per_input
 
 
-def get_compatible_shape_batch(x: np.array):
-    if np.shape(x)[1] == np.shape(x)[2] == np.shape(x)[3]:
-        raise ValueError('Ambiguous input shape')
-    if np.shape(x)[1] == np.shape(x)[2]:
-        return np.moveaxis(x, -1, 1)
-    if np.shape(x)[-1] == np.shape(x)[-2]:
-        return x
-    raise ValueError('Input dimension mismatch')
+def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
+    """Remove patch sizes that are not compatible with input size."""
+    return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
 def get_compatible_shape_batch(x: np.array):

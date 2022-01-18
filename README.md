@@ -56,31 +56,32 @@ The library contains implementations of the following evaluation metrics:
   * **[Selectivity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
   * **[SensitivityN](https://arxiv.org/pdf/1711.06104.pdf) (Ancona et al., 2019)**: computes the corerlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
   * **[IROF](https://arxiv.org/pdf/2003.08747.pdf) (Iterative Removal of Features) (Rieger et al., 2020)**: computes the area over the curve per class for sorted mean importances of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected), averaged over several test samples
-* **Robustness:** measures to what extent explanations are stable when subject to slight perturbations of the input
+* **Robustness:** measures to what extent explanations are stable when subject to slight perturbations of the input, assuming that model output approximately stayed the same
   * **[Local Lipschitz Estimate](https://arxiv.org/pdf/1806.08049.pdf) (Alvarez-Melis et al., 2018a, 2018b)**: tests the consistency in the explanation between adjacent examples
   * **[Max-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Avg-Sensitivity](https://arxiv.org/pdf/1901.09392.pdf) (Yeh et al., 2019)**: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
   * **[Continuity](https://arxiv.org/pdf/1706.07979.pdf) (Montavon et al., 2018)**: captures the strongest variation in explanation of an input and it's perturbed version
   <!--* **[Input Independence Rate](https://arxiv.org/pdf/1907.09701.pdf) (Yang et al., 2019)**: measures the percentage of inputs where a functionally insignificant patch (e.g., a dog) does not affect explanations significantly-->
-* **Localisation:** tests if the explainable evidence is centered around the object of interest (as defined by a bounding box)
+* **Localisation:** tests if the explainable evidence is centered around the object of interest (as defined by a bounding box or similar segmentation mask)
   * **[Pointing Game](https://arxiv.org/abs/1608.00507) (Zhang et al., 2018)**: checks whether attribution with the highest score is located within the targeted object
   * **[Attribution Localization](https://arxiv.org/abs/1910.09840) (Kohlbrenner et al., 2020)**: measures the ratio of positive attributions within the targeted object towards the total positive attributions
   * **[Top-K Intersection](https://arxiv.org/abs/2104.14995) (Theiner et al., 2021)**: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
   * **[Relevance Rank Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
   * **[Relevance Mass Accuracy](https://arxiv.org/abs/2003.07258) (Arras et al., 2021)**: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
   * **[AUC](https://doi.org/10.1016/j.patrec.2005.10.010) (Fawcett et al., 2006)**: compares the ranking between attributions and a given ground-truth mask
-* **Complexity:** captures to what extent explanations are concise i.e., few features are used to explain a prediction
+* **Complexity:** captures to what extent explanations are concise i.e., that few features are used to explain a model prediction
   * **[Sparseness](https://arxiv.org/abs/1810.06583) (Chalasani et al., 2020)**: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
   * **[Complexity](https://arxiv.org/abs/2005.00631) (Bhatt et al., 2020)**: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
   * **[Effective Complexity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020)**: measures how many attributions in absolute values are exceeding a certain threshold
-* **Randomisation:** tests how explanations deteriorate as model parameters are increasingly randomised
+* **Randomisation:** tests to what extent explanations deteriorate as model parameters are increasingly randomised
   * **[Model Parameter Randomisation](https://arxiv.org/abs/1810.03292) (Adebayo et al., 2018)**: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
   * **[Random Logit Test](https://arxiv.org/abs/1912.09818) (Sixt et. al., 2020)**: computes for the distance between the original explanation and the explanation for a random other class
 * **Axiomatic:** assesses if explanations fulfill certain axiomatic properties
   * **[Completeness](https://arxiv.org/abs/1703.01365) (Sundararajan et al., 2017) (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))**: measures whether the total attribution is proportional to the explainable evidence at the model output
   * **[Non-Sensitivity](https://arxiv.org/abs/2007.07584) (Nguyen at el., 2020) (and referred to as Null Player, Ancona et al., 2019), Dummy (Montavon et al., 2018))**: measures if zero-importance is only assigned to features that the model is not functionally dependent on
+  * **[Input Invariance](https://arxiv.org/abs/1711.00867)** (Kindermans et al., 2017): adds a shift to input, asking that attributions should not change in response (assuming the model does not)
   <!--* **Symmetry**:-->
-  <!--* **Input Invariance**:-->
+  
 
 Additional metrics will be included in future releases.
 
@@ -93,12 +94,12 @@ Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018)
 
 ## Installation
 
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/):
+<!--Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/):
 
 ```setup
 pip install quantus
 ````
-
+-->
 To install requirements:
 
 ```setup
@@ -281,6 +282,12 @@ quantus.AVAILABLE_PERTURBATION_FUNCTIONS
 
 # To list available normalisation function.
 quantus.AVAILABLE_NORMALISATION_FUNCTIONS
+
+# To get the scores of the last evaluated batch.
+metric_instance_called.last_results
+
+# To get the scores of all the evaluated batches.
+metric_instance_called.all_results
 ````
 With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
         
@@ -332,6 +339,13 @@ Interpretation of evaluation outcome will differ depending on whether we priorit
 ## Contributing
 
 If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
+
+#### Code Style
+Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
+We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
+
+#### Testing
+Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
 
 <!--
