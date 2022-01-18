@@ -3,11 +3,11 @@ from ..metrics import *
 import numpy as np
 import io
 import h5py
+
 from tensorflow.python.keras.saving import hdf5_format
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
-import keras.backend as K
 
 
 class TensorFlowModel(ModelInterface):
@@ -52,10 +52,9 @@ class TensorFlowModel(ModelInterface):
 
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
-        session = K.get_session()
 
         layers = [
-            (layer.name, layer)
+            layer
             for layer in self.model.layers
             if (hasattr(layer, 'kernel_initializer') or
                 hasattr(layer, 'bias_initializer'))
@@ -67,10 +66,8 @@ class TensorFlowModel(ModelInterface):
         for layer in layers:
             if order == "independent":
                 self.load_state_dict(original_parameters)
-            if hasattr(layer[1], 'kernel_initializer'):
-                layer[1].kernel.initializer.run(session=session)
-            if hasattr(layer[1], 'bias_initializer'):
-                layer[1].bias.initializer.run(session=session)
-            yield layers[0], self.model
+            weights = layer.get_weights()
+            layer.set_weights([np.random.permutation(w) for w in weights])
+            yield layer.name, self.model
 
-        self.model.load_state_dict(original_parameters)
+        self.load_state_dict(original_parameters)
