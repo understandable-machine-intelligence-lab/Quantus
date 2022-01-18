@@ -165,6 +165,8 @@ def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
     print(scores)
     if isinstance(expected, bool):
         assert all(s == expected for s in scores), "Test failed."
+    elif isinstance(expected, list):
+        assert all(s == e for s, e in zip(scores, expected)), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores

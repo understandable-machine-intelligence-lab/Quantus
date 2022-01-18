@@ -164,3 +164,84 @@ def test_non_sensitivity(
         a_batch=a_batch,
     )
     assert scores is not None, "Test failed."
+
+
+@pytest.mark.axiomatic
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "InputxGradient",
+                "img_size": 28,
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Gradient",
+                "img_size": 28,
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": 28,
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": 28,
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+    ],
+)
+def test_inputinvariance(
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_images,
+    load_mnist_model,
+):
+    model = load_mnist_model
+    x_batch, y_batch = (
+        load_mnist_images["x_batch"].numpy(),
+        load_mnist_images["y_batch"].numpy(),
+    )
+
+    scores = InputInvariance(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=None,
+        **params,
+    )
+
+    assert np.all([s in expected["dtypes"] for s in scores]), "Test failed."

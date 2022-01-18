@@ -299,7 +299,6 @@ class RandomLogit(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        print(self.num_classes, y_batch)
         if self.abs:
             a_batch = np.abs(a_batch)
 
@@ -347,7 +346,6 @@ class RandomLogit(Metric):
         if self.normalise:
             a_perturbed = self.normalise_func(a_perturbed)
 
-        # Check this.
         self.last_results = [
             self.similarity_func(a.flatten(), a_per.flatten())
             for a, a_per in zip(a_batch, a_perturbed)
