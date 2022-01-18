@@ -16,6 +16,11 @@ def input_zeros():
 
 
 @pytest.fixture
+def input_ones_mnist():
+    return np.ones(shape=(1, 1, 28, 28)).flatten()
+
+
+@pytest.fixture
 def input_pert_3d():
     return np.random.uniform(0, 0.1, size=(3, 224, 224))
 
@@ -34,15 +39,22 @@ def test_gaussian_noise(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("input_zeros"), {"indices": [0, 2], "fixed_values": 1.0}, True)],
+    [
+        (lazy_fixture("input_zeros"), {"indices": [0, 2], "fixed_values": 1.0}, 1),
+        (
+            lazy_fixture("input_ones_mnist"),
+            {"indices": np.arange(0, 784), "input_shift": -1.0},
+            -1,
+        ),
+    ],
 )
 def test_baseline_replacement_by_indices(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = baseline_replacement_by_indices(img=data, **params)
-    assert (
-        any(out[params["indices"]] != data[params["indices"]]) == expected
-    ), "Test failed."
+
+    if isinstance(expected, (int, float)):
+        assert np.all([i == expected for i in out[params["indices"]]]), "Test failed."
 
 
 @pytest.mark.perturb_func

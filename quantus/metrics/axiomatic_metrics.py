@@ -183,7 +183,6 @@ class Completeness(Metric):
 
             if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
                 self.last_results.append(True)
-
             else:
                 self.last_results.append(False)
 
@@ -196,7 +195,7 @@ class NonSensitivity(Metric):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 
-    Non- sensitivity measures measures if zero-importance is only assigned to features, that the model is not
+    Non- sensitivity measures if zero-importance is only assigned to features, that the model is not
     functionally dependent on.
 
     References:
@@ -370,6 +369,178 @@ class NonSensitivity(Metric):
             self.last_results.append(
                 len(non_features_vars.symmetric_difference(non_features))
             )
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+
+class InputInvariance(Metric):
+    """
+    Implementation of Completeness test by Kindermans et al., 2017, also referred
+    to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
+    Montavon et al., 2018.
+
+    To test for input invaraince, we add a constant shift to the input data and then measure the effect
+    on the attributions, the expectation is that if the model show no response, then the explanations should not.
+
+    References:
+        Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., Dähne Sven,
+        Erhan Dumitru and Kim Been. "THE (UN)RELIABILITY OF SALIENCY METHODS" Article (2017).
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", False)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.input_shift = self.kwargs.get("input_shift", -1)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.last_results = []
+        self.all_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("input shift 'input_shift'"),
+                citation=(
+                    "Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., "
+                    "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
+                ),
+            )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: Union[np.array, int],
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[bool]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = InputInvariance(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        # Asserts.
+        assert_attributions(a_batch=a_batch, x_batch=x_batch)
+
+        for x, y, a in zip(x_batch, y_batch, a_batch):
+
+            if self.abs:
+                print(
+                    "An absolute operation on the attributions is skipped"
+                    "since inconsistent results can be expected if applied."
+                )
+
+            if self.normalise:
+                print(
+                    "A normalising operation on the attributions is skipped"
+                    "since inconsistent results can be expected if applied."
+                )
+
+            x_shifted = self.perturb_func(
+                img=x.flatten(),
+                **{
+                    "indices": np.arange(0, len(x.flatten())),
+                    "input_shift": self.input_shift,
+                },
+            )
+            assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
+
+            # Generate explanation based on shifted input x.
+            a_shifted = explain_func(
+                model=model, inputs=x_shifted, targets=y, **self.kwargs
+            )
+
+            if self.abs:
+                print(
+                    "An absolute operation on the attributions is skipped"
+                    "since inconsistent results can be expected if applied."
+                )
+
+            if self.normalise:
+                print(
+                    "A normalising operation on the attributions is skipped"
+                    "since inconsistent results can be expected if applied."
+                )
+
+            # Check if explanation of shifted input is similar to original.
+            if (a.flatten() != a_shifted.flatten()).all():
+                self.last_results.append(True)
+            else:
+                self.last_results.append(False)
 
         self.all_results.append(self.last_results)
 
