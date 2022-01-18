@@ -6,6 +6,8 @@ from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.helpers import *
 from ...quantus.helpers.tf_model import TensorFlowModel
+from functools import reduce
+from operator import and_
 
 
 @pytest.fixture
@@ -68,26 +70,18 @@ def test_shape_input(
     assert np.array_equal(out, expected), "Test failed."
 
 
-'''
-@pytest.mark.pytorch_model
-@pytest.mark.parametrize("expected", [torch.nn.Module])
-def test_get_model(
-        expected: Union[float, dict, bool],
-        load_mnist_model
+@pytest.mark.tf_model
+def test_get_random_layer_generator(
+        load_mnist_model_tf
 ):
-    model = PyTorchModel(load_mnist_model)
-    out = model.get_model()
-    x = model.state_dict()
-    assert isinstance(out, expected), "Test failed."
+    tf_model = load_mnist_model_tf
+    model = TensorFlowModel(tf_model)
+    old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
 
+    for layer_name, random_layer_model in model.get_random_layer_generator():
 
-@pytest.mark.pytorch_model
-@pytest.mark.parametrize("expected", [OrderedDict])
-def test_state_dict(
-        expected: Union[float, dict, bool],
-        load_mnist_model
-):
-    model = PyTorchModel(load_mnist_model)
-    out = model.state_dict()
-    assert isinstance(out, expected), "Test failed."
-'''
+        old = old_weights[layer_name]
+
+        new = random_layer_model.get_layer(layer_name).get_weights()
+
+        assert reduce(and_, [not np.allclose(x, y) for x, y in zip(old, new)])
