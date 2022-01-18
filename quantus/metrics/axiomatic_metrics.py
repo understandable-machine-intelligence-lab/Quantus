@@ -486,7 +486,7 @@ class InputInvariance(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
@@ -520,7 +520,7 @@ class InputInvariance(Metric):
 
             # Generate explanation based on shifted input x.
             a_shifted = explain_func(
-                model=model, inputs=x_shifted, targets=y, **self.kwargs
+                model=model.get_model(), inputs=x_shifted, targets=y, **self.kwargs
             )
 
             if self.abs:
