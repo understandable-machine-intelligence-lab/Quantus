@@ -125,7 +125,8 @@ class LocalLipschitzEstimate(Metric):
             >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -304,7 +305,8 @@ class MaxSensitivity(Metric):
             >> metric = MaxSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -483,7 +485,8 @@ class AvgSensitivity(Metric):
             >> metric = AvgSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -663,7 +666,8 @@ class Continuity(Metric):
             >> metric = Continuity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 

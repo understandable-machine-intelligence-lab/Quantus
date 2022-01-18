@@ -102,14 +102,14 @@ def test_evaluate_func(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
+    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -118,7 +118,7 @@ def test_evaluate_func(
     results = evaluate(
         metrics=eval(params["eval_metrics"]),
         xai_methods=eval(params["eval_xai_methods"]),
-        model=PyTorchModel(load_mnist_model),
+        model=load_mnist_model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,

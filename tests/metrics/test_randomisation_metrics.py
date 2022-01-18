@@ -3,6 +3,7 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers.explanation_func_tf import explain_tf
 from ...quantus.helpers.model_interface import ModelInterface
 
 
@@ -12,7 +13,7 @@ from ...quantus.helpers.model_interface import ModelInterface
     "model,data,params,expected",
     [
         (
-            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "top_down",
@@ -27,7 +28,7 @@ from ...quantus.helpers.model_interface import ModelInterface
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "bottom_up",
@@ -36,6 +37,36 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {
+                    "layer_order": "top_down",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "disable_warnings": True,
+                    "explain_func": explain_tf,
+                    "method": "Gradient",
+                    "img_size": 28,
+                    "nr_channels": 1,
+                },
+                {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "layer_order": "bottom_up",
+                "similarity_func": correlation_pearson,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain_tf,
+                "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
             },
@@ -50,12 +81,12 @@ def test_model_parameter_randomisation(
     expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
-        data["x_batch"].numpy(),
-        data["y_batch"].numpy(),
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -84,7 +115,7 @@ def test_model_parameter_randomisation(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
@@ -98,7 +129,7 @@ def test_model_parameter_randomisation(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("get_wrapped_torch_model"),
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
@@ -120,12 +151,12 @@ def test_random_logit(
     expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
-        data["x_batch"].numpy(),
-        data["y_batch"].numpy(),
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,

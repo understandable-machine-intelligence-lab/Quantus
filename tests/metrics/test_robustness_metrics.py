@@ -29,14 +29,14 @@ def test_local_lipschitz_estimate(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
+    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -75,14 +75,14 @@ def test_max_sensitivity(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
+    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -127,14 +127,14 @@ def test_avg_sensitivity(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
+    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,
@@ -178,14 +178,14 @@ def test_continuity(
     load_mnist_images,
     load_mnist_model,
 ):
-    model = PyTorchModel(load_mnist_model)
+    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
-        model=model.get_model(),
+        model=model,
         inputs=x_batch,
         targets=y_batch,
         **params,

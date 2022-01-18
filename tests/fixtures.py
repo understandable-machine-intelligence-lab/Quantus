@@ -38,8 +38,8 @@ def load_mnist_images():
     x_batch = torch.as_tensor(
         np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
-    )
-    y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64)
+    ).numpy()
+    y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
@@ -62,20 +62,3 @@ def almost_uniform(scope="session", autouse=True):
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": a_batch,
     }
-
-
-@pytest.fixture(scope="session", autouse=True)
-def get_wrapped_tf_model():
-    model = LeNetTF()
-    model.load_weights('tutorials/assets/mnist_tf_weights/')
-    return TensorFlowModel(model)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def get_wrapped_torch_model():
-    model = LeNet()
-    model.load_state_dict(
-        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
-    )
-    return PyTorchModel(model)
-
