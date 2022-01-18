@@ -100,33 +100,3 @@ def test_get_random_layer_generator(
         layer = getattr(model.get_model(), layer_name).parameters()
         new_layer = getattr(random_layer_model, layer_name).parameters()
         assert (layer != new_layer), "Test failed."
-
-
-'''
-@pytest.mark.pytorch_model
-@pytest.mark.parametrize("expected", [list])
-def test_get_layers(
-        expected: Union[float, dict, bool],
-        load_mnist_model
-):
-    model = PyTorchModel(load_mnist_model)
-    out = model.get_layers()
-    assert isinstance(out, expected), "Test failed."
-
-
-@pytest.mark.pytorch_model
-@pytest.mark.parametrize("params",
-    [
-        ({"layer_name": "conv_2"}),
-    ],
-)
-def test_randomize_layer(
-        params: dict,
-        load_mnist_model
-):
-    model = PyTorchModel(load_mnist_model)
-    layer = getattr(model.get_model(), params["layer_name"]).parameters()
-    model.randomize_layer(layer, params["layer_name"])
-    new_layer = getattr(model.get_model(), params["layer_name"]).parameters()
-    assert (layer != new_layer), "Test failed."
-'''
