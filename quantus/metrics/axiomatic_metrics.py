@@ -118,7 +118,8 @@ class Completeness(Metric):
             >> metric = Completeness(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -294,7 +295,8 @@ class NonSensitivity(Metric):
             >> metric = NonSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 

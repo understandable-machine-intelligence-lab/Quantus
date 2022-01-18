@@ -1,10 +1,14 @@
 """This module contains the utils functions of the library."""
 import re
 import torch
+import tensorflow as tf
 import random
 from typing import Union, Optional, List, Callable
 import numpy as np
 from skimage.segmentation import *
+from ..helpers.pytorch_model import PyTorchModel
+from ..helpers.tf_model import TensorFlowModel
+from ..helpers.model_interface import ModelInterface
 
 
 def get_superpixel_segments(
@@ -103,3 +107,19 @@ def get_compatible_shape_batch(x: np.array):
     if np.shape(x)[-1] == np.shape(x)[-2]:
         return x
     raise ValueError('Input dimension mismatch')
+
+
+def get_compatible_shape_batch(x: np.array):
+    if np.shape(x)[1] == np.shape(x)[2] == np.shape(x)[3]:
+        raise ValueError('Ambiguous input shape')
+    if np.shape(x)[1] == np.shape(x)[2]:
+        return np.moveaxis(x, -1, 1)
+    if np.shape(x)[-1] == np.shape(x)[-2]:
+        return x
+    raise ValueError('Input dimension mismatch')
+
+
+def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.Module]) -> ModelInterface:
+    if isinstance(model, tf.keras.Model):
+        return TensorFlowModel(model)
+    return PyTorchModel(model)

@@ -121,7 +121,8 @@ class FaithfulnessCorrelation(Metric):
             >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -322,7 +323,8 @@ class FaithfulnessEstimate(Metric):
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -526,7 +528,8 @@ class MonotonicityArya(Metric):
             >> metric = MonotonicityArya(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -725,7 +728,8 @@ class MonotonicityNguyen(Metric):
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -938,7 +942,8 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -1140,7 +1145,8 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -1364,7 +1370,8 @@ class Selectivity(Metric):
             >> metric = Selectivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -1602,7 +1609,8 @@ class SensitivityN(Metric):
             >> metric = SensitivityN(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -1813,7 +1821,8 @@ class IterativeRemovalOfFeatures(Metric):
             >> metric = IROF(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 

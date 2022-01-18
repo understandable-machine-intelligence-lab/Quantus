@@ -88,7 +88,7 @@ def evaluate(
 
                 # Generate explanations.
                 a_batch = method_func(
-                    model=model.get_model(),
+                    model=model,
                     inputs=x_batch,
                     targets=y_batch,
                     **kwargs,

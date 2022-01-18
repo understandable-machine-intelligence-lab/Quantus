@@ -114,7 +114,8 @@ class PointingGame(Metric):
             >> metric = PointingGame(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow Tensor:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -279,7 +280,8 @@ class AttributionLocalisation(Metric):
             >> metric = AttributionLocalisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow Tensor:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -465,7 +467,8 @@ class TopKIntersection(Metric):
             >> metric = TopKIntersection(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow Tensor:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -626,7 +629,8 @@ class RelevanceRankAccuracy(Metric):
             >> metric = RelevanceRankAccuracy(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow Tensor:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -790,7 +794,8 @@ class RelevanceMassAccuracy(Metric):
             >> metric = RelevanceMassAccuracy(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow Tensor:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
@@ -947,7 +952,8 @@ class AUC(Metric):
             >> metric = AUC(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
-
+        # Wrap the model into an interface
+        model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
 
