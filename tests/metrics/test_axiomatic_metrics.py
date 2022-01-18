@@ -233,8 +233,8 @@ def test_inputinvariance(
 ):
     model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
 
     scores = InputInvariance(**params)(
