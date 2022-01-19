@@ -71,17 +71,24 @@ def test_shape_input(
 def test_get_random_layer_generator(load_mnist_model_tf):
     tf_model = load_mnist_model_tf
     model = TensorFlowModel(tf_model)
+    before = model.state_dict()
     old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
 
         old = old_weights[layer_name]
-
         new = random_layer_model.get_layer(layer_name).get_weights()
 
         assert reduce(
             and_, [not np.allclose(x, y) for x, y in zip(old, new)]
         ), "Test failed."
+
+    after = model.state_dict()
+
+    # Make sure the original model is unaffected
+    assert reduce(
+        and_, [np.allclose(x, y) for x, y in zip(before, after)]
+    ), "Test failed."
 
 
 @pytest.mark.tf_model

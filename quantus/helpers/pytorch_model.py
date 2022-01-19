@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from ..helpers.model_interface import ModelInterface
 import torch
 
@@ -28,8 +30,12 @@ class PyTorchModel(ModelInterface):
 
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
+        random_layer_model = deepcopy(self.model)
+
         modules = [
-            l for l in self.model.named_modules() if (hasattr(l[1], "reset_parameters"))
+            l
+            for l in random_layer_model.named_modules()
+            if (hasattr(l[1], "reset_parameters"))
         ]
 
         if order == "top_down":
@@ -37,8 +43,6 @@ class PyTorchModel(ModelInterface):
 
         for module in modules:
             if order == "independent":
-                self.load_state_dict(original_parameters)
+                random_layer_model.load_state_dict(original_parameters)
             module[1].reset_parameters()
-            yield module[0], self.model
-
-        self.load_state_dict(original_parameters)
+            yield module[0], random_layer_model

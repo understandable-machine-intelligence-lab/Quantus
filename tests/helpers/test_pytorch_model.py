@@ -3,6 +3,8 @@ import numpy as np
 import pytest
 import pickle
 from typing import Union
+from functools import reduce
+from operator import and_
 from collections import OrderedDict
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
@@ -84,7 +86,10 @@ def test_state_dict(expected: Union[float, dict, bool], load_mnist_model):
 @pytest.mark.pytorch_model
 def test_get_random_layer_generator(load_mnist_model):
     model = PyTorchModel(load_mnist_model)
+
     for layer_name, random_layer_model in model.get_random_layer_generator():
+
         layer = getattr(model.get_model(), layer_name).parameters()
         new_layer = getattr(random_layer_model, layer_name).parameters()
+
         assert layer != new_layer, "Test failed."

@@ -5,6 +5,7 @@ import numpy as np
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
+from tensorflow.keras.models import clone_model
 
 
 class TensorFlowModel(ModelInterface):
@@ -44,17 +45,16 @@ class TensorFlowModel(ModelInterface):
 
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
+        random_layer_model = clone_model(self.model)
 
-        layers = [l for l in self.model.layers if len(l.get_weights()) > 0]
+        layers = [l for l in random_layer_model.layers if len(l.get_weights()) > 0]
 
         if order == "top_down":
             layers = layers[::-1]
 
         for layer in layers:
             if order == "independent":
-                self.load_state_dict(original_parameters)
+                random_layer_model.set_weights(original_parameters)
             weights = layer.get_weights()
             layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, self.model
-
-        self.load_state_dict(original_parameters)
+            yield layer.name, random_layer_model
