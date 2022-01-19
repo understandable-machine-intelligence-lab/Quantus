@@ -34,11 +34,13 @@ class LeNetTF(Sequential):
     """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
 
     def __init__(self):
-        super().__init__([
-            tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(10)
-        ])
+        super().__init__(
+            [
+                tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
+                tf.keras.layers.Dense(128, activation="relu"),
+                tf.keras.layers.Dense(10),
+            ]
+        )
         self.compile(
             optimizer=tf.keras.optimizers.Adam(0.001),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),

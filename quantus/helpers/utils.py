@@ -107,12 +107,12 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
 
 def get_compatible_shape_batch(x: np.array):
     if np.shape(x)[1] == np.shape(x)[2] == np.shape(x)[3]:
-        raise ValueError('Ambiguous input shape')
+        raise ValueError("Ambiguous input shape")
     if np.shape(x)[1] == np.shape(x)[2]:
         return np.moveaxis(x, -1, 1)
     if np.shape(x)[-1] == np.shape(x)[-2]:
         return x
-    raise ValueError('Input dimension mismatch')
+    raise ValueError("Input dimension mismatch")
 
 
 def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.Module]) -> ModelInterface:

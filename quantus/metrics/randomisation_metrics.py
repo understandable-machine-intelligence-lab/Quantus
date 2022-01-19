@@ -14,6 +14,7 @@ from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
 from ..helpers.pytorch_model import PyTorchModel
 
+
 class ModelParameterRandomisation(Metric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
@@ -146,7 +147,7 @@ class ModelParameterRandomisation(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
-                order=self.layer_order
+            order=self.layer_order
         ):
 
             similarity_scores = []
@@ -274,7 +275,7 @@ class RandomLogit(Metric):
         model = get_wrapped_model(model)
         # Reshape TensorFlow input batch:
         x_batch_s = get_compatible_shape_batch(x_batch)
-        
+
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
         self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])

@@ -28,8 +28,9 @@ class PyTorchModel(ModelInterface):
 
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
-        modules = [l for l in self.model.named_modules() if (
-            hasattr(l[1], "reset_parameters"))]
+        modules = [
+            l for l in self.model.named_modules() if (hasattr(l[1], "reset_parameters"))
+        ]
 
         if order == "top_down":
             modules = modules[::-1]
@@ -41,6 +42,3 @@ class PyTorchModel(ModelInterface):
             yield module[0], self.model
 
         self.load_state_dict(original_parameters)
-
-
-

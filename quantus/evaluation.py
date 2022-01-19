@@ -5,6 +5,7 @@ from .metrics import *
 from .helpers.constants import *
 from .helpers.model_interface import ModelInterface
 
+
 def evaluate(
     metrics: dict,
     xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],

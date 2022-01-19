@@ -6,6 +6,7 @@ from ...quantus.metrics import *
 from ...quantus.helpers.pytorch_model import PyTorchModel
 from ...quantus.helpers.tf_model import TensorFlowModel
 
+
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
     "params,expected",

@@ -7,7 +7,6 @@ from ...quantus.helpers.explanation_func_tf import explain_tf
 from ...quantus.helpers.model_interface import ModelInterface
 
 
-
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -43,19 +42,19 @@ from ...quantus.helpers.model_interface import ModelInterface
             {"min": -1.0, "max": 1.0},
         ),
         (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {
-                    "layer_order": "top_down",
-                    "similarity_func": correlation_spearman,
-                    "normalise": True,
-                    "disable_warnings": True,
-                    "explain_func": explain_tf,
-                    "method": "Gradient",
-                    "img_size": 28,
-                    "nr_channels": 1,
-                },
-                {"min": -1.0, "max": 1.0},
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "layer_order": "top_down",
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain_tf,
+                "method": "Gradient",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),

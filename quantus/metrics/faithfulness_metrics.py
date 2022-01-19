@@ -165,9 +165,7 @@ class FaithfulnessCorrelation(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=False, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             logit_deltas = []
@@ -188,11 +186,11 @@ class FaithfulnessCorrelation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=False, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
@@ -370,9 +368,7 @@ class FaithfulnessEstimate(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=False, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             pred_deltas = []
@@ -396,11 +392,11 @@ class FaithfulnessEstimate(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=False, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
@@ -579,10 +575,7 @@ class MonotonicityArya(Metric):
             )
 
             # Copy the input x but fill with baseline values.
-            x_baseline = (
-                np.full(x.shape, baseline_value)
-                .flatten()
-            )
+            x_baseline = np.full(x.shape, baseline_value).flatten()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -600,9 +593,7 @@ class MonotonicityArya(Metric):
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
                 x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=True, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
 
                 preds.append(y_pred_perturb)
@@ -764,9 +755,7 @@ class MonotonicityNguyen(Metric):
             # Predict on input x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
@@ -809,11 +798,11 @@ class MonotonicityNguyen(Metric):
                     assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    x_input = model.shape_input(
+                        x_perturbed, self.img_size, self.nr_channels
+                    )
                     y_pred_perturb = float(
-                        model.predict(
-                            x_input, softmax_act=True, **self.kwargs
-                        )[:, y]
+                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
                     y_pred_perturbs.append(y_pred_perturb)
 
@@ -1007,11 +996,11 @@ class PixelFlipping(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=True, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
                 preds.append(y_pred_perturb)
 
@@ -1181,9 +1170,7 @@ class RegionPerturbation(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             if self.abs:
@@ -1252,11 +1239,11 @@ class RegionPerturbation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=True, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
 
                 sub_results.append(y_pred - y_pred_perturb)
@@ -1406,9 +1393,7 @@ class Selectivity(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             if self.abs:
@@ -1461,11 +1446,11 @@ class Selectivity(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=True, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
 
                 sub_results.append(y_pred_perturb)
@@ -1659,9 +1644,7 @@ class SensitivityN(Metric):
             # Predict on x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             att_sums = []
@@ -1690,11 +1673,11 @@ class SensitivityN(Metric):
                     # Sum attributions.
                     att_sums.append(float(a[a_ix].sum()))
 
-                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    x_input = model.shape_input(
+                        x_perturbed, self.img_size, self.nr_channels
+                    )
                     y_pred_perturb = float(
-                        model.predict(
-                            x_input, softmax_act=True, **self.kwargs
-                        )[:, y]
+                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
                     pred_deltas.append(y_pred - y_pred_perturb)
 
@@ -1863,9 +1846,7 @@ class IterativeRemovalOfFeatures(Metric):
             # Predict on x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             # Segment image.
@@ -1903,11 +1884,11 @@ class IterativeRemovalOfFeatures(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred_perturb = float(
-                    model.predict(
-                        x_input, softmax_act=True, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
                 # Normalise the scores to be within [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))

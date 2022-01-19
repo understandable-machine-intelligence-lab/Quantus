@@ -50,7 +50,8 @@ def explain_tf(
             list(
                 map(
                     lambda x, y: VanillaGradients().explain(([x], None), model, y),
-                    inputs, targets
+                    inputs,
+                    targets,
                 )
             )
         )
