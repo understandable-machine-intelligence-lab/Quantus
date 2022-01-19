@@ -174,7 +174,10 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(),
+                    inputs=x_perturbed,
+                    targets=y,
+                    **self.kwargs,
                 )
 
                 if self.abs:
@@ -353,7 +356,10 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(),
+                    inputs=x_perturbed,
+                    targets=y,
+                    **self.kwargs,
                 )
 
                 if self.abs:
@@ -533,7 +539,10 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(),
+                    inputs=x_perturbed,
+                    targets=y,
+                    **self.kwargs,
                 )
 
                 if self.abs:
@@ -723,7 +732,10 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_perturbed, targets=y, **self.kwargs
+                    model=model.get_model(),
+                    inputs=x_perturbed,
+                    targets=y,
+                    **self.kwargs,
                 )
 
                 if self.abs:
@@ -733,11 +745,11 @@ class Continuity(Metric):
                     a_perturbed = self.normalise_func(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
-                x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
                 y_pred = float(
-                    model.predict(
-                        x_input, softmax_act=False, **self.kwargs
-                    )[:, y]
+                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
 
                 sub_results[self.nr_patches].append(y_pred)

@@ -3,6 +3,7 @@ import pytest
 from functools import reduce
 from operator import and_
 from typing import Union
+from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
@@ -17,11 +18,12 @@ def mock_input_tf_array():
 
 @pytest.fixture
 def flat_image_array():
-    return {"x": np.zeros((1, 3*28*28)), "img_size": 28, "nr_channels": 3}
+    return {"x": np.zeros((1, 3 * 28 * 28)), "img_size": 28, "nr_channels": 3}
 
 
 @pytest.mark.tf_model
-@pytest.mark.parametrize("data,params,expected",
+@pytest.mark.parametrize(
+    "data,params,expected",
     [
         (
             lazy_fixture("mock_input_tf_array"),
@@ -32,22 +34,21 @@ def flat_image_array():
         (
             lazy_fixture("mock_input_tf_array"),
             {"softmax_act": True, },
-            np.array([0.05396363, 0.11891972, 0.12795599, 0.06260477, 0.13518457, 0.13892056,
-                      0.08500589, 0.14101373, 0.07338234, 0.06304886]),
+            softmax(
+                np.array([-0.723556, 0.06658217, 0.13982001, -0.57502496, 0.19477458, 0.22203586,
+                          -0.26914597, 0.23699084, -0.41618308, -0.5679564]),
+            )
         ),
     ]
 )
 def test_predict(
-        data: np.ndarray,
-        params: dict,
-        expected: Union[float, dict, bool],
-        load_mnist_model_tf
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_model_tf,
 ):
     model = TensorFlowModel(load_mnist_model_tf)
-    out = model.predict(
-        x=data["x"],
-        **params
-    )
+    out = model.predict(x=data["x"], **params)
     assert np.allclose(out, expected), "Test failed."
 
 
@@ -59,9 +60,7 @@ def test_predict(
     ],
 )
 def test_shape_input(
-        data: np.ndarray,
-        expected: Union[float, dict, bool],
-        load_mnist_model_tf
+    data: np.ndarray, expected: Union[float, dict, bool], load_mnist_model_tf
 ):
     model = TensorFlowModel(load_mnist_model_tf)
     out = model.shape_input(**data)
@@ -69,9 +68,7 @@ def test_shape_input(
 
 
 @pytest.mark.tf_model
-def test_get_random_layer_generator(
-        load_mnist_model_tf
-):
+def test_get_random_layer_generator(load_mnist_model_tf):
     tf_model = load_mnist_model_tf
     model = TensorFlowModel(tf_model)
     old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
@@ -82,26 +79,24 @@ def test_get_random_layer_generator(
 
         new = random_layer_model.get_layer(layer_name).get_weights()
 
-        assert reduce(and_, [not np.allclose(x, y) for x, y in zip(old, new)]), "Test failed."
+        assert reduce(
+            and_, [not np.allclose(x, y) for x, y in zip(old, new)]
+        ), "Test failed."
 
 
 @pytest.mark.tf_model
-def test_load_state_dict(
-        load_mnist_model_tf
-):
+def test_load_state_dict(load_mnist_model_tf):
     tf_model = load_mnist_model_tf
     model = TensorFlowModel(tf_model)
     before = model.state_dict()
 
-    alayer = [
-            layer
-            for layer in tf_model.layers
-            if len(layer.get_weights()) > 0
-    ][0]
+    alayer = [l for l in tf_model.layers if len(l.get_weights()) > 0][0]
     weights = alayer.get_weights()
     alayer.set_weights([np.random.permutation(w) for w in weights])
 
     model.load_state_dict(before)
     after = model.state_dict()
 
-    assert reduce(and_, [np.allclose(x, y) for x, y in zip(before, after)]), "Test failed."
+    assert reduce(
+        and_, [np.allclose(x, y) for x, y in zip(before, after)]
+    ), "Test failed."

@@ -138,6 +138,8 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
         (lazy_fixture("mock_input_torch_array"), np.zeros((1, 1, 28, 28))),
     ],
 )
-def test_get_compatible_shape_batch(data: np.ndarray, expected: Union[float, dict, bool]):
+def test_get_compatible_shape_batch(
+    data: np.ndarray, expected: Union[float, dict, bool]
+):
     out = get_compatible_shape_batch(data["x"])
     assert np.array_equal(out, expected), "Test failed."

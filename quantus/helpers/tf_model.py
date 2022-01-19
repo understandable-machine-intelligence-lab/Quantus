@@ -1,10 +1,7 @@
 from ..helpers.model_interface import ModelInterface
 from ..metrics import *
 import numpy as np
-import io
-import h5py
 
-from tensorflow.python.keras.saving import hdf5_format
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
@@ -22,7 +19,7 @@ class TensorFlowModel(ModelInterface):
             return self.model(x, training=False).numpy()
 
         config = self.model.layers[-1].get_config()
-        config['activation'] = target_act
+        config["activation"] = target_act
 
         weights = self.model.layers[-1].get_weights()
 
@@ -48,11 +45,7 @@ class TensorFlowModel(ModelInterface):
     def get_random_layer_generator(self, order: str = "top_down"):
         original_parameters = self.state_dict()
 
-        layers = [
-            layer
-            for layer in self.model.layers
-            if len(layer.get_weights()) > 0
-        ]
+        layers = [l for l in self.model.layers if len(l.get_weights()) > 0]
 
         if order == "top_down":
             layers = layers[::-1]

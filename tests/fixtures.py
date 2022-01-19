@@ -28,7 +28,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights('tutorials/assets/mnist_tf_weights/')
+    model.load_weights("tutorials/assets/mnist_tf_weights/")
     return model
 
 
@@ -39,7 +39,9 @@ def load_mnist_images():
         np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
-    y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64).numpy()
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
@@ -50,7 +52,9 @@ def load_mnist_images_tf():
         np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
-    y_batch = torch.as_tensor(np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64).numpy()
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
     return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
 
 

@@ -146,7 +146,9 @@ class PointingGame(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             # Reshape.
             a = a.flatten()
@@ -311,7 +313,9 @@ class AttributionLocalisation(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             a = a.flatten()
             s = s.flatten().astype(bool)
@@ -499,7 +503,9 @@ class TopKIntersection(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             if self.abs:
                 a = np.abs(a)
@@ -661,7 +667,9 @@ class RelevanceRankAccuracy(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             a = a.flatten()
             s = np.where(s.flatten().astype(bool))[0]
@@ -826,7 +834,9 @@ class RelevanceMassAccuracy(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             a = a.flatten()
 
@@ -984,7 +994,9 @@ class AUC(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        for sample, (x, y, a, s) in enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)):
+        for sample, (x, y, a, s) in enumerate(
+            zip(x_batch_s, y_batch, a_batch, s_batch)
+        ):
 
             if self.abs:
                 a = np.abs(a)

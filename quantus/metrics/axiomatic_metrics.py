@@ -12,6 +12,7 @@ from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
 from ..helpers.pytorch_model import PyTorchModel
 
+
 class Completeness(Metric):
     """
     Implementation of Completeness test by Sundararajan et al., 2017, also referred
@@ -168,17 +169,13 @@ class Completeness(Metric):
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
-                model.predict(
-                    x_input, softmax_act=False, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             # Predict on baseline.
             x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
             y_pred_baseline = float(
-                model.predict(
-                    x_input, softmax_act=True, **self.kwargs
-                )[:, y]
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
@@ -350,11 +347,11 @@ class NonSensitivity(Metric):
                     )
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(x_perturbed, self.img_size, self.nr_channels)
+                    x_input = model.shape_input(
+                        x_perturbed, self.img_size, self.nr_channels
+                    )
                     y_pred_perturbed = float(
-                        model.predict(
-                            x_input, softmax_act=True, **self.kwargs
-                        )[:, y]
+                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
                     preds.append(y_pred_perturbed)
 
