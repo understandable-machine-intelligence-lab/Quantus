@@ -175,7 +175,7 @@ class Completeness(Metric):
             # Predict on baseline.
             x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
             y_pred_baseline = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
