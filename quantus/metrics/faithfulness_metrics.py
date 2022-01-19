@@ -75,7 +75,7 @@ class FaithfulnessCorrelation(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -88,7 +88,7 @@ class FaithfulnessCorrelation(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -282,7 +282,7 @@ class FaithfulnessEstimate(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -295,7 +295,7 @@ class FaithfulnessEstimate(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -492,7 +492,7 @@ class MonotonicityArya(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -505,7 +505,7 @@ class MonotonicityArya(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -699,7 +699,7 @@ class MonotonicityNguyen(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -712,7 +712,7 @@ class MonotonicityNguyen(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -927,7 +927,7 @@ class PixelFlipping(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -940,7 +940,7 @@ class PixelFlipping(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -1135,7 +1135,7 @@ class RegionPerturbation(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -1148,7 +1148,7 @@ class RegionPerturbation(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -1374,7 +1374,7 @@ class Selectivity(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -1387,7 +1387,7 @@ class Selectivity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -1451,8 +1451,8 @@ class Selectivity(Metric):
             # Predict on input.
             with torch.no_grad():
                 y_pred = float(
-                    model(
-                        torch.nn.Softmax()(
+                    torch.nn.Softmax()(
+                        model(
                             torch.Tensor(x)
                             .reshape(
                                 1,
@@ -1627,7 +1627,7 @@ class SensitivityN(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -1640,7 +1640,7 @@ class SensitivityN(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -1853,7 +1853,7 @@ class IterativeRemovalOfFeatures(Metric):
         self,
         model,
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -1866,7 +1866,7 @@ class IterativeRemovalOfFeatures(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
