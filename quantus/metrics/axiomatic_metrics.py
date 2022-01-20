@@ -72,7 +72,7 @@ class Completeness(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.Module],
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],

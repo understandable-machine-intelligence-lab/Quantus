@@ -5,6 +5,7 @@ omit =
     /tests/*
     quantus/helpers/asserts.py
     quantus/helpers/warn_func.py
+    quantus/helpers/model_interface.py
     quantus/helpers/models.py
     quantus/helpers/constants.py
     quantus/helpers/plotting.py
