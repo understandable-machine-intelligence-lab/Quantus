@@ -11,6 +11,7 @@ scikit-image
 scikit-learn
 scipy
 tensorflow
+tensorflow_datasets
 termcolor
 tf-explain
 torch
