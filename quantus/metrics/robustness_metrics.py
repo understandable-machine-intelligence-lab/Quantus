@@ -80,7 +80,7 @@ class LocalLipschitzEstimate(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -93,7 +93,7 @@ class LocalLipschitzEstimate(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -143,7 +143,6 @@ class LocalLipschitzEstimate(Metric):
         explain_func = self.kwargs.get("explain_func", Callable)
         assert_explain_func(explain_func=explain_func)
 
-        print("check sizes", self.nr_channels, self.img_size)
         if a_batch is None:
 
             # Generate explanations.
@@ -263,7 +262,7 @@ class MaxSensitivity(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -276,7 +275,7 @@ class MaxSensitivity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -446,7 +445,7 @@ class AvgSensitivity(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -459,7 +458,7 @@ class AvgSensitivity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -630,7 +629,7 @@ class Continuity(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -643,7 +642,7 @@ class Continuity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict

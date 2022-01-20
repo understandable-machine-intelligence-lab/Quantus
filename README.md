@@ -295,6 +295,18 @@ With each metric intialisation, warnings are printed to shell in order to make t
 
 in the params of the metric initalisation.
 
+## Contributing
+
+If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
+
+#### Code Style
+Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
+We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
+
+#### Testing
+Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
+
+
 ## Disclaimers
 
 **1. Implementation may differ from the original author(s)**
@@ -309,7 +321,7 @@ Metrics for XAI methods are often empirical interpretations (or translations) of
 
 Metrics are often designed with a specific use case in mind e.g., in an image classification setting. Thus it is not always clear how to change the hyperparameters to make them suitable for another setting. Pay careful attention to how your hyperparameters should be tuned; what is a proper baseline value in your context i.e., that represents the notion of “missingness”?
 
-**4. Evaluation of explanations must be understood in its context; its application of and of its kind**
+**4. Evaluation of explanations must be understood in its context; its application and of its kind**
 
  What evaluation metric to use is completely dependent on: 1) the type of explanation (explanation by example cannot be evaluated the same way as attribution-based/ feature-importance methods), 2) the application/ task: we may not require the explanations to fulfil certain criteria in some context compared to others e.g., multi-label vs single label classification 3) the dataset/ domain: text vs images e.g, different dependency structures between features exist, and preprocessing of the data, leading to differences on what the model may perceive, and how attribution methods can react to that (prime example: MNIST in range  [0,1] vs [-1,1] and any NN) and 4) the user (most evaluation metrics are founded from principles of what a user want from its explanation e.g., even in the seemingly objective measures we are enforcing our preferences e.g., in TCAV "explain in a language we can understand", object localisation "explain over objects we think are important", robustness "explain similarly over things we think looks similar" etc. Thus it is important to define what attribution quality means for each experimental setting.
 
@@ -334,18 +346,6 @@ Interpretation of evaluation outcome will differ depending on whether we priorit
 [5] P. Sturmfels, S. Lundberg, and S. Lee. "Visualizing the impact of feature attribution baselines." Distill 5, no. 1: e22, 2020.
 
 [6] D. Janzing, L. Minorics, and P. Blöbaum. "Feature relevance quantification in explainable AI: A causal problem." In International Conference on Artificial Intelligence and Statistics, pp. 2907-2916. PMLR, 2020.
-
-
-## Contributing
-
-If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
-
-#### Code Style
-Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
-We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
-
-#### Testing
-Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
 
 <!--

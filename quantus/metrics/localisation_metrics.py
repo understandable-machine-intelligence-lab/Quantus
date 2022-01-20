@@ -67,7 +67,7 @@ class PointingGame(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
@@ -81,7 +81,7 @@ class PointingGame(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
@@ -235,7 +235,7 @@ class AttributionLocalisation(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
@@ -249,7 +249,7 @@ class AttributionLocalisation(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
@@ -424,7 +424,7 @@ class TopKIntersection(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
@@ -438,7 +438,7 @@ class TopKIntersection(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
@@ -588,7 +588,7 @@ class RelevanceRankAccuracy(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
@@ -602,7 +602,7 @@ class RelevanceRankAccuracy(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
@@ -756,7 +756,7 @@ class RelevanceMassAccuracy(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         **kwargs
@@ -769,7 +769,7 @@ class RelevanceMassAccuracy(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
@@ -915,7 +915,7 @@ class AUC(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
@@ -929,7 +929,7 @@ class AUC(Metric):
         ----------
         model: a torch model e.g., torchvision.models that is to-be-explained
         x_batch: a np.ndarray which contains the inputs that are to-be-explained
-        y_batch: a Union[np.ndarray, int] which contains the outputs that are to-be-explained
+        y_batch: a np.ndarray which contains the outputs that are to-be-explained
         a_batch: a Union[np.ndarray, None] which contains pre-computed attributions
         s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
         args: optional arguments
