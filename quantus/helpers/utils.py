@@ -115,7 +115,11 @@ def get_compatible_shape_batch(x: np.array):
     raise ValueError("Input dimension mismatch")
 
 
-def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.Module]) -> ModelInterface:
+def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.modules.module.Module]) -> ModelInterface:
+    if not model:
+        return None
     if isinstance(model, tf.keras.Model):
         return TensorFlowModel(model)
-    return PyTorchModel(model)
+    if isinstance(model, torch.nn.modules.module.Module):
+        return PyTorchModel(model)
+    raise ValueError("Model needs to be tf.keras.Model or torch.nn.modules.module.Module.")
