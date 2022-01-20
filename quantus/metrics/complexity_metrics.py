@@ -66,7 +66,7 @@ class Sparseness(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -79,7 +79,7 @@ class Sparseness(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -151,7 +151,7 @@ class Sparseness(Metric):
             else:
                 a = np.abs(a)
                 print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter)"
+                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
                     "since otherwise inconsistent results can be expected."
                 )
 
@@ -223,7 +223,7 @@ class Complexity(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -236,7 +236,7 @@ class Complexity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -375,7 +375,7 @@ class EffectiveComplexity(Metric):
         self,
         model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
-        y_batch: Union[np.array, int],
+        y_batch: np.array,
         a_batch: Union[np.array, None],
         *args,
         **kwargs,
@@ -388,7 +388,7 @@ class EffectiveComplexity(Metric):
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: optional args
             kwargs: optional dict
@@ -460,7 +460,7 @@ class EffectiveComplexity(Metric):
             else:
                 a = np.abs(a)
                 print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter)"
+                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
                     "since otherwise inconsistent results can be expected."
                 )
 

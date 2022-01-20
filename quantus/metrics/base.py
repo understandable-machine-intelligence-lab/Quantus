@@ -65,7 +65,7 @@ class Metric:
         Parameters
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a Union[np.ndarray, int] which contains the output labels that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: optional args
