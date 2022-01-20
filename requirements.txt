@@ -3,6 +3,7 @@ coverage
 flake8
 matplotlib
 numpy
+opencv-python
 pytest
 pytest-cov
 pytest-lazy-fixture
@@ -10,6 +11,8 @@ scikit-image
 scikit-learn
 scipy
 tensorflow
+tensorflow_datasets
 termcolor
 tf-explain
+torch
 torchvision
