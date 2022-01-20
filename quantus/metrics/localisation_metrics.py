@@ -65,7 +65,7 @@ class PointingGame(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -233,7 +233,7 @@ class AttributionLocalisation(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -422,7 +422,7 @@ class TopKIntersection(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -586,7 +586,7 @@ class RelevanceRankAccuracy(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -754,7 +754,7 @@ class RelevanceMassAccuracy(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -913,7 +913,7 @@ class AUC(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],

@@ -78,7 +78,7 @@ class LocalLipschitzEstimate(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -261,7 +261,7 @@ class MaxSensitivity(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -444,7 +444,7 @@ class AvgSensitivity(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
@@ -628,7 +628,7 @@ class Continuity(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.Module],
         x_batch: np.array,
         y_batch: Union[np.array, int],
         a_batch: Union[np.array, None],
