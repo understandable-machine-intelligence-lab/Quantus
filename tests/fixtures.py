@@ -8,7 +8,6 @@ from torchvision import transforms
 import numpy as np
 from ..quantus.helpers.models import LeNet, LeNetTF
 from tensorflow.keras.models import load_model
-import tensorflow_datasets as tfds
 import tensorflow as tf
 from ..quantus.helpers.pytorch_model import PyTorchModel
 from ..quantus.helpers.tf_model import TensorFlowModel
