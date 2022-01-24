@@ -1,5 +1,5 @@
 from copy import deepcopy
-from contextlib import nullcontext
+from contextlib import suppress
 
 from ..helpers.model_interface import ModelInterface
 import torch
@@ -16,7 +16,7 @@ class PyTorchModel(ModelInterface):
 
         device = kwargs.get("device", None)
         grad = kwargs.get("grad", False)
-        grad_context = torch.no_grad() if grad else nullcontext()
+        grad_context = torch.no_grad() if grad else suppress()
 
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
