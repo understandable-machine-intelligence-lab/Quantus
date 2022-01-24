@@ -121,10 +121,12 @@ class FaithfulnessCorrelation(Metric):
             >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -321,14 +323,16 @@ class FaithfulnessEstimate(Metric):
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -524,10 +528,12 @@ class MonotonicityArya(Metric):
             >> metric = MonotonicityArya(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -719,10 +725,12 @@ class MonotonicityNguyen(Metric):
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -931,10 +939,12 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -1134,10 +1144,12 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -1357,10 +1369,12 @@ class Selectivity(Metric):
             >> metric = Selectivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -1594,10 +1608,12 @@ class SensitivityN(Metric):
             >> metric = SensitivityN(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -1804,10 +1820,12 @@ class IterativeRemovalOfFeatures(Metric):
             >> metric = IROF(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])

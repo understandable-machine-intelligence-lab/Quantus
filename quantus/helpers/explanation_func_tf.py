@@ -61,12 +61,6 @@ def explain_tf(
             "Specify a XAI method that already has been implemented {}."
         ).__format__("XAI_METHODS")
 
-    if isinstance(explanation, torch.Tensor):
-        if explanation.requires_grad:
-            explanation = explanation.cpu().detach().numpy()
-        else:
-            explanation = explanation.cpu().numpy()
-
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 

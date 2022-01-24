@@ -47,22 +47,24 @@ def flat_image_array():
 def test_predict(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
-    model = PyTorchModel(load_mnist_model)
+    load_mnist_model.eval()
+    model = PyTorchModel(load_mnist_model, channel_first=True)
     out = model.predict(x=data["x"], **params)
     assert np.allclose(out, expected), "Test failed."
 
 
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
-    "data,expected",
+    "data,params,expected",
     [
-        (lazy_fixture("flat_image_array"), np.zeros((1, 3, 28, 28))),
+        (lazy_fixture("flat_image_array"), {"channel_first": True}, np.zeros((1, 3, 28, 28))),
     ],
 )
 def test_shape_input(
-    data: np.ndarray, expected: Union[float, dict, bool], load_mnist_model
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
-    model = PyTorchModel(load_mnist_model)
+    load_mnist_model.eval()
+    model = PyTorchModel(load_mnist_model, channel_first=True)
     out = model.shape_input(**data)
     assert np.array_equal(out, expected), "Test failed."
 
@@ -70,7 +72,7 @@ def test_shape_input(
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize("expected", [torch.nn.Module])
 def test_get_model(expected: Union[float, dict, bool], load_mnist_model):
-    model = PyTorchModel(load_mnist_model)
+    model = PyTorchModel(load_mnist_model, channel_first=True)
     out = model.get_model()
     assert isinstance(out, expected), "Test failed."
 
@@ -78,14 +80,14 @@ def test_get_model(expected: Union[float, dict, bool], load_mnist_model):
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize("expected", [OrderedDict])
 def test_state_dict(expected: Union[float, dict, bool], load_mnist_model):
-    model = PyTorchModel(load_mnist_model)
+    model = PyTorchModel(load_mnist_model, channel_first=True)
     out = model.state_dict()
     assert isinstance(out, expected), "Test failed."
 
 
 @pytest.mark.pytorch_model
 def test_get_random_layer_generator(load_mnist_model):
-    model = PyTorchModel(load_mnist_model)
+    model = PyTorchModel(load_mnist_model, channel_first=True)
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
 
