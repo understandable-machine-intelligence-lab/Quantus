@@ -20,9 +20,11 @@ class PyTorchModel(ModelInterface):
 
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
-        if softmax_act:
-            return torch.nn.Softmax()(pred).detach().cpu().numpy()
-        return pred.detach().cpu().numpy()
+            if softmax_act:
+                pred = torch.nn.Softmax()(pred)
+            if pred.requires_grad:
+                return pred.detach().cpu().numpy()
+            return pred.numpy()
 
     def shape_input(self, x, img_size, nr_channels):
         x = x.reshape(1, nr_channels, img_size, img_size)
