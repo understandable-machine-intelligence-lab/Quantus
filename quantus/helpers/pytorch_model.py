@@ -1,23 +1,34 @@
 from copy import deepcopy
+from contextlib import nullcontext
 
 from ..helpers.model_interface import ModelInterface
 import torch
+import numpy as np
 
 
 class PyTorchModel(ModelInterface):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, model, channel_first):
+        super().__init__(model, channel_first)
 
     def predict(self, x, softmax_act=False, **kwargs):
+        if self.model.training:
+            raise AttributeError("Torch model needs to be in the evaluation mode.")
+
         device = kwargs.get("device", None)
-        with torch.no_grad():
+        grad = kwargs.get("grad", False)
+        grad_context = torch.no_grad() if grad else nullcontext()
+
+        with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
         if softmax_act:
-            return torch.nn.Softmax()(pred).numpy()
-        return pred.numpy()
+            return torch.nn.Softmax()(pred).detach().cpu().numpy()
+        return pred.detach().cpu().numpy()
 
     def shape_input(self, x, img_size, nr_channels):
-        return x.reshape(1, nr_channels, img_size, img_size)
+        x = x.reshape(1, nr_channels, img_size, img_size)
+        if self.channel_first:
+            return x
+        raise ValueError("Channel first order expected for a torch model.")
 
     def get_model(self):
         return self.model

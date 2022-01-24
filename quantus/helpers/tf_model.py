@@ -9,8 +9,8 @@ from tensorflow.keras.models import clone_model
 
 
 class TensorFlowModel(ModelInterface):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, model, channel_first):
+        super().__init__(model, channel_first)
 
     def predict(self, x, softmax_act=False, **kwargs):
         output_act = self.model.layers[-1].activation
@@ -32,6 +32,8 @@ class TensorFlowModel(ModelInterface):
 
     def shape_input(self, x, img_size, nr_channels):
         x = x.reshape(1, nr_channels, img_size, img_size)
+        if self.channel_first:
+            return x
         return np.moveaxis(x, 1, -1)
 
     def get_model(self):

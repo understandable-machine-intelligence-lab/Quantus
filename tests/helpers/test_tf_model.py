@@ -27,13 +27,13 @@ def flat_image_array():
     [
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax_act": False, },
+            {"softmax_act": False, "channel_first": False, },
             np.array([-0.723556, 0.06658217, 0.13982001, -0.57502496, 0.19477458, 0.22203586,
                       -0.26914597, 0.23699084, -0.41618308, -0.5679564]),
         ),
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax_act": True, },
+            {"softmax_act": True, "channel_first": False, },
             softmax(
                 np.array([-0.723556, 0.06658217, 0.13982001, -0.57502496, 0.19477458, 0.22203586,
                           -0.26914597, 0.23699084, -0.41618308, -0.5679564]),
@@ -47,22 +47,22 @@ def test_predict(
     expected: Union[float, dict, bool],
     load_mnist_model_tf,
 ):
-    model = TensorFlowModel(load_mnist_model_tf)
+    model = TensorFlowModel(model=load_mnist_model_tf, channel_first=params["channel_first"])
     out = model.predict(x=data["x"], **params)
     assert np.allclose(out, expected), "Test failed."
 
 
 @pytest.mark.tf_model
 @pytest.mark.parametrize(
-    "data,expected",
+    "data,params,expected",
     [
-        (lazy_fixture("flat_image_array"), np.zeros((1, 28, 28, 3))),
+        (lazy_fixture("flat_image_array"), {"channel_first": False}, np.zeros((1, 28, 28, 3))),
     ],
 )
 def test_shape_input(
-    data: np.ndarray, expected: Union[float, dict, bool], load_mnist_model_tf
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model_tf
 ):
-    model = TensorFlowModel(load_mnist_model_tf)
+    model = TensorFlowModel(load_mnist_model_tf, channel_first=params["channel_first"])
     out = model.shape_input(**data)
     assert np.array_equal(out, expected), "Test failed."
 
@@ -70,7 +70,7 @@ def test_shape_input(
 @pytest.mark.tf_model
 def test_get_random_layer_generator(load_mnist_model_tf):
     tf_model = load_mnist_model_tf
-    model = TensorFlowModel(tf_model)
+    model = TensorFlowModel(model=tf_model, channel_first=False)
     before = model.state_dict()
     old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
 
@@ -94,7 +94,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
 @pytest.mark.tf_model
 def test_load_state_dict(load_mnist_model_tf):
     tf_model = load_mnist_model_tf
-    model = TensorFlowModel(tf_model)
+    model = TensorFlowModel(model=tf_model, channel_first=False)
     before = model.state_dict()
 
     alayer = [l for l in tf_model.layers if len(l.get_weights()) > 0][0]

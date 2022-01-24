@@ -111,10 +111,12 @@ class Sparseness(Metric):
             >> metric = Sparseness(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -268,10 +270,12 @@ class Complexity(Metric):
             >> metric = Complexity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -420,10 +424,12 @@ class EffectiveComplexity(Metric):
             >> metric = EffectiveComplexity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, channel_first)
         # Wrap the model into an interface
-        model = get_wrapped_model(model)
-        # Reshape TensorFlow input batch:
-        x_batch_s = get_compatible_shape_batch(x_batch)
+        if model:
+            model = get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])

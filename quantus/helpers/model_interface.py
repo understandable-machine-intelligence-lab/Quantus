@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 
 
 class ModelInterface(ABC):
-    def __init__(self, model):
+    def __init__(self, model, channel_first=True):
         self.model = model
+        self.channel_first = channel_first
 
     @abstractmethod
     def predict(self, x_input):
