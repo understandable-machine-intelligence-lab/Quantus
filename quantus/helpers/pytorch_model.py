@@ -16,7 +16,7 @@ class PyTorchModel(ModelInterface):
 
         device = kwargs.get("device", None)
         grad = kwargs.get("grad", False)
-        grad_context = torch.no_grad() if grad else suppress()
+        grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
