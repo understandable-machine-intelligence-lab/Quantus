@@ -1,13 +1,26 @@
 """This modules contains explainer functions which can be used in conjunction with the metrics in the library."""
 from typing import Union
+
+import numpy as np
 import torch
 import scipy
 import random
+from importlib import util
 import cv2
 from captum.attr import *
 import warnings
 from .utils import *
 from .normalise_func import *
+
+
+if not (util.find_spec("captum") or util.find_spec("tf_explain")):
+    raise ImportError(
+        "Explanation library not found. Please install Captum for torch models and tf-explain for TensorFlow."
+    )
+if util.find_spec("captum"):
+    from captum.attr import *
+if util.find_spec("tf_explain"):
+    import tf_explain
 
 
 def explain(
@@ -16,7 +29,7 @@ def explain(
     targets: Union[np.array, torch.Tensor],
     *args,
     **kwargs,
-) -> torch.Tensor:
+) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 
@@ -32,8 +45,120 @@ def explain(
             category=UserWarning,
         )
 
-    method = kwargs.get("method", "Gradient").lower()
+    explanation = get_explanation(model, inputs, targets, **kwargs)
 
+    if kwargs.get("normalise", False):
+        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
+
+    if kwargs.get("abs", False):
+        explanation = np.abs(explanation)
+
+    elif kwargs.get("pos_only", False):
+        explanation[explanation < 0] = 0.0
+
+    elif kwargs.get("neg_only", False):
+        explanation[explanation > 0] = 0.0
+
+    return explanation
+
+
+def get_explanation(model, inputs, targets, **kwargs):
+    if isinstance(model, tf.keras.Model) and util.find_spec("tf_explain"):
+        return generate_tf_explanation(model, inputs, targets, **kwargs)
+    if isinstance(model, torch.nn.modules.module.Module) and util.find_spec("captum"):
+        return generate_captum_explanation(model, inputs, targets, **kwargs)
+    raise ValueError(
+        "Model needs to be tf.keras.Model or torch.nn.modules.module.Module. "
+        "Please install Captum for torch models and tf-explain for TensorFlow."
+    )
+
+
+def generate_tf_explanation(model, inputs, targets, **kwargs):
+    method = kwargs.get("method", "Gradient").lower()
+    inputs = inputs.reshape(-1, *model.input_shape[1:])
+
+    explanation: np.ndarray = np.zeros_like(inputs)
+
+    if method == "Gradient".lower():
+        explanation = np.array(
+            list(
+                map(
+                    lambda x, y: tf_explain.core.vanilla_gradients.VanillaGradients().explain(
+                        ([x], None), model, y
+                    ),
+                    inputs,
+                    targets,
+                )
+            )
+        )
+
+    elif method == "IntegratedGradients".lower():
+        explanation = np.array(
+            list(
+                map(
+                    lambda x, y: tf_explain.core.integrated_gradients.IntegratedGradients().explain(
+                        ([x], None), model, y, n_steps=10
+                    ),
+                    inputs,
+                    targets,
+                )
+            )
+        )
+
+    elif method == "InputXGradient".lower():
+        explanation = np.array(
+            list(
+                map(
+                    lambda x, y: tf_explain.core.gradients_inputs.GradientsInputs().explain(
+                        ([x], None), model, y
+                    ),
+                    inputs,
+                    targets,
+                )
+            )
+        )
+
+    elif method == "Occlusion".lower():
+        patch_size = kwargs.get("window", (1, 4, 4))[-1]
+        explanation = np.array(
+            list(
+                map(
+                    lambda x, y: tf_explain.core.occlusion_sensitivity.OcclusionSensitivity().explain(
+                        ([x], None), model, y, patch_size=patch_size
+                    ),
+                    inputs,
+                    targets,
+                )
+            )
+        )
+
+    elif method == "GradCam".lower():
+        assert (
+            "gc_layer" in kwargs
+        ), "Specify convolutional layer name as 'gc_layer' to run GradCam."
+
+        explanation = np.array(
+            list(
+                map(
+                    lambda x, y: tf_explain.core.grad_cam.GradCAM().explain(
+                        ([x], None), model, y, layer_name=kwargs["gc_layer"]
+                    ),
+                    inputs,
+                    targets,
+                )
+            )
+        )
+
+    else:
+        raise KeyError(
+            "Specify a XAI method that already has been implemented {}."
+        ).__format__("XAI_METHODS")
+
+    return explanation
+
+
+def generate_captum_explanation(model, inputs, targets, **kwargs):
+    method = kwargs.get("method", "Gradient").lower()
     # Set model in evaluate mode.
     model.to(kwargs.get("device", None))
     model.eval()
@@ -175,17 +300,5 @@ def explain(
             explanation = explanation.cpu().detach().numpy()
         else:
             explanation = explanation.cpu().numpy()
-
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
-
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
 
     return explanation

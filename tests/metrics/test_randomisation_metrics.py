@@ -3,7 +3,6 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
-from ...quantus.helpers.explanation_func_tf import explain_tf
 from ...quantus.helpers.model_interface import ModelInterface
 
 
@@ -49,7 +48,7 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "similarity_func": correlation_spearman,
                 "normalise": True,
                 "disable_warnings": True,
-                "explain_func": explain_tf,
+                "explain_func": explain,
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
@@ -64,7 +63,7 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "similarity_func": correlation_pearson,
                 "normalise": True,
                 "disable_warnings": True,
-                "explain_func": explain_tf,
+                "explain_func": explain,
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,

@@ -8,9 +8,11 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "nr_runs": 10,
@@ -26,6 +28,8 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "nr_runs": 10,
@@ -39,18 +43,50 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "nr_runs": 10,
+                "perturb_baseline": "mean",
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "IntegratedGradients",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "nr_runs": 10,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "InputXGradient",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
     ],
 )
 def test_faithfulness_correlation(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -74,9 +110,11 @@ def test_faithfulness_correlation(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -91,6 +129,8 @@ def test_faithfulness_correlation(
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -105,6 +145,8 @@ def test_faithfulness_correlation(
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -122,15 +164,14 @@ def test_faithfulness_correlation(
     ],
 )
 def test_faithfulness_estimate(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -154,9 +195,11 @@ def test_faithfulness_estimate(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -171,6 +214,8 @@ def test_faithfulness_estimate(
             {"allowed_dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -185,6 +230,8 @@ def test_faithfulness_estimate(
             {"allowed_dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
@@ -201,15 +248,14 @@ def test_faithfulness_estimate(
     ],
 )
 def test_monotonicity_arya(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -231,9 +277,11 @@ def test_monotonicity_arya(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "eps": 1e-5,
                 "nr_samples": 10,
@@ -252,15 +300,14 @@ def test_monotonicity_arya(
     ],
 )
 def test_monotonicity_nguyen(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -282,9 +329,11 @@ def test_monotonicity_nguyen(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "features_in_step": 28,
@@ -298,6 +347,8 @@ def test_monotonicity_nguyen(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "features_in_step": 14,
@@ -311,6 +362,8 @@ def test_monotonicity_nguyen(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "random",
                 "features_in_step": 56,
@@ -324,6 +377,8 @@ def test_monotonicity_nguyen(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "random",
                 "features_in_step": 112,
@@ -339,15 +394,14 @@ def test_monotonicity_nguyen(
     ],
 )
 def test_pixel_flipping(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -371,9 +425,11 @@ def test_pixel_flipping(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "patch_size": 7,
@@ -388,6 +444,8 @@ def test_pixel_flipping(
             {"min": -1, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "patch_size": 7,
@@ -404,15 +462,14 @@ def test_pixel_flipping(
     ],
 )
 def test_region_segmentation(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -434,9 +491,11 @@ def test_region_segmentation(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "patch_size": 7,
@@ -450,6 +509,8 @@ def test_region_segmentation(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "random",
                 "patch_size": 4,
@@ -462,18 +523,32 @@ def test_region_segmentation(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "perturb_baseline": "random",
+                "patch_size": 4,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Gradient",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_selectivity(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -497,9 +572,11 @@ def test_selectivity(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "black",
                 "n_max_percentage": 0.9,
@@ -515,6 +592,8 @@ def test_selectivity(
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "black",
                 "n_max_percentage": 0.8,
@@ -530,6 +609,8 @@ def test_selectivity(
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "black",
                 "n_max_percentage": 0.7,
@@ -547,15 +628,14 @@ def test_selectivity(
     ],
 )
 def test_sensitivity_n(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
 
     explain = params["explain_func"]
@@ -580,9 +660,11 @@ def test_sensitivity_n(
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "segmentation_method": "slic",
@@ -596,6 +678,8 @@ def test_sensitivity_n(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_baseline": "mean",
                 "segmentation_method": "slic",
@@ -611,15 +695,14 @@ def test_sensitivity_n(
     ],
 )
 def test_iterative_removal_of_features(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(

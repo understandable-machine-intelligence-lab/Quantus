@@ -129,7 +129,9 @@ def get_channel_first_batch(x: np.array, channel_first: bool):
     return np.moveaxis(x, -1, 1)
 
 
-def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.modules.module.Module], channel_first: bool) -> ModelInterface:
+def get_wrapped_model(
+    model: Union[tf.keras.Model, torch.nn.modules.module.Module], channel_first: bool
+) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
     Return wrapped model.
@@ -138,4 +140,6 @@ def get_wrapped_model(model: Union[tf.keras.Model, torch.nn.modules.module.Modul
         return TensorFlowModel(model, channel_first)
     if isinstance(model, torch.nn.modules.module.Module):
         return PyTorchModel(model, channel_first)
-    raise ValueError("Model needs to be tf.keras.Model or torch.nn.modules.module.Module.")
+    raise ValueError(
+        "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
+    )
