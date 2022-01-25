@@ -138,9 +138,7 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
         (lazy_fixture("mock_input_torch_array"), True),
     ],
 )
-def test_get_channel_first(
-    data: np.ndarray, expected: Union[float, dict, bool]
-):
+def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     out = get_channel_first(data["x"])
     assert out == expected, "Test failed."
 
@@ -149,8 +147,16 @@ def test_get_channel_first(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("mock_input_tf_array"), {"channel_first": False}, np.zeros((1, 1, 28, 28))),
-        (lazy_fixture("mock_input_torch_array"), {"channel_first": True}, np.zeros((1, 1, 28, 28))),
+        (
+            lazy_fixture("mock_input_tf_array"),
+            {"channel_first": False},
+            np.zeros((1, 1, 28, 28)),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array"),
+            {"channel_first": True},
+            np.zeros((1, 1, 28, 28)),
+        ),
     ],
 )
 def test_get_channel_first_batch(

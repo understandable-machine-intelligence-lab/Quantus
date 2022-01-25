@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 class ModelInterface(ABC):
     """Interface for torch and tensorflow models."""
+
     def __init__(self, model, channel_first=True):
         self.model = model
         self.channel_first = channel_first
