@@ -47,15 +47,6 @@ def explain(
 
     explanation = get_explanation(model, inputs, targets, **kwargs)
 
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
-
     return explanation
 
 
@@ -71,8 +62,16 @@ def get_explanation(model, inputs, targets, **kwargs):
     )
 
 
-def generate_tf_explanation(model, inputs, targets, **kwargs):
-    """Generate explanation for a tf model with tf_explain."""
+def generate_tf_explanation(
+    model: tf.keras.Model,
+    inputs: np.array,
+    targets: np.array,
+    **kwargs,
+) -> np.ndarray:
+    """
+    Generate explanation for a tf model with tf_explain.
+    Currently only normalised absolute values of explanations supported.
+    """
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
 
@@ -173,15 +172,25 @@ def generate_tf_explanation(model, inputs, targets, **kwargs):
             "Specify a XAI method that already has been implemented {}."
         ).__format__("XAI_METHODS")
 
-    if not kwargs.get("normalise", True):
+    if (
+        not kwargs.get("normalise", True)
+        or not kwargs.get("abs", True)
+        or not kwargs.get("pos_only", True)
+        or kwargs.get("neg_only", False)
+    ):
         raise KeyError(
-            "Only normalized explanations are currently supported for TensorFlow models. Set normalise=false."
+            "Only normalized absolute explanations are currently supported for TensorFlow models (tf-explain). Set normalise=true, abs=true, pos_only=true, neg_only=false."
         )
 
     return explanation
 
 
-def generate_captum_explanation(model, inputs, targets, **kwargs):
+def generate_captum_explanation(
+    model: torch.nn,
+    inputs: Union[np.array, torch.Tensor],
+    targets: Union[np.array, torch.Tensor],
+    **kwargs,
+) -> np.ndarray:
     """Generate explanation for a torch model with captum."""
     method = kwargs.get("method", "Gradient").lower()
     # Set model in evaluate mode.
@@ -328,5 +337,14 @@ def generate_captum_explanation(model, inputs, targets, **kwargs):
 
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
+
+    if kwargs.get("abs", False):
+        explanation = np.abs(explanation)
+
+    elif kwargs.get("pos_only", False):
+        explanation[explanation < 0] = 0.0
+
+    elif kwargs.get("neg_only", False):
+        explanation[explanation > 0] = 0.0
 
     return explanation
