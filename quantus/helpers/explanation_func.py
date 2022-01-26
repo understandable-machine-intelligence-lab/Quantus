@@ -24,16 +24,16 @@ if util.find_spec("tf_explain"):
 
 
 def explain(
-    model: torch.nn,
-    inputs: Union[np.array, torch.Tensor],
-    targets: Union[np.array, torch.Tensor],
+    model,
+    inputs,
+    targets,
     *args,
     **kwargs,
 ) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 
-    Expecting inputs to be shaped such as (batch_size, nr_channels, img_size, img_size)
+    Expecting inputs to be shaped such as (batch_size, nr_channels, img_size, img_size) or (batch_size, img_size, img_size, nr_channels).
 
     Returns np.ndarray of same shape as inputs.
     """
@@ -46,9 +46,6 @@ def explain(
         )
 
     explanation = get_explanation(model, inputs, targets, **kwargs)
-
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
     if kwargs.get("abs", False):
         explanation = np.abs(explanation)
@@ -63,6 +60,7 @@ def explain(
 
 
 def get_explanation(model, inputs, targets, **kwargs):
+    """Generate explanation array based on the type of input model."""
     if isinstance(model, tf.keras.Model) and util.find_spec("tf_explain"):
         return generate_tf_explanation(model, inputs, targets, **kwargs)
     if isinstance(model, torch.nn.modules.module.Module) and util.find_spec("captum"):
@@ -74,62 +72,79 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(model, inputs, targets, **kwargs):
+    """Generate explanation for a tf model with tf_explain."""
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
 
     explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():
-        explanation = np.array(
-            list(
-                map(
-                    lambda x, y: tf_explain.core.vanilla_gradients.VanillaGradients().explain(
-                        ([x], None), model, y
-                    ),
-                    inputs,
-                    targets,
-                )
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: tf_explain.core.vanilla_gradients.VanillaGradients().explain(
+                            ([x], None), model, y
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
         )
 
     elif method == "IntegratedGradients".lower():
-        explanation = np.array(
-            list(
-                map(
-                    lambda x, y: tf_explain.core.integrated_gradients.IntegratedGradients().explain(
-                        ([x], None), model, y, n_steps=10
-                    ),
-                    inputs,
-                    targets,
-                )
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: tf_explain.core.integrated_gradients.IntegratedGradients().explain(
+                            ([x], None), model, y, n_steps=10
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
         )
 
     elif method == "InputXGradient".lower():
-        explanation = np.array(
-            list(
-                map(
-                    lambda x, y: tf_explain.core.gradients_inputs.GradientsInputs().explain(
-                        ([x], None), model, y
-                    ),
-                    inputs,
-                    targets,
-                )
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: tf_explain.core.gradients_inputs.GradientsInputs().explain(
+                            ([x], None), model, y
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
         )
 
     elif method == "Occlusion".lower():
         patch_size = kwargs.get("window", (1, 4, 4))[-1]
-        explanation = np.array(
-            list(
-                map(
-                    lambda x, y: tf_explain.core.occlusion_sensitivity.OcclusionSensitivity().explain(
-                        ([x], None), model, y, patch_size=patch_size
-                    ),
-                    inputs,
-                    targets,
-                )
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: tf_explain.core.occlusion_sensitivity.OcclusionSensitivity().explain(
+                            ([x], None), model, y, patch_size=patch_size
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
         )
 
     elif method == "GradCam".lower():
@@ -137,16 +152,20 @@ def generate_tf_explanation(model, inputs, targets, **kwargs):
             "gc_layer" in kwargs
         ), "Specify convolutional layer name as 'gc_layer' to run GradCam."
 
-        explanation = np.array(
-            list(
-                map(
-                    lambda x, y: tf_explain.core.grad_cam.GradCAM().explain(
-                        ([x], None), model, y, layer_name=kwargs["gc_layer"]
-                    ),
-                    inputs,
-                    targets,
-                )
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: tf_explain.core.grad_cam.GradCAM().explain(
+                            ([x], None), model, y, layer_name=kwargs["gc_layer"]
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
             )
+            / 255
         )
 
     else:
@@ -154,10 +173,16 @@ def generate_tf_explanation(model, inputs, targets, **kwargs):
             "Specify a XAI method that already has been implemented {}."
         ).__format__("XAI_METHODS")
 
+    if not kwargs.get("normalise", True):
+        raise KeyError(
+            "Only normalized explanations are currently supported for TensorFlow models. Set normalise=false."
+        )
+
     return explanation
 
 
 def generate_captum_explanation(model, inputs, targets, **kwargs):
+    """Generate explanation for a torch model with captum."""
     method = kwargs.get("method", "Gradient").lower()
     # Set model in evaluate mode.
     model.to(kwargs.get("device", None))
@@ -300,5 +325,8 @@ def generate_captum_explanation(model, inputs, targets, **kwargs):
             explanation = explanation.cpu().detach().numpy()
         else:
             explanation = explanation.cpu().numpy()
+
+    if kwargs.get("normalise", False):
+        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
     return explanation
