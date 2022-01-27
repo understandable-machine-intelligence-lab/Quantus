@@ -7,16 +7,11 @@ import scipy
 import random
 from importlib import util
 import cv2
-from captum.attr import *
 import warnings
 from .utils import *
 from .normalise_func import *
+from ..helpers import __EXTRAS__
 
-
-if not (util.find_spec("captum") or util.find_spec("tf_explain")):
-    raise ImportError(
-        "Explanation library not found. Please install Captum for torch models and tf-explain for TensorFlow."
-    )
 if util.find_spec("captum"):
     from captum.attr import *
 if util.find_spec("tf_explain"):
@@ -45,6 +40,11 @@ def explain(
             category=UserWarning,
         )
 
+    if not __EXTRAS__:
+        raise ImportError(
+            "Explanation library not found. Please install Captum for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
+        )
+
     explanation = get_explanation(model, inputs, targets, **kwargs)
 
     return explanation
@@ -58,7 +58,7 @@ def get_explanation(model, inputs, targets, **kwargs):
         return generate_captum_explanation(model, inputs, targets, **kwargs)
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module. "
-        "Please install Captum for torch models and tf-explain for TensorFlow."
+        "Please install Captum for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
     )
 
 
