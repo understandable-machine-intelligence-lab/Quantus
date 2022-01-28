@@ -395,7 +395,7 @@ def generate_zennit_explanation(
 
     # Handle composite kwarg
     composite = kwargs.get("composite", None)
-    if not composite == None and issubclass(composite, str):
+    if not composite == None and isinstance(composite, str):
         if composite not in zcomp.COMPOSITES.keys():
             raise ValueError(
                 "Composite {} does not exist in zennit."
@@ -450,6 +450,8 @@ def generate_zennit_explanation(
         #  Better solution with more choices?
         eye = torch.eye(n_outputs, device=kwargs.get("device", None))
         output_target = eye[targets]
+        output_target = output_target.reshape(-1, n_outputs)
+        #print(inputs.shape, targets.shape, output_target.shape)
         _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):
