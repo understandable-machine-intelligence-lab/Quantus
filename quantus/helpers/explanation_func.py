@@ -75,6 +75,9 @@ def generate_tf_explanation(
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
 
+    channel_first = kwargs.get("channel_first", get_channel_first(inputs))
+    inputs = get_channel_last_batch(inputs, channel_first)
+
     explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():

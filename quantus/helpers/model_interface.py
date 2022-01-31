@@ -29,11 +29,6 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_state_dict(self, parameters):
-        """Set model's learnable parameters."""
-        raise NotImplementedError
-
-    @abstractmethod
     def get_random_layer_generator(self):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.

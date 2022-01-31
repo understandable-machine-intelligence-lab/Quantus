@@ -94,6 +94,21 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Gradient",
+                "disable_warnings": True,
+                "normalise": False,
+                "eval_metrics": "None",
+                "eval_xai_methods": "{params['method']: None}",
+            },
+            {"exception": TypeError},
+        ),
     ],
 )
 def test_evaluate_func(
@@ -114,6 +129,19 @@ def test_evaluate_func(
         targets=y_batch,
         **params,
     )
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            results = evaluate(
+                metrics=eval(params["eval_metrics"]),
+                xai_methods=eval(params["eval_xai_methods"]),
+                model=load_mnist_model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                agg_func=np.mean,
+                **params,
+            )
+        return
 
     results = evaluate(
         metrics=eval(params["eval_metrics"]),
@@ -126,11 +154,12 @@ def test_evaluate_func(
         **params,
     )
 
-    assert (
-        results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
-        >= expected["min"]
-    ), "Test failed."
-    assert (
-        results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
-        <= expected["max"]
-    ), "Test failed."
+    if "min" in expected and "max" in expected:
+        assert (
+            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            >= expected["min"]
+        ), "Test failed."
+        assert (
+            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            <= expected["max"]
+        ), "Test failed."

@@ -44,10 +44,6 @@ class PyTorchModel(ModelInterface):
         """Get a dictionary of the model's learnable parameters."""
         return self.model.state_dict()
 
-    def load_state_dict(self, original_parameters):
-        """Set model's learnable parameters."""
-        self.model.load_state_dict(original_parameters)
-
     def get_random_layer_generator(self, order: str = "top_down"):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
