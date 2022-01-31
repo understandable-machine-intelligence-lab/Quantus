@@ -1231,9 +1231,9 @@ class RegionPerturbation(Metric):
 
                 # Calculate predictions on a random order.
                 if self.random_order:
-                    order = random.randint(0, len(patch_order))
-                    top_left_y = patch_order[order][0]
-                    top_left_x = patch_order[order][1]
+                    order = random.choice(list(patch_order.values()))
+                    top_left_y = order[0]
+                    top_left_x = order[1]
                 else:
                     top_left_y = patch_order[k][0]
                     top_left_x = patch_order[k][1]

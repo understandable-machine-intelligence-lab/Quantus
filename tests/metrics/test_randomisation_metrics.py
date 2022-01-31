@@ -17,7 +17,7 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "layer_order": "top_down",
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -47,7 +47,7 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "layer_order": "top_down",
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Gradient",
                 "img_size": 28,
@@ -67,6 +67,7 @@ from ...quantus.helpers.model_interface import ModelInterface
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -83,12 +84,15 @@ def test_model_parameter_randomisation(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores_layers = ModelParameterRandomisation(**params)(
         model=model,
         x_batch=x_batch,
@@ -118,7 +122,7 @@ def test_model_parameter_randomisation(
             {
                 "num_classes": 10,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -137,6 +141,7 @@ def test_model_parameter_randomisation(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -153,12 +158,15 @@ def test_random_logit(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = RandomLogit(**params)(
         model=model,
         x_batch=x_batch,

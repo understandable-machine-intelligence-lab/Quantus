@@ -27,19 +27,49 @@ def flat_image_array():
     [
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax_act": False, "channel_first": False, },
-            np.array([-0.723556, 0.06658217, 0.13982001, -0.57502496, 0.19477458, 0.22203586,
-                      -0.26914597, 0.23699084, -0.41618308, -0.5679564]),
+            {
+                "softmax_act": False,
+                "channel_first": False,
+            },
+            np.array(
+                [
+                    -0.723556,
+                    0.06658217,
+                    0.13982001,
+                    -0.57502496,
+                    0.19477458,
+                    0.22203586,
+                    -0.26914597,
+                    0.23699084,
+                    -0.41618308,
+                    -0.5679564,
+                ]
+            ),
         ),
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax_act": True, "channel_first": False, },
+            {
+                "softmax_act": True,
+                "channel_first": False,
+            },
             softmax(
-                np.array([-0.723556, 0.06658217, 0.13982001, -0.57502496, 0.19477458, 0.22203586,
-                          -0.26914597, 0.23699084, -0.41618308, -0.5679564]),
-            )
+                np.array(
+                    [
+                        -0.723556,
+                        0.06658217,
+                        0.13982001,
+                        -0.57502496,
+                        0.19477458,
+                        0.22203586,
+                        -0.26914597,
+                        0.23699084,
+                        -0.41618308,
+                        -0.5679564,
+                    ]
+                ),
+            ),
         ),
-    ]
+    ],
 )
 def test_predict(
     data: np.ndarray,
@@ -47,7 +77,9 @@ def test_predict(
     expected: Union[float, dict, bool],
     load_mnist_model_tf,
 ):
-    model = TensorFlowModel(model=load_mnist_model_tf, channel_first=params["channel_first"])
+    model = TensorFlowModel(
+        model=load_mnist_model_tf, channel_first=params["channel_first"]
+    )
     out = model.predict(x=data["x"], **params)
     assert np.allclose(out, expected), "Test failed."
 
@@ -56,11 +88,18 @@ def test_predict(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("flat_image_array"), {"channel_first": False}, np.zeros((1, 28, 28, 3))),
+        (
+            lazy_fixture("flat_image_array"),
+            {"channel_first": False},
+            np.zeros((1, 28, 28, 3)),
+        ),
     ],
 )
 def test_shape_input(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model_tf
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+    load_mnist_model_tf,
 ):
     model = TensorFlowModel(load_mnist_model_tf, channel_first=params["channel_first"])
     out = model.shape_input(**data)
@@ -86,24 +125,6 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     after = model.state_dict()
 
     # Make sure the original model is unaffected
-    assert reduce(
-        and_, [np.allclose(x, y) for x, y in zip(before, after)]
-    ), "Test failed."
-
-
-@pytest.mark.tf_model
-def test_load_state_dict(load_mnist_model_tf):
-    tf_model = load_mnist_model_tf
-    model = TensorFlowModel(model=tf_model, channel_first=False)
-    before = model.state_dict()
-
-    alayer = [l for l in tf_model.layers if len(l.get_weights()) > 0][0]
-    weights = alayer.get_weights()
-    alayer.set_weights([np.random.permutation(w) for w in weights])
-
-    model.load_state_dict(before)
-    after = model.state_dict()
-
     assert reduce(
         and_, [np.allclose(x, y) for x, y in zip(before, after)]
     ), "Test failed."
