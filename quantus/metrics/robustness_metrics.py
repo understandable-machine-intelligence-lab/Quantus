@@ -34,7 +34,26 @@ class LocalLipschitzEstimate(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_std (float): The amount of noise added, default=0.1.
+            perturb_mean (float): The mean of noise added, default=0.0.
+            nr_samples (integer): The number of samples iterated, default=200.
+            norm_numerator (callable): Function for norm calculations on the numerator, default=distance_euclidean.
+            norm_denominator (callable): Function for norm calculations on the denominator, default=distance_euclidean.
+            perturb_func (callable): Input perturbation function, default=gaussian_noise.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=lipschitz_constant.
+        """
         super().__init__()
 
         self.args = args
@@ -95,8 +114,15 @@ class LocalLipschitzEstimate(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -126,11 +152,11 @@ class LocalLipschitzEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -221,7 +247,25 @@ class MaxSensitivity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_radius (float): Perturbation radius, default=0.2.
+            nr_samples (integer): The number of samples iterated, default=200.
+            norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
+            norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
+            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=difference.
+        """
         super().__init__()
 
         self.args = args
@@ -279,8 +323,15 @@ class MaxSensitivity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -310,11 +361,11 @@ class MaxSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -407,7 +458,25 @@ class AvgSensitivity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_radius (float): Perturbation radius, default=0.2.
+            nr_samples (integer): The number of samples iterated, default=200.
+            norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
+            norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
+            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=difference.
+        """
         super().__init__()
 
         self.args = args
@@ -464,8 +533,15 @@ class AvgSensitivity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -495,11 +571,11 @@ class AvgSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -591,7 +667,26 @@ class Continuity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            img_size (integer): Square image dimensions, default=224.
+            patch_size (integer): The patch size for masking, default=7.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            nr_steps (integer): The number of steps to iterate over, default=28.
+            perturb_func (callable): Input perturbation function, default=translation_x_direction.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=lipschitz_constant.
+        """
         super().__init__()
 
         self.args = args
@@ -650,8 +745,15 @@ class Continuity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
@@ -681,11 +783,11 @@ class Continuity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])

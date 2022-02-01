@@ -33,7 +33,18 @@ class Sparseness(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        """
         super().__init__()
 
         self.args = args
@@ -81,8 +92,15 @@ class Sparseness(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -112,11 +130,11 @@ class Sparseness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -193,7 +211,18 @@ class Complexity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        """
         super().__init__()
 
         self.args = args
@@ -240,8 +269,15 @@ class Complexity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -271,11 +307,11 @@ class Complexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -346,7 +382,19 @@ class EffectiveComplexity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            eps (float): Attributions threshold, default=1e-5.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        """
         super().__init__()
 
         self.args = args
@@ -394,8 +442,15 @@ class EffectiveComplexity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -425,11 +480,11 @@ class EffectiveComplexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, channel_first)
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
