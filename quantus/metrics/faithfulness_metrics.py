@@ -11,6 +11,7 @@ from ..helpers.pytorch_model import PyTorchModel
 
 # TODO: patch sorting often wrong
 
+
 class FaithfulnessCorrelation(Metric):
     """
     Implementation of faithfulness correlation by Bhatt et al., 2020.
@@ -186,7 +187,7 @@ class FaithfulnessCorrelation(Metric):
                         **{
                             "indices": a_ix,
                             "perturb_baseline": self.perturb_baseline,
-                        }
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -397,7 +398,7 @@ class FaithfulnessEstimate(Metric):
                         **{
                             "indices": a_ix,
                             "perturb_baseline": self.perturb_baseline,
-                        }
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -605,7 +606,7 @@ class MonotonicityArya(Metric):
                         **{
                             "indices": a_ix,
                             "fixed_values": x.flatten()[a_ix],
-                        }
+                        },
                     },
                 )
 
@@ -1162,6 +1163,7 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+
         # Reshape input batch to channel first order:
         channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, channel_first)
@@ -1197,6 +1199,10 @@ class RegionPerturbation(Metric):
 
         for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
+            # Shape input to channels_first. This is needed for padding.
+            # For model prediction, inputs will be reshaped temporarily according to the model requirements
+            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
+
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
@@ -1215,19 +1221,29 @@ class RegionPerturbation(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             padwidth = (2 * self.patch_size - 2) // 2
-            x_tmp = np.pad(x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode='constant')
-            a_tmp = np.pad(a, ((padwidth, padwidth), (padwidth, padwidth)), mode='constant') #assumes 0 = neutral attribution
+            x_tmp = np.pad(
+                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+            )
+            a_tmp = np.pad(
+                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+            )
 
             # Get patch indices of sorted attributions (descending).
             att_sums = []
-            for i_x, top_left_x in enumerate(range(padwidth, x_tmp.shape[1]-padwidth)):
-                for i_y, top_left_y in enumerate(range(padwidth, x_tmp.shape[2]-padwidth)):#
+            for i_x, top_left_x in enumerate(
+                range(padwidth, x_tmp.shape[1] - padwidth)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(padwidth, x_tmp.shape[2] - padwidth)
+                ):  #
 
                     # Sum attributions for patch.
-                    att_sums.append(a_tmp[
-                        top_left_x : top_left_x + self.patch_size,
-                        top_left_y : top_left_y + self.patch_size,
-                    ].sum())
+                    att_sums.append(
+                        a_tmp[
+                            top_left_x : top_left_x + self.patch_size,
+                            top_left_y : top_left_y + self.patch_size,
+                        ].sum()
+                    )
                     patches.append([top_left_x, top_left_y])
 
             if self.order == "morf":
@@ -1250,7 +1266,13 @@ class RegionPerturbation(Metric):
                     break
 
                 # check if patch overlaps any already selected patch
-                intersected = [np.all(np.abs(np.array(patch_order[k]) - np.array(bl)) < self.patch_size) for bl in blocked_areas]
+                intersected = [
+                    np.all(
+                        np.abs(np.array(patch_order[k]) - np.array(bl))
+                        < self.patch_size
+                    )
+                    for bl in blocked_areas
+                ]
                 if not any(intersected):
                     patch_order_new[cnt] = patch_order[k]
                     blocked_areas.append(patch_order[k])
@@ -1273,7 +1295,12 @@ class RegionPerturbation(Metric):
                     top_left_y = patch_order[k][1]
 
                 # Also pad x_perturbed
-                x_perturbed_tmp = np.pad(x_perturbed, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode='edge') # The mode should probably depend on the used perturb_func?
+                # The mode should probably depend on the used perturb_func?
+                x_perturbed_tmp = np.pad(
+                    x_perturbed,
+                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
+                    mode="edge",
+                )
                 x_perturbed_tmp = self.perturb_func(
                     x_perturbed_tmp,
                     **{
@@ -1281,6 +1308,7 @@ class RegionPerturbation(Metric):
                         **{
                             "patch_size": self.patch_size,
                             "nr_channels": self.nr_channels,
+                            "img_size": self.img_size + 2 * padwidth,
                             "perturb_baseline": self.perturb_baseline,
                             "top_left_y": top_left_y,
                             "top_left_x": top_left_x,
@@ -1289,6 +1317,7 @@ class RegionPerturbation(Metric):
                 )
                 # Remove Padding
                 x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
@@ -1340,13 +1369,14 @@ class Selectivity(Metric):
             "perturb_func", baseline_replacement_by_patch
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get("patch_size", 8)
+        self.patch_size = self.kwargs.get(
+            "patch_size", 8
+        )  # TODO: according to doc string, should default not be 4?
         self.img_size = self.kwargs.get("img_size", 224)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
-        assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
         if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -1446,6 +1476,10 @@ class Selectivity(Metric):
 
         for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
+            # Shape input to channels_first. This is needed for padding.
+            # For model prediction, inputs will be reshaped temporarily according to the model requirements
+            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
+
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
             y_pred = float(
@@ -1462,47 +1496,71 @@ class Selectivity(Metric):
             sub_results = []
             x_perturbed = x.copy()
 
-            att_sums = np.zeros(
-                (
-                    int(a.shape[0] / self.patch_size),
-                    int(a.shape[1] / self.patch_size),
-                )
+            # Pad input and attributions. This is needed to allow for any patch_size.
+            padwidth = (2 * self.patch_size - 2) // 2
+            x_tmp = np.pad(
+                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+            )
+            a_tmp = np.pad(
+                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
             )
 
             # Get patch indices of sorted attributions (descending).
-            for i_x, top_left_x in enumerate(range(0, x.shape[1], self.patch_size)):
-                for i_y, top_left_y in enumerate(range(0, x.shape[2], self.patch_size)):
+            # TODO: currently, image is split into a grid, with the patches as the grid elements.
+            #  I.e., not all possible patches are considered. Consequently,
+            #  not the patch with the highest relevance is chosen first, but the (static) grid element instead.
+            #  This is changed now in regionperturbation. Would this change also be intended here?
+            #  Leaving it as-is for now.
+            #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
+            att_sums = []
+            for i_x, top_left_x in enumerate(
+                range(padwidth, x_tmp.shape[1] - padwidth, self.patch_size)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(padwidth, x_tmp.shape[2] - padwidth, self.patch_size)
+                ):
 
                     # Sum attributions for patch.
-                    att_sums[i_x][i_y] = a[
-                        top_left_x : top_left_x + self.patch_size,
-                        top_left_y : top_left_y + self.patch_size,
-                    ].sum()
-                    patches.append([top_left_y, top_left_x])
+                    att_sums.append(
+                        a_tmp[
+                            top_left_x : top_left_x + self.patch_size,
+                            top_left_y : top_left_y + self.patch_size,
+                        ].sum()
+                    )
+                    patches.append([top_left_x, top_left_y])
 
-            patch_order = {
-                k: v for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
-            }
+            # Order attributions according to the most relevant first.
+            patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             # Increasingly perturb the input and store the decrease in function value.
             for k in range(len(patch_order)):
-                # TODO: check whether top_left_y and top_left_x are not swapped
-                top_left_y = patch_order[k][0]
-                top_left_x = patch_order[k][1]
+                top_left_x = patch_order[k][0]
+                top_left_y = patch_order[k][1]
 
-                x_perturbed = self.perturb_func(
+                # Also pad x_perturbed
+                # The mode should probably depend on the used perturb_func?
+                x_perturbed_tmp = np.pad(
                     x_perturbed,
+                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
+                    mode="edge",
+                )
+                x_perturbed_tmp = self.perturb_func(
+                    x_perturbed_tmp,
                     **{
                         **self.kwargs,
                         **{
                             "patch_size": self.patch_size,
                             "nr_channels": self.nr_channels,
+                            "img_size": self.img_size + 2 * padwidth,
                             "perturb_baseline": self.perturb_baseline,
                             "top_left_y": top_left_y,
                             "top_left_x": top_left_x,
                         },
                     },
                 )
+                # Remove Padding
+                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
@@ -1943,13 +2001,13 @@ class IterativeRemovalOfFeatures(Metric):
 
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
+                    **{
+                        **self.kwargs,
                         **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
                         },
+                    },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
