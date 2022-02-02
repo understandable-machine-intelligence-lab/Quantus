@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from typing import Union
 from pytest_lazyfixture import lazy_fixture
@@ -15,6 +16,19 @@ def all_in_gt():
         "x_batch": np.random.randn(10, 3, 224, 224),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
+
+@pytest.fixture
+def all_in_gt_no_abatch():
+    s_batch = np.zeros((10, 1, 28, 28))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 28, 28))
+    s_batch[:, :, 0:15, 0:15] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 1, 28, 28),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": None,
         "s_batch": s_batch,
     }
 
@@ -150,21 +164,31 @@ def half_in_gt_zeros_bigger():
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, True),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("none_in_gt"), {}, False),
         (lazy_fixture("half_in_gt"), {}, True),
     ],
 )
-def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
+def test_pointing_game(
+    data: dict, params: dict, expected: Union[bool, dict], load_mnist_model
+):
+    model = load_mnist_model
     scores = PointingGame(**params)(
-        model=None,
+        model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
-    print(scores)
     if isinstance(expected, bool):
         assert all(s == expected for s in scores), "Test failed."
+    elif isinstance(expected, dict):
+        assert isinstance(scores, expected["type"]), "Test failed."
     elif isinstance(expected, list):
         assert all(s == e for s, e in zip(scores, expected)), "Test failed."
     else:
@@ -179,6 +203,11 @@ def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
     [
         (lazy_fixture("all_in_gt"), {"k": 10000}, 1.0),
         (lazy_fixture("all_in_gt"), {"k": 40000}, 0.25),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"k": 10000, "explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("none_in_gt"), {"k": 10000}, 0.0),
         (lazy_fixture("none_in_gt_zeros"), {"k": 40000}, {"min": 0.1, "max": 0.25}),
         (lazy_fixture("half_in_gt_zeros"), {"k": 2500}, 0.5),
@@ -186,17 +215,20 @@ def test_pointing_game(data: dict, params: dict, expected: Union[bool, dict]):
     ],
 )
 def test_top_k_intersection(
-    data: dict, params: dict, expected: Union[float, dict, bool]
+    data: dict, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     scores = TopKIntersection(**params)(
-        model=None,
+        model=load_mnist_model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores
@@ -208,23 +240,31 @@ def test_top_k_intersection(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
-        (lazy_fixture("none_in_gt"), {}, 0.0),
+        (lazy_fixture("none_in_gt"), {"abs": False}, 0.0),
         (lazy_fixture("half_in_gt"), {}, 0.5),
     ],
 )
 def test_relevance_rank_accuracy(
-    data: dict, params: dict, expected: Union[float, dict, bool]
+    data: dict, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     scores = RelevanceRankAccuracy(**params)(
-        model=None,
+        model=load_mnist_model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores
@@ -236,23 +276,31 @@ def test_relevance_rank_accuracy(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt_zeros"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
         (lazy_fixture("none_in_gt_zeros"), {}, 0.0),
         (lazy_fixture("half_in_gt_zeros"), {}, 0.5),
     ],
 )
 def test_relevance_mass_accuracy(
-    data: dict, params: dict, expected: Union[float, dict, bool]
+    data: dict, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     scores = RelevanceMassAccuracy(**params)(
-        model=None,
+        model=load_mnist_model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores
@@ -264,20 +312,30 @@ def test_relevance_mass_accuracy(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt_non_normalised"), {"normalise": False}, 1.0),
         (lazy_fixture("none_in_gt_fourth"), {}, 0.33333333333333337),
     ],
 )
-def test_auc(data: dict, params: dict, expected: Union[float, dict, bool]):
+def test_auc(
+    data: dict, params: dict, expected: Union[float, dict, bool], load_mnist_model
+):
     scores = AUC(**params)(
-        model=None,
+        model=load_mnist_model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores
@@ -289,23 +347,31 @@ def test_auc(data: dict, params: dict, expected: Union[float, dict, bool]):
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt_zeros"), {"weighted": False}, 1.0),
+        (
+            lazy_fixture("all_in_gt_no_abatch"),
+            {"weighted": False, "explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt"), {"weighted": False}, {"min": 0.8, "max": 0.85}),
         (lazy_fixture("none_in_gt_zeros"), {"weighted": False}, 0.0),
-        (lazy_fixture("none_in_gt_zeros"), {"weighted": True}, 0.0),
+        (lazy_fixture("none_in_gt_zeros"), {"weighted": True, "abs": False}, 0.0),
     ],
 )
 def test_attribution_localisation(
-    data: dict, params: dict, expected: Union[float, dict, bool]
+    data: dict, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     scores = AttributionLocalisation(**params)(
-        model=None,
+        model=load_mnist_model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
+        **params
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores

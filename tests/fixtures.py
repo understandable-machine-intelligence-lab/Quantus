@@ -65,3 +65,12 @@ def almost_uniform(scope="session", autouse=True):
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": a_batch,
     }
+
+
+@pytest.fixture
+def almost_uniform_no_abatch(scope="session", autouse=True):
+    return {
+        "x_batch": np.random.randn(10, 1, 28, 28),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": None,
+    }

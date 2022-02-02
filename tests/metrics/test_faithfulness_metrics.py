@@ -19,11 +19,12 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
                 "perturb_baseline": "mean",
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "max_steps_per_input": 2,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -40,6 +41,7 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -89,12 +91,15 @@ def test_faithfulness_correlation(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = FaithfulnessCorrelation(**params)(
         model=model,
         x_batch=x_batch,
@@ -120,11 +125,12 @@ def test_faithfulness_correlation(
                 "features_in_step": 28,
                 "perturb_baseline": "uniform",
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "max_steps_per_input": 2,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -158,6 +164,8 @@ def test_faithfulness_correlation(
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
+                "max_steps_per_input": 2,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -174,12 +182,15 @@ def test_faithfulness_estimate(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = FaithfulnessEstimate(**params)(
         model=model,
         x_batch=x_batch,
@@ -205,11 +216,12 @@ def test_faithfulness_estimate(
                 "features_in_step": 28,
                 "perturb_baseline": "black",
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "max_steps_per_input": 2,
             },
             {"allowed_dtypes": [True, False]},
         ),
@@ -242,6 +254,7 @@ def test_faithfulness_estimate(
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"allowed_dtypes": [True, False]},
         ),
@@ -258,12 +271,15 @@ def test_monotonicity_arya(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = MonotonicityArya(**params)(
         model=model,
         x_batch=x_batch,
@@ -287,13 +303,16 @@ def test_monotonicity_arya(
                 "nr_samples": 10,
                 "features_in_step": 28,
                 "normalise": True,
+                "abs": True,
                 "perturb_baseline": "uniform",
                 "similarity_func": correlation_kendall_tau,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
+                "max_steps_per_input": 2,
             },
             1.0,
         ),
@@ -310,12 +329,15 @@ def test_monotonicity_nguyen(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = MonotonicityNguyen(**params)(
         model=model,
         x_batch=x_batch,
@@ -338,11 +360,13 @@ def test_monotonicity_nguyen(
                 "perturb_baseline": "mean",
                 "features_in_step": 28,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
+                "abs": True,
                 "img_size": 28,
                 "nr_channels": 1,
+                "max_steps_per_input": 2,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -388,6 +412,7 @@ def test_monotonicity_nguyen(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -404,12 +429,15 @@ def test_pixel_flipping(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = PixelFlipping(**params)(
         model=model,
         x_batch=x_batch,
@@ -435,7 +463,7 @@ def test_pixel_flipping(
                 "patch_size": 7,
                 "normalise": True,
                 "order": "morf",
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -456,6 +484,8 @@ def test_pixel_flipping(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
+                "random_order": True,
             },
             {"min": -1, "max": 1.0},
         ),
@@ -472,12 +502,15 @@ def test_region_segmentation(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = RegionPerturbation(**params)(
         model=model,
         x_batch=x_batch,
@@ -500,11 +533,13 @@ def test_region_segmentation(
                 "perturb_baseline": "mean",
                 "patch_size": 7,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "abs": True,
+                "max_steps_per_input": 2,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -515,11 +550,12 @@ def test_region_segmentation(
                 "perturb_baseline": "random",
                 "patch_size": 4,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -551,12 +587,15 @@ def test_selectivity(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = Selectivity(**params)(
         model=model,
         x_batch=x_batch,
@@ -583,9 +622,10 @@ def test_selectivity(
                 "features_in_step": 28,
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
+                "abs": True,
                 "img_size": 28,
                 "nr_channels": 1,
             },
@@ -622,6 +662,8 @@ def test_selectivity(
                 "method": "Gradient",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
+                "max_steps_per_input": 2,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -639,12 +681,15 @@ def test_sensitivity_n(
     )
 
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = SensitivityN(**params)(
         model=model,
         x_batch=x_batch,
@@ -672,8 +717,10 @@ def test_sensitivity_n(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
+                "abs": True,
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -684,11 +731,12 @@ def test_sensitivity_n(
                 "perturb_baseline": "mean",
                 "segmentation_method": "slic",
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "max_steps_per_input": 2,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -705,12 +753,17 @@ def test_iterative_removal_of_features(
         data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
+
     scores = IterativeRemovalOfFeatures(**params)(
         model=model,
         x_batch=x_batch,

@@ -3,7 +3,6 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
-from ...quantus.helpers.pytorch_model import PyTorchModel
 
 
 @pytest.mark.robustness
@@ -18,7 +17,8 @@ from ...quantus.helpers.pytorch_model import PyTorchModel
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
+                "disable_warnings": False,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -64,7 +64,7 @@ def test_local_lipschitz_estimate(
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
+                "disable_warnings": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -82,12 +82,15 @@ def test_max_sensitivity(
         load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = MaxSensitivity(**params)(
         model=model,
         x_batch=x_batch,
@@ -116,7 +119,8 @@ def test_max_sensitivity(
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
+                "disable_warnings": False,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -134,12 +138,15 @@ def test_avg_sensitivity(
         load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = AvgSensitivity(**params)(
         model=model,
         x_batch=x_batch,
@@ -155,7 +162,7 @@ def test_avg_sensitivity(
         ), "Test failed."
 
 
-@pytest.mark.fixing
+@pytest.mark.robustness
 @pytest.mark.parametrize(
     "params,expected",
     [
@@ -167,7 +174,8 @@ def test_avg_sensitivity(
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
+                "disable_warnings": False,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -185,12 +193,15 @@ def test_continuity(
         load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = Continuity(**params)(
         model=model,
         x_batch=x_batch,
