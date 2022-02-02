@@ -169,6 +169,18 @@ from ...quantus.helpers import *
             {"method": "InputXGradient", "img_size": 28, "nr_channels": 1, "abs": True},
             {"min": 0.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"img_size": 28, "nr_channels": 1},
+            {"warning": UserWarning},
+        ),
+        (
+            None,
+            lazy_fixture("load_mnist_images_tf"),
+            {"img_size": 28, "nr_channels": 1},
+            {"exception": ValueError},
+        ),
     ],
 )
 def test_explain_func(
@@ -181,6 +193,15 @@ def test_explain_func(
         data["x_batch"],
         data["y_batch"],
     )
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            a_batch = explain(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **params,
+            )
+        return
 
     a_batch = explain(
         model=model,
@@ -204,6 +225,14 @@ def test_explain_func(
             assert all(
                 s == expected["value"] for s in a_batch.flatten()
             ), "Test failed."
+        elif "warning" in expected:
+            with pytest.warns(expected["warning"]):
+                a_batch = explain(
+                    model=model,
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **params,
+                )
 
 
 @pytest.mark.explain_func
@@ -227,6 +256,12 @@ def test_explain_func(
             },
             {"value": 0.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GradCam", "img_size": 28, "nr_channels": 1},
+            {"exception": AssertionError},
+        ),
     ],
 )
 def test_generate_captum_explanation(
@@ -239,6 +274,16 @@ def test_generate_captum_explanation(
         data["x_batch"],
         data["y_batch"],
     )
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            a_batch = generate_captum_explanation(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **params,
+            )
+        return
 
     a_batch = generate_captum_explanation(
         model=model,
@@ -292,6 +337,23 @@ def test_generate_captum_explanation(
             {"method": "IntegratedGradients", "img_size": 28, "nr_channels": 1},
             {"min": 0.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "GradCam", "img_size": 28, "nr_channels": 1},
+            {"exception": AssertionError},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "method": "GradCam",
+                "img_size": 28,
+                "nr_channels": 1,
+                "gc_layer": "dense_1",
+            },
+            {"exception": Exception},
+        ),
     ],
 )
 def test_generate_tf_explanation(
@@ -304,6 +366,16 @@ def test_generate_tf_explanation(
         data["x_batch"],
         data["y_batch"],
     )
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            a_batch = generate_tf_explanation(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **params,
+            )
+        return
 
     a_batch = generate_tf_explanation(
         model=model,

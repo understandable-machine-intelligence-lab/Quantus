@@ -30,25 +30,69 @@ def flat_image_array():
     [
         (
             lazy_fixture("mock_input_torch_array"),
-            {"softmax_act": False, "device": "cpu", },
-            np.array([-0.44321266, 0.60336196, 0.2091731, -0.17474744, -0.03755454,
-                      0.5306321, -0.3079375, 0.5329694, -0.41116637, -0.3060812]),
+            {
+                "softmax_act": False,
+                "device": "cpu",
+            },
+            np.array(
+                [
+                    -0.44321266,
+                    0.60336196,
+                    0.2091731,
+                    -0.17474744,
+                    -0.03755454,
+                    0.5306321,
+                    -0.3079375,
+                    0.5329694,
+                    -0.41116637,
+                    -0.3060812,
+                ]
+            ),
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {"softmax_act": True, "device": "cpu", },
+            {
+                "softmax_act": True,
+                "device": "cpu",
+            },
             softmax(
-                np.array([-0.44321266, 0.60336196, 0.2091731, -0.17474744, -0.03755454,
-                          0.5306321, -0.3079375, 0.5329694, -0.41116637, -0.3060812]),
-            )
+                np.array(
+                    [
+                        -0.44321266,
+                        0.60336196,
+                        0.2091731,
+                        -0.17474744,
+                        -0.03755454,
+                        0.5306321,
+                        -0.3079375,
+                        0.5329694,
+                        -0.41116637,
+                        -0.3060812,
+                    ]
+                ),
+            ),
         ),
-    ]
+        (
+            lazy_fixture("mock_input_torch_array"),
+            {
+                "softmax_act": True,
+                "device": "cpu",
+                "training": True,
+            },
+            {"exception": AttributeError},
+        ),
+    ],
 )
 def test_predict(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     load_mnist_model.eval()
     model = PyTorchModel(load_mnist_model, channel_first=True)
+    if params.get("training", False):
+        with pytest.raises(expected["exception"]):
+            model.train()
+            out = model.predict(x=data["x"], **params)
+        return
     out = model.predict(x=data["x"], **params)
     assert np.allclose(out, expected), "Test failed."
 
@@ -57,14 +101,27 @@ def test_predict(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("flat_image_array"), {"channel_first": True}, np.zeros((1, 3, 28, 28))),
+        (
+            lazy_fixture("flat_image_array"),
+            {"channel_first": True},
+            np.zeros((1, 3, 28, 28)),
+        ),
+        (
+            lazy_fixture("flat_image_array"),
+            {"channel_first": False},
+            {"exception": ValueError},
+        ),
     ],
 )
 def test_shape_input(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     load_mnist_model.eval()
-    model = PyTorchModel(load_mnist_model, channel_first=True)
+    model = PyTorchModel(load_mnist_model, channel_first=params["channel_first"])
+    if not params["channel_first"]:
+        with pytest.raises(expected["exception"]):
+            out = model.shape_input(**data)
+        return
     out = model.shape_input(**data)
     assert np.array_equal(out, expected), "Test failed."
 
