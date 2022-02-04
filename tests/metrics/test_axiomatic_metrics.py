@@ -3,6 +3,8 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers.pytorch_model import PyTorchModel
+from ...quantus.helpers.tf_model import TensorFlowModel
 
 
 @pytest.mark.axiomatic
@@ -12,7 +14,7 @@ from ...quantus.metrics import *
         (
             {
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -50,6 +52,7 @@ from ...quantus.metrics import *
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             1.0,
         ),
@@ -63,21 +66,21 @@ def test_completeness(
 ):
     model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = Completeness(**params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **params
     )
 
     assert scores is not None, "Test failed."
@@ -91,11 +94,12 @@ def test_completeness(
             {
                 "n_samples": 1,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             1.0,
         ),
@@ -147,21 +151,21 @@ def test_non_sensitivity(
 ):
     model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = NonSensitivity(**params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **params
     )
     assert scores is not None, "Test failed."
 
@@ -174,7 +178,7 @@ def test_non_sensitivity(
             {
                 "abs": False,
                 "normalise": False,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "InputxGradient",
                 "img_size": 28,
@@ -211,8 +215,8 @@ def test_non_sensitivity(
         ),
         (
             {
-                "abs": False,
-                "normalise": False,
+                "abs": True,
+                "normalise": True,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
@@ -232,8 +236,8 @@ def test_inputinvariance(
 ):
     model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
     )
 
     scores = InputInvariance(**params)(
