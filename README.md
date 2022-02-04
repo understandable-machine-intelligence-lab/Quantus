@@ -22,7 +22,7 @@ Interfaces may change suddenly and without warning, so please be careful when at
 
 ## Table of contents
 
-* [Library content](##library content)
+* [Library content](#library content)
 * [Installation](##installation)
 * [Getting Started](#getting-started)
 * [Tutorials](#tutorials)
