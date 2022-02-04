@@ -7,6 +7,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.pytorch_model import PyTorchModel
 
 
 class FaithfulnessCorrelation(Metric):
@@ -34,7 +35,26 @@ class FaithfulnessCorrelation(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
+            subset_size (integer): The size of subset, default=224.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=correlation_pearson.
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+        """
         super().__init__()
 
         self.args = args
@@ -73,7 +93,7 @@ class FaithfulnessCorrelation(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -90,8 +110,15 @@ class FaithfulnessCorrelation(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -120,10 +147,16 @@ class FaithfulnessCorrelation(Metric):
             >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -138,16 +171,16 @@ class FaithfulnessCorrelation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             a = a.flatten()
 
@@ -158,14 +191,10 @@ class FaithfulnessCorrelation(Metric):
                 a = self.normalise_func(a)
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+            )
 
             logit_deltas = []
             att_sums = []
@@ -185,19 +214,12 @@ class FaithfulnessCorrelation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        model(
-                            torch.Tensor(x_perturbed)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )[:, y]
-                    )
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                )
 
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
@@ -230,7 +252,28 @@ class FaithfulnessEstimate(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
+            subset_size (integer): The size of subset, default=224.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=correlation_spearman.
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            img_size (integer): Square image dimensions, default=224.
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+        """
         super().__init__()
 
         self.args = args
@@ -280,7 +323,7 @@ class FaithfulnessEstimate(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -297,8 +340,15 @@ class FaithfulnessEstimate(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -327,10 +377,16 @@ class FaithfulnessEstimate(Metric):
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -345,16 +401,16 @@ class FaithfulnessEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             a = a.flatten()
 
@@ -368,14 +424,10 @@ class FaithfulnessEstimate(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.Tensor(x)
-                        .reshape(1, self.nr_channels, self.img_size, self.img_size)
-                        .to(self.kwargs.get("device", None))
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+            )
 
             pred_deltas = []
             att_sums = []
@@ -398,19 +450,12 @@ class FaithfulnessEstimate(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        model(
-                            torch.Tensor(x_perturbed)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )[:, y]
-                    )
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                )
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions.
@@ -444,7 +489,25 @@ class MonotonicityArya(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            concept_influence (boolean): Indicates whether concept influence metric is used.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            img_size (integer): Square image dimensions, default=224.
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+        """
         super().__init__()
 
         self.args = args
@@ -490,7 +553,7 @@ class MonotonicityArya(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -507,8 +570,15 @@ class MonotonicityArya(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of bool(s) with the evaluation outcome of concerned batch
@@ -537,10 +607,16 @@ class MonotonicityArya(Metric):
             >> metric = MonotonicityArya(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -555,16 +631,16 @@ class MonotonicityArya(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             a = a.flatten()
 
@@ -584,12 +660,7 @@ class MonotonicityArya(Metric):
             )
 
             # Copy the input x but fill with baseline values.
-            x_baseline = (
-                torch.Tensor()
-                .new_full(size=x.shape, fill_value=baseline_value)
-                .numpy()
-                .flatten()
-            )
+            x_baseline = np.full(x.shape, baseline_value).flatten()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -605,21 +676,10 @@ class MonotonicityArya(Metric):
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_baseline)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
 
                 preds.append(y_pred_perturb)
 
@@ -645,7 +705,28 @@ class MonotonicityNguyen(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform".
+            eps (float): Attributions threshold, default=1e-5.
+            nr_samples (integer): The number of samples to iterate over, default=100.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=correlation_spearman.
+            img_size (integer): Square image dimensions, default=224.
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+        """
         super().__init__()
 
         self.args = args
@@ -697,7 +778,7 @@ class MonotonicityNguyen(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -714,8 +795,15 @@ class MonotonicityNguyen(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -744,10 +832,16 @@ class MonotonicityNguyen(Metric):
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -762,33 +856,22 @@ class MonotonicityNguyen(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             # Predict on input x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
             inv_pred = inv_pred ** 2
@@ -830,21 +913,12 @@ class MonotonicityNguyen(Metric):
                     assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
-                    with torch.no_grad():
-                        y_pred_perturb = float(
-                            torch.nn.Softmax()(
-                                model(
-                                    torch.Tensor(x_perturbed)
-                                    .reshape(
-                                        1,
-                                        self.nr_channels,
-                                        self.img_size,
-                                        self.img_size,
-                                    )
-                                    .to(self.kwargs.get("device", None))
-                                )
-                            )[:, y]
-                        )
+                    x_input = model.shape_input(
+                        x_perturbed, self.img_size, self.nr_channels
+                    )
+                    y_pred_perturb = float(
+                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                    )
                     y_pred_perturbs.append(y_pred_perturb)
 
                 vars.append(
@@ -878,7 +952,24 @@ class PixelFlipping(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            img_size (integer): Square image dimensions, default=224.
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+        """
         super().__init__()
 
         self.args = args
@@ -925,7 +1016,7 @@ class PixelFlipping(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -942,8 +1033,15 @@ class PixelFlipping(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -972,10 +1070,16 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -990,16 +1094,16 @@ class PixelFlipping(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch, y_batch, a_batch):
+        for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
             a = a.flatten()
 
@@ -1033,21 +1137,12 @@ class PixelFlipping(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
                 preds.append(y_pred_perturb)
 
             self.last_results.append(preds)
@@ -1084,7 +1179,27 @@ class RegionPerturbation(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_patch.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform".
+            regions_evaluation (integer): The number of regions to evaluate, default=100.
+            patch_size (integer): The patch size for masking, default=8.
+            random_order (boolean): Indicates whether predictions are calculated in a random order, default=False.
+            order (string): Indicates whether attributions are ordered according to the most relevant first ("MoRF")
+            or not, default="MoRF".
+            img_size (integer): Square image dimensions, default=224.
+        """
         super().__init__()
 
         self.args = args
@@ -1133,7 +1248,7 @@ class RegionPerturbation(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1150,8 +1265,15 @@ class RegionPerturbation(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
@@ -1180,15 +1302,21 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = {k: None for k in range(len(x_batch))}
+        self.last_results = {k: None for k in range(len(x_batch_s))}
 
         if a_batch is None:
 
@@ -1198,33 +1326,22 @@ class RegionPerturbation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    model(
-                        torch.nn.Softmax()(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
 
             if self.abs:
                 a = np.abs(a)
@@ -1272,9 +1389,9 @@ class RegionPerturbation(Metric):
 
                 # Calculate predictions on a random order.
                 if self.random_order:
-                    order = random.randint(0, len(patch_order))
-                    top_left_y = patch_order[order][0]
-                    top_left_x = patch_order[order][1]
+                    order = random.choice(list(patch_order.values()))
+                    top_left_y = order[0]
+                    top_left_x = order[1]
                 else:
                     top_left_y = patch_order[k][0]
                     top_left_x = patch_order[k][1]
@@ -1292,21 +1409,12 @@ class RegionPerturbation(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
 
                 sub_results.append(y_pred - y_pred_perturb)
 
@@ -1334,7 +1442,23 @@ class Selectivity(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            patch_size (integer): The patch size for masking, default=8.
+            img_size (integer): Square image dimensions, default=224.
+        """
         super().__init__()
 
         self.args = args
@@ -1372,7 +1496,7 @@ class Selectivity(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1389,8 +1513,15 @@ class Selectivity(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
@@ -1419,15 +1550,21 @@ class Selectivity(Metric):
             >> metric = Selectivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = {k: None for k in range(len(x_batch))}
+        self.last_results = {k: None for k in range(len(x_batch_s))}
 
         if a_batch is None:
 
@@ -1437,33 +1574,22 @@ class Selectivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             # Predict on input.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
 
             if self.abs:
                 a = np.abs(a)
@@ -1515,21 +1641,12 @@ class Selectivity(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
 
                 sub_results.append(y_pred_perturb)
 
@@ -1569,7 +1686,27 @@ class SensitivityN(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=correlation_pearson.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
+            img_size (integer): Square image dimensions, default=224.
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+        """
         super().__init__()
 
         self.args = args
@@ -1625,7 +1762,7 @@ class SensitivityN(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1642,8 +1779,15 @@ class SensitivityN(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -1672,10 +1816,16 @@ class SensitivityN(Metric):
             >> metric = SensitivityN(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -1690,19 +1840,19 @@ class SensitivityN(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        sub_results_pred_deltas = {k: [] for k in range(len(x_batch))}
-        sub_results_att_sums = {k: [] for k in range(len(x_batch))}
+        sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
+        sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             a = a.flatten()
 
@@ -1716,21 +1866,10 @@ class SensitivityN(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
 
             att_sums = []
             pred_deltas = []
@@ -1758,21 +1897,12 @@ class SensitivityN(Metric):
                     # Sum attributions.
                     att_sums.append(float(a[a_ix].sum()))
 
-                    with torch.no_grad():
-                        y_pred_perturb = float(
-                            torch.nn.Softmax()(
-                                model(
-                                    torch.Tensor(x_perturbed)
-                                    .reshape(
-                                        1,
-                                        self.nr_channels,
-                                        self.img_size,
-                                        self.img_size,
-                                    )
-                                    .to(self.kwargs.get("device", None))
-                                )
-                            )[:, y]
-                        )
+                    x_input = model.shape_input(
+                        x_perturbed, self.img_size, self.nr_channels
+                    )
+                    y_pred_perturb = float(
+                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                    )
                     pred_deltas.append(y_pred - y_pred_perturb)
 
             sub_results_att_sums[sample] = att_sums
@@ -1816,7 +1946,22 @@ class IterativeRemovalOfFeatures(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="mean".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+        """
         super().__init__()
 
         self.args = args
@@ -1851,7 +1996,7 @@ class IterativeRemovalOfFeatures(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1868,8 +2013,15 @@ class IterativeRemovalOfFeatures(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -1898,10 +2050,16 @@ class IterativeRemovalOfFeatures(Metric):
             >> metric = IROF(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -1916,16 +2074,16 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for ix, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        for ix, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
 
             if self.abs:
                 a = np.abs(a)
@@ -1934,21 +2092,10 @@ class IterativeRemovalOfFeatures(Metric):
                 a = self.normalise_func(a)
 
             # Predict on x.
-            with torch.no_grad():
-                y_pred = float(
-                    torch.nn.Softmax()(
-                        model(
-                            torch.Tensor(x)
-                            .reshape(
-                                1,
-                                self.nr_channels,
-                                self.img_size,
-                                self.img_size,
-                            )
-                            .to(self.kwargs.get("device", None))
-                        )
-                    )[:, y]
-                )
+            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
 
             # Segment image.
             segments = get_superpixel_segments(
@@ -1985,22 +2132,12 @@ class IterativeRemovalOfFeatures(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                with torch.no_grad():
-                    y_pred_perturb = float(
-                        torch.nn.Softmax()(
-                            model(
-                                torch.Tensor(x_perturbed)
-                                .reshape(
-                                    1,
-                                    self.nr_channels,
-                                    self.img_size,
-                                    self.img_size,
-                                )
-                                .to(self.kwargs.get("device", None))
-                            )
-                        )[:, y]
-                    )
-
+                x_input = model.shape_input(
+                    x_perturbed, self.img_size, self.nr_channels
+                )
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
                 # Normalise the scores to be within [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))
 

@@ -1,24 +1,14 @@
 """This module contains the utils functions of the library."""
 import re
 import torch
+import tensorflow as tf
 import random
 from typing import Union, Optional, List, Callable
 import numpy as np
 from skimage.segmentation import *
-
-
-def get_layers(model, order: str = "top_down"):
-    """Checks a pytorch model for randomizable layers and returns them in a dict."""
-    layers = [
-        module
-        for module in model.named_modules()
-        if hasattr(module[1], "reset_parameters")
-    ]
-
-    if order == "top_down":
-        return layers[::-1]
-    else:
-        return layers
+from ..helpers.pytorch_model import PyTorchModel
+from ..helpers.tf_model import TensorFlowModel
+from ..helpers.model_interface import ModelInterface
 
 
 def get_superpixel_segments(
@@ -34,15 +24,9 @@ def get_superpixel_segments(
     ], "Segmentation method must be either 'slic' or 'felzenszwalb'."
 
     if segmentation_method == "slic":
-        return slic(
-            img,
-            start_label=0,
-        )
-
+        return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(
-            img,
-        )
+        return felzenszwalb(img, )
     else:
         print(
             "Segmentation method i.e., 'segmentation_method' must be either 'slic' or 'felzenszwalb'."
@@ -113,3 +97,52 @@ def set_features_in_step(max_steps_per_input: int, img_size: int):
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
     """Remove patch sizes that are not compatible with input size."""
     return [i for i in perturb_patch_sizes if img_size % i == 0]
+
+
+def get_channel_first(x: np.array):
+    """
+    Returns True if input shape is (nr_batch, nr_channels, img_size, img_size).
+    Returns False if input shape is (nr_batch, img_size, img_size, nr_channels).
+    An error is raised if three last dimensions are equal, or if the image is not square.
+    """
+    if np.shape(x)[-1] == np.shape(x)[-2] == np.shape(x)[-3]:
+        raise ValueError("Ambiguous input shape")
+    if np.shape(x)[-3] == np.shape(x)[-2]:
+        return False
+    if np.shape(x)[-1] == np.shape(x)[-2]:
+        return True
+    raise ValueError("Input dimension mismatch")
+
+
+def get_channel_first_batch(x: np.array, channel_first=False):
+    """
+    Reshape batch to channel first.
+    """
+    if channel_first:
+        return x
+    return np.moveaxis(x, -1, -3)
+
+
+def get_channel_last_batch(x: np.array, channel_first=True):
+    """
+    Reshape batch to channel last.
+    """
+    if channel_first:
+        return np.moveaxis(x, -3, -1)
+    return x
+
+
+def get_wrapped_model(
+    model: Union[tf.keras.Model, torch.nn.modules.module.Module], channel_first: bool
+) -> ModelInterface:
+    """
+    Identifies the type of a model object and wraps the model in an appropriate interface.
+    Return wrapped model.
+    """
+    if isinstance(model, tf.keras.Model):
+        return TensorFlowModel(model, channel_first)
+    if isinstance(model, torch.nn.modules.module.Module):
+        return PyTorchModel(model, channel_first)
+    raise ValueError(
+        "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
+    )

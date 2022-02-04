@@ -12,6 +12,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.pytorch_model import PyTorchModel
 
 
 class ModelParameterRandomisation(Metric):
@@ -33,12 +34,28 @@ class ModelParameterRandomisation(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=correlation_spearman.
+            layer_order (string): Indicated whether the model is randomized cascadingly or independently.
+            Set order=top_down for cascading randomization, set order=independent for independent randomization,
+            default="independent".
+        """
         super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
+        self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -67,7 +84,7 @@ class ModelParameterRandomisation(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -84,8 +101,13 @@ class ModelParameterRandomisation(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -114,10 +136,16 @@ class ModelParameterRandomisation(Metric):
             >> metric = ModelParameterRandomisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -132,31 +160,24 @@ class ModelParameterRandomisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # Save state_dict.
-        original_parameters = model.state_dict()
-
-        for layer_name, layer in get_layers(model, order=self.layer_order):
+        for layer_name, random_layer_model in model.get_random_layer_generator(
+            order=self.layer_order
+        ):
 
             similarity_scores = []
 
-            if self.layer_order == "independent":
-                model.load_state_dict(original_parameters)
-
-            # Randomize layer.
-            layer.reset_parameters()
-
             # Generate an explanation with perturbed model.
             a_perturbed = explain_func(
-                model=model, inputs=x_batch, targets=y_batch, **self.kwargs
+                model=random_layer_model, inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
             for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
@@ -196,7 +217,21 @@ class RandomLogit(Metric):
 
     @attributes_check
     def __init__(self, *args, **kwargs):
-
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            default=ssim.
+            num_classes (integer): Number of prediction classes in the input, default=1000.
+        """
         super().__init__()
 
         self.args = args
@@ -226,7 +261,7 @@ class RandomLogit(Metric):
 
     def __call__(
         self,
-        model,
+        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -243,8 +278,13 @@ class RandomLogit(Metric):
             x_batch: a np.ndarray which contains the input data that are explained
             y_batch: a np.ndarray which contains the output labels that are explained
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: optional args
-            kwargs: optional dict
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last. 
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
 
         Returns
             last_results: a list of float(s) with the evaluation outcome of concerned batch
@@ -273,15 +313,21 @@ class RandomLogit(Metric):
             >> metric = RandomLogit(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch)[-1])
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = [dict() for _ in x_batch]
+        self.last_results = [dict() for _ in x_batch_s]
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -290,14 +336,14 @@ class RandomLogit(Metric):
         if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
-                model=model,
+                model=model.get_model(),
                 inputs=x_batch,
                 targets=y_batch,
                 **self.kwargs,
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         if self.abs:
             a_batch = np.abs(a_batch)
@@ -334,7 +380,7 @@ class RandomLogit(Metric):
 
         # Explain against a random class.
         a_perturbed = explain_func(
-            model=model,
+            model=model.get_model(),
             inputs=x_batch,
             targets=y_batch_off,
             **self.kwargs,

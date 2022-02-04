@@ -1,5 +1,6 @@
 import pytest
 from typing import Union
+import torch
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.helpers import *
@@ -18,6 +19,11 @@ def atts_normalise_2():
 @pytest.fixture
 def atts_denormalise():
     return np.zeros((3, 2, 2))
+
+
+@pytest.fixture
+def atts_denormalise_torch():
+    return torch.tensor(np.zeros((3, 2, 2)))
 
 
 @pytest.mark.normalise_func
@@ -64,13 +70,34 @@ def test_normalise_if_negative(
                     [[0.406, 0.406], [0.406, 0.406]],
                 ]
             ),
-        )
+        ),
+        (
+            [1, 2],
+            {},
+            [1, 2],
+        ),
+        (
+            lazy_fixture("atts_denormalise_torch"),
+            {"nr_channels": 3, "img_size": 2},
+            torch.tensor(
+                np.array(
+                    [
+                        [[0.485, 0.485], [0.485, 0.485]],
+                        [[0.456, 0.456], [0.456, 0.456]],
+                        [[0.406, 0.406], [0.406, 0.406]],
+                    ]
+                )
+            ),
+        ),
     ],
 )
 def test_denormalise(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = denormalise(img=data)
+    out = denormalise(img=data, **params)
+    if isinstance(data, list):
+        assert out == expected, "Test failed."
+        return
     assert all(
         o == e for o, e in zip(out.flatten(), expected.flatten())
     ), "Test failed."

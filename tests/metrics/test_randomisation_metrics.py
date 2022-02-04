@@ -3,18 +3,21 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers.model_interface import ModelInterface
 
 
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "top_down",
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -23,6 +26,8 @@ from ...quantus.metrics import *
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "layer_order": "bottom_up",
                 "similarity_func": correlation_pearson,
@@ -35,26 +40,59 @@ from ...quantus.metrics import *
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "layer_order": "top_down",
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "disable_warnings": False,
+                "explain_func": explain,
+                "method": "Gradient",
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "layer_order": "bottom_up",
+                "similarity_func": correlation_pearson,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Gradient",
+                "img_size": 28,
+                "nr_channels": 1,
+                "a_batch_generate": False,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
     ],
 )
 def test_model_parameter_randomisation(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores_layers = ModelParameterRandomisation(**params)(
         model=model,
         x_batch=x_batch,
@@ -76,13 +114,15 @@ def test_model_parameter_randomisation(
 
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
                 "normalise": True,
-                "disable_warnings": True,
+                "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
                 "img_size": 28,
@@ -91,6 +131,8 @@ def test_model_parameter_randomisation(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "num_classes": 10,
                 "normalise": False,
@@ -99,29 +141,32 @@ def test_model_parameter_randomisation(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
     ],
 )
 def test_random_logit(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"].numpy(),
-        load_mnist_images["y_batch"].numpy(),
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    if params.get("a_batch_generate", True):
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    else:
+        a_batch = None
     scores = RandomLogit(**params)(
         model=model,
         x_batch=x_batch,
