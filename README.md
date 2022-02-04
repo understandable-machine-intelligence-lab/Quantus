@@ -4,26 +4,31 @@
 <!--<h1 align="center"><b>Quantus</b></h1>-->
 <h3 align="center"><b>A metrics toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
-  <i>PyTorch implementation</i>
+  <i>PyTorch and Tensorflow implementation</i>
 </p>
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 [![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
 ![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
-
-<!--[![Build Status](https://github.com/understandable-machine-intelligence-lab/Quantus/workflows/CI/badge.svg?branch=master)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions?query=workflow%3A%22CI%22)-->
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 
-<!--**A library that helps you understand your XAI explanations..**-->
-<!--
-<p align="center">
-  <img src="samples/spider_image.png" alt="Visualisation of how Quantus library can help highlight differences between explanation methods as well as implicit trade-offs between various evaluation criteria." width="512"/>
-</p>
--->
-_Quantus is currently under active development!_
+
+_Quantus is currently under active development and has not yet reached a stable state!
+Interfaces may change suddenly and without warning, so please be careful when attempting to use quantus in its current state._
+
+
+## Table of contents
+
+* [Library content](##library content)
+* [Installation](##installation)
+* [Getting Started](#getting-started)
+* [Tutorials](#tutorials)
+* [Misc functionality](#misc-functionality)
+* [Contributing](#contributing)
+
 
 
 <!--### Citation
@@ -94,11 +99,41 @@ Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018)
 
 ## Installation
 
-<!--Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/):
+<!--Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/) 
+(this syntax assumes that you have either `torch` or `tensorflow` installed on your machine).  
 
 ```setup
 pip install quantus
-````
+```
+
+If you don't have `torch` or `tensorflow` installed, you can simply add the package you want and install it simultaneously.
+
+```setup
+pip install quantus[torch]
+```
+Or, alternatively for `tensorflow` you run:
+
+```setup
+pip install quantus[tensorflow]
+```
+
+Additionally, if you want to use the basic explainability functionaliy such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
+
+Alternatively, simply install requirements.txt (again, this requires that either `torch` or `tensorflow` is installed and won't include the explainability functionality to the installation):
+
+```setup
+pip install -r requirements.txt
+```
+
+pip install --editable ".[torch, extras]"
+
+### Package requirements:
+
+```
+Python >= 3.6.9
+PyTorch >= 1.8
+Tensorflow >= 1.8
+```
 -->
 To install requirements:
 
