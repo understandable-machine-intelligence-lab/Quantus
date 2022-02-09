@@ -15,7 +15,6 @@ from ..helpers import __EXTRAS__
 if util.find_spec("captum"):
     from captum.attr import *
 if util.find_spec("zennit"):
-    import zennit
     from zennit import canonizers as zcanon
     from zennit import composites as zcomp
     from zennit import attribution as zattr
@@ -24,13 +23,7 @@ if util.find_spec("tf_explain"):
     import tf_explain
 
 
-def explain(
-    model,
-    inputs,
-    targets,
-    *args,
-    **kwargs,
-) -> np.ndarray:
+def explain(model, inputs, targets, *args, **kwargs) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 
@@ -39,17 +32,17 @@ def explain(
     Returns np.ndarray of same shape as inputs.
     """
 
+    if util.find_spec("captum") or util.find_spec("tf_explain"):
+        if "method" not in kwargs:
+            warnings.warn(
+                f"Using quantus 'explain' function as an explainer without specifying 'method' (str) "
+                f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
+                category=UserWarning,
+            )
     if util.find_spec("zennit"):
         if "attributor" not in kwargs:
             warnings.warn(
                 f"Using quantus 'explain' function as an explainer without specifying 'attributor'"
-                f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
-                category=UserWarning,
-            )
-    elif util.find_spec("captum") or util.find_spec("tf_explain"):
-        if "method" not in kwargs:
-            warnings.warn(
-                f"Using quantus 'explain' function as an explainer without specifying 'method' (str) "
                 f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
                 category=UserWarning,
             )
@@ -67,12 +60,20 @@ def explain(
 
 def get_explanation(model, inputs, targets, **kwargs):
     """Generate explanation array based on the type of input model."""
+    xai_lib = kwargs.get("xai_lib", "captum")
+    if isinstance(model, torch.nn.modules.module.Module):
+        if util.find_spec("captum") and util.find_spec("zennit"):
+            if xai_lib == "captum":
+                return generate_captum_explanation(model, inputs, targets, **kwargs)
+            if xai_lib == "zennit":
+                return generate_zennit_explanation(model, inputs, targets, **kwargs)
+        if util.find_spec("captum"):
+            return generate_captum_explanation(model, inputs, targets, **kwargs)
+        if util.find_spec("zennit"):
+            return generate_zennit_explanation(model, inputs, targets, **kwargs)
     if isinstance(model, tf.keras.Model) and util.find_spec("tf_explain"):
         return generate_tf_explanation(model, inputs, targets, **kwargs)
-    if isinstance(model, torch.nn.modules.module.Module) and util.find_spec("zennit"):
-        return generate_zennit_explanation(model, inputs, targets, **kwargs)
-    if isinstance(model, torch.nn.modules.module.Module) and util.find_spec("captum"):
-        return generate_captum_explanation(model, inputs, targets, **kwargs)
+
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module. "
         "Please install Captum or Zennit for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
@@ -80,10 +81,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: tf.keras.Model,
-    inputs: np.array,
-    targets: np.array,
-    **kwargs,
+    model: tf.keras.Model, inputs: np.array, targets: np.array, **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
@@ -308,10 +306,7 @@ def generate_captum_explanation(
         explanation = torch.Tensor(
             cv2.resize(
                 explanation.cpu().data.numpy(),
-                dsize=(
-                    kwargs.get("img_size", 224),
-                    kwargs.get("img_size", 224),
-                ),
+                dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             )
         )
 
@@ -454,7 +449,7 @@ def generate_zennit_explanation(
         eye = torch.eye(n_outputs, device=kwargs.get("device", None))
         output_target = eye[targets]
         output_target = output_target.reshape(-1, n_outputs)
-        #print(inputs.shape, targets.shape, output_target.shape)
+        # print(inputs.shape, targets.shape, output_target.shape)
         _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):

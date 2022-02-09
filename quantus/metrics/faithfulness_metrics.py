@@ -173,10 +173,7 @@ class FaithfulnessCorrelation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -210,10 +207,7 @@ class FaithfulnessCorrelation(Metric):
                     img=x.flatten(),
                     **{
                         **self.kwargs,
-                        **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
-                        },
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -318,12 +312,10 @@ class FaithfulnessEstimate(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -406,10 +398,7 @@ class FaithfulnessEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -449,10 +438,7 @@ class FaithfulnessEstimate(Metric):
                     img=x.flatten(),
                     **{
                         **self.kwargs,
-                        **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
-                        },
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -551,12 +537,10 @@ class MonotonicityArya(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -639,10 +623,7 @@ class MonotonicityArya(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -682,10 +663,7 @@ class MonotonicityArya(Metric):
                     img=x_baseline,
                     **{
                         **self.kwargs,
-                        **{
-                            "indices": a_ix,
-                            "fixed_values": x.flatten()[a_ix],
-                        },
+                        **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
                     },
                 )
 
@@ -782,12 +760,10 @@ class MonotonicityNguyen(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -870,10 +846,7 @@ class MonotonicityNguyen(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1023,12 +996,10 @@ class PixelFlipping(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -1111,10 +1082,7 @@ class PixelFlipping(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1148,10 +1116,7 @@ class PixelFlipping(Metric):
                     img=x_perturbed,
                     **{
                         **self.kwargs,
-                        **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
-                        },
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1346,10 +1311,7 @@ class RegionPerturbation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1445,7 +1407,7 @@ class RegionPerturbation(Metric):
                     # TODO: this does not work with the current changes,
                     #  since patch_order does not contain all patches here anymore for efficiency
                     #  Or is it ok to just shuffle the first self.regions_evaluation patches?
-                    order = random.randint(0, len(patch_order))
+                    order = random.randint(0, len(patch_order) - 1)
                     top_left_x = patch_order[order][0]
                     top_left_y = patch_order[order][1]
                 else:
@@ -1646,10 +1608,7 @@ class Selectivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1856,12 +1815,10 @@ class SensitivityN(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -1944,10 +1901,7 @@ class SensitivityN(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -2181,10 +2135,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -2206,8 +2157,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Segment image.
             segments = get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                **kwargs,
+                img=np.moveaxis(x, 0, -1).astype("double"), **kwargs
             )
             nr_segments = segments.max()
             assert_nr_segments(nr_segments=nr_segments)
@@ -2233,10 +2183,7 @@ class IterativeRemovalOfFeatures(Metric):
                     img=x.flatten(),
                     **{
                         **self.kwargs,
-                        **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
-                        },
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
