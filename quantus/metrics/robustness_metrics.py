@@ -611,7 +611,7 @@ class AvgSensitivity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            self.temp_results = []
+            self.sub_results = []
             for _ in range(self.nr_samples):
 
                 # Perturb input.
@@ -639,10 +639,10 @@ class AvgSensitivity(Metric):
                     a=sensitivities
                 ) / self.norm_denominator(a=x.flatten())
 
-                self.temp_results.append(sensitivities_norm)
+                self.sub_results.append(sensitivities_norm)
 
             # Append average sensitivity score.
-            self.last_results.append(float(np.mean(self.temp_results)))
+            self.last_results.append(float(np.mean(self.sub_results)))
 
         self.all_results.append(self.last_results)
 
