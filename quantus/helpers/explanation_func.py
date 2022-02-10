@@ -59,7 +59,12 @@ def explain(model, inputs, targets, *args, **kwargs) -> np.ndarray:
 
 
 def get_explanation(model, inputs, targets, **kwargs):
-    """Generate explanation array based on the type of input model."""
+    """
+    Generate explanation array based on the type of input model and user specifications.
+    For tensorflow models, tf.explain is used.
+    For pytorch models, either captum or zennit is used, depending on which module is installed.
+        If both are installed, captum is used per default. Setting the xai_lib kwarg to "zennit" uses zennit instead.
+    """
     xai_lib = kwargs.get("xai_lib", "captum")
     if isinstance(model, torch.nn.modules.module.Module):
         if util.find_spec("captum") and util.find_spec("zennit"):

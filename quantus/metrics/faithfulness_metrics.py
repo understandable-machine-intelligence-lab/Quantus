@@ -1180,9 +1180,8 @@ class RegionPerturbation(Metric):
             default="uniform".
             regions_evaluation (integer): The number of regions to evaluate, default=100.
             patch_size (integer): The patch size for masking, default=8.
-            random_order (boolean): Indicates whether predictions are calculated in a random order, default=False.
-            order (string): Indicates whether attributions are ordered according to the most relevant first ("MoRF")
-            or not, default="MoRF".
+            order (string): Indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
             img_size (integer): Square image dimensions, default=224.
         """
         super().__init__()
@@ -1200,7 +1199,6 @@ class RegionPerturbation(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
         self.patch_size = self.kwargs.get("patch_size", 8)
-        self.random_order = self.kwargs.get("random_order", False)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.img_size = self.kwargs.get("img_size", 224)
         self.text_warning = (
@@ -1366,7 +1364,14 @@ class RegionPerturbation(Metric):
                     )
                     patches.append([top_left_x, top_left_y])
 
-            if self.order == "morf":
+            if self.order == "random":
+
+                # Order attributions randomly.
+                order = np.arange(len(patches))
+                np.random.shuffle(np.arange(len(patches)))
+                patch_order = [patches[p] for p in order]
+
+            elif self.order == "morf":
 
                 # Order attributions according to the most relevant first.
                 patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
@@ -1403,16 +1408,8 @@ class RegionPerturbation(Metric):
             for k in range(min(self.regions_evaluation, len(patch_order))):
 
                 # Calculate predictions on a random order.
-                if self.random_order:
-                    # TODO: this does not work with the current changes,
-                    #  since patch_order does not contain all patches here anymore for efficiency
-                    #  Or is it ok to just shuffle the first self.regions_evaluation patches?
-                    order = random.randint(0, len(patch_order) - 1)
-                    top_left_x = patch_order[order][0]
-                    top_left_y = patch_order[order][1]
-                else:
-                    top_left_x = patch_order[k][0]
-                    top_left_y = patch_order[k][1]
+                top_left_x = patch_order[k][0]
+                top_left_y = patch_order[k][1]
 
                 # Also pad x_perturbed
                 # The mode should probably depend on the used perturb_func?

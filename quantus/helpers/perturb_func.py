@@ -71,11 +71,15 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
 
 
 def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
-    """Replace a single patch in an image by a blurred version."""
+    """
+    Replace a single patch in an image by a blurred version.
+    Blur is performed via a 2D convolution.
+    kwarg "blur_patch_size" controls the kernel-size of that convolution (Default is 15).
+    """
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
     assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
-    assert "img_size" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
+    assert "img_size" in kwargs, "Specify 'img_size' (int) to perturb the image."
     assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
     assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
 
