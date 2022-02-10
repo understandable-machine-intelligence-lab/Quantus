@@ -6,6 +6,7 @@ from importlib.metadata import version
 with open("README.md", "r") as f1, open("requirements.txt", "r") as f2:
     long_description = f1.read()
     REQUIRED = f2.read()
+
 # Define library import by choice of ML framework (if neither torch or tensorflow is installed return an empty list).
 if (
     util.find_spec("torch")
@@ -20,6 +21,7 @@ elif util.find_spec("tensorflow") and version("tensorflow") >= "2.0":
     extras = ["tf-explain==0.3.1"]
 else:
     extras = []
+
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],

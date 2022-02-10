@@ -257,10 +257,10 @@ To get a more comprehensive view of the previous example, there is many types of
 
 For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
 
-* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
-* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_sensitivity_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
-* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
-<!--* Investigate to what extent metrics belonging to the same category score explanations similarly (check out: `/tutorials/category_reliability.ipynb`)-->
+* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
+* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_sensivitivty_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
+* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
+* [Compare explanation methods using qualitative-, quantitative- and senitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
 
 ... and more.
 
@@ -384,24 +384,6 @@ Interpretation of evaluation outcome will differ depending on whether we priorit
 
 
 <!--
-
-## Feature list
-
-For the next iteration, focus will be on the following items.
-
-* Tensorflow compatibility
-* Build a 'Quantifier' class:
-  * Handling of cache, writing to file, saving output, hdf5
-  * Parallelization capability
-* Post-processing
-  * Providing plots
-  * Populating table/ overview graphs of various scores
-* Other functionality
-  * Incorporate dataset wide measures e.g., like SpRAy compatibility
-    Perturbation outlier test, or detecting out-of-distribution samples
-  * Smarter segmentation of images to perform SDC and SSC
-
-
 ## Cite this paper
 
 To cite this paper use following Bibtex annotation:
@@ -415,7 +397,6 @@ To cite this paper use following Bibtex annotation:
 	      primaryClass={cs.LG}}
 
 ### Citations of metrics
-
 -->
 
 
