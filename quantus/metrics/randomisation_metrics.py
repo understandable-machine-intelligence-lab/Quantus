@@ -282,7 +282,7 @@ class RandomLogit(Metric):
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
                 img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last. 
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
 
@@ -354,9 +354,13 @@ class RandomLogit(Metric):
                 a = self.normalise_func(a)
 
             # Randomly select off-class labels.
-            y_off = np.array([random.choice([y_
-                                             for y_ in list(np.arange(0, self.num_classes))
-                                             if y_ != y])])
+            y_off = np.array(
+                [
+                    random.choice(
+                        [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
+                    )
+                ]
+            )
 
             # Explain against a random class.
             a_perturbed = explain_func(
@@ -372,9 +376,10 @@ class RandomLogit(Metric):
             if self.normalise:
                 a_perturbed = self.normalise_func(a_perturbed)
 
-            self.last_results.append(self.similarity_func(a.flatten(), a_perturbed.flatten()))
+            self.last_results.append(
+                self.similarity_func(a.flatten(), a_perturbed.flatten())
+            )
 
         self.all_results.append(self.last_results)
 
         return self.last_results
-

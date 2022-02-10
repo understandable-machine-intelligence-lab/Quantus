@@ -26,7 +26,9 @@ def get_superpixel_segments(
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(img, )
+        return felzenszwalb(
+            img,
+        )
     else:
         print(
             "Segmentation method i.e., 'segmentation_method' must be either 'slic' or 'felzenszwalb'."
