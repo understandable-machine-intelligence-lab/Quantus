@@ -2,7 +2,6 @@
 from typing import Union
 
 import numpy as np
-import torch
 import scipy
 import random
 from importlib import util
@@ -87,6 +86,10 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 def generate_tf_explanation(
     model: tf.keras.Model, inputs: np.array, targets: np.array, **kwargs
+    model: ModelInterface,
+    inputs: np.ndarray,
+    targets: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
@@ -210,9 +213,9 @@ def generate_tf_explanation(
 
 
 def generate_captum_explanation(
-    model: torch.nn,
-    inputs: Union[np.array, torch.Tensor],
-    targets: Union[np.array, torch.Tensor],
+    model: ModelInterface,
+    inputs: np.ndarray,
+    targets: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with captum."""
@@ -372,9 +375,9 @@ def generate_captum_explanation(
 
 
 def generate_zennit_explanation(
-    model: torch.nn,
-    inputs: Union[np.array, torch.Tensor],
-    targets: Union[np.array, torch.Tensor],
+    model: ModelInterface,
+    inputs: np.ndarray,
+    targets: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with zennit."""

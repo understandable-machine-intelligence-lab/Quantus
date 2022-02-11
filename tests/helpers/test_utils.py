@@ -284,7 +284,7 @@ def test_get_channel_last_batch(
     ],
 )
 def test_get_wrapped_model(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+    model: ModelInterface,
     params: dict,
     expected: Union[float, dict, bool],
 ):

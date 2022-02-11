@@ -1,11 +1,11 @@
-from ..helpers.model_interface import ModelInterface
-from ..metrics import *
-import numpy as np
-
+"""This model creates the ModelInterface for Tensorflow."""
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 from tensorflow.keras.models import clone_model
+import numpy as np
+from ..metrics import *
+from ..helpers.model_interface import ModelInterface
 
 
 class TensorFlowModel(ModelInterface):
