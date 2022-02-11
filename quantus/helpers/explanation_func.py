@@ -87,10 +87,8 @@ def get_explanation(model, inputs, targets, **kwargs):
 def generate_tf_explanation(
     model: tf.keras.Model, 
     inputs: np.array, 
-    targets: np.array, **kwargs
-    inputs: np.ndarray,
-    targets: np.ndarray,
-    **kwargs,
+    targets: np.array, 
+    **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
