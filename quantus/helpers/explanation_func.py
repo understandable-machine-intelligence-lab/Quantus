@@ -85,8 +85,9 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: tf.keras.Model, inputs: np.array, targets: np.array, **kwargs
-    model: ModelInterface,
+    model: tf.keras.Model, 
+    inputs: np.array, 
+    targets: np.array, **kwargs
     inputs: np.ndarray,
     targets: np.ndarray,
     **kwargs,
@@ -375,7 +376,7 @@ def generate_captum_explanation(
 
 
 def generate_zennit_explanation(
-    model,
+    model: ModelInterface,
     inputs: np.ndarray,
     targets: np.ndarray,
     **kwargs,
