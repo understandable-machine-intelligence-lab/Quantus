@@ -93,12 +93,12 @@ def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
     img = img.reshape(nr_channels, img_size, img_size)
 
     # Get blurred image
-    avgsize = 2 * blur_patch_size - 1
     weightavg = (
         1.0
-        / float(avgsize * avgsize)
-        * np.ones((1, 1, avgsize, avgsize), dtype=img.dtype)
+        / float(blur_patch_size * blur_patch_size)
+        * np.ones((1, 1, blur_patch_size, blur_patch_size), dtype=img.dtype)
     )
+    print(img.shape, np.tile(weightavg, (nr_channels, 1, 1, 1)).shape)
     avgimg = conv2D_numpy(
         img,
         np.tile(weightavg, (nr_channels, 1, 1, 1)),
@@ -106,15 +106,10 @@ def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
         padding=0,
         groups=nr_channels,
     )
-    padwidth = (2 * blur_patch_size - 2) // 2
+    padwidth = (blur_patch_size - 1) // 2
     avgimg = np.pad(
         avgimg, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="edge"
     )
-
-    import matplotlib.pyplot as plt
-
-    plt.imshow(avgimg.transpose((1, 2, 0)))
-    plt.show()
 
     # Perturb image
     img_perturbed = copy.copy(img)
