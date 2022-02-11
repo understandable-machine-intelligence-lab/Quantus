@@ -2,7 +2,7 @@
   <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b>A metrics toolkit to evaluate neural network explanations</b></h3>
+<h3 align="center"><b>A toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
   <i>PyTorch and Tensorflow implementation</i>
 </p>
@@ -27,15 +27,6 @@ Interfaces may change suddenly and without warning, so please be careful when at
 * [Misc functionality](#misc-functionality)
 * [Contributing](#contributing)
 
-
-<p align="center">
-  <img width="900" height="638" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
-</p>
-<p align="center">
-  <i>Illustrative example of how to use Quantus. a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which gradient-based method is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. *perturb_baseline* of a faithfulness test influences the ranking of explanation methods.</i>
-</p>
-
-
 <!--### Citation
 
 If you find this library helpful in speeding up your research please cite using the following Bibtex annotation:
@@ -49,7 +40,14 @@ If you find this library helpful in speeding up your research please cite using 
       primaryClass={cs.LG}}
 -->
 
-## Library content
+## Library overview 
+
+<p align="center">
+  <i>An illustrative example of how to use Quantus. a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which gradient-based method is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. perturb_baseline of a faithfulness test influences the ranking of XAI methods.</i>
+</p>
+<p align="center">
+  <img width="800" height="567" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+</p>
 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
 
