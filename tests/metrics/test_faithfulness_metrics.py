@@ -478,38 +478,6 @@ def test_pixel_flipping(
                 "perturb_baseline": "mean",
                 "patch_size": 7,
                 "normalise": True,
-                "order": "lorf",
-                "disable_warnings": False,
-                "explain_func": explain,
-                "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
-            },
-            {"min": -1, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "perturb_baseline": "mean",
-                "patch_size": 7,
-                "normalise": True,
-                "order": "someinvalidvalue",
-                "disable_warnings": False,
-                "explain_func": explain,
-                "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
-            },
-            {"min": -1, "max": 1.0, "exception": AssertionError},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "perturb_baseline": "mean",
-                "patch_size": 7,
-                "normalise": True,
                 "order": "random",
                 "disable_warnings": True,
                 "explain_func": explain,
@@ -542,27 +510,15 @@ def test_region_segmentation(
         )
     else:
         a_batch = None
+    scores = RegionPerturbation(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
 
-    if "exception" in expected.keys():
-        with pytest.raises(expected["exception"]):
-            scores = RegionPerturbation(**params)(
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                **params,
-            )
-        return
-    else:
-        scores = RegionPerturbation(**params)(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            **params,
-        )
-
-        assert scores is not None, "Test failed."
+    assert scores is not None, "Test failed."
 
 
 @pytest.mark.faithfulness
