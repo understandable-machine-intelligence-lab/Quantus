@@ -2,6 +2,8 @@ from setuptools import setup
 from importlib import util
 from importlib.metadata import version
 
+# TODO: Include zennit
+
 # Import package descriptions (long) and basic installation requirements.
 with open("README.md", "r") as f1, open("requirements.txt", "r") as f2:
     long_description = f1.read()
