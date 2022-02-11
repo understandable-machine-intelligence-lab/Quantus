@@ -73,6 +73,14 @@ def mock_mismatch_input():
     return {"x": np.zeros((1, 1, 2, 3))}
 
 
+def random_input(c_in, imsize):
+    return np.random.uniform(0, 1, size=(c_in, imsize, imsize))
+
+
+def random_kernel(c_in, c_out, groups, ksize):
+    return np.random.uniform(0, 1, size=(c_out, c_in // groups, ksize, ksize))
+
+
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "data,params,expected",
@@ -287,3 +295,95 @@ def test_get_wrapped_model(
     out = get_wrapped_model(model, params["channel_first"])
     if "type" in expected:
         isinstance(out, expected["type"]), "Test failed."
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+            },
+            {"shape": (3, 217, 217)},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 3,
+                "groups": 3,
+            },
+            {"shape": (3, 223, 223)},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 3,
+                "padding": 0,
+                "groups": 3,
+            },
+            {"shape": (3, 73, 73)},
+        ),
+        (
+            {
+                "c_in": 6,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+            },
+            {"shape": (3, 217, 217)},
+        ),
+        (
+            {
+                "c_in": 6,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 2,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+            },
+            {"exception": AssertionError},
+        ),
+    ],
+)
+def test_conv2D_numpy(
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    input = random_input(params["c_in"], params["imsize"])
+    kernel = random_kernel(
+        params["c_in"], params["c_out"], params["kgroups"], params["ksize"]
+    )
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = conv2D_numpy(
+                input, kernel, params["stride"], params["padding"], params["groups"]
+            )
+        return
+    out = conv2D_numpy(
+        input, kernel, params["stride"], params["padding"], params["groups"]
+    )
+    if "shape" in expected:
+        assert expected["shape"] == out.shape, "Test failed."

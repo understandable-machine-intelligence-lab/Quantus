@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 from sys import version_info
 from importlib import util
 
-# Intepret the version of a package depending on if python>=3.8 vs python<3.8:
+# Interpret the version of a package depending on if python>=3.8 vs python<3.8:
 # See: https://stackoverflow.com/questions/20180543/how-to-check-version-of-python-modules?rq=1.
 if version_info[1] <= 7:
     import pkg_resources
