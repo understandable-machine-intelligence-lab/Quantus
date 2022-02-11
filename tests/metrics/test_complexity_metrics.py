@@ -2,7 +2,7 @@ import pytest
 from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
-from ...quantus.metrics import *
+from quantus.quantus.metrics import *
 
 
 @pytest.mark.complexity
@@ -30,7 +30,7 @@ from ...quantus.metrics import *
     ],
 )
 def test_sparseness(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+    model: ModelInterface,
     data: dict,
     params: dict,
     expected: Union[float, dict, bool],
@@ -75,7 +75,7 @@ def test_sparseness(
     ],
 )
 def test_complexity(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+    model: ModelInterface,
     data: dict,
     params: dict,
     expected: Union[float, dict, bool],
@@ -115,7 +115,7 @@ def test_complexity(
     ],
 )
 def test_effective_complexity(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+    model: ModelInterface,
     data: dict,
     params: dict,
     expected: Union[float, dict, bool],

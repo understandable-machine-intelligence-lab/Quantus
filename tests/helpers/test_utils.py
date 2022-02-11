@@ -4,7 +4,7 @@ import pickle
 from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
-from ...quantus.helpers import *
+from quantus.quantus.helpers import *
 
 
 @pytest.fixture
@@ -276,7 +276,7 @@ def test_get_channel_last_batch(
     ],
 )
 def test_get_wrapped_model(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+    model: ModelInterface,
     params: dict,
     expected: Union[float, dict, bool],
 ):
