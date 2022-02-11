@@ -1,12 +1,12 @@
+"""This module provides some plotting functionality."""
 from typing import List, Union, Dict
 import numpy as np
-import torch
 import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
 
 def plot_pixel_flipping_experiment(
-    y_batch: torch.Tensor,
+    y_batch: np.ndarray,
     scores: List[float],
     single_class: Union[int, None] = None,
     *args,
@@ -132,7 +132,7 @@ def plot_sensitivity_n_experiment(
 
 
 def plot_superpixel_segments(
-    img: torch.Tensor, segments: np.ndarray, *args, **kwargs
+    img: np.ndarray, segments: np.ndarray, *args, **kwargs
 ) -> None:
     fig = plt.figure(figsize=(6, 6))
     plt.imshow(

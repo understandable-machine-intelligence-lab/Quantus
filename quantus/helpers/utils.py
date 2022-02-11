@@ -1,18 +1,22 @@
 """This module contains the utils functions of the library."""
 import re
-import torch
-import tensorflow as tf
 import random
-from typing import Union, Optional, List, Callable
 import numpy as np
+from typing import Union, Optional, List, Callable
+from importlib import util
 from skimage.segmentation import *
-from ..helpers.pytorch_model import PyTorchModel
-from ..helpers.tf_model import TensorFlowModel
 from ..helpers.model_interface import ModelInterface
+
+if util.find_spec("torch"):
+    import torch
+    from ..helpers.pytorch_model import PyTorchModel
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
+    from ..helpers.tf_model import TensorFlowModel
 
 
 def get_superpixel_segments(
-    img: torch.Tensor, segmentation_method: str, **kwargs
+    img: np.ndarray, segmentation_method: str, **kwargs
 ) -> np.ndarray:
     """Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels."""
     assert (
@@ -36,7 +40,7 @@ def get_superpixel_segments(
 
 
 def get_baseline_value(
-    choice: Union[float, int, str, None], img: torch.Tensor, **kwargs
+    choice: Union[float, int, str, None], img: np.ndarray, **kwargs
 ) -> float:
     """Get the baseline value (float) to fill tensor with."""
 
@@ -68,7 +72,7 @@ def get_baseline_value(
         )
 
 
-def get_baseline_dict(img: Union[torch.Tensor, None], **kwargs) -> dict:
+def get_baseline_dict(img: Union[np.ndarray, None], **kwargs) -> dict:
     """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
     fill_dict = {
         "mean": float(img.mean()),
@@ -134,9 +138,7 @@ def get_channel_last_batch(x: np.array, channel_first=True):
     return x
 
 
-def get_wrapped_model(
-    model: Union[tf.keras.Model, torch.nn.modules.module.Module], channel_first: bool
-) -> ModelInterface:
+def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
     Return wrapped model.
