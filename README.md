@@ -15,10 +15,8 @@
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 
-
 _Quantus is currently under active development and has not yet reached a stable state!
 Interfaces may change suddenly and without warning, so please be careful when attempting to use quantus in its current state._
-
 
 ## Table of contents
 
@@ -29,6 +27,13 @@ Interfaces may change suddenly and without warning, so please be careful when at
 * [Misc functionality](#misc-functionality)
 * [Contributing](#contributing)
 
+
+<p align="center">
+  <img width="900" height="638" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+</p>
+<p align="center">
+  <i>Illustrative example of how to use Quantus. a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which gradient-based method is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. *perturb_baseline* of a faithfulness test influences the ranking of explanation methods.</i>
+</p>
 
 
 <!--### Citation
@@ -381,23 +386,6 @@ Interpretation of evaluation outcome will differ depending on whether we priorit
 [5] P. Sturmfels, S. Lundberg, and S. Lee. "Visualizing the impact of feature attribution baselines." Distill 5, no. 1: e22, 2020.
 
 [6] D. Janzing, L. Minorics, and P. Blöbaum. "Feature relevance quantification in explainable AI: A causal problem." In International Conference on Artificial Intelligence and Statistics, pp. 2907-2916. PMLR, 2020.
-
-
-<!--
-## Cite this paper
-
-To cite this paper use following Bibtex annotation:
-
-	@misc{quantus,
-	      title={Quantus: A Comprehensive Toolbox for Responsible Evaluation of Neural Network Explanations},
-	      author={},
-	      year={2021},
-	      eprint={2106.10185},
-	      archivePrefix={arXiv},
-	      primaryClass={cs.LG}}
-
-### Citations of metrics
--->
 
 
 
