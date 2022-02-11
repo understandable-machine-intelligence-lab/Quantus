@@ -134,7 +134,7 @@ Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018)
 ## Installation
 
 
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.1.0/) 
+Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.1.1/) 
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
 
 ```setup
@@ -165,8 +165,7 @@ pip install -r requirements.txt
 ```
 python>=3.7.0
 pytorch>=1.10.1
-tensorflow==2.6.2; python==3.7.0
-tensorflow>=2.6.2; python>=3.7.0
+tensorflow==2.6.2
 ```
 
 ## Getting started
