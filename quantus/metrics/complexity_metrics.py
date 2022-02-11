@@ -10,7 +10,6 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
-from ..helpers.pytorch_model import PyTorchModel
 
 
 class Sparseness(Metric):
@@ -75,7 +74,7 @@ class Sparseness(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -252,7 +251,7 @@ class Complexity(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -425,7 +424,7 @@ class EffectiveComplexity(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],

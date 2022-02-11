@@ -3,7 +3,7 @@ from typing import Union
 import torch
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
-from quantus.quantus.helpers import *
+from ...quantus.helpers import *
 
 
 @pytest.fixture
@@ -76,28 +76,12 @@ def test_normalise_if_negative(
             {},
             [1, 2],
         ),
-        (
-            lazy_fixture("atts_denormalise_torch"),
-            {"nr_channels": 3, "img_size": 2},
-            torch.tensor(
-                np.array(
-                    [
-                        [[0.485, 0.485], [0.485, 0.485]],
-                        [[0.456, 0.456], [0.456, 0.456]],
-                        [[0.406, 0.406], [0.406, 0.406]],
-                    ]
-                )
-            ),
-        ),
     ],
 )
 def test_denormalise(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = denormalise(img=data, **params)
-    if isinstance(data, list):
-        assert out == expected, "Test failed."
-        return
-    assert all(
-        o == e for o, e in zip(out.flatten(), expected.flatten())
+    assert np.all(
+        o == e for o, e in zip(np.array(out).flatten(), np.array(expected).flatten())
     ), "Test failed."

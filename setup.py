@@ -1,11 +1,17 @@
-from setuptools import setup
+import importlib
+from setuptools import setup, find_packages
+from sys import version_info
 from importlib import util
-from importlib.metadata import version
 
-# Import package descriptions (long) and basic installation requirements.
-with open("README.md", "r") as f1, open("requirements.txt", "r") as f2:
-    long_description = f1.read()
-    REQUIRED = f2.read()
+# Intepret the version of a package depending on if python>=3.8 vs python<3.8:
+# See: https://stackoverflow.com/questions/20180543/how-to-check-version-of-python-modules?rq=1.
+if version_info[1] <= 7:
+    import pkg_resources
+
+    def version(s: str):
+        return pkg_resources.get_distribution(s).version
+else:
+    from importlib.metadata import version
 
 # Define library import by choice of ML framework (if neither torch or tensorflow is installed return an empty list).
 if (
@@ -22,6 +28,10 @@ elif util.find_spec("tensorflow") and version("tensorflow") >= "2.0":
 else:
     extras = []
 
+# Define basic package imports.
+#open("requirements.txt", "r") as f2:
+#    REQUIRED = f2.read()
+
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],
@@ -37,20 +47,34 @@ EXTRAS = {
         "xml",
     ],
 }
+
+# Define setup.
 setup(
     name="quantus",
     version="0.0.11",
     description="A metrics toolkit to evaluate neural network explanations.",
-    long_description=long_description,
+    long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    install_requires=REQUIRED,
+    install_requires=["coverage==6.2",
+                    "flake8==4.0.1",
+                    "matplotlib==3.3.4",
+                    "numpy==1.19.5",
+                    "opencv-python==4.5.5.62",
+                    "pytest==6.2.5",
+                    "pytest-cov==3.0.0",
+                    "pytest-lazy-fixture==0.6.3",
+                    "scikit-image==0.19.1",
+                    "scikit-learn==0.24.2",
+                    "scipy==1.5.4",
+                    "termcolor==1.1.0"],
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
     author="Anna Hedstrom",
     author_email="hedstroem.anna@gmail.com",
     keywords=["explainable ai", "xai", "machine learning", "deep learning"],
     license="CC BY-NC-SA 3.0",
-    packages=["quantus"],
+    packages=find_packages(),
     zip_safe=False,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
+    include_package_data=True,
 )
