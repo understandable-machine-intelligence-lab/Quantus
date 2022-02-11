@@ -2,9 +2,9 @@
   <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b>A toolkit to evaluate neural network explanations</b></h3>
+<h3 align="center"><b> A toolbox for quantitative evaluation of XAI</b></h3>
 <p align="center">
-  <i>PyTorch and Tensorflow implementation</i>
+  PyTorch <i>and</i> Tensorflow
 </p>
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
@@ -16,7 +16,7 @@
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 
 _Quantus is currently under active development and has not yet reached a stable state!
-Interfaces may change suddenly and without warning, so please be careful when attempting to use quantus in its current state._
+Interfaces may change suddenly and without warning, so please be careful when attempting to use Quantus in its current state._
 
 ## Table of contents
 
@@ -42,17 +42,17 @@ If you find this library helpful in speeding up your research please cite using 
 
 ## Library overview 
 
-Below you find an illustrative example of some insights that can be obtained with Quantus. As seen in a) — from simple _qualitative_ comparison of XAI methods it is often not sufficient to distinguish which gradient-based method — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad(Bykov et al., 2021) is preferred.
-With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. _perturb_baseline_ of a faithfulness test influences the ranking of the XAI methods.
+Simple _qualitative_ comparison of XAI methods is often not sufficient in order to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021).
+Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
+With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. _perturb_baseline_ of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
 <p align="center">
   <img width="800" height="567" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
 
-This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'.)
-
-The library contains implementations of the following evaluation metrics:
+ 
+**Implementations.** This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
 
 * **Faithfulness:** quantifies to what extent explanations follow the predictive behaviour of the model (asserting that more important features play a larger role in model outcomes)
   * **[Faithfulness Correlation](https://www.ijcai.org/Proceedings/2020/0417.pdf) (Bhatt et al., 2020)**: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output
@@ -103,8 +103,9 @@ Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018)
 
 ## Installation
 
-<!--Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.0.1/) 
-(this syntax assumes that you have either `torch` or `tensorflow` installed on your machine).  
+
+Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.1.0/) 
+(this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
 
 ```setup
 pip install quantus
@@ -129,28 +130,13 @@ Alternatively, simply install requirements.txt (again, this requires that either
 pip install -r requirements.txt
 ```
 
-pip install --editable ".[torch, extras]"
-
 ### Package requirements:
 
 ```
-Python >= 3.6.9
-PyTorch >= 1.8
-Tensorflow >= 1.8
-```
--->
-To install requirements:
-
-```setup
-pip install -r requirements.txt
-```
-
-Package requirements:
-
-```
-Python >= 3.6.9
-PyTorch >= 1.8
-Captum >= 0.4.0
+python>=3.7.0
+pytorch>=1.10.1
+tensorflow==2.6.2; python==3.7.0
+tensorflow>=2.6.2; python>=3.7.0
 ```
 
 ## Getting started
