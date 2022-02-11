@@ -7,17 +7,17 @@ from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.helpers import *
 
-from zennit import canonizers as zcanon
-from zennit import composites as zcomp
-from zennit import attribution as zattr
-from zennit import core as zcore
-from zennit import torchvision as ztv
+# This is not nice
+if util.find_spec("zennit"):
+    from zennit import canonizers as zcanon
+    from zennit import composites as zcomp
+    from zennit import attribution as zattr
+    from zennit import core as zcore
+    from zennit import torchvision as ztv
 
-
-@pytest.mark.explain_func
-@pytest.mark.parametrize(
-    "model,data,params,expected",
-    [
+# Still not nice (I actually hate this with a passion)
+if util.find_spec("zennit"):
+    zennit_tests = [
         # Zennit
         (
             lazy_fixture("load_mnist_model"),
@@ -117,6 +117,16 @@ from zennit import torchvision as ztv
             },
             {"max": 0},
         ),
+    ]
+else:
+    zennit_tests = []
+
+
+@pytest.mark.explain_func
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    zennit_tests
+    + [
         # Captum
         (
             lazy_fixture("load_mnist_model"),
