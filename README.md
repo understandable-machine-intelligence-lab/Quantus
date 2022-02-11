@@ -42,9 +42,8 @@ If you find this library helpful in speeding up your research please cite using 
 
 ## Library overview 
 
-Below you find an illustrative example of some insights that can be obtained with Quantus. 
-As seen in a) — from simple _qualitative_ comparison of XAI methods it is often not sufficient to distinguish which gradient-based method — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad(Bykov et al., 2021) is preferred.
-With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. _perturb_baseline_ of a faithfulness test influences the ranking of the explanation methods.
+Below you find an illustrative example of some insights that can be obtained with Quantus. As seen in a) — from simple _qualitative_ comparison of XAI methods it is often not sufficient to distinguish which gradient-based method — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad(Bykov et al., 2021) is preferred.
+With Quantus, we can obtain richer insights on how the methods compare b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. _perturb_baseline_ of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
 <p align="center">
