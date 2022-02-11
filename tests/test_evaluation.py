@@ -5,8 +5,8 @@ import torchvision
 import pickle
 from pytest_lazyfixture import lazy_fixture
 from .fixtures import *
-from quantus.quantus import *
-from quantus.quantus.helpers.pytorch_model import PyTorchModel
+from ..quantus import *
+from ..quantus.helpers.pytorch_model import PyTorchModel
 
 # from ..quantus.helpers import *
 # from ..quantus.metrics import *

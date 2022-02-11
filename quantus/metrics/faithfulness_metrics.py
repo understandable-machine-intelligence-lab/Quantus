@@ -7,7 +7,6 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
-from ..helpers.pytorch_model import PyTorchModel
 
 
 class FaithfulnessCorrelation(Metric):
@@ -93,7 +92,7 @@ class FaithfulnessCorrelation(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -323,7 +322,7 @@ class FaithfulnessEstimate(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -553,7 +552,7 @@ class MonotonicityArya(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -778,7 +777,7 @@ class MonotonicityNguyen(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1016,7 +1015,7 @@ class PixelFlipping(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1248,7 +1247,7 @@ class RegionPerturbation(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1496,7 +1495,7 @@ class Selectivity(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1762,7 +1761,7 @@ class SensitivityN(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
@@ -1996,7 +1995,7 @@ class IterativeRemovalOfFeatures(Metric):
 
     def __call__(
         self,
-        model: Union[tf.keras.Model, torch.nn.modules.module.Module],
+        model: ModelInterface,
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],

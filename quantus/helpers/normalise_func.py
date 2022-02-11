@@ -1,6 +1,6 @@
+"""This module provides some basic functionality to normalise and denormalise images."""
 from typing import Union
 import numpy as np
-import torch
 
 
 def normalise_by_max(a: np.ndarray) -> np.ndarray:
@@ -19,25 +19,10 @@ def normalise_by_negative(a: np.ndarray) -> np.ndarray:
 
 
 def denormalise(
-    img: Union[np.ndarray, torch.Tensor],
+    img: np.ndarray,
     mean: np.ndarray = np.array([0.485, 0.456, 0.406]),
     std: np.ndarray = np.array([0.229, 0.224, 0.225]),
     **kwargs
-) -> Union[np.ndarray, torch.Tensor]:
+) -> np.ndarray:
     """De-normalise a torch image (using conventional ImageNet values)."""
-    if isinstance(img, torch.Tensor):
-        return (
-            img.view(
-                [
-                    kwargs.get("nr_channels", 3),
-                    kwargs.get("img_size", 224),
-                    kwargs.get("img_size", 224),
-                ]
-            )
-            * std.reshape(-1, 1, 1)
-        ) + mean.reshape(-1, 1, 1)
-    elif isinstance(img, np.ndarray):
-        return (img * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
-    else:
-        print("Make image either a np.array or torch.Tensor before denormalising.")
-        return img
+    return (np.array(img) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)

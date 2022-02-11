@@ -2,8 +2,8 @@ import pytest
 from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
-from quantus.quantus.metrics import *
-from quantus.quantus.helpers.pytorch_model import PyTorchModel
+from ...quantus.metrics import *
+from ...quantus.helpers.pytorch_model import PyTorchModel
 
 
 @pytest.mark.faithfulness

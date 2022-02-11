@@ -1,9 +1,9 @@
-from copy import deepcopy
-from contextlib import suppress
-
-from ..helpers.model_interface import ModelInterface
+"""This model creates the ModelInterface for PyTorch."""
 import torch
 import numpy as np
+from copy import deepcopy
+from contextlib import suppress
+from ..helpers.model_interface import ModelInterface
 
 
 class PyTorchModel(ModelInterface):
