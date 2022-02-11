@@ -26,7 +26,9 @@ def get_superpixel_segments(
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(img, )
+        return felzenszwalb(
+            img,
+        )
     else:
         print(
             "Segmentation method i.e., 'segmentation_method' must be either 'slic' or 'felzenszwalb'."
@@ -146,3 +148,47 @@ def get_wrapped_model(
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )
+
+
+def conv2D_numpy(
+    x: np.array, kernel: np.array, stride: int, padding: int, groups: int
+) -> np.array:
+    """
+    Computes 2D convolution in numpy
+    Assumes:    Shape of x is [C_in, H, W] with C_in = input channels and H, W input height and weight, respectively
+                Shape of kernel is [C_out, C_in/groups, K, K] with C_out = output channels and K = kernel size
+    """
+
+    # Pad input
+    x = np.pad(x, [(0, 0), (padding, padding), (padding, padding)], mode="constant")
+
+    # Get shapes
+    c_in, height, width = x.shape
+    c_out, kernel_size = kernel.shape[0], kernel.shape[2]
+
+    # Handle groups
+    assert c_in % groups == 0
+    assert c_out % groups == 0
+    assert kernel.shape[1] * groups == c_in
+    c_in_g = c_in // groups
+    c_out_g = c_out // groups
+
+    # Build output
+    output_height = (height - kernel_size) // stride + 1
+    output_width = (width - kernel_size) // stride + 1
+    output = np.zeros((c_out, output_height, output_width)).astype(x.dtype)
+
+    # TODO: improve efficiency, less loops
+    for g in range(groups):
+        for c in range(c_out_g * g, c_out_g * (g + 1)):
+            for h in range(output_height):
+                for w in range(output_width):
+                    output[c][h][w] = np.multiply(
+                        x[
+                            c_in_g * g : c_in_g * (g + 1),
+                            h * stride : h * stride + kernel_size,
+                            w * stride : w * stride + kernel_size,
+                        ],
+                        kernel[c, :, :, :],
+                    ).sum()
+    return output

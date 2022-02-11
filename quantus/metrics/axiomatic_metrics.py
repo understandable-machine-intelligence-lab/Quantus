@@ -186,8 +186,11 @@ class Completeness(Metric):
             x_baseline = self.perturb_func(
                 img=x.flatten(),
                 **{
-                    "indices": np.arange(0, len(x)),
-                    "perturb_baseline": self.perturb_baseline,
+                    **self.kwargs,
+                    **{
+                        "indices": np.arange(0, len(x)),
+                        "perturb_baseline": self.perturb_baseline,
+                    },
                 },
             )
 
@@ -390,8 +393,11 @@ class NonSensitivity(Metric):
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
-                            "indices": a_i,
-                            "perturb_baseline": self.perturb_baseline,
+                            **self.kwargs,
+                            **{
+                                "indices": a_i,
+                                "perturb_baseline": self.perturb_baseline,
+                            },
                         },
                     )
 
@@ -581,8 +587,11 @@ class InputInvariance(Metric):
             x_shifted = self.perturb_func(
                 img=x.flatten(),
                 **{
-                    "indices": np.arange(0, len(x.flatten())),
-                    "input_shift": self.input_shift,
+                    **self.kwargs,
+                    **{
+                        "indices": np.arange(0, len(x.flatten())),
+                        "input_shift": self.input_shift,
+                    },
                 },
             )
             assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
