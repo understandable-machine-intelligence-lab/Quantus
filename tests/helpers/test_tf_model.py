@@ -7,8 +7,8 @@ from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
-from ...quantus.helpers import *
-from ...quantus.helpers.tf_model import TensorFlowModel
+from quantus.quantus.helpers import *
+from quantus.quantus.helpers.tf_model import TensorFlowModel
 
 
 @pytest.fixture
