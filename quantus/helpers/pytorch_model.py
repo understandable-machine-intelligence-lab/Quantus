@@ -27,7 +27,7 @@ class PyTorchModel(ModelInterface):
                 pred = torch.nn.Softmax()(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
-            return pred.numpy()
+            return pred.cpu().numpy()
 
     def shape_input(self, x, img_size, nr_channels):
         """Reshape input into model expected input."""

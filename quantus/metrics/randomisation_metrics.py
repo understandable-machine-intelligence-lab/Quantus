@@ -327,7 +327,7 @@ class RandomLogit(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_results = [dict() for _ in x_batch_s]
+        self.last_results = []
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -343,60 +343,38 @@ class RandomLogit(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        if self.abs:
-            a_batch = np.abs(a_batch)
+        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
 
-        if self.normalise:
-            a_batch = self.normalise_func(a_batch)
+            if self.abs:
+                a = np.abs(a)
 
-        # Randomly select off-class labels.
-        if isinstance(y_batch, (np.ndarray, list, torch.Tensor)):
-            y_batch_off = np.array(
-                [
-                    random.choice(
-                        [y for y in list(np.arange(0, self.num_classes)) if y != y_true]
-                    )
-                    for y_true in y_batch
-                ]
-            )
-        elif isinstance(y_batch, (float, int)):
-            y_batch_off = np.array(
-                [
-                    random.choice(
-                        [
-                            y
-                            for y in list(np.arange(0, self.num_classes))
-                            if y != y_batch
-                        ]
-                    )
-                ]
-            )
-        else:
-            raise ValueError(
-                "User should provide y_batch as either a list, np.ndarray, torch.Tensor, int or float."
+            if self.normalise:
+                a = self.normalise_func(a)
+
+            # Randomly select off-class labels.
+            y_off = np.array([random.choice([y_
+                                             for y_ in list(np.arange(0, self.num_classes))
+                                             if y_ != y])])
+
+            # Explain against a random class.
+            a_perturbed = explain_func(
+                model=model.get_model(),
+                inputs=x,
+                targets=y_off,
+                **self.kwargs,
             )
 
-        # Explain against a random class.
-        a_perturbed = explain_func(
-            model=model.get_model(),
-            inputs=x_batch,
-            targets=y_batch_off,
-            **self.kwargs,
-        )
+            if self.abs:
+                a_perturbed = np.abs(a_perturbed)
 
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
+            if self.normalise:
+                a_perturbed = self.normalise_func(a_perturbed)
 
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed)
-
-        self.last_results = [
-            self.similarity_func(a.flatten(), a_per.flatten())
-            for a, a_per in zip(a_batch, a_perturbed)
-        ]
+            self.last_results.append(self.similarity_func(a.flatten(), a_perturbed.flatten()))
 
         self.all_results.append(self.last_results)
 
         return self.last_results
+
