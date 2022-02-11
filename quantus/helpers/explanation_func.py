@@ -375,7 +375,7 @@ def generate_captum_explanation(
 
 
 def generate_zennit_explanation(
-    model: ModelInterface,
+    model,
     inputs: np.ndarray,
     targets: np.ndarray,
     **kwargs,
