@@ -28,8 +28,10 @@ temp/
 *.gcov
 test
 .coverage
+coverage.xml
 
 # build
 dist/
 */*.egg-info/
 *.egg-info/
+build/
