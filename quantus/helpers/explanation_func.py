@@ -11,7 +11,6 @@ import warnings
 from .utils import *
 from .normalise_func import *
 from ..helpers import __EXTRAS__
-import inspect
 
 if util.find_spec("captum"):
     from captum.attr import *
@@ -382,7 +381,7 @@ def generate_zennit_explanation(
     # Get zennit composite, canonizer, attributor
     # Handle canonizer kwarg
     canonizer = kwargs.get("canonizer", None)
-    if not canonizer == None and (not inspect.isclass(canonizer) or not issubclass(canonizer, zcanon.Canonizer)):
+    if not canonizer == None and not issubclass(canonizer, zcanon.Canonizer):
         raise ValueError(
             "The specified canonizer is not valid. "
             "Please provide None or an instance of zennit.canonizers.Canonizer"
@@ -391,7 +390,7 @@ def generate_zennit_explanation(
     # Handle attributor kwarg
     # TODO: we could create a str --> attributor mapping, but I like this better
     attributor = kwargs.get("attributor", zattr.Gradient)
-    if not inspect.isclass(attributor) or not issubclass(attributor, zattr.Attributor):
+    if not issubclass(attributor, zattr.Attributor):
         raise ValueError(
             "The specified attributor is not valid. "
             "Please provide a subclass of zennit.attributon.Attributor"
@@ -409,7 +408,7 @@ def generate_zennit_explanation(
             )
         else:
             composite = zcomp.COMPOSITES[composite]
-    if not composite == None and (not inspect.isclass(composite) or not issubclass(composite, zcore.Composite)):
+    if not composite == None and not issubclass(composite, zcore.Composite):
         raise ValueError(
             "The specified composite is not valid. "
             "Please provide None, a subclass of zennit.core.Composite, or one of {}".format(
