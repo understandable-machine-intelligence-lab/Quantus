@@ -7,11 +7,71 @@ from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.helpers import *
 
+from zennit import canonizers as zcanon
+from zennit import composites as zcomp
+from zennit import attribution as zattr
+from zennit import core as zcore
+from zennit import torchvision as ztv
+
 
 @pytest.mark.explain_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
+        # Zennit
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": None,
+                "attributor": zattr.Gradient,
+                "img_size": 28,
+                "nr_channels": 1,
+                "normalise": True,
+            },
+            {"min": -1},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": ztv.SequentialMergeBatchNorm,
+                "composite": zcomp.EpsilonPlus,
+                "attributor": zattr.Gradient,
+                "img_size": 28,
+                "nr_channels": 1,
+                "abs": True,
+            },
+            {"min": 0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "epsilon_alpha2_beta1_flat",
+                "attributor": zattr.Gradient,
+                "img_size": 28,
+                "nr_channels": 1,
+                "pos_only": True,
+            },
+            {"min": 0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "img_size": 28,
+                "nr_channels": 1,
+                "neg_only": True,
+            },
+            {"max": 0},
+        ),
+        # Captum
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
@@ -130,25 +190,133 @@ from ...quantus.helpers import *
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Saliency", "img_size": 28, "nr_channels": 1},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GradientShap", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "IntegratedGradients",
+                "img_size": 28,
+                "nr_channels": 1,
+                "abs": True,
+            },
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "InputXGradient", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Occlusion", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "FeatureAblation",
+                "img_size": 28,
+                "nr_channels": 1,
+                "neg_only": True,
+            },
+            {"max": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "GradCam",
+                "img_size": 28,
+                "nr_channels": 1,
+                "gc_layer": "model._modules.get('conv_2')",
+                "abs": True,
+            },
+            {"min": 0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "Control Var. Sobel Filter",
+                "img_size": 28,
+                "nr_channels": 1,
+                "neg_only": True,
+            },
+            {"max": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Gradient", "img_size": 28, "nr_channels": 1, "pos_only": True},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Gradient", "img_size": 28, "nr_channels": 1, "abs": True},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "Control Var. Constant",
+                "img_size": 28,
+                "nr_channels": 1,
+                "constant_value": 0.0,
+            },
+            {"value": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
+                "normalise": True,
+                "normalise_func": normalise_by_negative,
+                "img_size": 28,
+                "nr_channels": 1,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "Gradient",
+                "normalise": True,
                 "abs": True,
+                "normalise_func": normalise_by_max,
                 "img_size": 28,
                 "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
+        # tf-explain
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Occlusion",
-                "abs": True,
-                "img_size": 28,
-                "nr_channels": 1,
-            },
+            {"method": "Gradient", "abs": True, "img_size": 28, "nr_channels": 1},
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "Occlusion", "abs": True, "img_size": 28, "nr_channels": 1},
             {"min": 0.0, "max": 1.0},
         ),
         (
@@ -188,26 +356,13 @@ def test_explain_func(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
+    x_batch, y_batch = (data["x_batch"], data["y_batch"])
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            a_batch = explain(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **params,
-            )
+            a_batch = explain(model=model, inputs=x_batch, targets=y_batch, **params)
         return
 
-    a_batch = explain(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    a_batch = explain(model=model, inputs=x_batch, targets=y_batch, **params)
 
     if isinstance(expected, float):
         assert all(s == expected for s in a_batch), "Test failed."
@@ -227,10 +382,7 @@ def test_explain_func(
         elif "warning" in expected:
             with pytest.warns(expected["warning"]):
                 a_batch = explain(
-                    model=model,
-                    inputs=x_batch,
-                    targets=y_batch,
-                    **params,
+                    model=model, inputs=x_batch, targets=y_batch, **params
                 )
 
 
@@ -269,26 +421,17 @@ def test_generate_captum_explanation(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
+    x_batch, y_batch = (data["x_batch"], data["y_batch"])
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             a_batch = generate_captum_explanation(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **params,
+                model=model, inputs=x_batch, targets=y_batch, **params
             )
         return
 
     a_batch = generate_captum_explanation(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
+        model=model, inputs=x_batch, targets=y_batch, **params
     )
 
     if isinstance(expected, float):
@@ -361,26 +504,17 @@ def test_generate_tf_explanation(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
+    x_batch, y_batch = (data["x_batch"], data["y_batch"])
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             a_batch = generate_tf_explanation(
-                model=model,
-                inputs=x_batch,
-                targets=y_batch,
-                **params,
+                model=model, inputs=x_batch, targets=y_batch, **params
             )
         return
 
     a_batch = generate_tf_explanation(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
+        model=model, inputs=x_batch, targets=y_batch, **params
     )
 
     if isinstance(expected, float):
@@ -424,17 +558,9 @@ def test_get_explanation(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
+    x_batch, y_batch = (data["x_batch"], data["y_batch"])
 
-    a_batch = get_explanation(
-        model=model,
-        inputs=x_batch,
-        targets=y_batch,
-        **params,
-    )
+    a_batch = get_explanation(model=model, inputs=x_batch, targets=y_batch, **params)
 
     if isinstance(expected, float):
         assert all(s == expected for s in a_batch), "Test failed."

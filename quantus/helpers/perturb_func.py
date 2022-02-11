@@ -70,6 +70,67 @@ def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
     return img_perturbed
 
 
+def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
+    """
+    Replace a single patch in an image by a blurred version.
+    Blur is performed via a 2D convolution.
+    kwarg "blur_patch_size" controls the kernel-size of that convolution (Default is 15).
+    """
+    assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
+    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
+    assert "img_size" in kwargs, "Specify 'img_size' (int) to perturb the image."
+    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
+    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
+
+    # Get kwargs
+    # The patch-size for the blur generation (NOT the patch-size for perturbation)
+    blur_patch_size = kwargs.get("blur_patch_size", 15)
+    nr_channels = kwargs.get("nr_channels", 3)
+    img_size = kwargs.get("img_size", 224)
+
+    # Reshape image since rest of function assumes channels_first
+    img = img.reshape(nr_channels, img_size, img_size)
+
+    # Get blurred image
+    avgsize = 2 * blur_patch_size - 1
+    weightavg = (
+        1.0
+        / float(avgsize * avgsize)
+        * np.ones((1, 1, avgsize, avgsize), dtype=img.dtype)
+    )
+    avgimg = conv2D_numpy(
+        img,
+        np.tile(weightavg, (nr_channels, 1, 1, 1)),
+        stride=1,
+        padding=0,
+        groups=nr_channels,
+    )
+    padwidth = (2 * blur_patch_size - 2) // 2
+    avgimg = np.pad(
+        avgimg, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="edge"
+    )
+
+    import matplotlib.pyplot as plt
+
+    plt.imshow(avgimg.transpose((1, 2, 0)))
+    plt.show()
+
+    # Perturb image
+    img_perturbed = copy.copy(img)
+    img_perturbed[
+        :,
+        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
+        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
+    ] = avgimg[
+        :,
+        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
+        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
+    ]
+
+    return img_perturbed
+
+
 def uniform_sampling(img: np.array, **kwargs) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
