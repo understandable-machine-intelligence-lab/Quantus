@@ -8,6 +8,8 @@ from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
 
+# TODO: patch sorting often wrong
+
 
 class FaithfulnessCorrelation(Metric):
     """
@@ -170,10 +172,7 @@ class FaithfulnessCorrelation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -206,8 +205,8 @@ class FaithfulnessCorrelation(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "indices": a_ix,
-                        "perturb_baseline": self.perturb_baseline,
+                        **self.kwargs,
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -312,12 +311,10 @@ class FaithfulnessEstimate(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -400,10 +397,7 @@ class FaithfulnessEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -442,8 +436,8 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "indices": a_ix,
-                        "perturb_baseline": self.perturb_baseline,
+                        **self.kwargs,
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -542,12 +536,10 @@ class MonotonicityArya(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -630,10 +622,7 @@ class MonotonicityArya(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -671,7 +660,10 @@ class MonotonicityArya(Metric):
                 ]
                 x_baseline = self.perturb_func(
                     img=x_baseline,
-                    **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
+                    **{
+                        **self.kwargs,
+                        **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
+                    },
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -767,12 +759,10 @@ class MonotonicityNguyen(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -855,10 +845,7 @@ class MonotonicityNguyen(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -905,8 +892,11 @@ class MonotonicityNguyen(Metric):
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            **self.kwargs,
+                            **{
+                                "indices": a_ix,
+                                "perturb_baseline": self.perturb_baseline,
+                            },
                         },
                     )
                     assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1005,12 +995,10 @@ class PixelFlipping(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -1093,10 +1081,7 @@ class PixelFlipping(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1129,8 +1114,8 @@ class PixelFlipping(Metric):
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
                     **{
-                        "indices": a_ix,
-                        "perturb_baseline": self.perturb_baseline,
+                        **self.kwargs,
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1194,9 +1179,8 @@ class RegionPerturbation(Metric):
             default="uniform".
             regions_evaluation (integer): The number of regions to evaluate, default=100.
             patch_size (integer): The patch size for masking, default=8.
-            random_order (boolean): Indicates whether predictions are calculated in a random order, default=False.
-            order (string): Indicates whether attributions are ordered according to the most relevant first ("MoRF")
-            or not, default="MoRF".
+            order (string): Indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
             img_size (integer): Square image dimensions, default=224.
         """
         super().__init__()
@@ -1214,7 +1198,6 @@ class RegionPerturbation(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
         self.patch_size = self.kwargs.get("patch_size", 8)
-        self.random_order = self.kwargs.get("random_order", False)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.img_size = self.kwargs.get("img_size", 224)
         self.text_warning = (
@@ -1231,7 +1214,6 @@ class RegionPerturbation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
         assert_attributions_order(order=self.order)
         if not self.disable_warnings:
             warn_parameterisation(
@@ -1301,6 +1283,7 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
@@ -1325,16 +1308,17 @@ class RegionPerturbation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+
+            # Shape input to channels_first. This is needed for padding.
+            # For model prediction, inputs will be reshaped temporarily according to the model requirements
+            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
 
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
@@ -1352,59 +1336,104 @@ class RegionPerturbation(Metric):
             sub_results = []
             x_perturbed = x.copy()
 
-            att_sums = np.zeros(
-                (
-                    int(a.shape[0] / self.patch_size),
-                    int(a.shape[1] / self.patch_size),
-                )
+            # Pad input and attributions. This is needed to allow for any patch_size.
+            padwidth = (2 * self.patch_size - 2) // 2
+            x_tmp = np.pad(
+                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+            )
+            a_tmp = np.pad(
+                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
             )
 
             # Get patch indices of sorted attributions (descending).
-            for i_x, top_left_x in enumerate(range(0, x.shape[1], self.patch_size)):
-                for i_y, top_left_y in enumerate(range(0, x.shape[2], self.patch_size)):
-                    # Sum attributions for patch.
-                    att_sums[i_x][i_y] = a[
-                        top_left_x : top_left_x + self.patch_size,
-                        top_left_y : top_left_y + self.patch_size,
-                    ].sum()
-                    patches.append([top_left_y, top_left_x])
+            att_sums = []
+            for i_x, top_left_x in enumerate(
+                range(padwidth, x_tmp.shape[1] - padwidth)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(padwidth, x_tmp.shape[2] - padwidth)
+                ):  #
 
-            if self.order == "morf":
+                    # Sum attributions for patch.
+                    att_sums.append(
+                        a_tmp[
+                            top_left_x : top_left_x + self.patch_size,
+                            top_left_y : top_left_y + self.patch_size,
+                        ].sum()
+                    )
+                    patches.append([top_left_x, top_left_y])
+
+            if self.order == "random":
+
+                # Order attributions randomly.
+                order = np.arange(len(patches))
+                np.random.shuffle(np.arange(len(patches)))
+                patch_order = [patches[p] for p in order]
+
+            elif self.order == "morf":
 
                 # Order attributions according to the most relevant first.
-                patch_order = {
-                    k: v for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
-                }
+                patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             else:
 
                 # Order attributions according to the least relevant first.
-                patch_order = {
-                    k: v for k, v in zip(np.argsort(att_sums, axis=None), patches)
-                }
+                patch_order = [patches[p] for p in np.argsort(att_sums)]
+
+            # Remove overlapping patches
+            blocked_areas = []
+            patch_order_new = {}
+            cnt = 0
+            for k in range(len(patch_order)):
+
+                if cnt >= min(self.regions_evaluation, len(patch_order)):
+                    break
+
+                # check if patch overlaps any already selected patch
+                intersected = [
+                    np.all(
+                        np.abs(np.array(patch_order[k]) - np.array(bl))
+                        < self.patch_size
+                    )
+                    for bl in blocked_areas
+                ]
+                if not any(intersected):
+                    patch_order_new[cnt] = patch_order[k]
+                    blocked_areas.append(patch_order[k])
+                    cnt += 1
+            patch_order = patch_order_new
 
             # Increasingly perturb the input and store the decrease in function value.
             for k in range(min(self.regions_evaluation, len(patch_order))):
 
                 # Calculate predictions on a random order.
-                if self.random_order:
-                    order = random.choice(list(patch_order.values()))
-                    top_left_y = order[0]
-                    top_left_x = order[1]
-                else:
-                    top_left_y = patch_order[k][0]
-                    top_left_x = patch_order[k][1]
+                top_left_x = patch_order[k][0]
+                top_left_y = patch_order[k][1]
 
-                x_perturbed = self.perturb_func(
+                # Also pad x_perturbed
+                # The mode should probably depend on the used perturb_func?
+                x_perturbed_tmp = np.pad(
                     x_perturbed,
+                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
+                    mode="edge",
+                )
+                x_perturbed_tmp = self.perturb_func(
+                    x_perturbed_tmp,
                     **{
-                        "patch_size": self.patch_size,
-                        "nr_channels": self.nr_channels,
-                        "perturb_baseline": self.perturb_baseline,
-                        "top_left_y": top_left_y,
-                        "top_left_x": top_left_x,
+                        **self.kwargs,
+                        **{
+                            "patch_size": self.patch_size,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size + 2 * padwidth,
+                            "perturb_baseline": self.perturb_baseline,
+                            "top_left_y": top_left_y,
+                            "top_left_x": top_left_x,
+                        },
                     },
                 )
+                # Remove Padding
+                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
@@ -1415,6 +1444,7 @@ class RegionPerturbation(Metric):
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
 
+                # TODO: give an option to only return y_pred_perturb here?
                 sub_results.append(y_pred - y_pred_perturb)
 
             self.last_results[sample] = sub_results
@@ -1471,13 +1501,14 @@ class Selectivity(Metric):
             "perturb_func", baseline_replacement_by_patch
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get("patch_size", 8)
+        self.patch_size = self.kwargs.get(
+            "patch_size", 8
+        )  # TODO: according to doc string, should default not be 4?
         self.img_size = self.kwargs.get("img_size", 224)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
-        assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
         if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -1573,16 +1604,17 @@ class Selectivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+
+            # Shape input to channels_first. This is needed for padding.
+            # For model prediction, inputs will be reshaped temporarily according to the model requirements
+            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
 
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
@@ -1600,43 +1632,71 @@ class Selectivity(Metric):
             sub_results = []
             x_perturbed = x.copy()
 
-            att_sums = np.zeros(
-                (
-                    int(a.shape[0] / self.patch_size),
-                    int(a.shape[1] / self.patch_size),
-                )
+            # Pad input and attributions. This is needed to allow for any patch_size.
+            padwidth = (2 * self.patch_size - 2) // 2
+            x_tmp = np.pad(
+                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+            )
+            a_tmp = np.pad(
+                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
             )
 
             # Get patch indices of sorted attributions (descending).
-            for i_x, top_left_x in enumerate(range(0, x.shape[1], self.patch_size)):
-                for i_y, top_left_y in enumerate(range(0, x.shape[2], self.patch_size)):
+            # TODO: currently, image is split into a grid, with the patches as the grid elements.
+            #  I.e., not all possible patches are considered. Consequently,
+            #  not the patch with the highest relevance is chosen first, but the (static) grid element instead.
+            #  This is changed now in regionperturbation. Would this change also be intended here?
+            #  Leaving it as-is for now.
+            #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
+            att_sums = []
+            for i_x, top_left_x in enumerate(
+                range(padwidth, x_tmp.shape[1] - padwidth, self.patch_size)
+            ):
+                for i_y, top_left_y in enumerate(
+                    range(padwidth, x_tmp.shape[2] - padwidth, self.patch_size)
+                ):
 
                     # Sum attributions for patch.
-                    att_sums[i_x][i_y] = a[
-                        top_left_x : top_left_x + self.patch_size,
-                        top_left_y : top_left_y + self.patch_size,
-                    ].sum()
-                    patches.append([top_left_y, top_left_x])
+                    att_sums.append(
+                        a_tmp[
+                            top_left_x : top_left_x + self.patch_size,
+                            top_left_y : top_left_y + self.patch_size,
+                        ].sum()
+                    )
+                    patches.append([top_left_x, top_left_y])
 
-            patch_order = {
-                k: v for k, v in zip(np.argsort(att_sums, axis=None)[::-1], patches)
-            }
+            # Order attributions according to the most relevant first.
+            patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             # Increasingly perturb the input and store the decrease in function value.
             for k in range(len(patch_order)):
-                top_left_y = patch_order[k][0]
-                top_left_x = patch_order[k][1]
+                top_left_x = patch_order[k][0]
+                top_left_y = patch_order[k][1]
 
-                x_perturbed = self.perturb_func(
+                # Also pad x_perturbed
+                # The mode should probably depend on the used perturb_func?
+                x_perturbed_tmp = np.pad(
                     x_perturbed,
+                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
+                    mode="edge",
+                )
+                x_perturbed_tmp = self.perturb_func(
+                    x_perturbed_tmp,
                     **{
-                        "patch_size": self.patch_size,
-                        "nr_channels": self.nr_channels,
-                        "perturb_baseline": self.perturb_baseline,
-                        "top_left_y": top_left_y,
-                        "top_left_x": top_left_x,
+                        **self.kwargs,
+                        **{
+                            "patch_size": self.patch_size,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size + 2 * padwidth,
+                            "perturb_baseline": self.perturb_baseline,
+                            "top_left_y": top_left_y,
+                            "top_left_x": top_left_x,
+                        },
                     },
                 )
+                # Remove Padding
+                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
@@ -1751,12 +1811,10 @@ class SensitivityN(Metric):
         )
         if self.max_steps_per_input is not None:
             assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
             self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                img_size=self.img_size,
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
             )
 
     def __call__(
@@ -1839,10 +1897,7 @@ class SensitivityN(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -1887,8 +1942,11 @@ class SensitivityN(Metric):
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
                         **{
-                            "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            **self.kwargs,
+                            **{
+                                "indices": a_ix,
+                                "perturb_baseline": self.perturb_baseline,
+                            },
                         },
                     )
                     assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -2073,10 +2131,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
         # Asserts.
@@ -2098,8 +2153,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Segment image.
             segments = get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                **kwargs,
+                img=np.moveaxis(x, 0, -1).astype("double"), **kwargs
             )
             nr_segments = segments.max()
             assert_nr_segments(nr_segments=nr_segments)
@@ -2124,8 +2178,8 @@ class IterativeRemovalOfFeatures(Metric):
                 x_perturbed = self.perturb_func(
                     img=x.flatten(),
                     **{
-                        "indices": a_ix,
-                        "perturb_baseline": self.perturb_baseline,
+                        **self.kwargs,
+                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)

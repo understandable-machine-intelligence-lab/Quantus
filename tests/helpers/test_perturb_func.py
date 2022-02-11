@@ -25,6 +25,11 @@ def input_pert_3d():
     return np.random.uniform(0, 0.1, size=(3, 224, 224))
 
 
+@pytest.fixture
+def input_pert_mnist():
+    return np.random.uniform(0, 0.1, size=(1, 28, 28))
+
+
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected", [(lazy_fixture("input_pert_1d"), {}, True)]
@@ -149,3 +154,53 @@ def test_no_perturbation(
     out = no_perturbation(img=data, **params)
     print(out == data)
     assert (out == data).all() == expected, "Test failed."
+
+
+@pytest.mark.perturb_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_pert_3d"),
+            {
+                "nr_channels": 3,
+                "img_size": 224,
+                "blur_patch_size": 15,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+        (
+            lazy_fixture("input_pert_3d"),
+            {
+                "nr_channels": 3,
+                "img_size": 224,
+                "blur_patch_size": 7,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+        (
+            lazy_fixture("input_pert_mnist"),
+            {
+                "nr_channels": 1,
+                "img_size": 28,
+                "blur_patch_size": 15,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+    ],
+)
+def test_baseline_replacement_by_blur(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
+    out = baseline_replacement_by_blur(img=data, **params)
+    assert (out.shape == data.shape) == expected["shape"], "Test failed."
+    assert (out == data).all() == expected["values"], "Test failed."

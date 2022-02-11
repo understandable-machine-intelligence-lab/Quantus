@@ -88,9 +88,10 @@ def assert_patch_size(patch_size: int, img_size: int) -> None:
 def assert_attributions_order(order: str) -> None:
     """Assert that order is in pre-defined list."""
     assert order in [
+        "random",
         "morf",
         "lorf",
-    ], "The order of sorting the attributions must be either morf or lorf-"
+    ], "The order of sorting the attributions must be either random, morf, or lorf-"
 
 
 def assert_nr_segments(nr_segments: int) -> None:
