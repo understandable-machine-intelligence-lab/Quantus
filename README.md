@@ -60,9 +60,9 @@ quantifies to what extent explanations follow the predictive behaviour of the mo
 <ul>
 <li><a href="https://www.ijcai.org/Proceedings/2020/0417.pdf">Faithfulness Correlation</a>: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output 
 <li><a href="https://arxiv.org/pdf/1806.07538.pdf">Faithfulness Estimate</a>: computes the correlation between probability drops and attribution scores on various points
-<li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
+<li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuring the effect on model performance
 <li><a href="https://arxiv.org/pdf/2007.07584.pdf">Monotonicity Metric Nguyen</a>: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
-<li><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">Pixel Flipping</a>: aptures the impact of perturbing pixels in descending order according to the attributed value on the classification score
+<li><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">Pixel Flipping</a>: captures the impact of perturbing pixels in descending order according to the attributed value on the classification score
 <li><a href="https://arxiv.org/pdf/1509.06321.pdf">Region Perturbation</a>: is an extension of Pixel-Flipping to flip an area rather than a single pixel
 <li><a href="https://arxiv.org/pdf/1706.07979.pdf">Selectivity</a>: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
 <li><a href="https://arxiv.org/pdf/1711.06104.pdf">SensitivityN</a>: computes the correlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
@@ -109,7 +109,7 @@ captures to what extent explanations are concise i.e., that few features are use
 tests to what extent explanations deteriorate as model parameters are increasingly randomised
 <ul>
 <li><a href="https://arxiv.org/abs/1810.03292">Model Parameter Randomisation</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
-<li><a href="https://arxiv.org/abs/1912.09818">andom Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
+<li><a href="https://arxiv.org/abs/1912.09818">Random Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
 </ul>
 </details>
 
@@ -152,7 +152,7 @@ Or, alternatively for `tensorflow` you run:
 pip install quantus[tensorflow]
 ```
 
-Additionally, if you want to use the basic explainability functionaliy such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
+Additionally, if you want to use the basic explainability functionality such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
 
 Alternatively, simply install requirements.txt (again, this requires that either `torch` or `tensorflow` is installed and won't include the explainability functionality to the installation):
 
