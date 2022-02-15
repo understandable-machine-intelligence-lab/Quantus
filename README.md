@@ -2,7 +2,7 @@
   <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b> A toolbox for quantitative evaluation of XAI</b></h3>
+<h3 align="center"><b> A toolkit for quantitative evaluation of XAI</b></h3>
 <p align="center">
   PyTorch <i>and</i> Tensorflow
 </p>
@@ -20,13 +20,13 @@ Interfaces may change suddenly and without warning, so please be careful when at
 
 ## Table of contents
 
-* [Library Overview](#library-overview)
+* [Library overview](#library-overview)
 * [Installation](#installation)
 * [Getting Started](#getting-started)
 * [Tutorials](#tutorials)
-* [Misc functionality](#misc-functionality)
+* [Miscellaneous functionality](#misc-functionality)
 * [Contributing](#contributing)
-* [How to Cite the Toolbox](#how-to-cite-the-toolbox)
+* [Citation](#citation)
 
 <!--### Citation
 
@@ -43,7 +43,7 @@ If you find this library helpful in speeding up your research please cite using 
 
 ## Library Overview 
 
-Simple _qualitative_ comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021).
+Simple visual comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
 
@@ -161,7 +161,7 @@ Alternatively, simply install requirements.txt (again, this requires that either
 pip install -r requirements.txt
 ```
 
-### Package requirements:
+### Package requirements
 
 ```
 python>=3.7.0
@@ -171,12 +171,15 @@ tensorflow==2.6.2
 
 ## Getting started
 
-To use the library, you'll need a couple of ingredients; a torch model, some input data and labels (to be explained).
+To use the library, you'll need a couple of ingredients; a model, some input data and labels (to be explained). In this example, we use `torch` but we also support evaluation of `tensorflow` models.
 
 ```python
 import quantus
 import torch
 import torchvision
+
+# Enable GPU.
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
@@ -189,9 +192,6 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 # Load a batch of inputs and outputs to use for XAI evaluation.
 x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
-
-# Enable GPU.
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 ```
 
 Next, we generate some explanations for some test set samples that we wish to evaluate using quantus library.
@@ -285,7 +285,7 @@ For more use cases, please see notebooks in `/tutorials` folder which includes e
 ... and more.
 
 
-## Misc functionality
+## Miscellaneous Functionality
 
 With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one. 
 If you are replacing a function within the Quantus framework, make sure that your new function:
@@ -311,12 +311,9 @@ def my_similar_func(a: np.array, b: np.array, **kwargs) -> float:
 metric = LocalLipschitzEstimate(similar_func=my_similar_func)
 ````
 
-To evaluate multiple explanation methods over several metrics at oncewe user can leverage the `evaluate` method in Quantus. There are also other miscellaneous functionality built-into Quantus that might be helpful:
+To evaluate multiple explanation methods over several metrics at once we user can leverage the `evaluate` method in Quantus. There are also other miscellaneous functionality built-into Quantus that might be helpful:
 
 ````python
-# Interpret scores.
-quantus.evaluate
-
 # Interpret scores of a given metric.
 metric_instance.interpret_scores
 
@@ -361,10 +358,12 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 #### Testing
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
-## How to Cite the Toolbox
-If you find this toolbox or its companion paper
+## Citation
+
+If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
-interesting or useful, please cite us:
+interesting or useful in your research, use following Bibtex annotation to cite us:
+
 ```
 @article{hedström2022quantus,
       title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
