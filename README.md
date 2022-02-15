@@ -15,8 +15,7 @@
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 
-_Quantus is currently under active development and has not yet reached a stable state!
-Interfaces may change suddenly and without warning, so please be careful when attempting to use Quantus in its current state._
+_Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
 ## Table of contents
 
