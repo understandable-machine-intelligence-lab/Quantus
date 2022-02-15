@@ -20,8 +20,8 @@ Interfaces may change suddenly and without warning, so please be careful when at
 
 ## Table of contents
 
-* [Library content](#library-content)
-* [Installation](##installation)
+* [Library Overview](#library-overview)
+* [Installation](#installation)
 * [Getting Started](#getting-started)
 * [Tutorials](#tutorials)
 * [Misc functionality](#misc-functionality)
@@ -40,7 +40,7 @@ If you find this library helpful in speeding up your research please cite using 
       primaryClass={cs.LG}}
 -->
 
-## Library overview 
+## Library Overview 
 
 Simple _qualitative_ comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021).
 Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
