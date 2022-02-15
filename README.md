@@ -2,9 +2,9 @@
   <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b> A toolkit for quantitative evaluation of XAI</b></h3>
+<h3 align="center"><b> A toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
-  PyTorch <i>and</i> Tensorflow
+  PyTorch and Tensorflow
 </p>
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
