@@ -26,6 +26,7 @@ Interfaces may change suddenly and without warning, so please be careful when at
 * [Tutorials](#tutorials)
 * [Misc functionality](#misc-functionality)
 * [Contributing](#contributing)
+* [How to Cite the Toolbox](#how-to-cite-the-toolbox)
 
 <!--### Citation
 
@@ -360,4 +361,24 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 #### Testing
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
+## How to Cite the Toolbox
+If you find this toolbox or its companion paper
+[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
+interesting or useful, please cite us:
+```
+@article{hedström2022quantus,
+      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
+      author={Anna Hedström and
+              Leander Weber and
+              Dilyara Bareeva and
+              Franz Motzkus and
+              Wojciech Samek and
+              Sebastian Lapuschkin and
+              Marina M.-C. Höhne},
+      year={2022},
+      eprint={2202.06861},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
 
