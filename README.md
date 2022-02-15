@@ -9,7 +9,7 @@
 
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 [![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
-![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg)
+![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
 <!--[GitHub Licence](https://img.quantus.io/github/license/understandable-machine-intelligence-lab/Quantus.svg)-->
@@ -20,12 +20,13 @@ Interfaces may change suddenly and without warning, so please be careful when at
 
 ## Table of contents
 
-* [Library content](#library-content)
-* [Installation](##installation)
+* [Library Overview](#library-overview)
+* [Installation](#installation)
 * [Getting Started](#getting-started)
 * [Tutorials](#tutorials)
 * [Misc functionality](#misc-functionality)
 * [Contributing](#contributing)
+* [How to Cite the Toolbox](#how-to-cite-the-toolbox)
 
 <!--### Citation
 
@@ -40,7 +41,7 @@ If you find this library helpful in speeding up your research please cite using 
       primaryClass={cs.LG}}
 -->
 
-## Library overview 
+## Library Overview 
 
 Simple _qualitative_ comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021).
 Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
@@ -360,4 +361,24 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 #### Testing
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
+## How to Cite the Toolbox
+If you find this toolbox or its companion paper
+[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
+interesting or useful, please cite us:
+```
+@article{hedström2022quantus,
+      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
+      author={Anna Hedström and
+              Leander Weber and
+              Dilyara Bareeva and
+              Franz Motzkus and
+              Wojciech Samek and
+              Sebastian Lapuschkin and
+              Marina M.-C. Höhne},
+      year={2022},
+      eprint={2202.06861},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
 
