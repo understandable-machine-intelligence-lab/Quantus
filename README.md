@@ -193,7 +193,7 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using quantus library.
+Next, we generate some explanations for some test set samples that we wish to evaluate using the Quantus library.
 
 ```python
 import captum
@@ -284,7 +284,7 @@ For more use cases, please see notebooks in `/tutorials` folder which includes e
 ... and more.
 
 
-## Miscellaneous Functionality
+## Miscellaneous functionality
 
 With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one. 
 If you are replacing a function within the Quantus framework, make sure that your new function:
@@ -356,6 +356,16 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 
 #### Testing
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
+
+#### Workflow
+
+Before creating a PR, double-check that the following tasks are completed:
+
+- [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
+- [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
+- [x] Make `pytests` and add under `tests/` folder (to install mandatory packages for testing run `pip install -r requirements_text.txt`)
+- [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
+- [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
 
 ## Citation
 
