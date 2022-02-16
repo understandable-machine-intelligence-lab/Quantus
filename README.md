@@ -77,7 +77,7 @@ measures to what extent explanations are stable when subject to slight perturbat
 <li><a href="https://arxiv.org/pdf/1806.08049.pdf">Local Lipschitz Estimate</a>: tests the consistency in the explanation between adjacent examples
 <li><a href="https://arxiv.org/pdf/1901.09392.pdf">Max-Sensitivity</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
 <li><a href="https://arxiv.org/pdf/1901.09392.pdf">Avg-Sensitivity</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
-<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Continuity</a>: captures the strongest variation in explanation of an input and it's perturbed version
+<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Continuity</a>: captures the strongest variation in explanation of an input and its perturbed version
 </ul>
 </details>
 
