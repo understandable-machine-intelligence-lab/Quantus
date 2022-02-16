@@ -860,7 +860,7 @@ class MonotonicityNguyen(Metric):
             )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred ** 2
+            inv_pred = inv_pred**2
 
             a = a.flatten()
 
