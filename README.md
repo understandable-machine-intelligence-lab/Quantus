@@ -56,9 +56,10 @@ With Quantus, we can obtain richer insights on how the methods compare e.g., b) 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics (note, however, that the categories are oftentimes mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and 'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
 
 <details>
-<summary>Faithfulness</summary>
+  <summary><b>Faithfulness</b></summary>
 quantifies to what extent explanations follow the predictive behaviour of the model (asserting that more important features play a larger role in model outcomes)
-<ul>
+ <br><br>
+  <ul>
 <li><a href="https://www.ijcai.org/Proceedings/2020/0417.pdf">Faithfulness Correlation</a>: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output 
 <li><a href="https://arxiv.org/pdf/1806.07538.pdf">Faithfulness Estimate</a>: computes the correlation between probability drops and attribution scores on various points
 <li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuring the effect on model performance
@@ -72,8 +73,9 @@ quantifies to what extent explanations follow the predictive behaviour of the mo
 </details>
 
 <details>
-<summary>Robustness</summary>
+<summary><b>Robustness</b></summary>
 measures to what extent explanations are stable when subject to slight perturbations of the input, assuming that model output approximately stayed the same
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/pdf/1806.08049.pdf">Local Lipschitz Estimate</a>: tests the consistency in the explanation between adjacent examples
 <li><a href="https://arxiv.org/pdf/1901.09392.pdf">Max-Sensitivity</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
@@ -83,8 +85,9 @@ measures to what extent explanations are stable when subject to slight perturbat
 </details>
 
 <details>
-<summary>Localisation</summary>
+<summary><b>Localisation</b></summary>
 tests if the explainable evidence is centered around the object of interest (as defined by a bounding box or similar segmentation mask)
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1608.00507">Pointing Game</a>: checks whether attribution with the highest score is located within the targeted object
 <li><a href="https://arxiv.org/abs/1910.09840">Attribution Localization</a>: measures the ratio of positive attributions within the targeted object towards the total positive attributions
@@ -96,8 +99,9 @@ tests if the explainable evidence is centered around the object of interest (as 
 </details>
 
 <details>
-<summary>Complexity</summary>
+<summary><b>Complexity</b></summary>
 captures to what extent explanations are concise i.e., that few features are used to explain a model prediction
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1810.06583">Sparseness</a>: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
 <li><a href="https://arxiv.org/abs/2005.00631">Complexity</a>: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
@@ -106,8 +110,9 @@ captures to what extent explanations are concise i.e., that few features are use
 </details>
 
 <details>
-<summary>Randomisation</summary>
+<summary><b>Randomisation</b></summary>
 tests to what extent explanations deteriorate as model parameters are increasingly randomised
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1810.03292">Model Parameter Randomisation</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
 <li><a href="https://arxiv.org/abs/1912.09818">Random Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
@@ -115,7 +120,9 @@ tests to what extent explanations deteriorate as model parameters are increasing
 </details>
 
 <details>
-<summary>Axiomatic</summary>
+<summary><b>Axiomatic</b></summary>
+  assesses if explanations fulfill certain axiomatic properties
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1703.01365">Completeness</a>: assesses if explanations fulfill certain axiomatic properties
 <li><a href="https://arxiv.org/abs/2007.07584">Non-Sensitivity</a>: measures whether the total attribution is proportional to the explainable evidence at the model output  (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))
