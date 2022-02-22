@@ -382,7 +382,7 @@ If you find this toolkit or its companion paper
 interesting or useful in your research, use following Bibtex annotation to cite us:
 
 ```
-@article{hedström2022quantus,
+@article{hedstrom2022quantus,
       title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
       author={Anna Hedström and
               Leander Weber and
