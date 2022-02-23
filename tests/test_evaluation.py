@@ -35,7 +35,7 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
         (
             {
                 "nr_samples": 10,
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "abs": True,
                 "explain_func": explain,
