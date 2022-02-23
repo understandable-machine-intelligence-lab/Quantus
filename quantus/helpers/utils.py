@@ -105,22 +105,39 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
-def get_channel_first(x: np.array):
+def get_channel_first(x: np.array, flexible_imgsize_enabled: bool=False) -> bool:
     """
+    if flexible_imgsize_enabled = True
+
+    Returns True if input shape is (nr_batch, nr_channels, img_size_h, img_size_w).
+    Returns False if input shape is (nr_batch, img_size_h, img_size, nr_channels_w).
+    An error is raised if three last dimensions are equal.
+    Assume nr_channels < img_size_h and nr_channels < img_size_w.
+
+    if flexible_imgsize_enabled = False
+
     Returns True if input shape is (nr_batch, nr_channels, img_size, img_size).
     Returns False if input shape is (nr_batch, img_size, img_size, nr_channels).
     An error is raised if three last dimensions are equal, or if the image is not square.
     """
-    if np.shape(x)[-1] == np.shape(x)[-2] == np.shape(x)[-3]:
-        raise ValueError("Ambiguous input shape")
-    if np.shape(x)[-3] == np.shape(x)[-2]:
-        return False
-    if np.shape(x)[-1] == np.shape(x)[-2]:
-        return True
-    raise ValueError("Input dimension mismatch")
+    if flexible_imgsize_enabled:
+        if np.shape(x)[-1] == np.shape(x)[-2] == np.shape(x)[-3]:
+            raise ValueError("Ambiguous input shape")
+        if np.shape(x)[-1] < np.shape(x)[-2] and np.shape(x)[-1] < np.shape(x)[-3]:
+            return False
+        if np.shape(x)[-3] < np.shape(x)[-1] and np.shape(x)[-3] < np.shape(x)[-2]:
+            return True
+    else:
+        if np.shape(x)[-1] == np.shape(x)[-2] == np.shape(x)[-3]:
+            raise ValueError("Ambiguous input shape")
+        if np.shape(x)[-3] == np.shape(x)[-2]:
+            return False
+        if np.shape(x)[-1] == np.shape(x)[-2]:
+            return True
+        raise ValueError("Input dimension mismatch")
 
 
-def get_channel_first_batch(x: np.array, channel_first=False):
+def get_channel_first_batch(x: np.array, channel_first: bool=False) -> np.array:
     """
     Reshape batch to channel first.
     """

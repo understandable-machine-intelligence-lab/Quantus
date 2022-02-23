@@ -27,6 +27,18 @@ from ...quantus.metrics import *
             {"normalise": False, "disable_warnings": False, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            None,
+            lazy_fixture("almost_uniform_unequal_height_and_width"),
+            {"normalise": True, "disable_warnings": False, "explain_func": explain},
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("almost_uniform_no_abatch_unequal_height_and_width"),
+            {"normalise": True, "disable_warnings": False, "explain_func": explain},
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_sparseness(
@@ -72,6 +84,12 @@ def test_sparseness(
             {"normalise": False, "disable_warnings": True, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            None,
+            lazy_fixture("almost_uniform_unequal_height_and_width"),
+            {"normalise": True, "disable_warnings": False, "explain_func": explain},
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_complexity(
@@ -110,6 +128,12 @@ def test_complexity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("almost_uniform_no_abatch"),
             {"normalise": False, "disable_warnings": True, "explain_func": explain},
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_unequal_height_and_width"),
+            {"normalise": True, "disable_warnings": False, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
     ],

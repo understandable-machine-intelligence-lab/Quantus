@@ -229,12 +229,22 @@ def generate_captum_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(kwargs.get("device", None))
 
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
-    )
+    if isinstance(kwargs.get("img_size", 224), tuple):
+        inputs = inputs.reshape(
+            -1,
+            kwargs.get("nr_channels", 3),
+            kwargs.get("img_size", 224)[0],
+            kwargs.get("img_size", 224)[1],
+        )
+    elif isinstance(kwargs.get("img_size", 224), int):
+        inputs = inputs.reshape(
+            -1,
+            kwargs.get("nr_channels", 3),
+            kwargs.get("img_size", 224),
+            kwargs.get("img_size", 224),
+        )
+    else:
+        raise TypeError("img_size must be int or tuple.")
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
@@ -310,24 +320,46 @@ def generate_captum_explanation(
             .attribute(inputs=inputs, target=targets)
             .sum(axis=1)
         )
-        explanation = torch.Tensor(
-            cv2.resize(
-                explanation.cpu().data.numpy(),
-                dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
+        if isinstance(kwargs.get("img_size", 224), tuple):
+            explanation = torch.Tensor(
+                cv2.resize(
+                    explanation.cpu().data.numpy(),
+                    dsize=(kwargs.get("img_size", 224)[0], kwargs.get("img_size", 224)[1]),
+                )
             )
-        )
+        elif isinstance(kwargs.get("img_size", 224), int):
+            explanation = torch.Tensor(
+                cv2.resize(
+                    explanation.cpu().data.numpy(),
+                    dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
+                )
+            )
+        else:
+            raise TypeError("img_size must be int or tuple.")
+
 
     elif method == "Control Var. Sobel Filter".lower():
         explanation = torch.zeros(
             size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
         )
 
-        for i in range(len(explanation)):
-            explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
-                .mean(axis=0)
-                .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
-            )
+        if isinstance(kwargs.get("img_size", 224), tuple):
+            for i in range(len(explanation)):
+                explanation[i] = torch.Tensor(
+                    np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
+                    .mean(axis=0)
+                    .reshape(kwargs.get("img_size", 224)[0], kwargs.get("img_size", 224)[1])
+                )
+        elif isinstance(kwargs.get("img_size", 224), int):
+            for i in range(len(explanation)):
+                explanation[i] = torch.Tensor(
+                    np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
+                    .mean(axis=0)
+                    .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
+                )
+        else:
+            raise TypeError("img_size must be int or tuple.")
+
 
     elif method == "Control Var. Constant".lower():
         assert (
@@ -427,12 +459,22 @@ def generate_zennit_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(kwargs.get("device", None))
 
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
-    )
+    if isinstance(kwargs.get("img_size", 224), tuple):
+        inputs = inputs.reshape(
+            -1,
+            kwargs.get("nr_channels", 3),
+            kwargs.get("img_size", 224)[0],
+            kwargs.get("img_size", 224)[1],
+        )
+    elif isinstance(kwargs.get("img_size", 224), int):
+        inputs = inputs.reshape(
+            -1,
+            kwargs.get("nr_channels", 3),
+            kwargs.get("img_size", 224),
+            kwargs.get("img_size", 224),
+        )
+    else:
+        raise TypeError("img_size must be int or tuple.")
 
     # Initialize canonizer, composite, and attributor
     if canonizer is not None:

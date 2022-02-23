@@ -74,3 +74,24 @@ def almost_uniform_no_abatch(scope="session", autouse=True):
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": None,
     }
+
+
+@pytest.fixture
+def almost_uniform_unequal_height_and_width(scope="session", autouse=True):
+    a_batch = np.random.uniform(0, 0.01, size=(10, 1, 112, 224))
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+    }
+
+
+@pytest.fixture
+def almost_uniform_no_abatch_unequal_height_and_width(scope="session", autouse=True):
+    # height (28) and widht (30) are chosen so dimensionlaity in fully connected layer
+    # matches size of square (28x28) image.
+    return {
+        "x_batch": np.random.randn(10, 1, 28, 30),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": None,
+    }

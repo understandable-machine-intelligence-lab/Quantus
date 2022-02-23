@@ -478,7 +478,19 @@ def test_generate_captum_explanation(
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
+            {"method": "Gradient", "img_size": (28, 30), "nr_channels": 1},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
             {"method": "Occlusion", "img_size": 28, "nr_channels": 1},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "Occlusion", "img_size": (28, 30), "nr_channels": 1},
             {"min": 0.0},
         ),
         (
@@ -496,7 +508,19 @@ def test_generate_captum_explanation(
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
+            {"method": "IntegratedGradients", "img_size": (28, 30), "nr_channels": 1},
+            {"min": 0.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
             {"method": "GradCam", "img_size": 28, "nr_channels": 1},
+            {"exception": AssertionError},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "GradCam", "img_size": (28, 30), "nr_channels": 1},
             {"exception": AssertionError},
         ),
         (
@@ -505,6 +529,17 @@ def test_generate_captum_explanation(
             {
                 "method": "GradCam",
                 "img_size": 28,
+                "nr_channels": 1,
+                "gc_layer": "dense_1",
+            },
+            {"exception": Exception},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "method": "GradCam",
+                "img_size": (28, 30),
                 "nr_channels": 1,
                 "gc_layer": "dense_1",
             },
@@ -563,6 +598,12 @@ def test_generate_tf_explanation(
             lazy_fixture("load_mnist_images"),
             {"method": "Gradient", "img_size": 28, "nr_channels": 1},
             {"min": -3},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "Gradient", "img_size": (28, 30), "nr_channels": 1},
+            {"min": 0.0, "max": 1.0},
         ),
     ],
 )

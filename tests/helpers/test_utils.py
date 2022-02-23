@@ -218,6 +218,24 @@ def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool])
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
+    "data,expected",
+    [
+        (lazy_fixture("mock_input_tf_array"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array"), {"value": True}),
+        (lazy_fixture("mock_same_input"), {"exception": ValueError}),
+    ],
+)
+def test_flexible_imgsize_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            get_channel_first(data["x"], flexible_imgsize_enabled=True)
+        return
+    out = get_channel_first(data["x"], flexible_imgsize_enabled=True)
+    assert out == expected["value"], "Test failed."
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
     "data,params,expected",
     [
         (
