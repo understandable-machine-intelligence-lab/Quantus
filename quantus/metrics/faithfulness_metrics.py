@@ -986,7 +986,7 @@ class PixelFlipping(Metric):
                 citation=(
                     "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
                     " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                    "e0130140."
+                    "e0130140"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
