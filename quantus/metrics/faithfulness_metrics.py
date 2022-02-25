@@ -986,7 +986,7 @@ class PixelFlipping(Metric):
                 citation=(
                     "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
                     " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                    "e0130140."
+                    "e0130140"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -1200,16 +1200,6 @@ class RegionPerturbation(Metric):
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.img_size = self.kwargs.get("img_size", 224)
-        self.text_warning = (
-            "\nThe Region perturbation metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', the patch size for masking 'patch_size' and number of regions to"
-            " evaluate 'regions_evaluation'. "
-            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
-            "deep neural network has learned.' IEEE transactions on neural networks and learning "
-            "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140."
-        )
         self.last_results = {}
         self.all_results = []
 
@@ -1218,11 +1208,15 @@ class RegionPerturbation(Metric):
         if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=("baseline value 'perturb_baseline'"),
+                sensitive_params=(
+                    "baseline value 'perturb_baseline'"
+                    ", the patch size for masking 'patch_size'"
+                    " and number of regions to evaluate 'regions_evaluation'"
+                ),
                 citation=(
-                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
-                    "e0130140"
+                    "Samek, Wojciech, et al. 'Evaluating the visualization of what a deep"
+                    " neural network has learned.' IEEE transactions on neural networks and"
+                    " learning systems 28.11 (2016): 2660-2673"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
