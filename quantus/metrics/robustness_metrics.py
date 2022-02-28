@@ -1,6 +1,9 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
-import numpy as np
 from typing import Union, List, Dict
+
+import numpy as np
+from tqdm import tqdm
+
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -44,6 +47,7 @@ class LocalLipschitzEstimate(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             perturb_std (float): The amount of noise added, default=0.1.
             perturb_mean (float): The mean of noise added, default=0.0.
             nr_samples (integer): The number of samples iterated, default=200.
@@ -62,6 +66,7 @@ class LocalLipschitzEstimate(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
         self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
@@ -183,7 +188,14 @@ class LocalLipschitzEstimate(Metric):
         # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for ix, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -257,6 +269,7 @@ class MaxSensitivity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             perturb_radius (float): Perturbation radius, default=0.2.
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
@@ -274,6 +287,7 @@ class MaxSensitivity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
@@ -392,7 +406,14 @@ class MaxSensitivity(Metric):
         # Get explanation function and make asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -468,6 +489,7 @@ class AvgSensitivity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             perturb_radius (float): Perturbation radius, default=0.2.
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
@@ -485,6 +507,7 @@ class AvgSensitivity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
@@ -602,7 +625,14 @@ class AvgSensitivity(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -677,6 +707,7 @@ class Continuity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             img_size (integer): Square image dimensions, default=224.
             patch_size (integer): The patch size for masking, default=7.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -695,6 +726,7 @@ class Continuity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.img_size = self.kwargs.get("img_size", 224)
         self.patch_size = self.kwargs.get("patch_size", 7)
         self.nr_patches = int((self.img_size / self.patch_size) ** 2)
@@ -814,7 +846,14 @@ class Continuity(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -887,7 +926,7 @@ class Continuity(Metric):
                         sub_results[ix_patch].append(patch_sum)
                         ix_patch += 1
 
-            self.last_results[sample] = sub_results
+            self.last_results[ix] = sub_results
 
         self.all_results.append(self.last_results)
 
