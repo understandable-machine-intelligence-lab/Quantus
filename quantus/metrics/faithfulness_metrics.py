@@ -1,4 +1,6 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
+from tqdm import tqdm
+
 from .base import Metric
 from ..helpers.asserts import *
 from ..helpers.plotting import *
@@ -184,7 +186,6 @@ class FaithfulnessCorrelation(Metric):
         if self.disable_progress_bar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            from tqdm import tqdm
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
@@ -418,7 +419,6 @@ class FaithfulnessEstimate(Metric):
         if self.disable_progress_bar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            from tqdm import tqdm
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
@@ -652,7 +652,6 @@ class MonotonicityArya(Metric):
         if self.disable_progress_bar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            from tqdm import tqdm
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
@@ -884,7 +883,6 @@ class MonotonicityNguyen(Metric):
         if self.disable_progress_bar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            from tqdm import tqdm
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
@@ -1129,7 +1127,6 @@ class PixelFlipping(Metric):
         if self.disable_progress_bar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            from tqdm import tqdm
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
@@ -1365,7 +1362,6 @@ class RegionPerturbation(Metric):
         if self.disable_progress_bar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            from tqdm import tqdm
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
                             total=len(x_batch_s))
 
@@ -1671,7 +1667,6 @@ class Selectivity(Metric):
         if self.disable_progress_bar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            from tqdm import tqdm
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
                             total=len(x_batch_s))
 
@@ -1977,7 +1972,6 @@ class SensitivityN(Metric):
         if self.disable_progress_bar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            from tqdm import tqdm
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
                             total=len(x_batch_s))
 
@@ -2218,7 +2212,6 @@ class IterativeRemovalOfFeatures(Metric):
         if self.disable_progress_bar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            from tqdm import tqdm
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
                             total=len(x_batch_s))
 
