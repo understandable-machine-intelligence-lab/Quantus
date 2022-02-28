@@ -1,5 +1,8 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
 from typing import Union, List, Dict
+from tqdm import tqdm
+
+
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -43,6 +46,7 @@ class Sparseness(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
         """
         super().__init__()
 
@@ -53,6 +57,7 @@ class Sparseness(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.last_results = []
         self.all_results = []
 
@@ -161,7 +166,13 @@ class Sparseness(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -221,6 +232,7 @@ class Complexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
         """
         super().__init__()
 
@@ -231,6 +243,7 @@ class Complexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.last_results = []
         self.all_results = []
 
@@ -338,7 +351,13 @@ class Complexity(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -393,6 +412,7 @@ class EffectiveComplexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
         """
         super().__init__()
 
@@ -404,6 +424,7 @@ class EffectiveComplexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.last_results = []
         self.all_results = []
 
@@ -511,7 +532,13 @@ class EffectiveComplexity(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 

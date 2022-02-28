@@ -1,5 +1,7 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
 from typing import Union, List, Dict
+from tqdm import tqdm
+
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -47,6 +49,7 @@ class Completeness(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             output_func (callable): Function applied to the difference between the model output at the input and the
             baseline before metric calculation, default=lambda x: x.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -62,6 +65,7 @@ class Completeness(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
@@ -174,7 +178,13 @@ class Completeness(Metric):
         # Asserts.
         assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -247,6 +257,7 @@ class NonSensitivity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
@@ -262,6 +273,7 @@ class NonSensitivity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -373,7 +385,13 @@ class NonSensitivity(Metric):
         # Asserts.
         assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -449,6 +467,7 @@ class InputInvariance(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             input_shift (integer): Shift to the input data, default=-1.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
         """
@@ -461,6 +480,7 @@ class InputInvariance(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -569,7 +589,13 @@ class InputInvariance(Metric):
         # Asserts.
         assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 print(

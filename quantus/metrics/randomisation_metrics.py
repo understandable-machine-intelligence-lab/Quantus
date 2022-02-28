@@ -1,7 +1,10 @@
 """This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
-import numpy as np
 import random
 from typing import Union, List, Dict
+
+import numpy as np
+from tqdm import tqdm
+
 from .base import Metric
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -44,6 +47,7 @@ class ModelParameterRandomisation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             layer_order (string): Indicated whether the model is randomized cascadingly or independently.
@@ -59,6 +63,7 @@ class ModelParameterRandomisation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.last_results = {}
@@ -168,6 +173,7 @@ class ModelParameterRandomisation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
+        # TODO: decide in which loop to put progress bar
         for layer_name, random_layer_model in model.get_random_layer_generator(
             order=self.layer_order
         ):
@@ -179,7 +185,7 @@ class ModelParameterRandomisation(Metric):
                 model=random_layer_model, inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-            for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
+            for ix, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
                 if self.abs:
                     a = np.abs(a)
@@ -227,6 +233,7 @@ class RandomLogit(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=ssim.
             num_classes (integer): Number of prediction classes in the input, default=1000.
@@ -239,6 +246,7 @@ class RandomLogit(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
@@ -344,7 +352,14 @@ class RandomLogit(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if self.disable_progress_bar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
