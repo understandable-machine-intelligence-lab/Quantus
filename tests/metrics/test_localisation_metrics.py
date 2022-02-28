@@ -19,6 +19,20 @@ def all_in_gt():
         "s_batch": s_batch,
     }
 
+@pytest.fixture
+def all_in_gt_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
+    s_batch[:, :, 10:110, 10:110] = 1.0
+    a_batch[:, :, 50:150, 50:150] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
+
 
 @pytest.fixture
 def all_in_gt_no_abatch():
@@ -27,6 +41,18 @@ def all_in_gt_no_abatch():
     s_batch[:, :, 0:15, 0:15] = 1.0
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": None,
+        "s_batch": s_batch,
+    }
+
+@pytest.fixture
+def all_in_gt_no_abatch_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 28, 30))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 28, 30))
+    s_batch[:, :, 0:15, 0:15] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 1, 28, 30),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": None,
         "s_batch": s_batch,
@@ -88,6 +114,19 @@ def none_in_gt():
         "s_batch": s_batch,
     }
 
+@pytest.fixture
+def none_in_gt_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
+    s_batch[:, :, 0:100, 0:100] = 1.0
+    a_batch[:, :, 100:200, 100:200] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
 
 @pytest.fixture
 def none_in_gt_zeros():
@@ -144,6 +183,19 @@ def half_in_gt():
         "s_batch": s_batch,
     }
 
+@pytest.fixture
+def half_in_gt_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
+    s_batch[:, :, 50:100, 50:100] = 1.0
+    a_batch[:, :, 0:100, 75:100] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
 
 @pytest.fixture
 def half_in_gt_zeros_bigger():
@@ -164,13 +216,21 @@ def half_in_gt_zeros_bigger():
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, True),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {}, True),
         (
             lazy_fixture("all_in_gt_no_abatch"),
             {"explain_func": explain},
             {"type": list},
         ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("none_in_gt"), {}, False),
+        (lazy_fixture("none_in_gt_unequal_height_and_width"), {}, False),
         (lazy_fixture("half_in_gt"), {}, True),
+        (lazy_fixture("half_in_gt_unequal_height_and_width"), {}, True),
     ],
 )
 def test_pointing_game(

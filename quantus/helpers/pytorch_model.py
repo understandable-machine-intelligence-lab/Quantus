@@ -24,7 +24,7 @@ class PyTorchModel(ModelInterface):
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
             if softmax_act:
-                pred = torch.nn.Softmax()(pred)
+                pred = torch.nn.Softmax(dim=-1)(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()

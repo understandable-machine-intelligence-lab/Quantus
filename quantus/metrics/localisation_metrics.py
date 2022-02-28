@@ -49,6 +49,7 @@ class PointingGame(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
+        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -97,7 +98,7 @@ class PointingGame(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -132,7 +133,8 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
+                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -140,7 +142,7 @@ class PointingGame(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
