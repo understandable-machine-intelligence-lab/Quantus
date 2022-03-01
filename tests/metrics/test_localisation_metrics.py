@@ -24,7 +24,7 @@ def all_in_gt_unequal_height_and_width():
     s_batch = np.zeros((10, 1, 112, 224))
     a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
     s_batch[:, :, 10:110, 10:110] = 1.0
-    a_batch[:, :, 50:150, 50:150] = 1.0
+    a_batch[:, :, 10:110, 10:110] = 1.0
     return {
         "x_batch": np.random.randn(10, 3, 112, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -73,6 +73,7 @@ def all_in_gt_zeros():
     }
 
 
+
 @pytest.fixture
 def all_in_gt_non_normalised():
     s_batch = np.zeros((10, 1, 224, 224))
@@ -119,7 +120,7 @@ def none_in_gt_unequal_height_and_width():
     s_batch = np.zeros((10, 1, 112, 224))
     a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
     s_batch[:, :, 0:100, 0:100] = 1.0
-    a_batch[:, :, 100:200, 100:200] = 1.0
+    a_batch[:, :, 100:110, 100:200] = 1.0
     return {
         "x_batch": np.random.randn(10, 3, 112, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -136,6 +137,19 @@ def none_in_gt_zeros():
     a_batch[:, :, 100:200, 100:200] = 1.0
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
+@pytest.fixture
+def none_in_gt_zeros_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.zeros((10, 1, 112, 224))
+    s_batch[:, :, 0:100, 0:100] = 1.0
+    a_batch[:, :, 100:110, 100:200] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": a_batch,
         "s_batch": s_batch,
@@ -164,6 +178,19 @@ def half_in_gt_zeros():
     a_batch[:, :, 0:100, 75:100] = 1.0
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
+@pytest.fixture
+def half_in_gt_zeros_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.zeros((10, 1, 112, 224))
+    s_batch[:, :, 50:100, 50:100] = 1.0
+    a_batch[:, :, 0:100, 75:100] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": a_batch,
         "s_batch": s_batch,
@@ -262,16 +289,30 @@ def test_pointing_game(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {"k": 10000}, 1.0),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {"k": 10000}, 1.0),
         (lazy_fixture("all_in_gt"), {"k": 40000}, 0.25),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {"k": 40000}, 0.25),
         (
             lazy_fixture("all_in_gt_no_abatch"),
             {"k": 10000, "explain_func": explain},
             {"type": list},
         ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
+            {"k": 10000, "explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("none_in_gt"), {"k": 10000}, 0.0),
+        (lazy_fixture("none_in_gt_unequal_height_and_width"), {"k": 1000}, 0.0),
         (lazy_fixture("none_in_gt_zeros"), {"k": 40000}, {"min": 0.1, "max": 0.25}),
+        (
+            lazy_fixture("none_in_gt_zeros_unequal_height_and_width"),
+            {"k": 4000}, {"min": 0.001, "max": 0.8}
+        ),
         (lazy_fixture("half_in_gt_zeros"), {"k": 2500}, 0.5),
+        (lazy_fixture("half_in_gt_zeros_unequal_height_and_width"), {"k": 2500}, 0.5),
         (lazy_fixture("half_in_gt_zeros"), {"k": 1250}, {"min": 0.5, "max": 1.0}),
+        (lazy_fixture("half_in_gt_zeros_unequal_height_and_width"), {"k": 1250}, {"min": 0.5, "max": 1.0}),
     ],
 )
 def test_top_k_intersection(
