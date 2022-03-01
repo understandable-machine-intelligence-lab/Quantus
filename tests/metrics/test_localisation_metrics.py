@@ -163,14 +163,45 @@ def half_in_gt_zeros_bigger():
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt"), {}, True),
+        (
+            lazy_fixture("all_in_gt"), {
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            True
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"explain_func": explain},
+            {
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("none_in_gt"), {}, False),
-        (lazy_fixture("half_in_gt"), {}, True),
+        (
+            lazy_fixture("none_in_gt"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            False,
+        ),
+        (
+            lazy_fixture("half_in_gt"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            True,
+        ),
+        (
+            lazy_fixture("all_in_gt"), {
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            True
+        ),
     ],
 )
 def test_pointing_game(
@@ -201,17 +232,78 @@ def test_pointing_game(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt"), {"k": 10000}, 1.0),
-        (lazy_fixture("all_in_gt"), {"k": 40000}, 0.25),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "k": 10000,
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "k": 40000,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.25,
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"k": 10000, "explain_func": explain},
+            {
+                "k": 10000,
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("none_in_gt"), {"k": 10000}, 0.0),
-        (lazy_fixture("none_in_gt_zeros"), {"k": 40000}, {"min": 0.1, "max": 0.25}),
-        (lazy_fixture("half_in_gt_zeros"), {"k": 2500}, 0.5),
-        (lazy_fixture("half_in_gt_zeros"), {"k": 1250}, {"min": 0.5, "max": 1.0}),
+        (
+            lazy_fixture("none_in_gt"), {
+                "k": 10000,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.0,
+        ),
+        (
+            lazy_fixture("none_in_gt_zeros"),
+            {
+                "k": 40000,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            {"min": 0.1, "max": 0.25},
+        ),
+        (
+            lazy_fixture("half_in_gt_zeros"),
+            {
+                "k": 2500,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.5,
+        ),
+        (
+            lazy_fixture("half_in_gt_zeros"),
+            {
+                "k": 1250,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            {"min": 0.5, "max": 1.0},
+        ),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "k": 10000,
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            1.0,
+        ),
     ],
 )
 def test_top_k_intersection(
@@ -239,15 +331,56 @@ def test_top_k_intersection(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"explain_func": explain},
+            {
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
-        (lazy_fixture("none_in_gt"), {"abs": False}, 0.0),
-        (lazy_fixture("half_in_gt"), {}, 0.5),
+        (
+            lazy_fixture("all_in_gt_seg_bigger"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            {"min": 0.5, "max": 1.0},
+        ),
+        (
+            lazy_fixture("none_in_gt"),
+            {
+                "abs": False,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.0,
+        ),
+        (
+            lazy_fixture("half_in_gt"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.5,
+        ),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            1.0,
+        ),
     ],
 )
 def test_relevance_rank_accuracy(
@@ -275,15 +408,55 @@ def test_relevance_rank_accuracy(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt_zeros"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt_zeros"),
+            {
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"explain_func": explain},
+            {
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
-        (lazy_fixture("none_in_gt_zeros"), {}, 0.0),
-        (lazy_fixture("half_in_gt_zeros"), {}, 0.5),
+        (
+            lazy_fixture("all_in_gt_seg_bigger"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            {"min": 0.5, "max": 1.0},
+        ),
+        (
+            lazy_fixture("none_in_gt_zeros"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.0,
+        ),
+        (
+            lazy_fixture("half_in_gt_zeros"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.5,
+        ),
+        (
+            lazy_fixture("all_in_gt_zeros"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            1.0,
+        ),
     ],
 )
 def test_relevance_mass_accuracy(
@@ -311,14 +484,48 @@ def test_relevance_mass_accuracy(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt"), {}, 1.0),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"explain_func": explain},
+            {
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("all_in_gt_non_normalised"), {"normalise": False}, 1.0),
-        (lazy_fixture("none_in_gt_fourth"), {}, 0.33333333333333337),
+        (
+            lazy_fixture("all_in_gt_non_normalised"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("none_in_gt_fourth"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.33333333333333337,
+        ),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            1.0,
+        ),
     ],
 )
 def test_auc(
@@ -346,15 +553,62 @@ def test_auc(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("all_in_gt_zeros"), {"weighted": False}, 1.0),
+        (
+            lazy_fixture("all_in_gt_zeros"),
+            {
+                "weighted": False,
+                "disable_warnings": False,
+                "disable_progressbar": True,
+            },
+            1.0,
+        ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
-            {"weighted": False, "explain_func": explain},
+            {
+                "weighted": False,
+                "explain_func": explain,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
             {"type": list},
         ),
-        (lazy_fixture("all_in_gt"), {"weighted": False}, {"min": 0.8, "max": 0.85}),
-        (lazy_fixture("none_in_gt_zeros"), {"weighted": False}, 0.0),
-        (lazy_fixture("none_in_gt_zeros"), {"weighted": True, "abs": False}, 0.0),
+        (
+            lazy_fixture("all_in_gt"),
+            {
+                "weighted": False,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            {"min": 0.8, "max": 0.85},
+        ),
+        (
+            lazy_fixture("none_in_gt_zeros"),
+            {
+                "weighted": False,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.0,
+        ),
+        (
+            lazy_fixture("none_in_gt_zeros"),
+            {
+                "weighted": True,
+                "abs": False,
+                "disable_warnings": True,
+                "disable_progressbar": True,
+            },
+            0.0,
+        ),
+        (
+            lazy_fixture("all_in_gt_zeros"),
+            {
+                "weighted": False,
+                "disable_warnings": True,
+                "disable_progressbar": False,
+            },
+            1.0,
+        ),
     ],
 )
 def test_attribution_localisation(
