@@ -54,23 +54,58 @@ def baseline_mean():
 
 
 @pytest.fixture
-def mock_input_torch_array():
+def mock_input_torch_array_1d():
+    return {"x": np.zeros((1, 1, 28))}
+
+
+@pytest.fixture
+def mock_input_tf_array_1d():
+    return {"x": np.zeros((1, 28, 1))}
+
+
+@pytest.fixture
+def mock_input_torch_array_2d():
+    return {"x": np.zeros((1, 1, 28, 32))}
+
+
+@pytest.fixture
+def mock_input_tf_array_2d():
+    return {"x": np.zeros((1, 28, 32, 1))}
+
+
+@pytest.fixture
+def mock_input_torch_array_2d_squared():
     return {"x": np.zeros((1, 1, 28, 28))}
 
 
 @pytest.fixture
-def mock_input_tf_array():
+def mock_input_tf_array_2d_squared():
     return {"x": np.zeros((1, 28, 28, 1))}
 
 
 @pytest.fixture
-def mock_same_input():
-    return {"x": np.zeros((1, 28, 28, 28))}
+def mock_input_torch_array_3d():
+    return {"x": np.zeros((1, 1, 28, 28, 28))}
 
 
 @pytest.fixture
-def mock_mismatch_input():
-    return {"x": np.zeros((1, 1, 2, 3))}
+def mock_input_tf_array_3d():
+    return {"x": np.zeros((1, 28, 28, 28, 1))}
+
+
+@pytest.fixture
+def mock_unbatched_input_1d():
+    return {"x": np.zeros((28))}
+
+
+@pytest.fixture
+def mock_same_input_1d():
+    return {"x": np.zeros((1, 28, 28))}
+
+
+@pytest.fixture
+def mock_same_input_2d():
+    return {"x": np.zeros((1, 28, 28, 28))}
 
 
 def random_input(c_in, imsize):
@@ -201,10 +236,17 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("mock_input_tf_array"), {"value": False}),
-        (lazy_fixture("mock_input_torch_array"), {"value": True}),
-        (lazy_fixture("mock_same_input"), {"exception": ValueError}),
-        (lazy_fixture("mock_mismatch_input"), {"exception": ValueError}),
+        (lazy_fixture("mock_input_tf_array_1d"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_1d"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_2d"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_2d"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_2d_squared"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_2d_squared"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_3d"), {"exception": ValueError}),
+        (lazy_fixture("mock_input_torch_array_3d"), {"exception": ValueError}),
+        (lazy_fixture("mock_unbatched_input_1d"), {"exception": ValueError}),
+        (lazy_fixture("mock_same_input_1d"), {"exception": ValueError}),
+        (lazy_fixture("mock_same_input_2d"), {"exception": ValueError}),
     ],
 )
 def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
@@ -221,12 +263,12 @@ def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
+            lazy_fixture("mock_input_tf_array_2d"),
             {"channel_first": False},
             np.zeros((1, 1, 28, 28)),
         ),
         (
-            lazy_fixture("mock_input_torch_array"),
+            lazy_fixture("mock_input_torch_array_2d"),
             {"channel_first": True},
             np.zeros((1, 1, 28, 28)),
         ),
@@ -244,12 +286,12 @@ def test_make_channel_first(
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
+            lazy_fixture("mock_input_tf_array_2d"),
             {"channel_first": False},
             np.zeros((1, 28, 28, 1)),
         ),
         (
-            lazy_fixture("mock_input_torch_array"),
+            lazy_fixture("mock_input_torch_array_2d"),
             {"channel_first": True},
             np.zeros((1, 28, 28, 1)),
         ),
