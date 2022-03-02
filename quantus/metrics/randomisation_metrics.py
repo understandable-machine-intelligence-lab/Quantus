@@ -47,7 +47,7 @@ class ModelParameterRandomisation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             layer_order (string): Indicated whether the model is randomized cascadingly or independently.
@@ -63,7 +63,7 @@ class ModelParameterRandomisation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.last_results = {}
@@ -173,7 +173,6 @@ class ModelParameterRandomisation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # TODO: decide in which loop to put progress bar
         for layer_name, random_layer_model in model.get_random_layer_generator(
             order=self.layer_order
         ):
@@ -233,7 +232,7 @@ class RandomLogit(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=ssim.
             num_classes (integer): Number of prediction classes in the input, default=1000.
@@ -246,7 +245,7 @@ class RandomLogit(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
@@ -353,7 +352,7 @@ class RandomLogit(Metric):
         assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),

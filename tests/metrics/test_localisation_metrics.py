@@ -166,7 +166,7 @@ def half_in_gt_zeros_bigger():
         (
             lazy_fixture("all_in_gt"), {
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             True
         ),
@@ -175,7 +175,7 @@ def half_in_gt_zeros_bigger():
             {
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -183,7 +183,7 @@ def half_in_gt_zeros_bigger():
             lazy_fixture("none_in_gt"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             False,
         ),
@@ -191,14 +191,14 @@ def half_in_gt_zeros_bigger():
             lazy_fixture("half_in_gt"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             True,
         ),
         (
             lazy_fixture("all_in_gt"), {
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             True
         ),
@@ -237,7 +237,7 @@ def test_pointing_game(
             {
                 "k": 10000,
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -246,7 +246,7 @@ def test_pointing_game(
             {
                 "k": 40000,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.25,
         ),
@@ -256,7 +256,7 @@ def test_pointing_game(
                 "k": 10000,
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -264,7 +264,7 @@ def test_pointing_game(
             lazy_fixture("none_in_gt"), {
                 "k": 10000,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.0,
         ),
@@ -273,7 +273,7 @@ def test_pointing_game(
             {
                 "k": 40000,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"min": 0.1, "max": 0.25},
         ),
@@ -282,7 +282,7 @@ def test_pointing_game(
             {
                 "k": 2500,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.5,
         ),
@@ -291,7 +291,7 @@ def test_pointing_game(
             {
                 "k": 1250,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -300,7 +300,7 @@ def test_pointing_game(
             {
                 "k": 10000,
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             1.0,
         ),
@@ -335,7 +335,7 @@ def test_top_k_intersection(
             lazy_fixture("all_in_gt"),
             {
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -344,7 +344,7 @@ def test_top_k_intersection(
             {
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -352,7 +352,7 @@ def test_top_k_intersection(
             lazy_fixture("all_in_gt_seg_bigger"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -361,7 +361,7 @@ def test_top_k_intersection(
             {
                 "abs": False,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.0,
         ),
@@ -369,7 +369,7 @@ def test_top_k_intersection(
             lazy_fixture("half_in_gt"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.5,
         ),
@@ -377,7 +377,7 @@ def test_top_k_intersection(
             lazy_fixture("all_in_gt"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             1.0,
         ),
@@ -412,7 +412,7 @@ def test_relevance_rank_accuracy(
             lazy_fixture("all_in_gt_zeros"),
             {
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -421,7 +421,7 @@ def test_relevance_rank_accuracy(
             {
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -429,7 +429,7 @@ def test_relevance_rank_accuracy(
             lazy_fixture("all_in_gt_seg_bigger"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -437,7 +437,7 @@ def test_relevance_rank_accuracy(
             lazy_fixture("none_in_gt_zeros"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.0,
         ),
@@ -445,7 +445,7 @@ def test_relevance_rank_accuracy(
             lazy_fixture("half_in_gt_zeros"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.5,
         ),
@@ -453,7 +453,7 @@ def test_relevance_rank_accuracy(
             lazy_fixture("all_in_gt_zeros"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             1.0,
         ),
@@ -488,7 +488,7 @@ def test_relevance_mass_accuracy(
             lazy_fixture("all_in_gt"),
             {
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -497,7 +497,7 @@ def test_relevance_mass_accuracy(
             {
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -506,7 +506,7 @@ def test_relevance_mass_accuracy(
             {
                 "normalise": False,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -514,7 +514,7 @@ def test_relevance_mass_accuracy(
             lazy_fixture("none_in_gt_fourth"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.33333333333333337,
         ),
@@ -522,7 +522,7 @@ def test_relevance_mass_accuracy(
             lazy_fixture("all_in_gt"),
             {
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             1.0,
         ),
@@ -558,7 +558,7 @@ def test_auc(
             {
                 "weighted": False,
                 "disable_warnings": False,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             1.0,
         ),
@@ -568,7 +568,7 @@ def test_auc(
                 "weighted": False,
                 "explain_func": explain,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"type": list},
         ),
@@ -577,7 +577,7 @@ def test_auc(
             {
                 "weighted": False,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             {"min": 0.8, "max": 0.85},
         ),
@@ -586,7 +586,7 @@ def test_auc(
             {
                 "weighted": False,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.0,
         ),
@@ -596,7 +596,7 @@ def test_auc(
                 "weighted": True,
                 "abs": False,
                 "disable_warnings": True,
-                "disable_progressbar": True,
+                "display_progressbar": False,
             },
             0.0,
         ),
@@ -605,7 +605,7 @@ def test_auc(
             {
                 "weighted": False,
                 "disable_warnings": True,
-                "disable_progressbar": False,
+                "display_progressbar": True,
             },
             1.0,
         ),

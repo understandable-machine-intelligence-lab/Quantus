@@ -46,7 +46,7 @@ class Sparseness(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -57,7 +57,7 @@ class Sparseness(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -167,7 +167,7 @@ class Sparseness(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
@@ -232,7 +232,7 @@ class Complexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -243,7 +243,7 @@ class Complexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -352,7 +352,7 @@ class Complexity(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
@@ -412,7 +412,7 @@ class EffectiveComplexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -424,7 +424,7 @@ class EffectiveComplexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -533,7 +533,7 @@ class EffectiveComplexity(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
