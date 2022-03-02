@@ -143,11 +143,11 @@ def is_channel_first(x: np.array):
             "Only batched 1d and 2d multi-channel input dimensions supported.")
 
 
-def make_channel_first(x: np.array, is_channel_first=False):
+def make_channel_first(x: np.array, channel_first=False):
     """
     Reshape batch to channel first.
     """
-    if is_channel_first:
+    if channel_first:
         return x
 
     if len(np.shape(x)) == 4:
@@ -159,11 +159,11 @@ def make_channel_first(x: np.array, is_channel_first=False):
             "Only batched 1d and 2d multi-channel input dimensions supported.")
 
 
-def make_channel_last(x: np.array, is_channel_first=True):
+def make_channel_last(x: np.array, channel_first=True):
     """
     Reshape batch to channel last.
     """
-    if not is_channel_first:
+    if not channel_first:
         return x
 
     if len(np.shape(x)) == 4:
