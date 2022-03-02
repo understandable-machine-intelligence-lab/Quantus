@@ -263,6 +263,16 @@ def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     "data,params,expected",
     [
         (
+            lazy_fixture("mock_input_tf_array_1d"),
+            {"is_channel_first": False},
+            np.zeros((1, 1, 28)),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array_1d"),
+            {"is_channel_first": True},
+            np.zeros((1, 1, 28)),
+        ),
+        (
             lazy_fixture("mock_input_tf_array_2d"),
             {"is_channel_first": False},
             np.zeros((1, 1, 28, 32)),
@@ -285,6 +295,16 @@ def test_make_channel_first(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
+        (
+            lazy_fixture("mock_input_tf_array_1d"),
+            {"is_channel_first": False},
+            np.zeros((1, 28, 1)),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array_1d"),
+            {"is_channel_first": True},
+            np.zeros((1, 28, 1)),
+        ),
         (
             lazy_fixture("mock_input_tf_array_2d"),
             {"is_channel_first": False},
