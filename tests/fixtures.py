@@ -26,8 +26,16 @@ def load_mnist_model():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
-    model = LeNetTF()
+    model = LeNetTF((28, 28, 1))
     model.load_weights("tutorials/assets/mnist_tf_weights/")
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_model_tf_unequal_height_and_width():
+    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
+    model = LeNetTF((28, 30, 1))
+    #model.load_weights("tutorials/assets/mnist_tf_weights/")
     return model
 
 
@@ -45,12 +53,40 @@ def load_mnist_images():
 
 
 @pytest.fixture(scope="session", autouse=True)
+def load_mnist_images_unequal_height_and_width():
+    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    x_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        dtype=torch.float,
+    ).numpy()
+    x_batch = np.pad(x_batch, [(0,0), (0,0), (0,0), (1, 1)])
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
+    return {"x_batch": x_batch, "y_batch": y_batch}
+
+
+@pytest.fixture(scope="session", autouse=True)
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = torch.as_tensor(
         np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
+    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_images_tf_unequal_height_and_width():
+    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    x_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        dtype=torch.float,
+    ).numpy()
+    x_batch = np.pad(x_batch, [(0,0), (0,0), (0,0), (1, 1)])
     y_batch = torch.as_tensor(
         np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
     ).numpy()

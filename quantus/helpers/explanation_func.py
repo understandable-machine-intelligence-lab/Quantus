@@ -94,10 +94,12 @@ def generate_tf_explanation(
     Generate explanation for a tf model with tf_explain.
     Currently only normalised absolute values of explanations supported.
     """
+    flexible_imgsize_enabled = kwargs.get("flexible_imgsize_enabled", True)
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
 
-    channel_first = kwargs.get("channel_first", get_channel_first(inputs))
+    channel_first = kwargs.get("channel_first", get_channel_first(inputs,
+                               flexible_imgsize_enabled=flexible_imgsize_enabled))
     inputs = get_channel_last_batch(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)

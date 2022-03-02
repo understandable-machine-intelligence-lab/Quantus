@@ -38,6 +38,7 @@ class PointingGame(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -227,6 +228,7 @@ class AttributionLocalisation(Metric):
             default=False.
             max_size (float): The maximum ratio for  the size of the bounding box to image, default=1.0.
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -440,6 +442,7 @@ class TopKIntersection(Metric):
         kwargs: Keyword arguments (optional)
             concept_influence (boolean): Indicates whether concept influence metric is used, default=False.
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -629,6 +632,7 @@ class RelevanceRankAccuracy(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -820,6 +824,7 @@ class RelevanceMassAccuracy(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -1003,6 +1008,7 @@ class AUC(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.

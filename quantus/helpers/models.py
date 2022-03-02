@@ -43,10 +43,10 @@ if util.find_spec("tensorflow"):
     class LeNetTF(Sequential):
         """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
 
-        def __init__(self):
+        def __init__(self, input_shape):
             super().__init__(
                 [
-                    tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
+                    tf.keras.layers.Flatten(input_shape=input_shape),
                     tf.keras.layers.Dense(128, activation="relu"),
                     tf.keras.layers.Dense(10),
                 ]
