@@ -72,7 +72,18 @@ def all_in_gt_zeros():
         "s_batch": s_batch,
     }
 
-
+@pytest.fixture
+def all_in_gt_zeros_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.zeros((10, 1, 112, 224))
+    s_batch[:, :, 10:110, 50:150] = 1.0
+    a_batch[:, :, 10:110, 50:150] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
 
 @pytest.fixture
 def all_in_gt_non_normalised():
@@ -101,6 +112,19 @@ def all_in_gt_seg_bigger():
         "s_batch": s_batch,
     }
 
+@pytest.fixture
+def all_in_gt_seg_bigger_unequal_height_and_width():
+    s_batch = np.zeros((10, 1, 112, 224))
+    a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
+    s_batch[:, :, 0:100, 0:150] = 1.0
+    a_batch[:, :, 50:100, 50:150] = 1.0
+    return {
+        "x_batch": np.random.randn(10, 3, 112, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+        "s_batch": s_batch,
+    }
+
 
 @pytest.fixture
 def none_in_gt():
@@ -119,8 +143,8 @@ def none_in_gt():
 def none_in_gt_unequal_height_and_width():
     s_batch = np.zeros((10, 1, 112, 224))
     a_batch = np.random.uniform(0, 0.1, size=(10, 1, 112, 224))
-    s_batch[:, :, 0:100, 0:100] = 1.0
-    a_batch[:, :, 100:110, 100:200] = 1.0
+    s_batch[:, :, 0:50, 0:100] = 1.0
+    a_batch[:, :, 50:100, 100:200] = 1.0
     return {
         "x_batch": np.random.randn(10, 3, 112, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -341,14 +365,23 @@ def test_top_k_intersection(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, 1.0),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {}, 1.0),
         (
             lazy_fixture("all_in_gt_no_abatch"),
             {"explain_func": explain},
             {"type": list},
         ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
+        (lazy_fixture("all_in_gt_seg_bigger_unequal_height_and_width"), {}, {"min": 0.5, "max": 1.0}),
         (lazy_fixture("none_in_gt"), {"abs": False}, 0.0),
+        (lazy_fixture("none_in_gt_unequal_height_and_width"), {"abs": False}, 0.0),
         (lazy_fixture("half_in_gt"), {}, 0.5),
+        (lazy_fixture("half_in_gt_unequal_height_and_width"), {}, 0.5),
     ],
 )
 def test_relevance_rank_accuracy(
@@ -377,14 +410,23 @@ def test_relevance_rank_accuracy(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt_zeros"), {}, 1.0),
+        (lazy_fixture("all_in_gt_zeros_unequal_height_and_width"), {}, 1.0),
         (
             lazy_fixture("all_in_gt_no_abatch"),
             {"explain_func": explain},
             {"type": list},
         ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt_seg_bigger"), {}, {"min": 0.5, "max": 1.0}),
+        (lazy_fixture("all_in_gt_seg_bigger_unequal_height_and_width"), {}, {"min": 0.5, "max": 1.0}),
         (lazy_fixture("none_in_gt_zeros"), {}, 0.0),
+        (lazy_fixture("none_in_gt_zeros_unequal_height_and_width"), {}, 0.0),
         (lazy_fixture("half_in_gt_zeros"), {}, 0.5),
+        (lazy_fixture("half_in_gt_zeros_unequal_height_and_width"), {}, 0.5),
     ],
 )
 def test_relevance_mass_accuracy(
@@ -413,8 +455,14 @@ def test_relevance_mass_accuracy(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt"), {}, 1.0),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {}, 1.0),
         (
             lazy_fixture("all_in_gt_no_abatch"),
+            {"explain_func": explain},
+            {"type": list},
+        ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
             {"explain_func": explain},
             {"type": list},
         ),
@@ -448,14 +496,23 @@ def test_auc(
     "data,params,expected",
     [
         (lazy_fixture("all_in_gt_zeros"), {"weighted": False}, 1.0),
+        (lazy_fixture("all_in_gt_zeros_unequal_height_and_width"),{"weighted": False}, 1.0),
         (
             lazy_fixture("all_in_gt_no_abatch"),
             {"weighted": False, "explain_func": explain},
             {"type": list},
         ),
+        (
+            lazy_fixture("all_in_gt_no_abatch_unequal_height_and_width"),
+            {"weighted": False, "explain_func": explain},
+            {"type": list},
+        ),
         (lazy_fixture("all_in_gt"), {"weighted": False}, {"min": 0.8, "max": 0.85}),
+        (lazy_fixture("all_in_gt_unequal_height_and_width"), {"weighted": False}, {"min": 0.5, "max": 0.95}),
         (lazy_fixture("none_in_gt_zeros"), {"weighted": False}, 0.0),
+        (lazy_fixture("none_in_gt_zeros_unequal_height_and_width"), {"weighted": False}, 0.0),
         (lazy_fixture("none_in_gt_zeros"), {"weighted": True, "abs": False}, 0.0),
+        (lazy_fixture("none_in_gt_zeros_unequal_height_and_width"), {"weighted": True, "abs": False}, 0.0),
     ],
 )
 def test_attribution_localisation(
