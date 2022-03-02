@@ -149,16 +149,30 @@ def make_channel_first(x: np.array, is_channel_first=False):
     """
     if is_channel_first:
         return x
-    return np.moveaxis(x, -1, -3)
+
+    if len(np.shape(x)) == 4:
+        return np.moveaxis(x, -1, -3)
+    elif len(np.shape(x)) == 3:
+        return np.moveaxis(x, -1, -2)
+    else:
+        raise ValueError(
+            "Only batched 1d and 2d multi-channel input dimensions supported.")
 
 
 def make_channel_last(x: np.array, is_channel_first=True):
     """
     Reshape batch to channel last.
     """
-    if is_channel_first:
+    if not is_channel_first:
+        return x
+
+    if len(np.shape(x)) == 4:
         return np.moveaxis(x, -3, -1)
-    return x
+    elif len(np.shape(x)) == 3:
+        return np.moveaxis(x, -2, -1)
+    else:
+        raise ValueError(
+            "Only batched 1d and 2d multi-channel input dimensions supported.")
 
 
 def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:

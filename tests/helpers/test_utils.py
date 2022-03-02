@@ -264,20 +264,20 @@ def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     [
         (
             lazy_fixture("mock_input_tf_array_2d"),
-            {"channel_first": False},
-            np.zeros((1, 1, 28, 28)),
+            {"is_channel_first": False},
+            np.zeros((1, 1, 28, 32)),
         ),
         (
             lazy_fixture("mock_input_torch_array_2d"),
-            {"channel_first": True},
-            np.zeros((1, 1, 28, 28)),
+            {"is_channel_first": True},
+            np.zeros((1, 1, 28, 32)),
         ),
     ],
 )
 def test_make_channel_first(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = make_channel_first(data["x"], params["channel_first"])
+    out = make_channel_first(data["x"], params["is_channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
@@ -287,20 +287,20 @@ def test_make_channel_first(
     [
         (
             lazy_fixture("mock_input_tf_array_2d"),
-            {"channel_first": False},
-            np.zeros((1, 28, 28, 1)),
+            {"is_channel_first": False},
+            np.zeros((1, 28, 32, 1)),
         ),
         (
             lazy_fixture("mock_input_torch_array_2d"),
-            {"channel_first": True},
-            np.zeros((1, 28, 28, 1)),
+            {"is_channel_first": True},
+            np.zeros((1, 28, 32, 1)),
         ),
     ],
 )
 def test_make_channel_last(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = make_channel_last(data["x"], params["channel_first"])
+    out = make_channel_last(data["x"], params["is_channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
