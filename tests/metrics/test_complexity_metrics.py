@@ -11,19 +11,19 @@ from ...quantus.metrics import *
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": True, "disable_warnings": True},
             {"max": 1.0, "min": 0.0},
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": False, "disable_warnings": True, "abs": False},
             {"max": 1.0, "min": 0.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {"normalise": False, "disable_warnings": False, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
@@ -56,19 +56,19 @@ def test_sparseness(
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": True, "disable_warnings": True},
             {"max": 1.0, "min": 0.0},
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": False, "disable_warnings": False, "abs": False},
             {"max": 1.0, "min": 0.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {"normalise": False, "disable_warnings": True, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
@@ -96,19 +96,19 @@ def test_complexity(
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": True, "disable_warnings": True},
             {"max": 1.0, "min": 0.0},
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
             {"normalise": False, "disable_warnings": False, "abs": False},
             {"max": 1.0, "min": 0.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {"normalise": False, "disable_warnings": True, "explain_func": explain},
             {"max": 1.0, "min": 0.0},
         ),
