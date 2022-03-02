@@ -207,12 +207,12 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
         (lazy_fixture("mock_mismatch_input"), {"exception": ValueError}),
     ],
 )
-def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
+def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_channel_first(data["x"])
+            is_channel_first(data["x"])
         return
-    out = get_channel_first(data["x"])
+    out = is_channel_first(data["x"])
     assert out == expected["value"], "Test failed."
 
 
@@ -232,10 +232,10 @@ def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool])
         ),
     ],
 )
-def test_get_channel_first_batch(
+def test_make_channel_first(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = get_channel_first_batch(data["x"], params["channel_first"])
+    out = make_channel_first(data["x"], params["channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
@@ -255,10 +255,10 @@ def test_get_channel_first_batch(
         ),
     ],
 )
-def test_get_channel_last_batch(
+def test_make_channel_last(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = get_channel_last_batch(data["x"], params["channel_first"])
+    out = make_channel_last(data["x"], params["channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
