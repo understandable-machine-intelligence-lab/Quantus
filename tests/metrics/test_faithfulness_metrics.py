@@ -416,6 +416,21 @@ def test_monotonicity_nguyen(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "perturb_baseline": "mean",
+                "features_in_step": 14,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "channel_first": True,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_pixel_flipping(
