@@ -6,7 +6,7 @@ import torch
 import torchvision
 from torchvision import transforms
 import numpy as np
-from ..quantus.helpers.models import LeNet, LeNetTF
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from ..quantus.helpers.pytorch_model import PyTorchModel
@@ -28,6 +28,16 @@ def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
     model.load_weights("tutorials/assets/mnist_tf_weights/")
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_1d_conv_model():
+    """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
+    model = ConvNet1D(n_channels=3)
+    #model.load_state_dict(
+    #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+    #)
     return model
 
 
@@ -70,7 +80,7 @@ def almost_uniform_1d(scope="session", autouse=True):
 @pytest.fixture
 def almost_uniform_1d_no_abatch(scope="session", autouse=True):
     return {
-        "x_batch": np.random.randn(10, 1, 28),
+        "x_batch": np.random.randn(10, 1, 224),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": None,
     }
