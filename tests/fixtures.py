@@ -58,7 +58,26 @@ def load_mnist_images_tf():
 
 
 @pytest.fixture
-def almost_uniform(scope="session", autouse=True):
+def almost_uniform_1d(scope="session", autouse=True):
+    a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224))
+    return {
+        "x_batch": np.random.randn(10, 3, 224),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": a_batch,
+    }
+
+
+@pytest.fixture
+def almost_uniform_1d_no_abatch(scope="session", autouse=True):
+    return {
+        "x_batch": np.random.randn(10, 1, 28),
+        "y_batch": np.random.randint(0, 10, size=10),
+        "a_batch": None,
+    }
+
+
+@pytest.fixture
+def almost_uniform_2d(scope="session", autouse=True):
     a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224, 224))
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
@@ -68,7 +87,7 @@ def almost_uniform(scope="session", autouse=True):
 
 
 @pytest.fixture
-def almost_uniform_no_abatch(scope="session", autouse=True):
+def almost_uniform_2d_no_abatch(scope="session", autouse=True):
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
         "y_batch": np.random.randint(0, 10, size=10),
