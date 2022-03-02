@@ -418,7 +418,7 @@ def test_monotonicity_nguyen(
         ),
         (
             lazy_fixture("load_1d_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_baseline": "mean",
                 "features_in_step": 14,
@@ -426,8 +426,6 @@ def test_monotonicity_nguyen(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "channel_first": True,
-                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -451,6 +449,8 @@ def test_pixel_flipping(
             targets=y_batch,
             **params,
         )
+    if "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = PixelFlipping(**params)(
