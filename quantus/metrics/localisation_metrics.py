@@ -46,7 +46,7 @@ class PointingGame(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -57,7 +57,7 @@ class PointingGame(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -171,7 +171,7 @@ class PointingGame(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
@@ -240,7 +240,7 @@ class AttributionLocalisation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -253,7 +253,7 @@ class AttributionLocalisation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -368,7 +368,7 @@ class AttributionLocalisation(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
@@ -458,7 +458,7 @@ class TopKIntersection(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -471,7 +471,7 @@ class TopKIntersection(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -586,7 +586,7 @@ class TopKIntersection(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
@@ -652,7 +652,7 @@ class RelevanceRankAccuracy(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -663,7 +663,7 @@ class RelevanceRankAccuracy(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -777,7 +777,7 @@ class RelevanceRankAccuracy(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
@@ -847,7 +847,7 @@ class RelevanceMassAccuracy(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -858,7 +858,7 @@ class RelevanceMassAccuracy(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -971,7 +971,7 @@ class RelevanceMassAccuracy(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
@@ -1035,7 +1035,7 @@ class AUC(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            disable_progress_bar (boolean): Indicates whether a tqdm-progress-bar is printed, default=True.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -1046,7 +1046,7 @@ class AUC(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.disable_progress_bar = self.kwargs.get("disable_progress_bar", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
@@ -1158,7 +1158,7 @@ class AUC(Metric):
         assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
-        if self.disable_progress_bar:
+        if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
