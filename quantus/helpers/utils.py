@@ -105,7 +105,7 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
-def get_channel_first(x: np.array):
+def is_channel_first(x: np.array):
     """
     Returns True if input shape is (nr_batch, nr_channels, img_size, img_size).
     Returns False if input shape is (nr_batch, img_size, img_size, nr_channels).
@@ -120,20 +120,20 @@ def get_channel_first(x: np.array):
     raise ValueError("Input dimension mismatch")
 
 
-def get_channel_first_batch(x: np.array, channel_first=False):
+def make_channel_first(x: np.array, is_channel_first=False):
     """
     Reshape batch to channel first.
     """
-    if channel_first:
+    if is_channel_first:
         return x
     return np.moveaxis(x, -1, -3)
 
 
-def get_channel_last_batch(x: np.array, channel_first=True):
+def make_channel_last(x: np.array, is_channel_first=True):
     """
     Reshape batch to channel last.
     """
-    if channel_first:
+    if is_channel_first:
         return np.moveaxis(x, -3, -1)
     return x
 

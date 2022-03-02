@@ -132,8 +132,8 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
@@ -323,8 +323,8 @@ class AttributionLocalisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
@@ -533,8 +533,8 @@ class TopKIntersection(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
@@ -717,8 +717,8 @@ class RelevanceRankAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
@@ -904,8 +904,8 @@ class RelevanceMassAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
@@ -1084,8 +1084,8 @@ class AUC(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
             model = get_wrapped_model(model, self.channel_first)
