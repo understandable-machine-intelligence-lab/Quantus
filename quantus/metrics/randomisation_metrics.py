@@ -173,6 +173,15 @@ class ModelParameterRandomisation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
+        # Create progress bar if desired.
+        # Due to the nested for-loops and the requirement of a single progressbar,
+        # manual updating will be performed at the end of each inner iteration.
+        if self.display_progressbar:
+            n_layers = len(list(model.get_random_layer_generator(
+                order=self.layer_order)))
+            n_iterations = n_layers * len(a_batch)
+            pbar = tqdm(total=n_iterations)
+
         for layer_name, random_layer_model in model.get_random_layer_generator(
             order=self.layer_order
         ):
@@ -199,8 +208,16 @@ class ModelParameterRandomisation(Metric):
 
                 similarity_scores.append(similarity)
 
+                # Update progress bar if desired.
+                if self.display_progressbar:
+                    pbar.update(1)
+
             # Save similarity scores in a dictionary.
             self.last_results[layer_name] = similarity_scores
+
+        # Close progress bar if desired.
+        if self.display_progressbar:
+            pbar.close()
 
         self.all_results.append(self.last_results)
 
