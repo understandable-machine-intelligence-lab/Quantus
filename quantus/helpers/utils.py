@@ -107,17 +107,40 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
 
 def is_channel_first(x: np.array):
     """
-    Returns True if input shape is (nr_batch, nr_channels, img_size, img_size).
-    Returns False if input shape is (nr_batch, img_size, img_size, nr_channels).
-    An error is raised if three last dimensions are equal, or if the image is not square.
+    For 1d input:
+    Assumption: nr_channels < sequence_length
+    Returns True if input shape is (nr_batch, nr_channels, sequence_length).
+    Returns False if input shape is (nr_batch, sequence_length, nr_channels).
+    An error is raised if the two last dimensions are equal.
+
+    For 2d input:
+    Assumption: nr_channels < img_width and nr_channels < img_height
+    Returns True if input shape is (nr_batch, nr_channels, img_width, img_height).
+    Returns False if input shape is (nr_batch, img_width, img_height, nr_channels).
+    An error is raised if the three last dimensions are equal.
+
+    For higher dimensional input an error is raised.
     """
-    if np.shape(x)[-1] == np.shape(x)[-2] == np.shape(x)[-3]:
-        raise ValueError("Ambiguous input shape")
-    if np.shape(x)[-3] == np.shape(x)[-2]:
-        return False
-    if np.shape(x)[-1] == np.shape(x)[-2]:
-        return True
-    raise ValueError("Input dimension mismatch")
+    err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order."
+
+    if len(np.shape(x)) == 3:
+        if np.shape(x)[-2] < np.shape(x)[-1]:
+            return True
+        elif np.shape(x)[-2] > np.shape(x)[-1]:
+            return False
+        else:
+            raise ValueError(err_msg)
+
+    elif len(np.shape(x)) == 4:
+        if np.shape(x)[-1] < np.shape(x)[-2] and np.shape(x)[-1] < np.shape(x)[-3]:
+            return False
+        if np.shape(x)[-3] < np.shape(x)[-1] and np.shape(x)[-3] < np.shape(x)[-2]:
+            return True
+        raise ValueError(err_msg)
+
+    else:
+        raise ValueError(
+            "Only batched 1d and 2d multi-channel input dimensions supported.")
 
 
 def make_channel_first(x: np.array, is_channel_first=False):
