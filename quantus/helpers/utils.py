@@ -2,7 +2,7 @@
 import re
 import random
 import numpy as np
-from typing import Union, Optional, List, Callable
+from typing import Callable, List, Optional, Tuple, Union
 from importlib import util
 from skimage.segmentation import *
 from ..helpers.model_interface import ModelInterface
@@ -96,8 +96,8 @@ def get_name(str: str):
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
 
 
-def set_features_in_step(max_steps_per_input: int, img_size: int):
-    return (img_size * img_size) / max_steps_per_input
+def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...]):
+    return np.prod(input_shape) / max_steps_per_input
 
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:

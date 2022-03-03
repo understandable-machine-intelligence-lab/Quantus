@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Callable
+from typing import Callable, Tuple, Union
 
 
 def attributes_check(metric):
@@ -62,19 +62,19 @@ def set_warn(call):
     #    pass
 
 
-def assert_features_in_step(features_in_step: int, img_size: int) -> None:
+def assert_features_in_step(features_in_step: int, input_shape: Tuple[int, ...]) -> None:
     """Assert that features in step is compatible with the image size."""
-    assert (img_size * img_size) % features_in_step == 0, (
+    assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
-        "returns zero given the img_size."
+        "returns zero given the product of the input shape."
     )
 
 
-def assert_max_steps(max_steps_per_input: int, img_size: int) -> None:
+def assert_max_steps(max_steps_per_input: int, input_shape: Tuple[int, ...]) -> None:
     """Assert that max steps per inputs is compatible with the image size."""
-    assert (img_size * img_size) % max_steps_per_input == 0, (
+    assert np.prod(input_shape) % max_steps_per_input == 0, (
         "Set 'max_steps_per_input' so that the modulo remainder "
-        "returns zero given the img_size."
+        "returns zero given the product of the input shape."
     )
 
 

@@ -220,14 +220,18 @@ def test_get_name(data: np.ndarray, expected: Union[float, dict, bool]):
 @pytest.mark.parametrize(
     "data,expected",
     [
-        ({"max_steps_per_input": 4, "img_size": 28}, 196),
-        ({"max_steps_per_input": 128, "img_size": 224}, 392),
-        ({"max_steps_per_input": 4, "img_size": 4}, 4),
+        ({"max_steps_per_input": 4, "input_shape": (28, 28)}, 196),
+        ({"max_steps_per_input": 128, "input_shape": (224, 224)}, 392),
+        ({"max_steps_per_input": 4, "input_shape": (4, 4)}, 4),
+        ({"max_steps_per_input": 4, "input_shape": (28,)}, 7),
+        ({"max_steps_per_input": 128, "input_shape": (256,)}, 2),
+        ({"max_steps_per_input": 4, "input_shape": (4,)}, 1),
     ],
 )
-def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = set_features_in_step(
-        max_steps_per_input=data["max_steps_per_input"], img_size=data["img_size"]
+def test_get_features_in_step(data: np.ndarray, expected: Union[float, dict, bool]):
+    out = get_features_in_step(
+        max_steps_per_input=data["max_steps_per_input"],
+        input_shape=data["input_shape"],
     )
     assert out == expected, "Test failed."
 
