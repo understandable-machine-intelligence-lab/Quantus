@@ -7,13 +7,30 @@ from ...quantus.metrics import *
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_std": 0.1,
                 "nr_samples": 10,
-                "img_size": 28,
+                "img_size": (28, 28),
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "perturb_std": 0.1,
+                "nr_samples": 10,
+                "img_size": (28, 30),
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
@@ -25,15 +42,14 @@ from ...quantus.metrics import *
     ],
 )
 def test_local_lipschitz_estimate(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     a_batch = explain(
@@ -54,13 +70,29 @@ def test_local_lipschitz_estimate(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
+                "img_size": (28, 28),
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": (28, 30),
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
@@ -71,15 +103,14 @@ def test_local_lipschitz_estimate(
     ],
 )
 def test_max_sensitivity(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     if params.get("a_batch_generate", True):
@@ -109,33 +140,47 @@ def test_max_sensitivity(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
-                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": (28, 30),
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
     ],
 )
 def test_avg_sensitivity(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     if params.get("a_batch_generate", True):

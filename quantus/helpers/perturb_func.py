@@ -87,10 +87,10 @@ def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
     # The patch-size for the blur generation (NOT the patch-size for perturbation)
     blur_patch_size = kwargs.get("blur_patch_size", 15)
     nr_channels = kwargs.get("nr_channels", 3)
-    img_size = kwargs.get("img_size", 224)
+    img_size = kwargs.get("img_size", (224, 224))
 
     # Reshape image since rest of function assumes channels_first
-    img = img.reshape(nr_channels, img_size, img_size)
+    img = img.reshape(nr_channels, img_size[0], img_size[1])
 
     # Get blurred image
     weightavg = (
@@ -143,8 +143,8 @@ def rotation(img: np.array, **kwargs) -> np.array:
     assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = cv2.getRotationMatrix2D(
         center=(
-            kwargs.get("img_size", 224) / 2,
-            kwargs.get("img_size", 224) / 2,
+            kwargs.get("img_size", 224)[0] / 2,
+            kwargs.get("img_size", 224)[1]/ 2,
         ),
         angle=kwargs.get("perturb_angle", 10),
         scale=1,
@@ -153,7 +153,7 @@ def rotation(img: np.array, **kwargs) -> np.array:
         cv2.warpAffine(
             np.moveaxis(img, 0, 2),
             matrix,
-            (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
+            (kwargs.get("img_size", 224)[0], kwargs.get("img_size", 224)[1]),
         ),
         2,
         0,
@@ -182,7 +182,7 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
 
 
 def translation_y_direction(img: np.array, **kwargs) -> np.array:
-    """Translate image by some given value in the x-direction."""
+    """Translate image by some given value in the y-direction."""
     assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
     assert "img_size" in kwargs, "Specify 'img_size' to perform translation."
     matrix = np.float32([[1, 0, 0], [0, 1, kwargs.get("perturb_dy", 10)]])

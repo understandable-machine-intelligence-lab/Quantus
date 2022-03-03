@@ -21,13 +21,28 @@ def input_ones_mnist():
 
 
 @pytest.fixture
+def input_ones_mnist_unequal_height_and_width():
+    return np.ones(shape=(1, 1, 28, 30)).flatten()
+
+
+@pytest.fixture
 def input_pert_3d():
     return np.random.uniform(0, 0.1, size=(3, 224, 224))
 
 
 @pytest.fixture
+def input_pert_3d_unequal_height_and_width():
+    return np.random.uniform(0, 0.1, size=(3, 112, 224))
+
+
+@pytest.fixture
 def input_pert_mnist():
     return np.random.uniform(0, 0.1, size=(1, 28, 28))
+
+
+@pytest.fixture
+def input_pert_mnist_unequal_height_and_width():
+    return np.random.uniform(0, 0.1, size=(1, 28, 30))
 
 
 @pytest.mark.perturb_func
@@ -49,6 +64,11 @@ def test_gaussian_noise(
         (
             lazy_fixture("input_ones_mnist"),
             {"indices": np.arange(0, 784), "input_shift": -1.0},
+            -1,
+        ),
+        (
+            lazy_fixture("input_ones_mnist_unequal_height_and_width"),
+            {"indices": np.arange(0, 840), "input_shift": -1.0},
             -1,
         ),
     ],
@@ -76,7 +96,18 @@ def test_baseline_replacement_by_indices(
                 "top_left_x": 0,
             },
             True,
-        )
+        ),
+        (
+            lazy_fixture("input_pert_3d_unequal_height_and_width"),
+            {
+                "patch_size": 4,
+                "nr_channels": 3,
+                "perturb_baseline": "black",
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            True,
+        ),
     ],
 )
 def test_baseline_replacement_by_patch(
@@ -101,7 +132,10 @@ def test_uniform_sampling(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("input_pert_3d"), {"perturb_angle": 30, "img_size": 224}, True)],
+    [
+        (lazy_fixture("input_pert_3d"), {"perturb_angle": 30, "img_size": (224, 224)}, True),
+        (lazy_fixture("input_pert_3d_unequal_height_and_width"), {"perturb_angle": 30, "img_size": (112, 224)}, True)
+    ],
 )
 def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
     out = rotation(img=data, **params)
@@ -116,7 +150,7 @@ def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
             lazy_fixture("input_pert_3d"),
             {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
             True,
-        )
+        ),
     ],
 )
 def test_translation_x_direction(
@@ -134,7 +168,7 @@ def test_translation_x_direction(
             lazy_fixture("input_pert_3d"),
             {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
             True,
-        )
+        ),
     ],
 )
 def test_translation_y_direction(
@@ -164,7 +198,19 @@ def test_no_perturbation(
             lazy_fixture("input_pert_3d"),
             {
                 "nr_channels": 3,
-                "img_size": 224,
+                "img_size": (224, 224),
+                "blur_patch_size": 15,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+        (
+            lazy_fixture("input_pert_3d_unequal_height_and_width"),
+            {
+                "nr_channels": 3,
+                "img_size": (112, 224),
                 "blur_patch_size": 15,
                 "patch_size": 4,
                 "top_left_y": 0,
@@ -176,7 +222,19 @@ def test_no_perturbation(
             lazy_fixture("input_pert_3d"),
             {
                 "nr_channels": 3,
-                "img_size": 224,
+                "img_size": (224, 224),
+                "blur_patch_size": 7,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+        (
+            lazy_fixture("input_pert_3d_unequal_height_and_width"),
+            {
+                "nr_channels": 3,
+                "img_size": (112, 224),
                 "blur_patch_size": 7,
                 "patch_size": 4,
                 "top_left_y": 0,
@@ -188,7 +246,19 @@ def test_no_perturbation(
             lazy_fixture("input_pert_mnist"),
             {
                 "nr_channels": 1,
-                "img_size": 28,
+                "img_size": (28, 28),
+                "blur_patch_size": 15,
+                "patch_size": 4,
+                "top_left_y": 0,
+                "top_left_x": 0,
+            },
+            {"shape": True, "values": False},
+        ),
+        (
+            lazy_fixture("input_pert_mnist_unequal_height_and_width"),
+            {
+                "nr_channels": 1,
+                "img_size": (28, 30),
                 "blur_patch_size": 15,
                 "patch_size": 4,
                 "top_left_y": 0,
