@@ -426,6 +426,7 @@ def test_monotonicity_nguyen(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -449,7 +450,7 @@ def test_pixel_flipping(
             targets=y_batch,
             **params,
         )
-    if "a_batch" in data:
+    elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
