@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import scipy
 
+from .utils import conv2D_numpy
 from .utils import get_baseline_value
 
 
