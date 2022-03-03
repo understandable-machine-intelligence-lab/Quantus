@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Optional, Tuple
+import numpy as np
 
 
 class ModelInterface(ABC):
