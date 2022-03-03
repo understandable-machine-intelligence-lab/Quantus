@@ -41,7 +41,7 @@ class PyTorchModel(ModelInterface):
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first
-        x = x.reshape(shape)
+        x = x.reshape(1, *shape)
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")

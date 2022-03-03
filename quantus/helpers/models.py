@@ -44,7 +44,7 @@ if util.find_spec("torch"):
             self.conv_2 = torch.nn.Conv1d(6, 16, 5)
             self.pool_2 = torch.nn.MaxPool1d(2, 2)
             self.relu_2 = torch.nn.ReLU()
-            self.fc_1 = torch.nn.Linear(256, 120)
+            self.fc_1 = torch.nn.Linear(352, 120)
             self.relu_3 = torch.nn.ReLU()
             self.fc_2 = torch.nn.Linear(120, 84)
             self.relu_4 = torch.nn.ReLU()
@@ -53,7 +53,7 @@ if util.find_spec("torch"):
         def forward(self, x):
             x = self.pool_1(self.relu_1(self.conv_1(x)))
             x = self.pool_2(self.relu_2(self.conv_2(x)))
-            x = x.view(x.shape[0], -1)
+            x = torch.flatten(x, start_dim=1)
             x = self.relu_3(self.fc_1(x))
             x = self.relu_4(self.fc_2(x))
             x = self.fc_3(x)

@@ -35,6 +35,7 @@ def load_mnist_model_tf():
 def load_1d_conv_model():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1D(n_channels=3)
+    model.eval()
     #model.load_state_dict(
     #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
     #)
@@ -69,18 +70,17 @@ def load_mnist_images_tf():
 
 @pytest.fixture
 def almost_uniform_1d(scope="session", autouse=True):
-    a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224))
     return {
-        "x_batch": np.random.randn(10, 3, 224),
+        "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
-        "a_batch": a_batch,
+        "a_batch": np.random.uniform(0, 0.01, size=(10, 1, 100)),
     }
 
 
 @pytest.fixture
 def almost_uniform_1d_no_abatch(scope="session", autouse=True):
     return {
-        "x_batch": np.random.randn(10, 1, 224),
+        "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": None,
     }
@@ -88,11 +88,10 @@ def almost_uniform_1d_no_abatch(scope="session", autouse=True):
 
 @pytest.fixture
 def almost_uniform_2d(scope="session", autouse=True):
-    a_batch = np.random.uniform(0, 0.01, size=(10, 1, 224, 224))
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
         "y_batch": np.random.randint(0, 10, size=10),
-        "a_batch": a_batch,
+        "a_batch": np.random.uniform(0, 0.01, size=(10, 1, 224, 224)),
     }
 
 
@@ -109,7 +108,7 @@ def almost_uniform_2d_no_abatch(scope="session", autouse=True):
 def flat_image_array(scope="session", autouse=True):
     return {
         "x": np.zeros((1, 3 * 28 * 28)),
-        "shape": (1, 3, 28, 28),
+        "shape": (3, 28, 28),
         "channel_first": True,
     }
 
@@ -118,6 +117,6 @@ def flat_image_array(scope="session", autouse=True):
 def flat_sequence_array(scope="session", autouse=True):
     return {
         "x": np.zeros((1, 3 * 28)),
-        "shape": (1, 3, 28),
+        "shape": (3, 28),
         "channel_first": True,
     }
