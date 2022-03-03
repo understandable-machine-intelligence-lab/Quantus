@@ -105,7 +105,7 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
-def is_channel_first(x: np.array):
+def infer_channel_first(x: np.array):
     """
     For 1d input:
     Assumption: nr_channels < sequence_length
