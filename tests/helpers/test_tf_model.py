@@ -16,11 +16,6 @@ def mock_input_tf_array():
     return {"x": np.zeros((1, 28, 28, 1))}
 
 
-@pytest.fixture
-def flat_image_array():
-    return {"x": np.zeros((1, 3 * 28 * 28)), "img_size": 28, "nr_channels": 3}
-
-
 @pytest.mark.tf_model
 @pytest.mark.parametrize(
     "data,params,expected",
@@ -92,6 +87,21 @@ def test_predict(
             lazy_fixture("flat_image_array"),
             {"channel_first": False},
             np.zeros((1, 28, 28, 3)),
+        ),
+        (
+            lazy_fixture("flat_image_array"),
+            {"channel_first": True},
+            np.zeros((1, 3, 28, 28)),
+        ),
+        (
+            lazy_fixture("flat_sequence_array"),
+            {"channel_first": False},
+            np.zeros((1, 28, 3)),
+        ),
+        (
+            lazy_fixture("flat_sequence_array"),
+            {"channel_first": True},
+            np.zeros((1, 3, 28)),
         ),
     ],
 )

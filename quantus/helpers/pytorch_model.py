@@ -1,9 +1,13 @@
 """This model creates the ModelInterface for PyTorch."""
+from contextlib import suppress
+from copy import deepcopy
+from typing import Optional, Tuple
+
 import torch
 import numpy as np
-from copy import deepcopy
-from contextlib import suppress
+
 from ..helpers.model_interface import ModelInterface
+from ..helpers import utils
 
 
 class PyTorchModel(ModelInterface):
@@ -29,11 +33,17 @@ class PyTorchModel(ModelInterface):
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
 
-    def shape_input(self, x, img_size, nr_channels):
-        """Reshape input into model expected input."""
-        x = x.reshape(1, nr_channels, img_size, img_size)
+    def shape_input(self, x: np.array, shape: Tuple[int, ...],
+                    channel_first: Optional[bool] = None):
+        """
+        Reshape input into model expected input.
+        channel_first: Explicitely state if x is formatted channel first (optional).
+        """
+        if channel_first is None:
+            channel_first = utils.infer_channel_first
+        x = x.reshape(shape)
         if self.channel_first:
-            return x
+            return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
 
     def get_model(self):

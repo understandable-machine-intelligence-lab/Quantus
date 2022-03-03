@@ -103,3 +103,21 @@ def almost_uniform_2d_no_abatch(scope="session", autouse=True):
         "y_batch": np.random.randint(0, 10, size=10),
         "a_batch": None,
     }
+
+
+@pytest.fixture
+def flat_image_array(scope="session", autouse=True):
+    return {
+        "x": np.zeros((1, 3 * 28 * 28)),
+        "shape": (1, 3, 28, 28),
+        "channel_first": True,
+    }
+
+
+@pytest.fixture
+def flat_sequence_array(scope="session", autouse=True):
+    return {
+        "x": np.zeros((1, 3 * 28)),
+        "shape": (1, 3, 28),
+        "channel_first": True,
+    }
