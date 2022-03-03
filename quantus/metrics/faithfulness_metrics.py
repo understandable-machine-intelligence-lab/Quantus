@@ -990,16 +990,6 @@ class PixelFlipping(Metric):
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
 
     def __call__(
         self,
@@ -1086,6 +1076,19 @@ class PixelFlipping(Metric):
 
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         for x, y, a in zip(x_batch_s, y_batch, a_batch):
 
@@ -1121,9 +1124,7 @@ class PixelFlipping(Metric):
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
