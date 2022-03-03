@@ -151,7 +151,7 @@ class LocalLipschitzEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
         x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -360,7 +360,7 @@ class MaxSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
         x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -570,7 +570,7 @@ class AvgSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
         x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -782,7 +782,7 @@ class Continuity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", is_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
         x_batch_s = make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:

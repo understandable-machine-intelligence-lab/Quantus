@@ -249,12 +249,12 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
         (lazy_fixture("mock_same_input_2d"), {"exception": ValueError}),
     ],
 )
-def test_is_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
+def test_infer_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            is_channel_first(data["x"])
+            infer_channel_first(data["x"])
         return
-    out = is_channel_first(data["x"])
+    out = infer_channel_first(data["x"])
     assert out == expected["value"], "Test failed."
 
 
