@@ -3,7 +3,7 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
-from ...quantus.helpers.pytorch_model import PyTorchModel
+from ...quantus.helpers import perturb_func
 
 
 @pytest.mark.faithfulness
@@ -367,6 +367,7 @@ def test_monotonicity_nguyen(
                 "img_size": 28,
                 "nr_channels": 1,
                 "max_steps_per_input": 2,
+                "a_batch_generate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -382,6 +383,7 @@ def test_monotonicity_nguyen(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -397,6 +399,7 @@ def test_monotonicity_nguyen(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -425,6 +428,7 @@ def test_monotonicity_nguyen(
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
+                "perturb_func": no_perturbation,
                 "method": "Saliency",
                 "a_batch_generate": False,
             },
@@ -484,6 +488,7 @@ def test_pixel_flipping(
                 "method": "Saliency",
                 "img_size": 28,
                 "nr_channels": 1,
+                "a_batch_generate": True,
             },
             {"min": -1, "max": 1.0},
         ),
@@ -504,9 +509,25 @@ def test_pixel_flipping(
             },
             {"min": -1, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "perturb_baseline": "mean",
+                "patch_size": 7,
+                "normalise": True,
+                "order": "morf",
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "perturb_func": perturb_func.no_perturbation,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
-def test_region_segmentation(
+def test_region_perturbation(
     model,
     data: np.ndarray,
     params: dict,
@@ -524,6 +545,8 @@ def test_region_segmentation(
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = RegionPerturbation(**params)(

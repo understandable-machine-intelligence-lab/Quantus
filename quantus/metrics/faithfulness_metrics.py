@@ -1,14 +1,33 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
+import itertools
+
 from .base import Metric
 from ..helpers.asserts import *
 from ..helpers.plotting import *
-from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.perturb_func import baseline_replacement_by_patch
 
 # TODO: patch sorting often wrong
+
+
+def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
+    pad_width_list = [(pad_width, pad_width)] * arr.ndim
+    if omit_first_axis:
+        pad_width_list[0] = (0, 0)
+    arr_pad = np.pad(arr, pad_width_list, mode="constant")
+    return arr_pad
+
+
+def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
+    unpad_slice = [slice(pad_width, arr.shape[axis] - pad_width)
+                   for axis, _ in enumerate(arr.shape)]
+    if omit_first_axis:
+        unpad_slice[0] = slice(None)
+    return arr[tuple(unpad_slice)]
 
 
 class FaithfulnessCorrelation(Metric):
@@ -1310,13 +1329,8 @@ class RegionPerturbation(Metric):
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
-
-            # Shape input to channels_first. This is needed for padding.
-            # For model prediction, inputs will be reshaped temporarily according to the model requirements
-            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
-
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -1332,46 +1346,34 @@ class RegionPerturbation(Metric):
             x_perturbed = x.copy()
 
             # Pad input and attributions. This is needed to allow for any patch_size.
-            padwidth = (2 * self.patch_size - 2) // 2
-            x_tmp = np.pad(
-                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
-            a_tmp = np.pad(
-                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
+            pad_width = self.patch_size - 1
+            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
+            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
 
             # Get patch indices of sorted attributions (descending).
             att_sums = []
-            for i_x, top_left_x in enumerate(
-                range(padwidth, x_tmp.shape[1] - padwidth)
-            ):
-                for i_y, top_left_y in enumerate(
-                    range(padwidth, x_tmp.shape[2] - padwidth)
-                ):  #
 
-                    # Sum attributions for patch.
-                    att_sums.append(
-                        a_tmp[
-                            top_left_x : top_left_x + self.patch_size,
-                            top_left_y : top_left_y + self.patch_size,
-                        ].sum()
-                    )
-                    patches.append([top_left_x, top_left_y])
+            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width)
+                              for axis in range(2, x_pad.ndim)]
+            for top_left_coords in itertools.product(*axis_iterators):
+                # Sum attributions for patch.
+                patch_slice = [slice(coord, coord + self.patch_size)
+                               for coord in top_left_coords]
+                patch_slice = tuple([slice(None), *patch_slice])
+                att_sums.append(a_pad[patch_slice].sum())
+                patches.append(top_left_coords)
 
             if self.order == "random":
-
                 # Order attributions randomly.
                 order = np.arange(len(patches))
                 np.random.shuffle(np.arange(len(patches)))
                 patch_order = [patches[p] for p in order]
 
             elif self.order == "morf":
-
                 # Order attributions according to the most relevant first.
                 patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             else:
-
                 # Order attributions according to the least relevant first.
                 patch_order = [patches[p] for p in np.argsort(att_sums)]
 
@@ -1380,7 +1382,6 @@ class RegionPerturbation(Metric):
             patch_order_new = {}
             cnt = 0
             for k in range(len(patch_order)):
-
                 if cnt >= min(self.regions_evaluation, len(patch_order)):
                     break
 
@@ -1400,41 +1401,36 @@ class RegionPerturbation(Metric):
 
             # Increasingly perturb the input and store the decrease in function value.
             for k in range(min(self.regions_evaluation, len(patch_order))):
-
-                # Calculate predictions on a random order.
-                top_left_x = patch_order[k][0]
-                top_left_y = patch_order[k][1]
+                patch_coords = patch_order[k]
 
                 # Also pad x_perturbed
                 # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
-                    mode="edge",
-                )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
+                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
+                                             mode='edge', omit_first_axis=True)
+
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    x_perturbed_pad,
                     **{
                         **self.kwargs,
                         **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
+                            #"patch_size": self.patch_size,
+                            #"nr_channels": self.nr_channels,
+                            #"img_size": self.img_size + 2 * pad_width,
                             "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
+                            #"top_left_y": top_left_y,
+                            #"top_left_x": top_left_x,
                         },
                     },
                 )
+
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
 
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
@@ -1628,12 +1624,12 @@ class Selectivity(Metric):
             x_perturbed = x.copy()
 
             # Pad input and attributions. This is needed to allow for any patch_size.
-            padwidth = (2 * self.patch_size - 2) // 2
+            pad_width = (2 * self.patch_size - 2) // 2
             x_tmp = np.pad(
-                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+                x, ((0, 0), (pad_width, pad_width), (pad_width, pad_width)), mode="constant"
             )
             a_tmp = np.pad(
-                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
+                a, ((pad_width, pad_width), (pad_width, pad_width)), mode="constant"
             )
 
             # Get patch indices of sorted attributions (descending).
@@ -1645,10 +1641,10 @@ class Selectivity(Metric):
             #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
             att_sums = []
             for i_x, top_left_x in enumerate(
-                range(padwidth, x_tmp.shape[1] - padwidth, self.patch_size)
+                range(pad_width, x_tmp.shape[1] - pad_width, self.patch_size)
             ):
                 for i_y, top_left_y in enumerate(
-                    range(padwidth, x_tmp.shape[2] - padwidth, self.patch_size)
+                    range(pad_width, x_tmp.shape[2] - pad_width, self.patch_size)
                 ):
 
                     # Sum attributions for patch.
@@ -1672,7 +1668,7 @@ class Selectivity(Metric):
                 # The mode should probably depend on the used perturb_func?
                 x_perturbed_tmp = np.pad(
                     x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
+                    ((0, 0), (pad_width, pad_width), (pad_width, pad_width)),
                     mode="edge",
                 )
                 x_perturbed_tmp = self.perturb_func(
@@ -1682,7 +1678,7 @@ class Selectivity(Metric):
                         **{
                             "patch_size": self.patch_size,
                             "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
+                            "img_size": self.img_size + 2 * pad_width,
                             "perturb_baseline": self.perturb_baseline,
                             "top_left_y": top_left_y,
                             "top_left_x": top_left_x,
@@ -1690,7 +1686,7 @@ class Selectivity(Metric):
                     },
                 )
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = x_perturbed_tmp[:, pad_width:-pad_width, pad_width:-pad_width]
 
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 

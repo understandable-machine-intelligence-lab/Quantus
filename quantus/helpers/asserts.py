@@ -91,7 +91,7 @@ def assert_attributions_order(order: str) -> None:
         "random",
         "morf",
         "lorf",
-    ], "The order of sorting the attributions must be either random, morf, or lorf-"
+    ], "The order of sorting the attributions must be either random, morf, or lorf."
 
 
 def assert_nr_segments(nr_segments: int) -> None:
