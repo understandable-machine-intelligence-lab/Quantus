@@ -39,9 +39,8 @@ def get_superpixel_segments(
         )
 
 
-def get_baseline_value(
-    choice: Union[float, int, str, None], img: np.ndarray, **kwargs
-) -> float:
+def get_baseline_value(choice: Union[float, int, str, None], arr: np.ndarray,
+                       patch: Optional[np.ndarray] = None, **kwargs) -> float:
     """Get the baseline value (float) to fill tensor with."""
 
     if choice is None:
@@ -61,30 +60,31 @@ def get_baseline_value(
     if isinstance(choice, (float, int)):
         return choice
     elif isinstance(choice, str):
-        fill_dict = get_baseline_dict(img, **kwargs)
-        assert choice in list(
-            fill_dict.keys()
-        ), f"Ensure that 'perturb_baseline' or 'constant_value' (str) that exist in {list(fill_dict.keys())}"
-        return fill_dict.get(choice.lower(), fill_dict["uniform"])
+        fill_dict = get_baseline_dict(arr, patch)
+        if choice.lower() not in fill_dict:
+            raise ValueError(
+                f"Ensure that 'choice'(str) is in {list(fill_dict.keys())}"
+            )
+        return fill_dict[choice.lower()]
     else:
-        raise print(
+        raise ValueError(
             "Specify 'perturb_baseline' or 'constant_value' as a string, integer or float."
         )
 
 
-def get_baseline_dict(img: Union[np.ndarray, None], **kwargs) -> dict:
+def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
     """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
     fill_dict = {
-        "mean": float(img.mean()),
+        "mean": float(arr.mean()),
         "random": float(random.random()),
-        "uniform": float(random.uniform(img.min(), img.max())),
-        "black": float(img.min()),
-        "white": float(img.max()),
+        "uniform": float(random.uniform(arr.min(), arr.max())),
+        "black": float(arr.min()),
+        "white": float(arr.max()),
     }
-    if "patch" in kwargs:
-        fill_dict["neighbourhood_mean"] = (float(kwargs["patch"].mean()),)
+    if patch is not None:
+        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
         fill_dict["neighbourhood_random_min_max"] = (
-            float(random.uniform(kwargs["patch"].min(), kwargs["patch"].max())),
+            float(random.uniform(patch.min(), patch.max())),
         )
     return fill_dict
 
