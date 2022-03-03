@@ -128,7 +128,7 @@ def assert_targets(
 
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
-    """Asserts on attributions."""
+    """Asserts on attributions. Assumes channel first layout."""
     assert (
         type(a_batch) == np.ndarray
     ), "Attributions 'a_batch' should be of type np.ndarray."
@@ -138,10 +138,10 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
 
-    assert np.shape(x_batch)[-2:] == np.shape(a_batch)[-2:], (
+    assert np.shape(x_batch)[2:] == np.shape(a_batch)[2:], (
         "The inputs 'x_batch' and attributions 'a_batch' "
         "should share the same dimensions."
-        "{} != {}".format(np.shape(x_batch)[-1], np.shape(a_batch)[-1])
+        "{} != {}".format(np.shape(x_batch)[2:], np.shape(a_batch)[2:])
     )
     assert not np.all((a_batch == 0)), (
         "The elements in the attribution vector are all equal to zero, "
