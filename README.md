@@ -173,6 +173,7 @@ pip install -r requirements.txt
 python>=3.7.0
 pytorch>=1.10.1
 tensorflow==2.6.2
+tqdm==4.62.3
 ```
 
 ## Getting started
