@@ -8,6 +8,7 @@ from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
 from ..helpers.warn_func import *
+from ..helpers import utils
 from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import baseline_replacement_by_patch
 
@@ -1134,7 +1135,7 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    img=x_perturbed,
+                    arr=x_perturbed,
                     **{
                         **self.kwargs,
                         **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
@@ -1325,6 +1326,9 @@ class RegionPerturbation(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
+        if a_batch.ndim == x_batch_s.ndim - 1:
+            a_batch = np.expand_dims(a_batch, axis=1)
+
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
@@ -1350,78 +1354,64 @@ class RegionPerturbation(Metric):
             x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
             a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
 
-            # Get patch indices of sorted attributions (descending).
+            # Create patches across whole input shape and aggregate attributions.
             att_sums = []
-
             axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width)
-                              for axis in range(2, x_pad.ndim)]
+                              for axis in range(1, x_pad.ndim)]
             for top_left_coords in itertools.product(*axis_iterators):
+                # Create slice for patch.
+                patch_slice = utils.create_patch_slice(
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
+                    expand_first_dim=True,
+                )
+
                 # Sum attributions for patch.
-                patch_slice = [slice(coord, coord + self.patch_size)
-                               for coord in top_left_coords]
-                patch_slice = tuple([slice(None), *patch_slice])
                 att_sums.append(a_pad[patch_slice].sum())
-                patches.append(top_left_coords)
+                patches.append(patch_slice)
 
             if self.order == "random":
                 # Order attributions randomly.
                 order = np.arange(len(patches))
                 np.random.shuffle(np.arange(len(patches)))
-                patch_order = [patches[p] for p in order]
 
             elif self.order == "morf":
                 # Order attributions according to the most relevant first.
-                patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
+                order = np.argsort(att_sums)[::-1]
 
             else:
                 # Order attributions according to the least relevant first.
-                patch_order = [patches[p] for p in np.argsort(att_sums)]
+                order = np.argsort(att_sums)
+
+            # Create ordered list of patches.
+            ordered_patches = [patches[p] for p in order]
 
             # Remove overlapping patches
-            blocked_areas = []
-            patch_order_new = {}
-            cnt = 0
-            for k in range(len(patch_order)):
-                if cnt >= min(self.regions_evaluation, len(patch_order)):
+            blocked_mask = np.zeros(x_input.shape, dtype=bool)
+            ordered_patches_no_overlap = []
+            for patch_slice in ordered_patches:
+                patch_mask = np.zeros(x_input.shape, dtype=bool)
+                patch_mask[patch_slice] = True
+                intersected = blocked_mask & patch_mask
+
+                if not intersected.any():
+                    ordered_patches_no_overlap.append(patch_slice)
+                    blocked_mask = blocked_mask | patch_mask
+
+                if len(ordered_patches_no_overlap) >= self.regions_evaluation:
                     break
 
-                # check if patch overlaps any already selected patch
-                intersected = [
-                    np.all(
-                        np.abs(np.array(patch_order[k]) - np.array(bl))
-                        < self.patch_size
-                    )
-                    for bl in blocked_areas
-                ]
-                if not any(intersected):
-                    patch_order_new[cnt] = patch_order[k]
-                    blocked_areas.append(patch_order[k])
-                    cnt += 1
-            patch_order = patch_order_new
-
             # Increasingly perturb the input and store the decrease in function value.
-            for k in range(min(self.regions_evaluation, len(patch_order))):
-                patch_coords = patch_order[k]
-
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
+            for patch_slice in ordered_patches_no_overlap:
+                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
                 x_perturbed_pad = _pad_array(x_perturbed, pad_width,
                                              mode='edge', omit_first_axis=True)
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
-                    x_perturbed_pad,
-                    **{
-                        **self.kwargs,
-                        **{
-                            #"patch_size": self.patch_size,
-                            #"nr_channels": self.nr_channels,
-                            #"img_size": self.img_size + 2 * pad_width,
-                            "perturb_baseline": self.perturb_baseline,
-                            #"top_left_y": top_left_y,
-                            #"top_left_x": top_left_x,
-                        },
-                    },
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    perturb_baseline=self.perturb_baseline,
                 )
 
                 # Remove Padding
