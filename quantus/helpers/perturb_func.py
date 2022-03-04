@@ -1,6 +1,7 @@
 """This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import copy
 import random
+from typing import Any, Sequence
 
 import cv2
 import numpy as np
@@ -19,9 +20,9 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
     return img_perturbed
 
 
-def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
+def baseline_replacement_by_indices(arr: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
-    assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
+    assert arr.ndim == 1, "Check that 'perturb_func' receives a 1D array."
     assert (
         "indices" in kwargs
     ), "Specify 'indices' to enable perturbation function to run."
@@ -32,45 +33,37 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     elif "input_shift" in kwargs:
         choice = kwargs["input_shift"]
 
-    img_perturbed = copy.copy(img)
-    baseline_value = get_baseline_value(choice=choice, img=img, **kwargs)
+    arr_perturbed = copy.copy(arr)
+    baseline_value = get_baseline_value(choice=choice, arr=arr, **kwargs)
 
     if "input_shift" in kwargs:
-        img_shifted = copy.copy(img)
-        img_shifted = np.multiply(
-            img_shifted,
-            np.full(shape=img.shape, fill_value=baseline_value, dtype=float),
+        arr_shifted = copy.copy(arr)
+        arr_shifted = np.multiply(
+            arr_shifted,
+            np.full(shape=arr.shape, fill_value=baseline_value, dtype=float),
         )
-        img_perturbed[kwargs["indices"]] = img_shifted[kwargs["indices"]]
+        arr_perturbed[kwargs["indices"]] = arr_shifted[kwargs["indices"]]
     else:
-        img_perturbed[kwargs["indices"]] = baseline_value
+        arr_perturbed[kwargs["indices"]] = baseline_value
 
-    return img_perturbed
+    return arr_perturbed
 
 
-def baseline_replacement_by_patch(img: np.array, **kwargs) -> np.array:
+def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
+                                  perturb_baseline: Any) -> np.array:
     """Replace a single patch in an image by given baseline."""
-    assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
-    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
-    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
-    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
+    if len(patch_slice) != arr.ndim:
+        raise ValueError(
+            "patch_slice dimensions don't match arr dimensions."
+            f" ({len(patch_slice)} != {arr.ndim})"
+        )
 
-    # Preset patch for 'mean' and 'neighbourhood' choices.
-    kwargs["patch"] = img[
-        :,
-        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
-        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ]
-
-    img_perturbed = copy.copy(img)
-    img_perturbed[
-        :,
-        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
-        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ] = get_baseline_value(choice=kwargs["perturb_baseline"], img=img, **kwargs)
-
-    return img_perturbed
+    # Preset patch for 'neighbourhood_*' choices.
+    patch = arr[patch_slice]
+    arr_perturbed = copy.copy(arr)
+    baseline = get_baseline_value(choice=perturb_baseline, arr=arr, patch=patch)
+    arr_perturbed[patch_slice] = baseline
+    return arr_perturbed
 
 
 def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
