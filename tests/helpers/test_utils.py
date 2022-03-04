@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
 import pickle
-from typing import Union
+from typing import Any, Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
-from ...quantus.helpers import *
+from ...quantus.helpers.models import LeNet
+from ...quantus.helpers.utils import *
 
 
 @pytest.fixture
@@ -490,3 +491,54 @@ def test_conv2D_numpy(
     )
     if "shape" in expected:
         assert expected["shape"] == out.shape, "Test failed."
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, ),
+                "expand_first_dim": False,
+            },
+            (slice(0, 4, None), ),
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            (slice(0, 4, None), slice(0, 4, None)),
+        ),
+        (
+            {
+                "patch_size": 10,
+                "coords": (1, 2),
+                "expand_first_dim": False,
+            },
+            (slice(1, 11, None), slice(2, 12, None)),
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0),
+                "expand_first_dim": True,
+            },
+            (slice(None, None, None), slice(0, 4, None), slice(0, 4, None)),
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0, 0),
+                "expand_first_dim": False,
+            },
+            (slice(0, 4, None), slice(0, 4, None), slice(0, 4, None)),
+        ),
+    ],
+)
+def test_create_patch_slice(params: dict, expected: Any):
+    out = create_patch_slice(**params)
+    assert out == expected
