@@ -197,7 +197,6 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
     return img_perturbed
 
 
-def no_perturbation(img: np.array, **kwargs) -> np.array:
+def no_perturbation(arr: np.array, **kwargs) -> np.array:
     """Apply no perturbation to input."""
-    img_perturbed = img
-    return img_perturbed
+    return arr
