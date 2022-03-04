@@ -2,7 +2,7 @@
 import re
 import random
 import numpy as np
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 from importlib import util
 from skimage.segmentation import *
 from ..helpers.model_interface import ModelInterface
@@ -231,3 +231,16 @@ def conv2D_numpy(
                         kernel[c, :, :, :],
                     ).sum()
     return output
+
+
+def create_patch_slice(patch_size: int, coords: Sequence[int],
+                       expand_first_dim: bool) -> Tuple[Sequence[int]]:
+    """
+    Create a patch slice from patch size and coordinates.
+    expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
+    """
+    patch_slice = [slice(coord, coord + patch_size) for coord in coords]
+    # Prepend slice for all channels.
+    if expand_first_dim:
+        patch_slice = [slice(None), *patch_slice]
+    return tuple(patch_slice)
