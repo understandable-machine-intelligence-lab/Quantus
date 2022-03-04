@@ -42,7 +42,7 @@ If you find this library helpful in speeding up your research please cite using 
 
 ## Library Overview 
 
-Simple visual comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
+Simple visual comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 
 Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
@@ -56,14 +56,15 @@ With Quantus, we can obtain richer insights on how the methods compare e.g., b) 
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics (note, however, that the categories are oftentimes mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and 'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
 
 <details>
-<summary>Faithfulness</summary>
+  <summary><b>Faithfulness</b></summary>
 quantifies to what extent explanations follow the predictive behaviour of the model (asserting that more important features play a larger role in model outcomes)
-<ul>
+ <br><br>
+  <ul>
 <li><a href="https://www.ijcai.org/Proceedings/2020/0417.pdf">Faithfulness Correlation</a>: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output 
 <li><a href="https://arxiv.org/pdf/1806.07538.pdf">Faithfulness Estimate</a>: computes the correlation between probability drops and attribution scores on various points
-<li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
+<li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuring the effect on model performance
 <li><a href="https://arxiv.org/pdf/2007.07584.pdf">Monotonicity Metric Nguyen</a>: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
-<li><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">Pixel Flipping</a>: aptures the impact of perturbing pixels in descending order according to the attributed value on the classification score
+<li><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">Pixel Flipping</a>: captures the impact of perturbing pixels in descending order according to the attributed value on the classification score
 <li><a href="https://arxiv.org/pdf/1509.06321.pdf">Region Perturbation</a>: is an extension of Pixel-Flipping to flip an area rather than a single pixel
 <li><a href="https://arxiv.org/pdf/1706.07979.pdf">Selectivity</a>: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
 <li><a href="https://arxiv.org/pdf/1711.06104.pdf">SensitivityN</a>: computes the correlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
@@ -72,19 +73,21 @@ quantifies to what extent explanations follow the predictive behaviour of the mo
 </details>
 
 <details>
-<summary>Robustness</summary>
+<summary><b>Robustness</b></summary>
 measures to what extent explanations are stable when subject to slight perturbations of the input, assuming that model output approximately stayed the same
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/pdf/1806.08049.pdf">Local Lipschitz Estimate</a>: tests the consistency in the explanation between adjacent examples
 <li><a href="https://arxiv.org/pdf/1901.09392.pdf">Max-Sensitivity</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
 <li><a href="https://arxiv.org/pdf/1901.09392.pdf">Avg-Sensitivity</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
-<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Continuity</a>: captures the strongest variation in explanation of an input and it's perturbed version
+<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Continuity</a>: captures the strongest variation in explanation of an input and its perturbed version
 </ul>
 </details>
 
 <details>
-<summary>Localisation</summary>
+<summary><b>Localisation</b></summary>
 tests if the explainable evidence is centered around the object of interest (as defined by a bounding box or similar segmentation mask)
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1608.00507">Pointing Game</a>: checks whether attribution with the highest score is located within the targeted object
 <li><a href="https://arxiv.org/abs/1910.09840">Attribution Localization</a>: measures the ratio of positive attributions within the targeted object towards the total positive attributions
@@ -96,8 +99,9 @@ tests if the explainable evidence is centered around the object of interest (as 
 </details>
 
 <details>
-<summary>Complexity</summary>
+<summary><b>Complexity</b></summary>
 captures to what extent explanations are concise i.e., that few features are used to explain a model prediction
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1810.06583">Sparseness</a>: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
 <li><a href="https://arxiv.org/abs/2005.00631">Complexity</a>: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
@@ -106,16 +110,19 @@ captures to what extent explanations are concise i.e., that few features are use
 </details>
 
 <details>
-<summary>Randomisation</summary>
+<summary><b>Randomisation</b></summary>
 tests to what extent explanations deteriorate as model parameters are increasingly randomised
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1810.03292">Model Parameter Randomisation</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
-<li><a href="https://arxiv.org/abs/1912.09818">andom Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
+<li><a href="https://arxiv.org/abs/1912.09818">Random Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
 </ul>
 </details>
 
 <details>
-<summary>Axiomatic</summary>
+<summary><b>Axiomatic</b></summary>
+  assesses if explanations fulfill certain axiomatic properties
+     <br><br>
 <ul>
 <li><a href="https://arxiv.org/abs/1703.01365">Completeness</a>: assesses if explanations fulfill certain axiomatic properties
 <li><a href="https://arxiv.org/abs/2007.07584">Non-Sensitivity</a>: measures whether the total attribution is proportional to the explainable evidence at the model output  (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))
@@ -152,7 +159,7 @@ Or, alternatively for `tensorflow` you run:
 pip install quantus[tensorflow]
 ```
 
-Additionally, if you want to use the basic explainability functionaliy such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
+Additionally, if you want to use the basic explainability functionality such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
 
 Alternatively, simply install requirements.txt (again, this requires that either `torch` or `tensorflow` is installed and won't include the explainability functionality to the installation):
 
@@ -166,6 +173,7 @@ pip install -r requirements.txt
 python>=3.7.0
 pytorch>=1.10.1
 tensorflow==2.6.2
+tqdm==4.62.3
 ```
 
 ## Getting started
@@ -193,7 +201,7 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using the Quantus library.
+Next, we generate some explanations for some test set samples that we wish to evaluate using Quantus library.
 
 ```python
 import captum
@@ -374,7 +382,7 @@ If you find this toolkit or its companion paper
 interesting or useful in your research, use following Bibtex annotation to cite us:
 
 ```
-@article{hedström2022quantus,
+@article{hedstrom2022quantus,
       title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
       author={Anna Hedström and
               Leander Weber and
