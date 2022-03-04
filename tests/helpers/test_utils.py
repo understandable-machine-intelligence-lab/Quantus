@@ -24,33 +24,63 @@ def segmentation_setup():
 
 
 @pytest.fixture
-def baseline_none():
-    return {"choice": None, "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_none_1d():
+    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_black():
-    return {"choice": "black", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_none_2d():
+    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_uniform():
-    return {"choice": "uniform", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_black_1d():
+    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_random():
-    return {"choice": "random", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_black_2d():
+    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_white():
-    return {"choice": "white", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_uniform_1d():
+    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_mean():
-    return {"choice": "mean", "img": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
+def baseline_uniform_2d():
+    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_random_1d():
+    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_random_2d():
+    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_white_1d():
+    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_white_2d():
+    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_mean_1d():
+    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222))}
+
+
+@pytest.fixture
+def baseline_mean_2d():
+    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
 
 
 @pytest.fixture
@@ -156,18 +186,22 @@ def test_get_superpixel_segments(
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black"), {"value": 0.0}),
-        (lazy_fixture("baseline_white"), {"value": 1.0}),
-        (lazy_fixture("baseline_mean"), {"value": 0.5}),
-        (lazy_fixture("baseline_none"), {"exception": AssertionError}),
+        (lazy_fixture("baseline_black_1d"), {"value": 0.0}),
+        (lazy_fixture("baseline_black_2d"), {"value": 0.0}),
+        (lazy_fixture("baseline_white_1d"), {"value": 1.0}),
+        (lazy_fixture("baseline_white_2d"), {"value": 1.0}),
+        (lazy_fixture("baseline_mean_1d"), {"value": 0.5}),
+        (lazy_fixture("baseline_mean_2d"), {"value": 0.5}),
+        (lazy_fixture("baseline_none_1d"), {"exception": AssertionError}),
+        (lazy_fixture("baseline_none_2d"), {"exception": AssertionError}),
     ],
 )
 def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_baseline_value(choice=data["choice"], img=data["img"])
+            get_baseline_value(choice=data["choice"], arr=data["arr"])
         return
-    out = get_baseline_value(choice=data["choice"], img=data["img"])
+    out = get_baseline_value(choice=data["choice"], arr=data["arr"])
     assert round(out, 2) == expected["value"], "Test failed."
 
 
@@ -175,13 +209,16 @@ def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black"), dict),
-        (lazy_fixture("baseline_white"), dict),
-        (lazy_fixture("baseline_mean"), dict),
+        (lazy_fixture("baseline_black_2d"), dict),
+        (lazy_fixture("baseline_black_2d"), dict),
+        (lazy_fixture("baseline_white_2d"), dict),
+        (lazy_fixture("baseline_white_2d"), dict),
+        (lazy_fixture("baseline_mean_2d"), dict),
+        (lazy_fixture("baseline_mean_2d"), dict),
     ],
 )
 def test_get_baseline_dict(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = get_baseline_dict(img=data["img"])
+    out = get_baseline_dict(arr=data["arr"])
     assert isinstance(out, dict), "Test failed."
 
 
