@@ -9,48 +9,109 @@ from ...quantus.helpers.tf_model import TensorFlowModel
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": True,
                 "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "normalise": True,
+                "disable_warnings": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": True,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
+                "nr_channels": 1,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
                 "nr_channels": 1,
                 "a_batch_generate": False,
             },
@@ -59,15 +120,14 @@ from ...quantus.helpers.tf_model import TensorFlowModel
     ],
 )
 def test_completeness(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     if params.get("a_batch_generate", True):
@@ -88,22 +148,41 @@ def test_completeness(
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "normalise": True,
                 "disable_warnings": False,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "a_batch_generate": False,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "n_samples": 1,
+                "normalise": True,
+                "disable_warnings": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "eps": 1e-10,
@@ -111,12 +190,29 @@ def test_completeness(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "n_samples": 1,
+                "eps": 1e-10,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "eps": 1e-2,
@@ -124,19 +220,50 @@ def test_completeness(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
             },
             1.0,
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "n_samples": 1,
+                "eps": 1e-2,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 2,
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
+                "nr_channels": 1,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "n_samples": 2,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
                 "nr_channels": 1,
             },
             1.0,
@@ -144,15 +271,14 @@ def test_completeness(
     ],
 )
 def test_non_sensitivity(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     if params.get("a_batch_generate", True):
@@ -172,55 +298,123 @@ def test_non_sensitivity(
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
                 "disable_warnings": False,
                 "explain_func": explain,
                 "method": "InputxGradient",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "input_shift": -1,
             },
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": False,
+                "explain_func": explain,
+                "method": "InputxGradient",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Gradient",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "input_shift": -1,
             },
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Gradient",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
                 "nr_channels": 1,
                 "input_shift": -1,
             },
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": False,
+                "normalise": False,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": True,
                 "normalise": True,
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "img_size": 28,
+                "img_size": (28, 28),
+                "nr_channels": 1,
+                "input_shift": -1,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images_unequal_height_and_width"),
+            {
+                "abs": True,
+                "normalise": True,
+                "disable_warnings": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": (28, 30),
                 "nr_channels": 1,
                 "input_shift": -1,
             },
@@ -229,17 +423,15 @@ def test_non_sensitivity(
     ],
 )
 def test_inputinvariance(
+    model: ModelInterface,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
-
     scores = InputInvariance(**params)(
         model=model,
         x_batch=x_batch,
