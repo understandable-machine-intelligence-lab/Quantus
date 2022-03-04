@@ -1,4 +1,6 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
+from tqdm import tqdm
+
 from .base import Metric
 from ..helpers.asserts import *
 from ..helpers.plotting import *
@@ -47,6 +49,7 @@ class FaithfulnessCorrelation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
             subset_size (integer): The size of subset, default=224.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -65,6 +68,7 @@ class FaithfulnessCorrelation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -178,7 +182,13 @@ class FaithfulnessCorrelation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -261,6 +271,7 @@ class FaithfulnessEstimate(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
             subset_size (integer): The size of subset, default=224.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -281,6 +292,7 @@ class FaithfulnessEstimate(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
@@ -403,7 +415,13 @@ class FaithfulnessEstimate(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -494,6 +512,7 @@ class MonotonicityArya(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
@@ -510,6 +529,7 @@ class MonotonicityArya(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -628,7 +648,13 @@ class MonotonicityArya(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -707,6 +733,7 @@ class MonotonicityNguyen(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="uniform".
@@ -727,6 +754,7 @@ class MonotonicityNguyen(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -851,7 +879,13 @@ class MonotonicityNguyen(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             # Predict on input x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
@@ -952,6 +986,7 @@ class PixelFlipping(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
@@ -968,6 +1003,7 @@ class PixelFlipping(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_pixel_flipping_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -986,7 +1022,7 @@ class PixelFlipping(Metric):
                 citation=(
                     "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
                     " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                    "e0130140."
+                    "e0130140"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -1087,7 +1123,13 @@ class PixelFlipping(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -1174,6 +1216,7 @@ class RegionPerturbation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_patch.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="uniform".
@@ -1192,6 +1235,7 @@ class RegionPerturbation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_region_perturbation_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
@@ -1200,16 +1244,6 @@ class RegionPerturbation(Metric):
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.img_size = self.kwargs.get("img_size", 224)
-        self.text_warning = (
-            "\nThe Region perturbation metric is likely to be sensitive to the choice of "
-            "baseline value 'perturb_baseline', the patch size for masking 'patch_size' and number of regions to"
-            " evaluate 'regions_evaluation'. "
-            "\nGo over and select each hyperparameter of the metric carefully to avoid misinterpretation of scores. "
-            "\nTo view all relevant hyperparameters call .get_params of the metric instance. "
-            "\nFor further reading: Samek, Wojciech, et al. 'Evaluating the visualization of what a "
-            "deep neural network has learned.' IEEE transactions on neural networks and learning "
-            "systems 28.11 (2016): 2660-2673.' PloS one 10.7 (2015): e0130140."
-        )
         self.last_results = {}
         self.all_results = []
 
@@ -1218,11 +1252,15 @@ class RegionPerturbation(Metric):
         if not self.disable_warnings:
             warn_parameterisation(
                 metric_name=self.__class__.__name__,
-                sensitive_params=("baseline value 'perturb_baseline'"),
+                sensitive_params=(
+                    "baseline value 'perturb_baseline'"
+                    ", the patch size for masking 'patch_size'"
+                    " and number of regions to evaluate 'regions_evaluation'"
+                ),
                 citation=(
-                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015): "
-                    "e0130140"
+                    "Samek, Wojciech, et al. 'Evaluating the visualization of what a deep"
+                    " neural network has learned.' IEEE transactions on neural networks and"
+                    " learning systems 28.11 (2016): 2660-2673"
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
@@ -1314,7 +1352,14 @@ class RegionPerturbation(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for sample, (x, y, a) in iterator:
 
             # Shape input to channels_first. This is needed for padding.
             # For model prediction, inputs will be reshaped temporarily according to the model requirements
@@ -1482,6 +1527,7 @@ class Selectivity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
@@ -1497,6 +1543,7 @@ class Selectivity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_selectivity_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
@@ -1610,7 +1657,14 @@ class Selectivity(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for sample, (x, y, a) in iterator:
 
             # Shape input to channels_first. This is needed for padding.
             # For model prediction, inputs will be reshaped temporarily according to the model requirements
@@ -1756,6 +1810,7 @@ class SensitivityN(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_pearson.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -1775,6 +1830,7 @@ class SensitivityN(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_sensitivity_n_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -1906,7 +1962,14 @@ class SensitivityN(Metric):
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
 
-        for sample, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for sample, (x, y, a) in iterator:
 
             a = a.flatten()
 
@@ -2014,6 +2077,7 @@ class IterativeRemovalOfFeatures(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="mean".
@@ -2028,6 +2092,7 @@ class IterativeRemovalOfFeatures(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get(
@@ -2137,7 +2202,14 @@ class IterativeRemovalOfFeatures(Metric):
         # Asserts.
         assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for ix, (x, y, a) in enumerate(zip(x_batch_s, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
