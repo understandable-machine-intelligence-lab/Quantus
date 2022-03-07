@@ -66,6 +66,7 @@ class ModelParameterRandomisation(Metric):
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = {}
         self.all_results = []
 
@@ -183,7 +184,7 @@ class ModelParameterRandomisation(Metric):
             pbar = tqdm(total=n_iterations)
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
-            order=self.layer_order
+            order=self.layer_order, seed=self.seed
         ):
 
             similarity_scores = []
@@ -266,6 +267,7 @@ class RandomLogit(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = []
         self.all_results = []
 
@@ -384,6 +386,7 @@ class RandomLogit(Metric):
                 a = self.normalise_func(a)
 
             # Randomly select off-class labels.
+            random.seed(a=self.seed)
             y_off = np.array(
                 [
                     random.choice(
