@@ -158,7 +158,8 @@ class LocalLipschitzEstimate(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -377,7 +378,8 @@ class MaxSensitivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -597,7 +599,8 @@ class AvgSensitivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -819,7 +822,8 @@ class Continuity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
