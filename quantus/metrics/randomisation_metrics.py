@@ -178,8 +178,9 @@ class ModelParameterRandomisation(Metric):
         # Due to the nested for-loops and the requirement of a single progressbar,
         # manual updating will be performed at the end of each inner iteration.
         if self.display_progressbar:
-            n_layers = len(list(model.get_random_layer_generator(
-                order=self.layer_order)))
+            n_layers = len(
+                list(model.get_random_layer_generator(order=self.layer_order))
+            )
             n_iterations = n_layers * len(a_batch)
             pbar = tqdm(total=n_iterations)
 
@@ -374,8 +375,9 @@ class RandomLogit(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 

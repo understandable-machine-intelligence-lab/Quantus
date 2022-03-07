@@ -174,8 +174,10 @@ class PointingGame(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -371,8 +373,10 @@ class AttributionLocalisation(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -589,8 +593,10 @@ class TopKIntersection(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -780,8 +786,10 @@ class RelevanceRankAccuracy(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -974,8 +982,10 @@ class RelevanceMassAccuracy(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -1161,8 +1171,10 @@ class AUC(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 

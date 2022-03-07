@@ -164,11 +164,12 @@ def half_in_gt_zeros_bigger():
     "data,params,expected",
     [
         (
-            lazy_fixture("all_in_gt"), {
+            lazy_fixture("all_in_gt"),
+            {
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            True
+            True,
         ),
         (
             lazy_fixture("all_in_gt_no_abatch"),
@@ -196,11 +197,12 @@ def half_in_gt_zeros_bigger():
             True,
         ),
         (
-            lazy_fixture("all_in_gt"), {
+            lazy_fixture("all_in_gt"),
+            {
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            True
+            True,
         ),
     ],
 )
@@ -261,7 +263,8 @@ def test_pointing_game(
             {"type": list},
         ),
         (
-            lazy_fixture("none_in_gt"), {
+            lazy_fixture("none_in_gt"),
+            {
                 "k": 10000,
                 "disable_warnings": True,
                 "display_progressbar": False,
