@@ -19,6 +19,7 @@ def gaussian_noise(img: np.array, **kwargs) -> np.array:
 def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
     assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
+    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
     assert (
         "indices" in kwargs
     ), "Specify 'indices' to enable perturbation function to run."
@@ -31,6 +32,20 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
 
     img_perturbed = copy.copy(img)
     baseline_value = get_baseline_value(choice=choice, img=img, **kwargs)
+
+    # Make sure that image is perturbed on all channels.
+    if isinstance(kwargs["indices"], int):
+        kwargs["indices"] = np.expand_dims(kwargs["indices"], axis=0)
+    kwargs["indices"] = np.concatenate(
+        [
+            np.add(
+                kwargs["indices"],
+                int(c * len(img) / kwargs.get("nr_channels")),
+                dtype=int,
+            )
+            for c in range(kwargs.get("nr_channels"))
+        ]
+    )
 
     if "input_shift" in kwargs:
         img_shifted = copy.copy(img)

@@ -45,10 +45,18 @@ def test_gaussian_noise(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("input_zeros"), {"indices": [0, 2], "fixed_values": 1.0}, 1),
+        (
+            lazy_fixture("input_zeros"),
+            {
+                "indices": [0, 2, 224, 226, 448, 450],
+                "fixed_values": 1.0,
+                "nr_channels": 3,
+            },
+            1,
+        ),
         (
             lazy_fixture("input_ones_mnist"),
-            {"indices": np.arange(0, 784), "input_shift": -1.0},
+            {"indices": np.arange(0, 784), "input_shift": -1.0, "nr_channels": 1},
             -1,
         ),
     ],

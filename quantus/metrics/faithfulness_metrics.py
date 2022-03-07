@@ -155,7 +155,8 @@ class FaithfulnessCorrelation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -388,7 +389,8 @@ class FaithfulnessEstimate(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -621,7 +623,8 @@ class MonotonicityArya(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -852,7 +855,8 @@ class MonotonicityNguyen(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -1093,10 +1097,12 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface..
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -1325,7 +1331,8 @@ class RegionPerturbation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface..
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -1631,7 +1638,8 @@ class Selectivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -1934,7 +1942,8 @@ class SensitivityN(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
@@ -2178,7 +2187,8 @@ class IterativeRemovalOfFeatures(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-        # Wrap the model into an interface
+
+        # Wrap the model into an interface.
         if model:
             model = get_wrapped_model(model, self.channel_first)
 
