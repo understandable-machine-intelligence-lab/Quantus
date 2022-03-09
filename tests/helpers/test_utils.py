@@ -203,7 +203,7 @@ def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]
             get_baseline_value(choice=data["choice"], arr=data["arr"])
         return
     out = get_baseline_value(choice=data["choice"], arr=data["arr"])
-    assert round(out, 2) == expected["value"], "Test failed."
+    assert out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1), "Test failed."
 
 
 @pytest.mark.utils
