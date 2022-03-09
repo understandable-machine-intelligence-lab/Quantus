@@ -96,8 +96,14 @@ def get_name(str: str):
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
 
 
-def set_features_in_step(max_steps_per_input: int, img_size: int):
-    return (img_size * img_size) / max_steps_per_input
+def set_features_in_step(max_steps_per_input: int, img_size: Union[int, tuple]):
+    if isinstance(img_size, tuple):
+        return (np.prod(img_size)) / max_steps_per_input
+    elif isinstance(img_size, int):
+        return (img_size * img_size) / max_steps_per_input
+    else:
+        raise TypeError("img_size must be int or tuple.")
+    
 
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
@@ -105,7 +111,7 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
-def get_channel_first(x: np.array, flexible_imgsize_enabled: bool=False) -> bool:
+def get_channel_first(x: np.array, flexible_imgsize_enabled: bool=True) -> bool:
     """
     if flexible_imgsize_enabled = True
 

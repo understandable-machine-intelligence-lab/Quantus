@@ -210,9 +210,9 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
 def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_channel_first(data["x"])
+            get_channel_first(data["x"], flexible_imgsize_enabled=False)
         return
-    out = get_channel_first(data["x"])
+    out = get_channel_first(data["x"], flexible_imgsize_enabled=False)
     assert out == expected["value"], "Test failed."
 
 
@@ -228,9 +228,9 @@ def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool])
 def test_flexible_imgsize_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_channel_first(data["x"], flexible_imgsize_enabled=True)
+            get_channel_first(data["x"])
         return
-    out = get_channel_first(data["x"], flexible_imgsize_enabled=True)
+    out = get_channel_first(data["x"])
     assert out == expected["value"], "Test failed."
 
 

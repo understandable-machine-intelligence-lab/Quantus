@@ -62,20 +62,36 @@ def set_warn(call):
     #    pass
 
 
-def assert_features_in_step(features_in_step: int, img_size: int) -> None:
+def assert_features_in_step(features_in_step: int, img_size: Union[int, tuple]) -> None:
     """Assert that features in step is compatible with the image size."""
-    assert (img_size * img_size) % features_in_step == 0, (
-        "Set 'features_in_step' so that the modulo remainder "
-        "returns zero given the img_size."
-    )
+    if isinstance(img_size, tuple):
+        assert (np.prod(img_size)) % features_in_step == 0, (
+            "Set 'features_in_step' so that the modulo remainder "
+            "returns zero given the img_size."
+        )
+    elif isinstance(img_size, int):
+        assert (img_size * img_size) % features_in_step == 0, (
+            "Set 'features_in_step' so that the modulo remainder "
+            "returns zero given the img_size."
+        )
+    else:
+        raise TypeError("img_size must be int or tuple.")
 
 
-def assert_max_steps(max_steps_per_input: int, img_size: int) -> None:
+def assert_max_steps(max_steps_per_input: int, img_size: Union[int, tuple]) -> None:
     """Assert that max steps per inputs is compatible with the image size."""
-    assert (img_size * img_size) % max_steps_per_input == 0, (
-        "Set 'max_steps_per_input' so that the modulo remainder "
-        "returns zero given the img_size."
-    )
+    if isinstance(img_size, tuple):
+        assert (np.prod(img_size)) % max_steps_per_input == 0, (
+            "Set 'max_steps_per_input' so that the modulo remainder "
+            "returns zero given the img_size."
+        )
+    elif isinstance(img_size, int):
+        assert (img_size * img_size) % max_steps_per_input == 0, (
+            "Set 'max_steps_per_input' so that the modulo remainder "
+            "returns zero given the img_size."
+        )
+    else:
+        raise TypeError("img_size must be int or tuple.")
 
 
 def assert_patch_size(patch_size: int, img_size: int) -> None:

@@ -39,7 +39,6 @@ class LocalLipschitzEstimate(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -59,7 +58,6 @@ class LocalLipschitzEstimate(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -153,8 +151,7 @@ class LocalLipschitzEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -255,7 +252,6 @@ class MaxSensitivity(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -274,7 +270,6 @@ class MaxSensitivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -365,8 +360,7 @@ class MaxSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -469,7 +463,6 @@ class AvgSensitivity(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -488,7 +481,6 @@ class AvgSensitivity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -578,8 +570,7 @@ class AvgSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -681,6 +672,7 @@ class Continuity(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -700,6 +692,7 @@ class Continuity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
+        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -791,7 +784,8 @@ class Continuity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
+                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:

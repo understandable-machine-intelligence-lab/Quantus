@@ -38,7 +38,6 @@ class PointingGame(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -50,7 +49,6 @@ class PointingGame(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -134,8 +132,7 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -228,7 +225,6 @@ class AttributionLocalisation(Metric):
             default=False.
             max_size (float): The maximum ratio for  the size of the bounding box to image, default=1.0.
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -242,7 +238,6 @@ class AttributionLocalisation(Metric):
         self.weighted = self.kwargs.get("weighted", False)
         self.max_size = self.kwargs.get("max_size", 1.0)
         self.abs = self.kwargs.get("abs", True)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -328,8 +323,7 @@ class AttributionLocalisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -442,7 +436,6 @@ class TopKIntersection(Metric):
         kwargs: Keyword arguments (optional)
             concept_influence (boolean): Indicates whether concept influence metric is used, default=False.
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -456,7 +449,6 @@ class TopKIntersection(Metric):
         self.k = self.kwargs.get("k", 1000)
         self.concept_influence = self.kwargs.get("concept_influence", False)
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -541,8 +533,7 @@ class TopKIntersection(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -632,7 +623,6 @@ class RelevanceRankAccuracy(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -644,7 +634,6 @@ class RelevanceRankAccuracy(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -728,8 +717,7 @@ class RelevanceRankAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -824,7 +812,6 @@ class RelevanceMassAccuracy(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -836,7 +823,6 @@ class RelevanceMassAccuracy(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -919,8 +905,7 @@ class RelevanceMassAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -1008,7 +993,6 @@ class AUC(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -1020,7 +1004,6 @@ class AUC(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -1102,8 +1085,7 @@ class AUC(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:

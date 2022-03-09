@@ -114,7 +114,7 @@ class FaithfulnessCorrelation(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -157,7 +157,7 @@ class FaithfulnessCorrelation(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -268,7 +268,7 @@ class FaithfulnessEstimate(Metric):
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            img_size (integer): Square image dimensions, default=224.
+            img_size (tuple): Height and width of image.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -286,7 +286,7 @@ class FaithfulnessEstimate(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.img_size = self.kwargs.get("img_size", (224, 224))
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -339,7 +339,7 @@ class FaithfulnessEstimate(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -382,7 +382,7 @@ class FaithfulnessEstimate(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -497,7 +497,7 @@ class MonotonicityArya(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            img_size (integer): Square image dimensions, default=224.
+            img_size (tuple): Height and width of image.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -514,7 +514,7 @@ class MonotonicityArya(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.img_size = self.kwargs.get("img_size", (224, 224))
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -564,7 +564,7 @@ class MonotonicityArya(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -607,7 +607,7 @@ class MonotonicityArya(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -714,7 +714,7 @@ class MonotonicityNguyen(Metric):
             nr_samples (integer): The number of samples to iterate over, default=100.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
-            img_size (integer): Square image dimensions, default=224.
+            img_size (tuple): Height and width of image.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -734,7 +734,7 @@ class MonotonicityNguyen(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.eps = self.kwargs.get("eps", 1e-5)
         self.nr_samples = self.kwargs.get("nr_samples", 100)
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.img_size = self.kwargs.get("img_size", (224, 224))
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -787,7 +787,7 @@ class MonotonicityNguyen(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -830,7 +830,7 @@ class MonotonicityNguyen(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -914,7 +914,7 @@ class MonotonicityNguyen(Metric):
                     float(
                         np.mean((np.array(y_pred_perturb) - np.array(y_pred)) ** 2)
                         * inv_pred
-                    )
+                    )   
                 )
                 atts.append(float(sum(a[a_ix])))
 
@@ -955,7 +955,7 @@ class PixelFlipping(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            img_size (integer): Square image dimensions, default=224.
+            img_size (tuple): Height and width of image.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -972,7 +972,7 @@ class PixelFlipping(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.img_size = self.kwargs.get("img_size", (224, 224))
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -1023,7 +1023,7 @@ class PixelFlipping(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -1066,7 +1066,7 @@ class PixelFlipping(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
@@ -1158,7 +1158,7 @@ class RegionPerturbation(Metric):
         to make sure non-overlapping
         - they called it "area over the MoRF perturbation curve" it
         looks like a simple deduction of function outputs?
-
+        - In this implementation, we assume that height and width dimensions are equally sized.
     """
 
     @attributes_check
@@ -1169,6 +1169,7 @@ class RegionPerturbation(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -1181,13 +1182,14 @@ class RegionPerturbation(Metric):
             patch_size (integer): The patch size for masking, default=8.
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
-            img_size (integer): Square image dimensions, default=224.
+            img_size (tuple): Height and width of image.
         """
         super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
+        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_region_perturbation_experiment
@@ -1285,7 +1287,8 @@ class RegionPerturbation(Metric):
         """
 
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
+                                flexible_imgsize_enabled=self.flexible_imgsize_enabled))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -1467,6 +1470,9 @@ class Selectivity(Metric):
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
+
+    Current assumptions:
+        - In this implementation, we assume that height and width dimensions are equally sized.
     """
 
     @attributes_check
@@ -1477,6 +1483,7 @@ class Selectivity(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -1486,13 +1493,14 @@ class Selectivity(Metric):
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             patch_size (integer): The patch size for masking, default=8.
-            img_size (integer): Square image dimensions, default=224.
+            img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
         """
         super().__init__()
 
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
+        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_selectivity_experiment
@@ -1581,7 +1589,8 @@ class Selectivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
+                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -1740,7 +1749,7 @@ class SensitivityN(Metric):
          neighborhood, so not to distort the image distribution completely.
          - I don't get why they have so high correlation in the paper, maybe using a better baseline_value?
          - Also I don't get why correlation is only reported positive?
-
+        - In this implementation, we assume that height and width dimensions are equally sized.
     """
 
     @attributes_check
@@ -1751,6 +1760,7 @@ class SensitivityN(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -1762,7 +1772,7 @@ class SensitivityN(Metric):
             default="uniform".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
-            img_size (integer): Square image dimensions, default=224.
+            img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -1771,6 +1781,7 @@ class SensitivityN(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
+        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = plot_sensitivity_n_experiment
@@ -1874,7 +1885,8 @@ class SensitivityN(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
+                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -2073,7 +2085,7 @@ class IterativeRemovalOfFeatures(Metric):
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
                 nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                img_size (tuple): Height and width of image.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -2116,7 +2128,7 @@ class IterativeRemovalOfFeatures(Metric):
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.img_size = kwargs.get("img_size", (np.shape(x_batch_s)[2], np.shape(x_batch_s)[3]))
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},

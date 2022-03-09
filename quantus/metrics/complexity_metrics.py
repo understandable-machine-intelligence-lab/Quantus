@@ -38,7 +38,6 @@ class Sparseness(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -50,7 +49,6 @@ class Sparseness(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -131,8 +129,7 @@ class Sparseness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -219,7 +216,6 @@ class Complexity(Metric):
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -231,7 +227,6 @@ class Complexity(Metric):
         self.args = args
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", True)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -311,8 +306,7 @@ class Complexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -394,7 +388,6 @@ class EffectiveComplexity(Metric):
         kwargs: Keyword arguments (optional)
             eps (float): Attributions threshold, default=1e-5.
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            flexible_imgsize_enabled (boolean): Indicates whether or not the metric can handle non-square images, default=True.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
@@ -407,7 +400,6 @@ class EffectiveComplexity(Metric):
         self.kwargs = kwargs
         self.eps = self.kwargs.get("eps", 1e-5)
         self.abs = self.kwargs.get("abs", True)
-        self.flexible_imgsize_enabled = self.kwargs.get("flexible_imgsize_enabled", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -487,8 +479,7 @@ class EffectiveComplexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch,
-                                        flexible_imgsize_enabled=self.flexible_imgsize_enabled))
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
         x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:

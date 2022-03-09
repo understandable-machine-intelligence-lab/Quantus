@@ -35,7 +35,12 @@ class TensorFlowModel(ModelInterface):
 
     def shape_input(self, x, img_size, nr_channels):
         """Reshape input into model expected input."""
-        x = x.reshape(1, nr_channels, img_size, img_size)
+        if isinstance(img_size, tuple):
+            x = x.reshape(1, nr_channels, img_size[0], img_size[1])
+        elif isinstance(img_size, int):
+            x = x.reshape(1, nr_channels, img_size, img_size)
+        else:
+            raise TypeError("img_size must be int or tuple.")
         if self.channel_first:
             return x
         return np.moveaxis(x, 1, -1)
