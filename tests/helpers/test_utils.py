@@ -415,6 +415,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 217, 217)},
         ),
@@ -428,6 +429,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 3,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 223, 223)},
         ),
@@ -441,6 +443,7 @@ def test_get_wrapped_model(
                 "stride": 3,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 73, 73)},
         ),
@@ -454,6 +457,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 217, 217)},
         ),
@@ -467,8 +471,65 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"exception": AssertionError},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"shape": (3, 224, 224)},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 3,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"exception": NotImplementedError},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 3,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"exception": NotImplementedError},
+        ),
+        (
+            {
+                "c_in": 6,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"shape": (3, 224, 224)},
         ),
     ],
 )
@@ -483,11 +544,21 @@ def test_conv2D_numpy(
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             out = conv2D_numpy(
-                input, kernel, params["stride"], params["padding"], params["groups"]
+                x=input,
+                kernel=kernel,
+                stride=params["stride"],
+                padding=params["padding"],
+                groups=params["groups"],
+                pad_output=params["pad_output"],
             )
         return
     out = conv2D_numpy(
-        input, kernel, params["stride"], params["padding"], params["groups"]
+        x=input,
+        kernel=kernel,
+        stride=params["stride"],
+        padding=params["padding"],
+        groups=params["groups"],
+        pad_output=params["pad_output"],
     )
     if "shape" in expected:
         assert expected["shape"] == out.shape, "Test failed."
