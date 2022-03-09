@@ -11,13 +11,10 @@ from .utils import conv2D_numpy
 from .utils import get_baseline_value
 
 
-def gaussian_noise(img: np.array, **kwargs) -> np.array:
+def gaussian_noise(arr: np.array, mean: float = 0.0, std: float = 0.01) -> np.array:
     """Add gaussian noise to the input."""
-    assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    img_perturbed = img + np.random.normal(
-        kwargs.get("perturb_mean", 0.0), kwargs.get("perturb_std", 0.01)
-    )
-    return img_perturbed
+    noise = np.random.normal(loc=mean, scale=std, size=arr.shape)
+    return arr + noise
 
 
 def baseline_replacement_by_indices(arr: np.array, **kwargs) -> np.array:
