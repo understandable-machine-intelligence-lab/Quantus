@@ -265,7 +265,13 @@ def test_uniform_sampling(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("input_uniform_2d_3ch"), {"perturb_angle": 30, "img_size": 224}, True)],
+    [
+        (
+            lazy_fixture("input_uniform_2d_3ch"),
+            {"perturb_angle": 30, "img_size": 224},
+            True,
+        ),
+    ],
 )
 def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
     out = rotation(img=data, **params)
@@ -310,13 +316,19 @@ def test_translation_y_direction(
 
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
-    "data,params,expected", [(lazy_fixture("input_uniform_2d_3ch"), {"perturb_dx": 20}, True)]
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_uniform_2d_3ch"),
+            {"perturb_dx": 20},
+            True,
+        ),
+    ],
 )
 def test_no_perturbation(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = no_perturbation(img=data, **params)
-    print(out == data)
+    out = no_perturbation(arr=data, **params)
     assert (out == data).all() == expected, "Test failed."
 
 
@@ -327,44 +339,58 @@ def test_no_perturbation(
         (
             lazy_fixture("input_uniform_2d_3ch"),
             {
-                "nr_channels": 3,
-                "img_size": 224,
-                "blur_patch_size": 15,
+                "blur_kernel_size": 15,
                 "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "coords": (0, 0),
             },
-            {"shape": True, "values": False},
+            {},
         ),
         (
             lazy_fixture("input_uniform_2d_3ch"),
             {
-                "nr_channels": 3,
-                "img_size": 224,
-                "blur_patch_size": 7,
+                "blur_kernel_size": 7,
                 "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "coords": (0, 0),
             },
-            {"shape": True, "values": False},
+            {},
         ),
         (
             lazy_fixture("input_uniform_mnist"),
             {
-                "nr_channels": 1,
-                "img_size": 28,
-                "blur_patch_size": 15,
+                "blur_kernel_size": 15,
                 "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "coords": (0, 0),
             },
-            {"shape": True, "values": False},
+            {},
         ),
     ],
 )
 def test_baseline_replacement_by_blur(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = baseline_replacement_by_blur(img=data, **params)
-    assert (out.shape == data.shape) == expected["shape"], "Test failed."
-    assert (out == data).all() == expected["values"], "Test failed."
+    patch_slice = utils.create_patch_slice(
+        patch_size=params["patch_size"],
+        coords=params["coords"],
+        expand_first_dim=True,
+    )
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = baseline_replacement_by_blur(
+                arr=data,
+                patch_slice=patch_slice,
+                blur_kernel_size=params["blur_kernel_size"],
+            )
+        return
+
+    out = baseline_replacement_by_blur(
+        arr=data,
+        patch_slice=patch_slice,
+        blur_kernel_size=params["blur_kernel_size"],
+    )
+
+    patch_mask = np.zeros(data.shape, dtype=bool)
+    patch_mask[patch_slice] = True
+    assert out.shape == data.shape, "Test failed."
+    assert np.all(out[patch_mask] != data[patch_mask]), "Test failed."
+    assert np.all(out[~patch_mask] == data[~patch_mask]), "Test failed."
