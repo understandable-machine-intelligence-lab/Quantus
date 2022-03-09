@@ -238,6 +238,16 @@ def test_baseline_replacement_by_patch(
     "data,params,expected",
     [
         (
+            lazy_fixture("input_uniform_1d_3ch"),
+            {"perturb_radius": 0.02},
+            True,
+        ),
+        (
+            lazy_fixture("input_uniform_2d_3ch"),
+            {"perturb_radius": 0.02},
+            True,
+        ),
+        (
             lazy_fixture("input_uniform_2d_3ch_flattened"),
             {"perturb_radius": 0.02},
             True,
@@ -247,8 +257,9 @@ def test_baseline_replacement_by_patch(
 def test_uniform_sampling(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = uniform_sampling(img=data, **params)
-    assert np.any(out != data) == expected, "Test failed."
+    out = uniform_sampling(arr=data, **params)
+    assert any(out.flatten()[0] != out.flatten()), "Test failed."
+    assert any(out.flatten() != data.flatten()) == expected, "Test failed."
 
 
 @pytest.mark.perturb_func

@@ -11,9 +11,10 @@ from .utils import conv2D_numpy
 from .utils import get_baseline_value
 
 
-def gaussian_noise(arr: np.array, mean: float = 0.0, std: float = 0.01) -> np.array:
+def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
+                   perturb_std: float = 0.01) -> np.array:
     """Add gaussian noise to the input."""
-    noise = np.random.normal(loc=mean, scale=std, size=arr.shape)
+    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
     return arr + noise
 
 
@@ -119,15 +120,10 @@ def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
     return img_perturbed
 
 
-def uniform_sampling(img: np.array, **kwargs) -> np.array:
+def uniform_sampling(arr: np.array, perturb_radius: float = 0.02) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
-    assert img.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    img_perturbed = img + np.random.uniform(
-        -kwargs.get("perturb_radius", 0.02),
-        kwargs.get("perturb_radius", 0.02),
-        size=img.shape,
-    )
-    return img_perturbed
+    noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
+    return arr + noise
 
 
 def rotation(img: np.array, **kwargs) -> np.array:
