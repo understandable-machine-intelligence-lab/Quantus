@@ -232,9 +232,17 @@ def conv2D_numpy(
                     ).sum()
 
     if pad_output:
+        if stride != 1 or padding != 0:
+            raise NotImplementedError()
         padwidth = (kernel_size - 1) // 2
         output = np.pad(
-            output, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="edge"
+            output,
+            (
+                (0, 0),
+                (padwidth + padwidth % 2, padwidth),
+                (padwidth + padwidth % 2, padwidth),
+            ),
+            mode="edge"
         )
 
     return output
