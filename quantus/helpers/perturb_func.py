@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 import scipy
 
-from .utils import conv2D_numpy
 from .utils import get_baseline_value
+from .utils import conv2D_numpy
 
 
 def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
@@ -64,60 +64,37 @@ def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
     return arr_perturbed
 
 
-def baseline_replacement_by_blur(img: np.array, **kwargs) -> np.array:
+def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
+                                 blur_kernel_size: int = 15) -> np.array:
     """
     Replace a single patch in an image by a blurred version.
     Blur is performed via a 2D convolution.
-    kwarg "blur_patch_size" controls the kernel-size of that convolution (Default is 15).
+    blur_kernel_size controls the kernel-size of that convolution (Default is 15).
+    Assumes unbatched channel first format.
     """
-    assert img.ndim == 3, "Check that 'perturb_func' receives a 3D array."
-    assert "patch_size" in kwargs, "Specify 'patch_size' (int) to perturb the image."
-    assert "nr_channels" in kwargs, "Specify 'nr_channels' (int) to perturb the image."
-    assert "img_size" in kwargs, "Specify 'img_size' (int) to perturb the image."
-    assert "top_left_y" in kwargs, "Specify 'top_left_y' (int) to perturb the image."
-    assert "top_left_x" in kwargs, "Specify 'top_left_x' (int) to perturb the image."
+    nr_channels = arr.shape[0]
+    # Create blurred array.
+    blur_kernel_size = (1, *([blur_kernel_size] * (arr.ndim - 1)))
+    kernel = np.ones(blur_kernel_size, dtype=arr.dtype)
+    kernel *= 1.0 / np.prod(blur_kernel_size)
+    kernel = np.tile(kernel, (nr_channels, 1, *([1] * (arr.ndim - 1))))
 
-    # Get kwargs
-    # The patch-size for the blur generation (NOT the patch-size for perturbation)
-    blur_patch_size = kwargs.get("blur_patch_size", 15)
-    nr_channels = kwargs.get("nr_channels", 3)
-    img_size = kwargs.get("img_size", 224)
+    if arr.ndim == 2:
+        raise NotImplementedError()
+    elif arr.ndim == 3:
+        arr_avg = conv2D_numpy(
+            x=arr,
+            kernel=kernel,
+            stride=1,
+            padding=0,
+            groups=nr_channels,
+            pad_output=True,
+        )
 
-    # Reshape image since rest of function assumes channels_first
-    img = img.reshape(nr_channels, img_size, img_size)
-
-    # Get blurred image
-    weightavg = (
-        1.0
-        / float(blur_patch_size * blur_patch_size)
-        * np.ones((1, 1, blur_patch_size, blur_patch_size), dtype=img.dtype)
-    )
-    print(img.shape, np.tile(weightavg, (nr_channels, 1, 1, 1)).shape)
-    avgimg = conv2D_numpy(
-        img,
-        np.tile(weightavg, (nr_channels, 1, 1, 1)),
-        stride=1,
-        padding=0,
-        groups=nr_channels,
-    )
-    padwidth = (blur_patch_size - 1) // 2
-    avgimg = np.pad(
-        avgimg, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="edge"
-    )
-
-    # Perturb image
-    img_perturbed = copy.copy(img)
-    img_perturbed[
-        :,
-        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
-        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ] = avgimg[
-        :,
-        kwargs["top_left_x"] : kwargs["top_left_x"] + kwargs["patch_size"],
-        kwargs["top_left_y"] : kwargs["top_left_y"] + kwargs["patch_size"],
-    ]
-
-    return img_perturbed
+    # Perturb array.
+    arr_perturbed = copy.copy(arr)
+    arr_perturbed[patch_slice] = arr_avg[patch_slice]
+    return arr_perturbed
 
 
 def uniform_sampling(arr: np.array, perturb_radius: float = 0.02) -> np.array:
@@ -161,7 +138,7 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=get_baseline_value(
-                choice=kwargs["perturb_baseline"], img=img, **kwargs
+                choice=kwargs["perturb_baseline"], arr=img, **kwargs
             ),
         ),
         -1,
@@ -181,7 +158,7 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=get_baseline_value(
-                choice=kwargs["perturb_baseline"], img=img, **kwargs
+                choice=kwargs["perturb_baseline"], arr=img, **kwargs
             ),
         ),
         2,

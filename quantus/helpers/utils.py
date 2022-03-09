@@ -190,7 +190,7 @@ def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterf
 
 
 def conv2D_numpy(
-    x: np.array, kernel: np.array, stride: int, padding: int, groups: int
+        x: np.array, kernel: np.array, stride: int, padding: int, groups: int, pad_output: bool = False
 ) -> np.array:
     """
     Computes 2D convolution in numpy
@@ -230,6 +230,13 @@ def conv2D_numpy(
                         ],
                         kernel[c, :, :, :],
                     ).sum()
+
+    if pad_output:
+        padwidth = (kernel_size - 1) // 2
+        output = np.pad(
+            output, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="edge"
+        )
+
     return output
 
 
