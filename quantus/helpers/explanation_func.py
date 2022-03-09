@@ -7,10 +7,9 @@ import random
 from importlib import util
 import cv2
 import warnings
-from .utils import *
-from .normalise_func import *
-from ..helpers import __EXTRAS__
 
+if util.find_spec("torch"):
+    import torch
 if util.find_spec("captum"):
     from captum.attr import *
 if util.find_spec("zennit"):
@@ -18,8 +17,15 @@ if util.find_spec("zennit"):
     from zennit import composites as zcomp
     from zennit import attribution as zattr
     from zennit import core as zcore
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
 if util.find_spec("tf_explain"):
     import tf_explain
+
+from ..helpers import __EXTRAS__
+from .model_interface import ModelInterface
+from .normalise_func import normalise_by_negative
+from .utils import get_baseline_value, infer_channel_first, make_channel_last
 
 
 def explain(model, inputs, targets, *args, **kwargs) -> np.ndarray:
@@ -341,7 +347,7 @@ def generate_captum_explanation(
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                choice=kwargs["constant_value"], img=inputs[i]
+                choice=kwargs["constant_value"], arr=inputs[i]
             )
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
