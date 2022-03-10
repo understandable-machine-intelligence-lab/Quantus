@@ -532,11 +532,11 @@ def test_monotonicity_nguyen(
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_baseline": "mean",
-                "features_in_step": 14,
+                "features_in_step": 10,
                 "normalise": False,
                 "disable_warnings": True,
                 "explain_func": explain,
-                "perturb_func": no_perturbation,
+                "perturb_func": perturb_func.baseline_replacement_by_indices,
                 "method": "Saliency",
                 "a_batch_generate": False,
             },
