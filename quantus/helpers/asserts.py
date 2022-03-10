@@ -171,7 +171,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
         np.shape(x_batch)[0] == np.shape(s_batch)[0]
     ), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
     assert (
-        np.shape(x_batch)[-2:] == np.shape(s_batch)[-2:]
+        np.shape(x_batch)[2:] == np.shape(s_batch)[2:]
     ), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
     assert (
         np.shape(s_batch)[1] == 1
@@ -183,7 +183,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), ("The " "segmentation 's_batch' should not only contain [1‚0] or [True, False].")
+    ), ("The " "segmentation 's_batch' should only contain [1‚0] or [True, False].")
 
 
 def assert_max_size(max_size: float) -> None:
