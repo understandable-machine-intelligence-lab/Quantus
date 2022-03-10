@@ -7,15 +7,13 @@ from sklearn.metrics import roc_curve, auc
 from tqdm import tqdm
 
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import plotting
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
 
 
 class PointingGame(Metric):
@@ -63,7 +61,7 @@ class PointingGame(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' input as well as if "
@@ -76,7 +74,7 @@ class PointingGame(Metric):
                     "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -137,11 +135,11 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -156,7 +154,7 @@ class PointingGame(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -167,8 +165,8 @@ class PointingGame(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -258,9 +256,9 @@ class AttributionLocalisation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        assert_max_size(max_size=self.max_size)
+        asserts.assert_max_size(max_size=self.max_size)
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', if size of the ground truth "
@@ -274,7 +272,7 @@ class AttributionLocalisation(Metric):
                     "arXiv preprint arXiv:1910.09840v2 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -335,11 +333,11 @@ class AttributionLocalisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -353,7 +351,7 @@ class AttributionLocalisation(Metric):
         if a_batch is None:
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -364,8 +362,8 @@ class AttributionLocalisation(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -477,7 +475,7 @@ class TopKIntersection(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', the number of features to "
@@ -491,7 +489,7 @@ class TopKIntersection(Metric):
                     "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -552,11 +550,11 @@ class TopKIntersection(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -571,7 +569,7 @@ class TopKIntersection(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -582,8 +580,8 @@ class TopKIntersection(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -669,7 +667,7 @@ class RelevanceRankAccuracy(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' as well as if the attributions"
@@ -682,7 +680,7 @@ class RelevanceRankAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -743,11 +741,11 @@ class RelevanceRankAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -762,7 +760,7 @@ class RelevanceRankAccuracy(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -773,8 +771,8 @@ class RelevanceRankAccuracy(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -864,7 +862,7 @@ class RelevanceMassAccuracy(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' as well as if the attributions"
@@ -877,7 +875,7 @@ class RelevanceMassAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -937,11 +935,11 @@ class RelevanceMassAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -956,7 +954,7 @@ class RelevanceMassAccuracy(Metric):
 
             # Get explanation function and make asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -967,8 +965,8 @@ class RelevanceMassAccuracy(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -1052,7 +1050,7 @@ class AUC(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' input as well as if "
@@ -1063,7 +1061,7 @@ class AUC(Metric):
                     " Vol 27, Issue 8, (2006)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1124,11 +1122,11 @@ class AUC(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -1143,7 +1141,7 @@ class AUC(Metric):
 
             # Get explanation function and make asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -1154,8 +1152,8 @@ class AUC(Metric):
             )
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
