@@ -193,6 +193,7 @@ class FaithfulnessCorrelation(Metric):
         self.last_result = []
 
         if a_batch is None:
+
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
@@ -251,7 +252,7 @@ class FaithfulnessCorrelation(Metric):
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
-                att_sums.append(np.sum(a[a_ix]))
+                att_sums.append(np.sum(a[:, a_ix]))
 
             similarity = self.similarity_func(a=att_sums, b=logit_deltas)
             self.last_results.append(similarity)
@@ -338,16 +339,6 @@ class FaithfulnessEstimate(Metric):
                 ),
             )
             warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
 
     def __call__(
         self,
@@ -431,9 +422,23 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -455,7 +460,7 @@ class FaithfulnessEstimate(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -472,25 +477,21 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x.flatten(),
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions.
-                att_sums.append(a[a_ix].sum())
+                att_sums.append(a[:, a_ix].sum())
 
             self.last_results.append(self.similarity_func(a=att_sums, b=pred_deltas))
 
@@ -571,16 +572,6 @@ class MonotonicityArya(Metric):
                 ),
             )
             warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
 
     def __call__(
         self,
@@ -664,9 +655,23 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -689,11 +694,9 @@ class MonotonicityArya(Metric):
 
             preds = []
 
-            baseline_value = get_baseline_value(
-                choice=self.perturb_baseline, img=x, **kwargs
-            )
-
             # Copy the input x but fill with baseline values.
+            baseline_value = utils.get_baseline_value(
+                choice=self.perturb_baseline, arr=x)
             x_baseline = np.full(x.shape, baseline_value).flatten()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
@@ -705,19 +708,16 @@ class MonotonicityArya(Metric):
                     )
                 ]
                 x_baseline = self.perturb_func(
-                    img=x_baseline,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
-                    },
+                    arr=x_baseline,
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+                x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
-
                 preds.append(y_pred_perturb)
 
             self.last_results.append(np.all(np.diff(preds) >= 0))
@@ -802,16 +802,6 @@ class MonotonicityNguyen(Metric):
                 ),
             )
             warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
 
     def __call__(
         self,
@@ -895,9 +885,23 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -908,7 +912,7 @@ class MonotonicityNguyen(Metric):
         for x, y, a in iterator:
 
             # Predict on input x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -944,21 +948,14 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                        arr=x.flatten(),
+                        indices=a_ix,
+                        perturb_baseline=self.perturb_baseline,
                     )
                     asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
-                    )
+                    x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                     y_pred_perturb = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
@@ -970,7 +967,7 @@ class MonotonicityNguyen(Metric):
                         * inv_pred
                     )
                 )
-                atts.append(float(sum(a[a_ix])))
+                atts.append(float(sum(a[:, a_ix])))
 
             self.last_results.append(self.similarity_func(a=atts, b=vars))
 
@@ -1120,6 +1117,7 @@ class PixelFlipping(Metric):
         self.last_result = []
 
         if a_batch is None:
+
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
@@ -1178,10 +1176,8 @@ class PixelFlipping(Metric):
                 ]
                 x_perturbed = self.perturb_func(
                     arr=x_perturbed,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1342,7 +1338,6 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
@@ -1369,9 +1364,7 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-
-        if a_batch.ndim == x_batch_s.ndim - 1:
-            a_batch = np.expand_dims(a_batch, axis=1)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1535,9 +1528,7 @@ class Selectivity(Metric):
             "perturb_func", baseline_replacement_by_patch
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get(
-            "patch_size", 8
-        )  # TODO: according to doc string, should default not be 4?
+        self.patch_size = self.kwargs.get("patch_size", 8)
         self.img_size = self.kwargs.get("img_size", 224)
         self.last_results = {}
         self.all_results = []
@@ -1640,6 +1631,7 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1652,13 +1644,8 @@ class Selectivity(Metric):
                             total=len(x_batch_s))
 
         for sample, (x, y, a) in iterator:
-
-            # Shape input to channels_first. This is needed for padding.
-            # For model prediction, inputs will be reshaped temporarily according to the model requirements
-            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
-
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -1674,13 +1661,9 @@ class Selectivity(Metric):
             x_perturbed = x.copy()
 
             # Pad input and attributions. This is needed to allow for any patch_size.
-            pad_width = (2 * self.patch_size - 2) // 2
-            x_tmp = np.pad(
-                x, ((0, 0), (pad_width, pad_width), (pad_width, pad_width)), mode="constant"
-            )
-            a_tmp = np.pad(
-                a, ((pad_width, pad_width), (pad_width, pad_width)), mode="constant"
-            )
+            pad_width = self.patch_size - 1
+            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
+            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
 
             # Get patch indices of sorted attributions (descending).
             # TODO: currently, image is split into a grid, with the patches as the grid elements.
@@ -1690,60 +1673,43 @@ class Selectivity(Metric):
             #  Leaving it as-is for now.
             #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
             att_sums = []
-            for i_x, top_left_x in enumerate(
-                range(pad_width, x_tmp.shape[1] - pad_width, self.patch_size)
-            ):
-                for i_y, top_left_y in enumerate(
-                    range(pad_width, x_tmp.shape[2] - pad_width, self.patch_size)
-                ):
+            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
+                              for axis in range(1, x_pad.ndim)]
+            for top_left_coords in itertools.product(*axis_iterators):
+                # Create slice for patch.
+                patch_slice = utils.create_patch_slice(
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
+                    expand_first_dim=True,
+                )
 
-                    # Sum attributions for patch.
-                    att_sums.append(
-                        a_tmp[
-                            top_left_x : top_left_x + self.patch_size,
-                            top_left_y : top_left_y + self.patch_size,
-                        ].sum()
-                    )
-                    patches.append([top_left_x, top_left_y])
+                # Sum attributions for patch.
+                att_sums.append(a_pad[patch_slice].sum())
+                patches.append(patch_slice)
 
             # Order attributions according to the most relevant first.
-            patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
+            ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             # Increasingly perturb the input and store the decrease in function value.
-            for k in range(len(patch_order)):
-                top_left_x = patch_order[k][0]
-                top_left_y = patch_order[k][1]
+            for patch_slice in ordered_patches:
+                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
+                                             mode='edge', omit_first_axis=True)
 
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (pad_width, pad_width), (pad_width, pad_width)),
-                    mode="edge",
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    perturb_baseline=self.perturb_baseline,
                 )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
-                    **{
-                        **self.kwargs,
-                        **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * pad_width,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
-                        },
-                    },
-                )
+
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, pad_width:-pad_width, pad_width:-pad_width]
+                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
@@ -1826,9 +1792,6 @@ class SensitivityN(Metric):
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
         self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_features = int(
-            (0.8 * self.img_size * self.img_size) // self.features_in_step
-        )
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
         self.all_results = []
@@ -1849,16 +1812,6 @@ class SensitivityN(Metric):
                 ),
             )
             warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
 
     def __call__(
         self,
@@ -1942,9 +1895,25 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+
+        max_features = int(0.8 * np.prod(x_batch_s.shape[2:]) // self.features_in_step)
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
@@ -1970,7 +1939,7 @@ class SensitivityN(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -1981,45 +1950,36 @@ class SensitivityN(Metric):
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-                if i_ix <= self.max_features:
-
-                    # Perturb input by indices of attributions.
-                    a_ix = a_indices[
-                        (self.features_in_step * i_ix) : (
-                            self.features_in_step * (i_ix + 1)
-                        )
-                    ]
-                    x_perturbed = self.perturb_func(
-                        img=x_perturbed,
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                # Perturb input by indices of attributions.
+                a_ix = a_indices[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
                     )
-                    asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                ]
+                x_perturbed = self.perturb_func(
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
+                )
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                    # Sum attributions.
-                    att_sums.append(float(a[a_ix].sum()))
+                # Sum attributions.
+                att_sums.append(float(a[:, a_ix].sum()))
 
-                    x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
-                    )
-                    y_pred_perturb = float(
-                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                    )
-                    pred_deltas.append(y_pred - y_pred_perturb)
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
+                pred_deltas.append(y_pred - y_pred_perturb)
 
             sub_results_att_sums[sample] = att_sums
             sub_results_pred_deltas[sample] = pred_deltas
 
         # Re-arrange sublists so that they are sorted by n.
-        sub_results_pred_deltas_l = {k: [] for k in range(self.max_features)}
-        sub_results_att_sums_l = {k: [] for k in range(self.max_features)}
+        sub_results_pred_deltas_l = {k: [] for k in range(max_features)}
+        sub_results_att_sums_l = {k: [] for k in range(max_features)}
 
-        for k in range(self.max_features):
+        for k in range(max_features):
             for sublist1 in list(sub_results_pred_deltas.values()):
                 sub_results_pred_deltas_l[k].append(sublist1[k])
             for sublist2 in list(sub_results_att_sums.values()):
@@ -2030,7 +1990,7 @@ class SensitivityN(Metric):
             self.similarity_func(
                 a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
             )
-            for k in range(self.max_features)
+            for k in range(max_features)
         ]
         self.all_results.append(self.last_result)
 
@@ -2185,6 +2145,7 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -2205,14 +2166,15 @@ class IterativeRemovalOfFeatures(Metric):
                 a = self.normalise_func(a)
 
             # Predict on x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
 
             # Segment image.
-            segments = get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"), **kwargs
+            segments = utils.get_superpixel_segments(
+                img=np.moveaxis(x, 0, -1).astype("double"),
+                segmentation_method=self.segmentation_method,
             )
             nr_segments = segments.max()
             asserts.assert_nr_segments(nr_segments=nr_segments)
@@ -2220,7 +2182,7 @@ class IterativeRemovalOfFeatures(Metric):
             # Calculate average attribution of each segment.
             att_segs = np.zeros(nr_segments)
             for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[segments == s])
+                att_segs[i] = np.mean(a[:, segments == s])
 
             # Sort segments based on the mean attribution (descending order).
             s_indices = np.argsort(-att_segs)
@@ -2235,18 +2197,14 @@ class IterativeRemovalOfFeatures(Metric):
                 )[0]
 
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x_input.flatten(),
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
