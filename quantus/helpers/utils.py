@@ -259,3 +259,23 @@ def create_patch_slice(patch_size: int, coords: Sequence[int],
     if expand_first_dim:
         patch_slice = [slice(None), *patch_slice]
     return tuple(patch_slice)
+
+
+def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
+    """
+    Expand additional channel dimension for attributions if needed.
+    """
+    if a.shape[0] != x.shape[0]:
+        raise ValueError(
+            f"a and x must have same number of batches ({a.shape[0]} != {x.shape[0]})")
+    if a.ndim > x.ndim:
+        raise ValueError(
+            f"a must not have greater ndim than x ({a.ndim} > {x.ndim})")
+    if a.ndim < x.ndim - 1:
+        raise ValueError(
+            f"a can have at max one dimension less than x ({a.ndim} < {x.ndim} - 1)")
+
+    if a.ndim == x.ndim:
+        return a
+    elif a.ndim == x.ndim - 1:
+        return np.expand_dims(a, axis=1)

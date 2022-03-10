@@ -613,3 +613,69 @@ def test_conv2D_numpy(
 def test_create_patch_slice(params: dict, expected: Any):
     out = create_patch_slice(**params)
     assert out == expected
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "a": np.ones((64, 128)),
+                "x": np.ones((64, 3, 128)),
+            },
+            {"value": np.ones((64, 1, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 1, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 1, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 1, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 3, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((32, 3, 128, 128)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((64, 3, 128)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "a": np.ones((64, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_expand_attribution_channel(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = expand_attribution_channel(**params)
+        return
+
+    out = expand_attribution_channel(**params)
+    assert out.shape == expected["value"].shape
+    assert (out == expected["value"]).any()
