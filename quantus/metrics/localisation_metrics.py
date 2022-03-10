@@ -1,5 +1,5 @@
 """This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
+from typing import Callable, Dict, List, Union
 import warnings
 
 import numpy as np
@@ -163,6 +163,7 @@ class PointingGame(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -349,6 +350,7 @@ class AttributionLocalisation(Metric):
         self.last_results = []
 
         if a_batch is None:
+
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
@@ -360,6 +362,7 @@ class AttributionLocalisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -578,6 +581,7 @@ class TopKIntersection(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -769,6 +773,7 @@ class RelevanceRankAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -963,6 +968,7 @@ class RelevanceMassAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1150,6 +1156,7 @@ class AUC(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
