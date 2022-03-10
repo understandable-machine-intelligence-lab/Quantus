@@ -13,7 +13,7 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.similar_func import correlation_spearman
+from ..helpers.similar_func import correlation_pearson, correlation_spearman
 from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import baseline_replacement_by_patch
 
@@ -193,7 +193,6 @@ class FaithfulnessCorrelation(Metric):
         self.last_result = []
 
         if a_batch is None:
-
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
@@ -202,6 +201,7 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -223,7 +223,7 @@ class FaithfulnessCorrelation(Metric):
                 a = self.normalise_func(a)
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -237,28 +237,24 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x.flatten(),
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
-
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
                 att_sums.append(np.sum(a[a_ix]))
 
-            self.last_results.append(self.similarity_func(a=att_sums, b=logit_deltas))
+            similarity = self.similarity_func(a=att_sums, b=logit_deltas)
+            self.last_results.append(similarity)
 
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
