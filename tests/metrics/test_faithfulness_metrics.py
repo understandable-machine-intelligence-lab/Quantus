@@ -111,14 +111,16 @@ def test_faithfulness_correlation(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = FaithfulnessCorrelation(**params)(
@@ -223,14 +225,16 @@ def test_faithfulness_estimate(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = FaithfulnessEstimate(**params)(
@@ -333,14 +337,16 @@ def test_monotonicity_arya(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = MonotonicityArya(**params)(
@@ -414,14 +420,16 @@ def test_monotonicity_nguyen(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = MonotonicityNguyen(**params)(
@@ -531,13 +539,11 @@ def test_monotonicity_nguyen(
             lazy_fixture("load_1d_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
-                "perturb_baseline": "mean",
                 "features_in_step": 10,
                 "normalise": False,
-                "disable_warnings": True,
-                "explain_func": explain,
                 "perturb_func": perturb_func.baseline_replacement_by_indices,
-                "method": "Saliency",
+                "perturb_baseline": "mean",
+                "disable_warnings": True,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -554,8 +560,8 @@ def test_pixel_flipping(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -639,12 +645,9 @@ def test_pixel_flipping(
             lazy_fixture("load_1d_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
-                "explain_func": explain,
-                "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "a_batch_generate": False,
             },
             {"min": -1, "max": 1.0},
         ),
@@ -677,8 +680,8 @@ def test_region_perturbation(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -785,14 +788,16 @@ def test_selectivity(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = Selectivity(**params)(
@@ -901,14 +906,16 @@ def test_sensitivity_n(
         data["y_batch"],
     )
 
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = SensitivityN(**params)(
@@ -992,15 +999,17 @@ def test_iterative_removal_of_features(
         data["x_batch"],
         data["y_batch"],
     )
-    explain = params["explain_func"]
 
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
 
