@@ -99,6 +99,22 @@ from ...quantus.helpers import perturb_func
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "perturb_baseline": "mean",
+                "nr_runs": 10,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "subset_size": 100,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_faithfulness_correlation(
