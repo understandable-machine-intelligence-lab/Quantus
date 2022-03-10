@@ -393,16 +393,16 @@ class AttributionLocalisation(Metric):
                 a = self.normalise_func(a)
 
             # Asserts on attributions.
-            assert not np.all(
-                (a < 0.0)
-            ), "Attributions should not all be less than zero."
-            assert np.any(
-                s
-            ), "Segmentation mask should have some values in its array that is not zero."
+            if np.all((a < 0.0)):
+                raise ValueError("Attributions must not all be less than zero.")
+            if not np.any(s):
+                raise ValueError(
+                    "Segmentation mask must have some non-zero values in its array."
+                )
 
             # Compute ratio.
             size_bbox = float(np.sum(s))
-            size_data = float(self.img_size * self.img_size)
+            size_data = np.prod(x.shape[1:])
             ratio = size_bbox / size_data
 
             # Compute inside/outside ratio.
@@ -412,10 +412,9 @@ class AttributionLocalisation(Metric):
 
             if ratio <= self.max_size:
                 if inside_attribution_ratio > 1.0:
-                    print(
-                        "The inside explanation {} greater than total explanation {}".format(
-                            inside_attribution, total_attribution
-                        )
+                    warnings.warn(
+                        "Inside explanation is greater than total explanation"
+                        f" ({inside_attribution} > {total_attribution})"
                     )
                 if not self.weighted:
                     self.last_results.append(inside_attribution_ratio)
@@ -617,7 +616,7 @@ class TopKIntersection(Metric):
 
             # Concept influence (with size of object normalised tki score).
             if self.concept_influence:
-                tki = (self.img_size * self.img_size) / np.sum(s) * tki
+                tki = np.prod(x.shape[1:]) / np.sum(s) * tki
 
             self.last_results.append(tki)
 
