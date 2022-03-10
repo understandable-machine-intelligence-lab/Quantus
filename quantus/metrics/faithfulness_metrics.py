@@ -1388,11 +1388,6 @@ class RegionPerturbation(Metric):
                             total=len(x_batch_s))
 
         for sample, (x, y, a) in iterator:
-
-            # Shape input to channels_first. This is needed for padding.
-            # For model prediction, inputs will be reshaped temporarily according to the model requirements
-            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
-
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
