@@ -67,6 +67,7 @@ def assert_features_in_step(features_in_step: int, input_shape: Tuple[int, ...])
     assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
         "returns zero given the product of the input shape."
+        f" ({np.prod(input_shape)} % {features_in_step} != 0)"
     )
 
 
