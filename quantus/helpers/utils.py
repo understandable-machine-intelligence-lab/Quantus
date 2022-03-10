@@ -4,7 +4,7 @@ import random
 import numpy as np
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 from importlib import util
-from skimage.segmentation import *
+from skimage.segmentation import slic, felzenszwalb
 from ..helpers.model_interface import ModelInterface
 
 if util.find_spec("torch"):
@@ -15,9 +15,7 @@ if util.find_spec("tensorflow"):
     from ..helpers.tf_model import TensorFlowModel
 
 
-def get_superpixel_segments(
-    img: np.ndarray, segmentation_method: str, **kwargs
-) -> np.ndarray:
+def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
     """Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels."""
     assert (
         len(img.shape) == 3
