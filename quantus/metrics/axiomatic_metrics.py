@@ -3,15 +3,13 @@ from typing import Union, List, Dict
 from tqdm import tqdm
 
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.perturb_func import baseline_replacement_by_indices
 
 
 class Completeness(Metric):
@@ -76,7 +74,7 @@ class Completeness(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the function to modify the "
@@ -87,7 +85,7 @@ class Completeness(Metric):
                     "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -147,10 +145,10 @@ class Completeness(Metric):
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.kwargs = {
@@ -165,7 +163,7 @@ class Completeness(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -176,7 +174,7 @@ class Completeness(Metric):
             )
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -283,7 +281,7 @@ class NonSensitivity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the number of samples to iterate"
@@ -295,7 +293,7 @@ class NonSensitivity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -355,9 +353,9 @@ class NonSensitivity(Metric):
         """
         # Reshape# Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.kwargs = {
@@ -372,7 +370,7 @@ class NonSensitivity(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -383,7 +381,7 @@ class NonSensitivity(Metric):
             )
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -490,7 +488,7 @@ class InputInvariance(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("input shift 'input_shift'"),
                 citation=(
@@ -498,7 +496,7 @@ class InputInvariance(Metric):
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -558,10 +556,10 @@ class InputInvariance(Metric):
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.kwargs = {
@@ -576,7 +574,7 @@ class InputInvariance(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -587,7 +585,7 @@ class InputInvariance(Metric):
             )
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -619,7 +617,7 @@ class InputInvariance(Metric):
                     },
                 },
             )
-            assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
             a_shifted = explain_func(
