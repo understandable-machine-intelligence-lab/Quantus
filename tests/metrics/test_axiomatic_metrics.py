@@ -10,9 +10,22 @@ from ...quantus.helpers.tf_model import TensorFlowModel
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "normalise": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": True,
                 "explain_func": explain,
@@ -25,6 +38,21 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": True,
                 "explain_func": explain,
@@ -37,6 +65,21 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "explain_func": explain,
@@ -50,6 +93,21 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "normalise": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": False,
                 "explain_func": explain,
@@ -64,24 +122,25 @@ from ...quantus.helpers.tf_model import TensorFlowModel
     ],
 )
 def test_completeness(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = Completeness(**params)(
@@ -93,9 +152,25 @@ def test_completeness(
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "n_samples": 1,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "normalise": True,
@@ -110,6 +185,23 @@ def test_completeness(
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "n_samples": 1,
+                "eps": 1e-2,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "eps": 1e-2,
@@ -125,6 +217,22 @@ def test_completeness(
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "n_samples": 2,
+                "normalise": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 2,
                 "normalise": False,
@@ -139,6 +247,23 @@ def test_completeness(
             1.0,
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "n_samples": 1,
+                "eps": 1e-10,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "a_batch_generate": False,
+            },
+            1.0,
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "n_samples": 1,
                 "eps": 1e-10,
@@ -156,24 +281,25 @@ def test_completeness(
     ],
 )
 def test_non_sensitivity(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
-    explain = params["explain_func"]
     if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
             **params,
         )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = NonSensitivity(**params)(
@@ -184,9 +310,26 @@ def test_non_sensitivity(
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": False,
+                "normalise": False,
+                "explain_func": explain,
+                "method": "Gradient",
+                "input_shift": -1,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
@@ -201,6 +344,23 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": False,
+                "normalise": False,
+                "explain_func": explain,
+                "method": "InputxGradient",
+                "input_shift": -1,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
@@ -215,6 +375,23 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": False,
+                "normalise": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "input_shift": -1,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": False,
                 "normalise": False,
@@ -229,6 +406,23 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "abs": True,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "input_shift": -1,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": True,
                 "normalise": True,
@@ -243,13 +437,28 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
                 "normalise": False,
                 "explain_func": explain,
                 "method": "InputXGradient",
-                "img_size": 28,
-                "nr_channels": 1,
+                "input_shift": -1,
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "a_batch_generate": False,
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "abs": False,
+                "normalise": False,
+                "explain_func": explain,
+                "method": "InputXGradient",
                 "input_shift": -1,
                 "disable_warnings": True,
                 "display_progressbar": True,
@@ -259,22 +468,32 @@ def test_non_sensitivity(
     ],
 )
 def test_inputinvariance(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    load_mnist_images,
-    load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
-
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
     scores = InputInvariance(**params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
-        a_batch=None,
+        a_batch=a_batch,
         **params,
     )
 
