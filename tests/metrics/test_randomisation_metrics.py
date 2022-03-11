@@ -3,6 +3,7 @@ from typing import Union
 from pytest_lazyfixture import lazy_fixture
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers import *
 from ...quantus.helpers.model_interface import ModelInterface
 
 
