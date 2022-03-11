@@ -1,18 +1,18 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
+from typing import Callable, Dict, List, Union
+
+import numpy as np
+import scipy
 from tqdm import tqdm
 
-
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.perturb_func import baseline_replacement_by_indices
 
 
 class Sparseness(Metric):
@@ -63,7 +63,7 @@ class Sparseness(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -75,7 +75,7 @@ class Sparseness(Metric):
                     "(2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -134,11 +134,11 @@ class Sparseness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -153,7 +153,7 @@ class Sparseness(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -162,9 +162,10 @@ class Sparseness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -249,7 +250,7 @@ class Complexity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -260,7 +261,7 @@ class Complexity(Metric):
                     " feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -319,11 +320,11 @@ class Complexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -338,7 +339,7 @@ class Complexity(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -347,9 +348,10 @@ class Complexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -430,7 +432,7 @@ class EffectiveComplexity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -441,7 +443,7 @@ class EffectiveComplexity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -500,11 +502,11 @@ class EffectiveComplexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -519,7 +521,7 @@ class EffectiveComplexity(Metric):
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -528,9 +530,10 @@ class EffectiveComplexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
