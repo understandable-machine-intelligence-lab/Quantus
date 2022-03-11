@@ -194,12 +194,14 @@ class Completeness(Metric):
                 a = self.normalise_func(a)
 
             x_baseline = self.perturb_func(
-                img=x.flatten(),
+                img=x,
                 **{
                     **self.kwargs,
                     **{
-                        "indices": np.arange(0, len(x)),
+                        "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
                         "perturb_baseline": self.perturb_baseline,
+                        "nr_channels": self.nr_channels,
+                        "img_size": self.img_size,
                     },
                 },
             )
@@ -408,6 +410,8 @@ class NonSensitivity(Metric):
                 preds = []
                 for _ in range(self.n_samples):
 
+                    print(len(a), len(x.flatten()))
+
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
@@ -418,6 +422,13 @@ class NonSensitivity(Metric):
                             },
                         },
                     )
+
+                    #** {
+                    #       "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
+                    #       "perturb_baseline": self.perturb_baseline,
+                    #       "nr_channels": self.nr_channels,
+                    #       "img_size": self.img_size,
+                    #   },
 
                     # Predict on perturbed input x.
                     x_input = model.shape_input(

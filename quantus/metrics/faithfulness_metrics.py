@@ -191,8 +191,6 @@ class FaithfulnessCorrelation(Metric):
 
         for x, y, a in iterator:
 
-            a = a.flatten()
-
             if self.abs:
                 a = np.abs(a)
 
@@ -212,12 +210,21 @@ class FaithfulnessCorrelation(Metric):
             for i_ix in range(self.nr_runs):
 
                 # Randomly mask by subset size.
-                a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
+                idx = np.random.choice(
+                    len(a.flatten()), self.subset_size, replace=False
+                )
+                a_ix = np.unravel_index(idx, a.shape)
+
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
+                    img=x,
                     **{
                         **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -425,8 +432,6 @@ class FaithfulnessEstimate(Metric):
 
         for x, y, a in iterator:
 
-            a = a.flatten()
-
             if self.abs:
                 a = np.abs(a)
 
@@ -434,7 +439,7 @@ class FaithfulnessEstimate(Metric):
                 a = self.normalise_func(a)
 
             # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
+            a_indices = np.argsort(-a.flatten())
 
             # Predict on input.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
@@ -453,11 +458,17 @@ class FaithfulnessEstimate(Metric):
                         self.features_in_step * (i_ix + 1)
                     )
                 ]
+                a_ix = np.unravel_index(a_ix, a.shape)
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
+                    img=x,
                     **{
                         **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -659,8 +670,6 @@ class MonotonicityArya(Metric):
 
         for x, y, a in iterator:
 
-            a = a.flatten()
-
             if self.abs:
                 a = np.abs(a)
 
@@ -668,16 +677,16 @@ class MonotonicityArya(Metric):
                 a = self.normalise_func(a)
 
             # Get indices of sorted attributions (ascending).
-            a_indices = np.argsort(a)
+            a_indices = np.argsort(a.flatten())
 
             preds = []
 
             baseline_value = get_baseline_value(
-                choice=self.perturb_baseline, img=x, **kwargs
+                choice=self.perturb_baseline, img=x, nr_channels=self.nr_channels, **kwargs
             )
 
             # Copy the input x but fill with baseline values.
-            x_baseline = np.full(x.shape, baseline_value).flatten()
+            x_baseline = np.full(x.shape, baseline_value[:, None, None])
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -687,13 +696,20 @@ class MonotonicityArya(Metric):
                         self.features_in_step * (i_ix + 1)
                     )
                 ]
-                x_baseline = self.perturb_func(
-                    img=x_baseline,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
-                    },
-                )
+                for a_i in a_ix:
+                    a_i = np.unravel_index(a_i, a.shape)
+                    x_baseline = self.perturb_func(
+                        img=x_baseline,
+                        **{
+                            **self.kwargs,
+                            **{
+                                "indices": a_i,
+                                "perturb_baseline": x[(slice(0, self.nr_channels),) + a_i],
+                                "nr_channels": self.nr_channels,
+                                "img_size": self.img_size,
+                            },
+                        },
+                    )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
                 x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
@@ -898,9 +914,7 @@ class MonotonicityNguyen(Metric):
             )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred**2
-
-            a = a.flatten()
+            inv_pred = inv_pred ** 2
 
             if self.abs:
                 a = np.abs(a)
@@ -909,7 +923,7 @@ class MonotonicityNguyen(Metric):
                 a = self.normalise_func(a)
 
             # Get indices of sorted attributions (ascending).
-            a_indices = np.argsort(a)
+            a_indices = np.argsort(a.flatten())
 
             atts = []
             vars = []
@@ -922,18 +936,20 @@ class MonotonicityNguyen(Metric):
                         self.features_in_step * (i_ix + 1)
                     )
                 ]
-
+                a_ix = np.unravel_index(a_ix, a.shape)
                 y_pred_perturbs = []
 
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
+                        img=x,
                         **{
                             **self.kwargs,
                             **{
                                 "indices": a_ix,
                                 "perturb_baseline": self.perturb_baseline,
+                                "nr_channels": self.nr_channels,
+                                "img_size": self.img_size,
                             },
                         },
                     )
@@ -1137,8 +1153,6 @@ class PixelFlipping(Metric):
 
         for x, y, a in iterator:
 
-            a = a.flatten()
-
             if self.abs:
                 a = np.abs(a)
 
@@ -1146,10 +1160,10 @@ class PixelFlipping(Metric):
                 a = self.normalise_func(a)
 
             # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
+            a_indices = np.argsort(-a.flatten())
 
             preds = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -1159,11 +1173,17 @@ class PixelFlipping(Metric):
                         self.features_in_step * (i_ix + 1)
                     )
                 ]
+                a_ix = np.unravel_index(a_ix, a.shape)
                 x_perturbed = self.perturb_func(
                     img=x_perturbed,
                     **{
                         **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1243,7 +1263,7 @@ class RegionPerturbation(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
@@ -1463,29 +1483,32 @@ class RegionPerturbation(Metric):
                 top_left_x = patch_order[k][0]
                 top_left_y = patch_order[k][1]
 
+                a_ix = (
+                    np.array(range(top_left_x, top_left_x + self.patch_size)),
+                    np.array(range(top_left_y, top_left_y + self.patch_size)),
+                )
+
                 # Also pad x_perturbed
                 # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
+                x_perturbed = np.pad(
                     x_perturbed,
                     ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
                     mode="edge",
                 )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
+                x_perturbed = self.perturb_func(
+                    x_perturbed,
                     **{
                         **self.kwargs,
                         **{
-                            "patch_size": self.patch_size,
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
                         },
                     },
                 )
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = x_perturbed[:, padwidth:-padwidth, padwidth:-padwidth]
 
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1553,7 +1576,7 @@ class Selectivity(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get(
@@ -1737,29 +1760,32 @@ class Selectivity(Metric):
                 top_left_x = patch_order[k][0]
                 top_left_y = patch_order[k][1]
 
+                a_ix = (
+                    np.array(range(top_left_x, top_left_x + self.patch_size)),
+                    np.array(range(top_left_y, top_left_y + self.patch_size)),
+                )
+
                 # Also pad x_perturbed
                 # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
+                x_perturbed = np.pad(
                     x_perturbed,
                     ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
                     mode="edge",
                 )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
+                x_perturbed = self.perturb_func(
+                    x_perturbed,
                     **{
                         **self.kwargs,
                         **{
-                            "patch_size": self.patch_size,
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
                         },
                     },
                 )
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = x_perturbed[:, padwidth:-padwidth, padwidth:-padwidth]
 
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1983,8 +2009,6 @@ class SensitivityN(Metric):
 
         for sample, (x, y, a) in iterator:
 
-            a = a.flatten()
-
             if self.abs:
                 a = np.abs(a)
 
@@ -1992,7 +2016,7 @@ class SensitivityN(Metric):
                 a = self.normalise_func(a)
 
             # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
+            a_indices = np.argsort(-a.flatten())
 
             # Predict on x.
             x_input = model.shape_input(x, self.img_size, self.nr_channels)
@@ -2002,7 +2026,7 @@ class SensitivityN(Metric):
 
             att_sums = []
             pred_deltas = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -2014,6 +2038,7 @@ class SensitivityN(Metric):
                             self.features_in_step * (i_ix + 1)
                         )
                     ]
+                    a_ix = np.unravel_index(a_ix, a.shape)
                     x_perturbed = self.perturb_func(
                         img=x_perturbed,
                         **{
@@ -2021,6 +2046,8 @@ class SensitivityN(Metric):
                             **{
                                 "indices": a_ix,
                                 "perturb_baseline": self.perturb_baseline,
+                                "nr_channels": self.nr_channels,
+                                "img_size": self.img_size,
                             },
                         },
                     )
@@ -2239,7 +2266,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Segment image.
             segments = get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"), **kwargs
+                img=np.moveaxis(x, 0, -1).astype("double"), **self.kwargs
             )
             nr_segments = segments.max()
             assert_nr_segments(nr_segments=nr_segments)
@@ -2257,15 +2284,18 @@ class IterativeRemovalOfFeatures(Metric):
             for i_ix, s_ix in enumerate(s_indices):
 
                 # Perturb input by indices of attributions.
-                a_ix = np.nonzero(
-                    np.repeat((segments == s_ix).flatten(), self.nr_channels)
-                )[0]
+                a_ix = np.nonzero((segments == s_ix))
 
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
+                    img=x,
                     **{
                         **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
+                        **{
+                            "indices": a_ix,
+                            "perturb_baseline": self.perturb_baseline,
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
                     },
                 )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)

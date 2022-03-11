@@ -121,19 +121,19 @@ def test_get_superpixel_segments(
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black"), {"value": 0.0}),
-        (lazy_fixture("baseline_white"), {"value": 1.0}),
-        (lazy_fixture("baseline_mean"), {"value": 0.5}),
+        (lazy_fixture("baseline_black"), {"value": np.array(0.0, 0.0, 0.0)}),
+        (lazy_fixture("baseline_white"), {"value": np.array(1.0, 1.0, 1.0)}),
+        (lazy_fixture("baseline_mean"), {"value": np.array(0.5, 0.5, 0.5)}),
         (lazy_fixture("baseline_none"), {"exception": AssertionError}),
     ],
 )
 def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_baseline_value(choice=data["choice"], img=data["img"])
+            get_baseline_value(choice=data["choice"], img=data["img"], nr_channels=3)
         return
     out = get_baseline_value(choice=data["choice"], img=data["img"])
-    assert round(out, 2) == expected["value"], "Test failed."
+    assert np.round(out, decimals=2) == expected["value"], "Test failed."
 
 
 @pytest.mark.utils

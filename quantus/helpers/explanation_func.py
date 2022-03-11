@@ -7,6 +7,9 @@ import random
 from importlib import util
 import cv2
 import warnings
+
+import torch
+
 from .utils import *
 from .normalise_func import *
 from ..helpers import __EXTRAS__
@@ -338,11 +341,12 @@ def generate_captum_explanation(
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                choice=kwargs["constant_value"], img=inputs[i]
+                choice=kwargs["constant_value"], img=inputs[i], nr_channels=kwargs.get("nr_channels", 3)
             )
-            explanation[i] = torch.Tensor().new_full(
-                size=explanation[0].shape, fill_value=constant_value
+            exp = np.full(
+                explanation[0].shape, fill_value=constant_value[:, None, None]
             )
+            explanation[i] = torch.from_numpy(exp)
 
     else:
         raise KeyError(

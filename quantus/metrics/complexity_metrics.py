@@ -373,10 +373,13 @@ class Complexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            a = np.array(
-                np.reshape(a, (self.img_size * self.img_size,)),
-                dtype=np.float64,
-            ) / np.sum(np.abs(a))
+            a = (
+                np.array(
+                    np.reshape(a, (self.img_size * self.img_size,)),
+                    dtype=np.float64,
+                )
+                / np.sum(np.abs(a))
+            )
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
