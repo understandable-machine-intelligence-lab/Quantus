@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from .base import Metric
 from ..helpers import asserts
-from ..helpers import plotting
 from ..helpers import utils
 from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
