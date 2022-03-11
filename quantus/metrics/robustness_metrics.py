@@ -1,19 +1,27 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
+import itertools
 from typing import Union, List, Dict
 
 import numpy as np
 from tqdm import tqdm
 
 from .base import Metric
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.similar_func import correlation_spearman, ssim
+
 from ..helpers.utils import *
-from ..helpers.asserts import *
 from ..helpers.plotting import *
 from ..helpers.norm_func import *
 from ..helpers.perturb_func import *
 from ..helpers.similar_func import *
 from ..helpers.explanation_func import *
 from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
 
 
 class LocalLipschitzEstimate(Metric):
@@ -73,13 +81,14 @@ class LocalLipschitzEstimate(Metric):
         self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_denominator", distance_euclidean)
         self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
+        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_std', the number of samples iterated "
@@ -96,8 +105,8 @@ class LocalLipschitzEstimate(Metric):
                     "arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_noise_zero(noise=self.perturb_std)
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_noise_zero(noise=self.perturb_std)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -173,7 +182,7 @@ class LocalLipschitzEstimate(Metric):
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
 
@@ -184,9 +193,10 @@ class LocalLipschitzEstimate(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -207,13 +217,17 @@ class LocalLipschitzEstimate(Metric):
             for i in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                x_perturbed = self.perturb_func(
+                    arr=x.flatten(),
+                    **self.perturb_func_kwargs,
+                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model.get_model(),
-                    inputs=x_perturbed,
+                    inputs=x_input,
                     targets=y,
                     **self.kwargs,
                 )
@@ -293,6 +307,7 @@ class MaxSensitivity(Metric):
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
+        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
         self.similarity_func = self.kwargs.get("similarity_func", difference)
 
         self.last_results = []
@@ -300,7 +315,7 @@ class MaxSensitivity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_radius', the number of samples "
@@ -314,8 +329,8 @@ class MaxSensitivity(Metric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_noise_zero(noise=self.perturb_radius)
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_noise_zero(noise=self.perturb_radius)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -391,7 +406,7 @@ class MaxSensitivity(Metric):
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
 
@@ -402,9 +417,10 @@ class MaxSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -425,13 +441,17 @@ class MaxSensitivity(Metric):
             for _ in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                x_perturbed = self.perturb_func(
+                    arr=x.flatten(),
+                    **self.perturb_func_kwargs,
+                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model.get_model(),
-                    inputs=x_perturbed,
+                    inputs=x_input,
                     targets=y,
                     **self.kwargs,
                 )
@@ -513,13 +533,14 @@ class AvgSensitivity(Metric):
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
+        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
         self.similarity_func = self.kwargs.get("similarity_func", difference)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_radius', the number of samples "
@@ -533,8 +554,8 @@ class AvgSensitivity(Metric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_noise_zero(noise=self.perturb_radius)
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_noise_zero(noise=self.perturb_radius)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -610,7 +631,7 @@ class AvgSensitivity(Metric):
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
 
@@ -621,9 +642,10 @@ class AvgSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -644,13 +666,17 @@ class AvgSensitivity(Metric):
             for _ in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                x_perturbed = self.perturb_func(
+                    arr=x.flatten(),
+                    **self.perturb_func_kwargs,
+                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
                     model=model.get_model(),
-                    inputs=x_perturbed,
+                    inputs=x_input,
                     targets=y,
                     **self.kwargs,
                 )
@@ -732,15 +758,15 @@ class Continuity(Metric):
         self.nr_patches = int((self.img_size / self.patch_size) ** 2)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
-        self.dx = self.img_size // self.nr_steps
         self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
+        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
         self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "how many patches to split the input image to 'nr_patches', "
@@ -754,8 +780,8 @@ class Continuity(Metric):
                     "Processing 73, 1-15 (2018"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
+        asserts.assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     def __call__(
         self,
@@ -831,7 +857,7 @@ class Continuity(Metric):
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
 
@@ -842,9 +868,10 @@ class Continuity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -853,6 +880,7 @@ class Continuity(Metric):
             iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
                             total=len(x_batch_s))
 
+        self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
         for ix, (x, y, a) in iterator:
 
             if self.abs:
@@ -866,24 +894,23 @@ class Continuity(Metric):
             for step in range(self.nr_steps):
 
                 # Generate explanation based on perturbed input x.
+                dx_step = (step + 1) * self.dx
                 x_perturbed = self.perturb_func(
-                    x,
-                    **{
-                        **{
-                            "perturb_dx": (step + 1) * self.dx,
-                            "perturb_baseline": self.perturb_baseline,
-                        },
-                        **self.kwargs,
-                    },
+                    arr=x,
+                    perturb_baseline=self.perturb_baseline,
+                    perturb_dx=dx_step,
+                    **self.perturb_func_kwargs,
                 )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
                     model=model.get_model(),
-                    inputs=x_perturbed,
+                    inputs=x_input,
                     targets=y,
                     **self.kwargs,
                 )
+                a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
@@ -892,40 +919,37 @@ class Continuity(Metric):
                     a_perturbed = self.normalise_func(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
                 y_pred = float(
                     model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
 
                 sub_results[self.nr_patches].append(y_pred)
 
-                ix_patch = 0
-                for i_x, top_left_x in enumerate(
-                    range(0, self.img_size, self.patch_size)
-                ):
-                    for i_y, top_left_y in enumerate(
-                        range(0, self.img_size, self.patch_size)
-                    ):
-                        a_perturbed_patch = a_perturbed[
-                            :,
-                            top_left_x : top_left_x + self.patch_size,
-                            top_left_y : top_left_y + self.patch_size,
-                        ]
-                        if self.abs:
-                            a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
+                # create patches by splitting input into grid
+                axis_iterators = [range(0, x_input.shape[axis], self.patch_size)
+                                  for axis in range(1, x_input.ndim)]
+                for ix_patch, top_left_coords in enumerate(itertools.product(*axis_iterators)):
 
-                        if self.normalise:
-                            a_perturbed_patch = self.normalise_func(
-                                a_perturbed_patch.flatten()
-                            )
+                    # Create slice for patch.
+                    patch_slice = utils.create_patch_slice(
+                        patch_size=self.patch_size,
+                        coords=top_left_coords,
+                        expand_first_dim=True,
+                    )
 
-                        # Sum attributions for patch.
-                        patch_sum = float(sum(a_perturbed_patch))
-                        sub_results[ix_patch].append(patch_sum)
-                        ix_patch += 1
+                    a_perturbed_patch = a_perturbed[patch_slice]
+                    if self.abs:
+                        a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
+                        
+                    if self.normalise:
+                        a_perturbed_patch = self.normalise_func(
+                            a_perturbed_patch.flatten()
+                        )
 
+                    # Sum attributions for patch.
+                    patch_sum = float(sum(a_perturbed_patch))
+                    sub_results[ix_patch].append(patch_sum)
+                    
             self.last_results[ix] = sub_results
 
         self.all_results.append(self.last_results)
