@@ -2,7 +2,7 @@
   <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b> A toolkit to evaluate neural network explanations</b></h3>
+<h3 align="center"><b>A metrics toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
   PyTorch and Tensorflow
 </p>
