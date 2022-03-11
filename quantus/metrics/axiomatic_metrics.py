@@ -563,10 +563,8 @@ class InputInvariance(Metric):
         self.last_results = []
 
         explain_func = self.kwargs.get("explain_func", Callable)
+        asserts.assert_explain_func(explain_func=explain_func)
         if a_batch is None:
-
-            # Asserts.
-            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
