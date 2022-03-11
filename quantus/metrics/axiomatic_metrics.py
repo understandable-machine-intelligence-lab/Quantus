@@ -1,5 +1,7 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
+from typing import Callable, Dict, List, Union
+
+import numpy as np
 from tqdm import tqdm
 
 from .base import Metric
@@ -144,7 +146,7 @@ class Completeness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -172,6 +174,7 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -191,24 +194,19 @@ class Completeness(Metric):
                 a = self.normalise_func(a)
 
             x_baseline = self.perturb_func(
-                img=x.flatten(),
-                **{
-                    **self.kwargs,
-                    **{
-                        "indices": np.arange(0, len(x)),
-                        "perturb_baseline": self.perturb_baseline,
-                    },
-                },
+                arr=x.flatten(),
+                indices=np.arange(0, len(x)),
+                perturb_baseline=self.perturb_baseline,
             )
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             # Predict on baseline.
-            x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
             y_pred_baseline = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -352,7 +350,7 @@ class NonSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape# Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -379,6 +377,7 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -400,26 +399,19 @@ class NonSensitivity(Metric):
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
-            for a_i in range(len(a)):
+            for a_ix in range(len(a)):
 
                 preds = []
                 for _ in range(self.n_samples):
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_i,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                        arr=x.flatten(),
+                        indices=a_ix,
+                        perturb_baseline=self.perturb_baseline,
                     )
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
-                    )
+                    x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                     y_pred_perturbed = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
@@ -555,7 +547,7 @@ class InputInvariance(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
@@ -570,10 +562,10 @@ class InputInvariance(Metric):
         self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.last_results = []
 
+        explain_func = self.kwargs.get("explain_func", Callable)
         if a_batch is None:
 
             # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
@@ -583,6 +575,7 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
@@ -608,15 +601,11 @@ class InputInvariance(Metric):
                 )
 
             x_shifted = self.perturb_func(
-                img=x.flatten(),
-                **{
-                    **self.kwargs,
-                    **{
-                        "indices": np.arange(0, len(x.flatten())),
-                        "input_shift": self.input_shift,
-                    },
-                },
+                arr=x.flatten(),
+                indices=np.arange(0, len(x.flatten())),
+                input_shift=self.input_shift,
             )
+            x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
             asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
