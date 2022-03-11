@@ -1,27 +1,20 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
-from typing import Union, List, Dict
+from typing import Callable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
 
 from .base import Metric
 from ..helpers import asserts
+from ..helpers import perturb_func
+from ..helpers import similar_func
 from ..helpers import utils
 from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
+from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import baseline_replacement_by_indices
-from ..helpers.similar_func import correlation_spearman, ssim
-
-from ..helpers.utils import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
 
 
 class LocalLipschitzEstimate(Metric):
@@ -78,11 +71,14 @@ class LocalLipschitzEstimate(Metric):
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
         self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
-        self.norm_numerator = self.kwargs.get("norm_numerator", distance_euclidean)
-        self.norm_denominator = self.kwargs.get("norm_denominator", distance_euclidean)
-        self.perturb_func = self.kwargs.get("perturb_func", gaussian_noise)
+        self.norm_numerator = self.kwargs.get("norm_numerator",
+                                              similar_func.distance_euclidean)
+        self.norm_denominator = self.kwargs.get("norm_denominator",
+                                                similar_func.distance_euclidean)
+        self.perturb_func = self.kwargs.get("perturb_func", perturb_func.gaussian_noise)
         self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
-        self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.similarity_func = self.kwargs.get("similarity_func",
+                                               similar_func.lipschitz_constant)
         self.last_results = []
         self.all_results = []
 
@@ -165,11 +161,11 @@ class LocalLipschitzEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -306,9 +302,11 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
+        self.perturb_func = self.kwargs.get("perturb_func",
+                                            perturb_func.uniform_sampling)
         self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
-        self.similarity_func = self.kwargs.get("similarity_func", difference)
+        self.similarity_func = self.kwargs.get("similarity_func",
+                                               similar_func.difference)
 
         self.last_results = []
         self.all_results = []
@@ -389,11 +387,11 @@ class MaxSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -532,9 +530,11 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get("perturb_func", uniform_sampling)
+        self.perturb_func = self.kwargs.get("perturb_func",
+                                            perturb_func.uniform_sampling)
         self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
-        self.similarity_func = self.kwargs.get("similarity_func", difference)
+        self.similarity_func = self.kwargs.get("similarity_func",
+                                               similar_func.difference)
         self.last_results = []
         self.all_results = []
 
@@ -614,11 +614,11 @@ class AvgSensitivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
@@ -758,9 +758,11 @@ class Continuity(Metric):
         self.nr_patches = int((self.img_size / self.patch_size) ** 2)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
-        self.perturb_func = self.kwargs.get("perturb_func", translation_x_direction)
+        self.perturb_func = self.kwargs.get("perturb_func",
+                                            perturb_func.translation_x_direction)
         self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
-        self.similarity_func = self.kwargs.get("similarity_func", lipschitz_constant)
+        self.similarity_func = self.kwargs.get("similarity_func",
+                                               similar_func.lipschitz_constant)
         self.last_results = []
         self.all_results = []
 
@@ -840,11 +842,11 @@ class Continuity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", infer_channel_first(x_batch))
-        x_batch_s = make_channel_first(x_batch, self.channel_first)
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, self.channel_first)
 
         # Update kwargs.
         self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
