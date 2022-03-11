@@ -190,7 +190,7 @@ class Sparseness(Metric):
                 a = self.normalise_func(a)
 
             a = np.array(
-                np.reshape(a, (self.img_size * self.img_size,)),
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]), )),
                 dtype=np.float64,
             )
             a += 0.0000001
@@ -375,7 +375,7 @@ class Complexity(Metric):
 
             a = (
                 np.array(
-                    np.reshape(a, (self.img_size * self.img_size,)),
+                    np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
                     dtype=np.float64,
                 )
                 / np.sum(np.abs(a))
