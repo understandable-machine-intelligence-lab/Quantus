@@ -7,17 +7,17 @@ from ...quantus.helpers import *
 
 @pytest.fixture
 def input_pert_1d():
-    return np.random.uniform(0, 0.1, size=(1, 3, 224, 224)).flatten()
+    return np.random.uniform(0, 0.1, size=(3, 224, 224))
 
 
 @pytest.fixture
 def input_zeros():
-    return np.zeros(shape=(1, 3, 224, 224)).flatten()
+    return np.zeros(shape=(3, 224, 224))
 
 
 @pytest.fixture
 def input_ones_mnist():
-    return np.ones(shape=(1, 1, 28, 28)).flatten()
+    return np.ones(shape=(1, 28, 28))
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def test_gaussian_noise(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = gaussian_noise(img=data, **params)
-    assert any(out != data) == expected, "Test failed."
+    assert np.any(out != data) == expected, "Test failed."
 
 
 @pytest.mark.perturb_func
@@ -48,15 +48,15 @@ def test_gaussian_noise(
         (
             lazy_fixture("input_zeros"),
             {
-                "indices": [0, 2, 224, 226, 448, 450],
-                "fixed_values": 1.0,
+                "indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)),
+                "perturbed_baseline": 1.0,
                 "nr_channels": 3,
             },
             1,
         ),
         (
             lazy_fixture("input_ones_mnist"),
-            {"indices": np.arange(0, 784), "input_shift": -1.0, "nr_channels": 1},
+            {"indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)), "input_shift": -1.0, "nr_channels": 1},
             -1,
         ),
     ],
@@ -67,31 +67,7 @@ def test_baseline_replacement_by_indices(
     out = baseline_replacement_by_indices(img=data, **params)
 
     if isinstance(expected, (int, float)):
-        assert np.all([i == expected for i in out[params["indices"]]]), "Test failed."
-
-
-@pytest.mark.perturb_func
-@pytest.mark.parametrize(
-    "data,params,expected",
-    [
-        (
-            lazy_fixture("input_pert_3d"),
-            {
-                "patch_size": 4,
-                "nr_channels": 3,
-                "perturb_baseline": "black",
-                "top_left_y": 0,
-                "top_left_x": 0,
-            },
-            True,
-        )
-    ],
-)
-def test_baseline_replacement_by_patch(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
-    out = baseline_replacement_by_patch(img=data, **params)
-    assert np.any(out != data) == expected, "Test failed."
+        assert np.all([i == expected for i in out[((slice(0, params["nr_channels"])),) + params["indices"]]]), "Test failed."
 
 
 @pytest.mark.perturb_func
@@ -174,9 +150,7 @@ def test_no_perturbation(
                 "nr_channels": 3,
                 "img_size": 224,
                 "blur_patch_size": 15,
-                "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "indices": (np.array([0, 1, 2, 3]), np.array([0, 1, 2, 3]))
             },
             {"shape": True, "values": False},
         ),
@@ -186,9 +160,7 @@ def test_no_perturbation(
                 "nr_channels": 3,
                 "img_size": 224,
                 "blur_patch_size": 7,
-                "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "indices": (np.array([0, 1, 2, 3]), np.array([0, 1, 2, 3]))
             },
             {"shape": True, "values": False},
         ),
@@ -198,9 +170,7 @@ def test_no_perturbation(
                 "nr_channels": 1,
                 "img_size": 28,
                 "blur_patch_size": 15,
-                "patch_size": 4,
-                "top_left_y": 0,
-                "top_left_x": 0,
+                "indices": (np.array([0, 1, 2, 3]), np.array([0, 1, 2, 3]))
             },
             {"shape": True, "values": False},
         ),

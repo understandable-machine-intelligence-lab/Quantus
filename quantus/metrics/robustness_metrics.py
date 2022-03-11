@@ -209,7 +209,18 @@ class LocalLipschitzEstimate(Metric):
             for i in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                x_perturbed = self.perturb_func(
+                    x,
+                    **{
+                        **self.kwargs,
+                        **{
+                            "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
+                            "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
+                    },
+                )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.
@@ -429,7 +440,18 @@ class MaxSensitivity(Metric):
             for _ in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                x_perturbed = self.perturb_func(
+                    x,
+                    **{
+                        **self.kwargs,
+                        **{
+                            "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
+                            "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
+                    },
+                )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.
@@ -650,7 +672,18 @@ class AvgSensitivity(Metric):
             for _ in range(self.nr_samples):
 
                 # Perturb input.
-                x_perturbed = self.perturb_func(x.flatten(), **self.kwargs)
+                x_perturbed = self.perturb_func(
+                    x,
+                    **{
+                        **self.kwargs,
+                        **{
+                            "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
+                            "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
+                        },
+                    },
+                )
                 assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Generate explanation based on perturbed input x.

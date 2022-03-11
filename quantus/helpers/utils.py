@@ -40,35 +40,33 @@ def get_superpixel_segments(
 
 
 def get_baseline_value(
-    choice: Union[float, int, str, None], img: np.ndarray, **kwargs
-) -> float:
-    """Get the baseline value (float) to fill tensor with."""
+    choice: Union[float, int, str, np.array], img: np.ndarray, **kwargs
+) -> np.array:
+    """Get the baseline value for one pixel (np.array) to fill tensor with."""
 
-    if choice is None:
-        assert (
-            ("perturb_baseline" in kwargs)
-            or ("fixed_values" in kwargs)
-            or ("constant_value" in kwargs)
-            or ("input_shift" in kwargs)
-        ), (
-            "Specify"
-            "a 'perturb_baseline', 'fixed_values', 'constant_value' or 'input_shift' e.g., 0.0 or 'black' for "
-            "pixel replacement or 'baseline_values' containing an array with one value per index for replacement."
-        )
+    assert(choice is not None)
 
-    if "fixed_values" in kwargs:
-        return kwargs["fixed_values"]
+    nr_channels = kwargs.get("nr_channels", 3)
+
     if isinstance(choice, (float, int)):
-        return choice
+        return np.repeat(choice, nr_channels)
+    elif isinstance(choice, np.ndarray):
+        if len(choice.shape)==0:
+            return np.repeat(choice, nr_channels)
+        elif len(choice.shape)==1 and choice.shape[0] == nr_channels:
+            return choice
+        else:
+            raise ValueError("Shape {} of argument 'choice' cannot be fitted to required shape {} of return value".format(choice.shape, (nr_channels,)))
     elif isinstance(choice, str):
         fill_dict = get_baseline_dict(img, **kwargs)
         assert choice in list(
             fill_dict.keys()
-        ), f"Ensure that 'perturb_baseline' or 'constant_value' (str) that exist in {list(fill_dict.keys())}"
-        return fill_dict.get(choice.lower(), fill_dict["uniform"])
+        ), f"Ensure that choice (str) exists in {list(fill_dict.keys())}"
+        val = fill_dict.get(choice.lower(), fill_dict["uniform"])
+        return np.repeat(val, nr_channels)
     else:
         raise print(
-            "Specify 'perturb_baseline' or 'constant_value' as a string, integer or float."
+            "Specify 'choice'' as a np.array, string, integer or float."
         )
 
 
