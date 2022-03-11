@@ -109,13 +109,12 @@ def generate_tf_explanation(
     explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():
+        explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.vanilla_gradients.VanillaGradients().explain(
-                            ([x], None), model, y
-                        ),
+                        lambda x, y: explainer.explain(([x], None), model, y),
                         inputs,
                         targets,
                     )
@@ -126,11 +125,12 @@ def generate_tf_explanation(
         )
 
     elif method == "IntegratedGradients".lower():
+        explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.integrated_gradients.IntegratedGradients().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, n_steps=10
                         ),
                         inputs,
@@ -143,13 +143,12 @@ def generate_tf_explanation(
         )
 
     elif method == "InputXGradient".lower():
+        explainer = tf_explain.core.gradients_inputs.GradientsInputs()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.gradients_inputs.GradientsInputs().explain(
-                            ([x], None), model, y
-                        ),
+                        lambda x, y: explainer.explain(([x], None), model, y),
                         inputs,
                         targets,
                     )
@@ -160,12 +159,13 @@ def generate_tf_explanation(
         )
 
     elif method == "Occlusion".lower():
-        patch_size = kwargs.get("window", (1, 4, 4))[-1]
+        patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
+        explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.occlusion_sensitivity.OcclusionSensitivity().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, patch_size=patch_size
                         ),
                         inputs,
@@ -178,15 +178,17 @@ def generate_tf_explanation(
         )
 
     elif method == "GradCam".lower():
-        assert (
-            "gc_layer" in kwargs
-        ), "Specify convolutional layer name as 'gc_layer' to run GradCam."
+        if "gc_layer" not in kwargs:
+            raise ValueError(
+                "Specify convolutional layer name as 'gc_layer' to run GradCam."
+            )
 
+        explainer = tf_explain.core.grad_cam.GradCAM()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.grad_cam.GradCAM().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, layer_name=kwargs["gc_layer"]
                         ),
                         inputs,
@@ -291,12 +293,13 @@ def generate_captum_explanation(
         )
 
     elif method == "Occlusion".lower():
+        window_shape = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))
         explanation = (
             Occlusion(model)
             .attribute(
                 inputs=inputs,
                 target=targets,
-                sliding_window_shapes=kwargs.get("window", (1, 4, 4)),
+                sliding_window_shapes=window_shape,
             )
             .sum(axis=1)
         )
@@ -307,9 +310,10 @@ def generate_captum_explanation(
         )
 
     elif method == "GradCam".lower():
-        assert (
-            "gc_layer" in kwargs
-        ), "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+        if "gc_layer" not in kwargs:
+            raise ValueError(
+                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+            )
 
         if isinstance(kwargs["gc_layer"], str):
             kwargs["gc_layer"] = eval(kwargs["gc_layer"])

@@ -36,7 +36,7 @@ if util.find_spec("torch"):
     class ConvNet1D(torch.nn.Module):
         """ 1D-convolutional architecture inspired from LeNet. """
 
-        def __init__(self, n_channels):
+        def __init__(self, n_channels, n_classes):
             super().__init__()
             self.conv_1 = torch.nn.Conv1d(n_channels, 6, 5)
             self.pool_1 = torch.nn.MaxPool1d(2, 2)
@@ -48,7 +48,7 @@ if util.find_spec("torch"):
             self.relu_3 = torch.nn.ReLU()
             self.fc_2 = torch.nn.Linear(120, 84)
             self.relu_4 = torch.nn.ReLU()
-            self.fc_3 = torch.nn.Linear(84, 10)
+            self.fc_3 = torch.nn.Linear(84, n_classes)
 
         def forward(self, x):
             x = self.pool_1(self.relu_1(self.conv_1(x)))
@@ -82,3 +82,30 @@ if util.find_spec("tensorflow"):
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
+
+
+    class ConvNet1DTF(Sequential):
+        """ 1D-convolutional architecture. """
+
+        def __init__(self, n_channels, seq_len, n_classes):
+            super().__init__(
+                [
+                    tf.keras.layers.Input(shape=(seq_len, n_channels)),
+                    tf.keras.layers.Conv1D(filters=6, kernel_size=5, strides=1),
+                    tf.keras.layers.Activation('relu'),
+                    tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
+                    tf.keras.layers.Conv1D(filters=16, kernel_size=5, strides=1),
+                    tf.keras.layers.Activation('relu'),
+                    tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
+                    tf.keras.layers.Flatten(),
+                    tf.keras.layers.Dense(128, activation="relu"),
+                    tf.keras.layers.Dense(84, activation="relu"),
+                    tf.keras.layers.Dense(n_classes),
+                ]
+            )
+            self.compile(
+                optimizer=tf.keras.optimizers.Adam(0.001),
+                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+            )
+
