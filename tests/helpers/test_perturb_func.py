@@ -268,13 +268,13 @@ def test_uniform_sampling(
     [
         (
             lazy_fixture("input_uniform_2d_3ch"),
-            {"perturb_angle": 30, "img_size": 224},
+            {"perturb_angle": 30},
             True,
         ),
     ],
 )
 def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
-    out = rotation(img=data, **params)
+    out = rotation(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
 
 
@@ -284,7 +284,7 @@ def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
     [
         (
             lazy_fixture("input_uniform_2d_3ch"),
-            {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
+            {"perturb_dx": 20, "perturb_baseline": "black"},
             True,
         )
     ],
@@ -292,7 +292,7 @@ def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
 def test_translation_x_direction(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = translation_x_direction(img=data, **params)
+    out = translation_x_direction(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
 
 
@@ -302,7 +302,7 @@ def test_translation_x_direction(
     [
         (
             lazy_fixture("input_uniform_2d_3ch"),
-            {"perturb_dx": 20, "perturb_baseline": "black", "img_size": 224},
+            {"perturb_dx": 20, "perturb_baseline": "black"},
             True,
         )
     ],
@@ -310,7 +310,7 @@ def test_translation_x_direction(
 def test_translation_y_direction(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = translation_y_direction(img=data, **params)
+    out = translation_y_direction(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
 
 
