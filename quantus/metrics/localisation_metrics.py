@@ -389,10 +389,7 @@ class AttributionLocalisation(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
+                warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -667,7 +664,7 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -802,12 +799,6 @@ class RelevanceRankAccuracy(Metric):
 
             if self.abs:
                 a = np.abs(a)
-            else:
-                a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -1001,14 +992,6 @@ class RelevanceMassAccuracy(Metric):
 
             if self.normalise:
                 a = self.normalise_func(a)
-
-            # Asserts on attributions.
-            assert not np.all(
-                (a < 0.0)
-            ), "Attributions should not all be less than zero."
-            assert np.any(
-                s
-            ), "Segmentation mask should have some values in its array that is not zero."
 
             # Reshape.
             s = s.flatten().astype(bool)

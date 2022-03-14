@@ -546,10 +546,7 @@ class EffectiveComplexity(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-                    "since otherwise inconsistent results can be expected."
-                )
+                warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)

@@ -6,6 +6,51 @@ from ...quantus.helpers import *
 
 
 @pytest.fixture
+def input_zeros_1d_1ch():
+    return np.zeros(shape=(1, 224))
+
+
+@pytest.fixture
+def input_zeros_1d_3ch():
+    return np.zeros(shape=(3, 224))
+
+
+@pytest.fixture
+def input_zeros_2d_1ch():
+    return np.zeros(shape=(1, 224, 224))
+
+
+@pytest.fixture
+def input_zeros_2d_3ch():
+    return np.zeros(shape=(3, 224, 224))
+
+
+@pytest.fixture
+def input_zeros_2d_3ch_flattened():
+    return np.zeros(shape=(1, 3, 224, 224)).flatten()
+
+
+@pytest.fixture
+def input_ones_mnist_flattened():
+    return np.ones(shape=(1, 1, 28, 28)).flatten()
+
+
+@pytest.fixture
+def input_uniform_2d_3ch_flattened():
+    return np.random.uniform(0, 0.1, size=(3, 224, 224)).flatten()
+
+
+@pytest.fixture
+def input_uniform_2d_3ch():
+    return np.random.uniform(0, 0.1, size=(3, 224, 224))
+
+
+@pytest.fixture
+def input_uniform_mnist():
+    return np.random.uniform(0, 0.1, size=(1, 28, 28))
+
+
+@pytest.fixture
 def input_pert_1d():
     return np.random.uniform(0, 0.1, size=(1, 3, 224, 224)).flatten()
 
@@ -41,10 +86,28 @@ def test_gaussian_noise(
     assert any(out != data) == expected, "Test failed."
 
 
-@pytest.mark.perturb_func
+@pytest.mark.fixed
 @pytest.mark.parametrize(
     "data,params,expected",
     [
+        (
+            lazy_fixture("input_zeros_2d_3ch_flattened"),
+            {
+                "indices": [0, 2],
+                "fixed_values": 1.0,
+                "nr_channels": 3,
+            },
+            1,
+        ),
+        (
+            lazy_fixture("input_ones_mnist_flattened"),
+            {
+                "indices": np.arange(0, 784),
+                "input_shift": -1.0,
+                "nr_channels": 1,
+            },
+            -1,
+        ),
         (
             lazy_fixture("input_zeros"),
             {
