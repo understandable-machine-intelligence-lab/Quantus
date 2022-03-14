@@ -198,7 +198,7 @@ class Completeness(Metric):
                 **{
                     **self.kwargs,
                     **{
-                        "indices": np.arange(0, len(x)),
+                        "indices": np.arange(0, len(x.flatten())),
                         "perturb_baseline": self.perturb_baseline,
                     },
                 },
@@ -278,6 +278,9 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.img_size = self.kwargs.get("img_size", 224)
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
+        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.last_results = []
         self.all_results = []
@@ -297,6 +300,16 @@ class NonSensitivity(Metric):
                 ),
             )
             warn_attributions(normalise=self.normalise, abs=self.abs)
+        assert_features_in_step(
+            features_in_step=self.features_in_step, img_size=self.img_size
+        )
+        if self.max_steps_per_input is not None:
+            assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+            )
+            self.set_features_in_step = set_features_in_step(
+                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
+            )
 
     def __call__(
         self,
@@ -394,6 +407,8 @@ class NonSensitivity(Metric):
 
         for x, y, a in iterator:
 
+            a = a.flatten()
+
             if self.abs:
                 a = np.abs(a)
 
@@ -403,17 +418,23 @@ class NonSensitivity(Metric):
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
-            for a_i in range(len(a)):
+            for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
 
                 preds = []
-                for _ in range(self.n_samples):
+                a_ix = a[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ].astype(int)
 
+                for _ in range(self.n_samples):
+                    # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
                         img=x.flatten(),
                         **{
                             **self.kwargs,
                             **{
-                                "indices": a_i,
+                                "indices": a_ix,
                                 "perturb_baseline": self.perturb_baseline,
                             },
                         },
@@ -600,16 +621,10 @@ class InputInvariance(Metric):
         for x, y, a in iterator:
 
             if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_absolutes_skipped()
 
             if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_normalisation_skipped()
 
             x_shifted = self.perturb_func(
                 img=x.flatten(),
@@ -629,16 +644,10 @@ class InputInvariance(Metric):
             )
 
             if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_absolutes_skipped()
 
             if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_normalisation_skipped()
 
             # Check if explanation of shifted input is similar to original.
             if (a.flatten() != a_shifted.flatten()).all():

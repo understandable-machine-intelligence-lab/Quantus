@@ -29,6 +29,8 @@ temp/
 test
 .coverage
 coverage.xml
+/coverage/
+.coverage.*
 
 # build
 dist/
