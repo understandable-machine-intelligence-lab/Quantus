@@ -950,7 +950,7 @@ class MonotonicityNguyen(Metric):
 
                 vars.append(
                     float(
-                        np.mean((np.array(y_pred_perturb) - np.array(y_pred)) ** 2)
+                        np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
                         * inv_pred
                     )
                 )
