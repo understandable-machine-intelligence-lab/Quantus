@@ -127,7 +127,7 @@ Please read the user guidelines for further guidance on how to best use the libr
 ## Installation
 
 
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.1.2/) 
+Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) 
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
 
 ```setup
