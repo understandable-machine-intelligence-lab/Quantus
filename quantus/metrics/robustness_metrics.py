@@ -216,7 +216,7 @@ class LocalLipschitzEstimate(Metric):
 
                 # Perturb input.
                 x_perturbed = self.perturb_func(
-                    arr=x.flatten(),
+                    arr=x,
                     **self.perturb_func_kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -448,7 +448,7 @@ class MaxSensitivity(Metric):
 
                 # Perturb input.
                 x_perturbed = self.perturb_func(
-                    arr=x.flatten(),
+                    arr=x,
                     **self.perturb_func_kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -677,7 +677,7 @@ class AvgSensitivity(Metric):
 
                 # Perturb input.
                 x_perturbed = self.perturb_func(
-                    arr=x.flatten(),
+                    arr=x,
                     **self.perturb_func_kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
