@@ -1655,7 +1655,7 @@ class RegionPerturbation(Metric):
             if self.order == "random":
                 # Order attributions randomly.
                 order = np.arange(len(patches))
-                np.random.shuffle(np.arange(len(patches)))
+                np.random.shuffle(order)
 
             elif self.order == "morf":
                 # Order attributions according to the most relevant first.
