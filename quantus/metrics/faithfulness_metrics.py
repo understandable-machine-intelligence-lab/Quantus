@@ -252,7 +252,7 @@ class FaithfulnessCorrelation(Metric):
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
-                att_sums.append(np.sum(a[:, a_ix]))
+                att_sums.append(np.sum(a[a_ix]))
 
             similarity = self.similarity_func(a=att_sums, b=logit_deltas)
             self.last_results.append(similarity)
@@ -491,7 +491,7 @@ class FaithfulnessEstimate(Metric):
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions.
-                att_sums.append(a[:, a_ix].sum())
+                att_sums.append(a[a_ix].sum())
 
             self.last_results.append(self.similarity_func(a=att_sums, b=pred_deltas))
 
