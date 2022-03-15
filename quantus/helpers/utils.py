@@ -297,3 +297,25 @@ def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
         return a
     elif a.ndim == x.ndim - 1:
         return np.expand_dims(a, axis=1)
+
+
+def get_nr_patches(patch_size: Union[int, Sequence[int]],
+                   shape: Tuple[int, ...],
+                   overlap: bool = False) -> int:
+    """ Get number of patches for given shape """
+    if isinstance(patch_size, int):
+        patch_size = (patch_size, )
+    patch_size = np.array(patch_size)
+
+    if len(patch_size) == 1 and len(shape) != 1:
+        patch_size = tuple(patch_size for _ in shape)
+    elif patch_size.ndim != 1:
+        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+    elif len(patch_size) != len(shape):
+        raise ValueError(
+            "patch_size sequence length does not match shape length"
+            f" (len(patch_size) != len(shape))"
+        )
+    patch_size = tuple(patch_size)
+
+    return np.prod(shape) // np.prod(patch_size)
