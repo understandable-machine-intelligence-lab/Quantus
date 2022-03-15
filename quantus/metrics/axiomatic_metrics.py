@@ -1,4 +1,5 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
+import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
@@ -110,8 +111,6 @@ class Completeness(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -161,8 +160,15 @@ class Completeness(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -277,7 +283,6 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
@@ -321,8 +326,6 @@ class NonSensitivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -370,8 +373,15 @@ class NonSensitivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -542,8 +552,6 @@ class InputInvariance(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -593,8 +601,15 @@ class InputInvariance(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -622,10 +637,10 @@ class InputInvariance(Metric):
         for x, y, a in iterator:
 
             if self.abs:
-                warn_absolutes_skipped()
+                warn_func.warn_absolutes_skipped()
 
             if self.normalise:
-                warn_normalisation_skipped()
+                warn_func.warn_normalisation_skipped()
 
             x_shifted = self.perturb_func(
                 arr=x,
@@ -639,12 +654,6 @@ class InputInvariance(Metric):
             a_shifted = explain_func(
                 model=model.get_model(), inputs=x_shifted, targets=y, **self.kwargs
             )
-
-            if self.abs:
-                warn_absolutes_skipped()
-
-            if self.normalise:
-                warn_normalisation_skipped()
 
             # Check if explanation of shifted input is similar to original.
             if (a.flatten() != a_shifted.flatten()).all():

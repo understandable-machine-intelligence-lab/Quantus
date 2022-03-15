@@ -125,8 +125,6 @@ class LocalLipschitzEstimate(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -172,12 +170,19 @@ class LocalLipschitzEstimate(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_result = []
 
         # Get explanation function and make asserts.
@@ -356,8 +361,6 @@ class MaxSensitivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -398,21 +401,24 @@ class MaxSensitivity(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
-        channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, channel_first)
-
         # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_result = []
 
         # Get explanation function and make asserts.
@@ -592,8 +598,6 @@ class AvgSensitivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -639,12 +643,19 @@ class AvgSensitivity(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_result = []
 
         # Get explanation function and make asserts.
@@ -753,7 +764,6 @@ class Continuity(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            img_size (integer): Square image dimensions, default=224.
             patch_size (integer): The patch size for masking, default=7.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
@@ -772,9 +782,7 @@ class Continuity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.img_size = self.kwargs.get("img_size", 224)
         self.patch_size = self.kwargs.get("patch_size", 7)
-        self.nr_patches = int((self.img_size / self.patch_size) ** 2)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.perturb_func = self.kwargs.get("perturb_func",
@@ -802,7 +810,6 @@ class Continuity(Metric):
                 ),
             )
             warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-        asserts.assert_patch_size(patch_size=self.patch_size, img_size=self.img_size)
 
     def __call__(
         self,
@@ -825,8 +832,6 @@ class Continuity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -872,12 +877,19 @@ class Continuity(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
         # Get explanation function and make asserts.
@@ -896,7 +908,16 @@ class Continuity(Metric):
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
+        asserts.assert_patch_size(patch_size=self.patch_size,
+                                  arr_shape=x_batch_s.shape[2:])
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # Get number of patches for input shape (ignore batch and channel dim)
+        self.nr_patches = utils.get_nr_patches(
+            patch_size=self.patch_size,
+            shape=x_batch_s.shape[2:],
+            overlap=True,
+        )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:

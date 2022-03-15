@@ -98,8 +98,6 @@ class PointingGame(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -145,12 +143,19 @@ class PointingGame(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -303,8 +308,6 @@ class AttributionLocalisation(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -350,12 +353,19 @@ class AttributionLocalisation(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -395,7 +405,7 @@ class AttributionLocalisation(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                warn_absolutes_applied()
+                warn_func.warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -524,8 +534,6 @@ class TopKIntersection(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -571,12 +579,19 @@ class TopKIntersection(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -722,8 +737,6 @@ class RelevanceRankAccuracy(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -769,12 +782,19 @@ class RelevanceRankAccuracy(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -917,8 +937,6 @@ class RelevanceMassAccuracy(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -964,12 +982,19 @@ class RelevanceMassAccuracy(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
@@ -1103,8 +1128,6 @@ class AUC(Metric):
         s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            nr_channels (integer): Number of images, default=second dimension of the input.
-            img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
             channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape by default.
             explain_func (callable): Callable generating attributions, default=Callable.
@@ -1150,12 +1173,19 @@ class AUC(Metric):
             model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
