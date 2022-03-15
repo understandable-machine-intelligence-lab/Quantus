@@ -160,6 +160,7 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "metrics rely on ordering."
         "Recompute the explanations."
     )
+    assert not np.all((a_batch < 0.0)), "Attributions should not all be less than zero."
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
@@ -183,7 +184,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), ("The " "segmentation 's_batch' should only contain [1‚0] or [True, False].")
+    ), ("The segmentation 's_batch' should contain only [1, 0] or [True, False].")
 
 
 def assert_max_size(max_size: float) -> None:

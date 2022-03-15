@@ -10,7 +10,6 @@ from ...quantus.helpers import utils
 def input_zeros_1d_1ch():
     return np.zeros(shape=(1, 224))
 
-
 @pytest.fixture
 def input_zeros_1d_3ch():
     return np.zeros(shape=(3, 224))
@@ -85,7 +84,7 @@ def test_gaussian_noise(
     assert any(out.flatten() != data.flatten()) == expected, "Test failed."
 
 
-@pytest.mark.perturb_func
+@pytest.mark.fixed
 @pytest.mark.parametrize(
     "data,params,expected",
     [
@@ -99,6 +98,22 @@ def test_gaussian_noise(
         ),
         (
             lazy_fixture("input_ones_mnist_flattened"),
+            {
+                "indices": np.arange(0, 784),
+                "input_shift": -1.0,
+            },
+            -1,
+        ),
+        (
+            lazy_fixture("input_zeros"),
+            {
+                "indices": [0, 2, 224, 226, 448, 450],
+                "fixed_values": 1.0,
+            },
+            1,
+        ),
+        (
+            lazy_fixture("input_ones_mnist"),
             {
                 "indices": np.arange(0, 784),
                 "input_shift": -1.0,

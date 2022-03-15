@@ -136,6 +136,7 @@ class PointingGame(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -172,8 +173,10 @@ class PointingGame(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -335,6 +338,7 @@ class AttributionLocalisation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -371,8 +375,10 @@ class AttributionLocalisation(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -383,10 +389,7 @@ class AttributionLocalisation(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
+                warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -553,6 +556,7 @@ class TopKIntersection(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -589,8 +593,10 @@ class TopKIntersection(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -658,7 +664,7 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -745,6 +751,7 @@ class RelevanceRankAccuracy(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -781,8 +788,10 @@ class RelevanceRankAccuracy(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -791,12 +800,6 @@ class RelevanceRankAccuracy(Metric):
 
             if self.abs:
                 a = np.abs(a)
-            else:
-                a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -940,6 +943,7 @@ class RelevanceMassAccuracy(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -976,8 +980,10 @@ class RelevanceMassAccuracy(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 
@@ -988,14 +994,6 @@ class RelevanceMassAccuracy(Metric):
 
             if self.normalise:
                 a = self.normalise_func(a)
-
-            # Asserts on attributions.
-            assert not np.all(
-                (a < 0.0)
-            ), "Attributions should not all be less than zero."
-            assert np.any(
-                s
-            ), "Segmentation mask should have some values in its array that is not zero."
 
             # Reshape.
             s = s.flatten().astype(bool)
@@ -1128,6 +1126,7 @@ class AUC(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1164,8 +1163,10 @@ class AUC(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
+                total=len(x_batch_s),
+            )
 
         for ix, (x, y, a, s) in iterator:
 

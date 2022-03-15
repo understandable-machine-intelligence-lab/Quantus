@@ -179,6 +179,7 @@ class FaithfulnessCorrelation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -399,6 +400,7 @@ class FaithfulnessEstimate(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -625,6 +627,7 @@ class IterativeRemovalOfFeatures(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -861,6 +864,7 @@ class MonotonicityArya(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1091,6 +1095,7 @@ class MonotonicityNguyen(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1147,7 +1152,7 @@ class MonotonicityNguyen(Metric):
             )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred ** 2
+            inv_pred = inv_pred**2
 
             a = a.flatten()
 
@@ -1192,7 +1197,7 @@ class MonotonicityNguyen(Metric):
 
                 vars.append(
                     float(
-                        np.mean((np.array(y_pred_perturb) - np.array(y_pred)) ** 2)
+                        np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
                         * inv_pred
                     )
                 )
@@ -1329,9 +1334,11 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1570,6 +1577,7 @@ class RegionPerturbation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1602,8 +1610,9 @@ class RegionPerturbation(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for sample, (x, y, a) in iterator:
             # Predict on input.
@@ -1837,6 +1846,7 @@ class Selectivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -1869,8 +1879,9 @@ class Selectivity(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for sample, (x, y, a) in iterator:
             # Predict on input.
@@ -2101,6 +2112,7 @@ class SensitivityN(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -2151,8 +2163,9 @@ class SensitivityN(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for sample, (x, y, a) in iterator:
 

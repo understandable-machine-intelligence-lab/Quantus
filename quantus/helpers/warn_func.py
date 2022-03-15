@@ -31,6 +31,27 @@ def warn_noise_zero(noise: float) -> None:
         )
 
 
+def warn_absolutes_applied() -> None:
+    print(
+        "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
+        "since otherwise inconsistent results can be expected."
+    )
+
+
+def warn_absolutes_skipped() -> None:
+    print(
+        "An absolute operation on the attributions is skipped "
+        "since inconsistent results can be expected if applied."
+    )
+
+
+def warn_normalisation_skipped() -> None:
+    print(
+        "A normalising operation on the attributions is skipped "
+        "since inconsistent results can be expected if applied."
+    )
+
+
 def warn_parameterisation(
     metric_name: str = "Metric",
     sensitive_params: str = "X, Y and Z.",

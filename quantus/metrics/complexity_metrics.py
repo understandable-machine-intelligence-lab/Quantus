@@ -136,6 +136,7 @@ class Sparseness(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -322,6 +323,7 @@ class Complexity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -373,13 +375,10 @@ class Complexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            a = (
-                np.array(
-                    np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
-                    dtype=np.float64,
-                )
-                / np.sum(np.abs(a))
-            )
+            a = np.array(
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
+            ) / np.sum(np.abs(a))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -504,6 +503,7 @@ class EffectiveComplexity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -549,10 +549,7 @@ class EffectiveComplexity(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-                    "since otherwise inconsistent results can be expected."
-                )
+                warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)

@@ -1,7 +1,7 @@
 """This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import copy
 import random
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 import cv2
 import numpy as np
@@ -18,12 +18,12 @@ def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
     return arr + noise
 
 
-def baseline_replacement_by_indices(arr: np.array, **kwargs) -> np.array:
+def baseline_replacement_by_indices(arr: np.array, indices: Union[int, Sequence[int]],
+                                    nr_channels: int, **kwargs) -> np.array:
     """Replace indices in an image by given baseline."""
-    assert arr.ndim == 1, "Check that 'perturb_func' receives a 1D array."
-    assert (
-        "indices" in kwargs
-    ), "Specify 'indices' to enable perturbation function to run."
+    if arr.ndim != 1:
+        raise ValueError("Check that 'perturb_func' receives a 1D array.")
+
     if "fixed_values" in kwargs:
         choice = kwargs["fixed_values"]
     elif "perturb_baseline" in kwargs:
@@ -34,15 +34,29 @@ def baseline_replacement_by_indices(arr: np.array, **kwargs) -> np.array:
     arr_perturbed = copy.copy(arr)
     baseline_value = get_baseline_value(choice=choice, arr=arr, **kwargs)
 
+    # Make sure that image is perturbed on all channels.
+    if isinstance(indices, int):
+        indices = np.expand_dims(indices, axis=0)
+    indices = np.concatenate(
+        [
+            np.add(
+                indices,
+                int(c * len(arr) / nr_channels),
+                dtype=int,
+            )
+            for c in range(nr_channels)
+        ]
+    )
+
     if "input_shift" in kwargs:
         arr_shifted = copy.copy(arr)
         arr_shifted = np.multiply(
             arr_shifted,
             np.full(shape=arr.shape, fill_value=baseline_value, dtype=float),
         )
-        arr_perturbed[kwargs["indices"]] = arr_shifted[kwargs["indices"]]
+        arr_perturbed[indices] = arr_shifted[indices]
     else:
-        arr_perturbed[kwargs["indices"]] = baseline_value
+        arr_perturbed[indices] = baseline_value
 
     return arr_perturbed
 

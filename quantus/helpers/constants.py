@@ -26,7 +26,7 @@ AVAILABLE_METRICS = {
         "Pointing Game": PointingGame,
         "Top-K Intersection": TopKIntersection,
         "Relevance Mass Accuracy": RelevanceMassAccuracy,
-        "Relevance Mass Ranking": RelevanceRankAccuracy,
+        "Relevance Rank Accuracy": RelevanceRankAccuracy,
         "Attribution Localisation ": AttributionLocalisation,
         "AUC": AUC,
     },
