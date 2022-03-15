@@ -1,6 +1,6 @@
 """This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Callable, Dict, List, Union
 import warnings
+from typing import Callable, Dict, List, Union
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
