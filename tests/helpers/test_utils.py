@@ -748,3 +748,82 @@ def test_expand_attribution_channel(params: dict, expected: Any):
     out = expand_attribution_channel(**params)
     assert out.shape == expected["value"].shape
     assert (out == expected["value"]).any()
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "patch_size": 4,
+                "shape": (16, ),
+            },
+            {"value": 4},
+        ),
+        (
+            {
+                "patch_size": (4, ),
+                "shape": (16, ),
+            },
+            {"value": 4},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, ),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "shape": (16, 16),
+            },
+            {"value": 16},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, 16),
+            },
+            {"value": 16},
+        ),
+        (
+            {
+                "patch_size": (4, 2),
+                "shape": (16, 16),
+            },
+            {"value": 32},
+        ),
+        (
+            {
+                "patch_size": (4, 4, 4),
+                "shape": (16, 16),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, ),
+                "shape": (16, 16, 16),
+            },
+            {"value": 64},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, 16, 16),
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_get_nr_patches(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = get_nr_patches(**params)
+        return
+
+    out = get_nr_patches(**params)
+    assert out == expected["value"]

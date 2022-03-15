@@ -79,11 +79,25 @@ def assert_max_steps(max_steps_per_input: int, input_shape: Tuple[int, ...]) -> 
     )
 
 
-def assert_patch_size(patch_size: int, img_size: int) -> None:
-    """Assert that patch size that are not compatible with input size."""
+def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
+    """Assert that patch size is compatible with given shape."""
+    if isinstance(patch_size, int):
+        patch_size = (patch_size, )
+    patch_size = np.array(patch_size)
+
+    if len(patch_size) == 1 and len(shape) != 1:
+        patch_size = tuple(patch_size for _ in shape)
+    elif patch_size.ndim != 1:
+        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+    elif len(patch_size) != len(shape):
+        raise ValueError(
+            "patch_size sequence length does not match shape length"
+            f" (len(patch_size) != len(shape))"
+        )
+    patch_size = tuple(patch_size)
     assert (
-        img_size % patch_size == 0
-    ), "Set 'patch_size' so that the modulo remainder returns 0 given the image size."
+        np.prod(shape) % np.prod(patch_size) == 0
+    ), "Set 'patch_size' so that the modulo remainder returns 0 given the input shape."
 
 
 def assert_attributions_order(order: str) -> None:
