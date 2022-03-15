@@ -239,7 +239,7 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    arr=x.flatten(),
+                    arr=x,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
                 )
@@ -479,7 +479,7 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x.flatten(),
+                    arr=x,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
                 )
@@ -1182,7 +1182,7 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        arr=x.flatten(),
+                        arr=x,
                         indices=a_ix,
                         perturb_baseline=self.perturb_baseline,
                     )

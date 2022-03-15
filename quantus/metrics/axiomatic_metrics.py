@@ -195,8 +195,8 @@ class Completeness(Metric):
                 a = self.normalise_func(a)
 
             x_baseline = self.perturb_func(
-                arr=x.flatten(),
-                indices=np.arange(0, len(x.flatten())),
+                arr=x,
+                indices=np.arange(0, x.size),
                 perturb_baseline=self.perturb_baseline,
             )
 
@@ -430,7 +430,7 @@ class NonSensitivity(Metric):
                 for _ in range(self.n_samples):
                     # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
-                        arr=x.flatten(),
+                        arr=x,
                         indices=a_ix,
                         perturb_baseline=self.perturb_baseline,
                     )
@@ -619,8 +619,8 @@ class InputInvariance(Metric):
                 warn_normalisation_skipped()
 
             x_shifted = self.perturb_func(
-                arr=x.flatten(),
-                indices=np.arange(0, len(x.flatten())),
+                arr=x,
+                indices=np.arange(0, x.size),
                 input_shift=self.input_shift,
             )
             x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
