@@ -31,6 +31,11 @@ def input_zeros_2d_3ch_flattened():
 
 
 @pytest.fixture
+def input_ones_mnist():
+    return np.ones(shape=(1, 28, 28))
+
+
+@pytest.fixture
 def input_ones_mnist_flattened():
     return np.ones(shape=(1, 28, 28)).flatten()
 
@@ -89,7 +94,7 @@ def test_gaussian_noise(
     "data,params,expected",
     [
         (
-            lazy_fixture("input_zeros_2d_3ch_flattened"),
+            lazy_fixture("input_zeros_2d_3ch"),
             {
                 "indices": [0, 2],
                 "fixed_values": 1.0,
@@ -97,17 +102,9 @@ def test_gaussian_noise(
             1,
         ),
         (
-            lazy_fixture("input_ones_mnist_flattened"),
+            lazy_fixture("input_zeros_2d_3ch_flattened"),
             {
-                "indices": np.arange(0, 784),
-                "input_shift": -1.0,
-            },
-            -1,
-        ),
-        (
-            lazy_fixture("input_zeros"),
-            {
-                "indices": [0, 2, 224, 226, 448, 450],
+                "indices": [0, 2],
                 "fixed_values": 1.0,
             },
             1,
@@ -120,15 +117,56 @@ def test_gaussian_noise(
             },
             -1,
         ),
+        (
+            lazy_fixture("input_ones_mnist_flattened"),
+            {
+                "indices": np.arange(0, 784),
+                "input_shift": -1.0,
+            },
+            -1,
+        ),
+        (
+            lazy_fixture("input_zeros_1d_1ch"),
+            {
+                "indices": [0, 2, 112, 113, 128, 223],
+                "fixed_values": 1.0,
+            },
+            1,
+        ),
+        (
+            lazy_fixture("input_zeros_1d_3ch"),
+            {
+                "indices": [0, 2, 112, 113, 128, 223],
+                "fixed_values": 1.0,
+            },
+            1,
+        ),
+        (
+            lazy_fixture("input_zeros_2d_1ch"),
+            {
+                "indices": [0, 2, 224, 226, 448, 450],
+                "fixed_values": 1.0,
+            },
+            1,
+        ),
+        (
+            lazy_fixture("input_zeros_2d_3ch"),
+            {
+                "indices": [0, 2, 224, 226, 448, 450],
+                "fixed_values": 1.0,
+            },
+            1,
+        ),
     ],
 )
 def test_baseline_replacement_by_indices(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = baseline_replacement_by_indices(arr=data, **params)
+    indices = np.unravel_index(params["indices"], data.shape)
 
     if isinstance(expected, (int, float)):
-        assert np.all([i == expected for i in out[params["indices"]]]), "Test failed."
+        assert np.all([i == expected for i in out[indices]]), "Test failed."
 
 
 @pytest.mark.perturb_func

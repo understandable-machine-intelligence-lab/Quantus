@@ -1,7 +1,8 @@
 """This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import copy
 import random
-from typing import Any, Sequence, Union
+import warnings
+from typing import Any, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -18,11 +19,29 @@ def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
     return arr + noise
 
 
-def baseline_replacement_by_indices(arr: np.array, indices: Union[int, Sequence[int]],
-                                    nr_channels: int, **kwargs) -> np.array:
-    """Replace indices in an image by given baseline."""
-    if arr.ndim != 1:
-        raise ValueError("Check that 'perturb_func' receives a 1D array.")
+def baseline_replacement_by_indices(arr: np.array,
+                                    indices: Union[int, Sequence[int], Tuple[np.array]],
+                                    for_all_channels: bool = True,
+                                    **kwargs) -> np.array:
+    """
+    Replace indices in an array by given baseline.
+    for_all_channels: Replace complete channel for given index. 
+                      Assumes channel first ordering.
+    """
+    indices = np.array(indices)
+    if arr.ndim != indices.ndim:
+        if indices.ndim == 1:
+            indices = np.unravel_index(indices, arr.shape)
+        else:
+            raise ValueError("indices dimension doesn't match arr.shape")
+
+    # Make sure that array is perturbed on all channels.
+    # This can only be done if there is more than one dimension.
+    if for_all_channels and arr.ndim > 1:
+        # replace first dimension indices with slice for all channels
+        indices = slice(None), *indices[1:]
+    elif for_all_channels and arr.ndim == 1:
+        warnings.warn("for_all_channels=True but arr has no channel dimension")
 
     if "fixed_values" in kwargs:
         choice = kwargs["fixed_values"]
@@ -33,20 +52,6 @@ def baseline_replacement_by_indices(arr: np.array, indices: Union[int, Sequence[
 
     arr_perturbed = copy.copy(arr)
     baseline_value = get_baseline_value(choice=choice, arr=arr, **kwargs)
-
-    # Make sure that image is perturbed on all channels.
-    if isinstance(indices, int):
-        indices = np.expand_dims(indices, axis=0)
-    indices = np.concatenate(
-        [
-            np.add(
-                indices,
-                int(c * len(arr) / nr_channels),
-                dtype=int,
-            )
-            for c in range(nr_channels)
-        ]
-    )
 
     if "input_shift" in kwargs:
         arr_shifted = copy.copy(arr)
@@ -63,7 +68,7 @@ def baseline_replacement_by_indices(arr: np.array, indices: Union[int, Sequence[
 
 def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
                                   perturb_baseline: Any) -> np.array:
-    """Replace a single patch in an image by given baseline."""
+    """Replace a single patch in an array by given baseline."""
     if len(patch_slice) != arr.ndim:
         raise ValueError(
             "patch_slice dimensions don't match arr dimensions."
@@ -81,7 +86,7 @@ def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
 def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
                                  blur_kernel_size: int = 15) -> np.array:
     """
-    Replace a single patch in an image by a blurred version.
+    Replace a single patch in an array by a blurred version.
     Blur is performed via a 2D convolution.
     blur_kernel_size controls the kernel-size of that convolution (Default is 15).
     Assumes unbatched channel first format.
@@ -119,7 +124,7 @@ def uniform_sampling(arr: np.array, perturb_radius: float = 0.02) -> np.array:
 
 def rotation(arr: np.array, perturb_angle: float = 10) -> np.array:
     """
-    Rotate image by some given angle.
+    Rotate array by some given angle.
     Assumes channel first layout.
     """
     assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
@@ -140,7 +145,7 @@ def rotation(arr: np.array, perturb_angle: float = 10) -> np.array:
 def translation_x_direction(arr: np.array, perturb_baseline: Any,
                             perturb_dx: int = 10, **kwargs) -> np.array:
     """
-    Translate image by some given value in the x-direction.
+    Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
     assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
@@ -160,7 +165,7 @@ def translation_x_direction(arr: np.array, perturb_baseline: Any,
 def translation_y_direction(arr: np.array, perturb_baseline: Any,
                             perturb_dx: int = 10, **kwargs) -> np.array:
     """
-    Translate image by some given value in the x-direction.
+    Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
     assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
