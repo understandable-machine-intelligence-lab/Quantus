@@ -290,6 +290,113 @@ def test_faithfulness_estimate(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
+                "perturb_baseline": "mean",
+                "segmentation_method": "slic",
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": 28,
+                "nr_channels": 1,
+                "max_steps_per_input": 2,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "mean",
+                "segmentation_method": "slic",
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "img_size": 28,
+                "nr_channels": 1,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "mean",
+                "segmentation_method": "slic",
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "img_size": 28,
+                "nr_channels": 1,
+                "max_steps_per_input": 2,
+                "disable_warnings": True,
+                "display_progressbar": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "perturb_baseline": "mean",
+                "segmentation_method": "slic",
+                "normalise": True,
+                "max_steps_per_input": 2,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
+)
+def test_iterative_removal_of_features(
+    model,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+
+    scores = IterativeRemovalOfFeatures(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
+
+    assert scores is not None, "Test failed."
+
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
                 "perturb_func": baseline_replacement_by_indices,
                 "features_in_step": 28,
                 "perturb_baseline": "black",
@@ -1025,110 +1132,3 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-
-
-@pytest.mark.faithfulness
-@pytest.mark.parametrize(
-    "model,data,params,expected",
-    [
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "perturb_baseline": "mean",
-                "segmentation_method": "slic",
-                "normalise": True,
-                "explain_func": explain,
-                "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
-                "max_steps_per_input": 2,
-                "disable_warnings": False,
-                "display_progressbar": False,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "perturb_baseline": "mean",
-                "segmentation_method": "slic",
-                "normalise": True,
-                "explain_func": explain,
-                "method": "Saliency",
-                "abs": True,
-                "img_size": 28,
-                "nr_channels": 1,
-                "disable_warnings": True,
-                "display_progressbar": False,
-                "a_batch_generate": False,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "perturb_baseline": "mean",
-                "segmentation_method": "slic",
-                "normalise": True,
-                "explain_func": explain,
-                "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
-                "max_steps_per_input": 2,
-                "disable_warnings": True,
-                "display_progressbar": True,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_conv_model"),
-            lazy_fixture("almost_uniform_1d"),
-            {
-                "perturb_baseline": "mean",
-                "segmentation_method": "slic",
-                "normalise": True,
-                "max_steps_per_input": 2,
-                "disable_warnings": False,
-                "display_progressbar": False,
-                "a_batch_generate": False,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-    ],
-)
-def test_iterative_removal_of_features(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
-):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
-
-    if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
-        a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **params,
-        )
-    elif "a_batch" in data:
-        a_batch = data["a_batch"]
-    else:
-        a_batch = None
-
-    scores = IterativeRemovalOfFeatures(**params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **params,
-    )
-
-    assert scores is not None, "Test failed."
