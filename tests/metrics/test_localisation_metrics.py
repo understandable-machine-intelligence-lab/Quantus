@@ -435,7 +435,7 @@ def test_pointing_game(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            0.01,
+            0.01, # TODO: verify correctness
         ),
         (
             lazy_fixture("all_in_gt_2d"),
@@ -453,7 +453,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0025,
+            0.0025, # TODO: verify correctness
         ),
         (
             lazy_fixture("all_in_gt_2d"),
@@ -491,7 +491,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.01,
+            0.01, # TODO: verify correctness
         ),
         (
             lazy_fixture("none_in_gt_2d"),
@@ -509,7 +509,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0025,
+            0.0025, # TODO: verify correctness
         ),
         (
             lazy_fixture("none_in_gt_zeros_2d"),
@@ -527,7 +527,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.02,
+            0.02, # TODO: verify correctness
         ),
         (
             lazy_fixture("half_in_gt_zeros_2d"),
@@ -545,7 +545,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.04,
+            0.04, # TODO: verify correctness
         ),
         (
             lazy_fixture("half_in_gt_zeros_2d"),
@@ -563,7 +563,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            0.01,
+            0.01, # TODO: verify correctness
         ),
         (
             lazy_fixture("all_in_gt_2d"),
@@ -582,7 +582,7 @@ def test_pointing_game(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            0.022400000000000003,
+            0.022400000000000003, # TODO: verify correctness
         ),
         (
             lazy_fixture("all_in_gt_2d"),
@@ -592,7 +592,7 @@ def test_pointing_game(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            5.0176,
+            5.0176, # TODO: verify correctness
         ),
     ],
 )
@@ -695,7 +695,7 @@ def test_top_k_intersection(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            {"min": 0.5, "max": 1.0},
+            {"min": 0.5, "max": 1.0}, # TODO: verify correctness
         ),
         (
             lazy_fixture("half_in_gt_2d"),
@@ -930,7 +930,7 @@ def test_relevance_mass_accuracy(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0,
+            0.0, # TODO: verify correctness
         ),
         (
             lazy_fixture("none_in_gt_fourth_2d"),
@@ -1027,7 +1027,7 @@ def test_auc(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            {"min": 0.8, "max": 0.95},
+            {"min": 0.8, "max": 0.95}, # TODO: verify correctness
         ),
         (
             lazy_fixture("all_in_gt_2d"),
