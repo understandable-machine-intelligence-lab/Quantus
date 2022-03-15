@@ -65,6 +65,7 @@ class ModelParameterRandomisation(Metric):
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = {}
         self.all_results = []
 
@@ -142,6 +143,7 @@ class ModelParameterRandomisation(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -177,13 +179,14 @@ class ModelParameterRandomisation(Metric):
         # Due to the nested for-loops and the requirement of a single progressbar,
         # manual updating will be performed at the end of each inner iteration.
         if self.display_progressbar:
-            n_layers = len(list(model.get_random_layer_generator(
-                order=self.layer_order)))
+            n_layers = len(
+                list(model.get_random_layer_generator(order=self.layer_order))
+            )
             n_iterations = n_layers * len(a_batch)
             pbar = tqdm(total=n_iterations)
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
-            order=self.layer_order
+            order=self.layer_order, seed=self.seed
         ):
 
             similarity_scores = []
@@ -266,6 +269,7 @@ class RandomLogit(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = []
         self.all_results = []
 
@@ -339,6 +343,7 @@ class RandomLogit(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -373,8 +378,9 @@ class RandomLogit(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 
@@ -385,6 +391,7 @@ class RandomLogit(Metric):
                 a = self.normalise_func(a)
 
             # Randomly select off-class labels.
+            random.seed(a=self.seed)
             y_off = np.array(
                 [
                     random.choice(

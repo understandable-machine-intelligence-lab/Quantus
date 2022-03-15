@@ -124,6 +124,9 @@ class Metric:
             "kwargs",
             "all_results",
             "last_results",
+            "default_plot_func",
+            "disable_warnings",
+            "display_progressbar",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 

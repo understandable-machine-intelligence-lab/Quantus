@@ -318,18 +318,20 @@ def half_in_gt_zeros_bigger_2d():
     "data,params,expected",
     [
         (
-            lazy_fixture("all_in_gt_1d"), {
+            lazy_fixture("all_in_gt_1d"),
+            {
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
             True
         ),
         (
-            lazy_fixture("all_in_gt_2d"), {
+            lazy_fixture("all_in_gt_2d"),
+            {
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            True
+            True,
         ),
         (
             lazy_fixture("all_in_gt_no_abatch_1d"),
@@ -382,18 +384,20 @@ def half_in_gt_zeros_bigger_2d():
             True,
         ),
         (
-            lazy_fixture("all_in_gt_1d"), {
+            lazy_fixture("all_in_gt_1d"),
+            {
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
             True
         ),
         (
-            lazy_fixture("all_in_gt_2d"), {
+            lazy_fixture("all_in_gt_2d"),
+            {
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            True
+            True,
         ),
     ],
 )
@@ -481,7 +485,8 @@ def test_pointing_game(
             {"type": list},
         ),
         (
-            lazy_fixture("none_in_gt_1d"), {
+            lazy_fixture("none_in_gt_1d"),
+            {
                 "k": 10000,
                 "disable_warnings": True,
                 "display_progressbar": False,
@@ -489,7 +494,8 @@ def test_pointing_game(
             0.01,
         ),
         (
-            lazy_fixture("none_in_gt_2d"), {
+            lazy_fixture("none_in_gt_2d"),
+            {
                 "k": 10000,
                 "disable_warnings": True,
                 "display_progressbar": False,

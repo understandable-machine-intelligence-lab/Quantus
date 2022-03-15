@@ -54,7 +54,7 @@ class PyTorchModel(ModelInterface):
         """Get a dictionary of the model's learnable parameters."""
         return self.model.state_dict()
 
-    def get_random_layer_generator(self, order: str = "top_down"):
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         Set order to top_down for cascading randomization.
@@ -75,5 +75,6 @@ class PyTorchModel(ModelInterface):
         for module in modules:
             if order == "independent":
                 random_layer_model.load_state_dict(original_parameters)
+            torch.manual_seed(seed=seed + 1)
             module[1].reset_parameters()
             yield module[0], random_layer_model

@@ -148,6 +148,7 @@ class Completeness(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -195,7 +196,7 @@ class Completeness(Metric):
 
             x_baseline = self.perturb_func(
                 arr=x.flatten(),
-                indices=np.arange(0, len(x)),
+                indices=np.arange(0, len(x.flatten())),
                 perturb_baseline=self.perturb_baseline,
             )
 
@@ -273,6 +274,9 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.img_size = self.kwargs.get("img_size", 224)
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
+        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.last_results = []
         self.all_results = []
@@ -381,6 +385,19 @@ class NonSensitivity(Metric):
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -389,6 +406,8 @@ class NonSensitivity(Metric):
             iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
 
         for x, y, a in iterator:
+
+            a = a.flatten()
 
             if self.abs:
                 a = np.abs(a)
@@ -399,11 +418,17 @@ class NonSensitivity(Metric):
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
-            for a_ix in range(len(a)):
+            for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
 
                 preds = []
-                for _ in range(self.n_samples):
+                a_ix = a[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ].astype(int)
 
+                for _ in range(self.n_samples):
+                    # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
                         arr=x.flatten(),
                         indices=a_ix,
@@ -549,6 +574,7 @@ class InputInvariance(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -587,16 +613,10 @@ class InputInvariance(Metric):
         for x, y, a in iterator:
 
             if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_absolutes_skipped()
 
             if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_normalisation_skipped()
 
             x_shifted = self.perturb_func(
                 arr=x.flatten(),
@@ -612,16 +632,10 @@ class InputInvariance(Metric):
             )
 
             if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_absolutes_skipped()
 
             if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_normalisation_skipped()
 
             # Check if explanation of shifted input is similar to original.
             if (a.flatten() != a_shifted.flatten()).all():

@@ -61,7 +61,7 @@ class TensorFlowModel(ModelInterface):
         """Set model's learnable parameters."""
         self.model.set_weights(original_parameters)
 
-    def get_random_layer_generator(self, order: str = "top_down"):
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         Set order to top_down for cascading randomization.
@@ -79,5 +79,6 @@ class TensorFlowModel(ModelInterface):
             if order == "independent":
                 random_layer_model.set_weights(original_parameters)
             weights = layer.get_weights()
+            np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model

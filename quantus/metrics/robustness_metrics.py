@@ -163,6 +163,7 @@ class LocalLipschitzEstimate(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -198,8 +199,9 @@ class LocalLipschitzEstimate(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 
@@ -389,7 +391,12 @@ class MaxSensitivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
+        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
+        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
 
@@ -424,8 +431,9 @@ class MaxSensitivity(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 
@@ -616,6 +624,7 @@ class AvgSensitivity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -651,8 +660,9 @@ class AvgSensitivity(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 
@@ -844,6 +854,7 @@ class Continuity(Metric):
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
         x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, self.channel_first)
@@ -879,8 +890,9 @@ class Continuity(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
         for ix, (x, y, a) in iterator:
