@@ -246,13 +246,33 @@ def conv2D_numpy(
     return output
 
 
-def create_patch_slice(patch_size: int, coords: Sequence[int],
+def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[int],
                        expand_first_dim: bool) -> Tuple[Sequence[int]]:
     """
     Create a patch slice from patch size and coordinates.
     expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
     """
-    patch_slice = [slice(coord, coord + patch_size) for coord in coords]
+    if isinstance(patch_size, int):
+        patch_size = (patch_size, )
+    if isinstance(coords, int):
+        coords = (coords, )
+
+    patch_size = np.array(patch_size)
+    coords = tuple(coords)
+
+    if len(patch_size) == 1 and len(coords) != 1:
+        patch_size = tuple(patch_size for _ in coords)
+    elif patch_size.ndim != 1:
+        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+    elif len(patch_size) != len(coords):
+        raise ValueError(
+            "patch_size sequence length does not match coords length"
+            f" (len(patch_size) != len(coords))"
+        )
+    patch_size = tuple(patch_size)
+
+    patch_slice = [slice(coord, coord + patch_size_dim)
+                   for coord, patch_size_dim in zip(coords, patch_size)]
     # Prepend slice for all channels.
     if expand_first_dim:
         patch_slice = [slice(None), *patch_slice]

@@ -571,10 +571,18 @@ def test_conv2D_numpy(
         (
             {
                 "patch_size": 4,
+                "coords": 0,
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), )},
+        ),
+        (
+            {
+                "patch_size": 4,
                 "coords": (0, ),
                 "expand_first_dim": False,
             },
-            (slice(0, 4, None), ),
+            {"value": (slice(0, 4, None), )},
         ),
         (
             {
@@ -582,7 +590,23 @@ def test_conv2D_numpy(
                 "coords": (0, 0),
                 "expand_first_dim": False,
             },
-            (slice(0, 4, None), slice(0, 4, None)),
+            {"value": (slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 6),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 6, None))},
         ),
         (
             {
@@ -590,7 +614,15 @@ def test_conv2D_numpy(
                 "coords": (1, 2),
                 "expand_first_dim": False,
             },
-            (slice(1, 11, None), slice(2, 12, None)),
+            {"value": (slice(1, 11, None), slice(2, 12, None))},
+        ),
+        (
+            {
+                "patch_size": (10, 5),
+                "coords": (1, 2),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(1, 11, None), slice(2, 7, None))},
         ),
         (
             {
@@ -598,7 +630,7 @@ def test_conv2D_numpy(
                 "coords": (0, 0),
                 "expand_first_dim": True,
             },
-            (slice(None, None, None), slice(0, 4, None), slice(0, 4, None)),
+            {"value": (slice(None, None, None), slice(0, 4, None), slice(0, 4, None))},
         ),
         (
             {
@@ -606,13 +638,50 @@ def test_conv2D_numpy(
                 "coords": (0, 0, 0),
                 "expand_first_dim": False,
             },
-            (slice(0, 4, None), slice(0, 4, None), slice(0, 4, None)),
+            {"value": (slice(0, 4, None), slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 4, 4),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, 0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, ),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": np.ones((4, 4)),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
         ),
     ],
 )
 def test_create_patch_slice(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = create_patch_slice(**params)
+        return
+
     out = create_patch_slice(**params)
-    assert out == expected
+    assert out == expected["value"]
 
 
 @pytest.mark.utils
