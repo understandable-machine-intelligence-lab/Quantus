@@ -500,6 +500,235 @@ class FaithfulnessEstimate(Metric):
         return self.last_results
 
 
+class IterativeRemovalOfFeatures(Metric):
+    """
+    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
+
+    The metric computes the area over the curve per class for sorted mean importances
+    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
+    averaged over several test samples.
+
+    References:
+        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
+        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
+
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="mean".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.last_results = []
+        self.all_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and the method to segment "
+                    "the image 'segmentation_method' (including all its associated hyperparameters)"
+                ),
+                citation=(
+                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
+                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
+                ),
+            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                nr_channels (integer): Number of images, default=second dimension of the input.
+                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = IROF(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+        # Reshape input batch to channel first order:
+        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
+        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
+        # Wrap the model into an interface
+        if model:
+            model = utils.get_wrapped_model(model, self.channel_first)
+
+        # Update kwargs.
+        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
+        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+        self.last_result = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+
+        # Asserts.
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalise:
+                a = self.normalise_func(a)
+
+            # Predict on x.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
+
+            # Segment image.
+            segments = utils.get_superpixel_segments(
+                img=np.moveaxis(x, 0, -1).astype("double"),
+                segmentation_method=self.segmentation_method,
+            )
+            nr_segments = segments.max()
+            asserts.assert_nr_segments(nr_segments=nr_segments)
+
+            # Calculate average attribution of each segment.
+            att_segs = np.zeros(nr_segments)
+            for i, s in enumerate(range(nr_segments)):
+                att_segs[i] = np.mean(a[:, segments == s])
+
+            # Sort segments based on the mean attribution (descending order).
+            s_indices = np.argsort(-att_segs)
+
+            preds = []
+
+            for i_ix, s_ix in enumerate(s_indices):
+
+                # Perturb input by indices of attributions.
+                a_ix = np.nonzero(
+                    np.repeat((segments == s_ix).flatten(), self.nr_channels)
+                )[0]
+
+                x_perturbed = self.perturb_func(
+                    arr=x_input.flatten(),
+                    indices=a_ix,
+                    perturb_baseline=self.perturb_baseline,
+                )
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
+                # Normalise the scores to be within [0, 1].
+                preds.append(float(y_pred_perturb / y_pred))
+
+            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
+            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
+
+        self.last_results = [np.mean(self.last_results)]
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+    @property
+    def aggregated_score(self):
+        """Calculate the area over the curve (AOC) score for several test samples."""
+        return [np.mean(results) for results in self.all_results]
+
+
 class MonotonicityArya(Metric):
     """
     Implementation of Montonicity Metric by Arya at el., 2019.
@@ -967,7 +1196,7 @@ class MonotonicityNguyen(Metric):
                         * inv_pred
                     )
                 )
-                atts.append(float(sum(a[:, a_ix])))
+                atts.append(float(sum(a[a_ix])))
 
             self.last_results.append(self.similarity_func(a=atts, b=vars))
 
@@ -1964,7 +2193,7 @@ class SensitivityN(Metric):
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Sum attributions.
-                att_sums.append(float(a[:, a_ix].sum()))
+                att_sums.append(float(a[a_ix].sum()))
 
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
@@ -1995,232 +2224,3 @@ class SensitivityN(Metric):
         self.all_results.append(self.last_result)
 
         return self.last_result
-
-
-class IterativeRemovalOfFeatures(Metric):
-    """
-    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
-
-    The metric computes the area over the curve per class for sorted mean importances
-    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
-    averaged over several test samples.
-
-    References:
-        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
-        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
-
-    """
-
-    @attributes_check
-    def __init__(self, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-        """
-        super().__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
-        )
-        self.last_results = []
-        self.all_results = []
-
-        # Asserts and warnings.
-        if not self.disable_warnings:
-            warn_func.warn_parameterisation(
-                metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline' and the method to segment "
-                    "the image 'segmentation_method' (including all its associated hyperparameters)"
-                ),
-                citation=(
-                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
-                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
-                ),
-            )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
-
-    def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> List[float]:
-        """
-        This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
-
-        Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
-
-        Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
-
-        Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
-
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
-
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
-
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
-
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = IROF(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
-        """
-        # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", utils.infer_channel_first(x_batch))
-        x_batch_s = utils.make_channel_first(x_batch, self.channel_first)
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, self.channel_first)
-
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-        self.last_result = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
-
-        for ix, (x, y, a) in iterator:
-
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            # Predict on x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
-
-            # Segment image.
-            segments = utils.get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                segmentation_method=self.segmentation_method,
-            )
-            nr_segments = segments.max()
-            asserts.assert_nr_segments(nr_segments=nr_segments)
-
-            # Calculate average attribution of each segment.
-            att_segs = np.zeros(nr_segments)
-            for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[:, segments == s])
-
-            # Sort segments based on the mean attribution (descending order).
-            s_indices = np.argsort(-att_segs)
-
-            preds = []
-
-            for i_ix, s_ix in enumerate(s_indices):
-
-                # Perturb input by indices of attributions.
-                a_ix = np.nonzero(
-                    np.repeat((segments == s_ix).flatten(), self.nr_channels)
-                )[0]
-
-                x_perturbed = self.perturb_func(
-                    arr=x_input.flatten(),
-                    indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
-                )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
-                # Normalise the scores to be within [0, 1].
-                preds.append(float(y_pred_perturb / y_pred))
-
-            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
-            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
-
-        self.last_results = [np.mean(self.last_results)]
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
-
-    @property
-    def aggregated_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
-        return [np.mean(results) for results in self.all_results]
