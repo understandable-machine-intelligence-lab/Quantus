@@ -164,7 +164,7 @@ def random_kernel(c_in, c_out, groups, ksize):
         (
             lazy_fixture("segmentation_setup"),
             {"segmentation_method": "ERROR"},
-            {"exception": AssertionError},
+            {"exception": ValueError},
         ),
     ],
 )
