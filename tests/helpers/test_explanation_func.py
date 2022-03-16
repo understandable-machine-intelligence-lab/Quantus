@@ -20,7 +20,7 @@ if util.find_spec("zennit"):
     zennit_tests = [
         # Zennit
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "canonizer": None,
@@ -46,7 +46,7 @@ if util.find_spec("zennit"):
             {"min": -1},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "canonizer": ztv.SequentialMergeBatchNorm,
@@ -72,7 +72,7 @@ if util.find_spec("zennit"):
             {"min": 0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "canonizer": None,
@@ -98,7 +98,7 @@ if util.find_spec("zennit"):
             {"min": 0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "canonizer": None,
@@ -135,7 +135,7 @@ else:
     + [
         # Captum
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Saliency",
@@ -153,7 +153,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradientShap",
@@ -173,7 +173,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "IntegratedGradients",
@@ -193,7 +193,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "InputXGradient",
@@ -213,7 +213,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Occlusion",
@@ -233,7 +233,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "FeatureAblation",
@@ -253,7 +253,7 @@ else:
             {"max": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradCam",
@@ -275,7 +275,7 @@ else:
             {"min": 0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Sobel Filter",
@@ -295,7 +295,7 @@ else:
             {"max": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -315,7 +315,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -335,7 +335,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Constant",
@@ -355,7 +355,7 @@ else:
             {"value": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -377,7 +377,7 @@ else:
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -401,7 +401,7 @@ else:
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Saliency",
@@ -419,7 +419,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradientShap",
@@ -439,7 +439,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "IntegratedGradients",
@@ -459,7 +459,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "InputXGradient",
@@ -479,7 +479,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Occlusion",
@@ -499,7 +499,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "FeatureAblation",
@@ -519,7 +519,7 @@ else:
             {"max": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradCam",
@@ -541,7 +541,7 @@ else:
             {"min": 0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Sobel Filter",
@@ -561,7 +561,7 @@ else:
             {"max": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -581,7 +581,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -601,7 +601,7 @@ else:
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Constant",
@@ -621,7 +621,7 @@ else:
             {"value": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -643,7 +643,7 @@ else:
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
@@ -772,7 +772,7 @@ def test_explain_func(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Saliency",
@@ -790,7 +790,7 @@ def test_explain_func(
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Constant",
@@ -810,7 +810,7 @@ def test_explain_func(
             {"value": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradCam",
@@ -870,7 +870,7 @@ def test_generate_captum_explanation(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "Gradient",
@@ -888,7 +888,7 @@ def test_generate_captum_explanation(
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "Occlusion",
@@ -906,7 +906,7 @@ def test_generate_captum_explanation(
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "InputXGradient",
@@ -924,7 +924,7 @@ def test_generate_captum_explanation(
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "IntegratedGradients",
@@ -942,7 +942,7 @@ def test_generate_captum_explanation(
             {"min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "GradCam",
@@ -960,7 +960,7 @@ def test_generate_captum_explanation(
             {"exception": ValueError},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "GradCam",
@@ -1032,7 +1032,7 @@ def test_generate_tf_explanation(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "method": "Gradient",
@@ -1050,7 +1050,7 @@ def test_generate_tf_explanation(
             {"min": -3},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
