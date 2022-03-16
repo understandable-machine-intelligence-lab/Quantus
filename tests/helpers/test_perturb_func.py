@@ -166,6 +166,8 @@ def test_gaussian_noise(
                 "fixed_values": 1.0,
             },
             1,
+        ),
+        (
             lazy_fixture("input_ones_mnist"),
             {
                 "indices": np.arange(0, 784),
@@ -183,7 +185,7 @@ def test_gaussian_noise(
             },
             -1,
         ),
-(
+        (
             lazy_fixture("input_ones_mnist_flattened"),
             {
                 "indices": np.arange(0, 784),

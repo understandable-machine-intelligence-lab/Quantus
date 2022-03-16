@@ -51,7 +51,7 @@ from ...quantus.helpers import *
             {"max": 1.0, "min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "normalise": False,
@@ -204,7 +204,7 @@ def test_sparseness(
             {"max": 1.0, "min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "normalise": False,
@@ -330,7 +330,7 @@ def test_complexity(
             {"max": 1.0, "min": 0.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "normalise": False,

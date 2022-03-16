@@ -101,7 +101,7 @@ from ...quantus.helpers import perturb_func
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_func": baseline_replacement_by_indices,
@@ -231,7 +231,7 @@ def test_faithfulness_correlation(
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_func": baseline_replacement_by_indices,
@@ -339,7 +339,7 @@ def test_faithfulness_estimate(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_baseline": "mean",
@@ -476,7 +476,7 @@ def test_iterative_removal_of_features(
             {"allowed_dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_func": baseline_replacement_by_indices,
@@ -574,7 +574,7 @@ def test_monotonicity_arya(
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "eps": 1e-5,
@@ -719,7 +719,7 @@ def test_monotonicity_nguyen(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "features_in_step": 10,
@@ -825,7 +825,7 @@ def test_pixel_flipping(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "disable_warnings": True,
@@ -960,7 +960,7 @@ def test_region_perturbation(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_baseline": "mean",
@@ -1092,7 +1092,7 @@ def test_selectivity(
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "perturb_baseline": "black",
