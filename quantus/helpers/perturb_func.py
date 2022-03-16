@@ -13,7 +13,7 @@ from .utils import conv2D_numpy
 
 
 def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
-                   perturb_std: float = 0.01) -> np.array:
+                   perturb_std: float = 0.01, **kwargs) -> np.array:
     """Add gaussian noise to the input."""
     noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
     return arr + noise
@@ -67,7 +67,7 @@ def baseline_replacement_by_indices(arr: np.array,
 
 
 def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
-                                  perturb_baseline: Any) -> np.array:
+                                  perturb_baseline: Any, **kwargs) -> np.array:
     """Replace a single patch in an array by given baseline."""
     if len(patch_slice) != arr.ndim:
         raise ValueError(
@@ -85,7 +85,7 @@ def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
 
 
 def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
-                                 blur_kernel_size: int = 15) -> np.array:
+                                 blur_kernel_size: int = 15, **kwargs) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
     Blur is performed via a 2D convolution.
@@ -99,9 +99,7 @@ def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
     kernel *= 1.0 / np.prod(blur_kernel_size)
     kernel = np.tile(kernel, (nr_channels, 1, *([1] * (arr.ndim - 1))))
 
-    if arr.ndim == 2:
-        raise NotImplementedError()
-    elif arr.ndim == 3:
+    if arr.ndim == 3:
         arr_avg = conv2D_numpy(
             x=arr,
             kernel=kernel,
@@ -110,6 +108,10 @@ def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
             groups=nr_channels,
             pad_output=True,
         )
+    elif arr.ndim == 2:
+        raise NotImplementedError("1d support not implemented yet")
+    else:
+        raise ValueError("Blur supports only 2d inputs")
 
     # Perturb array.
     arr_perturbed = copy.copy(arr)
@@ -117,13 +119,13 @@ def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
     return arr_perturbed
 
 
-def uniform_sampling(arr: np.array, perturb_radius: float = 0.02) -> np.array:
+def uniform_sampling(arr: np.array, perturb_radius: float = 0.02, **kwargs) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
     noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
     return arr + noise
 
 
-def rotation(arr: np.array, perturb_angle: float = 10) -> np.array:
+def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
     Rotate array by some given angle.
     Assumes channel first layout.

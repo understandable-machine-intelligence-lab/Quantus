@@ -54,7 +54,7 @@ def load_1d_3ch_conv_model():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_1d__3ch_conv_model_tf():
+def load_1d_3ch_conv_model_tf():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1DTF(n_channels=3, seq_len=100, n_classes=10)
     #model = LeNetTF()
