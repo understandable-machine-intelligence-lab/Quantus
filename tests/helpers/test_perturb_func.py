@@ -37,7 +37,7 @@ def input_ones_mnist_flattened():
 
 @pytest.fixture
 def input_zeros_mnist_flattened():
-    return np.ones(shape=(1, 1, 28, 28)).flatten()
+    return np.zeros(shape=(1, 1, 28, 28)).flatten()
 
 
 @pytest.fixture
