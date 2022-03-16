@@ -11,7 +11,7 @@ from ...quantus.helpers import *
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_std": 0.1,
@@ -40,7 +40,7 @@ from ...quantus.helpers import *
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_std": 0.1,
@@ -69,7 +69,7 @@ from ...quantus.helpers import *
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_std": 0.1,
@@ -136,7 +136,7 @@ def test_local_lipschitz_estimate(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -163,7 +163,7 @@ def test_local_lipschitz_estimate(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -190,7 +190,7 @@ def test_local_lipschitz_estimate(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -261,7 +261,7 @@ def test_max_sensitivity(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -290,7 +290,7 @@ def test_max_sensitivity(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -319,7 +319,7 @@ def test_max_sensitivity(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "perturb_radius": 0.2,
@@ -391,7 +391,7 @@ def test_avg_sensitivity(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,
@@ -421,7 +421,7 @@ def test_avg_sensitivity(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,
@@ -451,7 +451,7 @@ def test_avg_sensitivity(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,

@@ -12,7 +12,7 @@ from ...quantus.helpers.model_interface import ModelInterface
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "layer_order": "top_down",
@@ -42,7 +42,7 @@ from ...quantus.helpers.model_interface import ModelInterface
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "layer_order": "bottom_up",
@@ -88,7 +88,7 @@ from ...quantus.helpers.model_interface import ModelInterface
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model_tf"),
+            lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
             {
                 "layer_order": "bottom_up",
@@ -120,7 +120,7 @@ from ...quantus.helpers.model_interface import ModelInterface
             {"min": -1.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "layer_order": "top_down",
@@ -207,7 +207,7 @@ def test_model_parameter_randomisation(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "num_classes": 10,
@@ -235,7 +235,7 @@ def test_model_parameter_randomisation(
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "num_classes": 10,
@@ -265,7 +265,7 @@ def test_model_parameter_randomisation(
             {"min": 0.0, "max": 1.0},
         ),
         ( # TODO: this one fails randomly with negative scores
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "num_classes": 10,

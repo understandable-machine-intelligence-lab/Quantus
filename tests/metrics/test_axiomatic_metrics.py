@@ -14,7 +14,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": True,
@@ -39,7 +39,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": True,
@@ -66,7 +66,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
@@ -94,7 +94,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
@@ -156,7 +156,7 @@ def test_completeness(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "n_samples": 1,
@@ -186,7 +186,7 @@ def test_completeness(
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "n_samples": 1,
@@ -218,7 +218,7 @@ def test_completeness(
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "n_samples": 2,
@@ -248,7 +248,7 @@ def test_completeness(
             1.0,
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "n_samples": 1,
@@ -314,7 +314,7 @@ def test_non_sensitivity(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
@@ -346,7 +346,7 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
@@ -378,7 +378,7 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
@@ -410,7 +410,7 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": True,
@@ -442,7 +442,7 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_conv_model"),
+            lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
                 "abs": False,
