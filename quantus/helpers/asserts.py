@@ -98,8 +98,8 @@ def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
     if np.prod(shape) % np.prod(patch_size) != 0:
         raise ValueError(
             "Set 'patch_size' so that the input shape modulo remainder returns 0"
-            f"(np.prod({shape}) % np.prod({patch_size}) != 0"
-            f" => {np.prod(shape)} % {np.prod(patch_size)} != 0)"
+            f" [np.prod({shape}) % np.prod({patch_size}) != 0"
+            f" => {np.prod(shape)} % {np.prod(patch_size)} != 0]"
         )
 
 

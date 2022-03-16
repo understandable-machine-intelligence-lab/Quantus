@@ -130,7 +130,9 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     Rotate array by some given angle.
     Assumes channel first layout.
     """
-    assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    if arr.ndim != 3:
+        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+
     matrix = cv2.getRotationMatrix2D(
         center=(arr.shape[1]/2, arr.shape[2]/2),
         angle=perturb_angle,
@@ -151,7 +153,9 @@ def translation_x_direction(arr: np.array, perturb_baseline: Any,
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
-    assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    if arr.ndim != 3:
+        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, -1),
@@ -171,7 +175,9 @@ def translation_y_direction(arr: np.array, perturb_baseline: Any,
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
-    assert arr.ndim == 3, "Check that 'perturb_func' receives a 3D array."
+    if arr.ndim != 3:
+        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),

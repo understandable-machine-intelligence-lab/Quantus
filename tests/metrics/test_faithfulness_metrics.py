@@ -114,7 +114,7 @@ from ...quantus.helpers import perturb_func
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )

@@ -395,14 +395,14 @@ def test_avg_sensitivity(
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,
-                "patch_size": 7,
+                "patch_size": 10,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -425,14 +425,14 @@ def test_avg_sensitivity(
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,
-                "patch_size": 7,
+                "patch_size": 10,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -455,14 +455,14 @@ def test_avg_sensitivity(
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "nr_steps": 10,
-                "patch_size": 7,
+                "patch_size": 10,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -514,7 +514,7 @@ def test_continuity(
                 a_batch=a_batch,
                 **params,
             )
-            return
+        return
         
     scores = Continuity(**params)(
         model=model,
