@@ -262,13 +262,15 @@ def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[i
             "patch_size sequence length does not match coords length"
             f" (len(patch_size) != len(coords))"
         )
-    patch_size = tuple(patch_size)
+    # make sure that each element in tuple is integer
+    patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
     patch_slice = [slice(coord, coord + patch_size_dim)
                    for coord, patch_size_dim in zip(coords, patch_size)]
     # Prepend slice for all channels.
     if expand_first_dim:
         patch_slice = [slice(None), *patch_slice]
+
     return tuple(patch_slice)
 
 
