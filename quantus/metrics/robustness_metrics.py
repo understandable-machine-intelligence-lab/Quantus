@@ -184,7 +184,7 @@ class LocalLipschitzEstimate(Metric):
                 "argument 'nr_channels' is deprecated and will be removed in future versions."
             )
 
-        self.last_result = []
+        self.last_results = []
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -420,7 +420,7 @@ class MaxSensitivity(Metric):
                 "argument 'nr_channels' is deprecated and will be removed in future versions."
             )
 
-        self.last_result = []
+        self.last_results = []
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
@@ -657,7 +657,7 @@ class AvgSensitivity(Metric):
                 "argument 'nr_channels' is deprecated and will be removed in future versions."
             )
 
-        self.last_result = []
+        self.last_results = []
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)

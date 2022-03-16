@@ -55,7 +55,7 @@ def baseline_replacement_by_indices(arr: np.array,
 
     if "input_shift" in kwargs:
         arr_shifted = copy.copy(arr)
-        arr_shifted = np.multiply(
+        arr_shifted = np.add(
             arr_shifted,
             np.full(shape=arr.shape, fill_value=baseline_value, dtype=float),
         )
