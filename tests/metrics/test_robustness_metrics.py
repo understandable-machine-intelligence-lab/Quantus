@@ -83,9 +83,11 @@ def test_local_lipschitz_estimate(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "params,expected",
+    "model,data,params,expected",
     [
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
@@ -99,6 +101,8 @@ def test_local_lipschitz_estimate(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
@@ -112,6 +116,8 @@ def test_local_lipschitz_estimate(
             {"min": 0.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
@@ -124,18 +130,36 @@ def test_local_lipschitz_estimate(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Gradient",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "abs": True,
+                "normalise": True
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_max_sensitivity(
+    model,
+    data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
     load_mnist_images,
     load_mnist_model,
 ):
-    model = load_mnist_model
     x_batch, y_batch = (
-        load_mnist_images["x_batch"],
-        load_mnist_images["y_batch"],
+        data["x_batch"],
+        data["y_batch"],
     )
     explain = params["explain_func"]
     if params.get("a_batch_generate", True):
