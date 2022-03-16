@@ -206,7 +206,7 @@ def test_model_parameter_randomisation(
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
-        (
+        ( # TODO: this one fails randomly with negative scores
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
