@@ -605,6 +605,7 @@ class InputInvariance(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        self.input_shift = self.kwargs.pop("input_shift", -1)
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
