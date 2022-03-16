@@ -681,7 +681,19 @@ def test_create_patch_slice(params: dict, expected: Any):
         return
 
     out = create_patch_slice(**params)
-    assert out == expected["value"]
+    
+    assert all(out_slice == expected_slice
+               for out_slice, expected_slice in zip(out, expected["value"])
+    ), f"Slices not equal. {out_slice} != {expected_slice}"
+    assert all(isinstance(out_slice.start, int) or out_slice.start is None
+               for out_slice in out
+    ), f"Not all slice starts are integers/None. {out}"
+    assert all(isinstance(out_slice.stop, int) or out_slice.stop is None
+               for out_slice in out
+    ), f"Not all slice stops are integers/None. {out}"
+    assert all(isinstance(out_slice.step, int) or out_slice.step is None
+               for out_slice in out
+    ), f"Not all slice steps are integers/None. {out}"
 
 
 @pytest.mark.utils

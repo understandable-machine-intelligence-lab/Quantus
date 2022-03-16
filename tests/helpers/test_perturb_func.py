@@ -259,11 +259,13 @@ def test_baseline_replacement_by_indices(
 def test_baseline_replacement_by_patch(
         data: np.ndarray, params: dict, expected: dict
 ):
+    print(params["patch_size"], params["coords"])
     patch_slice = utils.create_patch_slice(
         patch_size=params["patch_size"],
         coords=params["coords"],
         expand_first_dim=True,
     )
+    print(patch_slice)
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
