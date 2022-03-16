@@ -251,6 +251,7 @@ class FaithfulnessCorrelation(Metric):
                     arr=x,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -497,6 +498,7 @@ class FaithfulnessEstimate(Metric):
                     arr=x,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -730,6 +732,7 @@ class IterativeRemovalOfFeatures(Metric):
                     arr=x_input.flatten(),
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -974,6 +977,7 @@ class MonotonicityArya(Metric):
                     arr=x_baseline,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -1221,6 +1225,7 @@ class MonotonicityNguyen(Metric):
                         arr=x,
                         indices=a_ix,
                         perturb_baseline=self.perturb_baseline,
+                        **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1455,6 +1460,7 @@ class PixelFlipping(Metric):
                     arr=x_perturbed,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1741,6 +1747,7 @@ class RegionPerturbation(Metric):
                     arr=x_perturbed_pad,
                     patch_slice=patch_slice,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
 
                 # Remove Padding
@@ -1994,6 +2001,7 @@ class Selectivity(Metric):
                     arr=x_perturbed_pad,
                     patch_slice=patch_slice,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
 
                 # Remove Padding
@@ -2261,6 +2269,7 @@ class SensitivityN(Metric):
                     arr=x_perturbed,
                     indices=a_ix,
                     perturb_baseline=self.perturb_baseline,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 

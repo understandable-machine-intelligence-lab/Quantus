@@ -13,7 +13,6 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.similar_func import correlation_spearman, ssim
 
 
