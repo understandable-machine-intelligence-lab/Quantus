@@ -910,7 +910,7 @@ class Continuity(Metric):
 
         # Asserts.
         asserts.assert_patch_size(patch_size=self.patch_size,
-                                  arr_shape=x_batch_s.shape[2:])
+                                  shape=x_batch_s.shape[2:])
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # Get number of patches for input shape (ignore batch and channel dim)

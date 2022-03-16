@@ -264,7 +264,7 @@ def test_model_parameter_randomisation(
             },
             {"min": 0.0, "max": 1.0},
         ),
-        ( # this one fails randomly with negative scores
+        ( # TODO: this one fails randomly with negative scores
             lazy_fixture("load_1d_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
@@ -325,8 +325,8 @@ def test_random_logit(
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
     else:
-        assert all(s > expected["min"] for s in scores), f"Test failed.{scores}"
-        assert all(s < expected["max"] for s in scores), f"Test failed.{scores}"
+        assert all(s > expected["min"] for s in scores), f"Test failed."
+        assert all(s < expected["max"] for s in scores), f"Test failed."
         assert all(
             ((s > expected["min"]) & (s < expected["max"])) for s in scores
         ), "Test failed."

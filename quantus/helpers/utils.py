@@ -17,23 +17,16 @@ if util.find_spec("tensorflow"):
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
     """Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels."""
-    assert (
-        len(img.shape) == 3
-    ), "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
-    assert segmentation_method in [
-        "slic",
-        "felzenszwalb",
-    ], "Segmentation method must be either 'slic' or 'felzenszwalb'."
+    if img.shape != 3:
+        raise ValueError("Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels.")
+    if segmentation_method not in ["slic", "felzenszwalb"]:
+        raise ValueError("'segmentation_method' must be either 'slic' or 'felzenszwalb'.")
 
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
         return felzenszwalb(
             img,
-        )
-    else:
-        print(
-            "Segmentation method i.e., 'segmentation_method' must be either 'slic' or 'felzenszwalb'."
         )
 
 
