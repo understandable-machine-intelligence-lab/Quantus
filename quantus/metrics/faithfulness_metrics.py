@@ -167,7 +167,7 @@ class FaithfulnessCorrelation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -401,7 +401,7 @@ class FaithfulnessEstimate(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -635,7 +635,7 @@ class MonotonicityArya(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -867,7 +867,7 @@ class MonotonicityNguyen(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -1113,7 +1113,7 @@ class PixelFlipping(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -1954,7 +1954,7 @@ class SensitivityN(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
@@ -2051,15 +2051,15 @@ class SensitivityN(Metric):
                 sub_results_att_sums_l[k].append(sublist2[k])
 
         # Measure similarity for each n.
-        self.last_result = [
+        self.last_results = [
             self.similarity_func(
                 a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
             )
             for k in range(self.max_features)
         ]
-        self.all_results.append(self.last_result)
+        self.all_results.append(self.last_results)
 
-        return self.last_result
+        return self.last_results
 
 
 class IterativeRemovalOfFeatures(Metric):
@@ -2199,7 +2199,7 @@ class IterativeRemovalOfFeatures(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.last_result = []
+        self.last_results = []
 
         if a_batch is None:
 
