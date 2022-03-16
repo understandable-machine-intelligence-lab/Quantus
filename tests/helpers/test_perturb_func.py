@@ -36,6 +36,11 @@ def input_ones_mnist_flattened():
 
 
 @pytest.fixture
+def input_zeros_mnist_flattened():
+    return np.ones(shape=(1, 1, 28, 28)).flatten()
+
+
+@pytest.fixture
 def input_uniform_2d_3ch_flattened():
     return np.random.uniform(0, 0.1, size=(3, 224, 224)).flatten()
 
@@ -106,7 +111,7 @@ def test_gaussian_noise(
                 "input_shift": -1.0,
                 "nr_channels": 1,
             },
-            -1,
+            0,
         ),
         (
             lazy_fixture("input_zeros"),
@@ -120,7 +125,17 @@ def test_gaussian_noise(
         (
             lazy_fixture("input_ones_mnist"),
             {"indices": np.arange(0, 784), "input_shift": -1.0, "nr_channels": 1},
+            0,
+        ),
+        (
+            lazy_fixture("input_zeros_mnist_flattened"),
+            {"indices": np.arange(0, 784), "input_shift": -1.0, "nr_channels": 1},
             -1,
+        ),
+(
+            lazy_fixture("input_ones_mnist_flattened"),
+            {"indices": np.arange(0, 784), "input_shift": 1.0, "nr_channels": 1},
+            2,
         ),
     ],
 )
