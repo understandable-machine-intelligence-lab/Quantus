@@ -93,6 +93,8 @@ def generate_tf_explanation(
     """
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
+    if not isinstance(targets, np.ndarray):
+        targets = np.array([targets])
 
     channel_first = kwargs.get("channel_first", get_channel_first(inputs))
     inputs = get_channel_last_batch(inputs, channel_first)
