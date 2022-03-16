@@ -9,17 +9,6 @@ from ...quantus.helpers.utils import *
 
 
 @pytest.fixture
-def get_model(autouse=True):
-    model = (
-        LeNet()
-    )  # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-    model.load_state_dict(
-        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
-    )
-    return model
-
-
-@pytest.fixture
 def segmentation_setup():
     return np.random.uniform(0, 0.1, size=(224, 224, 3))
 
