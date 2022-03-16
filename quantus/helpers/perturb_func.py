@@ -49,7 +49,7 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
 
     if "input_shift" in kwargs:
         img_shifted = copy.copy(img)
-        img_shifted = np.multiply(
+        img_shifted = np.add(
             img_shifted,
             np.full(shape=img.shape, fill_value=baseline_value, dtype=float),
         )
