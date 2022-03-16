@@ -350,7 +350,7 @@ def test_faithfulness_estimate(
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"exception": ValueError},
         ),
     ],
 )
@@ -377,6 +377,17 @@ def test_iterative_removal_of_features(
         a_batch = data["a_batch"]
     else:
         a_batch = None
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = IterativeRemovalOfFeatures(**params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **params,
+            )
+        return
 
     scores = IterativeRemovalOfFeatures(**params)(
         model=model,

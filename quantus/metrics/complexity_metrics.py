@@ -574,7 +574,7 @@ class EffectiveComplexity(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                warn_absolutes_applied()
+                warn_func.warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
