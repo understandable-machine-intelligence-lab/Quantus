@@ -95,9 +95,12 @@ def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
             f" (len(patch_size) != len(shape))"
         )
     patch_size = tuple(patch_size)
-    assert (
-        np.prod(shape) % np.prod(patch_size) == 0
-    ), "Set 'patch_size' so that the modulo remainder returns 0 given the input shape."
+    if np.prod(shape) % np.prod(patch_size) != 0:
+        raise ValueError(
+            "Set 'patch_size' so that the input shape modulo remainder returns 0"
+            f"(np.prod({shape}) % np.prod({patch_size}) != 0"
+            f" => {np.prod(shape)} % {np.prod(patch_size)} != 0)"
+        )
 
 
 def assert_attributions_order(order: str) -> None:
