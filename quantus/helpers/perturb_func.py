@@ -76,7 +76,6 @@ def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
         )
 
     # Preset patch for 'neighbourhood_*' choices.
-    print(patch_slice)
     patch = arr[patch_slice]
     arr_perturbed = copy.copy(arr)
     baseline = get_baseline_value(choice=perturb_baseline, arr=arr, patch=patch)

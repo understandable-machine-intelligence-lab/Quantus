@@ -467,7 +467,6 @@ def generate_zennit_explanation(
         eye = torch.eye(n_outputs, device=device)
         output_target = eye[targets]
         output_target = output_target.reshape(-1, n_outputs)
-        # print(inputs.shape, targets.shape, output_target.shape)
         _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):
