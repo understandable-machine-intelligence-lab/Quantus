@@ -449,11 +449,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 10000,
+                "k": 100,
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            0.01, # TODO: verify correctness
+            1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -469,11 +469,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 40000,
+                "k": 200,
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0025, # TODO: verify correctness
+            0.5,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -489,7 +489,7 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "k": 10000,
+                "k": 20,
                 "explain_func": explain,
                 "disable_warnings": True,
                 "display_progressbar": False,
@@ -500,7 +500,7 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "k": 10000,
+                "k": 500,
                 "explain_func": explain,
                 "disable_warnings": True,
                 "display_progressbar": False,
@@ -511,11 +511,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_1d_3ch"),
             {
-                "k": 10000,
+                "k": 100,
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.01, # TODO: verify correctness
+            0.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -531,11 +531,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
-                "k": 40000,
+                "k": 200,
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0025, # TODO: verify correctness
+            0.38, # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -551,11 +551,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
-                "k": 2500,
+                "k": 50,
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.02, # TODO: verify correctness
+            0.98, # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -571,11 +571,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
-                "k": 1250,
+                "k": 125,
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.04, # TODO: verify correctness
+            0.4, # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -591,11 +591,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 10000,
+                "k": 100,
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            0.01, # TODO: verify correctness
+            1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -611,12 +611,12 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 10000,
+                "k": 100,
                 "concept_influence": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            0.022400000000000003, # TODO: verify correctness
+            2.24, # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1014,7 +1014,7 @@ def test_relevance_mass_accuracy(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.33333333333333337,
+            0.33333333333333337, # TODO: verify correctness
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
