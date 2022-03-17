@@ -100,7 +100,7 @@ class FaithfulnessCorrelation(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.last_results = []
         self.all_results = []
@@ -191,7 +191,6 @@ class FaithfulnessCorrelation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -253,7 +252,6 @@ class FaithfulnessCorrelation(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -331,7 +329,7 @@ class FaithfulnessEstimate(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -422,7 +420,6 @@ class FaithfulnessEstimate(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -501,7 +498,6 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -567,7 +563,7 @@ class IterativeRemovalOfFeatures(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "mean")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -659,7 +655,6 @@ class IterativeRemovalOfFeatures(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "mean")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -736,7 +731,6 @@ class IterativeRemovalOfFeatures(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_input.flatten(),
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -817,7 +811,7 @@ class MonotonicityArya(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -905,7 +899,6 @@ class MonotonicityArya(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -982,7 +975,6 @@ class MonotonicityArya(Metric):
                 x_baseline = self.perturb_func(
                     arr=x_baseline,
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
 
@@ -1051,7 +1043,7 @@ class MonotonicityNguyen(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.eps = self.kwargs.get("eps", 1e-5)
         self.nr_samples = self.kwargs.get("nr_samples", 100)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
@@ -1144,7 +1136,6 @@ class MonotonicityNguyen(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -1231,7 +1222,6 @@ class MonotonicityNguyen(Metric):
                     x_perturbed = self.perturb_func(
                         arr=x,
                         indices=a_ix,
-                        perturb_baseline=self.perturb_baseline,
                         **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1305,7 +1295,7 @@ class PixelFlipping(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -1394,7 +1384,6 @@ class PixelFlipping(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -1467,7 +1456,6 @@ class PixelFlipping(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_perturbed,
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1546,7 +1534,7 @@ class RegionPerturbation(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
@@ -1641,7 +1629,6 @@ class RegionPerturbation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -1755,7 +1742,6 @@ class RegionPerturbation(Metric):
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
                     patch_slice=patch_slice,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
 
@@ -1827,7 +1813,7 @@ class Selectivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.last_results = {}
         self.all_results = []
@@ -1918,7 +1904,6 @@ class Selectivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -2010,7 +1995,6 @@ class Selectivity(Metric):
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
                     patch_slice=patch_slice,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
 
@@ -2098,7 +2082,7 @@ class SensitivityN(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
@@ -2192,7 +2176,6 @@ class SensitivityN(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "uniform")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -2279,7 +2262,6 @@ class SensitivityN(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_perturbed,
                     indices=a_ix,
-                    perturb_baseline=self.perturb_baseline,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
