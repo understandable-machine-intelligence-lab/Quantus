@@ -68,7 +68,7 @@ class Completeness(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -160,7 +160,6 @@ class Completeness(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -207,7 +206,6 @@ class Completeness(Metric):
             x_baseline = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
-                perturb_baseline=self.perturb_baseline,
                 **self.kwargs,
             )
 
@@ -285,9 +283,9 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         self.last_results = []
         self.all_results = []
 
@@ -375,7 +373,6 @@ class NonSensitivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.perturb_baseline = self.kwargs.pop("perturb_baseline", "black")
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -451,7 +448,6 @@ class NonSensitivity(Metric):
                     x_perturbed = self.perturb_func(
                         arr=x,
                         indices=a_ix,
-                        perturb_baseline=self.perturb_baseline,
                         **self.kwargs,
                     )
 
@@ -516,7 +512,7 @@ class InputInvariance(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.input_shift = self.kwargs.pop("input_shift", -1)
+        self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -605,7 +601,6 @@ class InputInvariance(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.input_shift = self.kwargs.pop("input_shift", -1)
         if "img_size" in kwargs:
             warnings.warn(
                 "argument 'img_size' is deprecated and will be removed in future versions."
@@ -650,7 +645,6 @@ class InputInvariance(Metric):
             x_shifted = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
-                input_shift=self.input_shift,
                 **self.kwargs,
             )
             x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)

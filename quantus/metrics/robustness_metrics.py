@@ -69,15 +69,14 @@ class LocalLipschitzEstimate(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_std = self.kwargs.get("perturb_std", 0.1)
-        self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator",
                                               similar_func.distance_euclidean)
         self.norm_denominator = self.kwargs.get("norm_denominator",
                                                 similar_func.distance_euclidean)
         self.perturb_func = self.kwargs.get("perturb_func", perturb_func.gaussian_noise)
-        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
+        self.perturb_std = self.kwargs.get("perturb_std", 0.1)
+        self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
         self.similarity_func = self.kwargs.get("similarity_func",
                                                similar_func.lipschitz_constant)
         self.last_results = []
@@ -226,7 +225,7 @@ class LocalLipschitzEstimate(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
-                    **self.perturb_func_kwargs,
+                    **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -309,13 +308,12 @@ class MaxSensitivity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func",
                                             perturb_func.uniform_sampling)
-        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
+        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get("similarity_func",
                                                similar_func.difference)
 
@@ -462,7 +460,7 @@ class MaxSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
-                    **self.perturb_func_kwargs,
+                    **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -547,13 +545,12 @@ class AvgSensitivity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get("perturb_func",
                                             perturb_func.uniform_sampling)
-        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
+        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get("similarity_func",
                                                similar_func.difference)
         self.last_results = []
@@ -699,7 +696,7 @@ class AvgSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
-                    **self.perturb_func_kwargs,
+                    **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -788,7 +785,6 @@ class Continuity(Metric):
         self.nr_steps = self.kwargs.get("nr_steps", 28)
         self.perturb_func = self.kwargs.get("perturb_func",
                                             perturb_func.translation_x_direction)
-        self.perturb_func_kwargs = self.kwargs.get("perturb_func_kwargs", {})
         self.similarity_func = self.kwargs.get("similarity_func",
                                                similar_func.lipschitz_constant)
         self.last_results = []
@@ -945,9 +941,8 @@ class Continuity(Metric):
                 dx_step = (step + 1) * self.dx
                 x_perturbed = self.perturb_func(
                     arr=x,
-                    perturb_baseline=self.perturb_baseline,
                     perturb_dx=dx_step,
-                    **self.perturb_func_kwargs,
+                    **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
