@@ -612,6 +612,8 @@ class TopKIntersection(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_value_smaller_than_input_size(
+            x=x_batch_s, value=self.k, value_name="k")
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -631,10 +633,9 @@ class TopKIntersection(Metric):
                 a = self.normalise_func(a)
 
             top_k_binary_mask = np.zeros(a.shape)
-
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
-                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
+                top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None
             )
 
             s = s.astype(bool)
