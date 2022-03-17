@@ -113,7 +113,7 @@ from ...quantus.helpers.explanation_func import explain
                 "nr_runs": 10,
                 "similarity_func": correlation_spearman,
                 "normalise": True,
-                "subset_size": 100,
+                "subset_size": 10,
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
