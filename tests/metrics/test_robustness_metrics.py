@@ -33,8 +33,6 @@ from ...quantus.helpers.explanation_func import explain
             {
                 "perturb_std": 0.1,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
@@ -62,8 +60,6 @@ from ...quantus.helpers.explanation_func import explain
             {
                 "perturb_std": 0.1,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -91,8 +87,6 @@ from ...quantus.helpers.explanation_func import explain
             {
                 "perturb_std": 0.1,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -157,8 +151,6 @@ def test_local_lipschitz_estimate(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
@@ -184,8 +176,6 @@ def test_local_lipschitz_estimate(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -211,8 +201,6 @@ def test_local_lipschitz_estimate(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -283,8 +271,6 @@ def test_max_sensitivity(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
@@ -312,8 +298,6 @@ def test_max_sensitivity(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -341,8 +325,6 @@ def test_max_sensitivity(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -414,8 +396,6 @@ def test_avg_sensitivity(
             {
                 "nr_steps": 10,
                 "patch_size": 7,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": False,
@@ -444,8 +424,6 @@ def test_avg_sensitivity(
             {
                 "nr_steps": 10,
                 "patch_size": 7,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -474,8 +452,6 @@ def test_avg_sensitivity(
             {
                 "nr_steps": 10,
                 "patch_size": 7,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,

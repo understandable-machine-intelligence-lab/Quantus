@@ -69,6 +69,11 @@ def input_uniform_2d_3ch_flattened():
 
 
 @pytest.fixture
+def input_uniform_3d_3ch():
+    return np.random.uniform(0, 0.1, size=(3, 224, 224, 224))
+
+
+@pytest.fixture
 def input_uniform_mnist():
     return np.random.uniform(0, 0.1, size=(1, 28, 28))
 
@@ -457,6 +462,24 @@ def test_no_perturbation(
                 "coords": (0, 0),
             },
             {},
+        ),
+        (
+            lazy_fixture("input_uniform_1d_3ch"),
+            {
+                "blur_kernel_size": 15,
+                "patch_size": 4,
+                "coords": (0, ),
+            },
+            {"exception": NotImplementedError},
+        ),
+        (
+            lazy_fixture("input_uniform_3d_3ch"),
+            {
+                "blur_kernel_size": 15,
+                "patch_size": 4,
+                "coords": (0, 0, 0),
+            },
+            {"exception": ValueError},
         ),
     ],
 )

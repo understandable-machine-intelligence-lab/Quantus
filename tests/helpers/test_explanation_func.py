@@ -41,8 +41,6 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": None,
                 "attributor": zattr.Gradient,
-                "img_size": 28,
-                "nr_channels": 1,
                 "normalise": True,
                 "xai_lib": "zennit",
             },
@@ -67,8 +65,6 @@ if util.find_spec("zennit"):
                 "canonizer": ztv.SequentialMergeBatchNorm,
                 "composite": zcomp.EpsilonPlus,
                 "attributor": zattr.Gradient,
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
                 "xai_lib": "zennit",
             },
@@ -93,8 +89,6 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "epsilon_alpha2_beta1_flat",
                 "attributor": zattr.Gradient,
-                "img_size": 28,
-                "nr_channels": 1,
                 "pos_only": True,
                 "xai_lib": "zennit",
             },
@@ -119,8 +113,6 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "img_size": 28,
-                "nr_channels": 1,
                 "neg_only": True,
                 "xai_lib": "zennit",
             },
@@ -150,8 +142,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -169,8 +159,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradientShap",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -189,8 +177,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "IntegratedGradients",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -209,8 +195,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "InputXGradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -229,8 +213,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Occlusion",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -249,8 +231,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "FeatureAblation",
-                "img_size": 28,
-                "nr_channels": 1,
                 "neg_only": True,
             },
             {"max": 0.0},
@@ -270,8 +250,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradCam",
-                "img_size": 28,
-                "nr_channels": 1,
                 "gc_layer": "model._modules.get('conv_2')",
                 "abs": True,
             },
@@ -291,8 +269,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Sobel Filter",
-                "img_size": 28,
-                "nr_channels": 1,
                 "neg_only": True,
             },
             {"max": 0.0},
@@ -311,8 +287,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "pos_only": True,
             },
             {"min": 0.0},
@@ -331,8 +305,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -351,8 +323,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Constant",
-                "img_size": 28,
-                "nr_channels": 1,
                 "constant_value": 0.0,
             },
             {"value": 0.0},
@@ -374,8 +344,6 @@ else:
                 "method": "Gradient",
                 "normalise": True,
                 "normalise_func": normalise_by_negative,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -398,8 +366,6 @@ else:
                 "normalise": True,
                 "abs": True,
                 "normalise_func": normalise_by_max,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -416,8 +382,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -435,8 +399,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradientShap",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -455,8 +417,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "IntegratedGradients",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -475,8 +435,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "InputXGradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -495,8 +453,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Occlusion",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -515,8 +471,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "FeatureAblation",
-                "img_size": 28,
-                "nr_channels": 1,
                 "neg_only": True,
             },
             {"max": 0.0},
@@ -536,8 +490,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradCam",
-                "img_size": 28,
-                "nr_channels": 1,
                 "gc_layer": "model._modules.get('conv_2')",
                 "abs": True,
             },
@@ -557,8 +509,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Sobel Filter",
-                "img_size": 28,
-                "nr_channels": 1,
                 "neg_only": True,
             },
             {"max": 0.0},
@@ -577,8 +527,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "pos_only": True,
             },
             {"min": 0.0},
@@ -597,8 +545,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -617,8 +563,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Constant",
-                "img_size": 28,
-                "nr_channels": 1,
                 "constant_value": 0.0,
             },
             {"value": 0.0},
@@ -640,8 +584,6 @@ else:
                 "method": "Gradient",
                 "normalise": True,
                 "normalise_func": normalise_by_negative,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -664,8 +606,6 @@ else:
                 "normalise": True,
                 "abs": True,
                 "normalise_func": normalise_by_max,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -676,8 +616,6 @@ else:
             {
                 "method": "Gradient",
                 "abs": True,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -687,8 +625,6 @@ else:
             {
                 "method": "Occlusion",
                 "abs": True,
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -697,8 +633,6 @@ else:
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "IntegratedGradients",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -708,8 +642,6 @@ else:
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "InputXGradient",
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
             },
             {"min": 0.0},
@@ -718,8 +650,6 @@ else:
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"warning": UserWarning},
         ),
@@ -727,8 +657,6 @@ else:
             None,
             lazy_fixture("load_mnist_images_tf"),
             {
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"exception": ValueError},
         ),
@@ -787,8 +715,6 @@ def test_explain_func(
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Saliency",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -806,8 +732,6 @@ def test_explain_func(
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Constant",
-                "img_size": 28,
-                "nr_channels": 1,
                 "constant_value": 0.0,
             },
             {"value": 0.0},
@@ -825,8 +749,6 @@ def test_explain_func(
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradCam",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"exception": ValueError},
         ),
@@ -885,8 +807,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -903,8 +823,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "Occlusion",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -921,8 +839,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "InputXGradient",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -939,8 +855,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "IntegratedGradients",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0},
         ),
@@ -957,8 +871,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "GradCam",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"exception": ValueError},
         ),
@@ -976,8 +888,6 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "GradCam",
-                "img_size": 28,
-                "nr_channels": 1,
                 "gc_layer": "dense_1",
             },
             {"exception": ValueError},
@@ -1029,8 +939,6 @@ def test_generate_tf_explanation(
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1047,8 +955,6 @@ def test_generate_tf_explanation(
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "img_size": 28,
-                "nr_channels": 1,
             },
             {"min": -3},
         ),
