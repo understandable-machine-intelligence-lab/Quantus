@@ -32,7 +32,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 
-    Expecting inputs to be shaped such as (batch_size, nr_channels, img_size, img_size) or (batch_size, img_size, img_size, nr_channels).
+    Expecting inputs to be shaped such as (batch_size, nr_channels, ...) or (batch_size, ..., nr_channels).
 
     Returns np.ndarray of same shape as inputs.
     """

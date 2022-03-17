@@ -22,8 +22,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -37,8 +35,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
         (
             {
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "abs": True,
                 "explain_func": explain,
                 "method": "IntegratedGradients",
@@ -54,8 +50,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
                 "disable_warnings": True,
@@ -85,8 +79,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "InputXGradient",
                 "disable_warnings": True,
@@ -100,8 +92,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Gradient",
                 "disable_warnings": True,
