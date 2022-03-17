@@ -217,7 +217,8 @@ class FaithfulnessCorrelation(Metric):
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_subset_size(x=x_batch_s, subset_size=self.subset_size)
+        asserts.assert_value_smaller_than_input_size(
+            x=x_batch_s, value=self.subset_size, value_name="subset_size")
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
