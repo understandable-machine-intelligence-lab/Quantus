@@ -1,10 +1,14 @@
-import pytest
 from typing import Union
+
+import numpy as np
+import pytest
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
 from ...quantus.metrics import *
 from ...quantus.helpers import *
 from ...quantus.helpers import perturb_func
+from ...quantus.helpers.explanation_func import explain
 
 
 @pytest.mark.faithfulness

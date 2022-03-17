@@ -2,6 +2,7 @@ import warnings
 import pickle
 from typing import Union
 
+import numpy as np
 import pytest
 import torch
 import torchvision
@@ -9,10 +10,8 @@ from pytest_lazyfixture import lazy_fixture
 
 from .fixtures import *
 from ..quantus import *
+from ..quantus.helpers.explanation_func import explain
 from ..quantus.helpers.pytorch_model import PyTorchModel
-
-# from ..quantus.helpers import *
-# from ..quantus.metrics import *
 
 
 @pytest.mark.evaluate_func
@@ -132,7 +131,6 @@ def test_evaluate_func(
         targets=y_batch,
         **params,
     )
-    a_batch = expand_attribution_channel(a_batch, x_batch)
     
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
@@ -148,7 +146,6 @@ def test_evaluate_func(
             )
         return
 
-    print(x_batch.shape, a_batch.shape)
     results = evaluate(
         metrics=eval(params["eval_metrics"]),
         xai_methods=eval(params["eval_xai_methods"]),

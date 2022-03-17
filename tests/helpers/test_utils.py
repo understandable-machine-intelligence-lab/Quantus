@@ -1,8 +1,10 @@
-import numpy as np
-import pytest
 import pickle
 from typing import Any, Union
+
+import numpy as np
+import pytest
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
 from ...quantus.helpers.models import LeNet
 from ...quantus.helpers.utils import *
