@@ -219,3 +219,13 @@ def assert_explain_func(explain_func: Callable) -> None:
         "Make sure 'explain_func' is a Callable that takes model, x_batch, "
         "y_batch and **kwargs as arguments."
     )
+
+def assert_subset_size(x: np.ndarray, subset_size: int):
+    """ Checks if input size is smaller than input size.
+    Assumes batch and channel first dimension
+    """
+    if subset_size >= np.prod(x.shape[2:]):
+        raise ValueError(
+            "Subset size must be smaller than input size."
+            f" [{subset_size} >= {np.prod(x.shape[2:])}]"
+        )

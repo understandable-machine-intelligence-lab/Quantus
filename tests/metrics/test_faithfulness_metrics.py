@@ -105,6 +105,22 @@ from ...quantus.helpers.explanation_func import explain
             {"min": -1.0, "max": 1.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "perturb_baseline": "mean",
+                "explain_func": explain,
+                "nr_runs": 10,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "subset_size": 100,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
@@ -119,6 +135,38 @@ from ...quantus.helpers.explanation_func import explain
                 "a_batch_generate": False,
             },
             {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "perturb_baseline": "mean",
+                "nr_runs": 10,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "subset_size": 100,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "perturb_baseline": "mean",
+                "explain_func": explain,
+                "nr_runs": 10,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "subset_size": 784,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"exception": ValueError},
         ),
     ],
 )
@@ -144,6 +192,18 @@ def test_faithfulness_correlation(
         a_batch = data["a_batch"]
     else:
         a_batch = None
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = FaithfulnessCorrelation(**params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **params,
+            )[0]
+        return
+
     scores = FaithfulnessCorrelation(**params)(
         model=model,
         x_batch=x_batch,
