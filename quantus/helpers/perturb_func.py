@@ -28,7 +28,7 @@ def baseline_replacement_by_indices(img: np.array, **kwargs) -> np.array:
     choice = kwargs["perturb_baseline"]
 
     img_perturbed = copy.copy(img)
-    baseline_value = get_baseline_value(choice=choice, img=img, nr_channels=kwargs.get("nr_channels", 3), **kwargs)
+    baseline_value = get_baseline_value(choice=choice, img=img, **kwargs)
 
     # Make sure that image is perturbed on all channels.
     kwargs["indices"] = (slice(0, kwargs.get("nr_channels")),) + kwargs["indices"]
@@ -53,15 +53,16 @@ def baseline_replacement_by_shift(img: np.array, **kwargs) -> np.array:
     choice = kwargs["input_shift"]
 
     img_perturbed = copy.copy(img)
-    baseline_value = get_baseline_value(choice=choice, img=img, nr_channels=kwargs.get("nr_channels", 3), **kwargs)
+    baseline_value = get_baseline_value(choice=choice, img=img, **kwargs)
 
     # Make sure that image is perturbed on all channels.
     kwargs["indices"] = (slice(0, kwargs.get("nr_channels")),) + kwargs["indices"]
 
+    # TODO: this is not a shift, right? Due to the multiplication...
     img_shifted = copy.copy(img)
     img_shifted = np.multiply(
         img_shifted,
-        np.full(shape=img.shape, fill_value=baseline_value, dtype=float),
+        np.full(shape=img.shape, fill_value=baseline_value[:, None, None], dtype=float),
     )
     img_perturbed[kwargs["indices"]] = img_shifted[kwargs["indices"]]
 
@@ -163,7 +164,7 @@ def translation_x_direction(img: np.array, **kwargs) -> np.array:
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=get_baseline_value(
-                choice=kwargs["perturb_baseline"], img=img, nr_channels=kwargs.get("nr_channels", 3), **kwargs
+                choice=kwargs["perturb_baseline"], img=img **kwargs
             ),
         ),
         -1,
@@ -183,7 +184,7 @@ def translation_y_direction(img: np.array, **kwargs) -> np.array:
             matrix,
             (kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             borderValue=get_baseline_value(
-                choice=kwargs["perturb_baseline"], img=img, nr_channels=kwargs.get("nr_channels", 3), **kwargs
+                choice=kwargs["perturb_baseline"], img=img, **kwargs
             ),
         ),
         2,

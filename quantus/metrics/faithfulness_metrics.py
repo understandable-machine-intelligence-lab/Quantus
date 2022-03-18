@@ -221,7 +221,8 @@ class FaithfulnessCorrelation(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -465,7 +466,8 @@ class FaithfulnessEstimate(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -682,7 +684,7 @@ class MonotonicityArya(Metric):
             preds = []
 
             baseline_value = get_baseline_value(
-                choice=self.perturb_baseline, img=x, nr_channels=self.nr_channels, **kwargs
+                choice=self.perturb_baseline, img=x, **kwargs
             )
 
             # Copy the input x but fill with baseline values.
@@ -947,7 +949,8 @@ class MonotonicityNguyen(Metric):
                             **self.kwargs,
                             **{
                                 "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
+                                "input_shift": kwargs.get("input_shift", -1),
+                                "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                                 "nr_channels": self.nr_channels,
                                 "img_size": self.img_size,
                             },
@@ -1180,7 +1183,8 @@ class PixelFlipping(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -1501,7 +1505,8 @@ class RegionPerturbation(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size + 2 * padwidth,
                         },
@@ -1778,7 +1783,8 @@ class Selectivity(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size + 2 * padwidth,
                         },
@@ -2045,7 +2051,8 @@ class SensitivityN(Metric):
                             **self.kwargs,
                             **{
                                 "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
+                                "input_shift": kwargs.get("input_shift", -1),
+                                "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                                 "nr_channels": self.nr_channels,
                                 "img_size": self.img_size,
                             },
@@ -2292,7 +2299,8 @@ class IterativeRemovalOfFeatures(Metric):
                         **self.kwargs,
                         **{
                             "indices": a_ix,
-                            "perturb_baseline": self.perturb_baseline,
+                            "input_shift": kwargs.get("input_shift", -1),
+                            "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },

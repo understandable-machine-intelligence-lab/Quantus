@@ -216,6 +216,7 @@ class LocalLipschitzEstimate(Metric):
                         **{
                             "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
                             "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "input_shift": self.kwargs.get("input_shift", -1),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -447,6 +448,7 @@ class MaxSensitivity(Metric):
                         **{
                             "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
                             "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "input_shift": self.kwargs.get("input_shift", -1),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -679,6 +681,7 @@ class AvgSensitivity(Metric):
                         **{
                             "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
                             "perturb_baseline": self.kwargs.get("perturb_baseline", "black"),
+                            "input_shift": self.kwargs.get("input_shift", -1),
                             "nr_channels": self.nr_channels,
                             "img_size": self.img_size,
                         },
@@ -910,11 +913,14 @@ class Continuity(Metric):
                 x_perturbed = self.perturb_func(
                     x,
                     **{
+                        **self.kwargs,
                         **{
                             "perturb_dx": (step + 1) * self.dx,
                             "perturb_baseline": self.perturb_baseline,
+                            "input_shift": self.kwargs.get("input_shift", -1),
+                            "nr_channels": self.nr_channels,
+                            "img_size": self.img_size,
                         },
-                        **self.kwargs,
                     },
                 )
 
