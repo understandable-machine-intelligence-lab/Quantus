@@ -199,7 +199,8 @@ class Completeness(Metric):
                     **self.kwargs,
                     **{
                         "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
-                        "perturb_baseline": self.perturb_baseline,
+                        "input_shift": kwargs.get("input_shift", -1),
+                        "perturb_baseline": kwargs.get("perturb_baseline", "black"),
                         "nr_channels": self.nr_channels,
                         "img_size": self.img_size,
                     },
@@ -405,30 +406,25 @@ class NonSensitivity(Metric):
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
-            for a_i in range(len(a)):
+            for a_i in range(len(a.flatten())):
 
                 preds = []
                 for _ in range(self.n_samples):
 
-                    print(len(a), len(x.flatten()))
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
+                        img=x,
                         **{
                             **self.kwargs,
                             **{
-                                "indices": a_i,
-                                "perturb_baseline": self.perturb_baseline,
+                                "indices": np.unravel_index(a_i, a.shape),
+                                "input_shift": kwargs.get("input_shift", -1),
+                                "perturb_baseline": kwargs.get("perturb_baseline", "black"),
+                                "nr_channels": self.nr_channels,
+                                "img_size": self.img_size,
                             },
                         },
                     )
-
-                    #** {
-                    #       "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
-                    #       "perturb_baseline": self.perturb_baseline,
-                    #       "nr_channels": self.nr_channels,
-                    #       "img_size": self.img_size,
-                    #   },
 
                     # Predict on perturbed input x.
                     x_input = model.shape_input(
@@ -623,15 +619,19 @@ class InputInvariance(Metric):
                 )
 
             x_shifted = self.perturb_func(
-                img=x.flatten(),
+                img=x,
                 **{
                     **self.kwargs,
                     **{
-                        "indices": np.arange(0, len(x.flatten())),
-                        "input_shift": self.input_shift,
+                        "indices": np.unravel_index(np.arange(0, len(a.flatten())), a.shape),
+                        "input_shift": kwargs.get("input_shift", -1),
+                        "perturb_baseline": kwargs.get("perturb_baseline", "black"),
+                        "nr_channels": self.nr_channels,
+                        "img_size": self.img_size,
                     },
                 },
             )
+
             assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
