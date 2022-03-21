@@ -70,15 +70,18 @@ class LocalLipschitzEstimate(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
-        self.norm_numerator = self.kwargs.get("norm_numerator",
-                                              similar_func.distance_euclidean)
-        self.norm_denominator = self.kwargs.get("norm_denominator",
-                                                similar_func.distance_euclidean)
+        self.norm_numerator = self.kwargs.get(
+            "norm_numerator", similar_func.distance_euclidean
+        )
+        self.norm_denominator = self.kwargs.get(
+            "norm_denominator", similar_func.distance_euclidean
+        )
         self.perturb_func = self.kwargs.get("perturb_func", perturb_func.gaussian_noise)
         self.perturb_std = self.kwargs.get("perturb_std", 0.1)
         self.perturb_mean = self.kwargs.get("perturb_mean", 0.0)
-        self.similarity_func = self.kwargs.get("similarity_func",
-                                               similar_func.lipschitz_constant)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", similar_func.lipschitz_constant
+        )
         self.last_results = []
         self.all_results = []
 
@@ -102,7 +105,6 @@ class LocalLipschitzEstimate(Metric):
                 ),
             )
             warn_func.warn_noise_zero(noise=self.perturb_std)
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -160,7 +162,7 @@ class LocalLipschitzEstimate(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -174,14 +176,9 @@ class LocalLipschitzEstimate(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -311,11 +308,13 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get("perturb_func",
-                                            perturb_func.uniform_sampling)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", perturb_func.uniform_sampling
+        )
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
-        self.similarity_func = self.kwargs.get("similarity_func",
-                                               similar_func.difference)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", similar_func.difference
+        )
 
         self.last_results = []
         self.all_results = []
@@ -337,7 +336,6 @@ class MaxSensitivity(Metric):
                 ),
             )
             warn_func.warn_noise_zero(noise=self.perturb_radius)
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -395,7 +393,7 @@ class MaxSensitivity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -409,14 +407,9 @@ class MaxSensitivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -548,11 +541,13 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get("perturb_func",
-                                            perturb_func.uniform_sampling)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", perturb_func.uniform_sampling
+        )
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
-        self.similarity_func = self.kwargs.get("similarity_func",
-                                               similar_func.difference)
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", similar_func.difference
+        )
         self.last_results = []
         self.all_results = []
 
@@ -573,7 +568,6 @@ class AvgSensitivity(Metric):
                 ),
             )
             warn_func.warn_noise_zero(noise=self.perturb_radius)
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -631,7 +625,7 @@ class AvgSensitivity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -645,14 +639,9 @@ class AvgSensitivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -783,10 +772,12 @@ class Continuity(Metric):
         self.patch_size = self.kwargs.get("patch_size", 7)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
-        self.perturb_func = self.kwargs.get("perturb_func",
-                                            perturb_func.translation_x_direction)
-        self.similarity_func = self.kwargs.get("similarity_func",
-                                               similar_func.lipschitz_constant)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", perturb_func.translation_x_direction
+        )
+        self.similarity_func = self.kwargs.get(
+            "similarity_func", similar_func.lipschitz_constant
+        )
         self.last_results = []
         self.all_results = []
 
@@ -806,7 +797,6 @@ class Continuity(Metric):
                     "Processing 73, 1-15 (2018"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -864,7 +854,7 @@ class Continuity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -878,14 +868,9 @@ class Continuity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
@@ -905,8 +890,7 @@ class Continuity(Metric):
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        asserts.assert_patch_size(patch_size=self.patch_size,
-                                  shape=x_batch_s.shape[2:])
+        asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # Get number of patches for input shape (ignore batch and channel dim)
@@ -969,9 +953,13 @@ class Continuity(Metric):
                 sub_results[self.nr_patches].append(y_pred)
 
                 # create patches by splitting input into grid
-                axis_iterators = [range(0, x_input.shape[axis], self.patch_size)
-                                  for axis in range(1, x_input.ndim)]
-                for ix_patch, top_left_coords in enumerate(itertools.product(*axis_iterators)):
+                axis_iterators = [
+                    range(0, x_input.shape[axis], self.patch_size)
+                    for axis in range(1, x_input.ndim)
+                ]
+                for ix_patch, top_left_coords in enumerate(
+                    itertools.product(*axis_iterators)
+                ):
 
                     # Create slice for patch.
                     patch_slice = utils.create_patch_slice(
@@ -983,7 +971,7 @@ class Continuity(Metric):
                     a_perturbed_patch = a_perturbed[patch_slice]
                     if self.abs:
                         a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
-                        
+
                     if self.normalise:
                         a_perturbed_patch = self.normalise_func(
                             a_perturbed_patch.flatten()
@@ -992,7 +980,7 @@ class Continuity(Metric):
                     # Sum attributions for patch.
                     patch_sum = float(sum(a_perturbed_patch))
                     sub_results[ix_patch].append(patch_sum)
-                    
+
             self.last_results[ix] = sub_results
 
         self.all_results.append(self.last_results)

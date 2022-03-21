@@ -19,25 +19,6 @@ from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import baseline_replacement_by_patch
 
 
-# TODO: patch sorting often wrong
-
-
-def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
-    pad_width_list = [(pad_width, pad_width)] * arr.ndim
-    if omit_first_axis:
-        pad_width_list[0] = (0, 0)
-    arr_pad = np.pad(arr, pad_width_list, mode="constant")
-    return arr_pad
-
-
-def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
-    unpad_slice = [slice(pad_width, arr.shape[axis] - pad_width)
-                   for axis, _ in enumerate(arr.shape)]
-    if omit_first_axis:
-        unpad_slice[0] = slice(None)
-    return arr[tuple(unpad_slice)]
-
-
 class FaithfulnessCorrelation(Metric):
     """
     Implementation of faithfulness correlation by Bhatt et al., 2020.
@@ -119,7 +100,6 @@ class FaithfulnessCorrelation(Metric):
                     "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -177,7 +157,7 @@ class FaithfulnessCorrelation(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -191,14 +171,9 @@ class FaithfulnessCorrelation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -217,7 +192,8 @@ class FaithfulnessCorrelation(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_value_smaller_than_input_size(
-            x=x_batch_s, value=self.subset_size, value_name="subset_size")
+            x=x_batch_s, value=self.subset_size, value_name="subset_size"
+        )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -348,7 +324,6 @@ class FaithfulnessEstimate(Metric):
                     " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -406,7 +381,7 @@ class FaithfulnessEstimate(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -420,14 +395,9 @@ class FaithfulnessEstimate(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -583,7 +553,6 @@ class IterativeRemovalOfFeatures(Metric):
                     "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -641,7 +610,7 @@ class IterativeRemovalOfFeatures(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -655,14 +624,9 @@ class IterativeRemovalOfFeatures(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         nr_channels = x_batch_s.shape[1]
         self.last_results = []
@@ -686,8 +650,9 @@ class IterativeRemovalOfFeatures(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
-            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
-                            total=len(x_batch_s))
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
 
         for ix, (x, y, a) in iterator:
 
@@ -724,9 +689,9 @@ class IterativeRemovalOfFeatures(Metric):
             for i_ix, s_ix in enumerate(s_indices):
 
                 # Perturb input by indices of attributions.
-                a_ix = np.nonzero(
-                    np.repeat((segments == s_ix).flatten(), nr_channels)
-                )[0]
+                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), nr_channels))[
+                    0
+                ]
 
                 x_perturbed = self.perturb_func(
                     arr=x_input.flatten(),
@@ -827,7 +792,6 @@ class MonotonicityArya(Metric):
                     " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -885,7 +849,7 @@ class MonotonicityArya(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -899,14 +863,9 @@ class MonotonicityArya(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -961,7 +920,8 @@ class MonotonicityArya(Metric):
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
-                choice=self.perturb_baseline, arr=x)
+                choice=self.perturb_baseline, arr=x
+            )
             x_baseline = np.full(x.shape, baseline_value).flatten()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
@@ -1064,7 +1024,6 @@ class MonotonicityNguyen(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1122,7 +1081,7 @@ class MonotonicityNguyen(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -1136,14 +1095,9 @@ class MonotonicityNguyen(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -1224,10 +1178,14 @@ class MonotonicityNguyen(Metric):
                         indices=a_ix,
                         **self.kwargs,
                     )
-                    asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                    asserts.assert_perturbation_caused_change(
+                        x=x, x_perturbed=x_perturbed
+                    )
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                    x_input = model.shape_input(
+                        x_perturbed, x.shape, channel_first=True
+                    )
                     y_pred_perturb = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
@@ -1312,7 +1270,6 @@ class PixelFlipping(Metric):
                     "e0130140"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1370,7 +1327,7 @@ class PixelFlipping(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -1384,14 +1341,9 @@ class PixelFlipping(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -1557,7 +1509,6 @@ class RegionPerturbation(Metric):
                     " learning systems 28.11 (2016): 2660-2673"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1615,7 +1566,7 @@ class RegionPerturbation(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -1629,14 +1580,9 @@ class RegionPerturbation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
@@ -1682,13 +1628,19 @@ class RegionPerturbation(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
-            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
+            x_pad = utils._pad_array(
+                x, pad_width, mode="constant", omit_first_axis=True
+            )
+            a_pad = utils._pad_array(
+                a, pad_width, mode="constant", omit_first_axis=True
+            )
 
             # Create patches across whole input shape and aggregate attributions.
             att_sums = []
-            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width)
-                              for axis in range(1, x_pad.ndim)]
+            axis_iterators = [
+                range(pad_width, x_pad.shape[axis] - pad_width)
+                for axis in range(1, x_pad.ndim)
+            ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
@@ -1735,8 +1687,9 @@ class RegionPerturbation(Metric):
             # Increasingly perturb the input and store the decrease in function value.
             for patch_slice in ordered_patches_no_overlap:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
-                                             mode='edge', omit_first_axis=True)
+                x_perturbed_pad = utils._pad_array(
+                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
@@ -1746,7 +1699,9 @@ class RegionPerturbation(Metric):
                 )
 
                 # Remove Padding
-                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
+                x_perturbed = utils._unpad_array(
+                    x_perturbed_pad, pad_width, omit_first_axis=True
+                )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1832,7 +1787,6 @@ class Selectivity(Metric):
                     "Processing 73 (2018): 1-15"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1890,7 +1844,7 @@ class Selectivity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -1904,14 +1858,9 @@ class Selectivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
@@ -1957,8 +1906,12 @@ class Selectivity(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
-            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
+            x_pad = utils._pad_array(
+                x, pad_width, mode="constant", omit_first_axis=True
+            )
+            a_pad = utils._pad_array(
+                a, pad_width, mode="constant", omit_first_axis=True
+            )
 
             # Get patch indices of sorted attributions (descending).
             # TODO: currently, image is split into a grid, with the patches as the grid elements.
@@ -1968,8 +1921,10 @@ class Selectivity(Metric):
             #  Leaving it as-is for now.
             #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
             att_sums = []
-            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
-                              for axis in range(1, x_pad.ndim)]
+            axis_iterators = [
+                range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
+                for axis in range(1, x_pad.ndim)
+            ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
@@ -1988,8 +1943,9 @@ class Selectivity(Metric):
             # Increasingly perturb the input and store the decrease in function value.
             for patch_slice in ordered_patches:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
-                                             mode='edge', omit_first_axis=True)
+                x_perturbed_pad = utils._pad_array(
+                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
@@ -1999,7 +1955,9 @@ class Selectivity(Metric):
                 )
 
                 # Remove Padding
-                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
+                x_perturbed = utils._unpad_array(
+                    x_perturbed_pad, pad_width, omit_first_axis=True
+                )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -2104,7 +2062,6 @@ class SensitivityN(Metric):
                     "arXiv:1711.06104 (2017)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -2162,7 +2119,7 @@ class SensitivityN(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -2176,14 +2133,9 @@ class SensitivityN(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 

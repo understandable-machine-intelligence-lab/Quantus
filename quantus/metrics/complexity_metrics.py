@@ -75,7 +75,6 @@ class Sparseness(Metric):
                     "(2020)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -133,7 +132,7 @@ class Sparseness(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -147,14 +146,9 @@ class Sparseness(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -199,7 +193,7 @@ class Sparseness(Metric):
                 a = self.normalise_func(a)
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]), )),
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
                 dtype=np.float64,
             )
             a += 0.0000001
@@ -270,7 +264,6 @@ class Complexity(Metric):
                     " feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -328,7 +321,7 @@ class Complexity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -342,14 +335,9 @@ class Complexity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -458,7 +446,6 @@ class EffectiveComplexity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -516,7 +503,7 @@ class EffectiveComplexity(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -530,14 +517,9 @@ class EffectiveComplexity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 

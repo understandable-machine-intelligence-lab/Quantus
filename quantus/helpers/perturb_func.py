@@ -12,20 +12,23 @@ from .utils import get_baseline_value
 from .utils import conv2D_numpy
 
 
-def gaussian_noise(arr: np.array, perturb_mean: float = 0.0,
-                   perturb_std: float = 0.01, **kwargs) -> np.array:
+def gaussian_noise(
+    arr: np.array, perturb_mean: float = 0.0, perturb_std: float = 0.01, **kwargs
+) -> np.array:
     """Add gaussian noise to the input."""
     noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
     return arr + noise
 
 
-def baseline_replacement_by_indices(arr: np.array,
-                                    indices: Union[int, Sequence[int], Tuple[np.array]],
-                                    for_all_channels: bool = True,
-                                    **kwargs) -> np.array:
+def baseline_replacement_by_indices(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    for_all_channels: bool = True,
+    **kwargs,
+) -> np.array:
     """
     Replace indices in an array by given baseline.
-    for_all_channels: Replace complete channel for given index. 
+    for_all_channels: Replace complete channel for given index.
                       Assumes channel first ordering.
     """
     indices = np.array(indices)
@@ -66,8 +69,9 @@ def baseline_replacement_by_indices(arr: np.array,
     return arr_perturbed
 
 
-def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
-                                  perturb_baseline: Any, **kwargs) -> np.array:
+def baseline_replacement_by_patch(
+    arr: np.array, patch_slice: Sequence, perturb_baseline: Any, **kwargs
+) -> np.array:
     """Replace a single patch in an array by given baseline."""
     if len(patch_slice) != arr.ndim:
         raise ValueError(
@@ -83,8 +87,9 @@ def baseline_replacement_by_patch(arr: np.array, patch_slice: Sequence,
     return arr_perturbed
 
 
-def baseline_replacement_by_blur(arr: np.array, patch_slice: Sequence,
-                                 blur_kernel_size: int = 15, **kwargs) -> np.array:
+def baseline_replacement_by_blur(
+    arr: np.array, patch_slice: Sequence, blur_kernel_size: int = 15, **kwargs
+) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
     Blur is performed via a 2D convolution.
@@ -133,7 +138,7 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
 
     matrix = cv2.getRotationMatrix2D(
-        center=(arr.shape[1]/2, arr.shape[2]/2),
+        center=(arr.shape[1] / 2, arr.shape[2] / 2),
         angle=perturb_angle,
         scale=1,
     )
@@ -146,8 +151,9 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     return arr_perturbed
 
 
-def translation_x_direction(arr: np.array, perturb_baseline: Any,
-                            perturb_dx: int = 10, **kwargs) -> np.array:
+def translation_x_direction(
+    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+) -> np.array:
     """
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
@@ -161,15 +167,18 @@ def translation_x_direction(arr: np.array, perturb_baseline: Any,
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline, arr=arr, **kwargs,
+            choice=perturb_baseline,
+            arr=arr,
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
     return arr_perturbed
 
 
-def translation_y_direction(arr: np.array, perturb_baseline: Any,
-                            perturb_dx: int = 10, **kwargs) -> np.array:
+def translation_y_direction(
+    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+) -> np.array:
     """
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
@@ -183,7 +192,9 @@ def translation_y_direction(arr: np.array, perturb_baseline: Any,
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline, arr=arr, **kwargs,
+            choice=perturb_baseline,
+            arr=arr,
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)

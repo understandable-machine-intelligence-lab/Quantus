@@ -62,7 +62,9 @@ def set_warn(call):
     #    pass
 
 
-def assert_features_in_step(features_in_step: int, input_shape: Tuple[int, ...]) -> None:
+def assert_features_in_step(
+    features_in_step: int, input_shape: Tuple[int, ...]
+) -> None:
     """Assert that features in step is compatible with the image size."""
     assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
@@ -82,7 +84,7 @@ def assert_max_steps(max_steps_per_input: int, input_shape: Tuple[int, ...]) -> 
 def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
     """Assert that patch size is compatible with given shape."""
     if isinstance(patch_size, int):
-        patch_size = (patch_size, )
+        patch_size = (patch_size,)
     patch_size = np.array(patch_size)
 
     if len(patch_size) == 1 and len(shape) != 1:
@@ -201,7 +203,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), ("The segmentation 's_batch' should contain only [1, 0] or [True, False].")
+    ), "The segmentation 's_batch' should contain only [1, 0] or [True, False]."
 
 
 def assert_max_size(max_size: float) -> None:
@@ -220,9 +222,9 @@ def assert_explain_func(explain_func: Callable) -> None:
         "y_batch and **kwargs as arguments."
     )
 
-def assert_value_smaller_than_input_size(x: np.ndarray, value: int,
-                                         value_name: str):
-    """ Checks if value is smaller than input size.
+
+def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):
+    """Checks if value is smaller than input size.
     Assumes batch and channel first dimension
     """
     if value >= np.prod(x.shape[2:]):

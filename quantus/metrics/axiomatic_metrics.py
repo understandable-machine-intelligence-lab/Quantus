@@ -88,7 +88,6 @@ class Completeness(Metric):
                     "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -146,7 +145,7 @@ class Completeness(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -160,14 +159,9 @@ class Completeness(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -303,7 +297,6 @@ class NonSensitivity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -359,9 +352,9 @@ class NonSensitivity(Metric):
             >> metric = NonSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape# Reshape input batch to channel first order:
+        # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -373,14 +366,9 @@ class NonSensitivity(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -410,7 +398,7 @@ class NonSensitivity(Metric):
                 max_steps_per_input=self.max_steps_per_input,
                 input_shape=x_batch_s.shape[2:],
             )
-            self.set_features_in_step = utils.get_features_in_step(
+            self.features_in_step = utils.get_features_in_step(
                 max_steps_per_input=self.max_steps_per_input,
                 input_shape=x_batch_s.shape[2:],
             )
@@ -452,7 +440,9 @@ class NonSensitivity(Metric):
                     )
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                    x_input = model.shape_input(
+                        x_perturbed, x.shape, channel_first=True
+                    )
                     y_pred_perturbed = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
@@ -472,9 +462,7 @@ class NonSensitivity(Metric):
 
 class InputInvariance(Metric):
     """
-    Implementation of Completeness test by Kindermans et al., 2017, also referred
-    to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
-    Montavon et al., 2018.
+    Implementation of Completeness test by Kindermans et al., 2017.
 
     To test for input invaraince, we add a constant shift to the input data and then measure the effect
     on the attributions, the expectation is that if the model show no response, then the explanations should not.
@@ -529,7 +517,6 @@ class InputInvariance(Metric):
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -587,7 +574,7 @@ class InputInvariance(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -601,14 +588,9 @@ class InputInvariance(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
