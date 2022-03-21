@@ -1,21 +1,13 @@
+import pickle
+from typing import Any, Union
+
 import numpy as np
 import pytest
-import pickle
-from typing import Union
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
-from ...quantus.helpers import *
-
-
-@pytest.fixture
-def get_model(autouse=True):
-    model = (
-        LeNet()
-    )  # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-    model.load_state_dict(
-        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
-    )
-    return model
+from ...quantus.helpers.models import LeNet
+from ...quantus.helpers.utils import *
 
 
 @pytest.fixture
@@ -24,53 +16,118 @@ def segmentation_setup():
 
 
 @pytest.fixture
-def baseline_none():
-    return {"choice": None, "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_none_1d():
+    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_black():
-    return {"choice": "black", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_none_2d():
+    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_uniform():
-    return {"choice": "uniform", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_black_1d():
+    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_random():
-    return {"choice": "random", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_black_2d():
+    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_white():
-    return {"choice": "white", "img": np.random.uniform(0, 1, size=(1, 3, 224, 224))}
+def baseline_uniform_1d():
+    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def baseline_mean():
-    return {"choice": "mean", "img": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
+def baseline_uniform_2d():
+    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
 
 
 @pytest.fixture
-def mock_input_torch_array():
+def baseline_random_1d():
+    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_random_2d():
+    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_white_1d():
+    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_white_2d():
+    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+
+
+@pytest.fixture
+def baseline_mean_1d():
+    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222))}
+
+
+@pytest.fixture
+def baseline_mean_2d():
+    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
+
+
+@pytest.fixture
+def mock_input_torch_array_1d():
+    return {"x": np.zeros((1, 1, 28))}
+
+
+@pytest.fixture
+def mock_input_tf_array_1d():
+    return {"x": np.zeros((1, 28, 1))}
+
+
+@pytest.fixture
+def mock_input_torch_array_2d():
+    return {"x": np.zeros((1, 1, 28, 32))}
+
+
+@pytest.fixture
+def mock_input_tf_array_2d():
+    return {"x": np.zeros((1, 28, 32, 1))}
+
+
+@pytest.fixture
+def mock_input_torch_array_2d_squared():
     return {"x": np.zeros((1, 1, 28, 28))}
 
 
 @pytest.fixture
-def mock_input_tf_array():
+def mock_input_tf_array_2d_squared():
     return {"x": np.zeros((1, 28, 28, 1))}
 
 
 @pytest.fixture
-def mock_same_input():
-    return {"x": np.zeros((1, 28, 28, 28))}
+def mock_input_torch_array_3d():
+    return {"x": np.zeros((1, 1, 28, 28, 28))}
 
 
 @pytest.fixture
-def mock_mismatch_input():
-    return {"x": np.zeros((1, 1, 2, 3))}
+def mock_input_tf_array_3d():
+    return {"x": np.zeros((1, 28, 28, 28, 1))}
+
+
+@pytest.fixture
+def mock_unbatched_input_1d():
+    return {"x": np.zeros((28))}
+
+
+@pytest.fixture
+def mock_same_input_1d():
+    return {"x": np.zeros((1, 28, 28))}
+
+
+@pytest.fixture
+def mock_same_input_2d():
+    return {"x": np.zeros((1, 28, 28, 28))}
 
 
 def random_input(c_in, imsize):
@@ -98,7 +155,7 @@ def random_kernel(c_in, c_out, groups, ksize):
         (
             lazy_fixture("segmentation_setup"),
             {"segmentation_method": "ERROR"},
-            {"exception": AssertionError},
+            {"exception": ValueError},
         ),
     ],
 )
@@ -121,32 +178,39 @@ def test_get_superpixel_segments(
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black"), {"value": 0.0}),
-        (lazy_fixture("baseline_white"), {"value": 1.0}),
-        (lazy_fixture("baseline_mean"), {"value": 0.5}),
-        (lazy_fixture("baseline_none"), {"exception": AssertionError}),
+        (lazy_fixture("baseline_black_1d"), {"value": 0.0}),
+        (lazy_fixture("baseline_black_2d"), {"value": 0.0}),
+        (lazy_fixture("baseline_white_1d"), {"value": 1.0}),
+        (lazy_fixture("baseline_white_2d"), {"value": 1.0}),
+        (lazy_fixture("baseline_mean_1d"), {"value": 0.5}),
+        (lazy_fixture("baseline_mean_2d"), {"value": 0.5}),
+        (lazy_fixture("baseline_none_1d"), {"exception": AssertionError}),
+        (lazy_fixture("baseline_none_2d"), {"exception": AssertionError}),
     ],
 )
 def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_baseline_value(choice=data["choice"], img=data["img"])
+            get_baseline_value(choice=data["choice"], arr=data["arr"])
         return
-    out = get_baseline_value(choice=data["choice"], img=data["img"])
-    assert round(out, 2) == expected["value"], "Test failed."
+    out = get_baseline_value(choice=data["choice"], arr=data["arr"])
+    assert out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1), "Test failed."
 
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black"), dict),
-        (lazy_fixture("baseline_white"), dict),
-        (lazy_fixture("baseline_mean"), dict),
+        (lazy_fixture("baseline_black_2d"), dict),
+        (lazy_fixture("baseline_black_2d"), dict),
+        (lazy_fixture("baseline_white_2d"), dict),
+        (lazy_fixture("baseline_white_2d"), dict),
+        (lazy_fixture("baseline_mean_2d"), dict),
+        (lazy_fixture("baseline_mean_2d"), dict),
     ],
 )
 def test_get_baseline_dict(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = get_baseline_dict(img=data["img"])
+    out = get_baseline_dict(arr=data["arr"])
     assert isinstance(out, dict), "Test failed."
 
 
@@ -185,14 +249,18 @@ def test_get_name(data: np.ndarray, expected: Union[float, dict, bool]):
 @pytest.mark.parametrize(
     "data,expected",
     [
-        ({"max_steps_per_input": 4, "img_size": 28}, 196),
-        ({"max_steps_per_input": 128, "img_size": 224}, 392),
-        ({"max_steps_per_input": 4, "img_size": 4}, 4),
+        ({"max_steps_per_input": 4, "input_shape": (28, 28)}, 196),
+        ({"max_steps_per_input": 128, "input_shape": (224, 224)}, 392),
+        ({"max_steps_per_input": 4, "input_shape": (4, 4)}, 4),
+        ({"max_steps_per_input": 4, "input_shape": (28,)}, 7),
+        ({"max_steps_per_input": 128, "input_shape": (256,)}, 2),
+        ({"max_steps_per_input": 4, "input_shape": (4,)}, 1),
     ],
 )
-def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = set_features_in_step(
-        max_steps_per_input=data["max_steps_per_input"], img_size=data["img_size"]
+def test_get_features_in_step(data: np.ndarray, expected: Union[float, dict, bool]):
+    out = get_features_in_step(
+        max_steps_per_input=data["max_steps_per_input"],
+        input_shape=data["input_shape"],
     )
     assert out == expected, "Test failed."
 
@@ -201,18 +269,25 @@ def test_set_features_in_step(data: np.ndarray, expected: Union[float, dict, boo
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("mock_input_tf_array"), {"value": False}),
-        (lazy_fixture("mock_input_torch_array"), {"value": True}),
-        (lazy_fixture("mock_same_input"), {"exception": ValueError}),
-        (lazy_fixture("mock_mismatch_input"), {"exception": ValueError}),
+        (lazy_fixture("mock_input_tf_array_1d"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_1d"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_2d"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_2d"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_2d_squared"), {"value": False}),
+        (lazy_fixture("mock_input_torch_array_2d_squared"), {"value": True}),
+        (lazy_fixture("mock_input_tf_array_3d"), {"exception": ValueError}),
+        (lazy_fixture("mock_input_torch_array_3d"), {"exception": ValueError}),
+        (lazy_fixture("mock_unbatched_input_1d"), {"exception": ValueError}),
+        (lazy_fixture("mock_same_input_1d"), {"exception": ValueError}),
+        (lazy_fixture("mock_same_input_2d"), {"exception": ValueError}),
     ],
 )
-def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
+def test_infer_channel_first(data: np.ndarray, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_channel_first(data["x"])
+            infer_channel_first(data["x"])
         return
-    out = get_channel_first(data["x"])
+    out = infer_channel_first(data["x"])
     assert out == expected["value"], "Test failed."
 
 
@@ -221,21 +296,31 @@ def test_get_channel_first(data: np.ndarray, expected: Union[float, dict, bool])
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
+            lazy_fixture("mock_input_tf_array_1d"),
             {"channel_first": False},
-            np.zeros((1, 1, 28, 28)),
+            np.zeros((1, 1, 28)),
         ),
         (
-            lazy_fixture("mock_input_torch_array"),
+            lazy_fixture("mock_input_torch_array_1d"),
             {"channel_first": True},
-            np.zeros((1, 1, 28, 28)),
+            np.zeros((1, 1, 28)),
+        ),
+        (
+            lazy_fixture("mock_input_tf_array_2d"),
+            {"channel_first": False},
+            np.zeros((1, 1, 28, 32)),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array_2d"),
+            {"channel_first": True},
+            np.zeros((1, 1, 28, 32)),
         ),
     ],
 )
-def test_get_channel_first_batch(
+def test_make_channel_first(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = get_channel_first_batch(data["x"], params["channel_first"])
+    out = make_channel_first(data["x"], params["channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
@@ -244,21 +329,31 @@ def test_get_channel_first_batch(
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
+            lazy_fixture("mock_input_tf_array_1d"),
             {"channel_first": False},
-            np.zeros((1, 28, 28, 1)),
+            np.zeros((1, 28, 1)),
         ),
         (
-            lazy_fixture("mock_input_torch_array"),
+            lazy_fixture("mock_input_torch_array_1d"),
             {"channel_first": True},
-            np.zeros((1, 28, 28, 1)),
+            np.zeros((1, 28, 1)),
+        ),
+        (
+            lazy_fixture("mock_input_tf_array_2d"),
+            {"channel_first": False},
+            np.zeros((1, 28, 32, 1)),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array_2d"),
+            {"channel_first": True},
+            np.zeros((1, 28, 32, 1)),
         ),
     ],
 )
-def test_get_channel_last_batch(
+def test_make_channel_last(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = get_channel_last_batch(data["x"], params["channel_first"])
+    out = make_channel_last(data["x"], params["channel_first"])
     assert np.array_equal(out, expected), "Test failed."
 
 
@@ -311,6 +406,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 217, 217)},
         ),
@@ -324,6 +420,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 3,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 223, 223)},
         ),
@@ -337,6 +434,7 @@ def test_get_wrapped_model(
                 "stride": 3,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 73, 73)},
         ),
@@ -350,6 +448,7 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"shape": (3, 217, 217)},
         ),
@@ -363,8 +462,65 @@ def test_get_wrapped_model(
                 "stride": 1,
                 "padding": 0,
                 "groups": 3,
+                "pad_output": False,
             },
             {"exception": AssertionError},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"shape": (3, 224, 224)},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 3,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"exception": NotImplementedError},
+        ),
+        (
+            {
+                "c_in": 3,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 3,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"exception": NotImplementedError},
+        ),
+        (
+            {
+                "c_in": 6,
+                "c_out": 3,
+                "imsize": 224,
+                "kgroups": 3,
+                "ksize": 8,
+                "stride": 1,
+                "padding": 0,
+                "groups": 3,
+                "pad_output": True,
+            },
+            {"shape": (3, 224, 224)},
         ),
     ],
 )
@@ -379,11 +535,298 @@ def test_conv2D_numpy(
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             out = conv2D_numpy(
-                input, kernel, params["stride"], params["padding"], params["groups"]
+                x=input,
+                kernel=kernel,
+                stride=params["stride"],
+                padding=params["padding"],
+                groups=params["groups"],
+                pad_output=params["pad_output"],
             )
         return
     out = conv2D_numpy(
-        input, kernel, params["stride"], params["padding"], params["groups"]
+        x=input,
+        kernel=kernel,
+        stride=params["stride"],
+        padding=params["padding"],
+        groups=params["groups"],
+        pad_output=params["pad_output"],
     )
     if "shape" in expected:
         assert expected["shape"] == out.shape, "Test failed."
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "patch_size": 4,
+                "coords": 0,
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), )},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, ),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), )},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 6),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 6, None))},
+        ),
+        (
+            {
+                "patch_size": 10,
+                "coords": (1, 2),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(1, 11, None), slice(2, 12, None))},
+        ),
+        (
+            {
+                "patch_size": (10, 5),
+                "coords": (1, 2),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(1, 11, None), slice(2, 7, None))},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0),
+                "expand_first_dim": True,
+            },
+            {"value": (slice(None, None, None), slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "coords": (0, 0, 0),
+                "expand_first_dim": False,
+            },
+            {"value": (slice(0, 4, None), slice(0, 4, None), slice(0, 4, None))},
+        ),
+        (
+            {
+                "patch_size": (4, 4, 4),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, 0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "coords": (0, ),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": np.ones((4, 4)),
+                "coords": (0, 0),
+                "expand_first_dim": False,
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_create_patch_slice(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = create_patch_slice(**params)
+        return
+
+    out = create_patch_slice(**params)
+    
+    assert all(out_slice == expected_slice
+               for out_slice, expected_slice in zip(out, expected["value"])
+    ), f"Slices not equal. {out_slice} != {expected_slice}"
+    assert all(isinstance(out_slice.start, int) or out_slice.start is None
+               for out_slice in out
+    ), f"Not all slice starts are integers/None. {out}"
+    assert all(isinstance(out_slice.stop, int) or out_slice.stop is None
+               for out_slice in out
+    ), f"Not all slice stops are integers/None. {out}"
+    assert all(isinstance(out_slice.step, int) or out_slice.step is None
+               for out_slice in out
+    ), f"Not all slice steps are integers/None. {out}"
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "a": np.ones((64, 128)),
+                "x": np.ones((64, 3, 128)),
+            },
+            {"value": np.ones((64, 1, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 1, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 1, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 1, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 3, 128, 128))},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((32, 3, 128, 128)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "a": np.ones((64, 3, 128, 128)),
+                "x": np.ones((64, 3, 128)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "a": np.ones((64, 128)),
+                "x": np.ones((64, 3, 128, 128)),
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_expand_attribution_channel(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = expand_attribution_channel(**params)
+        return
+
+    out = expand_attribution_channel(**params)
+    assert out.shape == expected["value"].shape
+    assert (out == expected["value"]).any()
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "patch_size": 4,
+                "shape": (16, ),
+            },
+            {"value": 4},
+        ),
+        (
+            {
+                "patch_size": (4, ),
+                "shape": (16, ),
+            },
+            {"value": 4},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, ),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": 4,
+                "shape": (16, 16),
+            },
+            {"value": 16},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, 16),
+            },
+            {"value": 16},
+        ),
+        (
+            {
+                "patch_size": (4, 2),
+                "shape": (16, 16),
+            },
+            {"value": 32},
+        ),
+        (
+            {
+                "patch_size": (4, 4, 4),
+                "shape": (16, 16),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "patch_size": (4, ),
+                "shape": (16, 16, 16),
+            },
+            {"value": 64},
+        ),
+        (
+            {
+                "patch_size": (4, 4),
+                "shape": (16, 16, 16),
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_get_nr_patches(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = get_nr_patches(**params)
+        return
+
+    out = get_nr_patches(**params)
+    assert out == expected["value"]
