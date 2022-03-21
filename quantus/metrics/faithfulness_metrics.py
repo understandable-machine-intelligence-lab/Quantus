@@ -1,16 +1,41 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
+import itertools
+import warnings
+from typing import Callable, Dict, List, Union
+
+import numpy as np
 from tqdm import tqdm
 
 from .base import Metric
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import plotting
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.similar_func import correlation_pearson, correlation_spearman
+from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.perturb_func import baseline_replacement_by_patch
+
 
 # TODO: patch sorting often wrong
+
+
+def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
+    pad_width_list = [(pad_width, pad_width)] * arr.ndim
+    if omit_first_axis:
+        pad_width_list[0] = (0, 0)
+    arr_pad = np.pad(arr, pad_width_list, mode="constant")
+    return arr_pad
+
+
+def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
+    unpad_slice = [slice(pad_width, arr.shape[axis] - pad_width)
+                   for axis, _ in enumerate(arr.shape)]
+    if omit_first_axis:
+        unpad_slice[0] = slice(None)
+    return arr[tuple(unpad_slice)]
 
 
 class FaithfulnessCorrelation(Metric):
@@ -71,18 +96,18 @@ class FaithfulnessCorrelation(Metric):
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
@@ -94,7 +119,7 @@ class FaithfulnessCorrelation(Metric):
                     "feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -117,8 +142,6 @@ class FaithfulnessCorrelation(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -153,35 +176,48 @@ class FaithfulnessCorrelation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_value_smaller_than_input_size(
+            x=x_batch_s, value=self.subset_size, value_name="subset_size")
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -200,7 +236,7 @@ class FaithfulnessCorrelation(Metric):
                 a = self.normalise_func(a)
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -214,28 +250,24 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x,
+                    indices=a_ix,
+                    **self.kwargs,
                 )
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
-
                 logit_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
                 att_sums.append(np.sum(a[a_ix]))
 
-            self.last_results.append(self.similarity_func(a=att_sums, b=logit_deltas))
+            similarity = self.similarity_func(a=att_sums, b=logit_deltas)
+            self.last_results.append(similarity)
 
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
@@ -280,7 +312,6 @@ class FaithfulnessEstimate(Metric):
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            img_size (integer): Square image dimensions, default=224.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -294,12 +325,11 @@ class FaithfulnessEstimate(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -307,7 +337,7 @@ class FaithfulnessEstimate(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and similarity function "
@@ -318,17 +348,7 @@ class FaithfulnessEstimate(Metric):
                     " with self-explaining neural networks.' arXiv preprint arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -351,8 +371,6 @@ class FaithfulnessEstimate(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -387,35 +405,59 @@ class FaithfulnessEstimate(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -437,7 +479,7 @@ class FaithfulnessEstimate(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -454,18 +496,14 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x,
+                    indices=a_ix,
+                    **self.kwargs,
                 )
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                 )
@@ -479,6 +517,245 @@ class FaithfulnessEstimate(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+class IterativeRemovalOfFeatures(Metric):
+    """
+    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
+
+    The metric computes the area over the curve per class for sorted mean importances
+    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
+    averaged over several test samples.
+
+    References:
+        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
+        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
+
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="mean".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.last_results = []
+        self.all_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline' and the method to segment "
+                    "the image 'segmentation_method' (including all its associated hyperparameters)"
+                ),
+                citation=(
+                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
+                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
+                ),
+            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = IROF(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+        # Reshape input batch to channel first order:
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        # Wrap the model into an interface
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
+        nr_channels = x_batch_s.shape[1]
+        self.last_results = []
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+
+        # Asserts.
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(enumerate(zip(x_batch_s, y_batch, a_batch)),
+                            total=len(x_batch_s))
+
+        for ix, (x, y, a) in iterator:
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalise:
+                a = self.normalise_func(a)
+
+            # Predict on x.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(
+                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+            )
+
+            # Segment image.
+            segments = utils.get_superpixel_segments(
+                img=np.moveaxis(x, 0, -1).astype("double"),
+                segmentation_method=self.segmentation_method,
+            )
+            nr_segments = segments.max()
+            asserts.assert_nr_segments(nr_segments=nr_segments)
+
+            # Calculate average attribution of each segment.
+            att_segs = np.zeros(nr_segments)
+            for i, s in enumerate(range(nr_segments)):
+                att_segs[i] = np.mean(a[:, segments == s])
+
+            # Sort segments based on the mean attribution (descending order).
+            s_indices = np.argsort(-att_segs)
+
+            preds = []
+
+            for i_ix, s_ix in enumerate(s_indices):
+
+                # Perturb input by indices of attributions.
+                a_ix = np.nonzero(
+                    np.repeat((segments == s_ix).flatten(), nr_channels)
+                )[0]
+
+                x_perturbed = self.perturb_func(
+                    arr=x_input.flatten(),
+                    indices=a_ix,
+                    **self.kwargs,
+                )
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
+                # Normalise the scores to be within [0, 1].
+                preds.append(float(y_pred_perturb / y_pred))
+
+            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
+            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
+
+        self.last_results = [np.mean(self.last_results)]
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
+
+    @property
+    def aggregated_score(self):
+        """Calculate the area over the curve (AOC) score for several test samples."""
+        return [np.mean(results) for results in self.all_results]
 
 
 class MonotonicityArya(Metric):
@@ -518,7 +795,6 @@ class MonotonicityArya(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            img_size (integer): Square image dimensions, default=224.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -536,7 +812,6 @@ class MonotonicityArya(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -544,7 +819,7 @@ class MonotonicityArya(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
                 citation=(
@@ -552,17 +827,7 @@ class MonotonicityArya(Metric):
                     " of ai explainability techniques.' arXiv preprint arXiv:1909.03012 (2019)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -585,8 +850,6 @@ class MonotonicityArya(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -621,35 +884,59 @@ class MonotonicityArya(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -672,11 +959,9 @@ class MonotonicityArya(Metric):
 
             preds = []
 
-            baseline_value = get_baseline_value(
-                choice=self.perturb_baseline, img=x, **kwargs
-            )
-
             # Copy the input x but fill with baseline values.
+            baseline_value = utils.get_baseline_value(
+                choice=self.perturb_baseline, arr=x)
             x_baseline = np.full(x.shape, baseline_value).flatten()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
@@ -688,19 +973,16 @@ class MonotonicityArya(Metric):
                     )
                 ]
                 x_baseline = self.perturb_func(
-                    img=x_baseline,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "fixed_values": x.flatten()[a_ix]},
-                    },
+                    arr=x_baseline,
+                    indices=a_ix,
+                    **self.kwargs,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+                x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
-
                 preds.append(y_pred_perturb)
 
             self.last_results.append(np.all(np.diff(preds) >= 0))
@@ -744,7 +1026,6 @@ class MonotonicityNguyen(Metric):
             nr_samples (integer): The number of samples to iterate over, default=100.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
-            img_size (integer): Square image dimensions, default=224.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -765,7 +1046,6 @@ class MonotonicityNguyen(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.eps = self.kwargs.get("eps", 1e-5)
         self.nr_samples = self.kwargs.get("nr_samples", 100)
-        self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -773,7 +1053,7 @@ class MonotonicityNguyen(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', threshold value 'eps' and number "
@@ -784,17 +1064,7 @@ class MonotonicityNguyen(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -817,8 +1087,6 @@ class MonotonicityNguyen(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -853,35 +1121,59 @@ class MonotonicityNguyen(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -892,7 +1184,7 @@ class MonotonicityNguyen(Metric):
         for x, y, a in iterator:
 
             # Predict on input x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -928,21 +1220,14 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                        arr=x,
+                        indices=a_ix,
+                        **self.kwargs,
                     )
-                    assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                    asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
-                    )
+                    x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                     y_pred_perturb = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                     )
@@ -994,7 +1279,6 @@ class PixelFlipping(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            img_size (integer): Square image dimensions, default=224.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -1005,14 +1289,13 @@ class PixelFlipping(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plot_pixel_flipping_experiment
+        self.default_plot_func = plotting.plot_pixel_flipping_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -1020,7 +1303,7 @@ class PixelFlipping(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("baseline value 'perturb_baseline'"),
                 citation=(
@@ -1029,17 +1312,7 @@ class PixelFlipping(Metric):
                     "e0130140"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1062,8 +1335,6 @@ class PixelFlipping(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -1097,37 +1368,60 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface..
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -1160,18 +1454,14 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    img=x_perturbed,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    **self.kwargs,
                 )
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
@@ -1230,7 +1520,6 @@ class RegionPerturbation(Metric):
             patch_size (integer): The patch size for masking, default=8.
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
-            img_size (integer): Square image dimensions, default=224.
         """
         super().__init__()
 
@@ -1239,7 +1528,7 @@ class RegionPerturbation(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plot_region_perturbation_experiment
+        self.default_plot_func = plotting.plot_region_perturbation_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
@@ -1249,14 +1538,13 @@ class RegionPerturbation(Metric):
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
-        self.img_size = self.kwargs.get("img_size", 224)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
-        assert_attributions_order(order=self.order)
+        asserts.assert_attributions_order(order=self.order)
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline'"
@@ -1269,7 +1557,7 @@ class RegionPerturbation(Metric):
                     " learning systems 28.11 (2016): 2660-2673"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1292,8 +1580,6 @@ class RegionPerturbation(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -1327,37 +1613,47 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface..
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -1368,13 +1664,8 @@ class RegionPerturbation(Metric):
             )
 
         for sample, (x, y, a) in iterator:
-
-            # Shape input to channels_first. This is needed for padding.
-            # For model prediction, inputs will be reshaped temporarily according to the model requirements
-            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
-
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -1390,109 +1681,77 @@ class RegionPerturbation(Metric):
             x_perturbed = x.copy()
 
             # Pad input and attributions. This is needed to allow for any patch_size.
-            padwidth = (2 * self.patch_size - 2) // 2
-            x_tmp = np.pad(
-                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
-            a_tmp = np.pad(
-                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
+            pad_width = self.patch_size - 1
+            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
+            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
 
-            # Get patch indices of sorted attributions (descending).
+            # Create patches across whole input shape and aggregate attributions.
             att_sums = []
-            for i_x, top_left_x in enumerate(
-                range(padwidth, x_tmp.shape[1] - padwidth)
-            ):
-                for i_y, top_left_y in enumerate(
-                    range(padwidth, x_tmp.shape[2] - padwidth)
-                ):  #
+            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width)
+                              for axis in range(1, x_pad.ndim)]
+            for top_left_coords in itertools.product(*axis_iterators):
+                # Create slice for patch.
+                patch_slice = utils.create_patch_slice(
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
+                    expand_first_dim=True,
+                )
 
-                    # Sum attributions for patch.
-                    att_sums.append(
-                        a_tmp[
-                            top_left_x : top_left_x + self.patch_size,
-                            top_left_y : top_left_y + self.patch_size,
-                        ].sum()
-                    )
-                    patches.append([top_left_x, top_left_y])
+                # Sum attributions for patch.
+                att_sums.append(a_pad[patch_slice].sum())
+                patches.append(patch_slice)
 
             if self.order == "random":
-
                 # Order attributions randomly.
                 order = np.arange(len(patches))
-                np.random.shuffle(np.arange(len(patches)))
-                patch_order = [patches[p] for p in order]
+                np.random.shuffle(order)
 
             elif self.order == "morf":
-
                 # Order attributions according to the most relevant first.
-                patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
+                order = np.argsort(att_sums)[::-1]
 
             else:
-
                 # Order attributions according to the least relevant first.
-                patch_order = [patches[p] for p in np.argsort(att_sums)]
+                order = np.argsort(att_sums)
+
+            # Create ordered list of patches.
+            ordered_patches = [patches[p] for p in order]
 
             # Remove overlapping patches
-            blocked_areas = []
-            patch_order_new = {}
-            cnt = 0
-            for k in range(len(patch_order)):
+            blocked_mask = np.zeros(x_input.shape, dtype=bool)
+            ordered_patches_no_overlap = []
+            for patch_slice in ordered_patches:
+                patch_mask = np.zeros(x_input.shape, dtype=bool)
+                patch_mask[patch_slice] = True
+                intersected = blocked_mask & patch_mask
 
-                if cnt >= min(self.regions_evaluation, len(patch_order)):
+                if not intersected.any():
+                    ordered_patches_no_overlap.append(patch_slice)
+                    blocked_mask = blocked_mask | patch_mask
+
+                if len(ordered_patches_no_overlap) >= self.regions_evaluation:
                     break
 
-                # check if patch overlaps any already selected patch
-                intersected = [
-                    np.all(
-                        np.abs(np.array(patch_order[k]) - np.array(bl))
-                        < self.patch_size
-                    )
-                    for bl in blocked_areas
-                ]
-                if not any(intersected):
-                    patch_order_new[cnt] = patch_order[k]
-                    blocked_areas.append(patch_order[k])
-                    cnt += 1
-            patch_order = patch_order_new
-
             # Increasingly perturb the input and store the decrease in function value.
-            for k in range(min(self.regions_evaluation, len(patch_order))):
+            for patch_slice in ordered_patches_no_overlap:
+                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
+                                             mode='edge', omit_first_axis=True)
 
-                # Calculate predictions on a random order.
-                top_left_x = patch_order[k][0]
-                top_left_y = patch_order[k][1]
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    **self.kwargs,
+                )
 
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
-                    mode="edge",
-                )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
-                    **{
-                        **self.kwargs,
-                        **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
-                        },
-                    },
-                )
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
 
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
@@ -1540,7 +1799,6 @@ class Selectivity(Metric):
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             patch_size (integer): The patch size for masking, default=8.
-            img_size (integer): Square image dimensions, default=224.
         """
         super().__init__()
 
@@ -1549,23 +1807,20 @@ class Selectivity(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plot_selectivity_experiment
+        self.default_plot_func = plotting.plot_selectivity_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_patch
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get(
-            "patch_size", 8
-        )  # TODO: according to doc string, should default not be 4?
-        self.img_size = self.kwargs.get("img_size", 224)
+        self.patch_size = self.kwargs.get("patch_size", 8)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the patch size for masking"
@@ -1577,7 +1832,7 @@ class Selectivity(Metric):
                     "Processing 73 (2018): 1-15"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1600,8 +1855,6 @@ class Selectivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -1636,35 +1889,46 @@ class Selectivity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = {k: None for k in range(len(x_batch_s))}
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -1675,13 +1939,8 @@ class Selectivity(Metric):
             )
 
         for sample, (x, y, a) in iterator:
-
-            # Shape input to channels_first. This is needed for padding.
-            # For model prediction, inputs will be reshaped temporarily according to the model requirements
-            x = x.reshape(self.nr_channels, self.img_size, self.img_size)
-
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -1697,13 +1956,9 @@ class Selectivity(Metric):
             x_perturbed = x.copy()
 
             # Pad input and attributions. This is needed to allow for any patch_size.
-            padwidth = (2 * self.patch_size - 2) // 2
-            x_tmp = np.pad(
-                x, ((0, 0), (padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
-            a_tmp = np.pad(
-                a, ((padwidth, padwidth), (padwidth, padwidth)), mode="constant"
-            )
+            pad_width = self.patch_size - 1
+            x_pad = _pad_array(x, pad_width, mode='constant', omit_first_axis=True)
+            a_pad = _pad_array(a, pad_width, mode='constant', omit_first_axis=True)
 
             # Get patch indices of sorted attributions (descending).
             # TODO: currently, image is split into a grid, with the patches as the grid elements.
@@ -1713,60 +1968,43 @@ class Selectivity(Metric):
             #  Leaving it as-is for now.
             #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
             att_sums = []
-            for i_x, top_left_x in enumerate(
-                range(padwidth, x_tmp.shape[1] - padwidth, self.patch_size)
-            ):
-                for i_y, top_left_y in enumerate(
-                    range(padwidth, x_tmp.shape[2] - padwidth, self.patch_size)
-                ):
+            axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
+                              for axis in range(1, x_pad.ndim)]
+            for top_left_coords in itertools.product(*axis_iterators):
+                # Create slice for patch.
+                patch_slice = utils.create_patch_slice(
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
+                    expand_first_dim=True,
+                )
 
-                    # Sum attributions for patch.
-                    att_sums.append(
-                        a_tmp[
-                            top_left_x : top_left_x + self.patch_size,
-                            top_left_y : top_left_y + self.patch_size,
-                        ].sum()
-                    )
-                    patches.append([top_left_x, top_left_y])
+                # Sum attributions for patch.
+                att_sums.append(a_pad[patch_slice].sum())
+                patches.append(patch_slice)
 
             # Order attributions according to the most relevant first.
-            patch_order = [patches[p] for p in np.argsort(att_sums)[::-1]]
+            ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             # Increasingly perturb the input and store the decrease in function value.
-            for k in range(len(patch_order)):
-                top_left_x = patch_order[k][0]
-                top_left_y = patch_order[k][1]
+            for patch_slice in ordered_patches:
+                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+                x_perturbed_pad = _pad_array(x_perturbed, pad_width,
+                                             mode='edge', omit_first_axis=True)
 
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
-                    mode="edge",
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    **self.kwargs,
                 )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
-                    **{
-                        **self.kwargs,
-                        **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
-                        },
-                    },
-                )
+
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = _unpad_array(x_perturbed_pad, pad_width, omit_first_axis=True)
 
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
                     model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
                 )
@@ -1827,7 +2065,6 @@ class SensitivityN(Metric):
             default="uniform".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
-            img_size (integer): Square image dimensions, default=224.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
@@ -1838,7 +2075,7 @@ class SensitivityN(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plot_sensitivity_n_experiment
+        self.default_plot_func = plotting.plot_sensitivity_n_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
@@ -1847,18 +2084,14 @@ class SensitivityN(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
-        self.img_size = self.kwargs.get("img_size", 224)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_features = int(
-            (0.8 * self.img_size * self.img_size) // self.features_in_step
-        )
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the patch size for masking "
@@ -1871,17 +2104,7 @@ class SensitivityN(Metric):
                     "arXiv:1711.06104 (2017)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-        assert_features_in_step(
-            features_in_step=self.features_in_step, img_size=self.img_size
-        )
-        if self.max_steps_per_input is not None:
-            assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
-            self.set_features_in_step = set_features_in_step(
-                max_steps_per_input=self.max_steps_per_input, img_size=self.img_size
-            )
+            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1904,8 +2127,6 @@ class SensitivityN(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -1940,35 +2161,61 @@ class SensitivityN(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.pop("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+        if "img_size" in kwargs:
+            warnings.warn(
+                "argument 'img_size' is deprecated and will be removed in future versions."
+            )
+        if "nr_channels" in kwargs:
+            warnings.warn(
+                "argument 'nr_channels' is deprecated and will be removed in future versions."
+            )
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+
+        max_features = int(0.8 * np.prod(x_batch_s.shape[2:]) // self.features_in_step)
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
@@ -1995,7 +2242,7 @@ class SensitivityN(Metric):
             a_indices = np.argsort(-a)
 
             # Predict on x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
             )
@@ -2006,45 +2253,36 @@ class SensitivityN(Metric):
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-                if i_ix <= self.max_features:
-
-                    # Perturb input by indices of attributions.
-                    a_ix = a_indices[
-                        (self.features_in_step * i_ix) : (
-                            self.features_in_step * (i_ix + 1)
-                        )
-                    ]
-                    x_perturbed = self.perturb_func(
-                        img=x_perturbed,
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                # Perturb input by indices of attributions.
+                a_ix = a_indices[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
                     )
-                    assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                ]
+                x_perturbed = self.perturb_func(
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    **self.kwargs,
+                )
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                    # Sum attributions.
-                    att_sums.append(float(a[a_ix].sum()))
+                # Sum attributions.
+                att_sums.append(float(a[a_ix].sum()))
 
-                    x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
-                    )
-                    y_pred_perturb = float(
-                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                    )
-                    pred_deltas.append(y_pred - y_pred_perturb)
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturb = float(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
+                )
+                pred_deltas.append(y_pred - y_pred_perturb)
 
             sub_results_att_sums[sample] = att_sums
             sub_results_pred_deltas[sample] = pred_deltas
 
         # Re-arrange sublists so that they are sorted by n.
-        sub_results_pred_deltas_l = {k: [] for k in range(self.max_features)}
-        sub_results_att_sums_l = {k: [] for k in range(self.max_features)}
+        sub_results_pred_deltas_l = {k: [] for k in range(max_features)}
+        sub_results_att_sums_l = {k: [] for k in range(max_features)}
 
-        for k in range(self.max_features):
+        for k in range(max_features):
             for sublist1 in list(sub_results_pred_deltas.values()):
                 sub_results_pred_deltas_l[k].append(sublist1[k])
             for sublist2 in list(sub_results_att_sums.values()):
@@ -2055,241 +2293,8 @@ class SensitivityN(Metric):
             self.similarity_func(
                 a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
             )
-            for k in range(self.max_features)
+            for k in range(max_features)
         ]
         self.all_results.append(self.last_results)
 
         return self.last_results
-
-
-class IterativeRemovalOfFeatures(Metric):
-    """
-    Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
-
-    The metric computes the area over the curve per class for sorted mean importances
-    of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
-    averaged over several test samples.
-
-    References:
-        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
-        explanation methods." arXiv preprint arXiv:2003.08747 (2020).
-
-    """
-
-    @attributes_check
-    def __init__(self, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-        """
-        super().__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
-        )
-        self.last_results = []
-        self.all_results = []
-
-        # Asserts and warnings.
-        if not self.disable_warnings:
-            warn_parameterisation(
-                metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "baseline value 'perturb_baseline' and the method to segment "
-                    "the image 'segmentation_method' (including all its associated hyperparameters)"
-                ),
-                citation=(
-                    "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "
-                    "for explanation methods.' arXiv preprint arXiv:2003.08747 (2020)"
-                ),
-            )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
-
-    def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> List[float]:
-        """
-        This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
-
-        Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
-
-        Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
-
-        Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
-
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
-
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
-
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
-
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = IROF(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
-        """
-        # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = get_wrapped_model(model, self.channel_first)
-
-        # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
-
-        for ix, (x, y, a) in iterator:
-
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            # Predict on x.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
-
-            # Segment image.
-            segments = get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"), **kwargs
-            )
-            nr_segments = segments.max()
-            assert_nr_segments(nr_segments=nr_segments)
-
-            # Calculate average attribution of each segment.
-            att_segs = np.zeros(nr_segments)
-            for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[segments == s])
-
-            # Sort segments based on the mean attribution (descending order).
-            s_indices = np.argsort(-att_segs)
-
-            preds = []
-
-            for i_ix, s_ix in enumerate(s_indices):
-
-                # Perturb input by indices of attributions.
-                a_ix = np.nonzero(
-                    np.repeat((segments == s_ix).flatten(), self.nr_channels)
-                )[0]
-
-                x_perturbed = self.perturb_func(
-                    img=x.flatten(),
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
-                )
-                assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, self.img_size, self.nr_channels
-                )
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
-                # Normalise the scores to be within [0, 1].
-                preds.append(float(y_pred_perturb / y_pred))
-
-            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
-            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
-
-        self.last_results = [np.mean(self.last_results)]
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
-
-    @property
-    def aggregated_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
-        return [np.mean(results) for results in self.all_results]

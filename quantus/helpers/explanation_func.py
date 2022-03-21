@@ -1,5 +1,5 @@
 """This modules contains explainer functions which can be used in conjunction with the metrics in the library."""
-from typing import Union
+from typing import Dict, Optional, Union
 
 import numpy as np
 import scipy
@@ -7,10 +7,9 @@ import random
 from importlib import util
 import cv2
 import warnings
-from .utils import *
-from .normalise_func import *
-from ..helpers import __EXTRAS__
 
+if util.find_spec("torch"):
+    import torch
 if util.find_spec("captum"):
     from captum.attr import *
 if util.find_spec("zennit"):
@@ -18,15 +17,22 @@ if util.find_spec("zennit"):
     from zennit import composites as zcomp
     from zennit import attribution as zattr
     from zennit import core as zcore
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
 if util.find_spec("tf_explain"):
     import tf_explain
 
+from ..helpers import __EXTRAS__
+from .model_interface import ModelInterface
+from .normalise_func import normalise_by_negative
+from .utils import get_baseline_value, infer_channel_first, make_channel_last
 
-def explain(model, inputs, targets, *args, **kwargs) -> np.ndarray:
+
+def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 
-    Expecting inputs to be shaped such as (batch_size, nr_channels, img_size, img_size) or (batch_size, img_size, img_size, nr_channels).
+    Expecting inputs to be shaped such as (batch_size, nr_channels, ...) or (batch_size, ..., nr_channels).
 
     Returns np.ndarray of same shape as inputs.
     """
@@ -96,19 +102,18 @@ def generate_tf_explanation(
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
 
-    channel_first = kwargs.get("channel_first", get_channel_first(inputs))
-    inputs = get_channel_last_batch(inputs, channel_first)
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+    inputs = make_channel_last(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():
+        explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.vanilla_gradients.VanillaGradients().explain(
-                            ([x], None), model, y
-                        ),
+                        lambda x, y: explainer.explain(([x], None), model, y),
                         inputs,
                         targets,
                     )
@@ -119,11 +124,12 @@ def generate_tf_explanation(
         )
 
     elif method == "IntegratedGradients".lower():
+        explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.integrated_gradients.IntegratedGradients().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, n_steps=10
                         ),
                         inputs,
@@ -136,13 +142,12 @@ def generate_tf_explanation(
         )
 
     elif method == "InputXGradient".lower():
+        explainer = tf_explain.core.gradients_inputs.GradientsInputs()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.gradients_inputs.GradientsInputs().explain(
-                            ([x], None), model, y
-                        ),
+                        lambda x, y: explainer.explain(([x], None), model, y),
                         inputs,
                         targets,
                     )
@@ -153,12 +158,13 @@ def generate_tf_explanation(
         )
 
     elif method == "Occlusion".lower():
-        patch_size = kwargs.get("window", (1, 4, 4))[-1]
+        patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
+        explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.occlusion_sensitivity.OcclusionSensitivity().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, patch_size=patch_size
                         ),
                         inputs,
@@ -171,15 +177,17 @@ def generate_tf_explanation(
         )
 
     elif method == "GradCam".lower():
-        assert (
-            "gc_layer" in kwargs
-        ), "Specify convolutional layer name as 'gc_layer' to run GradCam."
+        if "gc_layer" not in kwargs:
+            raise ValueError(
+                "Specify convolutional layer name as 'gc_layer' to run GradCam."
+            )
 
+        explainer = tf_explain.core.grad_cam.GradCAM()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: tf_explain.core.grad_cam.GradCAM().explain(
+                        lambda x, y: explainer.explain(
                             ([x], None), model, y, layer_name=kwargs["gc_layer"]
                         ),
                         inputs,
@@ -214,26 +222,29 @@ def generate_captum_explanation(
     model: ModelInterface,
     inputs: np.ndarray,
     targets: np.ndarray,
+    device: Optional[str] = None,
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with captum."""
     method = kwargs.get("method", "Gradient").lower()
     # Set model in evaluate mode.
-    model.to(kwargs.get("device", None))
+    model.to(device)
     model.eval()
 
     if not isinstance(inputs, torch.Tensor):
-        inputs = torch.Tensor(inputs).to(kwargs.get("device", None))
+        inputs = torch.Tensor(inputs).to(device)
 
     if not isinstance(targets, torch.Tensor):
-        targets = torch.as_tensor(targets).to(kwargs.get("device", None))
+        targets = torch.as_tensor(targets).to(device)
 
+    """ TODO: why is this needed?
     inputs = inputs.reshape(
         -1,
         kwargs.get("nr_channels", 3),
         kwargs.get("img_size", 224),
         kwargs.get("img_size", 224),
     )
+    """
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
@@ -281,12 +292,13 @@ def generate_captum_explanation(
         )
 
     elif method == "Occlusion".lower():
+        window_shape = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))
         explanation = (
             Occlusion(model)
             .attribute(
                 inputs=inputs,
                 target=targets,
-                sliding_window_shapes=kwargs.get("window", (1, 4, 4)),
+                sliding_window_shapes=window_shape,
             )
             .sum(axis=1)
         )
@@ -297,9 +309,10 @@ def generate_captum_explanation(
         )
 
     elif method == "GradCam".lower():
-        assert (
-            "gc_layer" in kwargs
-        ), "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+        if "gc_layer" not in kwargs:
+            raise ValueError(
+                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+            )
 
         if isinstance(kwargs["gc_layer"], str):
             kwargs["gc_layer"] = eval(kwargs["gc_layer"])
@@ -309,23 +322,24 @@ def generate_captum_explanation(
             .attribute(inputs=inputs, target=targets)
             .sum(axis=1)
         )
+        """ TODO: why is this needed?
         explanation = torch.Tensor(
             cv2.resize(
                 explanation.cpu().data.numpy(),
                 dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
             )
         )
+        """
 
     elif method == "Control Var. Sobel Filter".lower():
-        explanation = torch.zeros(
-            size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
-        )
+        explanation = torch.zeros(size=(inputs.shape[0], *inputs.shape[2:]))
 
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
                 np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
                 .mean(axis=0)
-                .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
+                # TODO: why is this needed?
+                # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
 
     elif method == "Control Var. Constant".lower():
@@ -333,14 +347,12 @@ def generate_captum_explanation(
             "constant_value" in kwargs
         ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
 
-        explanation = torch.zeros(
-            size=(inputs.shape[0], inputs.shape[2], inputs.shape[3])
-        )
+        explanation = torch.zeros(size=(inputs.shape[0], *inputs.shape[2:]))
 
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                choice=kwargs["constant_value"], img=inputs[i]
+                choice=kwargs["constant_value"], arr=inputs[i]
             )
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
@@ -376,6 +388,7 @@ def generate_zennit_explanation(
     model: ModelInterface,
     inputs: np.ndarray,
     targets: np.ndarray,
+    device: Optional[str] = None,
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with zennit."""
@@ -417,21 +430,22 @@ def generate_zennit_explanation(
             )
         )
     # Set model in evaluate mode.
-    model.to(kwargs.get("device", None))
     model.eval()
 
     if not isinstance(inputs, torch.Tensor):
-        inputs = torch.Tensor(inputs).to(kwargs.get("device", None))
+        inputs = torch.Tensor(inputs).to(device)
 
     if not isinstance(targets, torch.Tensor):
-        targets = torch.as_tensor(targets).to(kwargs.get("device", None))
+        targets = torch.as_tensor(targets).to(device)
 
+    """ TODO: why is this needed?
     inputs = inputs.reshape(
         -1,
         kwargs.get("nr_channels", 3),
         kwargs.get("img_size", 224),
         kwargs.get("img_size", 224),
     )
+    """
 
     # Initialize canonizer, composite, and attributor
     if canonizer is not None:
@@ -452,10 +466,9 @@ def generate_zennit_explanation(
 
         # TODO: this assumes one-hot encoded target outputs (e.g., initial relevance).
         #  Better solution with more choices?
-        eye = torch.eye(n_outputs, device=kwargs.get("device", None))
+        eye = torch.eye(n_outputs, device=device)
         output_target = eye[targets]
         output_target = output_target.reshape(-1, n_outputs)
-        # print(inputs.shape, targets.shape, output_target.shape)
         _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):
