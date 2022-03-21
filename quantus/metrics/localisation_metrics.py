@@ -73,7 +73,6 @@ class PointingGame(Metric):
                     "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -83,7 +82,7 @@ class PointingGame(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -133,7 +132,7 @@ class PointingGame(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -147,14 +146,9 @@ class PointingGame(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -283,7 +277,6 @@ class AttributionLocalisation(Metric):
                     "arXiv preprint arXiv:1910.09840v2 (2020)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -293,7 +286,7 @@ class AttributionLocalisation(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -343,7 +336,7 @@ class AttributionLocalisation(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -357,14 +350,9 @@ class AttributionLocalisation(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -509,7 +497,6 @@ class TopKIntersection(Metric):
                     "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -519,7 +506,7 @@ class TopKIntersection(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -569,7 +556,7 @@ class TopKIntersection(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -583,14 +570,9 @@ class TopKIntersection(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -613,7 +595,8 @@ class TopKIntersection(Metric):
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
         asserts.assert_value_smaller_than_input_size(
-            x=x_batch_s, value=self.k, value_name="k")
+            x=x_batch_s, value=self.k, value_name="k"
+        )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -635,7 +618,7 @@ class TopKIntersection(Metric):
             top_k_binary_mask = np.zeros(a.shape)
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
-                top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None
+                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
             )
 
             s = s.astype(bool)
@@ -713,7 +696,6 @@ class RelevanceRankAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -723,7 +705,7 @@ class RelevanceRankAccuracy(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -773,7 +755,7 @@ class RelevanceRankAccuracy(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -787,14 +769,9 @@ class RelevanceRankAccuracy(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -914,7 +891,6 @@ class RelevanceMassAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -923,7 +899,7 @@ class RelevanceMassAccuracy(Metric):
         y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
-        **kwargs
+        **kwargs,
     ):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -973,7 +949,7 @@ class RelevanceMassAccuracy(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -987,14 +963,9 @@ class RelevanceMassAccuracy(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 
@@ -1104,7 +1075,6 @@ class AUC(Metric):
                     " Vol 27, Issue 8, (2006)"
                 ),
             )
-            warn_func.warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1114,7 +1084,7 @@ class AUC(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         Implementation of metric logic to evaluate explanations (a_batch) with respect to some input (x_batch), output
@@ -1164,7 +1134,7 @@ class AUC(Metric):
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.pop("channel_first")
+            channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
@@ -1178,14 +1148,9 @@ class AUC(Metric):
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        if "img_size" in kwargs:
-            warnings.warn(
-                "argument 'img_size' is deprecated and will be removed in future versions."
-            )
-        if "nr_channels" in kwargs:
-            warnings.warn(
-                "argument 'nr_channels' is deprecated and will be removed in future versions."
-            )
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
 
         self.last_results = []
 

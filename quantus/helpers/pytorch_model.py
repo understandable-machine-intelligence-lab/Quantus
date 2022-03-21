@@ -33,8 +33,9 @@ class PyTorchModel(ModelInterface):
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
 
-    def shape_input(self, x: np.array, shape: Tuple[int, ...],
-                    channel_first: Optional[bool] = None):
+    def shape_input(
+        self, x: np.array, shape: Tuple[int, ...], channel_first: Optional[bool] = None
+    ):
         """
         Reshape input into model expected input.
         channel_first: Explicitely state if x is formatted channel first (optional).

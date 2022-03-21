@@ -20,9 +20,12 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
     if img.ndim != 3:
         raise ValueError(
             "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
-            f" shape: {img.shape}")
+            f" shape: {img.shape}"
+        )
     if segmentation_method not in ["slic", "felzenszwalb"]:
-        raise ValueError("'segmentation_method' must be either 'slic' or 'felzenszwalb'.")
+        raise ValueError(
+            "'segmentation_method' must be either 'slic' or 'felzenszwalb'."
+        )
 
     if segmentation_method == "slic":
         return slic(img, start_label=0)
@@ -32,10 +35,13 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
         )
 
 
-def get_baseline_value(choice: Union[float, int, str, None], arr: np.ndarray,
-                       patch: Optional[np.ndarray] = None, **kwargs) -> float:
-    """Get the baseline value (float) to fill tensor with."""
-
+def get_baseline_value(
+    choice: Union[float, int, str, None],
+    arr: np.ndarray,
+    patch: Optional[np.ndarray] = None,
+    **kwargs,
+) -> float:
+    """Get the baseline value (float) to fill the array with."""
     if choice is None:
         assert (
             ("perturb_baseline" in kwargs)
@@ -83,13 +89,14 @@ def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> di
 
 
 def get_name(str: str):
-    """Get the name of the class object"""
+    """Get the name of the class object."""
     if str.isupper():
         return str
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
 
 
 def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...]):
+    """Get the number of features in the iteration."""
     return np.prod(input_shape) / max_steps_per_input
 
 
@@ -100,17 +107,25 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
 
 def infer_channel_first(x: np.array):
     """
+    Infer if the channels are first.
+
     For 1d input:
-    Assumption: nr_channels < sequence_length
-    Returns True if input shape is (nr_batch, nr_channels, sequence_length).
-    Returns False if input shape is (nr_batch, sequence_length, nr_channels).
-    An error is raised if the two last dimensions are equal.
+
+        Assumes
+            nr_channels < sequence_length
+        Returns
+            True if input shape is (nr_batch, nr_channels, sequence_length).
+            False if input shape is (nr_batch, sequence_length, nr_channels).
+            An error is raised if the two last dimensions are equal.
 
     For 2d input:
-    Assumption: nr_channels < img_width and nr_channels < img_height
-    Returns True if input shape is (nr_batch, nr_channels, img_width, img_height).
-    Returns False if input shape is (nr_batch, img_width, img_height, nr_channels).
-    An error is raised if the three last dimensions are equal.
+
+        Assumes
+            nr_channels < img_width and nr_channels < img_height
+        Returns
+            True if input shape is (nr_batch, nr_channels, img_width, img_height).
+            False if input shape is (nr_batch, img_width, img_height, nr_channels).
+            An error is raised if the three last dimensions are equal.
 
     For higher dimensional input an error is raised.
     """
@@ -133,13 +148,12 @@ def infer_channel_first(x: np.array):
 
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported.")
+            "Only batched 1d and 2d multi-channel input dimensions supported."
+        )
 
 
 def make_channel_first(x: np.array, channel_first=False):
-    """
-    Reshape batch to channel first.
-    """
+    """Reshape batch to channel first."""
     if channel_first:
         return x
 
@@ -149,13 +163,12 @@ def make_channel_first(x: np.array, channel_first=False):
         return np.moveaxis(x, -1, -2)
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported.")
+            "Only batched 1d and 2d multi-channel input dimensions supported."
+        )
 
 
 def make_channel_last(x: np.array, channel_first=True):
-    """
-    Reshape batch to channel last.
-    """
+    """Reshape batch to channel last."""
     if not channel_first:
         return x
 
@@ -165,13 +178,16 @@ def make_channel_last(x: np.array, channel_first=True):
         return np.moveaxis(x, -2, -1)
     else:
         raise ValueError(
-            "Only batched 1d and 2d multi-channel input dimensions supported.")
+            "Only batched 1d and 2d multi-channel input dimensions supported."
+        )
 
 
 def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
-    Return wrapped model.
+
+    Returns
+        A wrapped ModelInterface model.
     """
     if isinstance(model, tf.keras.Model):
         return TensorFlowModel(model, channel_first)
@@ -183,12 +199,19 @@ def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterf
 
 
 def conv2D_numpy(
-        x: np.array, kernel: np.array, stride: int, padding: int, groups: int, pad_output: bool = False
+    x: np.array,
+    kernel: np.array,
+    stride: int,
+    padding: int,
+    groups: int,
+    pad_output: bool = False,
 ) -> np.array:
     """
-    Computes 2D convolution in numpy
-    Assumes:    Shape of x is [C_in, H, W] with C_in = input channels and H, W input height and weight, respectively
-                Shape of kernel is [C_out, C_in/groups, K, K] with C_out = output channels and K = kernel size
+    Computes 2D convolution in NumPy.
+
+    Assumes
+        Shape of x is [C_in, H, W] with C_in = input channels and H, W input height and weight, respectively
+        Shape of kernel is [C_out, C_in/groups, K, K] with C_out = output channels and K = kernel size
     """
 
     # Pad input
@@ -235,22 +258,23 @@ def conv2D_numpy(
                 (padwidth + padwidth % 2, padwidth),
                 (padwidth + padwidth % 2, padwidth),
             ),
-            mode="edge"
+            mode="edge",
         )
 
     return output
 
 
-def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[int],
-                       expand_first_dim: bool) -> Tuple[Sequence[int]]:
+def create_patch_slice(
+    patch_size: Union[int, Sequence[int]], coords: Sequence[int], expand_first_dim: bool
+) -> Tuple[Sequence[int]]:
     """
     Create a patch slice from patch size and coordinates.
     expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
     """
     if isinstance(patch_size, int):
-        patch_size = (patch_size, )
+        patch_size = (patch_size,)
     if isinstance(coords, int):
-        coords = (coords, )
+        coords = (coords,)
 
     patch_size = np.array(patch_size)
     coords = tuple(coords)
@@ -267,8 +291,10 @@ def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[i
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    patch_slice = [slice(coord, coord + patch_size_dim)
-                   for coord, patch_size_dim in zip(coords, patch_size)]
+    patch_slice = [
+        slice(coord, coord + patch_size_dim)
+        for coord, patch_size_dim in zip(coords, patch_size)
+    ]
     # Prepend slice for all channels.
     if expand_first_dim:
         patch_slice = [slice(None), *patch_slice]
@@ -277,18 +303,17 @@ def create_patch_slice(patch_size: Union[int, Sequence[int]], coords: Sequence[i
 
 
 def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
-    """
-    Expand additional channel dimension for attributions if needed.
-    """
+    """Expand additional channel dimension for attributions if needed."""
     if a.shape[0] != x.shape[0]:
         raise ValueError(
-            f"a and x must have same number of batches ({a.shape[0]} != {x.shape[0]})")
+            f"a and x must have same number of batches ({a.shape[0]} != {x.shape[0]})"
+        )
     if a.ndim > x.ndim:
-        raise ValueError(
-            f"a must not have greater ndim than x ({a.ndim} > {x.ndim})")
+        raise ValueError(f"a must not have greater ndim than x ({a.ndim} > {x.ndim})")
     if a.ndim < x.ndim - 1:
         raise ValueError(
-            f"a can have at max one dimension less than x ({a.ndim} < {x.ndim} - 1)")
+            f"a can have at max one dimension less than x ({a.ndim} < {x.ndim} - 1)"
+        )
 
     if a.ndim == x.ndim:
         return a
@@ -296,12 +321,12 @@ def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
         return np.expand_dims(a, axis=1)
 
 
-def get_nr_patches(patch_size: Union[int, Sequence[int]],
-                   shape: Tuple[int, ...],
-                   overlap: bool = False) -> int:
-    """ Get number of patches for given shape """
+def get_nr_patches(
+    patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
+) -> int:
+    """Get number of patches for given shape."""
     if isinstance(patch_size, int):
-        patch_size = (patch_size, )
+        patch_size = (patch_size,)
     patch_size = np.array(patch_size)
 
     if len(patch_size) == 1 and len(shape) != 1:
@@ -316,3 +341,23 @@ def get_nr_patches(patch_size: Union[int, Sequence[int]],
     patch_size = tuple(patch_size)
 
     return np.prod(shape) // np.prod(patch_size)
+
+
+def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
+    """To allow for any patch_size we add padding to the array."""
+    pad_width_list = [(pad_width, pad_width)] * arr.ndim
+    if omit_first_axis:
+        pad_width_list[0] = (0, 0)
+    arr_pad = np.pad(arr, pad_width_list, mode="constant")
+    return arr_pad
+
+
+def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
+    """Remove padding from the array."""
+    unpad_slice = [
+        slice(pad_width, arr.shape[axis] - pad_width)
+        for axis, _ in enumerate(arr.shape)
+    ]
+    if omit_first_axis:
+        unpad_slice[0] = slice(None)
+    return arr[tuple(unpad_slice)]

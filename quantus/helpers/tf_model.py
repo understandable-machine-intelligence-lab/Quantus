@@ -36,8 +36,9 @@ class TensorFlowModel(ModelInterface):
 
         return new_model(x, training=False).numpy()
 
-    def shape_input(self, x: np.array, shape: Tuple[int, ...],
-                    channel_first: Optional[bool] = None):
+    def shape_input(
+        self, x: np.array, shape: Tuple[int, ...], channel_first: Optional[bool] = None
+    ):
         """
         Reshape input into model expected input.
         channel_first: Explicitely state if x is formatted channel first (optional).

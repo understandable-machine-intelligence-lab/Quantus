@@ -334,8 +334,7 @@ def generate_captum_explanation(
 
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
-                .mean(axis=0)
+                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1).mean(axis=0)
                 # TODO: why is this needed?
                 # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
