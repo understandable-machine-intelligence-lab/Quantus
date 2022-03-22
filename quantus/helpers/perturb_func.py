@@ -2,7 +2,7 @@
 import copy
 import random
 import warnings
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -10,6 +10,26 @@ import scipy
 
 from .utils import get_baseline_value
 from .utils import conv2D_numpy
+
+
+def perturb_batch(
+        arr: np.ndarray,
+        indices: np.ndarray,
+        perturb_func: Callable,
+        **perturb_func_kwargs,
+) -> None:
+    """ inplace perturbation of complete batch """
+    # TODO: move that to asserts
+    assert arr.shape[0] == indices.shape[0], (
+        "arr and indices need same number of batches"
+    )
+
+    for i in range(len(arr)):
+        arr[i] = perturb_func(
+            arr[i],
+            indices=indices[i],
+            **perturb_func_kwargs,
+        )
 
 
 def gaussian_noise(
