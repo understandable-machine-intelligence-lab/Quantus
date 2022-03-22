@@ -34,15 +34,24 @@ class PyTorchModel(ModelInterface):
             return pred.cpu().numpy()
 
     def shape_input(
-        self, x: np.array, shape: Tuple[int, ...], channel_first: Optional[bool] = None
+            self,
+            x: np.array,
+            shape: Tuple[int, ...],
+            channel_first: Optional[bool] = None,
+            batched: bool = False,
     ):
         """
         Reshape input into model expected input.
         channel_first: Explicitely state if x is formatted channel first (optional).
         """
         if channel_first is None:
-            channel_first = utils.infer_channel_first
-        x = x.reshape(1, *shape)
+            channel_first = utils.infer_channel_first(x)
+
+        # expand first dimension if this is just a single instance
+        if not batched:
+            x = x.reshape(1, *shape)
+
+        # set channel order
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
