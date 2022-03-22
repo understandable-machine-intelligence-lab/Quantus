@@ -1,7 +1,7 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
 import warnings
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, Optional, Any
 
 import numpy as np
 from tqdm import tqdm
@@ -10,6 +10,7 @@ from .base import Metric
 from ..helpers import asserts
 from ..helpers import plotting
 from ..helpers import utils
+from ..helpers import perturb_func as perturb_funcs
 from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
@@ -1226,7 +1227,9 @@ class PixelFlipping(Metric):
             abs: bool = False,
             normalise: bool = True,
             normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
             perturb_func: Optional[Callable] = None,
+            perturb_func_kwargs: Optional[Dict] = None,
             perturb_baseline: Any = "black",
             features_in_step: int = 1,
             max_steps_per_input: Optional[int] = None,
@@ -1259,8 +1262,12 @@ class PixelFlipping(Metric):
         if plot_func is None:
             plot_func = plotting.plot_pixel_flipping_experiment
 
-        perturb_kwargs = {
+        # TODO: deprecate perturb_baseline keyword and use perturb_kwargs exclusively in later versions
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs = {
             'perturb_baseline': perturb_baseline,
+            **perturb_func_kwargs,
         }
 
         warn_parametrisation_kwargs = {
@@ -1277,8 +1284,9 @@ class PixelFlipping(Metric):
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
             perturb_func=perturb_func,
-            perturb_kwargs=perturb_kwargs,
+            perturb_func_kwargs=perturb_func_kwargs,
             plot_func=plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
@@ -1291,13 +1299,13 @@ class PixelFlipping(Metric):
 
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            batch_size: int = 64,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1344,105 +1352,83 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape input batch to channel first order:
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            batch_size=batch_size,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
+
+
+    def process_batch(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            a_batch: np.ndarray,
+            s_batch: Optional[np.ndarray] = None,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+            model_predict_kwargs: Optional[Dict] = None,
+    ):
+        # TODO: use check function for this, but maybe already in __call__
+        if perturb_func is None:
+            raise ValueError("perturb_func must not be None")
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+
+        batch_size = x_batch.shape[0]
+
+        # Get indices of sorted attributions (descending).
+        # TODO: do this in a more readable way
+        a_batch_flat = np.zeros((batch_size, *a_batch[0].flatten().shape))
+        a_batch_indices = np.zeros((batch_size, *a_batch[0].flatten().shape), dtype=np.int)
+        for i in range(batch_size):
+            a_batch_flat[i] = a_batch[i].flatten()
+            a_batch_indices[i] = np.argsort(-a_batch_flat[i])
+
+        preds = []
+        x_batch_perturbed = x_batch.copy()
+
+        for i_ix, _ in enumerate(a_batch_indices[0, :: self.features_in_step]):
+
+            # Perturb input by indices of attributions.
+            perturb_start_ix = self.features_in_step * i_ix
+            perturb_end_ix = self.features_in_step * (i_ix + 1)
+            perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
+
+            perturb_funcs.perturb_batch(
+                arr=x_batch_perturbed,
+                indices=perturb_indices,
+                perturb_func=perturb_func,
+                **perturb_func_kwargs,
             )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
-
-        for x, y, a in iterator:
-
-            a = a.flatten()
-
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
-
-            preds = []
-            x_perturbed = x.copy().flatten()
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    **self.kwargs,
-                )
+            for x, x_perturbed in zip(x_batch, x_batch_perturbed):
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+            # Predict on perturbed input x.
+            x_input = model.shape_input(
+                x=x_batch_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+
+            y_batch_pred_perturb = model.predict(
+                x=x_input,
+                softmax_act=True,
+                **model_predict_kwargs,
+            )
+
+            for y, y_pred_perturb in zip(y_batch, y_batch_pred_perturb):
+                y_pred_perturb = float(y_pred_perturb[y])
                 preds.append(y_pred_perturb)
 
-            self.last_results.append(preds)
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
+        return preds
 
 
 class RegionPerturbation(Metric):
