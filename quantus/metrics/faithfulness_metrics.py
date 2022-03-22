@@ -1221,7 +1221,19 @@ class PixelFlipping(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable] = None,
+            perturb_func: Optional[Callable] = None,
+            perturb_baseline: Any = "black",
+            features_in_step: int = 1,
+            max_steps_per_input: Optional[int] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs):
         """
         Parameters
         ----------
@@ -1240,36 +1252,43 @@ class PixelFlipping(Metric):
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+        if plot_func is None:
+            plot_func = plotting.plot_pixel_flipping_experiment
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_pixel_flipping_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        perturb_kwargs = {
+            'perturb_baseline': perturb_baseline,
+        }
+
+        warn_parametrisation_kwargs = {
+            'metric_name': self.__class__.__name__,
+            'sensitive_params': ("baseline value 'perturb_baseline'"),
+            'citation': (
+                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
+                "e0130140"
+            ),
+        }
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            perturb_func=perturb_func,
+            perturb_kwargs=perturb_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            warn_parametrisation_kwargs=warn_parametrisation_kwargs,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.last_results = []
-        self.all_results = []
 
-        # Asserts and warnings.
-        if not self.disable_warnings:
-            warn_func.warn_parameterisation(
-                metric_name=self.__class__.__name__,
-                sensitive_params=("baseline value 'perturb_baseline'"),
-                citation=(
-                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                    "e0130140"
-                ),
-            )
+        self.features_in_step = features_in_step
+        self.max_steps_per_input = max_steps_per_input
+
 
     def __call__(
         self,

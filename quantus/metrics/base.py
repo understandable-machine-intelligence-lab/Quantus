@@ -1,7 +1,7 @@
 """This module implements the base class for creating evaluation measures."""
 import warnings
 import numpy as np
-from typing import Union, List, Dict, Any
+from typing import Union, List, Dict, Any, Optional
 import matplotlib.pyplot as plt
 from ..helpers.utils import *
 from ..helpers.asserts import *
@@ -16,7 +16,18 @@ class Metric:
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            abs: bool = False,
+            normalise: bool = False,
+            normalise_func: Optional[Callable] = None,
+            perturb_func: Optional[Callable] = None,
+            perturb_kwargs: Optional[Dict] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            warn_parametrisation_kwargs: Optional[Dict[str, str]] = None,
+            **kwargs):
         """
         Initialise the Metric base class.
 
@@ -34,27 +45,45 @@ class Metric:
             all_results: a list containing the resulting scores of all the calls made on the metric instance
 
         """
-        self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.abs = abs
+        self.normalise = normalise
+
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
+        self.normalise_func = normalise_func
+
+        self.perturb_func = perturb_func
+        if perturb_kwargs is None:
+            perturb_kwargs = {}
+        # TODO: deprecate this kind of unspecific kwargs passing
+        # this code prioritizes perturb_kwargs items over kwargs items
+        perturb_kwargs = {**kwargs, **perturb_kwargs}
+        self.perturb_kwargs = perturb_kwargs
+
+        self.default_plot_func = plot_func
+        self.display_progressbar = display_progressbar
+        self.disable_warnings = disable_warnings
+
         self.last_results = []
         self.all_results = []
 
-        # Print warning at metric initialisation.
-        # warn_parameterisation()
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            if warn_parametrisation_kwargs is None:
+                raise ValueError(
+                    "no warn_parametrisation_kwargs passed, but warnings are not disabled."
+                )
+            warn_func.warn_parameterisation(**warn_parametrisation_kwargs)
+
 
     def __call__(
         self,
         model,
         x_batch: np.ndarray,
         y_batch: Union[np.ndarray, int],
-        a_batch: Union[np.ndarray, None],
-        s_batch: Union[np.ndarray, None],
-        *args,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
