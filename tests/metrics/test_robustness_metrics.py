@@ -208,6 +208,23 @@ def test_local_lipschitz_estimate(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "perturb_radius": 0.2,
+                "nr_samples": 10,
+                "img_size": 28,
+                "nr_channels": 1,
+                "explain_func": explain,
+                "method": "Gradient",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "abs": True,
+                "normalise": True
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_max_sensitivity(
@@ -495,7 +512,7 @@ def test_continuity(
                 **params,
             )
         return
-        
+
     scores = Continuity(**params)(
         model=model,
         x_batch=x_batch,
