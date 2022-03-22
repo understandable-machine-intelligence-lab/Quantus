@@ -1,11 +1,12 @@
 """This module contains the utils functions of the library."""
+import math
 import re
 import random
-import numpy as np
-from typing import Callable, List, Optional, Sequence, Tuple, Union
 from importlib import util
+from typing import Callable, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
 from skimage.segmentation import slic, felzenszwalb
-from ..helpers.model_interface import ModelInterface
 
 if util.find_spec("torch"):
     import torch
@@ -13,6 +14,8 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from ..helpers.tf_model import TensorFlowModel
+
+from ..helpers.model_interface import ModelInterface
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -152,7 +155,7 @@ def infer_channel_first(x: np.array):
         )
 
 
-def make_channel_first(x: np.array, channel_first=False):
+def make_channel_first(x: np.array, channel_first: bool = False):
     """Reshape batch to channel first."""
     if channel_first:
         return x
@@ -167,7 +170,7 @@ def make_channel_first(x: np.array, channel_first=False):
         )
 
 
-def make_channel_last(x: np.array, channel_first=True):
+def make_channel_last(x: np.array, channel_first: bool = True):
     """Reshape batch to channel last."""
     if not channel_first:
         return x
@@ -361,3 +364,21 @@ def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
     if omit_first_axis:
         unpad_slice[0] = slice(None)
     return arr[tuple(unpad_slice)]
+
+
+def get_number_of_batches(sequence: Sequence, batch_size: int):
+    return math.ceil(len(sequence)/batch_size)
+
+
+def get_batch_generator(*iterables: np.ndarray, batch_size: int):
+    # TODO: put into asserts module
+    assert all(iterable.shape[0] == iterables[0].shape[0]
+               for iterable in iterables), "number of batches needs to be equal for all"
+
+    n_instances = len(iterables[0])
+    n_batches = get_number_of_batches(iterables[0], batch_size=batch_size)
+    for batch_idx in range(0, n_batches):
+        batch_start = batch_size * batch_idx
+        batch_end = min(batch_size * (batch_idx + 1), n_instances)
+        batch = tuple(iterable[batch_start:batch_end]  for iterable in iterables)
+        yield batch
