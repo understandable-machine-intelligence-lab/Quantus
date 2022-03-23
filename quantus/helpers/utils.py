@@ -36,28 +36,25 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
 
 def get_baseline_value(
-    choice: Union[float, int, str, None],
+    choice: Union[float, int, str, np.array],
     arr: np.ndarray,
     patch: Optional[np.ndarray] = None,
     **kwargs,
-) -> float:
-    """Get the baseline value (float) to fill the array with."""
-    if choice is None:
-        assert (
-            ("perturb_baseline" in kwargs)
-            or ("fixed_values" in kwargs)
-            or ("constant_value" in kwargs)
-            or ("input_shift" in kwargs)
-        ), (
-            "Specify"
-            "a 'perturb_baseline', 'fixed_values', 'constant_value' or 'input_shift' e.g., 0.0 or 'black' for "
-            "pixel replacement or 'baseline_values' containing an array with one value per index for replacement."
-        )
+) -> np.array:
+    """Get the baseline value for all channels (np.array) to fill the array with."""
+    assert(choice is not None)
 
-    if "fixed_values" in kwargs:
-        return kwargs["fixed_values"]
+    nr_channels = kwargs.get("nr_channels", 3)
+
     if isinstance(choice, (float, int)):
-        return choice
+        return np.repeat(choice, nr_channels)
+    elif isinstance(choice, np.ndarray):
+        if len(choice.shape)==0:
+            return np.repeat(choice, nr_channels)
+        elif len(choice.shape)==1 and choice.shape[0] == nr_channels:
+            return choice
+        else:
+            raise ValueError("Shape {} of argument 'choice' cannot be fitted to required shape {} of return value".format(choice.shape, (nr_channels,)))
     elif isinstance(choice, str):
         fill_dict = get_baseline_dict(arr, patch)
         if choice.lower() not in fill_dict:
@@ -67,7 +64,7 @@ def get_baseline_value(
         return fill_dict[choice.lower()]
     else:
         raise ValueError(
-            "Specify 'perturb_baseline' or 'constant_value' as a string, integer or float."
+            "Specify 'choice'' as a np.array, string, integer or float."
         )
 
 
