@@ -261,44 +261,8 @@ def test_baseline_replacement_by_indices(
                 "patch_size": 10,
                 "coords": (0, 0),
             },
-            {},
-        ),
-        (
-            lazy_fixture("input_zeros_2d_3ch"),
-            {
-                "perturb_baseline": 1.0,
-                "patch_size": 4,
-                "coords": (11, 22),
-            },
-            {},
-        ),
-        (
-            lazy_fixture("input_zeros_2d_3ch"),
-            {
-                "perturb_baseline": 1.0,
-                "patch_size": 4,
-                "coords": (11, ),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            lazy_fixture("input_zeros_2d_3ch"),
-            {
-                "perturb_baseline": 1.0,
-                "patch_size": 4,
-                "coords": (11, 11, 11, ),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            lazy_fixture("input_zeros_1d_3ch"),
-            {
-                "perturb_baseline": 1.0,
-                "patch_size": 4,
-                "coords": (11, 11, ),
-            },
-            {"exception": ValueError},
-        ),
+            True,
+        )
     ],
 )
 def test_baseline_replacement_by_patch(

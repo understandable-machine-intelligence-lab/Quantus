@@ -178,6 +178,7 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO: check this
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -517,6 +518,7 @@ class InputInvariance(Metric):
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
                 ),
             )
+            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,

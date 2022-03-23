@@ -19,76 +19,122 @@ def gaussian_noise(
     noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
     return arr + noise
 
-
 def baseline_replacement_by_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
-    for_all_channels: bool = True,
+    indices_axis: Sequence[int],
+    replacement_value: Union[float, int, str, np.array],
     **kwargs,
 ) -> np.array:
     """
-    Replace indices in an array by given baseline.
-    for_all_channels: Replace complete channel for given index.
-                      Assumes channel first ordering.
+    Replace indices in an array by a given baseline.
+    indices: array-like, with a subset shape of arr
+    indices_axis: dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
     """
     indices = np.array(indices)
-    if arr.ndim != indices.ndim:
+    indices_axis = sorted(indices_axis)
+
+    # TODO @Leander: include this into asserts?
+    assert list(indices_axis) == list(range(indices_axis[0], indices_axis[-1]+1))
+    assert 0 in indices_axis or arr.ndim-1 in indices_axis
+
+    if len(indices_axis) != indices.ndim:
         if indices.ndim == 1:
-            indices = np.unravel_index(indices, arr.shape)
+            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
         else:
-            raise ValueError("indices dimension doesn't match arr.shape")
+            raise ValueError("indices dimension doesn't match indices_axis")
 
-    # Make sure that array is perturbed on all channels.
-    # This can only be done if there is more than one dimension.
-    if for_all_channels and arr.ndim > 1:
-        # replace first dimension indices with slice for all channels
-        indices = slice(None), *indices[1:]
-    elif for_all_channels and arr.ndim == 1:
-        warnings.warn("for_all_channels=True but arr has no channel dimension")
-
-    if "fixed_values" in kwargs:
-        choice = kwargs["fixed_values"]
-    elif "perturb_baseline" in kwargs:
-        choice = kwargs["perturb_baseline"]
-    elif "input_shift" in kwargs:
-        choice = kwargs["input_shift"]
-
-    arr_perturbed = copy.copy(arr)
-    baseline_value = get_baseline_value(choice=choice, arr=arr, **kwargs)
-
-    if "input_shift" in kwargs:
-        arr_shifted = copy.copy(arr)
-        arr_shifted = np.add(
-            arr_shifted,
-            np.full(shape=arr.shape, fill_value=baseline_value, dtype=float),
-        )
-        arr_perturbed[indices] = arr_shifted[indices]
+    baseline_shape = []
+    # Indices First
+    if 0 in indices_axis:
+        for i in range(indices_axis[-1]+1, arr.ndim):
+            indices = indices, slice(None)
+            baseline_shape.append(arr.shape[i])
+    # Indices Last
     else:
-        arr_perturbed[indices] = baseline_value
+        for i in range(0, indices_axis[0]):
+            indices = slice(None), indices
+            baseline_shape.append(arr.shape[i])
 
-    return arr_perturbed
-
-
-def baseline_replacement_by_patch(
-    arr: np.array, patch_slice: Sequence, perturb_baseline: Any, **kwargs
-) -> np.array:
-    """Replace a single patch in an array by given baseline."""
-    if len(patch_slice) != arr.ndim:
-        raise ValueError(
-            "patch_slice dimensions don't match arr dimensions."
-            f" ({len(patch_slice)} != {arr.ndim})"
-        )
-
-    # Preset patch for 'neighbourhood_*' choices.
-    patch = arr[patch_slice]
     arr_perturbed = copy.copy(arr)
-    baseline = get_baseline_value(choice=perturb_baseline, arr=arr, patch=patch)
-    arr_perturbed[patch_slice] = baseline
+
+    # Get Baseline
+    baseline_value = get_baseline_value(
+        value=replacement_value,
+        arr=arr,
+        return_shape=tuple(baseline_shape),
+        **kwargs
+    )
+
+    arr_perturbed[indices] = baseline_value
     return arr_perturbed
 
+def baseline_replacement_by_shift(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices_axis: Sequence[int],
+    shift_value: Union[float, int, str, np.array],
+    ** kwargs,
+) -> np.array:
+    """
+    Shift values at indices in an image.
+    indices: array-like, with a subset shape of arr
+    indices_axis: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    """
+    indices = np.array(indices)
+    indices_axis = sorted(indices_axis)
+
+    # TODO @Leander: include this into asserts?
+    assert list(indices_axis) == list(range(indices_axis[0], indices_axis[-1]+1))
+    assert 0 in indices_axis or arr.ndim-1 in indices_axis
+
+    if len(indices_axis) != indices.ndim:
+        if indices.ndim == 1:
+            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
+        else:
+            raise ValueError("indices dimension doesn't match indices_axis")
+
+    baseline_shape = []
+    # Indices First
+    if 0 in indices_axis:
+        for i in range(indices_axis[-1]+1, arr.ndim):
+            indices = indices, slice(None)
+            baseline_shape.append(arr.shape[i])
+    # Indices Last
+    else:
+        for i in range(0, indices_axis[0]):
+            indices = slice(None), indices
+            baseline_shape.append(arr.shape[i])
+
+    arr_perturbed = copy.copy(arr)
+
+    # Get Baseline
+    baseline_value = get_baseline_value(
+        value=shift_value,
+        arr=arr,
+        return_shape=tuple(baseline_shape),
+        **kwargs
+    )
+
+    # Shift
+    arr_shifted = copy.copy(arr_perturbed)
+    expand_axis = (dim for dim in range(baseline_value.ndim, arr_shifted.ndim))
+    arr_shifted = np.add(
+        arr_shifted,
+        np.full(
+            shape=arr_shifted.shape,
+            fill_value=np.expand_dims(baseline_value, axis=tuple(indices_axis)),
+            dtype=float
+        ),
+    )
+
+    arr_perturbed[indices] = arr_shifted[indices]
+    return arr_perturbed
 
 def baseline_replacement_by_blur(
-    arr: np.array, patch_slice: Sequence, blur_kernel_size: int = 15, **kwargs
+    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], blur_kernel_size: int = 15, **kwargs
 ) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
@@ -96,6 +142,9 @@ def baseline_replacement_by_blur(
     blur_kernel_size controls the kernel-size of that convolution (Default is 15).
     Assumes unbatched channel first format.
     """
+
+    # TODO @Leander: change this for arbitrary input shapes
+    # TODO @Leander: double check axes
     nr_channels = arr.shape[0]
     # Create blurred array.
     blur_kernel_size = (1, *([blur_kernel_size] * (arr.ndim - 1)))
@@ -104,6 +153,7 @@ def baseline_replacement_by_blur(
     kernel = np.tile(kernel, (nr_channels, 1, *([1] * (arr.ndim - 1))))
 
     if arr.ndim == 3:
+        # TODO @Leander: Check return shape for different kernel sizes
         arr_avg = conv2D_numpy(
             x=arr,
             kernel=kernel,
@@ -119,7 +169,7 @@ def baseline_replacement_by_blur(
 
     # Perturb array.
     arr_perturbed = copy.copy(arr)
-    arr_perturbed[patch_slice] = arr_avg[patch_slice]
+    arr_perturbed[indices] = arr_avg[indices]
     return arr_perturbed
 
 
@@ -127,7 +177,6 @@ def uniform_sampling(arr: np.array, perturb_radius: float = 0.02, **kwargs) -> n
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
     noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
     return arr + noise
-
 
 def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
@@ -152,22 +201,24 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
 
 
 def translation_x_direction(
-    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array, perturb_value: Any, perturb_dx: int = 10, **kwargs
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
+    # TODO @Leander: arbitrary shapes?
     if arr.ndim != 3:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
 
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
+    # TODO @Leander: return shape for baseline value?
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, -1),
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline,
+            value=perturb_value,
             arr=arr,
             **kwargs,
         ),
@@ -183,16 +234,18 @@ def translation_y_direction(
     Translate array by some given value in the x-direction.
     Assumes channel first layout.
     """
+    # TODO @Leander: arbitrary shapes?
     if arr.ndim != 3:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
 
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
+    # TODO @Leander: return shape for baseline value?
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline,
+            value=perturb_baseline,
             arr=arr,
             **kwargs,
         ),
