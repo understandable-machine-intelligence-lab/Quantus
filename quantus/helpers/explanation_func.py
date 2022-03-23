@@ -354,7 +354,7 @@ def generate_captum_explanation(
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                choice=kwargs["constant_value"], arr=inputs[i]
+                value=kwargs["constant_value"], arr=inputs[i], return_shape=(1,)
             )
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
@@ -404,7 +404,6 @@ def generate_zennit_explanation(
         )
 
     # Handle attributor kwarg
-    # TODO: we could create a str --> attributor mapping, but I like this better
     attributor = kwargs.get("attributor", zattr.Gradient)
     if not issubclass(attributor, zattr.Attributor):
         raise ValueError(
@@ -455,18 +454,18 @@ def generate_zennit_explanation(
     else:
         canonizers = []
     if composite is not None:
-        # TODO: only uses default parameters for each method for now
+        # TODO @Leander: only uses default parameters for each method for now --> extend
         composite = composite(canonizers=canonizers)
-    # TODO: only uses default parameters for each method for now
+    # TODO @Leander: only uses default parameters for each method for now --> extend
     attributor = attributor(model, composite)
 
-    # TODO: there may be a better solution here?
+    # TODO @Leander: there may be a better solution here?
     n_outputs = model(inputs).shape[1]
 
     # Get Attributions
     with attributor:
 
-        # TODO: this assumes one-hot encoded target outputs (e.g., initial relevance).
+        # TODO @Leander: this assumes one-hot encoded target outputs (e.g., initial relevance).
         #  Better solution with more choices?
         eye = torch.eye(n_outputs, device=device)
         output_target = eye[targets]
@@ -479,7 +478,7 @@ def generate_zennit_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    # TODO: Include alternatives here?
+    # TODO @Leander: Include alternatives here?
     # Remove channel axis
     explanation = np.sum(explanation, axis=1)
 
