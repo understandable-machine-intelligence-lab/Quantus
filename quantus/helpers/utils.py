@@ -374,8 +374,9 @@ def get_number_of_batches(sequence: Sequence, batch_size: int):
 def get_batch_generator(*iterables: np.ndarray, batch_size: int,
                         display_progressbar: bool = False):
     # TODO: put into asserts module
-    assert all(iterable.shape[0] == iterables[0].shape[0]
-               for iterable in iterables), "number of batches needs to be equal for all"
+    if not all(iterable.shape[0] == iterables[0].shape[0]
+               for iterable in iterables):
+        raise ValueError("number of batches needs to be equal for all")
 
     n_instances = len(iterables[0])
     n_batches = get_number_of_batches(iterables[0], batch_size=batch_size)
