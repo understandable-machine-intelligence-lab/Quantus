@@ -1,7 +1,7 @@
 """This module implements the base class for creating evaluation measures."""
 import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -252,7 +252,7 @@ class Metric:
         asserts.assert_attributions(x_batch=X, a_batch=A)
 
         # Call pre-processing
-        self.preprocess(X=X, Y=Y, A=A, S=S)
+        X, Y, A, S = self.preprocess(X=X, Y=Y, A=A, S=S)
 
         if self.abs:
             # inplace execution
@@ -287,7 +287,7 @@ class Metric:
                 perturb_func_kwargs=self.perturb_func_kwargs,
                 model_predict_kwargs=model_predict_kwargs,
             )
-            self.last_results.append(result)
+            self.last_results.extend(result)
 
         # Call post-processing
         self.postprocess()
@@ -306,17 +306,16 @@ class Metric:
     ):
         raise NotImplementedError()
 
-
     def preprocess(
             self,
             X: np.ndarray,
             Y: np.ndarray,
             A: np.ndarray,
             S: np.ndarray,
-    ):
-        pass
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        return X, Y, A, S
 
-    def postprocess(self):
+    def postprocess(self) -> None:
         pass
 
     @property

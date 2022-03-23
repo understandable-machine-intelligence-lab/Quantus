@@ -1,7 +1,8 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
+import math
 import warnings
-from typing import Callable, Dict, List, Union, Optional, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -1361,27 +1362,6 @@ class PixelFlipping(Metric):
             **kwargs,
         )
 
-    def preprocess(
-            self,
-            X: np.ndarray,
-            Y: np.ndarray,
-            A: np.ndarray,
-            S: np.ndarray,
-    ):
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=X.shape[2:],
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=X.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=X.shape[2:],
-            )
-
     def process_batch(
             self,
             model: ModelInterface,
@@ -1401,24 +1381,25 @@ class PixelFlipping(Metric):
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
 
-        batch_size = x_batch.shape[0]
-
         # Get indices of sorted attributions (descending).
-        # TODO: do this in a more readable way
-        a_batch_flat = np.zeros((batch_size, *a_batch[0].flatten().shape))
-        a_batch_indices = np.zeros((batch_size, *a_batch[0].flatten().shape), dtype=np.int)
+        # TODO: do this in a more readable way or even better: without for-loop
+        batch_size = x_batch.shape[0]
+        flat_shape = a_batch[0].flatten().shape
+        a_batch_flat = np.zeros((batch_size, *flat_shape))
+        a_batch_indices = np.zeros((batch_size, *flat_shape), dtype=np.int)
         for i in range(batch_size):
             a_batch_flat[i] = a_batch[i].flatten()
             a_batch_indices[i] = np.argsort(-a_batch_flat[i])
 
-        preds = []
+        n_steps = math.ceil(a_batch_indices.shape[1] / self.features_in_step)
+        preds = [[None for _ in range(n_steps)] for _ in range(batch_size)]
         x_batch_perturbed = x_batch.copy()
 
-        for i_ix, _ in enumerate(a_batch_indices[0, :: self.features_in_step]):
+        for step in range(n_steps):
 
             # Perturb input by indices of attributions.
-            perturb_start_ix = self.features_in_step * i_ix
-            perturb_end_ix = self.features_in_step * (i_ix + 1)
+            perturb_start_ix = self.features_in_step * step
+            perturb_end_ix = self.features_in_step * (step + 1)
             perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
 
             perturb_funcs.perturb_batch(
@@ -1428,7 +1409,8 @@ class PixelFlipping(Metric):
                 **perturb_func_kwargs,
             )
             for x, x_perturbed in zip(x_batch, x_batch_perturbed):
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+                asserts.assert_perturbation_caused_change(
+                    x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x.
             x_input = model.shape_input(
@@ -1444,11 +1426,35 @@ class PixelFlipping(Metric):
                 **model_predict_kwargs,
             )
 
-            for y, y_pred_perturb in zip(y_batch, y_batch_pred_perturb):
+            # TODO: get rid of for loop
+            iterator = zip(y_batch, y_batch_pred_perturb)
+            for ix, (y, y_pred_perturb) in enumerate(iterator):
                 y_pred_perturb = float(y_pred_perturb[y])
-                preds.append(y_pred_perturb)
+                preds[ix][step] = y_pred_perturb
 
         return preds
+
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=X.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=X.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=X.shape[2:],
+            )
+        return X, Y, A, S
 
 
 class RegionPerturbation(Metric):
