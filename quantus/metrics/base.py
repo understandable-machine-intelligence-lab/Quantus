@@ -241,30 +241,30 @@ class Metric:
             )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # TODO: This needs to move to PixelFlipping
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
-        )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-
         # TODO: maybe find better names instead of capital letters?
         # also: use these as argument names and deprecate _batch suffixes
         X = x_batch_s
         Y = y_batch
         A = a_batch
         S = s_batch
+
+        # Asserts.
+        asserts.assert_attributions(x_batch=X, a_batch=A)
+
+        # Call pre-processing
+        self.preprocess(X=X, Y=Y, A=A, S=S)
+
+        if self.abs:
+            # inplace execution
+            np.abs(A, out=A)
+
+        if self.normalise:
+            # inplace execution
+            normalise_func.normalise_batch(
+                arr=A,
+                normalise_func=self.normalise_func,
+                normalise_func_kwargs=self.normalise_func_kwargs,
+            )
 
         # create generator for generating batches
         batch_generator = utils.get_batch_generator(X, Y, A, batch_size=batch_size)
@@ -278,18 +278,6 @@ class Metric:
         )
 
         for x_batch, y_batch, a_batch in iterator:
-            if self.abs:
-                # inplace execution
-                np.abs(a_batch, out=a_batch)
-
-            if self.normalise:
-                # inplace execution
-                normalise_func.normalise_batch(
-                    arr=a_batch,
-                    normalise_func=self.normalise_func,
-                    normalise_func_kwargs=self.normalise_func_kwargs,
-                )
-
             result = self.process_batch(
                 model=model,
                 x_batch=x_batch,
@@ -301,9 +289,11 @@ class Metric:
             )
             self.last_results.append(result)
 
+        # Call post-processing
+        self.postprocess()
+
         self.all_results.append(self.last_results)
         return self.last_results
-
 
     @abstractmethod
     def process_batch(
@@ -316,6 +306,18 @@ class Metric:
     ):
         raise NotImplementedError()
 
+
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+    ):
+        pass
+
+    def postprocess(self):
+        pass
 
     @property
     def interpret_scores(self) -> None:

@@ -1361,6 +1361,26 @@ class PixelFlipping(Metric):
             **kwargs,
         )
 
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+    ):
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=X.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=X.shape[2:],
+            )
+            self.set_features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=X.shape[2:],
+            )
 
     def process_batch(
             self,
