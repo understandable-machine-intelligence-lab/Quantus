@@ -94,6 +94,7 @@ def evaluate(
                     targets=y_batch,
                     **kwargs,
                 )
+                a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
                 # Asserts.
                 assert_attributions(a_batch=a_batch, x_batch=x_batch)

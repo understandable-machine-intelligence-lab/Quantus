@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Callable
+from typing import Callable, Tuple, Union
 
 
 def attributes_check(metric):
@@ -62,27 +62,47 @@ def set_warn(call):
     #    pass
 
 
-def assert_features_in_step(features_in_step: int, img_size: int) -> None:
+def assert_features_in_step(
+    features_in_step: int, input_shape: Tuple[int, ...]
+) -> None:
     """Assert that features in step is compatible with the image size."""
-    assert (img_size * img_size) % features_in_step == 0, (
+    assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
-        "returns zero given the img_size."
+        "returns zero given the product of the input shape."
+        f" ({np.prod(input_shape)} % {features_in_step} != 0)"
     )
 
 
-def assert_max_steps(max_steps_per_input: int, img_size: int) -> None:
+def assert_max_steps(max_steps_per_input: int, input_shape: Tuple[int, ...]) -> None:
     """Assert that max steps per inputs is compatible with the image size."""
-    assert (img_size * img_size) % max_steps_per_input == 0, (
+    assert np.prod(input_shape) % max_steps_per_input == 0, (
         "Set 'max_steps_per_input' so that the modulo remainder "
-        "returns zero given the img_size."
+        "returns zero given the product of the input shape."
     )
 
 
-def assert_patch_size(patch_size: int, img_size: int) -> None:
-    """Assert that patch size that are not compatible with input size."""
-    assert (
-        img_size % patch_size == 0
-    ), "Set 'patch_size' so that the modulo remainder returns 0 given the image size."
+def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
+    """Assert that patch size is compatible with given shape."""
+    if isinstance(patch_size, int):
+        patch_size = (patch_size,)
+    patch_size = np.array(patch_size)
+
+    if len(patch_size) == 1 and len(shape) != 1:
+        patch_size = tuple(patch_size for _ in shape)
+    elif patch_size.ndim != 1:
+        raise ValueError("patch_size has to be either a scalar or a 1d-sequence")
+    elif len(patch_size) != len(shape):
+        raise ValueError(
+            "patch_size sequence length does not match shape length"
+            f" (len(patch_size) != len(shape))"
+        )
+    patch_size = tuple(patch_size)
+    if np.prod(shape) % np.prod(patch_size) != 0:
+        raise ValueError(
+            "Set 'patch_size' so that the input shape modulo remainder returns 0"
+            f" [np.prod({shape}) % np.prod({patch_size}) != 0"
+            f" => {np.prod(shape)} % {np.prod(patch_size)} != 0]"
+        )
 
 
 def assert_attributions_order(order: str) -> None:
@@ -91,7 +111,7 @@ def assert_attributions_order(order: str) -> None:
         "random",
         "morf",
         "lorf",
-    ], "The order of sorting the attributions must be either random, morf, or lorf-"
+    ], "The order of sorting the attributions must be either random, morf, or lorf."
 
 
 def assert_nr_segments(nr_segments: int) -> None:
@@ -128,7 +148,7 @@ def assert_targets(
 
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
-    """Asserts on attributions."""
+    """Asserts on attributions. Assumes channel first layout."""
     assert (
         type(a_batch) == np.ndarray
     ), "Attributions 'a_batch' should be of type np.ndarray."
@@ -138,10 +158,10 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
 
-    assert np.shape(x_batch)[-2:] == np.shape(a_batch)[-2:], (
+    assert np.shape(x_batch)[2:] == np.shape(a_batch)[2:], (
         "The inputs 'x_batch' and attributions 'a_batch' "
         "should share the same dimensions."
-        "{} != {}".format(np.shape(x_batch)[-1], np.shape(a_batch)[-1])
+        "{} != {}".format(np.shape(x_batch)[2:], np.shape(a_batch)[2:])
     )
     assert not np.all((a_batch == 0)), (
         "The elements in the attribution vector are all equal to zero, "
@@ -159,6 +179,7 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "metrics rely on ordering."
         "Recompute the explanations."
     )
+    assert not np.all((a_batch < 0.0)), "Attributions should not all be less than zero."
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
@@ -170,7 +191,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
         np.shape(x_batch)[0] == np.shape(s_batch)[0]
     ), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
     assert (
-        np.shape(x_batch)[-2:] == np.shape(s_batch)[-2:]
+        np.shape(x_batch)[2:] == np.shape(s_batch)[2:]
     ), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
     assert (
         np.shape(s_batch)[1] == 1
@@ -182,7 +203,7 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.isin(s_batch.flatten(), [0, 1]).all()
         or np.isin(s_batch.flatten(), [True, False]).all()
-    ), ("The " "segmentation 's_batch' should not only contain [1‚0] or [True, False].")
+    ), "The segmentation 's_batch' should contain only [1, 0] or [True, False]."
 
 
 def assert_max_size(max_size: float) -> None:
@@ -200,3 +221,14 @@ def assert_explain_func(explain_func: Callable) -> None:
         "Make sure 'explain_func' is a Callable that takes model, x_batch, "
         "y_batch and **kwargs as arguments."
     )
+
+
+def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):
+    """Checks if value is smaller than input size.
+    Assumes batch and channel first dimension
+    """
+    if value >= np.prod(x.shape[2:]):
+        raise ValueError(
+            f"'{value_name}' must be smaller than input size."
+            f" [{value} >= {np.prod(x.shape[2:])}]"
+        )

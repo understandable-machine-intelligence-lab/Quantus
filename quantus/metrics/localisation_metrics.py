@@ -1,21 +1,18 @@
 """This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
 import warnings
+from typing import Callable, Dict, List, Union
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 from tqdm import tqdm
 
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
 
 
 class PointingGame(Metric):
@@ -63,7 +60,7 @@ class PointingGame(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' input as well as if "
@@ -76,7 +73,6 @@ class PointingGame(Metric):
                     "Backprop.' International Journal of Computer Vision, 126:1084-1102 (2018)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -86,7 +82,7 @@ class PointingGame(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -101,8 +97,6 @@ class PointingGame(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -137,27 +131,32 @@ class PointingGame(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -166,10 +165,11 @@ class PointingGame(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -261,9 +261,9 @@ class AttributionLocalisation(Metric):
         self.all_results = []
 
         # Asserts and warnings.
-        assert_max_size(max_size=self.max_size)
+        asserts.assert_max_size(max_size=self.max_size)
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', if size of the ground truth "
@@ -277,7 +277,6 @@ class AttributionLocalisation(Metric):
                     "arXiv preprint arXiv:1910.09840v2 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -287,7 +286,7 @@ class AttributionLocalisation(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -302,8 +301,6 @@ class AttributionLocalisation(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -338,26 +335,32 @@ class AttributionLocalisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
+
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -366,10 +369,11 @@ class AttributionLocalisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -389,25 +393,22 @@ class AttributionLocalisation(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
+                warn_func.warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
 
             # Asserts on attributions.
-            assert not np.all(
-                (a < 0.0)
-            ), "Attributions should not all be less than zero."
-            assert np.any(
-                s
-            ), "Segmentation mask should have some values in its array that is not zero."
+            if np.all((a < 0.0)):
+                raise ValueError("Attributions must not all be less than zero.")
+            if not np.any(s):
+                raise ValueError(
+                    "Segmentation mask must have some non-zero values in its array."
+                )
 
             # Compute ratio.
             size_bbox = float(np.sum(s))
-            size_data = float(self.img_size * self.img_size)
+            size_data = np.prod(x.shape[1:])
             ratio = size_bbox / size_data
 
             # Compute inside/outside ratio.
@@ -417,10 +418,9 @@ class AttributionLocalisation(Metric):
 
             if ratio <= self.max_size:
                 if inside_attribution_ratio > 1.0:
-                    print(
-                        "The inside explanation {} greater than total explanation {}".format(
-                            inside_attribution, total_attribution
-                        )
+                    warnings.warn(
+                        "Inside explanation is greater than total explanation"
+                        f" ({inside_attribution} > {total_attribution})"
                     )
                 if not self.weighted:
                     self.last_results.append(inside_attribution_ratio)
@@ -483,7 +483,7 @@ class TopKIntersection(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', the number of features to "
@@ -497,7 +497,6 @@ class TopKIntersection(Metric):
                     "Semantic Photo Geolocalization.' arXiv preprint arXiv:2104.14995 (2021)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -507,7 +506,7 @@ class TopKIntersection(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -522,8 +521,6 @@ class TopKIntersection(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -558,27 +555,32 @@ class TopKIntersection(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -587,10 +589,14 @@ class TopKIntersection(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_value_smaller_than_input_size(
+            x=x_batch_s, value=self.k, value_name="k"
+        )
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -610,7 +616,6 @@ class TopKIntersection(Metric):
                 a = self.normalise_func(a)
 
             top_k_binary_mask = np.zeros(a.shape)
-
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
                 top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
@@ -624,7 +629,7 @@ class TopKIntersection(Metric):
 
             # Concept influence (with size of object normalised tki score).
             if self.concept_influence:
-                tki = (self.img_size * self.img_size) / np.sum(s) * tki
+                tki = np.prod(x.shape[1:]) / np.sum(s) * tki
 
             self.last_results.append(tki)
 
@@ -667,7 +672,7 @@ class RelevanceRankAccuracy(Metric):
 
         self.args = args
         self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
+        self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
@@ -678,7 +683,7 @@ class RelevanceRankAccuracy(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' as well as if the attributions"
@@ -691,7 +696,6 @@ class RelevanceRankAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -701,7 +705,7 @@ class RelevanceRankAccuracy(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -716,8 +720,6 @@ class RelevanceRankAccuracy(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -752,27 +754,32 @@ class RelevanceRankAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -781,10 +788,11 @@ class RelevanceRankAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -802,12 +810,6 @@ class RelevanceRankAccuracy(Metric):
 
             if self.abs:
                 a = np.abs(a)
-            else:
-                a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless if set 'abs' parameter is False)"
-                    "since inconsistent results can be expected otherwise."
-                )
 
             if self.normalise:
                 a = self.normalise_func(a)
@@ -876,7 +878,7 @@ class RelevanceMassAccuracy(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' as well as if the attributions"
@@ -889,7 +891,6 @@ class RelevanceMassAccuracy(Metric):
                     "arXiv:2003.07258v2 (2021)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -898,7 +899,7 @@ class RelevanceMassAccuracy(Metric):
         y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
-        **kwargs
+        **kwargs,
     ):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -913,8 +914,6 @@ class RelevanceMassAccuracy(Metric):
             s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -949,27 +948,32 @@ class RelevanceMassAccuracy(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Get explanation function and make asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -978,10 +982,11 @@ class RelevanceMassAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
@@ -1001,14 +1006,6 @@ class RelevanceMassAccuracy(Metric):
 
             if self.normalise:
                 a = self.normalise_func(a)
-
-            # Asserts on attributions.
-            assert not np.all(
-                (a < 0.0)
-            ), "Attributions should not all be less than zero."
-            assert np.any(
-                s
-            ), "Segmentation mask should have some values in its array that is not zero."
 
             # Reshape.
             s = s.flatten().astype(bool)
@@ -1067,7 +1064,7 @@ class AUC(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' input as well as if "
@@ -1078,7 +1075,6 @@ class AUC(Metric):
                     " Vol 27, Issue 8, (2006)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -1088,7 +1084,7 @@ class AUC(Metric):
         a_batch: Union[np.array, None],
         s_batch: np.array,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         Implementation of metric logic to evaluate explanations (a_batch) with respect to some input (x_batch), output
@@ -1103,8 +1099,6 @@ class AUC(Metric):
         s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            nr_channels (integer): Number of images, default=second dimension of the input.
-            img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
             channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape by default.
             explain_func (callable): Callable generating attributions, default=Callable.
@@ -1139,27 +1133,32 @@ class AUC(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface.
+        # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Get explanation function and make asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -1168,10 +1167,11 @@ class AUC(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
         # use tqdm progressbar if not disabled
         if not self.display_progressbar:
