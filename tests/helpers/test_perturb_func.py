@@ -49,14 +49,14 @@ def test_gaussian_noise(
             lazy_fixture("input_zeros"),
             {
                 "indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)),
-                "perturbed_baseline": 1.0,
+                "perturb_baseline": 1.0,
                 "nr_channels": 3,
             },
             1,
         ),
         (
             lazy_fixture("input_ones_mnist"),
-            {"indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)), "input_shift": -1.0, "nr_channels": 1},
+            {"indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)), "perturb_baseline": -1.0, "nr_channels": 1},
             -1,
         ),
     ],
@@ -65,6 +65,35 @@ def test_baseline_replacement_by_indices(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = baseline_replacement_by_indices(img=data, **params)
+
+    if isinstance(expected, (int, float)):
+        assert np.all([i == expected for i in out[((slice(0, params["nr_channels"])),) + params["indices"]]]), "Test failed."
+
+
+@pytest.mark.perturb_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("input_zeros"),
+            {
+                "indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)),
+                "input_shift": 1.0,
+                "nr_channels": 3,
+            },
+            0,
+        ),
+        (
+            lazy_fixture("input_ones_mnist"),
+            {"indices": np.unravel_index([0, 2, 224, 226, 448, 450], shape=(224, 224)), "input_shift": -1.0, "nr_channels": 1},
+            -1,
+        ),
+    ],
+)
+def test_baseline_replacement_by_shift(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
+    out = baseline_replacement_by_shift(img=data, **params)
 
     if isinstance(expected, (int, float)):
         assert np.all([i == expected for i in out[((slice(0, params["nr_channels"])),) + params["indices"]]]), "Test failed."
