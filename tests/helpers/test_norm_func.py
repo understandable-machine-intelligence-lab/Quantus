@@ -1,6 +1,9 @@
-import pytest
 from typing import Union
+
+import numpy as np
+import pytest
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
 from ...quantus.helpers import *
 

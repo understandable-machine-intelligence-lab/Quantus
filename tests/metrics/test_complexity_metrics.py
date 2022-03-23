@@ -1,8 +1,13 @@
-import pytest
 from typing import Union
+
+import numpy as np
+import pytest
 from pytest_lazyfixture import lazy_fixture
+
 from ..fixtures import *
 from ...quantus.metrics import *
+from ...quantus.helpers import *
+from ...quantus.helpers.explanation_func import explain
 
 
 @pytest.mark.complexity
@@ -11,7 +16,7 @@ from ...quantus.metrics import *
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "disable_warnings": False,
@@ -21,7 +26,17 @@ from ...quantus.metrics import *
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": True,
                 "disable_warnings": True,
@@ -30,8 +45,29 @@ from ...quantus.metrics import *
             {"max": 1.0, "min": 0.0},
         ),
         (
+            None,
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": True,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "normalise": False,
+                "explain_func": explain,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {
                 "normalise": False,
                 "explain_func": explain,
@@ -42,7 +78,7 @@ from ...quantus.metrics import *
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "abs": False,
@@ -53,7 +89,28 @@ from ...quantus.metrics import *
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "abs": False,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "display_progressbar": True,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_2d"),
             {
                 "normalise": False,
                 "disable_warnings": True,
@@ -90,7 +147,7 @@ def test_sparseness(
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "disable_warnings": False,
@@ -100,7 +157,17 @@ def test_sparseness(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": True,
                 "disable_warnings": True,
@@ -110,7 +177,17 @@ def test_sparseness(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": True,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "abs": False,
@@ -120,8 +197,30 @@ def test_sparseness(
             {"max": 1.0, "min": 0.0},
         ),
         (
+            None,
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "abs": False,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "normalise": False,
+                "explain_func": explain,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {
                 "normalise": False,
                 "explain_func": explain,
@@ -132,7 +231,17 @@ def test_sparseness(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "display_progressbar": True,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_2d"),
             {
                 "normalise": False,
                 "disable_warnings": True,
@@ -164,7 +273,7 @@ def test_complexity(
     [
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": True,
                 "disable_warnings": False,
@@ -174,7 +283,17 @@ def test_complexity(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "disable_warnings": True,
@@ -184,7 +303,17 @@ def test_complexity(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_1d"),
             {
                 "normalise": False,
                 "abs": False,
@@ -194,8 +323,30 @@ def test_complexity(
             {"max": 1.0, "min": 0.0},
         ),
         (
+            None,
+            lazy_fixture("almost_uniform_2d"),
+            {
+                "normalise": False,
+                "abs": False,
+                "disable_warnings": True,
+                "display_progressbar": False,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "display_progressbar": False,
+                "explain_func": explain,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("almost_uniform_no_abatch"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
             {
                 "normalise": False,
                 "disable_warnings": True,
@@ -206,7 +357,17 @@ def test_complexity(
         ),
         (
             None,
-            lazy_fixture("almost_uniform"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "normalise": False,
+                "disable_warnings": True,
+                "display_progressbar": True,
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            None,
+            lazy_fixture("almost_uniform_2d"),
             {
                 "normalise": False,
                 "disable_warnings": True,
