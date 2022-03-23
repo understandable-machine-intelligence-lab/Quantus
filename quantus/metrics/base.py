@@ -268,18 +268,19 @@ class Metric:
 
         # create generator for generating batches
         batch_generator = utils.get_batch_generator(
-            X, Y, A,
+            X, Y, A, S,
             batch_size=batch_size,
             display_progressbar=self.display_progressbar,
         )
 
         self.last_results = []
-        for x_batch, y_batch, a_batch in batch_generator:
+        for x_batch, y_batch, a_batch, s_batch in batch_generator:
             result = self.process_batch(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
                 a_batch=a_batch,
+                s_batch=s_batch,
                 perturb_func=self.perturb_func,
                 perturb_func_kwargs=self.perturb_func_kwargs,
                 model_predict_kwargs=model_predict_kwargs,
