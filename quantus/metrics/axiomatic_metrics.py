@@ -178,7 +178,7 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO: check this
+        # TODO @Leander: remove. infer general channel shape instead
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -386,6 +386,7 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: remove. infer general channel shape instead
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -607,6 +608,7 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: remove. infer general channel shape instead
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.

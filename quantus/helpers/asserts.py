@@ -158,10 +158,14 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
 
-    assert np.shape(x_batch)[2:] == np.shape(a_batch)[2:], (
+    allowed_a_shapes = []
+    allowed_a_shapes += [tuple(np.shape(x_batch)[1+dim:]) for dim in range(x_batch.ndim)]
+    allowed_a_shapes += [tuple(np.shape(x_batch)[1:1+dim]) for dim in range(x_batch.ndim)]
+
+    assert np.shape(a_batch)[1:] in allowed_a_shapes, (
         "The inputs 'x_batch' and attributions 'a_batch' "
-        "should share the same dimensions."
-        "{} != {}".format(np.shape(x_batch)[2:], np.shape(a_batch)[2:])
+        "should share dimensions."
+        "{} not in {}".format(np.shape(x_batch)[1:], np.shape(a_batch)[1:])
     )
     assert not np.all((a_batch == 0)), (
         "The elements in the attribution vector are all equal to zero, "

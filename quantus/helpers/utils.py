@@ -36,35 +36,33 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
 
 def get_baseline_value(
-    choice: Union[float, int, str, np.array],
+    value: Union[float, int, str, np.array],
     arr: np.ndarray,
+    return_shape: Tuple,
     patch: Optional[np.ndarray] = None,
     **kwargs,
 ) -> np.array:
-    """Get the baseline value for all channels (np.array) to fill the array with."""
-    assert(choice is not None)
+    """Get the baseline value to fill the array with, in the shape of return_shape"""
 
-    nr_channels = kwargs.get("nr_channels", 3)
-
-    if isinstance(choice, (float, int)):
-        return np.repeat(choice, nr_channels)
-    elif isinstance(choice, np.ndarray):
-        if len(choice.shape)==0:
-            return np.repeat(choice, nr_channels)
-        elif len(choice.shape)==1 and choice.shape[0] == nr_channels:
-            return choice
+    if isinstance(value, (float, int)):
+        return np.full(return_shape, value)
+    elif isinstance(value, np.ndarray):
+        if value.ndim == 0:
+            return np.full(return_shape, value)
+        elif value.shape == return_shape:
+            return value
         else:
-            raise ValueError("Shape {} of argument 'choice' cannot be fitted to required shape {} of return value".format(choice.shape, (nr_channels,)))
-    elif isinstance(choice, str):
+            raise ValueError("Shape {} of argument 'value' cannot be fitted to required shape {} of return value".format(value.shape, return_shape))
+    elif isinstance(value, str):
         fill_dict = get_baseline_dict(arr, patch)
-        if choice.lower() not in fill_dict:
+        if value.lower() not in fill_dict:
             raise ValueError(
                 f"Ensure that 'choice'(str) is in {list(fill_dict.keys())}"
             )
-        return fill_dict[choice.lower()]
+        return np.full(return_shape, fill_dict[value.lower()])
     else:
         raise ValueError(
-            "Specify 'choice'' as a np.array, string, integer or float."
+            "Specify 'value'' as a np.array, string, integer or float."
         )
 
 
@@ -78,10 +76,8 @@ def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> di
         "white": float(arr.max()),
     }
     if patch is not None:
-        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
-        fill_dict["neighbourhood_random_min_max"] = (
-            float(random.uniform(patch.min(), patch.max())),
-        )
+        fill_dict["neighbourhood_mean"] = float(patch.mean()),
+        fill_dict["neighbourhood_random_min_max"] = float(random.uniform(patch.min(), patch.max()))
     return fill_dict
 
 
@@ -230,7 +226,7 @@ def conv2D_numpy(
     output_width = (width - kernel_size) // stride + 1
     output = np.zeros((c_out, output_height, output_width)).astype(x.dtype)
 
-    # TODO: improve efficiency, less loops
+    # TODO @Leander: improve efficiency, less loops
     for g in range(groups):
         for c in range(c_out_g * g, c_out_g * (g + 1)):
             for h in range(output_height):
@@ -317,6 +313,27 @@ def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
     elif a.ndim == x.ndim - 1:
         return np.expand_dims(a, axis=1)
 
+def infer_generalized_channel_shape(a: np.ndarray, x: np.ndarray) -> Tuple:
+    """
+    Infers the shape of a generalized channel shape (i.e., all axes in x not present in a) from attributions a and inputs x.
+    Assumes not Batch axis.
+    """
+
+    if a.ndim > x.ndim:
+        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a.ndim, x.ndim))
+
+    # Equal Shape
+    if a.shape == x.shape:
+        return 1,
+
+    # Inferring channel shape
+    for dim in range(x.ndim + 1):
+        if a.shape == tuple(x.shape[dim:]):
+            return tuple(x.shape[:dim])
+        if a.shape == tuple(x.shape[:dim]):
+            return tuple(x.shape[dim:])
+
+    raise ValueError("A general channel shape could not be inferred for inputs of shape {} and attributions of shape {}".format(x.shape, a.shape))
 
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
