@@ -7,6 +7,7 @@ from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
+from tqdm import tqdm
 
 if util.find_spec("torch"):
     import torch
@@ -370,14 +371,21 @@ def get_number_of_batches(sequence: Sequence, batch_size: int):
     return math.ceil(len(sequence)/batch_size)
 
 
-def get_batch_generator(*iterables: np.ndarray, batch_size: int):
+def get_batch_generator(*iterables: np.ndarray, batch_size: int,
+                        display_progressbar: bool = False):
     # TODO: put into asserts module
     assert all(iterable.shape[0] == iterables[0].shape[0]
                for iterable in iterables), "number of batches needs to be equal for all"
 
     n_instances = len(iterables[0])
     n_batches = get_number_of_batches(iterables[0], batch_size=batch_size)
-    for batch_idx in range(0, n_batches):
+    iterator = tqdm(
+        range(0, n_batches),
+        total=n_batches,
+        disable=not display_progressbar,
+    )
+
+    for batch_idx in iterator:
         batch_start = batch_size * batch_idx
         batch_end = min(batch_size * (batch_idx + 1), n_instances)
         batch = tuple(iterable[batch_start:batch_end]  for iterable in iterables)

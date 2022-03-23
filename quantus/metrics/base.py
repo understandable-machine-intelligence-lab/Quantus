@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 
 from ..helpers import utils
 from ..helpers import asserts
@@ -213,13 +212,14 @@ class Metric:
         # Update kwargs.
         self.kwargs = {
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+            **{
+                k: v for k, v in self.__dict__.items()
+                if k not in ["args", "kwargs"]
+            },
         }
 
         # Run deprecation warnings.
         warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
 
         if a_batch is None:
 
@@ -267,17 +267,14 @@ class Metric:
             )
 
         # create generator for generating batches
-        batch_generator = utils.get_batch_generator(X, Y, A, batch_size=batch_size)
-
-        # use tqdm progressbar if not disabled
-        n_batches = utils.get_number_of_batches(X, batch_size=batch_size)
-        iterator = tqdm(
-            batch_generator,
-            total=n_batches,
-            disable=not self.display_progressbar,
+        batch_generator = utils.get_batch_generator(
+            X, Y, A,
+            batch_size=batch_size,
+            display_progressbar=self.display_progressbar,
         )
 
-        for x_batch, y_batch, a_batch in iterator:
+        self.last_results = []
+        for x_batch, y_batch, a_batch in batch_generator:
             result = self.process_batch(
                 model=model,
                 x_batch=x_batch,
