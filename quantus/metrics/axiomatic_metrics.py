@@ -178,7 +178,6 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -278,7 +277,7 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black") #TODO: this attribute is unused right? also in other metrics
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -386,8 +385,8 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -438,6 +437,7 @@ class NonSensitivity(Metric):
                     x_perturbed = self.perturb_func(
                         arr=x,
                         indices=a_ix,
+                        indices_axis=a_axis,
                         **self.kwargs,
                     )
 
@@ -519,7 +519,6 @@ class InputInvariance(Metric):
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -608,8 +607,7 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
@@ -631,12 +629,14 @@ class InputInvariance(Metric):
             x_shifted = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
+                indices_axis=np.arange(0, x.ndim),
                 **self.kwargs,
             )
             x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
             asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
+            # TODO @Leander: Flexible explanation shape
             a_shifted = explain_func(
                 model=model.get_model(), inputs=x_shifted, targets=y, **self.kwargs
             )

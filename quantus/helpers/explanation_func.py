@@ -30,6 +30,7 @@ from .model_interface import ModelInterface
 from .normalise_func import normalise_by_negative
 from .utils import get_baseline_value, infer_channel_first, make_channel_last
 
+# TODO @Leander: include multidimensional channel averaging
 
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
