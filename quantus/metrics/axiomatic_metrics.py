@@ -386,7 +386,7 @@ class NonSensitivity(Metric):
                 **self.kwargs,
             )
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -437,7 +437,7 @@ class NonSensitivity(Metric):
                     x_perturbed = self.perturb_func(
                         arr=x,
                         indices=a_ix,
-                        indices_axis=a_axis,
+                        indexed_axes=a_axes,
                         **self.kwargs,
                     )
 
@@ -629,14 +629,13 @@ class InputInvariance(Metric):
             x_shifted = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
-                indices_axis=np.arange(0, x.ndim),
+                indexed_axes=np.arange(0, x.ndim),
                 **self.kwargs,
             )
             x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
             asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
-            # TODO @Leander: Flexible explanation shape
             a_shifted = explain_func(
                 model=model.get_model(), inputs=x_shifted, targets=y, **self.kwargs
             )

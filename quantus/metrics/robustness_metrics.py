@@ -195,8 +195,7 @@ class LocalLipschitzEstimate(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -223,6 +222,8 @@ class LocalLipschitzEstimate(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -292,7 +293,7 @@ class MaxSensitivity(Metric):
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
             norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
-            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            perturb_func (callable): Input perturbation function, default=uniform_noise.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=difference.
         """
@@ -310,7 +311,7 @@ class MaxSensitivity(Metric):
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_sampling
+            "perturb_func", perturb_func.uniform_noise
         )
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get(
@@ -427,8 +428,7 @@ class MaxSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -455,6 +455,8 @@ class MaxSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -526,7 +528,7 @@ class AvgSensitivity(Metric):
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
             norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
-            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            perturb_func (callable): Input perturbation function, default=uniform_noise.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=difference.
         """
@@ -544,7 +546,7 @@ class AvgSensitivity(Metric):
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_sampling
+            "perturb_func", perturb_func.uniform_noise
         )
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get(
@@ -660,8 +662,7 @@ class AvgSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -688,6 +689,8 @@ class AvgSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -890,8 +893,7 @@ class Continuity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
@@ -929,6 +931,8 @@ class Continuity(Metric):
                 dx_step = (step + 1) * self.dx
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     perturb_dx=dx_step,
                     **self.kwargs,
                 )
@@ -941,8 +945,7 @@ class Continuity(Metric):
                     targets=y,
                     **self.kwargs,
                 )
-                # TODO @Leander: remove. infer general channel shape instead
-                a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
+                #a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
@@ -970,7 +973,6 @@ class Continuity(Metric):
                     patch_slice = utils.create_patch_slice(
                         patch_size=self.patch_size,
                         coords=top_left_coords,
-                        expand_first_dim=True,
                     )
 
                     a_perturbed_patch = a_perturbed[patch_slice]
