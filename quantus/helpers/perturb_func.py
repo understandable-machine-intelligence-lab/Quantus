@@ -23,7 +23,7 @@ def baseline_replacement_by_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indices_axis: Sequence[int],
-    replacement_value: Union[float, int, str, np.array],
+    perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
 ) -> np.array:
     """
@@ -33,13 +33,14 @@ def baseline_replacement_by_indices(
                   and either include the first or last dimension of array.
     """
     indices = np.array(indices)
-    indices_axis = sorted(indices_axis)
+    indices_axis = np.array(indices_axis)
+    indices_axis = np.sort(indices_axis)
 
     # TODO @Leander: include this into asserts?
-    assert list(indices_axis) == list(range(indices_axis[0], indices_axis[-1]+1))
-    assert 0 in indices_axis or arr.ndim-1 in indices_axis
+    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
+    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
 
-    if len(indices_axis) != indices.ndim:
+    if indices_axis.size != indices.ndim:
         if indices.ndim == 1:
             indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
         else:
@@ -61,7 +62,7 @@ def baseline_replacement_by_indices(
 
     # Get Baseline
     baseline_value = get_baseline_value(
-        value=replacement_value,
+        value=perturb_baseline,
         arr=arr,
         return_shape=tuple(baseline_shape),
         **kwargs
@@ -74,7 +75,7 @@ def baseline_replacement_by_shift(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indices_axis: Sequence[int],
-    shift_value: Union[float, int, str, np.array],
+    perturb_baseline: Union[float, int, str, np.array],
     ** kwargs,
 ) -> np.array:
     """
@@ -84,13 +85,14 @@ def baseline_replacement_by_shift(
                   and either include the first or last dimension of array.
     """
     indices = np.array(indices)
-    indices_axis = sorted(indices_axis)
+    indices_axis = np.array(indices_axis)
+    indices_axis = np.sort(indices_axis)
 
     # TODO @Leander: include this into asserts?
-    assert list(indices_axis) == list(range(indices_axis[0], indices_axis[-1]+1))
-    assert 0 in indices_axis or arr.ndim-1 in indices_axis
+    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
+    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
 
-    if len(indices_axis) != indices.ndim:
+    if indices_axis.size != indices.ndim:
         if indices.ndim == 1:
             indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
         else:
@@ -112,7 +114,7 @@ def baseline_replacement_by_shift(
 
     # Get Baseline
     baseline_value = get_baseline_value(
-        value=shift_value,
+        value=perturb_baseline,
         arr=arr,
         return_shape=tuple(baseline_shape),
         **kwargs
@@ -134,7 +136,7 @@ def baseline_replacement_by_shift(
     return arr_perturbed
 
 def baseline_replacement_by_blur(
-    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], blur_kernel_size: int = 15, **kwargs
+    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indices_axis: Sequence[int], blur_kernel_size: int = 15, **kwargs
 ) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
@@ -142,6 +144,29 @@ def baseline_replacement_by_blur(
     blur_kernel_size controls the kernel-size of that convolution (Default is 15).
     Assumes unbatched channel first format.
     """
+
+    indices = np.array(indices)
+    indices_axis = np.array(indices_axis)
+    indices_axis = np.sort(indices_axis)
+
+    # TODO @Leander: include this into asserts?
+    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
+    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
+
+    if indices_axis.size != indices.ndim:
+        if indices.ndim == 1:
+            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
+        else:
+            raise ValueError("indices dimension doesn't match indices_axis")
+
+    # Indices First
+    if 0 in indices_axis:
+        for i in range(indices_axis[-1] + 1, arr.ndim):
+            indices = indices, slice(None)
+    # Indices Last
+    else:
+        for i in range(0, indices_axis[0]):
+            indices = slice(None), indices
 
     # TODO @Leander: change this for arbitrary input shapes
     # TODO @Leander: double check axes
@@ -201,7 +226,7 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
 
 
 def translation_x_direction(
-    arr: np.array, perturb_value: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
@@ -218,7 +243,7 @@ def translation_x_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            value=perturb_value,
+            value=perturb_baseline,
             arr=arr,
             **kwargs,
         ),

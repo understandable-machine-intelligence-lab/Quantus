@@ -187,8 +187,8 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -229,6 +229,7 @@ class FaithfulnessCorrelation(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
+                    indices_axis=a_axis,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -412,8 +413,8 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -470,6 +471,7 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
+                    indices_axes=a_axis,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -643,8 +645,8 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -699,6 +701,7 @@ class IterativeRemovalOfFeatures(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_input.flatten(),
                     indices=a_ix,
+                    indices_axes=a_axis,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -883,7 +886,8 @@ class MonotonicityArya(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1116,7 +1120,8 @@ class MonotonicityNguyen(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1368,7 +1373,8 @@ class PixelFlipping(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1610,7 +1616,8 @@ class RegionPerturbation(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1902,7 +1909,8 @@ class Selectivity(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -2189,7 +2197,8 @@ class SensitivityN(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)

@@ -295,45 +295,50 @@ def create_patch_slice(
     return tuple(patch_slice)
 
 
-def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
+def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
     """Expand additional channel dimension for attributions if needed."""
-    if a.shape[0] != x.shape[0]:
+    if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
-            f"a and x must have same number of batches ({a.shape[0]} != {x.shape[0]})"
+            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
         )
-    if a.ndim > x.ndim:
-        raise ValueError(f"a must not have greater ndim than x ({a.ndim} > {x.ndim})")
-    if a.ndim < x.ndim - 1:
+    if a_batch.ndim > x_batch.ndim:
+        raise ValueError(f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})")
+    if a_batch.ndim < x_batch.ndim - 1:
         raise ValueError(
-            f"a can have at max one dimension less than x ({a.ndim} < {x.ndim} - 1)"
+            f"a can have at max one dimension less than x ({a_batch.ndim} < {x_batch.ndim} - 1)"
         )
 
-    if a.ndim == x.ndim:
-        return a
-    elif a.ndim == x.ndim - 1:
-        return np.expand_dims(a, axis=1)
+    if a_batch.ndim == x_batch.ndim:
+        return a_batch
+    elif a_batch.ndim == x_batch.ndim - 1:
+        return np.expand_dims(a_batch, axis=1)
 
-def infer_generalized_channel_shape(a: np.ndarray, x: np.ndarray) -> Tuple:
+def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
     """
-    Infers the shape of a generalized channel shape (i.e., all axes in x not present in a) from attributions a and inputs x.
-    Assumes not Batch axis.
+    Infers the axes in x_batch that are covered by a_batch.
     """
 
-    if a.ndim > x.ndim:
-        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a.ndim, x.ndim))
+    if a_batch.shape[0] != x_batch.shape[0]:
+        raise ValueError(
+            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
+        )
 
+    if a_batch.ndim > x_batch.ndim:
+        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim))
+
+    # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
     # Equal Shape
-    if a.shape == x.shape:
-        return 1,
+    if a_batch.shape[1:] == x_batch.shape[1:]:
+        return np.arange(0, x_batch.ndim-1)
 
     # Inferring channel shape
-    for dim in range(x.ndim + 1):
-        if a.shape == tuple(x.shape[dim:]):
-            return tuple(x.shape[:dim])
-        if a.shape == tuple(x.shape[:dim]):
-            return tuple(x.shape[dim:])
+    for dim in range(x_batch.ndim):
+        if a_batch.shape[1:] == tuple(x_batch.shape[1+dim:]):
+            return np.arange(dim, x_batch.ndim)
+        if a_batch.shape[1:] == tuple(x_batch.shape[1:dim+1]):
+            return np.arange(0, dim)
 
-    raise ValueError("A general channel shape could not be inferred for inputs of shape {} and attributions of shape {}".format(x.shape, a.shape))
+    raise ValueError("Attribution axes could not be inferred for inputs of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape))
 
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
