@@ -220,7 +220,7 @@ params_eval = {
   "perturb_radius": 0.1,
   "norm_numerator": quantus.fro_norm,
   "norm_denominator": quantus.fro_norm,
-  "perturb_func": quantus.uniform_sampling,
+  "perturb_func": quantus.uniform_noise,
   "similarity_func": quantus.difference,
   "img_size": 28, 
   "nr_channels": 1,

@@ -165,8 +165,7 @@ class PointingGame(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -370,8 +369,7 @@ class AttributionLocalisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -591,8 +589,7 @@ class TopKIntersection(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -632,7 +629,7 @@ class TopKIntersection(Metric):
 
             # Concept influence (with size of object normalised tki score).
             if self.concept_influence:
-                tki = np.prod(x.shape[1:]) / np.sum(s) * tki
+                tki = np.prod(s.shape) / np.sum(s) * tki
 
             self.last_results.append(tki)
 
@@ -791,8 +788,7 @@ class RelevanceRankAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -986,8 +982,7 @@ class RelevanceMassAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1172,8 +1167,7 @@ class AUC(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: remove. infer general channel shape instead
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
