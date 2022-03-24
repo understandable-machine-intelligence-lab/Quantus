@@ -6,6 +6,7 @@ from typing import Callable, List, Optional, Sequence, Tuple, Union
 from importlib import util
 from skimage.segmentation import slic, felzenszwalb
 from ..helpers.model_interface import ModelInterface
+from ..helpers import asserts
 
 if util.find_spec("torch"):
     import torch
@@ -258,12 +259,13 @@ def conv2D_numpy(
 
 
 def create_patch_slice(
-    patch_size: Union[int, Sequence[int]], coords: Sequence[int], expand_first_dim: bool
+    patch_size: Union[int, Sequence[int]], coords: Sequence[int], expand_first_dim: bool = False
 ) -> Tuple[Sequence[int]]:
     """
     Create a patch slice from patch size and coordinates.
     expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
     """
+    # TODO @Leander: Variable Channel shapes
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
     if isinstance(coords, int):
@@ -364,15 +366,17 @@ def get_nr_patches(
 
 def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
     """To allow for any patch_size we add padding to the array."""
+    # TODO @Leander: Variable Channel shapes
     pad_width_list = [(pad_width, pad_width)] * arr.ndim
     if omit_first_axis:
         pad_width_list[0] = (0, 0)
-    arr_pad = np.pad(arr, pad_width_list, mode="constant")
+    arr_pad = np.pad(arr, pad_width_list, mode=mode)
     return arr_pad
 
 
 def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
     """Remove padding from the array."""
+    # TODO @Leander: Variable Channel shapes
     unpad_slice = [
         slice(pad_width, arr.shape[axis] - pad_width)
         for axis, _ in enumerate(arr.shape)
@@ -380,3 +384,40 @@ def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
     if omit_first_axis:
         unpad_slice[0] = slice(None)
     return arr[tuple(unpad_slice)]
+
+def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int]) -> np.array:
+    """
+    Expands indices to fit array shape. Returns expanded indices.
+    """
+    expanded_indices = np.array(indices)
+    indexed_axes = np.sort(np.array(indexed_axes))
+
+    asserts.assert_indexed_axes(arr, indexed_axes)
+
+    if indexed_axes.size != expanded_indices.ndim:
+        if expanded_indices.ndim == 1:
+            expanded_indices = np.unravel_index(expanded_indices, tuple([arr.shape[i] for i in indexed_axes]))
+        else:
+            raise ValueError("indices dimension doesn't match indexed_axes")
+
+    # Indices First
+    if 0 in indexed_axes:
+        for i in range(indexed_axes[-1] + 1, arr.ndim):
+            expanded_indices = expanded_indices, slice(None)
+    # Indices Last
+    else:
+        for i in range(0, indexed_axes[0]):
+            expanded_indices = slice(None), expanded_indices
+
+    return expanded_indices
+
+
+def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> np.array:
+    """
+    Gets the shape of the arr dimensions not included in axes
+    """
+    axes = np.sort(np.array(axes))
+    asserts.assert_indexed_axes(arr, axes)
+
+    leftover_shape = tuple([arr.shape[i] for i in range(arr.ndims) if i not in axes])
+    return leftover_shape

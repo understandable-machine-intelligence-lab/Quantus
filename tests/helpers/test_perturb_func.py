@@ -318,10 +318,10 @@ def test_baseline_replacement_by_patch(
         ),
     ],
 )
-def test_uniform_sampling(
+def test_uniform_noise(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = uniform_sampling(arr=data, **params)
+    out = uniform_noise(arr=data, **params)
     assert any(out.flatten()[0] != out.flatten()), "Test failed."
     assert any(out.flatten() != data.flatten()) == expected, "Test failed."
 

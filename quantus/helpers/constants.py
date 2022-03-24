@@ -53,7 +53,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    "uniform_sampling": uniform_sampling,
+    "uniform_noise": uniform_noise,
     "no_perturbation": no_perturbation,
 }
 
