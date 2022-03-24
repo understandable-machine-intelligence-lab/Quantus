@@ -1184,14 +1184,9 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_ix,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                        arr=x,
+                        indices=a_ix,
+                        **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(
                         x=x, x_perturbed=x_perturbed
@@ -1423,11 +1418,9 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    img=x_perturbed,
-                    **{
-                        **self.kwargs,
-                        **{"indices": a_ix, "perturb_baseline": self.perturb_baseline},
-                    },
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1712,30 +1705,17 @@ class RegionPerturbation(Metric):
                     x_perturbed, pad_width, mode="edge", omit_first_axis=True
                 )
 
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
-                    mode="edge",
-                )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
-                    **{
-                        **self.kwargs,
-                        **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
-                        },
-                    },
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    **self.kwargs,
                 )
 
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = utils._unpad_array(
+                    x_perturbed_pad, pad_width, omit_first_axis=True
+                )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1977,34 +1957,23 @@ class Selectivity(Metric):
             ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
             # Increasingly perturb the input and store the decrease in function value.
-            for k in range(len(patch_order)):
-                top_left_x = patch_order[k][0]
-                top_left_y = patch_order[k][1]
-
-                # Also pad x_perturbed
-                # The mode should probably depend on the used perturb_func?
-                x_perturbed_tmp = np.pad(
-                    x_perturbed,
-                    ((0, 0), (padwidth, padwidth), (padwidth, padwidth)),
-                    mode="edge",
+            for patch_slice in ordered_patches:
+                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+                x_perturbed_pad = utils._pad_array(
+                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
                 )
-                x_perturbed_tmp = self.perturb_func(
-                    x_perturbed_tmp,
-                    **{
-                        **self.kwargs,
-                        **{
-                            "patch_size": self.patch_size,
-                            "nr_channels": self.nr_channels,
-                            "img_size": self.img_size + 2 * padwidth,
-                            "perturb_baseline": self.perturb_baseline,
-                            "top_left_y": top_left_y,
-                            "top_left_x": top_left_x,
-                        },
-                    },
+
+                # Perturb.
+                x_perturbed_pad = self.perturb_func(
+                    arr=x_perturbed_pad,
+                    patch_slice=patch_slice,
+                    **self.kwargs,
                 )
 
                 # Remove Padding
-                x_perturbed = x_perturbed_tmp[:, padwidth:-padwidth, padwidth:-padwidth]
+                x_perturbed = utils._unpad_array(
+                    x_perturbed_pad, pad_width, omit_first_axis=True
+                )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
