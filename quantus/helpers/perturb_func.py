@@ -8,55 +8,25 @@ import cv2
 import numpy as np
 import scipy
 
-from .utils import get_baseline_value
-from .utils import conv2D_numpy
+from .utils import get_baseline_value, conv2D_numpy, expand_indices, get_leftover_shape
 
-
-def gaussian_noise(
-    arr: np.array, perturb_mean: float = 0.0, perturb_std: float = 0.01, **kwargs
-) -> np.array:
-    """Add gaussian noise to the input."""
-    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
-    return arr + noise
+# TODO @Leander: Create perturb_func interface?
 
 def baseline_replacement_by_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
-    indices_axis: Sequence[int],
+    indexed_axes: Sequence[int],
     perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
 ) -> np.array:
     """
     Replace indices in an array by a given baseline.
     indices: array-like, with a subset shape of arr
-    indices_axis: dimensions of arr that are indexed. These need to be consecutive,
+    indexed_axes: dimensions of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
     """
-    indices = np.array(indices)
-    indices_axis = np.array(indices_axis)
-    indices_axis = np.sort(indices_axis)
-
-    # TODO @Leander: include this into asserts?
-    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
-    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
-
-    if indices_axis.size != indices.ndim:
-        if indices.ndim == 1:
-            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
-        else:
-            raise ValueError("indices dimension doesn't match indices_axis")
-
-    baseline_shape = []
-    # Indices First
-    if 0 in indices_axis:
-        for i in range(indices_axis[-1]+1, arr.ndim):
-            indices = indices, slice(None)
-            baseline_shape.append(arr.shape[i])
-    # Indices Last
-    else:
-        for i in range(0, indices_axis[0]):
-            indices = slice(None), indices
-            baseline_shape.append(arr.shape[i])
+    indices = expand_indices(arr, indices, indexed_axes)
+    baseline_shape = get_leftover_shape(arr, indexed_axes)
 
     arr_perturbed = copy.copy(arr)
 
@@ -74,41 +44,18 @@ def baseline_replacement_by_indices(
 def baseline_replacement_by_shift(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
-    indices_axis: Sequence[int],
+    indexed_axes: Sequence[int],
     perturb_baseline: Union[float, int, str, np.array],
     ** kwargs,
 ) -> np.array:
     """
     Shift values at indices in an image.
     indices: array-like, with a subset shape of arr
-    indices_axis: axes of arr that are indexed. These need to be consecutive,
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
     """
-    indices = np.array(indices)
-    indices_axis = np.array(indices_axis)
-    indices_axis = np.sort(indices_axis)
-
-    # TODO @Leander: include this into asserts?
-    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
-    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
-
-    if indices_axis.size != indices.ndim:
-        if indices.ndim == 1:
-            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
-        else:
-            raise ValueError("indices dimension doesn't match indices_axis")
-
-    baseline_shape = []
-    # Indices First
-    if 0 in indices_axis:
-        for i in range(indices_axis[-1]+1, arr.ndim):
-            indices = indices, slice(None)
-            baseline_shape.append(arr.shape[i])
-    # Indices Last
-    else:
-        for i in range(0, indices_axis[0]):
-            indices = slice(None), indices
-            baseline_shape.append(arr.shape[i])
+    indices = expand_indices(arr, indices, indexed_axes)
+    baseline_shape = get_leftover_shape(arr, indexed_axes)
 
     arr_perturbed = copy.copy(arr)
 
@@ -127,7 +74,7 @@ def baseline_replacement_by_shift(
         arr_shifted,
         np.full(
             shape=arr_shifted.shape,
-            fill_value=np.expand_dims(baseline_value, axis=tuple(indices_axis)),
+            fill_value=np.expand_dims(baseline_value, axis=tuple(indexed_axes)),
             dtype=float
         ),
     )
@@ -136,7 +83,7 @@ def baseline_replacement_by_shift(
     return arr_perturbed
 
 def baseline_replacement_by_blur(
-    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indices_axis: Sequence[int], blur_kernel_size: int = 15, **kwargs
+    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int], blur_kernel_size: int = 15, **kwargs
 ) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
@@ -145,28 +92,7 @@ def baseline_replacement_by_blur(
     Assumes unbatched channel first format.
     """
 
-    indices = np.array(indices)
-    indices_axis = np.array(indices_axis)
-    indices_axis = np.sort(indices_axis)
-
-    # TODO @Leander: include this into asserts?
-    assert indices_axis == np.arange(indices_axis[0], indices_axis[-1] + 1)
-    assert 0 in indices_axis or arr.ndim - 1 in indices_axis
-
-    if indices_axis.size != indices.ndim:
-        if indices.ndim == 1:
-            indices = np.unravel_index(indices, tuple([arr.shape[i] for i in indices_axis]))
-        else:
-            raise ValueError("indices dimension doesn't match indices_axis")
-
-    # Indices First
-    if 0 in indices_axis:
-        for i in range(indices_axis[-1] + 1, arr.ndim):
-            indices = indices, slice(None)
-    # Indices Last
-    else:
-        for i in range(0, indices_axis[0]):
-            indices = slice(None), indices
+    indices = expand_indices(arr, indices, indexed_axes)
 
     # TODO @Leander: change this for arbitrary input shapes
     # TODO @Leander: double check axes
@@ -197,13 +123,46 @@ def baseline_replacement_by_blur(
     arr_perturbed[indices] = arr_avg[indices]
     return arr_perturbed
 
+def gaussian_noise(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    perturb_mean: float = 0.0,
+    perturb_std: float = 0.01,
+    **kwargs
+) -> np.array:
+    """Add gaussian noise to the input."""
 
-def uniform_sampling(arr: np.array, perturb_radius: float = 0.02, **kwargs) -> np.array:
+    indices = expand_indices(arr, indices, indexed_axes)
+    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
+
+    arr_perturbed = copy.copy(arr)
+    arr_perturbed[indices] = (arr_perturbed + noise)[indices]
+
+    return arr_perturbed
+
+def uniform_noise(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    perturb_radius: float = 0.02,
+    **kwargs
+) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
-    noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
-    return arr + noise
 
-def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
+    indices = expand_indices(arr, indices, indexed_axes)
+    noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
+
+    arr_perturbed = copy.copy(arr)
+    arr_perturbed[indices] = (arr_perturbed + noise)[indices]
+
+    return arr_perturbed
+
+def rotation(
+    arr: np.array,
+    perturb_angle: float = 10,
+    **kwargs
+) -> np.array:
     """
     Rotate array by some given angle.
     Assumes channel first layout.

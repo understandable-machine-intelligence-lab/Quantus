@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple, Union, Sequence
 
 
 def attributes_check(metric):
@@ -194,13 +194,15 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.shape(x_batch)[0] == np.shape(s_batch)[0]
     ), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
-    assert (
-        np.shape(x_batch)[2:] == np.shape(s_batch)[2:]
-    ), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
-    assert (
-        np.shape(s_batch)[1] == 1
-    ), "The second dimension of the segmentations 's_batch' should be equal to 1."
-    # TODO.
+    allowed_s_shapes = []
+    allowed_s_shapes += [tuple(np.shape(x_batch)[1 + dim:]) for dim in range(x_batch.ndim)]
+    allowed_s_shapes += [tuple(np.shape(x_batch)[1:1 + dim]) for dim in range(x_batch.ndim)]
+
+    assert np.shape(s_batch)[1:] in allowed_s_shapes, (
+        "The inputs 'x_batch' and segmentations 's_batch' "
+        "should share dimensions."
+        "{} not in {}".format(np.shape(x_batch)[1:], np.shape(s_batch)[1:])
+    )
     assert (
         len(np.nonzero(s_batch)) > 0
     ), "The segmentation 's_batch' must contain non-zero elements."
@@ -236,3 +238,12 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
             f"'{value_name}' must be smaller than input size."
             f" [{value} >= {np.prod(x.shape[2:])}]"
         )
+
+def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
+    """
+    Checks that indexed_axes fits arr
+    """
+    assert (indexed_axes == np.arange(indexed_axes[0], indexed_axes[-1] + 1)), (
+        "Make sure indexed_axes contains consecutive axes.")
+    assert 0 in indexed_axes or arr.ndim - 1 in indexed_axes, (
+        "Make sure indexed_axes contains either the first or last axis of arr.")

@@ -188,7 +188,7 @@ class FaithfulnessCorrelation(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -229,7 +229,7 @@ class FaithfulnessCorrelation(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
-                    indices_axis=a_axis,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -414,7 +414,7 @@ class FaithfulnessEstimate(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -471,7 +471,7 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
-                    indices_axes=a_axis,
+                    indices_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -646,7 +646,7 @@ class IterativeRemovalOfFeatures(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -701,7 +701,7 @@ class IterativeRemovalOfFeatures(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_input.flatten(),
                     indices=a_ix,
-                    indices_axes=a_axis,
+                    indices_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -885,9 +885,9 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
+
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -943,6 +943,7 @@ class MonotonicityArya(Metric):
                 x_baseline = self.perturb_func(
                     arr=x_baseline,
                     indices=a_ix,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
@@ -1119,9 +1120,8 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1186,6 +1186,7 @@ class MonotonicityNguyen(Metric):
                     x_perturbed = self.perturb_func(
                         arr=x,
                         indices=a_ix,
+                        indexed_axes=a_axes,
                         **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(
@@ -1367,9 +1368,8 @@ class PixelFlipping(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1420,6 +1420,7 @@ class PixelFlipping(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_perturbed,
                     indices=a_ix,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1608,9 +1609,8 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1653,14 +1653,13 @@ class RegionPerturbation(Metric):
             att_sums = []
             axis_iterators = [
                 range(pad_width, x_pad.shape[axis] - pad_width)
-                for axis in range(1, x_pad.ndim)
+                for axis in a_axes
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
                     patch_size=self.patch_size,
                     coords=top_left_coords,
-                    expand_first_dim=True,
                 )
 
                 # Sum attributions for patch.
@@ -1688,7 +1687,7 @@ class RegionPerturbation(Metric):
             ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
                 patch_mask = np.zeros(x_input.shape, dtype=bool)
-                patch_mask[patch_slice] = True
+                patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
                 intersected = blocked_mask & patch_mask
 
                 if not intersected.any():
@@ -1708,7 +1707,8 @@ class RegionPerturbation(Metric):
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
+                    indices=patch_slice,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
@@ -1888,9 +1888,8 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1939,14 +1938,13 @@ class Selectivity(Metric):
             att_sums = []
             axis_iterators = [
                 range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
-                for axis in range(1, x_pad.ndim)
+                for axis in a_axes
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
                     patch_size=self.patch_size,
                     coords=top_left_coords,
-                    expand_first_dim=True,
                 )
 
                 # Sum attributions for patch.
@@ -1967,6 +1965,7 @@ class Selectivity(Metric):
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
                     patch_slice=patch_slice,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
@@ -2165,9 +2164,8 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: remove. infer general channel shape instead
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axis = utils.infer_attribution_axes(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -2232,6 +2230,7 @@ class SensitivityN(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x_perturbed,
                     indices=a_ix,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
