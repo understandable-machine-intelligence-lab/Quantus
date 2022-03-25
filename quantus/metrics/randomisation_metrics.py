@@ -172,6 +172,7 @@ class ModelParameterRandomisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -373,6 +374,7 @@ class RandomLogit(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.

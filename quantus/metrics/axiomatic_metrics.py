@@ -178,7 +178,8 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
+        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -385,6 +386,7 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -607,6 +609,7 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.

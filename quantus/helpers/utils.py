@@ -249,8 +249,8 @@ def conv2D_numpy(
             output,
             (
                 (0, 0),
-                (padwidth + padwidth % 2, padwidth),
-                (padwidth + padwidth % 2, padwidth),
+                (padwidth + (1 - (kernel_size % 2)), padwidth),
+                (padwidth + (1 - (kernel_size % 2)), padwidth),
             ),
             mode="edge",
         )
@@ -299,6 +299,7 @@ def create_patch_slice(
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
     """Expand additional channel dimension for attributions if needed."""
+    # TODO @Leander: Change to allow for more than 1 dim to be missing from attributions
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
@@ -314,33 +315,6 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
         return a_batch
     elif a_batch.ndim == x_batch.ndim - 1:
         return np.expand_dims(a_batch, axis=1)
-
-def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
-    """
-    Infers the axes in x_batch that are covered by a_batch.
-    """
-
-    if a_batch.shape[0] != x_batch.shape[0]:
-        raise ValueError(
-            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
-        )
-
-    if a_batch.ndim > x_batch.ndim:
-        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim))
-
-    # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
-    # Equal Shape
-    if a_batch.shape[1:] == x_batch.shape[1:]:
-        return np.arange(0, x_batch.ndim-1)
-
-    # Inferring channel shape
-    for dim in range(x_batch.ndim):
-        if a_batch.shape[1:] == tuple(x_batch.shape[1+dim:]):
-            return np.arange(dim, x_batch.ndim)
-        if a_batch.shape[1:] == tuple(x_batch.shape[1:dim+1]):
-            return np.arange(0, dim)
-
-    raise ValueError("Attribution axes could not be inferred for inputs of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape))
 
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
@@ -385,39 +359,76 @@ def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
         unpad_slice[0] = slice(None)
     return arr[tuple(unpad_slice)]
 
-def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int]) -> np.array:
+
+def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
+    """
+    Infers the axes in x_batch that are covered by a_batch.
+    """
+
+    if a_batch.shape[0] != x_batch.shape[0]:
+        raise ValueError(
+            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
+        )
+
+    if a_batch.ndim > x_batch.ndim:
+        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim))
+
+    # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
+    # Equal Shape
+    if a_batch.shape[1:] == x_batch.shape[1:]:
+        return np.arange(0, x_batch.ndim-1)
+
+    # Inferring channel shape
+    for dim in range(x_batch.ndim):
+        if a_batch.shape[1:] == tuple(x_batch.shape[1+dim:]):
+            return np.arange(dim, x_batch.ndim)
+        if a_batch.shape[1:] == tuple(x_batch.shape[1:dim+1]):
+            return np.arange(0, dim)
+
+    raise ValueError("Attribution axes could not be inferred for inputs of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape))
+
+
+def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int]) -> Tuple:
     """
     Expands indices to fit array shape. Returns expanded indices.
     """
-    expanded_indices = np.array(indices)
+    expanded_indices = np.array(indices) if not isinstance(indices, int) else np.array([indices])
     indexed_axes = np.sort(np.array(indexed_axes))
 
     asserts.assert_indexed_axes(arr, indexed_axes)
 
+    # Check if unraveling is needed
     if indexed_axes.size != expanded_indices.ndim:
         if expanded_indices.ndim == 1:
             expanded_indices = np.unravel_index(expanded_indices, tuple([arr.shape[i] for i in indexed_axes]))
         else:
             raise ValueError("indices dimension doesn't match indexed_axes")
 
-    # Indices First
-    if 0 in indexed_axes:
-        for i in range(indexed_axes[-1] + 1, arr.ndim):
-            expanded_indices = expanded_indices, slice(None)
-    # Indices Last
-    else:
-        for i in range(0, indexed_axes[0]):
-            expanded_indices = slice(None), expanded_indices
+    # Handle case of 1D indices
+    if not np.array(expanded_indices).ndim > 1:
+        expanded_indices = [np.array(expanded_indices)]
 
-    return expanded_indices
+    # Cast to list so item assignment works
+    expanded_indices = list(expanded_indices)
+
+    # Ensure array dimensions are kept when indexing.
+    # Expands dimensions of each element in expanded_indices depending on the number of elements
+    for i in range(len(expanded_indices)):
+        expanded_indices[i] = np.expand_dims(expanded_indices[i], axis=tuple(range(len(expanded_indices)-1)))
+
+    # Buffer with None-slices if indices index the last axes
+    for i in range(0, indexed_axes[0]):
+        expanded_indices = slice(None), *expanded_indices
+
+    return tuple(expanded_indices)
 
 
-def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> np.array:
+def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     """
     Gets the shape of the arr dimensions not included in axes
     """
     axes = np.sort(np.array(axes))
     asserts.assert_indexed_axes(arr, axes)
 
-    leftover_shape = tuple([arr.shape[i] for i in range(arr.ndims) if i not in axes])
+    leftover_shape = tuple([arr.shape[i] for i in range(arr.ndim) if i not in axes])
     return leftover_shape

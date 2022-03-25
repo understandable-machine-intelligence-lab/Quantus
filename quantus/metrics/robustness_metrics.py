@@ -195,6 +195,7 @@ class LocalLipschitzEstimate(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
@@ -428,6 +429,7 @@ class MaxSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
@@ -662,6 +664,7 @@ class AvgSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -893,6 +896,7 @@ class Continuity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -945,6 +949,7 @@ class Continuity(Metric):
                     targets=y,
                     **self.kwargs,
                 )
+                # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
                 #a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
 
                 if self.abs:

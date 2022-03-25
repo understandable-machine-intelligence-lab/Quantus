@@ -10,8 +10,6 @@ import scipy
 
 from .utils import get_baseline_value, conv2D_numpy, expand_indices, get_leftover_shape
 
-# TODO @Leander: Create perturb_func interface?
-
 def baseline_replacement_by_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
@@ -38,7 +36,9 @@ def baseline_replacement_by_indices(
         **kwargs
     )
 
-    arr_perturbed[indices] = baseline_value
+    # Perturb
+    arr_perturbed[indices] = np.expand_dims(baseline_value, axis=tuple(indexed_axes))
+
     return arr_perturbed
 
 def baseline_replacement_by_shift(
@@ -69,7 +69,6 @@ def baseline_replacement_by_shift(
 
     # Shift
     arr_shifted = copy.copy(arr_perturbed)
-    expand_axis = (dim for dim in range(baseline_value.ndim, arr_shifted.ndim))
     arr_shifted = np.add(
         arr_shifted,
         np.full(
@@ -120,6 +119,7 @@ def baseline_replacement_by_blur(
 
     # Perturb array.
     arr_perturbed = copy.copy(arr)
+
     arr_perturbed[indices] = arr_avg[indices]
     return arr_perturbed
 

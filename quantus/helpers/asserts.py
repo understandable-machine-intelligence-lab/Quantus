@@ -158,9 +158,12 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
 
+    # TODO @Leander: Revert to previous solution (x_batch.ndim == a_batch.ndim), but allow shapes to be different
     allowed_a_shapes = []
     allowed_a_shapes += [tuple(np.shape(x_batch)[1+dim:]) for dim in range(x_batch.ndim)]
     allowed_a_shapes += [tuple(np.shape(x_batch)[1:1+dim]) for dim in range(x_batch.ndim)]
+
+    print(x_batch.shape, a_batch.shape, allowed_a_shapes)
 
     assert np.shape(a_batch)[1:] in allowed_a_shapes, (
         "The inputs 'x_batch' and attributions 'a_batch' "
@@ -194,6 +197,8 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.shape(x_batch)[0] == np.shape(s_batch)[0]
     ), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
+
+    # TODO @Leander: Revert to previous solution (x_batch.ndim == s_batch.ndim), but allow shapes to be different
     allowed_s_shapes = []
     allowed_s_shapes += [tuple(np.shape(x_batch)[1 + dim:]) for dim in range(x_batch.ndim)]
     allowed_s_shapes += [tuple(np.shape(x_batch)[1:1 + dim]) for dim in range(x_batch.ndim)]
@@ -243,7 +248,9 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     """
     Checks that indexed_axes fits arr
     """
-    assert (indexed_axes == np.arange(indexed_axes[0], indexed_axes[-1] + 1)), (
+    assert len(indexed_axes) <= arr.ndim
+    assert len(indexed_axes) == len(np.arange(indexed_axes[0], indexed_axes[-1] + 1))
+    assert all([a == b for a, b in list(zip(indexed_axes, np.arange(indexed_axes[0], indexed_axes[-1] + 1)))]), (
         "Make sure indexed_axes contains consecutive axes.")
     assert 0 in indexed_axes or arr.ndim - 1 in indexed_axes, (
         "Make sure indexed_axes contains either the first or last axis of arr.")
