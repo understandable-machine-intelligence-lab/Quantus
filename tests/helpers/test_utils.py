@@ -9,7 +9,6 @@ from ..fixtures import *
 from ...quantus.helpers.models import LeNet
 from ...quantus.helpers.utils import *
 
-
 @pytest.fixture
 def segmentation_setup():
     return np.random.uniform(0, 0.1, size=(224, 224, 3))
@@ -17,62 +16,62 @@ def segmentation_setup():
 
 @pytest.fixture
 def baseline_none_1d():
-    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+    return {"value": None, "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_none_2d():
-    return {"choice": None, "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+def baseline_none_3d():
+    return {"value": None, "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
 def baseline_black_1d():
-    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+    return {"value": "black", "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_black_2d():
-    return {"choice": "black", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+def baseline_black_3d():
+    return {"value": "black", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
 def baseline_uniform_1d():
-    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+    return {"value": "uniform", "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_uniform_2d():
-    return {"choice": "uniform", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+def baseline_uniform_3d():
+    return {"value": "uniform", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
 def baseline_random_1d():
-    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+    return {"value": "random", "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_random_2d():
-    return {"choice": "random", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+def baseline_random_3d():
+    return {"value": "random", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
 def baseline_white_1d():
-    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+    return {"value": "white", "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_white_2d():
-    return {"choice": "white", "arr": np.random.uniform(0, 1, size=(1, 3, 224))}
+def baseline_white_3d():
+    return {"value": "white", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
 def baseline_mean_1d():
-    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222))}
+    return {"value": "mean", "arr": np.random.uniform(0, 1, size=(128,))}
 
 
 @pytest.fixture
-def baseline_mean_2d():
-    return {"choice": "mean", "arr": np.random.uniform(0, 1, size=(1, 3, 2222, 2222))}
+def baseline_mean_3d():
+    return {"value": "mean", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
 
 
 @pytest.fixture
@@ -176,37 +175,45 @@ def test_get_superpixel_segments(
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
-    "data,expected",
+    "data,shape,expected",
     [
-        (lazy_fixture("baseline_black_1d"), {"value": 0.0}),
-        (lazy_fixture("baseline_black_2d"), {"value": 0.0}),
-        (lazy_fixture("baseline_white_1d"), {"value": 1.0}),
-        (lazy_fixture("baseline_white_2d"), {"value": 1.0}),
-        (lazy_fixture("baseline_mean_1d"), {"value": 0.5}),
-        (lazy_fixture("baseline_mean_2d"), {"value": 0.5}),
-        (lazy_fixture("baseline_none_1d"), {"exception": AssertionError}),
-        (lazy_fixture("baseline_none_2d"), {"exception": AssertionError}),
+        (lazy_fixture("baseline_black_1d"), {"return_shape": (1,)}, {"value": 0.0}),
+        (lazy_fixture("baseline_black_1d"), {"return_shape": (3, 4)}, {"value": 0.0}),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,)}, {"value": 0.0}),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (3, 4)}, {"value": 0.0}),
+        (lazy_fixture("baseline_white_1d"), {"return_shape": (1,)}, {"value": 1.0}),
+        (lazy_fixture("baseline_white_1d"), {"return_shape": (3, 4)}, {"value": 1.0}),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,)}, {"value": 1.0}),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (3, 4)}, {"value": 1.0}),
+        (lazy_fixture("baseline_mean_1d"), {"return_shape": (1,)}, {"value": 0.5}),
+        (lazy_fixture("baseline_mean_1d"), {"return_shape": (3, 4)}, {"value": 0.5}),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,)}, {"value": 0.5}),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (3, 4)}, {"value": 0.5}),
+        (lazy_fixture("baseline_none_1d"), {"return_shape": (1,)}, {"exception": ValueError}),
+        (lazy_fixture("baseline_none_1d"), {"return_shape": (3, 4)}, {"exception": ValueError}),
+        (lazy_fixture("baseline_none_3d"), {"return_shape": (1,)}, {"exception": ValueError}),
+        (lazy_fixture("baseline_none_3d"), {"return_shape": (3, 4)}, {"exception": ValueError}),
     ],
 )
-def test_get_baseline_value(data: np.ndarray, expected: Union[float, dict, bool]):
+def test_get_baseline_value(data: np.ndarray, shape: Tuple, expected: Union[float, dict, bool]):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_baseline_value(choice=data["choice"], arr=data["arr"])
+            get_baseline_value(value=data["value"], return_shape=shape["return_shape"], arr=data["arr"])
         return
-    out = get_baseline_value(choice=data["choice"], arr=data["arr"])
-    assert out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1), "Test failed."
+    out = get_baseline_value(value=data["value"], return_shape=shape["return_shape"], arr=data["arr"])
+    assert out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1) and out.shape == shape["return_shape"], "Test failed."
 
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "data,expected",
     [
-        (lazy_fixture("baseline_black_2d"), dict),
-        (lazy_fixture("baseline_black_2d"), dict),
-        (lazy_fixture("baseline_white_2d"), dict),
-        (lazy_fixture("baseline_white_2d"), dict),
-        (lazy_fixture("baseline_mean_2d"), dict),
-        (lazy_fixture("baseline_mean_2d"), dict),
+        (lazy_fixture("baseline_black_3d"), dict),
+        (lazy_fixture("baseline_black_3d"), dict),
+        (lazy_fixture("baseline_white_3d"), dict),
+        (lazy_fixture("baseline_white_3d"), dict),
+        (lazy_fixture("baseline_mean_3d"), dict),
+        (lazy_fixture("baseline_mean_3d"), dict),
     ],
 )
 def test_get_baseline_dict(data: np.ndarray, expected: Union[float, dict, bool]):
@@ -522,6 +529,20 @@ def test_get_wrapped_model(
             },
             {"shape": (3, 224, 224)},
         ),
+        (
+            {
+                "c_in": 1,
+                "c_out": 1,
+                "imsize": 28,
+                "kgroups": 1,
+                "ksize": 15,
+                "stride": 1,
+                "padding": 0,
+                "groups": 1,
+                "pad_output": True,
+            },
+            {"shape": (1, 28, 28)},
+        ),
     ],
 )
 def test_conv2D_numpy(
@@ -532,6 +553,7 @@ def test_conv2D_numpy(
     kernel = random_kernel(
         params["c_in"], params["c_out"], params["kgroups"], params["ksize"]
     )
+
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             out = conv2D_numpy(
@@ -693,50 +715,50 @@ def test_create_patch_slice(params: dict, expected: Any):
     [
         (
             {
-                "a": np.ones((64, 128)),
-                "x": np.ones((64, 3, 128)),
+                "a_batch": np.ones((64, 128)),
+                "x_batch": np.ones((64, 3, 128)),
             },
             {"value": np.ones((64, 1, 128))},
         ),
         (
             {
-                "a": np.ones((64, 128, 128)),
-                "x": np.ones((64, 3, 128, 128)),
+                "a_batch": np.ones((64, 128, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
             },
             {"value": np.ones((64, 1, 128, 128))},
         ),
         (
             {
-                "a": np.ones((64, 1, 128, 128)),
-                "x": np.ones((64, 3, 128, 128)),
+                "a_batch": np.ones((64, 1, 128, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
             },
             {"value": np.ones((64, 1, 128, 128))},
         ),
         (
             {
-                "a": np.ones((64, 3, 128, 128)),
-                "x": np.ones((64, 3, 128, 128)),
+                "a_batch": np.ones((64, 3, 128, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
             },
             {"value": np.ones((64, 3, 128, 128))},
         ),
         (
             {
-                "a": np.ones((64, 3, 128, 128)),
-                "x": np.ones((32, 3, 128, 128)),
+                "a_batch": np.ones((64, 3, 128, 128)),
+                "x_batch": np.ones((32, 3, 128, 128)),
             },
             {"exception": ValueError},
         ),
         (
             {
-                "a": np.ones((64, 3, 128, 128)),
-                "x": np.ones((64, 3, 128)),
+                "a_batch": np.ones((64, 3, 128, 128)),
+                "x_batch": np.ones((64, 3, 128)),
             },
             {"exception": ValueError},
         ),
         (
             {
-                "a": np.ones((64, 128)),
-                "x": np.ones((64, 3, 128, 128)),
+                "a_batch": np.ones((64, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
             },
             {"exception": ValueError},
         ),
@@ -830,3 +852,190 @@ def test_get_nr_patches(params: dict, expected: Any):
 
     out = get_nr_patches(**params)
     assert out == expected["value"]
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 2, 3, 4, 5, 6)),
+            },
+            {"value": [0, 1, 2, 3, 4]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 3, 4, 5, 6)),
+            },
+            {"value": [1, 2, 3, 4]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 4, 5, 6)),
+            },
+            {"value": [2, 3, 4]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 2, 3, 4)),
+            },
+            {"value": [0, 1, 2]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30,)),
+            },
+            {"value": []},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 9, 9, 9, 9, 9, 9)),
+            },
+            {"exception": ValueError},
+        ),
+    ],
+)
+def test_infer_attribution_axes(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = infer_attribution_axes(**params)
+        return
+
+    out = infer_attribution_axes(**params)
+    assert all([a == b for a, b in list(zip(out, expected["value"]))])
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": 5,
+                "indexed_axes": [0, 1, 2, 3, 4],
+            },
+            {"value": (0, 0, 0, 0, 5)},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": [5, 19],
+                "indexed_axes": [2, 3, 4],
+            },
+            {"value": (slice(None), slice(None), np.array([0, 0]), np.array([0, 3]), np.array([5, 1]))},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": (np.array([1, 1]), np.array([0, 2])),
+                "indexed_axes": [0, 1],
+            },
+            {"value": (np.array([1, 1]), np.array([0, 2]), slice(None), slice(None), slice(None))},
+        ),
+        (
+            {
+                "arr": np.ones((2,)),
+                "indices": [1],
+                "indexed_axes": [0, 1, 2, 3],
+            },
+            {"exception": AssertionError},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": (np.array([1, 1]), np.array([0, 2])),
+                "indexed_axes": [0],
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": [1],
+                "indexed_axes": [0, 2],
+            },
+            {"exception": AssertionError},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "indices": [1],
+                "indexed_axes": [2, 3],
+            },
+            {"exception": AssertionError},
+        ),
+    ],
+)
+def test_expand_indices(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = expand_indices(**params)
+        return
+
+    out = expand_indices(**params)
+    assert all([np.all(a == b) for a, b in list(zip(out, expected["value"]))])
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": [0, 1, 2, 3, 4],
+            },
+            {"value": ()},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": np.array([0, 1]),
+            },
+            {"value": (4, 5, 6)},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": np.array([1, 2, 3, 4]),
+            },
+            {"value": (2,)},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": np.array([0, 2]),
+            },
+            {"exception": AssertionError},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": np.array([1, 2]),
+            },
+            {"exception": AssertionError},
+        ),
+        (
+            {
+                "arr": np.ones((2, 3, 4, 5, 6)),
+                "axes": np.array([0, 1, 2, 3, 4, 5]),
+            },
+            {"exception": AssertionError},
+        ),
+    ]
+)
+def test_get_leftover_shape(params: dict, expected: Any):
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            out = get_leftover_shape(**params)
+        return
+
+    out = get_leftover_shape(**params)
+    assert all([np.all(a == b) for a, b in list(zip(out, expected["value"]))])

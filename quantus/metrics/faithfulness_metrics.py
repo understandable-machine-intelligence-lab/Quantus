@@ -16,7 +16,6 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.similar_func import correlation_pearson, correlation_spearman
 from ..helpers.perturb_func import baseline_replacement_by_indices
-from ..helpers.perturb_func import baseline_replacement_by_patch
 
 
 class FaithfulnessCorrelation(Metric):
@@ -187,6 +186,7 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -413,6 +413,7 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -645,6 +646,7 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -885,7 +887,7 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1120,6 +1122,7 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1368,6 +1371,7 @@ class PixelFlipping(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1497,7 +1501,7 @@ class RegionPerturbation(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
@@ -1609,6 +1613,7 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1780,7 +1785,7 @@ class Selectivity(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
@@ -1888,6 +1893,7 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -2164,6 +2170,7 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
         #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
