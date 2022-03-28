@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple, Union, List
 
 
 def attributes_check(metric):
@@ -142,6 +142,22 @@ def assert_targets(
 
     if isinstance(y_batch, int):
         return
+
+    # Retrieve the function parameters ('x_batch', 'y_batch') as strings.
+    # Convert type dict_keys to list for convenience.
+    params_str: List[str] = list(locals().keys())
+
+    # Ensure all targets are numpy arrays.
+    for target_str in params_str:
+
+        # locals()[target_str] is a numpy array.
+        # It retrieves the variable with the target_str name.
+        # In this case, it results in either the 'x_batch' or 'y_batch' variable.
+        target: np.ndarray = locals()[target_str]
+
+        assert (
+            type(target) == np.ndarray
+        ), f"Attributions {target_str} should be of type np.ndarray."
 
     assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
         "The 'y_batch' should be an integer or a list with "
