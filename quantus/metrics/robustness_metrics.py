@@ -148,7 +148,7 @@ class LocalLipschitzEstimate(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -357,7 +357,7 @@ class MaxSensitivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MaxSensitivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -567,7 +567,7 @@ class AvgSensitivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = AvgSensitivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -779,7 +779,7 @@ class Continuity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Continuity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))

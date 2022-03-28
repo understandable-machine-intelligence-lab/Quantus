@@ -146,7 +146,7 @@ class FaithfulnessCorrelation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -371,7 +371,7 @@ class FaithfulnessEstimate(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -596,7 +596,7 @@ class MonotonicityArya(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MonotonicityArya(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -819,7 +819,7 @@ class MonotonicityNguyen(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -1055,7 +1055,7 @@ class PixelFlipping(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = PixelFlipping(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -1281,7 +1281,7 @@ class RegionPerturbation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = RegionPerturbation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
 
         # Reshape input batch to channel first order:
@@ -1578,7 +1578,7 @@ class Selectivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Selectivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -1871,7 +1871,7 @@ class SensitivityN(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = SensitivityN(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
@@ -2105,7 +2105,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = IROF(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
