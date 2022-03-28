@@ -118,6 +118,19 @@ if util.find_spec("zennit"):
             },
             {"max": 0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "neg_only": True,
+                "xai_lib": "zennit",
+                "reduce_axes": (0, 1)
+            },
+            {"shape": (28,)},
+        ),
     ]
 else:
     zennit_tests = []
@@ -690,6 +703,10 @@ def test_explain_func(
         elif "value" in expected:
             assert all(
                 s == expected["value"] for s in a_batch.flatten()
+            ), "Test failed."
+        elif "shape" in expected:
+            assert all(
+                s.shape == expected["shape"] for s in a_batch
             ), "Test failed."
         elif "warning" in expected:
             with pytest.warns(expected["warning"]):

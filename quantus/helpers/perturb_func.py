@@ -45,7 +45,7 @@ def baseline_replacement_by_shift(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
-    perturb_baseline: Union[float, int, str, np.array],
+    input_shift: Union[float, int, str, np.array],
     ** kwargs,
 ) -> np.array:
     """
@@ -61,7 +61,7 @@ def baseline_replacement_by_shift(
 
     # Get Baseline
     baseline_value = get_baseline_value(
-        value=perturb_baseline,
+        value=input_shift,
         arr=arr,
         return_shape=tuple(baseline_shape),
         **kwargs
@@ -82,7 +82,11 @@ def baseline_replacement_by_shift(
     return arr_perturbed
 
 def baseline_replacement_by_blur(
-    arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int], blur_kernel_size: int = 15, **kwargs
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    blur_kernel_size: Union[int, Sequence[int]] = 15,
+    **kwargs
 ) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
@@ -91,16 +95,23 @@ def baseline_replacement_by_blur(
     Assumes unbatched channel first format.
     """
 
+    raise NotImplementedError("Currently in development")
+
     indices = expand_indices(arr, indices, indexed_axes)
 
+    # expand blur_kernel_size
+    if isinstance(blur_kernel_size, int):
+        blur_kernel_size = [blur_kernel_size for _ in indexed_axes]
+
+    assert len(blur_kernel_size) == len(indexed_axes)
+
     # TODO @Leander: change this for arbitrary input shapes
-    # TODO @Leander: double check axes
-    nr_channels = arr.shape[0]
     # Create blurred array.
-    blur_kernel_size = (1, *([blur_kernel_size] * (arr.ndim - 1)))
     kernel = np.ones(blur_kernel_size, dtype=arr.dtype)
     kernel *= 1.0 / np.prod(blur_kernel_size)
-    kernel = np.tile(kernel, (nr_channels, 1, *([1] * (arr.ndim - 1))))
+    kernel = np.tile(kernel, (*get_leftover_shape(arr, indexed_axes), 1, *[1 for _ in blur_kernel_size]))
+    print(kernel.shape)
+    print(arr.shape, kernel.shape)
 
     if arr.ndim == 3:
         # TODO @Leander: Check return shape for different kernel sizes
@@ -165,7 +176,7 @@ def rotation(
 ) -> np.array:
     """
     Rotate array by some given angle.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
@@ -189,14 +200,13 @@ def translation_x_direction(
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
     """
-    # TODO @Leander: arbitrary shapes?
     if arr.ndim != 3:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
 
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
-    # TODO @Leander: return shape for baseline value?
+    # TODO @Leander: test
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, -1),
         matrix,
@@ -204,6 +214,7 @@ def translation_x_direction(
         borderValue=get_baseline_value(
             value=perturb_baseline,
             arr=arr,
+            return_shape=(arr.shape[0]),
             **kwargs,
         ),
     )
@@ -216,14 +227,13 @@ def translation_y_direction(
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
     """
-    # TODO @Leander: arbitrary shapes?
     if arr.ndim != 3:
         raise ValueError("Check that 'perturb_func' receives a 3D array.")
 
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
-    # TODO @Leander: return shape for baseline value?
+    # TODO @Leander: test
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),
         matrix,
@@ -231,6 +241,7 @@ def translation_y_direction(
         borderValue=get_baseline_value(
             value=perturb_baseline,
             arr=arr,
+            return_shape=(arr.shape[0]),
             **kwargs,
         ),
     )

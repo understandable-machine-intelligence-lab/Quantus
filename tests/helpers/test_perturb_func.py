@@ -183,7 +183,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2],
                 "indexed_axes": [1, 2],
-                "perturb_baseline": -1.0,
+                "input_shift": -1.0,
             },
             -1,
         ),
@@ -192,7 +192,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2],
                 "indexed_axes": [0],
-                "perturb_baseline": -1.0,
+                "input_shift": -1.0,
             },
             -1,
         ),
@@ -201,7 +201,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2],
                 "indexed_axes": [0, 1, 2],
-                "perturb_baseline": -1.0,
+                "input_shift": -1.0,
             },
             -1,
         ),
@@ -210,7 +210,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2],
                 "indexed_axes": [0],
-                "perturb_baseline": -1.0,
+                "input_shift": -1.0,
             },
             -1,
         ),
@@ -219,7 +219,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2, 112, 113, 128, 223],
                 "indexed_axes": [0, 1],
-                "perturb_baseline": -1.0,
+                "input_shift": -1.0,
             },
             -1,
         ),
@@ -228,7 +228,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2, 112, 113, 128, 223],
                 "indexed_axes": [1],
-                "perturb_baseline": np.array([1, 2, 3]),
+                "input_shift": np.array([1, 2, 3]),
             },
             np.array([1, 2, 3]),
         ),
@@ -237,7 +237,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2, 224, 226, 448, 450],
                 "indexed_axes": [1, 2],
-                "perturb_baseline": np.array([1]),
+                "input_shift": np.array([1]),
             },
             np.array([1]),
         ),
@@ -246,7 +246,7 @@ def test_baseline_replacement_by_indices(
             {
                 "indices": [0, 2, 224, 226, 448, 450],
                 "indexed_axes": [0, 1, 2],
-                "perturb_baseline": 1.0,
+                "input_shift": 1.0,
             },
             1,
         ),

@@ -227,7 +227,7 @@ def conv2D_numpy(
     output_width = (width - kernel_size) // stride + 1
     output = np.zeros((c_out, output_height, output_width)).astype(x.dtype)
 
-    # TODO @Leander: improve efficiency, less loops
+    # TODO: improve efficiency, less loops
     for g in range(groups):
         for c in range(c_out_g * g, c_out_g * (g + 1)):
             for h in range(output_height):
@@ -259,13 +259,12 @@ def conv2D_numpy(
 
 
 def create_patch_slice(
-    patch_size: Union[int, Sequence[int]], coords: Sequence[int], expand_first_dim: bool = False
+    patch_size: Union[int, Sequence[int]], coords: Sequence[int]
 ) -> Tuple[Sequence[int]]:
     """
     Create a patch slice from patch size and coordinates.
-    expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
     """
-    # TODO @Leander: Variable Channel shapes
+
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
     if isinstance(coords, int):
@@ -287,34 +286,11 @@ def create_patch_slice(
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
     patch_slice = [
-        slice(coord, coord + patch_size_dim)
+        np.arange(coord, coord + patch_size_dim)
         for coord, patch_size_dim in zip(coords, patch_size)
     ]
-    # Prepend slice for all channels.
-    if expand_first_dim:
-        patch_slice = [slice(None), *patch_slice]
 
     return tuple(patch_slice)
-
-
-def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
-    """Expand additional channel dimension for attributions if needed."""
-    # TODO @Leander: Change to allow for more than 1 dim to be missing from attributions
-    if a_batch.shape[0] != x_batch.shape[0]:
-        raise ValueError(
-            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
-        )
-    if a_batch.ndim > x_batch.ndim:
-        raise ValueError(f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})")
-    if a_batch.ndim < x_batch.ndim - 1:
-        raise ValueError(
-            f"a can have at max one dimension less than x ({a_batch.ndim} < {x_batch.ndim} - 1)"
-        )
-
-    if a_batch.ndim == x_batch.ndim:
-        return a_batch
-    elif a_batch.ndim == x_batch.ndim - 1:
-        return np.expand_dims(a_batch, axis=1)
 
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
@@ -338,33 +314,64 @@ def get_nr_patches(
     return np.prod(shape) // np.prod(patch_size)
 
 
-def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
+def _pad_array(arr: np.array, pad_width: int, mode: str, padded_axes: Sequence[int]):
     """To allow for any patch_size we add padding to the array."""
-    # TODO @Leander: Variable Channel shapes
+
+    assert len(padded_axes) <= arr.ndim, (
+        "Cannot pad more axes than array has dimensions"
+    )
+
     pad_width_list = [(pad_width, pad_width)] * arr.ndim
-    if omit_first_axis:
-        pad_width_list[0] = (0, 0)
+    for ax in range(arr.ndim):
+        if ax not in padded_axes:
+            pad_width_list[ax] = (0, 0)
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
     return arr_pad
 
 
-def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
+def _unpad_array(arr: np.array, pad_width: int, padded_axes: Sequence[int]):
     """Remove padding from the array."""
-    # TODO @Leander: Variable Channel shapes
+
+    assert len(padded_axes) <= arr.ndim, (
+        "Cannot unpad more axes than array has dimensions"
+    )
+
     unpad_slice = [
         slice(pad_width, arr.shape[axis] - pad_width)
         for axis, _ in enumerate(arr.shape)
     ]
-    if omit_first_axis:
-        unpad_slice[0] = slice(None)
+    for ax in range(arr.ndim):
+        if ax not in padded_axes:
+            unpad_slice[ax] = slice(None)
+
     return arr[tuple(unpad_slice)]
+
+
+def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
+    """Expand additional channel dimension(s) for attributions if needed."""
+    if a_batch.shape[0] != x_batch.shape[0]:
+        raise ValueError(
+            f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
+        )
+    if a_batch.ndim > x_batch.ndim:
+        raise ValueError(f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})")
+
+    if a_batch.ndim == x_batch.ndim:
+        return a_batch
+    else:
+        attr_axes = infer_attribution_axes(a_batch, x_batch)
+
+        #TODO: infer_attribution_axes currently returns dimensions w/o batch dimension
+        attr_axes = [a+1 for a in attr_axes]
+        expand_axes = [a for a in range(1, x_batch.ndim) if a not in attr_axes]
+
+        return np.expand_dims(a_batch, axis=tuple(expand_axes))
 
 
 def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
     """
     Infers the axes in x_batch that are covered by a_batch.
     """
-
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
@@ -374,18 +381,59 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim))
 
     # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
+    # TODO: adapt to expanded attributions?
+    a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
+    x_shape = [s for s in np.shape(x_batch)[1:]]
+
     # Equal Shape
-    if a_batch.shape[1:] == x_batch.shape[1:]:
-        return np.arange(0, x_batch.ndim-1)
+    if a_shape == x_shape:
+        return np.arange(0, len(x_shape))
 
-    # Inferring channel shape
-    for dim in range(x_batch.ndim):
-        if a_batch.shape[1:] == tuple(x_batch.shape[1+dim:]):
-            return np.arange(dim, x_batch.ndim)
-        if a_batch.shape[1:] == tuple(x_batch.shape[1:dim+1]):
-            return np.arange(0, dim)
+    # One attribution value per sample
+    if len(a_shape) == 0:
+        return np.array([])
 
-    raise ValueError("Attribution axes could not be inferred for inputs of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape))
+    x_subshapes = [[x_shape[i] for i in range(start, start + len(a_shape))] for start in range(0, len(x_shape) - len(a_shape) + 1)]
+    if x_subshapes.count(a_shape) < 1:
+        # Check that attribution dimensions are (consecutive) subdimensions of inputs
+        raise ValueError(
+            "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
+            "inputs were of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
+        )
+    elif x_subshapes.count(a_shape) > 1:
+        # Check that attribution dimensions are (unique) subdimensions of inputs.
+        # Consider potentially expanded dims in attributions.
+        if a_batch.ndim == x_batch.ndim and len(a_shape) < a_batch.ndim:
+            a_subshapes = [[np.shape(a_batch)[1:][i] for i in range(start, start + len(a_shape))] for start in
+                           range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)]
+            if a_subshapes.count(a_shape) == 1:
+                # Inferring channel shape
+                for dim in range(len(np.shape(a_batch)[1:]) + 1):
+                    if a_shape == np.shape(a_batch)[1:][dim:]:
+                        return np.arange(dim, len(np.shape(a_batch)[1:]))
+                    if a_shape == np.shape(a_batch)[1:][:dim]:
+                        return np.arange(0, dim)
+
+            raise ValueError("Attribution axes could not be inferred for inputs of "
+                             "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
+                             )
+
+        raise ValueError(
+            "Attribution dimensions are not unique subdimensions of inputs:  "
+            "inputs were of shape {} and attributions of shape {}."
+            "Please expand attribution dimensions for a unique solution".format(x_batch.shape, a_batch.shape)
+        )
+    else:
+        # Inferring channel shape
+        for dim in range(len(x_shape) + 1):
+            if a_shape == x_shape[dim:]:
+                return np.arange(dim, len(x_shape))
+            if a_shape == x_shape[:dim]:
+                return np.arange(0, dim)
+
+    raise ValueError("Attribution axes could not be inferred for inputs of "
+                     "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
+                     )
 
 
 def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array]], indexed_axes: Sequence[int]) -> Tuple:
@@ -398,7 +446,7 @@ def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.ar
     asserts.assert_indexed_axes(arr, indexed_axes)
 
     # Check if unraveling is needed
-    if indexed_axes.size != expanded_indices.ndim:
+    if indexed_axes.size != len(expanded_indices):
         if expanded_indices.ndim == 1:
             expanded_indices = np.unravel_index(expanded_indices, tuple([arr.shape[i] for i in indexed_axes]))
         else:

@@ -12,7 +12,7 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.perturb_func import baseline_replacement_by_indices, baseline_replacement_by_shift
 
 
 class Completeness(Metric):
@@ -178,8 +178,7 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -201,6 +200,7 @@ class Completeness(Metric):
             x_baseline = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
+                indexed_axes=np.arange(0, x.ndim),
                 **self.kwargs,
             )
 
@@ -386,8 +386,7 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -506,7 +505,7 @@ class InputInvariance(Metric):
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+            "perturb_func", baseline_replacement_by_shift
         )
         self.last_results = []
         self.all_results = []
@@ -609,8 +608,7 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
