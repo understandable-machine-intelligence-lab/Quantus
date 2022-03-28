@@ -119,12 +119,14 @@ def assert_targets(
     x_batch: np.array,
     y_batch: np.array,
 ) -> None:
-    if not isinstance(y_batch, int):
-        assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
-            "The 'y_batch' should by an integer or a list with "
-            "the same number of samples as the 'x_batch' input"
-            "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
-        )
+    if isinstance(y_batch, int):
+        return
+
+    assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
+        "The 'y_batch' should by an integer or a list with "
+        "the same number of samples as the 'x_batch' input"
+        "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
+    )
 
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
