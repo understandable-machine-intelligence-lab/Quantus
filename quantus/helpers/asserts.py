@@ -157,18 +157,25 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "include the same number of samples."
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
-
-    # TODO @Leander: Revert to previous solution (x_batch.ndim == a_batch.ndim), but allow shapes to be different
-    allowed_a_shapes = []
-    allowed_a_shapes += [tuple(np.shape(x_batch)[1+dim:]) for dim in range(x_batch.ndim)]
-    allowed_a_shapes += [tuple(np.shape(x_batch)[1:1+dim]) for dim in range(x_batch.ndim)]
-
-    print(x_batch.shape, a_batch.shape, allowed_a_shapes)
-
-    assert np.shape(a_batch)[1:] in allowed_a_shapes, (
-        "The inputs 'x_batch' and attributions 'a_batch' "
-        "should share dimensions."
-        "{} not in {}".format(np.shape(x_batch)[1:], np.shape(a_batch)[1:])
+    assert np.ndim(x_batch) == np.ndim(a_batch), (
+        "The inputs 'x_batch' and attributions 'a_batch' should "
+        "have the same number of dimensions."
+        "{} != {}".format(np.ndim(x_batch), np.ndim(a_batch))
+    )
+    a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
+    x_shape = [s for s in np.shape(x_batch)[1:]]
+    assert a_shape[0] == x_shape[0] or a_shape[-1] == x_shape[-1], (
+        "The dimensions of attribution and input per sample should correspond in either "
+        "the first or last dimensions, but got shapes "
+        "{} and {}".format(a_shape, x_shape)
+    )
+    assert all([a in x_shape for a in a_shape]), (
+        "All attribution dimensions should be included in the input dimensions, "
+        "but got shapes {} and {}".format(a_shape, x_shape)
+    )
+    assert all([x_shape.index(a) > x_shape.index(a_shape[i]) for a in a_shape for i in range(a_shape.index(a))]), (
+        "The dimensions of the attribution must correspond to dimensions of the input in the same order, "
+        "but got shapes {} and {}".format(a_shape, x_shape)
     )
     assert not np.all((a_batch == 0)), (
         "The elements in the attribution vector are all equal to zero, "
@@ -197,17 +204,13 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.shape(x_batch)[0] == np.shape(s_batch)[0]
     ), "The inputs 'x_batch' and segmentations 's_batch' should include the same number of samples."
-
-    # TODO @Leander: Revert to previous solution (x_batch.ndim == s_batch.ndim), but allow shapes to be different
-    allowed_s_shapes = []
-    allowed_s_shapes += [tuple(np.shape(x_batch)[1 + dim:]) for dim in range(x_batch.ndim)]
-    allowed_s_shapes += [tuple(np.shape(x_batch)[1:1 + dim]) for dim in range(x_batch.ndim)]
-
-    assert np.shape(s_batch)[1:] in allowed_s_shapes, (
-        "The inputs 'x_batch' and segmentations 's_batch' "
-        "should share dimensions."
-        "{} not in {}".format(np.shape(x_batch)[1:], np.shape(s_batch)[1:])
-    )
+    assert (
+        np.shape(x_batch)[2:] == np.shape(s_batch)[2:]
+    ), "The inputs 'x_batch' and segmentations 's_batch' should share the same dimensions."
+    assert (
+        np.shape(s_batch)[1] == 1
+    ), "The second dimension of the segmentations 's_batch' should be equal to 1."
+    # TODO.
     assert (
         len(np.nonzero(s_batch)) > 0
     ), "The segmentation 's_batch' must contain non-zero elements."

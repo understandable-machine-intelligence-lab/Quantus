@@ -165,8 +165,7 @@ class Sparseness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -355,8 +354,7 @@ class Complexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -538,8 +536,7 @@ class EffectiveComplexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)

@@ -585,79 +585,62 @@ def test_conv2D_numpy(
             {
                 "patch_size": 4,
                 "coords": 0,
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), )},
+            {"value": (np.arange(0, 4), )},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0, ),
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), )},
+            {"value": (np.arange(0, 4), )},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0, 0),
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), slice(0, 4, None))},
+            {"value": (np.arange(0, 4), np.arange(0, 4))},
         ),
         (
             {
                 "patch_size": (4, 4),
                 "coords": (0, 0),
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), slice(0, 4, None))},
+            {"value": (np.arange(0, 4), np.arange(0, 4))},
         ),
         (
             {
                 "patch_size": (4, 6),
                 "coords": (0, 0),
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), slice(0, 6, None))},
+            {"value": (np.arange(0, 4), np.arange(0, 6))},
         ),
         (
             {
                 "patch_size": 10,
                 "coords": (1, 2),
-                "expand_first_dim": False,
             },
-            {"value": (slice(1, 11, None), slice(2, 12, None))},
+            {"value": (np.arange(1, 11), np.arange(2, 12))},
         ),
         (
             {
                 "patch_size": (10, 5),
                 "coords": (1, 2),
-                "expand_first_dim": False,
             },
-            {"value": (slice(1, 11, None), slice(2, 7, None))},
-        ),
-        (
-            {
-                "patch_size": 4,
-                "coords": (0, 0),
-                "expand_first_dim": True,
-            },
-            {"value": (slice(None, None, None), slice(0, 4, None), slice(0, 4, None))},
+            {"value": (np.arange(1, 11), np.arange(2, 7))},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0, 0, 0),
-                "expand_first_dim": False,
             },
-            {"value": (slice(0, 4, None), slice(0, 4, None), slice(0, 4, None))},
+            {"value": (np.arange(0, 4), np.arange(0, 4), np.arange(0, 4))},
         ),
         (
             {
                 "patch_size": (4, 4, 4),
                 "coords": (0, 0),
-                "expand_first_dim": False,
             },
             {"exception": ValueError},
         ),
@@ -665,7 +648,6 @@ def test_conv2D_numpy(
             {
                 "patch_size": (4, 4),
                 "coords": (0, 0, 0),
-                "expand_first_dim": False,
             },
             {"exception": ValueError},
         ),
@@ -673,15 +655,6 @@ def test_conv2D_numpy(
             {
                 "patch_size": (4, 4),
                 "coords": (0, ),
-                "expand_first_dim": False,
-            },
-            {"exception": ValueError},
-        ),
-        (
-            {
-                "patch_size": np.ones((4, 4)),
-                "coords": (0, 0),
-                "expand_first_dim": False,
             },
             {"exception": ValueError},
         ),
@@ -695,18 +668,9 @@ def test_create_patch_slice(params: dict, expected: Any):
 
     out = create_patch_slice(**params)
     
-    assert all(out_slice == expected_slice
+    assert np.all(out_slice == expected_slice
                for out_slice, expected_slice in zip(out, expected["value"])
     ), f"Slices not equal. {out_slice} != {expected_slice}"
-    assert all(isinstance(out_slice.start, int) or out_slice.start is None
-               for out_slice in out
-    ), f"Not all slice starts are integers/None. {out}"
-    assert all(isinstance(out_slice.stop, int) or out_slice.stop is None
-               for out_slice in out
-    ), f"Not all slice stops are integers/None. {out}"
-    assert all(isinstance(out_slice.step, int) or out_slice.step is None
-               for out_slice in out
-    ), f"Not all slice steps are integers/None. {out}"
 
 
 @pytest.mark.utils
@@ -740,6 +704,34 @@ def test_create_patch_slice(params: dict, expected: Any):
                 "x_batch": np.ones((64, 3, 128, 128)),
             },
             {"value": np.ones((64, 3, 128, 128))},
+        ),
+        (
+                {
+                    "a_batch": np.ones((64, 1, 1, 128)),
+                    "x_batch": np.ones((64, 3, 128, 128)),
+                },
+                {"value": np.ones((64, 1, 1, 128))},
+        ),
+        (
+                {
+                    "a_batch": np.ones((64, 3, 128)),
+                    "x_batch": np.ones((64, 3, 128, 128)),
+                },
+                {"value": np.ones((64, 3, 128, 1))},
+        ),
+        (
+                {
+                    "a_batch": np.ones((64, 3)),
+                    "x_batch": np.ones((64, 3, 128, 128)),
+                },
+                {"value": np.ones((64, 3, 1, 1))},
+        ),
+        (
+                {
+                    "a_batch": np.ones((64, 200)),
+                    "x_batch": np.ones((64, 3, 128, 200)),
+                },
+                {"value": np.ones((64, 1, 1, 200))},
         ),
         (
             {
@@ -895,7 +887,56 @@ def test_get_nr_patches(params: dict, expected: Any):
         (
             {
                 "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 1, 1, 1, 5, 6)),
+            },
+            {"value": [3, 4]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 1, 1, 5, 6)),
+            },
+            {"value": [3, 4]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 2, 3, 1, 1, 1)),
+            },
+            {"value": [0, 1]},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
                 "a_batch": np.ones((30, 9, 9, 9, 9, 9, 9)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 2, 2, 2, 2)),
+                "a_batch": np.ones((30, 2)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 2)),
+                "a_batch": np.ones((30, 2, 2, 2)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
+                "a_batch": np.ones((30, 2, 4, 6)),
+            },
+            {"exception": ValueError},
+        ),
+        (
+            {
+                "x_batch": np.ones((30, 2, 2, 2, 2)),
+                "a_batch": np.ones((30, 2, 1, 1, 2)),
             },
             {"exception": ValueError},
         ),

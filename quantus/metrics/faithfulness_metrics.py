@@ -186,8 +186,7 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -413,8 +412,7 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -472,7 +470,7 @@ class FaithfulnessEstimate(Metric):
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
-                    indices_axes=a_axes,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -646,8 +644,7 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -701,9 +698,9 @@ class IterativeRemovalOfFeatures(Metric):
                 ]
 
                 x_perturbed = self.perturb_func(
-                    arr=x_input.flatten(),
+                    arr=x,
                     indices=a_ix,
-                    indices_axes=a_axes,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -887,8 +884,7 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -932,7 +928,7 @@ class MonotonicityArya(Metric):
             baseline_value = utils.get_baseline_value(
                 value=self.perturb_baseline, arr=x, return_shape=(1,)
             )
-            x_baseline = np.full(x.shape, baseline_value).flatten()
+            x_baseline = np.full(x.shape, baseline_value)
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -1122,8 +1118,7 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -1371,8 +1366,7 @@ class PixelFlipping(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -1411,7 +1405,7 @@ class PixelFlipping(Metric):
             a_indices = np.argsort(-a)
 
             preds = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -1613,8 +1607,7 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -1648,10 +1641,10 @@ class RegionPerturbation(Metric):
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
             x_pad = utils._pad_array(
-                x, pad_width, mode="constant", omit_first_axis=True
+                x, pad_width, mode="constant", padded_axes=a_axes
             )
             a_pad = utils._pad_array(
-                a, pad_width, mode="constant", omit_first_axis=True
+                a, pad_width, mode="constant", padded_axes=a_axes
             )
 
             # Create patches across whole input shape and aggregate attributions.
@@ -1668,7 +1661,7 @@ class RegionPerturbation(Metric):
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[patch_slice].sum())
+                att_sums.append(a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum())
                 patches.append(patch_slice)
 
             if self.order == "random":
@@ -1688,10 +1681,10 @@ class RegionPerturbation(Metric):
             ordered_patches = [patches[p] for p in order]
 
             # Remove overlapping patches
-            blocked_mask = np.zeros(x_input.shape, dtype=bool)
+            blocked_mask = np.zeros(x_pad.shape, dtype=bool)
             ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
-                patch_mask = np.zeros(x_input.shape, dtype=bool)
+                patch_mask = np.zeros(x_pad.shape, dtype=bool)
                 patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
                 intersected = blocked_mask & patch_mask
 
@@ -1706,7 +1699,7 @@ class RegionPerturbation(Metric):
             for patch_slice in ordered_patches_no_overlap:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
                 x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
 
                 # Perturb.
@@ -1719,7 +1712,7 @@ class RegionPerturbation(Metric):
 
                 # Remove Padding
                 x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, omit_first_axis=True
+                    x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1893,8 +1886,7 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -1928,10 +1920,10 @@ class Selectivity(Metric):
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
             x_pad = utils._pad_array(
-                x, pad_width, mode="constant", omit_first_axis=True
+                x, pad_width, mode="constant", padded_axes=a_axes
             )
             a_pad = utils._pad_array(
-                a, pad_width, mode="constant", omit_first_axis=True
+                a, pad_width, mode="constant", padded_axes=a_axes
             )
 
             # Get patch indices of sorted attributions (descending).
@@ -1954,7 +1946,7 @@ class Selectivity(Metric):
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[patch_slice].sum())
+                att_sums.append(a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum())
                 patches.append(patch_slice)
 
             # Order attributions according to the most relevant first.
@@ -1964,20 +1956,20 @@ class Selectivity(Metric):
             for patch_slice in ordered_patches:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
                 x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
+                    indices=patch_slice,
                     indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
                 # Remove Padding
                 x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, omit_first_axis=True
+                    x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -2170,8 +2162,7 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
@@ -2224,7 +2215,7 @@ class SensitivityN(Metric):
 
             att_sums = []
             pred_deltas = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 

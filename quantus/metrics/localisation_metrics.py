@@ -165,8 +165,7 @@ class PointingGame(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        # a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -370,8 +369,7 @@ class AttributionLocalisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -591,8 +589,7 @@ class TopKIntersection(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -791,8 +788,7 @@ class RelevanceRankAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -986,8 +982,7 @@ class RelevanceMassAccuracy(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1172,8 +1167,7 @@ class AUC(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)

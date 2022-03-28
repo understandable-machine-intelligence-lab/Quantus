@@ -440,38 +440,43 @@ def generate_zennit_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
 
-    """ TODO: why is this needed?
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
-    )
-    """
+    # Get kwargs
+    canonizer_kwargs = kwargs.get("canonizer_kwargs", {})
+    composite_kwargs = kwargs.get("composite_kwargs", {})
+    attributor_kwargs = kwargs.get("attributor_kwargs", {})
 
     # Initialize canonizer, composite, and attributor
+    # TODO @Leander: Test parameterization
     if canonizer is not None:
-        canonizers = [canonizer()]
+        canonizers = [canonizer(**canonizer_kwargs)]
     else:
         canonizers = []
     if composite is not None:
-        # TODO @Leander: only uses default parameters for each method for now --> extend
-        composite = composite(canonizers=canonizers)
-    # TODO @Leander: only uses default parameters for each method for now --> extend
-    attributor = attributor(model, composite)
+        composite = composite(
+            **{
+                **composite_kwargs,
+                "canonizers":canonizers,
+            }
+        )
+    attributor = attributor(
+        **{
+            **attributor_kwargs,
+            "model": model,
+            "composite": composite,
+        }
+    )
 
-    # TODO @Leander: there may be a better solution here?
     n_outputs = model(inputs).shape[1]
 
     # Get Attributions
     with attributor:
-
-        # TODO @Leander: this assumes one-hot encoded target outputs (e.g., initial relevance).
-        #  Better solution with more choices?
-        eye = torch.eye(n_outputs, device=device)
-        output_target = eye[targets]
-        output_target = output_target.reshape(-1, n_outputs)
-        _, explanation = attributor(inputs, output_target)
+        if "attr_output" in attributor_kwargs.keys():
+            _, explanation = attributor(inputs, None)
+        else:
+            eye = torch.eye(n_outputs, device=device)
+            output_target = eye[targets]
+            output_target = output_target.reshape(-1, n_outputs)
+            _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
@@ -479,9 +484,8 @@ def generate_zennit_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    # TODO @Leander: Include alternatives here?
-    # Remove channel axis
-    explanation = np.sum(explanation, axis=1)
+    # Sum over axes
+    explanation = np.sum(explanation, axis=tuple(kwargs.get("reduce_axes", [])))
 
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)

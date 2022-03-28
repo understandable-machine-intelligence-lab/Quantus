@@ -195,8 +195,7 @@ class LocalLipschitzEstimate(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -429,8 +428,7 @@ class MaxSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -664,8 +662,7 @@ class AvgSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -896,8 +893,8 @@ class Continuity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
-        # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-        #a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
@@ -949,8 +946,7 @@ class Continuity(Metric):
                     targets=y,
                     **self.kwargs,
                 )
-                # TODO @Leander: Revert to previous solution and potentially infer axes from same-dim explanations and inputs
-                #a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
+                a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
@@ -968,7 +964,7 @@ class Continuity(Metric):
                 # create patches by splitting input into grid
                 axis_iterators = [
                     range(0, x_input.shape[axis], self.patch_size)
-                    for axis in range(1, x_input.ndim)
+                    for axis in a_axes
                 ]
                 for ix_patch, top_left_coords in enumerate(
                     itertools.product(*axis_iterators)
@@ -980,7 +976,7 @@ class Continuity(Metric):
                         coords=top_left_coords,
                     )
 
-                    a_perturbed_patch = a_perturbed[patch_slice]
+                    a_perturbed_patch = a_perturbed[utils.expand_indices(a_perturbed, patch_slice, a_axes)]
                     if self.abs:
                         a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 
