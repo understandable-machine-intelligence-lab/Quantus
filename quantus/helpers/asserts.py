@@ -117,8 +117,9 @@ def assert_layer_order(layer_order: str) -> None:
 
 def assert_targets(
     x_batch: np.array,
-    y_batch: np.array,
+    y_batch: Union[np.array, int],
 ) -> None:
+
     if isinstance(y_batch, int):
         return
 
