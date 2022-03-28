@@ -13,7 +13,7 @@ def plot_pixel_flipping_experiment(
     **kwargs,
 ) -> None:
     """
-    Plot the pixel-flippng experiment as done in paper:
+    Plot the pixel-flipping experiment as done in paper:
 
     References:
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
