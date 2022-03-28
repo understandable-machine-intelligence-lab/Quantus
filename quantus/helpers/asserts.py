@@ -141,7 +141,7 @@ def assert_targets(
 ) -> None:
     if not isinstance(y_batch, int):
         assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
-            "The 'y_batch' should by an integer or a list with "
+            "The 'y_batch' should be an integer or a list with "
             "the same number of samples as the 'x_batch' input"
             "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
         )
