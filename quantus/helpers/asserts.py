@@ -122,7 +122,7 @@ def assert_nr_segments(nr_segments: int) -> None:
 
 
 def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
-    """Assert that perturbation applied to input caused change so that input and perturbed input is not the smae."""
+    """Assert that perturbation applied to input caused change so that input and perturbed input is not the same."""
     assert (x.flatten() != x_perturbed.flatten()).any(), (
         "The settings for perturbing input e.g., 'perturb_func' "
         "didn't cause change in input. "
