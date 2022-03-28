@@ -1,8 +1,8 @@
 <p align="center">
-  <img width="350" height="200" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
+  <img width="350" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/quantus_logo.png">
 </p>
 <!--<h1 align="center"><b>Quantus</b></h1>-->
-<h3 align="center"><b> A toolkit to evaluate neural network explanations</b></h3>
+<h3 align="center"><b>A metrics toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
   PyTorch and Tensorflow
 </p>
@@ -21,120 +21,113 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 * [Library overview](#library-overview)
 * [Installation](#installation)
-* [Getting Started](#getting-started)
+* [Getting started](#getting-started)
 * [Tutorials](#tutorials)
-* [Miscellaneous functionality](#misc-functionality)
+* [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
 * [Citation](#citation)
 
-<!--### Citation
+## Library overview 
 
-If you find this library helpful in speeding up your research please cite using the following Bibtex annotation:
+Simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 
-@misc{quantus,
-      title={Quantus: Github repository},
-      author={Anna Hedström, Leander Weber, Wojciech Samek, Sebastian Lapuschkin, Marina Höhne},
-      year={2021},
-      eprint={2106.10185},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}}
--->
-
-## Library Overview 
-
-Simple visual comparison of XAI methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Shrikumar et al., 2017), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
 <p align="center">
-  <img width="800" height="567" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+  <img width="800" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
-
  
-**Implementations.** This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of Explainable Artificial Intelligence (XAI) research. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. It is important to note here that in XAI literature, the categories are often mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and "'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
+This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics (note, however, that the categories are oftentimes mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and 'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
 
 <details>
-<summary>Faithfulness</summary>
+  <summary><b>Faithfulness</b></summary>
 quantifies to what extent explanations follow the predictive behaviour of the model (asserting that more important features play a larger role in model outcomes)
-<ul>
-<li><a href="https://www.ijcai.org/Proceedings/2020/0417.pdf">Faithfulness Correlation</a>: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output 
-<li><a href="https://arxiv.org/pdf/1806.07538.pdf">Faithfulness Estimate</a>: computes the correlation between probability drops and attribution scores on various points
-<li><a href="https://arxiv.org/abs/1909.03012">Monotonicity Metric Arya</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuing the effect on model performance
-<li><a href="https://arxiv.org/pdf/2007.07584.pdf">Monotonicity Metric Nguyen</a>: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
-<li><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">Pixel Flipping</a>: aptures the impact of perturbing pixels in descending order according to the attributed value on the classification score
-<li><a href="https://arxiv.org/pdf/1509.06321.pdf">Region Perturbation</a>: is an extension of Pixel-Flipping to flip an area rather than a single pixel
-<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Selectivity</a>: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
-<li><a href="https://arxiv.org/pdf/1711.06104.pdf">SensitivityN</a>: computes the correlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
-<li><a href="https://arxiv.org/pdf/2003.08747.pdf">IROF</a>: computes the area over the curve per class for sorted mean importances of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected), averaged over several test samples
+ <br><br>
+  <ul>
+    <li><b>Faithfulness Correlation </b><a href="https://www.ijcai.org/Proceedings/2020/0417.pdf">(Bhatt et al., 2020)</a>: iteratively replaces a random subset of given attributions with a baseline value and then measuring the correlation between the sum of this attribution subset and the difference in function output 
+    <li><b>Faithfulness Estimate </b><a href="https://arxiv.org/pdf/1806.07538.pdf">(Alvarez-Melis et al., 2018)</a>: computes the correlation between probability drops and attribution scores on various points
+    <li><b>Monotonicity Metric </b><a href="https://arxiv.org/abs/1909.03012">(Arya et al. 2019)</a>: starts from a reference baseline to then incrementally replace each feature in a sorted attribution vector, measuring the effect on model performance
+    <li><b>Monotonicity Metric </b><a href="https://arxiv.org/pdf/2007.07584.pdf"> (Nguyen et al, 2020)</a>: measures the spearman rank correlation between the absolute values of the attribution and the uncertainty in the probability estimation
+    <li><b>Pixel Flipping </b><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0130140">(Bach et al., 2015)</a>: captures the impact of perturbing pixels in descending order according to the attributed value on the classification score
+    <li><b>Region Perturbation </b><a href="https://arxiv.org/pdf/1509.06321.pdf">(Samek et al., 2015)</a>: is an extension of Pixel-Flipping to flip an area rather than a single pixel
+    <li><b>Selectivity </b><a href="https://arxiv.org/pdf/1706.07979.pdf">(Montavan et al., 2018)</a>: measures how quickly an evaluated prediction function starts to drop when removing features with the highest attributed values
+    <li><b>SensitivityN </b><a href="https://arxiv.org/pdf/1711.06104.pdf">(Ancona et al., 2019)</a>: computes the correlation between the sum of the attributions and the variation in the target output while varying the fraction of the total number of features, averaged over several test samples
+    <li><b>IROF </b><a href="https://arxiv.org/pdf/2003.08747.pdf">(Rieger at el., 2020)</a>: computes the area over the curve per class for sorted mean importances of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected), averaged over several test samples
 </ul>
 </details>
 
 <details>
-<summary>Robustness</summary>
+<summary><b>Robustness</b></summary>
 measures to what extent explanations are stable when subject to slight perturbations of the input, assuming that model output approximately stayed the same
+     <br><br>
 <ul>
-<li><a href="https://arxiv.org/pdf/1806.08049.pdf">Local Lipschitz Estimate</a>: tests the consistency in the explanation between adjacent examples
-<li><a href="https://arxiv.org/pdf/1901.09392.pdf">Max-Sensitivity</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
-<li><a href="https://arxiv.org/pdf/1901.09392.pdf">Avg-Sensitivity</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
-<li><a href="https://arxiv.org/pdf/1706.07979.pdf">Continuity</a>: captures the strongest variation in explanation of an input and it's perturbed version
+    <li><b>Local Lipschitz Estimate </b><a href="https://arxiv.org/pdf/1806.08049.pdf">(Alvarez-Melis et al., 2018)</a>: tests the consistency in the explanation between adjacent examples
+    <li><b>Max-Sensitivity </b><a href="https://arxiv.org/pdf/1901.09392.pdf">(Yeh et al., 2019)</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
+    <li><b>Avg-Sensitivity </b><a href="https://arxiv.org/pdf/1901.09392.pdf">(Yeh et al., 2019)</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
+    <li><b>Continuity </b><a href="https://arxiv.org/pdf/1706.07979.pdf">(Montavan et al., 2018)</a>: captures the strongest variation in explanation of an input and its perturbed version
 </ul>
 </details>
 
 <details>
-<summary>Localisation</summary>
+<summary><b>Localisation</b></summary>
 tests if the explainable evidence is centered around the object of interest (as defined by a bounding box or similar segmentation mask)
+     <br><br>
 <ul>
-<li><a href="https://arxiv.org/abs/1608.00507">Pointing Game</a>: checks whether attribution with the highest score is located within the targeted object
-<li><a href="https://arxiv.org/abs/1910.09840">Attribution Localization</a>: measures the ratio of positive attributions within the targeted object towards the total positive attributions
-<li><a href="https://arxiv.org/abs/2104.14995">Top-K Intersection</a>: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
-<li><a href="https://arxiv.org/abs/2003.07258">Relevance Rank Accuracy</a>: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
-<li><a href="https://arxiv.org/abs/2003.07258">Relevance Mass Accuracy</a>: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
-<li><a href="https://doi.org/10.1016/j.patrec.2005.10.010">AUC</a>: compares the ranking between attributions and a given ground-truth mask
+    <li><b>Pointing Game </b><a href="https://arxiv.org/abs/1608.00507">(Zhang et al., 2018)</a>: checks whether attribution with the highest score is located within the targeted object
+    <li><b>Attribution Localization </b>a href="https://arxiv.org/abs/1910.09840">(Kohlbrenner et al., 2020)</a>: measures the ratio of positive attributions within the targeted object towards the total positive attributions
+    <li><b>Top-K Intersection </b><a href="https://arxiv.org/abs/2104.14995">(Theiner et al., 2021)</a>: computes the intersection between a ground truth mask and the binarized explanation at the top k feature locations
+    <li><b>Relevance Rank Accuracy </b><a href="https://arxiv.org/abs/2003.07258">(Arras et al., 2021)</a>: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
+    <li><b>Relevance Mass Accuracy </b><a href="https://arxiv.org/abs/2003.07258">(Arras et al., 2021)</a>: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
+    <li><b>AUC </b><a href="https://doi.org/10.1016/j.patrec.2005.10.010">(Fawcett et al., 2006)</a>: compares the ranking between attributions and a given ground-truth mask
 </ul>
 </details>
 
 <details>
-<summary>Complexity</summary>
+<summary><b>Complexity</b></summary>
 captures to what extent explanations are concise i.e., that few features are used to explain a model prediction
+     <br><br>
 <ul>
-<li><a href="https://arxiv.org/abs/1810.06583">Sparseness</a>: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
-<li><a href="https://arxiv.org/abs/2005.00631">Complexity</a>: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
-<li><a href="https://arxiv.org/abs/2007.07584">Effective Complexity</a>: measures how many attributions in absolute values are exceeding a certain threshold
+    <li><b>Sparseness </b><a href="https://arxiv.org/abs/1810.06583">(Chalasani et al., 2020)</a>: uses the Gini Index for measuring, if only highly attributed features are truly predictive of the model output
+    <li><b>Complexity </b><a href="https://arxiv.org/abs/2005.00631">(Bhatt et al., 2020)</a>: computes the entropy of the fractional contribution of all features to the total magnitude of the attribution individually
+    <li><b>Effective Complexity </b><a href="https://arxiv.org/abs/2007.07584">(Nguyen at el., 2020)</a>: measures how many attributions in absolute values are exceeding a certain threshold
 </ul>
 </details>
 
 <details>
-<summary>Randomisation</summary>
+<summary><b>Randomisation</b></summary>
 tests to what extent explanations deteriorate as model parameters are increasingly randomised
+     <br><br>
 <ul>
-<li><a href="https://arxiv.org/abs/1810.03292">Model Parameter Randomisation</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
-<li><a href="https://arxiv.org/abs/1912.09818">andom Logit Test</a>: computes for the distance between the original explanation and the explanation for a random other class
+    <li><b>Model Parameter Randomisation </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
+    <li><b>Random Logit Test </b><a href="https://arxiv.org/abs/1912.09818">(Sixt et al., 2020)</a>: computes for the distance between the original explanation and the explanation for a random other class
 </ul>
 </details>
 
 <details>
-<summary>Axiomatic</summary>
+<summary><b>Axiomatic</b></summary>
+  assesses if explanations fulfill certain axiomatic properties
+     <br><br>
 <ul>
-<li><a href="https://arxiv.org/abs/1703.01365">Completeness</a>: assesses if explanations fulfill certain axiomatic properties
-<li><a href="https://arxiv.org/abs/2007.07584">Non-Sensitivity</a>: measures whether the total attribution is proportional to the explainable evidence at the model output  (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))
-<li><a href="https://arxiv.org/abs/1711.00867">Input Invariance</a>: adds a shift to input, asking that attributions should not change in response (assuming the model does not)
+    <li><b>Completeness </b><a href="https://arxiv.org/abs/1703.01365">(Sundararajan et al., 2017)</a>: assesses if explanations fulfill certain axiomatic properties
+    <li><b>Non-Sensitivity </b><a href="https://arxiv.org/abs/2007.07584">(Nguyen at el., 2020)</a>: measures whether the total attribution is proportional to the explainable evidence at the model output  (and referred to as Summation to Delta (Shrikumar et al., 2017) Sensitivity-n (slight variation, Ancona et al., 2018) Conservation (Montavon et al., 2018))
+    <li><b>Input Invariance </b><a href="https://arxiv.org/abs/1711.00867">(Kindermans et al., 2017)</a>: adds a shift to input, asking that attributions should not change in response (assuming the model does not)
 </ul>
 </details>
 
 Additional metrics will be included in future releases.
 
-**Scope.** There is a couple of metrics that are popular but have not been included in the first version of this library.
-Metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021) are considered out of scope of the first iteration.
+**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. 
 
-**Motivation.** It is worth nothing that this implementation primarily is motivated by image classification tasks. Further, it has been developed with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable.
+The first iteration has been developed primarily for image classification tasks, with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable. Similarly, there is a couple of metrics that are popular but are considered out of scope for the first iteration of the library e.g., metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021).
 
-**Disclaimers.** Note that the implementations of metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Also, metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill. Hence it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. Please read the user guidelines for further guidance on how to best use the library.
+Please read the user guidelines for further guidance on how to best use the library. 
 
 ## Installation
 
 
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/0.1.1/) 
+Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) 
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
 
 ```setup
@@ -152,7 +145,7 @@ Or, alternatively for `tensorflow` you run:
 pip install quantus[tensorflow]
 ```
 
-Additionally, if you want to use the basic explainability functionaliy such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
+Additionally, if you want to use the basic explainability functionality such as `quantus.explain` in your evaluations, you can run `pip install quantus[extras]` (this step requires that either `torch` or `tensorflow` is installed).
 
 Alternatively, simply install requirements.txt (again, this requires that either `torch` or `tensorflow` is installed and won't include the explainability functionality to the installation):
 
@@ -166,6 +159,7 @@ pip install -r requirements.txt
 python>=3.7.0
 pytorch>=1.10.1
 tensorflow==2.6.2
+tqdm==4.62.3
 ```
 
 ## Getting started
@@ -193,7 +187,7 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using quantus library.
+Next, we generate some explanations for some test set samples that we wish to evaluate using Quantus library.
 
 ```python
 import captum
@@ -279,12 +273,12 @@ For more use cases, please see notebooks in `/tutorials` folder which includes e
 * [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
 * [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_sensivitivty_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
 * [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
-* [Compare explanation methods using qualitative-, quantitative- and senitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
+* [Compare explanation methods using qualitative-, quantitative- and sensitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
 
 ... and more.
 
 
-## Miscellaneous Functionality
+## Miscellaneous functionality
 
 With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one. 
 If you are replacing a function within the Quantus framework, make sure that your new function:
@@ -357,6 +351,17 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 #### Testing
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 
+#### Workflow
+
+Before creating a PR, double-check that the following tasks are completed:
+
+- [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
+- [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
+- [x] Make `pytests` and add under `tests/` folder (to install mandatory packages for testing run `pip install -r requirements_text.txt`)
+- [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
+- [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
+
+
 ## Citation
 
 If you find this toolkit or its companion paper
@@ -364,7 +369,7 @@ If you find this toolkit or its companion paper
 interesting or useful in your research, use following Bibtex annotation to cite us:
 
 ```
-@article{hedström2022quantus,
+@article{hedstrom2022quantus,
       title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
       author={Anna Hedström and
               Leander Weber and
@@ -380,3 +385,4 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 }
 ```
 
+When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 

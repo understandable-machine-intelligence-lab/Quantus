@@ -1,17 +1,19 @@
 """This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
-import numpy as np
 import random
-from typing import Union, List, Dict
+import warnings
+from typing import Callable, Dict, List, Union
+
+import numpy as np
+from tqdm import tqdm
+
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.similar_func import correlation_spearman, ssim
 
 
 class ModelParameterRandomisation(Metric):
@@ -44,6 +46,7 @@ class ModelParameterRandomisation(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             layer_order (string): Indicated whether the model is randomized cascadingly or independently.
@@ -59,15 +62,17 @@ class ModelParameterRandomisation(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = {}
         self.all_results = []
 
         # Asserts and warnings.
-        assert_layer_order(layer_order=self.layer_order)
+        asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "similarity metric 'similarity_func' and the order of "
@@ -79,7 +84,6 @@ class ModelParameterRandomisation(Metric):
                     " arXiv:1810.073292v3 (2018)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -102,8 +106,6 @@ class ModelParameterRandomisation(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -136,24 +138,30 @@ class ModelParameterRandomisation(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = {}
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
 
@@ -164,12 +172,23 @@ class ModelParameterRandomisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # Create progress bar if desired.
+        # Due to the nested for-loops and the requirement of a single progressbar,
+        # manual updating will be performed at the end of each inner iteration.
+        if self.display_progressbar:
+            n_layers = len(
+                list(model.get_random_layer_generator(order=self.layer_order))
+            )
+            n_iterations = n_layers * len(a_batch)
+            pbar = tqdm(total=n_iterations)
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
-            order=self.layer_order
+            order=self.layer_order, seed=self.seed
         ):
 
             similarity_scores = []
@@ -179,7 +198,7 @@ class ModelParameterRandomisation(Metric):
                 model=random_layer_model, inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-            for sample, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
+            for ix, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
                 if self.abs:
                     a = np.abs(a)
@@ -194,8 +213,16 @@ class ModelParameterRandomisation(Metric):
 
                 similarity_scores.append(similarity)
 
+                # Update progress bar if desired.
+                if self.display_progressbar:
+                    pbar.update(1)
+
             # Save similarity scores in a dictionary.
             self.last_results[layer_name] = similarity_scores
+
+        # Close progress bar if desired.
+        if self.display_progressbar:
+            pbar.close()
 
         self.all_results.append(self.last_results)
 
@@ -227,6 +254,7 @@ class RandomLogit(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=ssim.
             num_classes (integer): Number of prediction classes in the input, default=1000.
@@ -239,15 +267,17 @@ class RandomLogit(Metric):
         self.normalise = self.kwargs.get("normalise", True)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
+        self.seed = self.kwargs.get("seed", 42)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("similarity metric 'similarity_func'"),
                 citation=(
@@ -256,7 +286,6 @@ class RandomLogit(Metric):
                     "arXiv:1912.09818v6 (2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -279,8 +308,6 @@ class RandomLogit(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -313,24 +340,30 @@ class RandomLogit(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         # Get explanation function and make asserts.
         explain_func = self.kwargs.get("explain_func", Callable)
-        assert_explain_func(explain_func=explain_func)
+        asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
             # Generate explanations.
@@ -340,11 +373,20 @@ class RandomLogit(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        for sample, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch)):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
+
+        for ix, (x, y, a) in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -353,6 +395,7 @@ class RandomLogit(Metric):
                 a = self.normalise_func(a)
 
             # Randomly select off-class labels.
+            random.seed(a=self.seed)
             y_off = np.array(
                 [
                     random.choice(
@@ -364,7 +407,7 @@ class RandomLogit(Metric):
             # Explain against a random class.
             a_perturbed = explain_func(
                 model=model.get_model(),
-                inputs=x,
+                inputs=np.expand_dims(x, axis=0),
                 targets=y_off,
                 **self.kwargs,
             )

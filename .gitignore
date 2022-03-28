@@ -29,9 +29,15 @@ temp/
 test
 .coverage
 coverage.xml
+/coverage/
+.coverage.*
 
 # build
 dist/
 */*.egg-info/
 *.egg-info/
 build/
+
+# progress
+quantus/analysers/*
+tests/analysers/*

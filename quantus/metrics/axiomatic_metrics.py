@@ -1,15 +1,18 @@
 """This module contains the collection of axiomatic metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
+import warnings
+from typing import Callable, Dict, List, Union
+
+import numpy as np
+from tqdm import tqdm
+
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.perturb_func import baseline_replacement_by_indices
 
 
 class Completeness(Metric):
@@ -47,6 +50,7 @@ class Completeness(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             output_func (callable): Function applied to the difference between the model output at the input and the
             baseline before metric calculation, default=lambda x: x.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
@@ -62,6 +66,7 @@ class Completeness(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
@@ -72,7 +77,7 @@ class Completeness(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the function to modify the "
@@ -83,7 +88,6 @@ class Completeness(Metric):
                     "deep networks.' International Conference on Machine Learning. PMLR, (2017)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -106,8 +110,6 @@ class Completeness(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -142,26 +144,32 @@ class Completeness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -170,11 +178,18 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -183,24 +198,19 @@ class Completeness(Metric):
                 a = self.normalise_func(a)
 
             x_baseline = self.perturb_func(
-                img=x.flatten(),
-                **{
-                    **self.kwargs,
-                    **{
-                        "indices": np.arange(0, len(x)),
-                        "perturb_baseline": self.perturb_baseline,
-                    },
-                },
+                arr=x,
+                indices=np.arange(0, x.size),
+                **self.kwargs,
             )
 
             # Predict on input.
-            x_input = model.shape_input(x, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             # Predict on baseline.
-            x_input = model.shape_input(x_baseline, self.img_size, self.nr_channels)
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
             y_pred_baseline = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
@@ -247,6 +257,7 @@ class NonSensitivity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
@@ -262,16 +273,19 @@ class NonSensitivity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
+        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the number of samples to iterate"
@@ -283,7 +297,6 @@ class NonSensitivity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -306,8 +319,6 @@ class NonSensitivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -341,26 +352,31 @@ class NonSensitivity(Metric):
             >> metric = NonSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape# Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        # Reshape input batch to channel first order:
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -369,11 +385,33 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
+        )
+        if self.max_steps_per_input is not None:
+            asserts.assert_max_steps(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
+            self.features_in_step = utils.get_features_in_step(
+                max_steps_per_input=self.max_steps_per_input,
+                input_shape=x_batch_s.shape[2:],
+            )
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
+
+            a = a.flatten()
 
             if self.abs:
                 a = np.abs(a)
@@ -384,25 +422,26 @@ class NonSensitivity(Metric):
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
             vars = []
-            for a_i in range(len(a)):
+            for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
 
                 preds = []
-                for _ in range(self.n_samples):
+                a_ix = a[
+                    (self.features_in_step * i_ix) : (
+                        self.features_in_step * (i_ix + 1)
+                    )
+                ].astype(int)
 
+                for _ in range(self.n_samples):
+                    # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
-                        img=x.flatten(),
-                        **{
-                            **self.kwargs,
-                            **{
-                                "indices": a_i,
-                                "perturb_baseline": self.perturb_baseline,
-                            },
-                        },
+                        arr=x,
+                        indices=a_ix,
+                        **self.kwargs,
                     )
 
                     # Predict on perturbed input x.
                     x_input = model.shape_input(
-                        x_perturbed, self.img_size, self.nr_channels
+                        x_perturbed, x.shape, channel_first=True
                     )
                     y_pred_perturbed = float(
                         model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
@@ -423,9 +462,7 @@ class NonSensitivity(Metric):
 
 class InputInvariance(Metric):
     """
-    Implementation of Completeness test by Kindermans et al., 2017, also referred
-    to as Summation to Delta by Shrikumar et al., 2017 and Conservation by
-    Montavon et al., 2018.
+    Implementation of Completeness test by Kindermans et al., 2017.
 
     To test for input invaraince, we add a constant shift to the input data and then measure the effect
     on the attributions, the expectation is that if the model show no response, then the explanations should not.
@@ -449,6 +486,7 @@ class InputInvariance(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             input_shift (integer): Shift to the input data, default=-1.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
         """
@@ -461,6 +499,7 @@ class InputInvariance(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -470,7 +509,7 @@ class InputInvariance(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("input shift 'input_shift'"),
                 citation=(
@@ -478,7 +517,6 @@ class InputInvariance(Metric):
                     "Dähne Sven, Erhan Dumitru and Kim Been. 'THE (UN)RELIABILITY OF SALIENCY METHODS' Article (2017)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -501,8 +539,6 @@ class InputInvariance(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -537,26 +573,30 @@ class InputInvariance(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
+        explain_func = self.kwargs.get("explain_func", Callable)
+        asserts.assert_explain_func(explain_func=explain_func)
         if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -565,52 +605,37 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(a_batch=a_batch, x_batch=x_batch)
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_func.warn_absolutes_skipped()
 
             if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
+                warn_func.warn_normalisation_skipped()
 
             x_shifted = self.perturb_func(
-                img=x.flatten(),
-                **{
-                    **self.kwargs,
-                    **{
-                        "indices": np.arange(0, len(x.flatten())),
-                        "input_shift": self.input_shift,
-                    },
-                },
+                arr=x,
+                indices=np.arange(0, x.size),
+                **self.kwargs,
             )
-            assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
+            x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
 
             # Generate explanation based on shifted input x.
             a_shifted = explain_func(
                 model=model.get_model(), inputs=x_shifted, targets=y, **self.kwargs
             )
-
-            if self.abs:
-                print(
-                    "An absolute operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
-
-            if self.normalise:
-                print(
-                    "A normalising operation on the attributions is skipped"
-                    "since inconsistent results can be expected if applied."
-                )
 
             # Check if explanation of shifted input is similar to original.
             if (a.flatten() != a_shifted.flatten()).all():

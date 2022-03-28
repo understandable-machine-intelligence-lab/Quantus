@@ -1,11 +1,14 @@
 """This model creates the ModelInterface for Tensorflow."""
+from typing import Optional, Tuple
+
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 from tensorflow.keras.models import clone_model
 import numpy as np
-from ..metrics import *
+
 from ..helpers.model_interface import ModelInterface
+from ..helpers import utils
 
 
 class TensorFlowModel(ModelInterface):
@@ -33,12 +36,19 @@ class TensorFlowModel(ModelInterface):
 
         return new_model(x, training=False).numpy()
 
-    def shape_input(self, x, img_size, nr_channels):
-        """Reshape input into model expected input."""
-        x = x.reshape(1, nr_channels, img_size, img_size)
+    def shape_input(
+        self, x: np.array, shape: Tuple[int, ...], channel_first: Optional[bool] = None
+    ):
+        """
+        Reshape input into model expected input.
+        channel_first: Explicitely state if x is formatted channel first (optional).
+        """
+        if channel_first is None:
+            channel_first = utils.infer_channel_first
+        x = x.reshape(1, *shape)
         if self.channel_first:
-            return x
-        return np.moveaxis(x, 1, -1)
+            return utils.make_channel_first(x, channel_first)
+        return utils.make_channel_last(x, channel_first)
 
     def get_model(self):
         """Get the original torch/tf model."""
@@ -52,7 +62,7 @@ class TensorFlowModel(ModelInterface):
         """Set model's learnable parameters."""
         self.model.set_weights(original_parameters)
 
-    def get_random_layer_generator(self, order: str = "top_down"):
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         Set order to top_down for cascading randomization.
@@ -70,5 +80,6 @@ class TensorFlowModel(ModelInterface):
             if order == "independent":
                 random_layer_model.set_weights(original_parameters)
             weights = layer.get_weights()
+            np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model

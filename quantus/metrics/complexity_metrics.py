@@ -1,15 +1,18 @@
 """This module contains the collection of complexity metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Union, List, Dict
+import warnings
+from typing import Callable, Dict, List, Union
+
+import numpy as np
+import scipy
+from tqdm import tqdm
+
 from .base import Metric
-from ..helpers.utils import *
-from ..helpers.asserts import *
-from ..helpers.plotting import *
-from ..helpers.norm_func import *
-from ..helpers.perturb_func import *
-from ..helpers.similar_func import *
-from ..helpers.explanation_func import *
-from ..helpers.normalise_func import *
-from ..helpers.warn_func import *
+from ..helpers import asserts
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_by_negative
 
 
 class Sparseness(Metric):
@@ -43,6 +46,7 @@ class Sparseness(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -53,12 +57,13 @@ class Sparseness(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -70,7 +75,6 @@ class Sparseness(Metric):
                     "(2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -93,8 +97,6 @@ class Sparseness(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -129,26 +131,32 @@ class Sparseness(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -157,11 +165,18 @@ class Sparseness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -178,7 +193,7 @@ class Sparseness(Metric):
                 a = self.normalise_func(a)
 
             a = np.array(
-                np.reshape(a, (self.img_size * self.img_size,)),
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
                 dtype=np.float64,
             )
             a += 0.0000001
@@ -221,6 +236,7 @@ class Complexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -231,12 +247,13 @@ class Complexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -247,7 +264,6 @@ class Complexity(Metric):
                     " feature-based model explanations.' arXiv preprint arXiv:2005.00631 (2020)"
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -270,8 +286,6 @@ class Complexity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -306,26 +320,32 @@ class Complexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -334,11 +354,18 @@ class Complexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             if self.abs:
                 a = np.abs(a)
@@ -352,13 +379,10 @@ class Complexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            a = (
-                np.array(
-                    np.reshape(a, (self.img_size * self.img_size,)),
-                    dtype=np.float64,
-                )
-                / np.sum(np.abs(a))
-            )
+            a = np.array(
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
+            ) / np.sum(np.abs(a))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -393,6 +417,7 @@ class EffectiveComplexity(Metric):
             default=normalise_by_negative.
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -404,12 +429,13 @@ class EffectiveComplexity(Metric):
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"
@@ -420,7 +446,6 @@ class EffectiveComplexity(Metric):
                     "model interpretability.' arXiv preprint arXiv:2007.07584 (2020)."
                 ),
             )
-            warn_attributions(normalise=self.normalise, abs=self.abs)
 
     def __call__(
         self,
@@ -443,8 +468,6 @@ class EffectiveComplexity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                nr_channels (integer): Number of images, default=second dimension of the input.
-                img_size (integer): Image dimension (assumed to be squared), default=last dimension of the input.
                 channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
                 explain_func (callable): Callable generating attributions, default=Callable.
@@ -479,26 +502,32 @@ class EffectiveComplexity(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
         # Reshape input batch to channel first order:
-        self.channel_first = kwargs.get("channel_first", get_channel_first(x_batch))
-        x_batch_s = get_channel_first_batch(x_batch, self.channel_first)
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
         # Wrap the model into an interface
         if model:
-            model = get_wrapped_model(model, self.channel_first)
+            model = utils.get_wrapped_model(model, channel_first)
 
         # Update kwargs.
-        self.nr_channels = kwargs.get("nr_channels", np.shape(x_batch_s)[1])
-        self.img_size = kwargs.get("img_size", np.shape(x_batch_s)[-1])
         self.kwargs = {
             **kwargs,
             **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
         }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
         self.last_results = []
 
         if a_batch is None:
 
             # Asserts.
             explain_func = self.kwargs.get("explain_func", Callable)
-            assert_explain_func(explain_func=explain_func)
+            asserts.assert_explain_func(explain_func=explain_func)
 
             # Generate explanations.
             a_batch = explain_func(
@@ -507,11 +536,18 @@ class EffectiveComplexity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
-        assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        for x, y, a in zip(x_batch_s, y_batch, a_batch):
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
 
             a = a.flatten()
 
@@ -519,10 +555,7 @@ class EffectiveComplexity(Metric):
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-                    "since otherwise inconsistent results can be expected."
-                )
+                warn_func.warn_absolutes_applied()
 
             if self.normalise:
                 a = self.normalise_func(a)
