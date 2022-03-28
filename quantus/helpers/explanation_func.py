@@ -356,7 +356,7 @@ def generate_captum_explanation(
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
                 value=kwargs["constant_value"], arr=inputs[i], return_shape=(1,)
-            )
+            )[0]
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
             )
