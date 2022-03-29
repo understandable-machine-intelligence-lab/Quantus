@@ -157,7 +157,8 @@ def rotation(
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError("perturb func 'rotation' requires image-type data."
+                         "Check that this perturb_func receives a 3D array.")
 
     matrix = cv2.getRotationMatrix2D(
         center=(arr.shape[1] / 2, arr.shape[2] / 2),
@@ -181,10 +182,10 @@ def translation_x_direction(
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError("perturb func 'translation_x_direction' requires image-type data."
+                         "Check that this perturb_func receives a 3D array.")
 
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
-    # TODO @Leander: test
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, -1),
         matrix,
@@ -208,10 +209,10 @@ def translation_y_direction(
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError("perturb func 'translation_y_direction' requires image-type data."
+                         "Check that this perturb_func receives a 3D array.")
 
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
-    # TODO @Leander: test
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),
         matrix,
