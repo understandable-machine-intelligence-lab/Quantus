@@ -341,6 +341,9 @@ def generate_captum_explanation(
                 # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
 
+    elif method == "Control Var. Random Uniform".lower():
+        explanation = torch.rand(size=(inputs.shape[0], *inputs.shape[2:]))
+
     elif method == "Control Var. Constant".lower():
         assert (
             "constant_value" in kwargs
