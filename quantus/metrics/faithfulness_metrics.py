@@ -1723,7 +1723,7 @@ class RegionPerturbation(Metric):
 
 class Selectivity(Metric):
     """
-    Implementation of Selectivity test by Montavan et al., 2018.
+    Implementation of Selectivity test by Montavon et al., 2018.
 
     At each iteration, a patch of size 4 x 4 corresponding to the region with
     highest relevance is set to black. The plot keeps track of the function value
