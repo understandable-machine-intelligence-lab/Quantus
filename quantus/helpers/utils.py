@@ -250,7 +250,7 @@ def blur_at_indices(
 
         x_blur[idx] = np.sum(np.multiply(x[expanded_idx], expanded_kernel), axis=tuple(indexed_axes), keepdims=True)
 
-    return _unpad_array(x_blur, pad_width, mode="constant", padded_axes=indexed_axes)
+    return _unpad_array(x_blur, pad_width, padded_axes=indexed_axes)
 
 
 def create_patch_slice(
