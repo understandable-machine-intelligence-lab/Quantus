@@ -1152,7 +1152,7 @@ class MonotonicityNguyen(Metric):
             )
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred**2
+            inv_pred = inv_pred ** 2
 
             a = a.flatten()
 
@@ -1640,18 +1640,13 @@ class RegionPerturbation(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
-                x, pad_width, mode="constant", padded_axes=a_axes
-            )
-            a_pad = utils._pad_array(
-                a, pad_width, mode="constant", padded_axes=a_axes
-            )
+            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
+            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
 
             # Create patches across whole input shape and aggregate attributions.
             att_sums = []
             axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width)
-                for axis in a_axes
+                range(pad_width, x_pad.shape[axis] - pad_width) for axis in a_axes
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
@@ -1661,7 +1656,9 @@ class RegionPerturbation(Metric):
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum())
+                att_sums.append(
+                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
+                )
                 patches.append(patch_slice)
 
             if self.order == "random":
@@ -1919,12 +1916,8 @@ class Selectivity(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
-                x, pad_width, mode="constant", padded_axes=a_axes
-            )
-            a_pad = utils._pad_array(
-                a, pad_width, mode="constant", padded_axes=a_axes
-            )
+            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
+            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
 
             # Get patch indices of sorted attributions (descending).
             # TODO: currently, image is split into a grid, with the patches as the grid elements.
@@ -1946,7 +1939,9 @@ class Selectivity(Metric):
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum())
+                att_sums.append(
+                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
+                )
                 patches.append(patch_slice)
 
             # Order attributions according to the most relevant first.

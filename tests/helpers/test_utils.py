@@ -9,6 +9,7 @@ from ..fixtures import *
 from ...quantus.helpers.models import LeNet
 from ...quantus.helpers.utils import *
 
+
 @pytest.fixture
 def segmentation_setup():
     return np.random.uniform(0, 0.1, size=(224, 224, 3))
@@ -185,19 +186,44 @@ def test_get_superpixel_segments(
         (lazy_fixture("baseline_mean_1d"), {"return_shape": (3, 4)}, {"value": 0.5}),
         (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,)}, {"value": 0.5}),
         (lazy_fixture("baseline_mean_3d"), {"return_shape": (3, 4)}, {"value": 0.5}),
-        (lazy_fixture("baseline_none_1d"), {"return_shape": (1,)}, {"exception": ValueError}),
-        (lazy_fixture("baseline_none_1d"), {"return_shape": (3, 4)}, {"exception": ValueError}),
-        (lazy_fixture("baseline_none_3d"), {"return_shape": (1,)}, {"exception": ValueError}),
-        (lazy_fixture("baseline_none_3d"), {"return_shape": (3, 4)}, {"exception": ValueError}),
+        (
+            lazy_fixture("baseline_none_1d"),
+            {"return_shape": (1,)},
+            {"exception": ValueError},
+        ),
+        (
+            lazy_fixture("baseline_none_1d"),
+            {"return_shape": (3, 4)},
+            {"exception": ValueError},
+        ),
+        (
+            lazy_fixture("baseline_none_3d"),
+            {"return_shape": (1,)},
+            {"exception": ValueError},
+        ),
+        (
+            lazy_fixture("baseline_none_3d"),
+            {"return_shape": (3, 4)},
+            {"exception": ValueError},
+        ),
     ],
 )
-def test_get_baseline_value(data: np.ndarray, shape: Tuple, expected: Union[float, dict, bool]):
+def test_get_baseline_value(
+    data: np.ndarray, shape: Tuple, expected: Union[float, dict, bool]
+):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            get_baseline_value(value=data["value"], return_shape=shape["return_shape"], arr=data["arr"])
+            get_baseline_value(
+                value=data["value"], return_shape=shape["return_shape"], arr=data["arr"]
+            )
         return
-    out = get_baseline_value(value=data["value"], return_shape=shape["return_shape"], arr=data["arr"])
-    assert out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1) and out.shape == shape["return_shape"], "Test failed."
+    out = get_baseline_value(
+        value=data["value"], return_shape=shape["return_shape"], arr=data["arr"]
+    )
+    assert (
+        out == pytest.approx(expected["value"], rel=1e-1, abs=1e-1)
+        and out.shape == shape["return_shape"]
+    ), "Test failed."
 
 
 @pytest.mark.utils
@@ -404,7 +430,7 @@ def test_get_wrapped_model(
                 "arr_shape": (10, 20, 30, 40),
                 "kernel_shape": (3, 3),
                 "indices": [15, 22, 30],
-                "indexed_axes": [2, 3]
+                "indexed_axes": [2, 3],
             },
             {"shape": (10, 20, 30, 40)},
         ),
@@ -413,7 +439,7 @@ def test_get_wrapped_model(
                 "arr_shape": (10, 20, 30, 40),
                 "kernel_shape": (4, 9, 21),
                 "indices": [15, 22, 30],
-                "indexed_axes": [0, 1, 2]
+                "indexed_axes": [0, 1, 2],
             },
             {"shape": (10, 20, 30, 40)},
         ),
@@ -422,7 +448,7 @@ def test_get_wrapped_model(
                 "arr_shape": (10, 20, 30, 40),
                 "kernel_shape": (1, 1, 1),
                 "indices": [15, 22, 30],
-                "indexed_axes": [1, 2, 3]
+                "indexed_axes": [1, 2, 3],
             },
             {"shape": (10, 20, 30, 40)},
         ),
@@ -431,7 +457,7 @@ def test_get_wrapped_model(
                 "arr_shape": (10, 20, 30, 40),
                 "kernel_shape": (1, 3, 3),
                 "indices": [15, 22, 30],
-                "indexed_axes": [2, 3]
+                "indexed_axes": [2, 3],
             },
             {"exception": AssertionError},
         ),
@@ -463,7 +489,6 @@ def test_blur_at_indices(
         assert expected["shape"] == out.shape, "Test failed."
 
 
-
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "params,expected",
@@ -473,14 +498,14 @@ def test_blur_at_indices(
                 "patch_size": 4,
                 "coords": 0,
             },
-            {"value": (np.arange(0, 4), )},
+            {"value": (np.arange(0, 4),)},
         ),
         (
             {
                 "patch_size": 4,
-                "coords": (0, ),
+                "coords": (0,),
             },
-            {"value": (np.arange(0, 4), )},
+            {"value": (np.arange(0, 4),)},
         ),
         (
             {
@@ -541,7 +566,7 @@ def test_blur_at_indices(
         (
             {
                 "patch_size": (4, 4),
-                "coords": (0, ),
+                "coords": (0,),
             },
             {"exception": ValueError},
         ),
@@ -554,9 +579,10 @@ def test_create_patch_slice(params: dict, expected: Any):
         return
 
     out = create_patch_slice(**params)
-    
-    assert np.all(out_slice == expected_slice
-               for out_slice, expected_slice in zip(out, expected["value"])
+
+    assert np.all(
+        out_slice == expected_slice
+        for out_slice, expected_slice in zip(out, expected["value"])
     ), f"Slices not equal. {out_slice} != {expected_slice}"
 
 
@@ -593,32 +619,32 @@ def test_create_patch_slice(params: dict, expected: Any):
             {"value": np.ones((64, 3, 128, 128))},
         ),
         (
-                {
-                    "a_batch": np.ones((64, 1, 1, 128)),
-                    "x_batch": np.ones((64, 3, 128, 128)),
-                },
-                {"value": np.ones((64, 1, 1, 128))},
+            {
+                "a_batch": np.ones((64, 1, 1, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 1, 1, 128))},
         ),
         (
-                {
-                    "a_batch": np.ones((64, 3, 128)),
-                    "x_batch": np.ones((64, 3, 128, 128)),
-                },
-                {"value": np.ones((64, 3, 128, 1))},
+            {
+                "a_batch": np.ones((64, 3, 128)),
+                "x_batch": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 3, 128, 1))},
         ),
         (
-                {
-                    "a_batch": np.ones((64, 3)),
-                    "x_batch": np.ones((64, 3, 128, 128)),
-                },
-                {"value": np.ones((64, 3, 1, 1))},
+            {
+                "a_batch": np.ones((64, 3)),
+                "x_batch": np.ones((64, 3, 128, 128)),
+            },
+            {"value": np.ones((64, 3, 1, 1))},
         ),
         (
-                {
-                    "a_batch": np.ones((64, 200)),
-                    "x_batch": np.ones((64, 3, 128, 200)),
-                },
-                {"value": np.ones((64, 1, 1, 200))},
+            {
+                "a_batch": np.ones((64, 200)),
+                "x_batch": np.ones((64, 3, 128, 200)),
+            },
+            {"value": np.ones((64, 1, 1, 200))},
         ),
         (
             {
@@ -661,21 +687,21 @@ def test_expand_attribution_channel(params: dict, expected: Any):
         (
             {
                 "patch_size": 4,
-                "shape": (16, ),
+                "shape": (16,),
             },
             {"value": 4},
         ),
         (
             {
-                "patch_size": (4, ),
-                "shape": (16, ),
+                "patch_size": (4,),
+                "shape": (16,),
             },
             {"value": 4},
         ),
         (
             {
                 "patch_size": (4, 4),
-                "shape": (16, ),
+                "shape": (16,),
             },
             {"exception": ValueError},
         ),
@@ -709,7 +735,7 @@ def test_expand_attribution_channel(params: dict, expected: Any):
         ),
         (
             {
-                "patch_size": (4, ),
+                "patch_size": (4,),
                 "shape": (16, 16, 16),
             },
             {"value": 64},
@@ -731,6 +757,7 @@ def test_get_nr_patches(params: dict, expected: Any):
 
     out = get_nr_patches(**params)
     assert out == expected["value"]
+
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
@@ -849,7 +876,17 @@ def test_infer_attribution_axes(params: dict, expected: Any):
                 "indices": 5,
                 "indexed_axes": [0, 1, 2, 3, 4],
             },
-            {"value": ((np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[5]]]]])))},
+            {
+                "value": (
+                    (
+                        np.array([[[[[0]]]]]),
+                        np.array([[[[[0]]]]]),
+                        np.array([[[[[0]]]]]),
+                        np.array([[[[[0]]]]]),
+                        np.array([[[[[5]]]]]),
+                    )
+                )
+            },
         ),
         (
             {
@@ -857,7 +894,15 @@ def test_infer_attribution_axes(params: dict, expected: Any):
                 "indices": [5, 19],
                 "indexed_axes": [2, 3, 4],
             },
-            {"value": (slice(None), slice(None), np.array([[[0, 0]]]), np.array([[[0, 3]]]), np.array([[[5, 1]]]))},
+            {
+                "value": (
+                    slice(None),
+                    slice(None),
+                    np.array([[[0, 0]]]),
+                    np.array([[[0, 3]]]),
+                    np.array([[[5, 1]]]),
+                )
+            },
         ),
         (
             {
@@ -957,7 +1002,7 @@ def test_expand_indices(params: dict, expected: Any):
             },
             {"exception": AssertionError},
         ),
-    ]
+    ],
 )
 def test_get_leftover_shape(params: dict, expected: Any):
     if "exception" in expected:

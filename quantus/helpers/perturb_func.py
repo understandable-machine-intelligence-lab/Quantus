@@ -8,7 +8,13 @@ import cv2
 import numpy as np
 import scipy
 
-from .utils import get_baseline_value, blur_at_indices, expand_indices, get_leftover_shape
+from .utils import (
+    get_baseline_value,
+    blur_at_indices,
+    expand_indices,
+    get_leftover_shape,
+)
+
 
 def baseline_replacement_by_indices(
     arr: np.array,
@@ -30,10 +36,7 @@ def baseline_replacement_by_indices(
 
     # Get Baseline
     baseline_value = get_baseline_value(
-        value=perturb_baseline,
-        arr=arr,
-        return_shape=tuple(baseline_shape),
-        **kwargs
+        value=perturb_baseline, arr=arr, return_shape=tuple(baseline_shape), **kwargs
     )
 
     # Perturb
@@ -41,12 +44,13 @@ def baseline_replacement_by_indices(
 
     return arr_perturbed
 
+
 def baseline_replacement_by_shift(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     input_shift: Union[float, int, str, np.array],
-    ** kwargs,
+    **kwargs,
 ) -> np.array:
     """
     Shift values at indices in an image.
@@ -61,10 +65,7 @@ def baseline_replacement_by_shift(
 
     # Get Baseline
     baseline_value = get_baseline_value(
-        value=input_shift,
-        arr=arr,
-        return_shape=tuple(baseline_shape),
-        **kwargs
+        value=input_shift, arr=arr, return_shape=tuple(baseline_shape), **kwargs
     )
 
     # Shift
@@ -74,19 +75,20 @@ def baseline_replacement_by_shift(
         np.full(
             shape=arr_shifted.shape,
             fill_value=np.expand_dims(baseline_value, axis=tuple(indexed_axes)),
-            dtype=float
+            dtype=float,
         ),
     )
 
     arr_perturbed[indices] = arr_shifted[indices]
     return arr_perturbed
 
+
 def baseline_replacement_by_blur(
     arr: np.array,
     indices: Tuple[np.array],
     indexed_axes: Sequence[int],
     blur_kernel_size: Union[int, Sequence[int]] = 15,
-    **kwargs
+    **kwargs,
 ) -> np.array:
     """
     Replace array at indices by a blurred version.
@@ -112,13 +114,14 @@ def baseline_replacement_by_blur(
 
     return arr_perturbed
 
+
 def gaussian_noise(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
-    **kwargs
+    **kwargs,
 ) -> np.array:
     """Add gaussian noise to the input."""
 
@@ -130,12 +133,13 @@ def gaussian_noise(
 
     return arr_perturbed
 
+
 def uniform_noise(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_radius: float = 0.02,
-    **kwargs
+    **kwargs,
 ) -> np.array:
     """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
 
@@ -147,18 +151,17 @@ def uniform_noise(
 
     return arr_perturbed
 
-def rotation(
-    arr: np.array,
-    perturb_angle: float = 10,
-    **kwargs
-) -> np.array:
+
+def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
     Rotate array by some given angle.
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("perturb func 'rotation' requires image-type data."
-                         "Check that this perturb_func receives a 3D array.")
+        raise ValueError(
+            "perturb func 'rotation' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = cv2.getRotationMatrix2D(
         center=(arr.shape[1] / 2, arr.shape[2] / 2),
@@ -182,8 +185,10 @@ def translation_x_direction(
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("perturb func 'translation_x_direction' requires image-type data."
-                         "Check that this perturb_func receives a 3D array.")
+        raise ValueError(
+            "perturb func 'translation_x_direction' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
     arr_perturbed = cv2.warpAffine(
@@ -209,8 +214,10 @@ def translation_y_direction(
     Assumes image type data and channel first layout.
     """
     if arr.ndim != 3:
-        raise ValueError("perturb func 'translation_y_direction' requires image-type data."
-                         "Check that this perturb_func receives a 3D array.")
+        raise ValueError(
+            "perturb func 'translation_y_direction' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
     arr_perturbed = cv2.warpAffine(
