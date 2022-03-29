@@ -13,6 +13,7 @@ from ...quantus.helpers import utils
 def input_zeros_1d_1ch():
     return np.zeros(shape=(1, 224))
 
+
 @pytest.fixture
 def input_zeros_1d_3ch():
     return np.zeros(shape=(3, 224))
@@ -163,7 +164,9 @@ def test_baseline_replacement_by_indices(
     out = baseline_replacement_by_indices(arr=data, **params)
 
     # Indices
-    indices = np.unravel_index(params["indices"], tuple([data.shape[i] for i in params["indexed_axes"]]))
+    indices = np.unravel_index(
+        params["indices"], tuple([data.shape[i] for i in params["indexed_axes"]])
+    )
     if not np.array(indices).ndim > 1:
         indices = [np.array(indices)]
     indices = list(indices)
@@ -172,7 +175,10 @@ def test_baseline_replacement_by_indices(
     indices = tuple(indices)
 
     if isinstance(expected, (int, float)):
-        assert np.all([i == expected for i in out[indices].flatten()]), f"Test failed.{out}"
+        assert np.all(
+            [i == expected for i in out[indices].flatten()]
+        ), f"Test failed.{out}"
+
 
 @pytest.mark.fixed
 @pytest.mark.parametrize(
@@ -259,7 +265,9 @@ def test_baseline_replacement_by_shift(
     out = baseline_replacement_by_shift(arr=data, **params)
 
     # Indices
-    indices = np.unravel_index(params["indices"], tuple([data.shape[i] for i in params["indexed_axes"]]))
+    indices = np.unravel_index(
+        params["indices"], tuple([data.shape[i] for i in params["indexed_axes"]])
+    )
     if not np.array(indices).ndim > 1:
         indices = [np.array(indices)]
     indices = list(indices)
@@ -268,7 +276,9 @@ def test_baseline_replacement_by_shift(
     indices = tuple(indices)
 
     if isinstance(expected, (int, float)):
-        assert np.all([i == expected for i in out[indices].flatten()]), f"Test failed.{out}"
+        assert np.all(
+            [i == expected for i in out[indices].flatten()]
+        ), f"Test failed.{out}"
 
 
 @pytest.mark.perturb_func

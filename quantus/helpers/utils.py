@@ -54,7 +54,11 @@ def get_baseline_value(
         elif value.shape == return_shape:
             return value
         else:
-            raise ValueError("Shape {} of argument 'value' cannot be fitted to required shape {} of return value".format(value.shape, return_shape))
+            raise ValueError(
+                "Shape {} of argument 'value' cannot be fitted to required shape {} of return value".format(
+                    value.shape, return_shape
+                )
+            )
     elif isinstance(value, str):
         fill_dict = get_baseline_dict(arr, patch)
         if value.lower() not in fill_dict:
@@ -63,9 +67,7 @@ def get_baseline_value(
             )
         return np.full(return_shape, fill_dict[value.lower()])
     else:
-        raise ValueError(
-            "Specify 'value'' as a np.array, string, integer or float."
-        )
+        raise ValueError("Specify 'value'' as a np.array, string, integer or float.")
 
 
 def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
@@ -78,8 +80,10 @@ def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> di
         "white": float(arr.max()),
     }
     if patch is not None:
-        fill_dict["neighbourhood_mean"] = float(patch.mean()),
-        fill_dict["neighbourhood_random_min_max"] = float(random.uniform(patch.min(), patch.max()))
+        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
+        fill_dict["neighbourhood_random_min_max"] = float(
+            random.uniform(patch.min(), patch.max())
+        )
     return fill_dict
 
 
@@ -197,15 +201,15 @@ def blur_at_indices(
     arr: np.array,
     kernel: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
-    indexed_axes: Sequence[int]
+    indexed_axes: Sequence[int],
 ) -> np.array:
     """
     Returns a version of arr that is blurred at indices
     """
 
-    assert kernel.ndim == len(indexed_axes), (
-        "kernel should have as many dimensions as indexed_axes has elements."
-    )
+    assert kernel.ndim == len(
+        indexed_axes
+    ), "kernel should have as many dimensions as indexed_axes has elements."
 
     # Pad array
     pad_width = [(0, 0) for _ in indexed_axes]
@@ -230,7 +234,9 @@ def blur_at_indices(
     array_indices = np.array(array_indices)
 
     # Expand kernel dimensions
-    expanded_kernel = np.expand_dims(kernel, tuple([i for i in range(arr.ndim) if i not in indexed_axes]))
+    expanded_kernel = np.expand_dims(
+        kernel, tuple([i for i in range(arr.ndim) if i not in indexed_axes])
+    )
 
     # Iterate over indices, applying expanded kernel
     x_blur = copy.copy(x)
@@ -240,7 +246,9 @@ def blur_at_indices(
         for ax, idx_ax in enumerate(expanded_idx):
             s = kernel.shape[ax]
             idx_ax = np.squeeze(idx_ax)
-            expanded_idx[ax] = slice(idx_ax - (s//2), idx_ax + s//2 + 1 - (s % 2 == 0))
+            expanded_idx[ax] = slice(
+                idx_ax - (s // 2), idx_ax + s // 2 + 1 - (s % 2 == 0)
+            )
 
         if 0 not in indexed_axes:
             expanded_idx = none_slices + expanded_idx
@@ -248,7 +256,11 @@ def blur_at_indices(
         expanded_idx = tuple(expanded_idx)
         idx = tuple(idx)
 
-        x_blur[idx] = np.sum(np.multiply(x[expanded_idx], expanded_kernel), axis=tuple(indexed_axes), keepdims=True)
+        x_blur[idx] = np.sum(
+            np.multiply(x[expanded_idx], expanded_kernel),
+            axis=tuple(indexed_axes),
+            keepdims=True,
+        )
 
     return _unpad_array(x_blur, pad_width, padded_axes=indexed_axes)
 
@@ -287,6 +299,7 @@ def create_patch_slice(
 
     return tuple(patch_slice)
 
+
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
 ) -> int:
@@ -309,22 +322,25 @@ def get_nr_patches(
     return np.prod(shape) // np.prod(patch_size)
 
 
-def _pad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]], mode: str, padded_axes: Sequence[int]):
+def _pad_array(
+    arr: np.array,
+    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
+    mode: str,
+    padded_axes: Sequence[int],
+):
     """To allow for any patch_size we add padding to the array."""
 
-    assert len(padded_axes) <= arr.ndim, (
-        "Cannot pad more axes than array has dimensions"
-    )
+    assert (
+        len(padded_axes) <= arr.ndim
+    ), "Cannot pad more axes than array has dimensions"
 
     if isinstance(pad_width, Sequence):
-        assert len(pad_width) == len(padded_axes), (
-            "pad_width and padded_axes have different lengths"
-        )
+        assert len(pad_width) == len(
+            padded_axes
+        ), "pad_width and padded_axes have different lengths"
         for p in pad_width:
             if isinstance(p, Tuple):
-                assert len(p) == 2, (
-                    "Elements in pad_width need to have length 2"
-                )
+                assert len(p) == 2, "Elements in pad_width need to have length 2"
 
     pad_width_list = []
     for ax in range(arr.ndim):
@@ -333,29 +349,33 @@ def _pad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tupl
         elif isinstance(pad_width, int):
             pad_width_list.append((pad_width, pad_width))
         elif isinstance(pad_width[padded_axes.index(ax)], int):
-            pad_width_list.append((pad_width[padded_axes.index(ax)], pad_width[padded_axes.index(ax)]))
+            pad_width_list.append(
+                (pad_width[padded_axes.index(ax)], pad_width[padded_axes.index(ax)])
+            )
         else:
             pad_width_list.append(pad_width[padded_axes.index(ax)])
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
     return arr_pad
 
 
-def _unpad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]], padded_axes: Sequence[int]):
+def _unpad_array(
+    arr: np.array,
+    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
+    padded_axes: Sequence[int],
+):
     """Remove padding from the array."""
 
-    assert len(padded_axes) <= arr.ndim, (
-        "Cannot unpad more axes than array has dimensions"
-    )
+    assert (
+        len(padded_axes) <= arr.ndim
+    ), "Cannot unpad more axes than array has dimensions"
 
     if isinstance(pad_width, Sequence):
-        assert len(pad_width) == len(padded_axes), (
-            "pad_width and padded_axes have different lengths"
-        )
+        assert len(pad_width) == len(
+            padded_axes
+        ), "pad_width and padded_axes have different lengths"
         for p in pad_width:
             if isinstance(p, Tuple):
-                assert len(p) == 2, (
-                    "Elements in pad_width need to have length 2"
-                )
+                assert len(p) == 2, "Elements in pad_width need to have length 2"
 
     unpad_slice = []
     for ax in range(arr.ndim):
@@ -364,9 +384,19 @@ def _unpad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tu
         elif isinstance(pad_width, int):
             unpad_slice.append(slice(pad_width, arr.shape[ax] - pad_width))
         elif isinstance(pad_width[padded_axes.index(ax)], int):
-            unpad_slice.append(slice(pad_width[padded_axes.index(ax)], arr.shape[ax] - pad_width[padded_axes.index(ax)]))
+            unpad_slice.append(
+                slice(
+                    pad_width[padded_axes.index(ax)],
+                    arr.shape[ax] - pad_width[padded_axes.index(ax)],
+                )
+            )
         else:
-            unpad_slice.append(slice(pad_width[padded_axes.index(ax)][0], arr.shape[ax] - pad_width[padded_axes.index(ax)][1]))
+            unpad_slice.append(
+                slice(
+                    pad_width[padded_axes.index(ax)][0],
+                    arr.shape[ax] - pad_width[padded_axes.index(ax)][1],
+                )
+            )
     return arr[tuple(unpad_slice)]
 
 
@@ -377,15 +407,17 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
         )
     if a_batch.ndim > x_batch.ndim:
-        raise ValueError(f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})")
+        raise ValueError(
+            f"a must not have greater ndim than x ({a_batch.ndim} > {x_batch.ndim})"
+        )
 
     if a_batch.ndim == x_batch.ndim:
         return a_batch
     else:
         attr_axes = infer_attribution_axes(a_batch, x_batch)
 
-        #TODO: infer_attribution_axes currently returns dimensions w/o batch dimension
-        attr_axes = [a+1 for a in attr_axes]
+        # TODO: infer_attribution_axes currently returns dimensions w/o batch dimension
+        attr_axes = [a + 1 for a in attr_axes]
         expand_axes = [a for a in range(1, x_batch.ndim) if a not in attr_axes]
 
         return np.expand_dims(a_batch, axis=tuple(expand_axes))
@@ -401,7 +433,11 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         )
 
     if a_batch.ndim > x_batch.ndim:
-        raise ValueError("Attributions need to have <= dimensions than inputs, but {} > {}".format(a_batch.ndim, x_batch.ndim))
+        raise ValueError(
+            "Attributions need to have <= dimensions than inputs, but {} > {}".format(
+                a_batch.ndim, x_batch.ndim
+            )
+        )
 
     # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
     # TODO: adapt to expanded attributions?
@@ -416,19 +452,26 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
     if len(a_shape) == 0:
         return np.array([])
 
-    x_subshapes = [[x_shape[i] for i in range(start, start + len(a_shape))] for start in range(0, len(x_shape) - len(a_shape) + 1)]
+    x_subshapes = [
+        [x_shape[i] for i in range(start, start + len(a_shape))]
+        for start in range(0, len(x_shape) - len(a_shape) + 1)
+    ]
     if x_subshapes.count(a_shape) < 1:
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
-            "inputs were of shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
+            "inputs were of shape {} and attributions of shape {}".format(
+                x_batch.shape, a_batch.shape
+            )
         )
     elif x_subshapes.count(a_shape) > 1:
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
         if a_batch.ndim == x_batch.ndim and len(a_shape) < a_batch.ndim:
-            a_subshapes = [[np.shape(a_batch)[1:][i] for i in range(start, start + len(a_shape))] for start in
-                           range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)]
+            a_subshapes = [
+                [np.shape(a_batch)[1:][i] for i in range(start, start + len(a_shape))]
+                for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
+            ]
             if a_subshapes.count(a_shape) == 1:
                 # Inferring channel shape
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
@@ -437,14 +480,19 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                     if a_shape == np.shape(a_batch)[1:][:dim]:
                         return np.arange(0, dim)
 
-            raise ValueError("Attribution axes could not be inferred for inputs of "
-                             "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
-                             )
+            raise ValueError(
+                "Attribution axes could not be inferred for inputs of "
+                "shape {} and attributions of shape {}".format(
+                    x_batch.shape, a_batch.shape
+                )
+            )
 
         raise ValueError(
             "Attribution dimensions are not unique subdimensions of inputs:  "
             "inputs were of shape {} and attributions of shape {}."
-            "Please expand attribution dimensions for a unique solution".format(x_batch.shape, a_batch.shape)
+            "Please expand attribution dimensions for a unique solution".format(
+                x_batch.shape, a_batch.shape
+            )
         )
     else:
         # Inferring channel shape
@@ -454,12 +502,17 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             if a_shape == x_shape[:dim]:
                 return np.arange(0, dim)
 
-    raise ValueError("Attribution axes could not be inferred for inputs of "
-                     "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
-                     )
+    raise ValueError(
+        "Attribution axes could not be inferred for inputs of "
+        "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
+    )
 
 
-def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice]], indexed_axes: Sequence[int]) -> Tuple:
+def expand_indices(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice]],
+    indexed_axes: Sequence[int],
+) -> Tuple:
     """
     Expands indices to fit array shape. Returns expanded indices.
 
@@ -493,7 +546,9 @@ def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.ar
 
     # Check if unraveling is needed
     if np.all([isinstance(i, int) for i in expanded_indices]):
-        expanded_indices = np.unravel_index(expanded_indices, tuple([arr.shape[i] for i in indexed_axes]))
+        expanded_indices = np.unravel_index(
+            expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
+        )
 
     # Handle case of 1D indices
     if not np.array(expanded_indices).ndim > 1:
@@ -509,7 +564,9 @@ def expand_indices(arr: np.array, indices: Union[int, Sequence[int], Tuple[np.ar
     # Expands dimensions of each element in expanded_indices depending on the number of elements
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
-            expanded_indices[i] = np.expand_dims(expanded_indices[i], axis=tuple(range(len(expanded_indices)-1)))
+            expanded_indices[i] = np.expand_dims(
+                expanded_indices[i], axis=tuple(range(len(expanded_indices) - 1))
+            )
 
     # Buffer with None-slices if indices index the last axes
     for i in range(0, indexed_axes[0]):

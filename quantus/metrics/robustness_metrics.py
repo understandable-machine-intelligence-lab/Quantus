@@ -310,9 +310,7 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_noise
-        )
+        self.perturb_func = self.kwargs.get("perturb_func", perturb_func.uniform_noise)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.difference
@@ -545,9 +543,7 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_noise
-        )
+        self.perturb_func = self.kwargs.get("perturb_func", perturb_func.uniform_noise)
         self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.difference
@@ -963,8 +959,7 @@ class Continuity(Metric):
 
                 # create patches by splitting input into grid
                 axis_iterators = [
-                    range(0, x_input.shape[axis], self.patch_size)
-                    for axis in a_axes
+                    range(0, x_input.shape[axis], self.patch_size) for axis in a_axes
                 ]
                 for ix_patch, top_left_coords in enumerate(
                     itertools.product(*axis_iterators)
@@ -976,7 +971,9 @@ class Continuity(Metric):
                         coords=top_left_coords,
                     )
 
-                    a_perturbed_patch = a_perturbed[utils.expand_indices(a_perturbed, patch_slice, a_axes)]
+                    a_perturbed_patch = a_perturbed[
+                        utils.expand_indices(a_perturbed, patch_slice, a_axes)
+                    ]
                     if self.abs:
                         a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 

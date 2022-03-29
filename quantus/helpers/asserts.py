@@ -173,7 +173,13 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "All attribution dimensions should be included in the input dimensions, "
         "but got shapes {} and {}".format(a_shape, x_shape)
     )
-    assert all([x_shape.index(a) > x_shape.index(a_shape[i]) for a in a_shape for i in range(a_shape.index(a))]), (
+    assert all(
+        [
+            x_shape.index(a) > x_shape.index(a_shape[i])
+            for a in a_shape
+            for i in range(a_shape.index(a))
+        ]
+    ), (
         "The dimensions of the attribution must correspond to dimensions of the input in the same order, "
         "but got shapes {} and {}".format(a_shape, x_shape)
     )
@@ -247,13 +253,21 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
             f" [{value} >= {np.prod(x.shape[2:])}]"
         )
 
+
 def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     """
     Checks that indexed_axes fits arr
     """
     assert len(indexed_axes) <= arr.ndim
     assert len(indexed_axes) == len(np.arange(indexed_axes[0], indexed_axes[-1] + 1))
-    assert all([a == b for a, b in list(zip(indexed_axes, np.arange(indexed_axes[0], indexed_axes[-1] + 1)))]), (
-        "Make sure indexed_axes contains consecutive axes.")
-    assert 0 in indexed_axes or arr.ndim - 1 in indexed_axes, (
-        "Make sure indexed_axes contains either the first or last axis of arr.")
+    assert all(
+        [
+            a == b
+            for a, b in list(
+                zip(indexed_axes, np.arange(indexed_axes[0], indexed_axes[-1] + 1))
+            )
+        ]
+    ), "Make sure indexed_axes contains consecutive axes."
+    assert (
+        0 in indexed_axes or arr.ndim - 1 in indexed_axes
+    ), "Make sure indexed_axes contains either the first or last axis of arr."

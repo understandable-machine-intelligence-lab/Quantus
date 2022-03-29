@@ -12,7 +12,10 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import baseline_replacement_by_indices, baseline_replacement_by_shift
+from ..helpers.perturb_func import (
+    baseline_replacement_by_indices,
+    baseline_replacement_by_shift,
+)
 
 
 class Completeness(Metric):
@@ -278,7 +281,9 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black") #TODO: this attribute is unused right? also in other metrics
+        self.perturb_baseline = self.kwargs.get(
+            "perturb_baseline", "black"
+        )  # TODO: this attribute is unused right? also in other metrics
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
