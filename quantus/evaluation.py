@@ -94,7 +94,6 @@ def evaluate(
                     targets=y_batch,
                     **kwargs,
                 )
-                # TODO @Leander: Potentially infer axes from same-dim explanations and inputs
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
                 # Asserts.

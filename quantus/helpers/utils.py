@@ -340,7 +340,7 @@ def _pad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tupl
     return arr_pad
 
 
-def _unpad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]], mode: str, padded_axes: Sequence[int]):
+def _unpad_array(arr: np.array, pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]], padded_axes: Sequence[int]):
     """Remove padding from the array."""
 
     assert len(padded_axes) <= arr.ndim, (

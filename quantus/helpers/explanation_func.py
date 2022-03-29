@@ -446,7 +446,6 @@ def generate_zennit_explanation(
     attributor_kwargs = kwargs.get("attributor_kwargs", {})
 
     # Initialize canonizer, composite, and attributor
-    # TODO @Leander: Test parameterization
     if canonizer is not None:
         canonizers = [canonizer(**canonizer_kwargs)]
     else:
