@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import scipy
 
-from .utils import get_baseline_value, conv2D_numpy, expand_indices, get_leftover_shape
+from .utils import get_baseline_value, blur_at_indices, expand_indices, get_leftover_shape
 
 def baseline_replacement_by_indices(
     arr: np.array,
@@ -83,55 +83,33 @@ def baseline_replacement_by_shift(
 
 def baseline_replacement_by_blur(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[np.array],
     indexed_axes: Sequence[int],
     blur_kernel_size: Union[int, Sequence[int]] = 15,
     **kwargs
 ) -> np.array:
     """
-    Replace a single patch in an array by a blurred version.
-    Blur is performed via a 2D convolution.
+    Replace array at indices by a blurred version.
+    Blur is performed via convolution.
     blur_kernel_size controls the kernel-size of that convolution (Default is 15).
-    Assumes unbatched channel first format.
     """
-
-    raise NotImplementedError("Currently in development")
 
     indices = expand_indices(arr, indices, indexed_axes)
 
-    # expand blur_kernel_size
+    # Expand blur_kernel_size
     if isinstance(blur_kernel_size, int):
         blur_kernel_size = [blur_kernel_size for _ in indexed_axes]
 
     assert len(blur_kernel_size) == len(indexed_axes)
 
-    # TODO @Leander: change this for arbitrary input shapes
-    # Create blurred array.
+    # Create kernel and expand dimensions to arr.ndim
     kernel = np.ones(blur_kernel_size, dtype=arr.dtype)
     kernel *= 1.0 / np.prod(blur_kernel_size)
-    kernel = np.tile(kernel, (*get_leftover_shape(arr, indexed_axes), 1, *[1 for _ in blur_kernel_size]))
-    print(kernel.shape)
-    print(arr.shape, kernel.shape)
 
-    if arr.ndim == 3:
-        # TODO @Leander: Check return shape for different kernel sizes
-        arr_avg = conv2D_numpy(
-            x=arr,
-            kernel=kernel,
-            stride=1,
-            padding=0,
-            groups=nr_channels,
-            pad_output=True,
-        )
-    elif arr.ndim == 2:
-        raise NotImplementedError("1d support not implemented yet")
-    else:
-        raise ValueError("Blur supports only 2d inputs")
+    # Compute blur array. It is only blurred at indices, otherwise it is equal to arr.
+    # We only blur at indices since otherwise n-d convolution can be quite computationally expensive
+    arr_perturbed = blur_at_indices(arr, kernel, indices, indexed_axes)
 
-    # Perturb array.
-    arr_perturbed = copy.copy(arr)
-
-    arr_perturbed[indices] = arr_avg[indices]
     return arr_perturbed
 
 def gaussian_noise(
