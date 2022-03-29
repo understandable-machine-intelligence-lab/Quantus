@@ -129,12 +129,8 @@ def mock_same_input_2d():
     return {"x": np.zeros((1, 28, 28, 28))}
 
 
-def random_input(c_in, imsize):
-    return np.random.uniform(0, 1, size=(c_in, imsize, imsize))
-
-
-def random_kernel(c_in, c_out, groups, ksize):
-    return np.random.uniform(0, 1, size=(c_out, c_in // groups, ksize, ksize))
+def random_array(shape):
+    return np.random.uniform(0, 1, size=shape)
 
 
 @pytest.mark.utils
@@ -405,176 +401,67 @@ def test_get_wrapped_model(
     [
         (
             {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": False,
+                "arr_shape": (10, 20, 30, 40),
+                "kernel_shape": (3, 3),
+                "indices": [15, 22, 30],
+                "indexed_axes": [2, 3]
             },
-            {"shape": (3, 217, 217)},
+            {"shape": (10, 20, 30, 40)},
         ),
         (
             {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 3,
-                "groups": 3,
-                "pad_output": False,
+                "arr_shape": (10, 20, 30, 40),
+                "kernel_shape": (4, 9, 21),
+                "indices": [15, 22, 30],
+                "indexed_axes": [0, 1, 2]
             },
-            {"shape": (3, 223, 223)},
+            {"shape": (10, 20, 30, 40)},
         ),
         (
             {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 3,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": False,
+                "arr_shape": (10, 20, 30, 40),
+                "kernel_shape": (1, 1, 1),
+                "indices": [15, 22, 30],
+                "indexed_axes": [1, 2, 3]
             },
-            {"shape": (3, 73, 73)},
+            {"shape": (10, 20, 30, 40)},
         ),
         (
             {
-                "c_in": 6,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": False,
-            },
-            {"shape": (3, 217, 217)},
-        ),
-        (
-            {
-                "c_in": 6,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 2,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": False,
+                "arr_shape": (10, 20, 30, 40),
+                "kernel_shape": (1, 3, 3),
+                "indices": [15, 22, 30],
+                "indexed_axes": [2, 3]
             },
             {"exception": AssertionError},
         ),
-        (
-            {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": True,
-            },
-            {"shape": (3, 224, 224)},
-        ),
-        (
-            {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 3,
-                "groups": 3,
-                "pad_output": True,
-            },
-            {"exception": NotImplementedError},
-        ),
-        (
-            {
-                "c_in": 3,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 3,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": True,
-            },
-            {"exception": NotImplementedError},
-        ),
-        (
-            {
-                "c_in": 6,
-                "c_out": 3,
-                "imsize": 224,
-                "kgroups": 3,
-                "ksize": 8,
-                "stride": 1,
-                "padding": 0,
-                "groups": 3,
-                "pad_output": True,
-            },
-            {"shape": (3, 224, 224)},
-        ),
-        (
-            {
-                "c_in": 1,
-                "c_out": 1,
-                "imsize": 28,
-                "kgroups": 1,
-                "ksize": 15,
-                "stride": 1,
-                "padding": 0,
-                "groups": 1,
-                "pad_output": True,
-            },
-            {"shape": (1, 28, 28)},
-        ),
     ],
 )
-def test_conv2D_numpy(
+def test_blur_at_indices(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    input = random_input(params["c_in"], params["imsize"])
-    kernel = random_kernel(
-        params["c_in"], params["c_out"], params["kgroups"], params["ksize"]
-    )
+    input = random_array(params["arr_shape"])
+    kernel = random_array(params["kernel_shape"])
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            out = conv2D_numpy(
-                x=input,
+            out = blur_at_indices(
+                arr=input,
                 kernel=kernel,
-                stride=params["stride"],
-                padding=params["padding"],
-                groups=params["groups"],
-                pad_output=params["pad_output"],
+                indices=params["indices"],
+                indexed_axes=params["indexed_axes"],
             )
         return
-    out = conv2D_numpy(
-        x=input,
+    out = blur_at_indices(
+        arr=input,
         kernel=kernel,
-        stride=params["stride"],
-        padding=params["padding"],
-        groups=params["groups"],
-        pad_output=params["pad_output"],
+        indices=params["indices"],
+        indexed_axes=params["indexed_axes"],
     )
     if "shape" in expected:
         assert expected["shape"] == out.shape, "Test failed."
+
 
 
 @pytest.mark.utils
@@ -962,7 +849,7 @@ def test_infer_attribution_axes(params: dict, expected: Any):
                 "indices": 5,
                 "indexed_axes": [0, 1, 2, 3, 4],
             },
-            {"value": (0, 0, 0, 0, 5)},
+            {"value": ((np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[0]]]]]), np.array([[[[[5]]]]])))},
         ),
         (
             {
@@ -970,7 +857,7 @@ def test_infer_attribution_axes(params: dict, expected: Any):
                 "indices": [5, 19],
                 "indexed_axes": [2, 3, 4],
             },
-            {"value": (slice(None), slice(None), np.array([0, 0]), np.array([0, 3]), np.array([5, 1]))},
+            {"value": (slice(None), slice(None), np.array([[[0, 0]]]), np.array([[[0, 3]]]), np.array([[[5, 1]]]))},
         ),
         (
             {
@@ -978,7 +865,7 @@ def test_infer_attribution_axes(params: dict, expected: Any):
                 "indices": (np.array([1, 1]), np.array([0, 2])),
                 "indexed_axes": [0, 1],
             },
-            {"value": (np.array([1, 1]), np.array([0, 2]), slice(None), slice(None), slice(None))},
+            {"value": (np.array([[1, 1]]), np.array([[0, 2]]))},
         ),
         (
             {

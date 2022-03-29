@@ -287,7 +287,7 @@ def test_baseline_replacement_by_shift(
         (
             lazy_fixture("input_uniform_2d_3ch"),
             {
-                "blur_kernel_size": 7,
+                "blur_kernel_size": [3, 4],
                 "indices": [20, 15, 5, 27, 9],
                 "indexed_axes": [1, 2],
             },
@@ -307,9 +307,9 @@ def test_baseline_replacement_by_shift(
             {
                 "blur_kernel_size": 15,
                 "indices": [20, 15, 5, 27, 9],
-                "indexed_axes": [0],
+                "indexed_axes": [1],
             },
-            {"exception": NotImplementedError},
+            {},
         ),
         (
             lazy_fixture("input_uniform_3d_3ch"),
@@ -318,7 +318,7 @@ def test_baseline_replacement_by_shift(
                 "indices": [20, 15, 5, 27, 9],
                 "indexed_axes": [0, 1, 2, 3],
             },
-            {"exception": ValueError},
+            {},
         ),
     ],
 )
