@@ -1,15 +1,25 @@
 """This module provides some basic functionality to normalise and denormalise images."""
-from typing import Union
+from typing import Callable, Dict, Optional, Union
 import numpy as np
 
 
-def normalise_by_max(a: np.ndarray) -> np.ndarray:
+def normalise_batch(
+        arr: np.ndarray,
+        normalise_func: Callable,
+        **normalise_func_kwargs,
+) -> None:
+    """ inplace normalisation of complete batch """
+    for i in range(len(arr)):
+        arr[i] = normalise_func(arr[i], **normalise_func_kwargs)
+
+
+def normalise_by_max(a: np.ndarray, **kwargs) -> np.ndarray:
     """ "Normalize attributions by the maximum absolute value of the explanation."""
     a /= np.max(np.abs(a))
     return a
 
 
-def normalise_by_negative(a: np.ndarray) -> np.ndarray:
+def normalise_by_negative(a: np.ndarray, **kwargs) -> np.ndarray:
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
     if a.min() >= 0.0:
         return a / a.max()
