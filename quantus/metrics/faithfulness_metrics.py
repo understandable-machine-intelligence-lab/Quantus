@@ -2250,3 +2250,151 @@ class SensitivityN(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+class Infidelity(Metric):
+    """
+    Implementation of Infidelity by Yeh et al., 2019.
+
+    Explanation infidelity represents the expected mean square error
+    between 1) a dot product of an attribution and input perturbation and
+    2) difference in model output after significant perturbation.
+
+    References:
+        1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
+        "On the (In)fidelity and Sensitivity of Explanations."
+        33rd Conference on Neural Information Processing Systems (NeurIPS 2019), Vancouver, Canada.
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", False)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.last_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func'"
+                ),
+                citation=(
+                    "Chih-Kuan, Yeh, et al. 'On the (In)fidelity and Sensitivity of Explanations'"
+                    "arXiv:1901.09392 (2019)"
+                ),
+            )
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[float]:
+        """
+
+        """
+        # Reshape input batch to channel first order:
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        # Wrap the model into an interface
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
+        self.last_results = []
+
+        if a_batch is None:
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+
+        # Asserts.
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
+
+            a = a.flatten()
+
+            x_perturb = self.perturb_func(
+                arr=x,
+                indices=np.arange(0, x.size),
+                **self.kwargs,
+            )
+
+            # Copy the input x but fill with baseline values.
+            baseline_value = utils.get_baseline_value(
+                choice=self.perturb_baseline, arr=x
+            )
+            x_baseline = np.full(x.shape, baseline_value).flatten()
+
+            # Predict on input.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+            )
+
+            # Predict on baseline.
+            x_input = model.shape_input(x_perturb, x.shape, channel_first=True)
+            y_pred_perturb = float(
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+            )
+
+            y_pred_diff = y_pred - y_pred_perturb
+
+            a_times_perturb_sum = np.sum(x_baseline * a)
+
+            self.last_results.append(np.square(y_pred_diff - a_times_perturb_sum))
+
+        return np.mean(self.last_results)
