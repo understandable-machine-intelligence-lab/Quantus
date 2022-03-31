@@ -21,14 +21,14 @@ class PyTorchModel(ModelInterface):
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
 
-        softmax_act = kwargs.get("softmax_act", False)
+        softmax = kwargs.get("softmax", False)
         device = kwargs.get("device", None)
         grad = kwargs.get("grad", False)
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
-            if softmax_act:
+            if softmax:
                 pred = torch.nn.Softmax()(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
