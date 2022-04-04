@@ -380,7 +380,7 @@ def test_faithfulness_estimate(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": 0.0, "max": 80.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -396,7 +396,7 @@ def test_faithfulness_estimate(
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": 0.0, "max": 80.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -411,7 +411,7 @@ def test_faithfulness_estimate(
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": 0.0, "max": 80.0},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -472,7 +472,9 @@ def test_iterative_removal_of_features(
         **params,
     )
 
-    assert scores is not None, "Test failed."
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -688,7 +690,6 @@ def test_monotonicity_nguyen(
 
     assert scores is not None, "Test failed."
 
-
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -784,6 +785,37 @@ def test_monotonicity_nguyen(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "random",
+                "features_in_step": 56,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "max_steps_per_input": 2,
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "return_auc": True,
+            },
+            {"min": 0.0, "max": 14.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "features_in_step": 10,
+                "normalise": False,
+                "perturb_func": perturb_func.baseline_replacement_by_indices,
+                "perturb_baseline": "mean",
+                "disable_warnings": True,
+                "a_batch_generate": False,
+                "return_auc": True,
+            },
+            {"min": 0.0, "max": 10.0},
+        ),
     ],
 )
 def test_pixel_flipping(
@@ -816,10 +848,9 @@ def test_pixel_flipping(
         **params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores[0]
-    ), "Test failed."
-
+    assert all([(s>=expected["min"] and s<= expected["max"])
+                for s_list in scores
+                    for s in s_list]), "Test failed."
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -839,7 +870,7 @@ def test_pixel_flipping(
                 "display_progressbar": False,
                 "a_batch_generate": True,
             },
-            {"min": -1, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -855,7 +886,7 @@ def test_pixel_flipping(
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": -1, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -871,7 +902,7 @@ def test_pixel_flipping(
                 "perturb_func": perturb_func.baseline_replacement_by_patch,
                 "a_batch_generate": False,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -881,7 +912,7 @@ def test_pixel_flipping(
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
-            {"min": -1, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -896,7 +927,23 @@ def test_pixel_flipping(
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            {"min": -1, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "mean",
+                "patch_size": 7,
+                "normalise": True,
+                "order": "morf",
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "return_auc": True,
+            },
+            {"min": 0.0, "max": 100.0},
         ),
     ],
 )
@@ -930,8 +977,9 @@ def test_region_perturbation(
         **params,
     )
 
-    assert scores is not None, "Test failed."
-
+    assert all([(s>=expected["min"] and s<= expected["max"])
+                for _, s_list in scores.items()
+                    for s in s_list]), "Test failed."
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1013,6 +1061,39 @@ def test_region_perturbation(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "mean",
+                "patch_size": 7,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "max_steps_per_input": 2,
+                "disable_warnings": False,
+                "display_progressbar": True,
+                "return_auc": True,
+            },
+            {"min": 0.0, "max": 16.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "perturb_baseline": "mean",
+                "patch_size": 7,
+                "normalise": True,
+                "abs": True,
+                "max_steps_per_input": 2,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+                "return_auc": True,
+            },
+            {"min": 0.0, "max": 16.0},
+        ),
     ],
 )
 def test_selectivity(
@@ -1045,9 +1126,9 @@ def test_selectivity(
         **params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores[0]
-    ), "Test failed."
+    assert all([(s>=expected["min"] and s<= expected["max"])
+                for _, s_list in scores.items()
+                    for s in s_list]), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1135,6 +1216,24 @@ def test_selectivity(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_baseline": "black",
+                "n_max_percentage": 0.9,
+                "features_in_step": 28,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "disable_warnings": False,
+                "display_progressbar": True,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),

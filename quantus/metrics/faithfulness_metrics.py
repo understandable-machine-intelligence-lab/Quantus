@@ -1211,6 +1211,8 @@ class PixelFlipping(Metric):
     with scores close to zero and then to evaluate the impact of these flips
     onto the prediction scores (mean prediction is calculated).
 
+    Note: Plotting only works when return_auc=False.
+
     References:
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
@@ -1236,6 +1238,7 @@ class PixelFlipping(Metric):
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1254,6 +1257,7 @@ class PixelFlipping(Metric):
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
+        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = []
         self.all_results = []
 
@@ -1414,8 +1418,11 @@ class PixelFlipping(Metric):
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
-
-            self.last_results.append(preds)
+            
+            if self.return_auc:
+                self.last_results.append([np.trapz(np.array(preds), dx=1.0)])
+            else:
+                self.last_results.append(preds)
 
         self.all_results.append(self.last_results)
 
@@ -1431,6 +1438,8 @@ class RegionPerturbation(Metric):
     encoded in the image (e.g. as measured by the function f) disappears when we
     progressively remove information from the image x, a process referred to as
     region perturbation, at the specified locations.
+
+    Note: Plotting only works when return_auc=False.
 
     References:
         1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
@@ -1469,6 +1478,7 @@ class RegionPerturbation(Metric):
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1488,6 +1498,7 @@ class RegionPerturbation(Metric):
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.softmax = self.kwargs.get("softmax", True)
+        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = {}
         self.all_results = []
 
@@ -1708,7 +1719,10 @@ class RegionPerturbation(Metric):
                 # TODO: give an option to only return y_pred_perturb here?
                 sub_results.append(y_pred - y_pred_perturb)
 
-            self.last_results[sample] = sub_results
+            if self.return_auc:
+                self.last_results[sample] = [np.trapz(np.array(sub_results), dx=1.0)]
+            else:
+                self.last_results[sample] = sub_results
 
         self.all_results.append(self.last_results)
 
@@ -1723,6 +1737,8 @@ class Selectivity(Metric):
     highest relevance is set to black. The plot keeps track of the function value
     as the features are being progressively removed and computes an average over
     a large number of examples.
+
+    Note: Plotting only works when return_auc=False.
 
     References:
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
@@ -1749,6 +1765,7 @@ class Selectivity(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             patch_size (integer): The patch size for masking, default=8.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1766,6 +1783,7 @@ class Selectivity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.softmax = self.kwargs.get("softmax", True)
+        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = {}
         self.all_results = []
 
@@ -1961,7 +1979,10 @@ class Selectivity(Metric):
 
                 sub_results.append(y_pred_perturb)
 
-            self.last_results[sample] = sub_results
+            if self.return_auc:
+                self.last_results[sample] = [np.trapz(np.array(sub_results), dx=1.0)]
+            else:
+                self.last_results[sample] = sub_results
 
         self.all_results.append(self.last_results)
 
@@ -1979,6 +2000,8 @@ class SensitivityN(Metric):
     Pearson correlation coefficient (PCC) is computed between the sum of the attributions and the variation in the
     target output varying n from one to about 80% of the total number of features, where an average across a thousand
     of samples is reported. Sampling is performed using a uniform probability distribution over the features.
+
+    Note: Plotting only works when return_auc=False.
 
     References:
         1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
@@ -2018,6 +2041,7 @@ class SensitivityN(Metric):
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
         """
         super().__init__()
 
@@ -2038,6 +2062,7 @@ class SensitivityN(Metric):
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.last_results = []
         self.all_results = []
 
@@ -2237,6 +2262,12 @@ class SensitivityN(Metric):
             )
             for k in range(max_features)
         ]
+
+        if self.return_aggregate:
+            self.last_results = [np.mean(self.last_results)]
+        else:
+            self.last_results = self.last_results
+
         self.all_results.append(self.last_results)
 
         return self.last_results
