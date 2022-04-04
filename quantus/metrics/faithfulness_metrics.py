@@ -186,6 +186,8 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -412,6 +414,8 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -536,10 +540,10 @@ class IterativeRemovalOfFeatures(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.last_results = []
         self.all_results = []
 
@@ -644,6 +648,8 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -884,6 +890,8 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -926,7 +934,7 @@ class MonotonicityArya(Metric):
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
-                value=self.perturb_baseline, arr=x, return_shape=(1,)
+                value=self.kwargs.get("perturb_baseline", "black"), arr=x, return_shape=(1,)
             )
             x_baseline = np.full(x.shape, baseline_value)
 
@@ -1118,6 +1126,8 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1366,6 +1376,8 @@ class PixelFlipping(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1607,6 +1619,8 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -1883,6 +1897,8 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -2157,6 +2173,8 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 

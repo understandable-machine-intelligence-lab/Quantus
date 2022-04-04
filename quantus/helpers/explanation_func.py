@@ -250,6 +250,8 @@ def generate_captum_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
+    reduce_axes = tuple(kwargs.get("reduce_axes", [1]))
+
     """ TODO: why is this needed?
     inputs = inputs.reshape(
         -1,
@@ -269,7 +271,7 @@ def generate_captum_explanation(
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "IntegratedGradients".lower():
@@ -282,28 +284,28 @@ def generate_captum_explanation(
                 n_steps=10,
                 method="riemann_trapezoid",
             )
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "InputXGradient".lower():
         explanation = (
             InputXGradient(model)
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "Saliency".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "Gradient".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=False)
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "Occlusion".lower():
@@ -315,14 +317,14 @@ def generate_captum_explanation(
                 target=targets,
                 sliding_window_shapes=window_shape,
             )
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "FeatureAblation".lower():
         explanation = (
             FeatureAblation(model)
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
 
     elif method == "GradCam".lower():
@@ -337,16 +339,8 @@ def generate_captum_explanation(
         explanation = (
             LayerGradCam(model, layer=kwargs["gc_layer"])
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True)
+            .sum(axis=reduce_axes, keepdims=True)
         )
-        """ TODO: why is this needed?
-        explanation = torch.Tensor(
-            cv2.resize(
-                explanation.cpu().data.numpy(),
-                dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            )
-        )
-        """
 
     elif method == "Control Var. Sobel Filter".lower():
         explanation = torch.zeros(size=inputs.shape)
@@ -358,7 +352,7 @@ def generate_captum_explanation(
                 # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
         explanation = explanation.mean(
-            axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True
+            axis=reduce_axes, keepdims=True
         )
 
     elif method == "Control Var. Constant".lower():
@@ -378,7 +372,7 @@ def generate_captum_explanation(
             )
 
         explanation = explanation.mean(
-            axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True
+            axis=reduce_axes, keepdims=True
         )
 
     else:
@@ -423,6 +417,8 @@ def generate_zennit_explanation(
         "Cannot reduce attributions over more axes than each sample has dimensions, but got "
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
+
+    reduce_axes = tuple(kwargs.get("reduce_axes", [1]))
 
     # Get zennit composite, canonizer, attributor
     # Handle canonizer kwarg
@@ -514,7 +510,7 @@ def generate_zennit_explanation(
 
     # Sum over axes
     explanation = np.sum(
-        explanation, axis=tuple(kwargs.get("reduce_axes", [1])), keepdims=True
+        explanation, axis=reduce_axes, keepdims=True
     )
 
     if kwargs.get("normalise", False):

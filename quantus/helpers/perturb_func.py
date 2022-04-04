@@ -28,6 +28,7 @@ def baseline_replacement_by_indices(
     indices: array-like, with a subset shape of arr
     indexed_axes: dimensions of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
+    perturb_baseline: baseline value to replace arr at indices with
     """
     indices = expand_indices(arr, indices, indexed_axes)
     baseline_shape = get_leftover_shape(arr, indexed_axes)
@@ -57,6 +58,7 @@ def baseline_replacement_by_shift(
     indices: array-like, with a subset shape of arr
     indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
+    input_shift: value to shift arr at indices with
     """
     indices = expand_indices(arr, indices, indexed_axes)
     baseline_shape = get_leftover_shape(arr, indexed_axes)
@@ -93,7 +95,10 @@ def baseline_replacement_by_blur(
     """
     Replace array at indices by a blurred version.
     Blur is performed via convolution.
-    blur_kernel_size controls the kernel-size of that convolution (Default is 15).
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    blur_kernel_size: controls the kernel-size of that convolution (Default is 15).
     """
 
     indices = expand_indices(arr, indices, indexed_axes)
@@ -123,7 +128,14 @@ def gaussian_noise(
     perturb_std: float = 0.01,
     **kwargs,
 ) -> np.array:
-    """Add gaussian noise to the input."""
+    """
+    Add gaussian noise to the input at indices.
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    perturb_mean: Mean for gaussian
+    perturb_std: Std for gaussian
+    """
 
     indices = expand_indices(arr, indices, indexed_axes)
     noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
@@ -138,13 +150,28 @@ def uniform_noise(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
-    perturb_radius: float = 0.02,
+    lower_bound: float = 0.02,
+    upper_bound: Union[None, float] = None,
     **kwargs,
 ) -> np.array:
-    """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
+    """
+    Add noise to the input at indices as sampled uniformly random from [-lower_bound, lower_bound]
+    if upper_bound is None, and [lower_bound, upper_bound] otherwise.
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    lower_bound: lower bound for uniform sampling
+    upper_bound: upper bound for uniform sampling
+    """
 
     indices = expand_indices(arr, indices, indexed_axes)
-    noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
+
+    if upper_bound is None:
+        noise = np.random.uniform(low=-lower_bound, high=lower_bound, size=arr.shape)
+    else:
+        assert upper_bound > lower_bound, "Parameter 'upper_bound' needs to be larger than 'lower_bound', " \
+                                          "but {} <= {}".format(upper_bound, lower_bound)
+        noise = np.random.uniform(low=lower_bound, high=upper_bound, size=arr.shape)
 
     arr_perturbed = copy.copy(arr)
     arr_perturbed[indices] = (arr_perturbed + noise)[indices]

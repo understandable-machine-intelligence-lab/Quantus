@@ -63,11 +63,11 @@ def get_baseline_value(
         fill_dict = get_baseline_dict(arr, patch)
         if value.lower() not in fill_dict:
             raise ValueError(
-                f"Ensure that 'choice'(str) is in {list(fill_dict.keys())}"
+                f"Ensure that 'value'(str) is in {list(fill_dict.keys())}"
             )
         return np.full(return_shape, fill_dict[value.lower()])
     else:
-        raise ValueError("Specify 'value'' as a np.array, string, integer or float.")
+        raise ValueError("Specify 'value' as a np.array, string, integer or float.")
 
 
 def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
@@ -440,11 +440,9 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         )
 
     # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
-    # TODO: adapt to expanded attributions?
     a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
     x_shape = [s for s in np.shape(x_batch)[1:]]
 
-    # Equal Shape
     if a_shape == x_shape:
         return np.arange(0, len(x_shape))
 
@@ -495,7 +493,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     else:
-        # Inferring channel shape
+        # Infer attribution axes
         for dim in range(len(x_shape) + 1):
             if a_shape == x_shape[dim:]:
                 return np.arange(dim, len(x_shape))
