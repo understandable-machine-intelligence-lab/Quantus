@@ -56,6 +56,7 @@ class Completeness(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -72,6 +73,7 @@ class Completeness(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
 
@@ -205,15 +207,11 @@ class Completeness(Metric):
 
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             # Predict on baseline.
             x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-            y_pred_baseline = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-            )
+            y_pred_baseline = float(model.predict(x_input, **self.kwargs)[:, y])
 
             if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
                 self.last_results.append(True)
@@ -261,6 +259,7 @@ class NonSensitivity(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -280,6 +279,7 @@ class NonSensitivity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -443,9 +443,7 @@ class NonSensitivity(Metric):
                     x_input = model.shape_input(
                         x_perturbed, x.shape, channel_first=True
                     )
-                    y_pred_perturbed = float(
-                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                    )
+                    y_pred_perturbed = float(model.predict(x_input, **self.kwargs)[:, y])
                     preds.append(y_pred_perturbed)
 
                     vars.append(np.var(preds))
