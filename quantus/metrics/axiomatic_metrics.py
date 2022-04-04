@@ -71,10 +71,10 @@ class Completeness(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.last_results = []
         self.all_results = []
 
@@ -181,6 +181,8 @@ class Completeness(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -199,6 +201,8 @@ class Completeness(Metric):
 
             if self.normalise:
                 a = self.normalise_func(a)
+
+            print(self.kwargs)
 
             x_baseline = self.perturb_func(
                 arr=x,
@@ -281,9 +285,7 @@ class NonSensitivity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_baseline = self.kwargs.get(
-            "perturb_baseline", "black"
-        )  # TODO: this attribute is unused right? also in other metrics
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.last_results = []
@@ -391,6 +393,8 @@ class NonSensitivity(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -508,10 +512,10 @@ class InputInvariance(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_shift
         )
+        self.input_shift = self.kwargs.get("input_shift", -1)
         self.last_results = []
         self.all_results = []
 
@@ -613,6 +617,8 @@ class InputInvariance(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.

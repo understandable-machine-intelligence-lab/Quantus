@@ -172,6 +172,8 @@ class ModelParameterRandomisation(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -373,6 +375,8 @@ class RandomLogit(Metric):
                 targets=y_batch,
                 **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
