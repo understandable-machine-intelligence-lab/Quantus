@@ -708,6 +708,7 @@ def test_monotonicity_nguyen(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": True,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -723,6 +724,7 @@ def test_monotonicity_nguyen(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": True,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -738,6 +740,7 @@ def test_monotonicity_nguyen(
                 "a_batch_generate": True,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -753,6 +756,7 @@ def test_monotonicity_nguyen(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -769,6 +773,7 @@ def test_monotonicity_nguyen(
                 "max_steps_per_input": 2,
                 "disable_warnings": True,
                 "display_progressbar": True,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -782,6 +787,7 @@ def test_monotonicity_nguyen(
                 "perturb_baseline": "mean",
                 "disable_warnings": True,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -840,7 +846,10 @@ def test_pixel_flipping(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = PixelFlipping(**params)(
+    
+    metric = PixelFlipping(**params)
+
+    scores = metric(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -848,9 +857,15 @@ def test_pixel_flipping(
         **params,
     )
 
-    assert all([(s>=expected["min"] and s<= expected["max"])
-                for s_list in scores
-                    for s in s_list]), "Test failed."
+    if params.get("return_auc", True):
+        assert all([(s>=expected["min"] and s<= expected["max"])
+            for s_list in metric.get_auc_score
+                for s in s_list]), "Test failed."
+    else:
+        assert all([(s>=expected["min"] and s<= expected["max"])
+            for s_list in scores
+                for s in s_list]), "Test failed."
+
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -869,6 +884,7 @@ def test_pixel_flipping(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": True,
+                "return_auc": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -885,6 +901,7 @@ def test_pixel_flipping(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -901,6 +918,7 @@ def test_pixel_flipping(
                 "method": "Saliency",
                 "perturb_func": perturb_func.baseline_replacement_by_patch,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -911,6 +929,7 @@ def test_pixel_flipping(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -926,6 +945,7 @@ def test_pixel_flipping(
                 "method": "Saliency",
                 "disable_warnings": True,
                 "display_progressbar": True,
+                "return_auc": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -969,7 +989,10 @@ def test_region_perturbation(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = RegionPerturbation(**params)(
+
+    metric = RegionPerturbation(**params)
+    
+    scores = metric(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -977,9 +1000,17 @@ def test_region_perturbation(
         **params,
     )
 
-    assert all([(s>=expected["min"] and s<= expected["max"])
-                for _, s_list in scores.items()
-                    for s in s_list]), "Test failed."
+    if params.get("return_auc", True):
+        assert all(
+            ((s >= expected["min"]) & (s <= expected["max"])) for s in metric.get_auc_score
+        ), "Test failed."
+    else:
+        assert all([(s>=expected["min"] and s<= expected["max"])
+                    for _, s_list in scores.items()
+                        for s in s_list]), "Test failed."
+
+
+
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -998,6 +1029,7 @@ def test_region_perturbation(
                 "max_steps_per_input": 2,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1013,6 +1045,7 @@ def test_region_perturbation(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1027,6 +1060,7 @@ def test_region_perturbation(
                 "method": "Gradient",
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1043,6 +1077,7 @@ def test_region_perturbation(
                 "max_steps_per_input": 2,
                 "disable_warnings": True,
                 "display_progressbar": True,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1058,6 +1093,7 @@ def test_region_perturbation(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_auc": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1076,7 +1112,7 @@ def test_region_perturbation(
                 "display_progressbar": True,
                 "return_auc": True,
             },
-            {"min": 0.0, "max": 16.0},
+            {"min": 0.0, "max": 50.0},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -1118,7 +1154,10 @@ def test_selectivity(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = Selectivity(**params)(
+
+    metric = Selectivity(**params)
+
+    scores = metric(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -1126,9 +1165,14 @@ def test_selectivity(
         **params,
     )
 
-    assert all([(s>=expected["min"] and s<= expected["max"])
-                for _, s_list in scores.items()
-                    for s in s_list]), "Test failed."
+    if params.get("return_auc", True):
+        assert all(
+            ((s >= expected["min"]) & (s <= expected["max"])) for s in metric.get_auc_score
+        ), "Test failed."
+    else:
+        assert all([(s>=expected["min"] and s<= expected["max"])
+                    for _, s_list in scores.items()
+                        for s in s_list]), "Test failed."
 
 
 @pytest.mark.faithfulness

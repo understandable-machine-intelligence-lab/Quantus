@@ -1211,8 +1211,6 @@ class PixelFlipping(Metric):
     with scores close to zero and then to evaluate the impact of these flips
     onto the prediction scores (mean prediction is calculated).
 
-    Note: Plotting only works when return_auc=False.
-
     References:
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
@@ -1238,7 +1236,6 @@ class PixelFlipping(Metric):
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1257,7 +1254,6 @@ class PixelFlipping(Metric):
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
-        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = []
         self.all_results = []
 
@@ -1419,15 +1415,16 @@ class PixelFlipping(Metric):
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
             
-            if self.return_auc:
-                self.last_results.append([np.trapz(np.array(preds), dx=1.0)])
-            else:
-                self.last_results.append(preds)
+        self.last_results.append(preds)
 
         self.all_results.append(self.last_results)
 
         return self.last_results
 
+    @property
+    def get_auc_score(self):
+        """Calculate the area over the curve (AOC) score for several test samples."""
+        return [np.trapz(np.array(results), dx=1.0) for results in self.all_results]
 
 class RegionPerturbation(Metric):
     """
@@ -1438,8 +1435,6 @@ class RegionPerturbation(Metric):
     encoded in the image (e.g. as measured by the function f) disappears when we
     progressively remove information from the image x, a process referred to as
     region perturbation, at the specified locations.
-
-    Note: Plotting only works when return_auc=False.
 
     References:
         1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
@@ -1478,7 +1473,6 @@ class RegionPerturbation(Metric):
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1498,7 +1492,6 @@ class RegionPerturbation(Metric):
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
         self.softmax = self.kwargs.get("softmax", True)
-        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = {}
         self.all_results = []
 
@@ -1719,14 +1712,16 @@ class RegionPerturbation(Metric):
                 # TODO: give an option to only return y_pred_perturb here?
                 sub_results.append(y_pred - y_pred_perturb)
 
-            if self.return_auc:
-                self.last_results[sample] = [np.trapz(np.array(sub_results), dx=1.0)]
-            else:
-                self.last_results[sample] = sub_results
+            self.last_results[sample] = sub_results
 
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+    @property
+    def get_auc_score(self):
+        """Calculate the area over the curve (AOC) score for several test samples."""
+        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
 
 
 class Selectivity(Metric):
@@ -1765,7 +1760,6 @@ class Selectivity(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             patch_size (integer): The patch size for masking, default=8.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            return_auc (boolean): Indicates if auc of perturbed inputs will be returned, default=False.
         """
         super().__init__()
 
@@ -1783,7 +1777,6 @@ class Selectivity(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.softmax = self.kwargs.get("softmax", True)
-        self.return_auc = self.kwargs.get("return_auc", False)
         self.last_results = {}
         self.all_results = []
 
@@ -1979,14 +1972,16 @@ class Selectivity(Metric):
 
                 sub_results.append(y_pred_perturb)
 
-            if self.return_auc:
-                self.last_results[sample] = [np.trapz(np.array(sub_results), dx=1.0)]
-            else:
-                self.last_results[sample] = sub_results
+            self.last_results[sample] = sub_results
 
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+    @property
+    def get_auc_score(self):
+        """Calculate the area over the curve (AOC) score for several test samples."""
+        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
 
 
 class SensitivityN(Metric):
