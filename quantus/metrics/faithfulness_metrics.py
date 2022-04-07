@@ -2319,7 +2319,9 @@ class Infidelity(Metric):
         **kwargs,
     ) -> List[float]:
         """
-
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -2398,3 +2400,169 @@ class Infidelity(Metric):
             self.last_results.append(np.square(y_pred_diff - a_times_perturb_sum))
 
         return np.mean(self.last_results)
+
+
+class ROAD(Metric):
+    """
+    Implementation of ROAD evaluation strategy by Rong et al., 2022.
+
+    The ROAD approach measures the accuracy of the model on the provided test set at each step of an iterative process
+    of removing k most important pixels. At each step k most relevant pixels (MoRF order) are replaced with a filling
+    value and accuracy is measured.
+
+    References:
+        1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
+        arXiv:2202.00449 (2022).
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            order (string): Indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
+            features_in_step (integer): The size of the step, default=1.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = plotting.plot_region_perturbation_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
+        self.features_in_step = self.kwargs.get("features_in_step", 8)
+        self.last_results = {}
+        self.all_results = {}
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
+                    "number of pixels k removed per iteration 'features_in_step'"
+                ),
+                citation=(
+                    "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective."
+                    "arXiv:2202.00449 (2022)"
+                ),
+            )
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> Dict[int, List[float]]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+        """
+        # Reshape input batch to channel first order:
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        # Wrap the model into an interface
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+
+        # Asserts.
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # use tqdm progressbar if not disabled
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
+
+        self.img_size = x_batch_s.shape[-1] * x_batch_s.shape[-2]
+        self.last_results = {
+            k: 0 for k in range(1, self.img_size, self.features_in_step)
+        }
+        self.all_results = {
+            k: 0 for k in range(1, self.img_size, self.features_in_step)
+        }
+
+        for sample, (x, y, a) in iterator:
+            # Predict on input.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalise:
+                a = self.normalise_func(a)
+
+            ordered_indices = np.argsort(a, axis=None)
+
+            for k in range(1, self.img_size, self.features_in_step):
+                top_k_indices = ordered_indices[::-1][:k]
+
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=top_k_indices,
+                    **self.kwargs,
+                )
+
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                class_pred_perturb = np.argmax(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)
+                )
+
+                self.last_results[k] += y == class_pred_perturb
+
+        # Calculate accuracy for every number of most important pixels removed
+        for k in self.last_results:
+            self.all_results[k] = self.last_results[k] / len(x_batch_s)
+
+        return self.all_results

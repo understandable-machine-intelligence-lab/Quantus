@@ -1139,3 +1139,157 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
+
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "features_in_step": 8,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "features_in_step": 8,
+                "a_batch_generate": False,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+    ],
+)
+def test_ROAD(
+    model,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+    scores = Infidelity(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
+
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
+    ), "Test failed."
+
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "features_in_step": 8,
+                "img_size": 28 * 28,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_func": baseline_replacement_by_indices,
+                "similarity_func": correlation_spearman,
+                "normalise": True,
+                "explain_func": explain,
+                "method": "Saliency",
+                "abs": True,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "features_in_step": 8,
+                "a_batch_generate": False,
+                "img_size": 28 * 28,
+            },
+            {"min": -1.0, "max": 1.0},
+        ),
+    ],
+)
+def test_ROAD(
+    model,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+    scores = ROAD(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
+    img_size = params.get("img_size", 28 * 28)
+    last_k = img_size - (img_size - 1) % params.get("features_in_step", 8)
+
+    assert (scores[1] <= expected["max"]) & (
+        scores[last_k] >= expected["min"]
+    ), "Test failed."
