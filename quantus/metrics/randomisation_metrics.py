@@ -135,7 +135,7 @@ class ModelParameterRandomisation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = ModelParameterRandomisation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -337,7 +337,7 @@ class RandomLogit(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = RandomLogit(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):

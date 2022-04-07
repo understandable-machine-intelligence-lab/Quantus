@@ -124,7 +124,7 @@ def baseline_replacement_by_blur(
 
 
 def uniform_sampling(arr: np.array, perturb_radius: float = 0.02, **kwargs) -> np.array:
-    """Add noise to input as sampled uniformly random from L_infiniy ball with a radius."""
+    """Add noise to input as sampled uniformly random from L_infinity ball with a radius."""
     noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
     return arr + noise
 

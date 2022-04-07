@@ -328,6 +328,22 @@ else:
             {"value": 0.0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "Control Var. Random Uniform",
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "method": "Control Var. Random Uniform",
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {

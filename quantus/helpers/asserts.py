@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple, Union, List
 
 
 def attributes_check(metric):
@@ -122,7 +122,7 @@ def assert_nr_segments(nr_segments: int) -> None:
 
 
 def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
-    """Assert that perturbation applied to input caused change so that input and perturbed input is not the smae."""
+    """Assert that perturbation applied to input caused change so that input and perturbed input is not the same."""
     assert (x.flatten() != x_perturbed.flatten()).any(), (
         "The settings for perturbing input e.g., 'perturb_func' "
         "didn't cause change in input. "
@@ -137,14 +137,33 @@ def assert_layer_order(layer_order: str) -> None:
 
 def assert_targets(
     x_batch: np.array,
-    y_batch: np.array,
+    y_batch: Union[np.array, int],
 ) -> None:
-    if not isinstance(y_batch, int):
-        assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
-            "The 'y_batch' should by an integer or a list with "
-            "the same number of samples as the 'x_batch' input"
-            "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
-        )
+
+    if isinstance(y_batch, int):
+        return
+
+    # Retrieve the function parameters ('x_batch', 'y_batch') as strings.
+    # Convert type dict_keys to list for convenience.
+    params_str: List[str] = list(locals().keys())
+
+    # Ensure all targets are numpy arrays.
+    for target_str in params_str:
+
+        # locals()[target_str] is a numpy array.
+        # It retrieves the variable with the target_str name.
+        # In this case, it results in either the 'x_batch' or 'y_batch' variable.
+        target: np.ndarray = locals()[target_str]
+
+        assert (
+            type(target) == np.ndarray
+        ), f"Attributions {target_str} should be of type np.ndarray."
+
+    assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
+        "The 'y_batch' should be an integer or a list with "
+        "the same number of samples as the 'x_batch' input"
+        "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
+    )
 
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
