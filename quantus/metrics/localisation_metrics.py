@@ -128,7 +128,7 @@ class PointingGame(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = PointingGame(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -332,7 +332,7 @@ class AttributionLocalisation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = AttributionLocalisation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -552,7 +552,7 @@ class TopKIntersection(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = TopKIntersection(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -751,7 +751,7 @@ class RelevanceRankAccuracy(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = RelevanceRankAccuracy(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -945,7 +945,7 @@ class RelevanceMassAccuracy(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = RelevanceMassAccuracy(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):

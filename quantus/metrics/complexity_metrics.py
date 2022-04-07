@@ -128,7 +128,7 @@ class Sparseness(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Sparseness(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -317,7 +317,7 @@ class Complexity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Complexity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -499,7 +499,7 @@ class EffectiveComplexity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = EffectiveComplexity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):

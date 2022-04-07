@@ -26,7 +26,7 @@ def mock_input_torch_array():
         (
             lazy_fixture("mock_input_torch_array"),
             {
-                "softmax_act": False,
+                "softmax": False,
                 "device": "cpu",
             },
             np.array(
@@ -47,7 +47,7 @@ def mock_input_torch_array():
         (
             lazy_fixture("mock_input_torch_array"),
             {
-                "softmax_act": True,
+                "softmax": True,
                 "device": "cpu",
             },
             softmax(
@@ -70,7 +70,7 @@ def mock_input_torch_array():
         (
             lazy_fixture("mock_input_torch_array"),
             {
-                "softmax_act": True,
+                "softmax": True,
                 "device": "cpu",
                 "training": True,
             },

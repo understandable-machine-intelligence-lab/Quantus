@@ -64,6 +64,7 @@ class FaithfulnessCorrelation(Metric):
             default=correlation_pearson.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -83,6 +84,7 @@ class FaithfulnessCorrelation(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
 
@@ -153,7 +155,7 @@ class FaithfulnessCorrelation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -214,10 +216,10 @@ class FaithfulnessCorrelation(Metric):
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                model.predict(x_input, **self.kwargs)[:, y]
             )
 
-            logit_deltas = []
+            pred_deltas = []
             att_sums = []
 
             # For each test data point, execute a couple of runs.
@@ -235,14 +237,14 @@ class FaithfulnessCorrelation(Metric):
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                    model.predict(x_input, **self.kwargs)[:, y]
                 )
-                logit_deltas.append(float(y_pred - y_pred_perturb))
+                pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
                 att_sums.append(np.sum(a[a_ix]))
 
-            similarity = self.similarity_func(a=att_sums, b=logit_deltas)
+            similarity = self.similarity_func(a=att_sums, b=pred_deltas)
             self.last_results.append(similarity)
 
         if self.return_aggregate:
@@ -290,6 +292,7 @@ class FaithfulnessEstimate(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -308,6 +311,7 @@ class FaithfulnessEstimate(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
 
@@ -377,7 +381,7 @@ class FaithfulnessEstimate(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -450,9 +454,7 @@ class FaithfulnessEstimate(Metric):
 
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             pred_deltas = []
             att_sums = []
@@ -474,9 +476,7 @@ class FaithfulnessEstimate(Metric):
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions.
@@ -521,6 +521,7 @@ class IterativeRemovalOfFeatures(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="mean".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -537,6 +538,7 @@ class IterativeRemovalOfFeatures(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -606,7 +608,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = IROF(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -664,9 +666,7 @@ class IterativeRemovalOfFeatures(Metric):
 
             # Predict on x.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             # Segment image.
             segments = utils.get_superpixel_segments(
@@ -702,9 +702,7 @@ class IterativeRemovalOfFeatures(Metric):
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 # Normalise the scores to be within [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))
 
@@ -762,6 +760,7 @@ class MonotonicityArya(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -779,6 +778,7 @@ class MonotonicityArya(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -845,7 +845,7 @@ class MonotonicityArya(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MonotonicityArya(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -940,9 +940,7 @@ class MonotonicityArya(Metric):
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
                 x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
 
             self.last_results.append(np.all(np.diff(preds) >= 0))
@@ -988,6 +986,7 @@ class MonotonicityNguyen(Metric):
             default=correlation_spearman.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -1008,6 +1007,7 @@ class MonotonicityNguyen(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 100)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -1077,7 +1077,7 @@ class MonotonicityNguyen(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -1139,9 +1139,7 @@ class MonotonicityNguyen(Metric):
 
             # Predict on input x.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
             inv_pred = inv_pred**2
@@ -1186,9 +1184,7 @@ class MonotonicityNguyen(Metric):
                     x_input = model.shape_input(
                         x_perturbed, x.shape, channel_first=True
                     )
-                    y_pred_perturb = float(
-                        model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                    )
+                    y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                     y_pred_perturbs.append(y_pred_perturb)
 
                 vars.append(
@@ -1239,6 +1235,7 @@ class PixelFlipping(Metric):
             default="black".
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -1256,6 +1253,7 @@ class PixelFlipping(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -1323,7 +1321,7 @@ class PixelFlipping(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = PixelFlipping(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -1414,9 +1412,7 @@ class PixelFlipping(Metric):
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
 
             self.last_results.append(preds)
@@ -1472,6 +1468,7 @@ class RegionPerturbation(Metric):
             patch_size (integer): The patch size for masking, default=8.
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -1490,6 +1487,7 @@ class RegionPerturbation(Metric):
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
         self.patch_size = self.kwargs.get("patch_size", 8)
         self.order = self.kwargs.get("order", "MoRF").lower()
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = {}
         self.all_results = []
 
@@ -1562,7 +1560,7 @@ class RegionPerturbation(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = RegionPerturbation(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -1612,9 +1610,7 @@ class RegionPerturbation(Metric):
         for sample, (x, y, a) in iterator:
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             if self.abs:
                 a = np.abs(a)
@@ -1707,9 +1703,7 @@ class RegionPerturbation(Metric):
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
 
                 # TODO: give an option to only return y_pred_perturb here?
                 sub_results.append(y_pred - y_pred_perturb)
@@ -1723,7 +1717,7 @@ class RegionPerturbation(Metric):
 
 class Selectivity(Metric):
     """
-    Implementation of Selectivity test by Montavan et al., 2018.
+    Implementation of Selectivity test by Montavon et al., 2018.
 
     At each iteration, a patch of size 4 x 4 corresponding to the region with
     highest relevance is set to black. The plot keeps track of the function value
@@ -1754,6 +1748,7 @@ class Selectivity(Metric):
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             patch_size (integer): The patch size for masking, default=8.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -1770,6 +1765,7 @@ class Selectivity(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = {}
         self.all_results = []
 
@@ -1840,7 +1836,7 @@ class Selectivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Selectivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -1890,9 +1886,7 @@ class Selectivity(Metric):
         for sample, (x, y, a) in iterator:
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             if self.abs:
                 a = np.abs(a)
@@ -1963,9 +1957,7 @@ class Selectivity(Metric):
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
 
                 sub_results.append(y_pred_perturb)
 
@@ -2025,6 +2017,7 @@ class SensitivityN(Metric):
             n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -2044,6 +2037,7 @@ class SensitivityN(Metric):
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
 
@@ -2115,7 +2109,7 @@ class SensitivityN(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = SensitivityN(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -2195,9 +2189,7 @@ class SensitivityN(Metric):
 
             # Predict on x.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             att_sums = []
             pred_deltas = []
@@ -2222,9 +2214,7 @@ class SensitivityN(Metric):
                 att_sums.append(float(a[a_ix].sum()))
 
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 pred_deltas.append(y_pred - y_pred_perturb)
 
             sub_results_att_sums[sample] = att_sums
