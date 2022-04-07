@@ -2359,12 +2359,6 @@ class Infidelity(Metric):
 
             a = a.flatten()
 
-            x_perturb = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                **self.kwargs,
-            )
-
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
                 choice=self.perturb_baseline, arr=x
@@ -2378,14 +2372,14 @@ class Infidelity(Metric):
             )
 
             # Predict on baseline.
-            x_input = model.shape_input(x_perturb, x.shape, channel_first=True)
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
             y_pred_perturb = float(
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
             y_pred_diff = y_pred - y_pred_perturb
 
-            a_times_perturb_sum = np.sum(x_baseline * a)
+            a_times_perturb_sum = np.sum((x-x_baseline) * a)
 
             self.last_results.append(np.square(y_pred_diff - a_times_perturb_sum))
 
