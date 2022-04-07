@@ -955,6 +955,8 @@ class Continuity(Metric):
                     targets=y,
                     **self.kwargs,
                 )
+                # Taking the first element, since a_perturbed will be expanded to a batch dimension
+                # not expected by the current index management functions
                 a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.abs:

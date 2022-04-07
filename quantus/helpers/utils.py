@@ -62,9 +62,7 @@ def get_baseline_value(
     elif isinstance(value, str):
         fill_dict = get_baseline_dict(arr, patch)
         if value.lower() not in fill_dict:
-            raise ValueError(
-                f"Ensure that 'value'(str) is in {list(fill_dict.keys())}"
-            )
+            raise ValueError(f"Ensure that 'value'(str) is in {list(fill_dict.keys())}")
         return np.full(return_shape, fill_dict[value.lower()])
     else:
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")

@@ -25,6 +25,7 @@ def baseline_replacement_by_indices(
 ) -> np.array:
     """
     Replace indices in an array by a given baseline.
+    arr: array to be perturbed
     indices: array-like, with a subset shape of arr
     indexed_axes: dimensions of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
@@ -55,6 +56,7 @@ def baseline_replacement_by_shift(
 ) -> np.array:
     """
     Shift values at indices in an image.
+    arr: array to be perturbed
     indices: array-like, with a subset shape of arr
     indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
@@ -95,6 +97,7 @@ def baseline_replacement_by_blur(
     """
     Replace array at indices by a blurred version.
     Blur is performed via convolution.
+    arr: array to be perturbed
     indices: array-like, with a subset shape of arr
     indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
@@ -130,6 +133,7 @@ def gaussian_noise(
 ) -> np.array:
     """
     Add gaussian noise to the input at indices.
+    arr: array to be perturbed
     indices: array-like, with a subset shape of arr
     indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
@@ -157,6 +161,7 @@ def uniform_noise(
     """
     Add noise to the input at indices as sampled uniformly random from [-lower_bound, lower_bound]
     if upper_bound is None, and [lower_bound, upper_bound] otherwise.
+    arr: array to be perturbed
     indices: array-like, with a subset shape of arr
     indexed_axes: axes of arr that are indexed. These need to be consecutive,
                   and either include the first or last dimension of array.
@@ -169,8 +174,10 @@ def uniform_noise(
     if upper_bound is None:
         noise = np.random.uniform(low=-lower_bound, high=lower_bound, size=arr.shape)
     else:
-        assert upper_bound > lower_bound, "Parameter 'upper_bound' needs to be larger than 'lower_bound', " \
-                                          "but {} <= {}".format(upper_bound, lower_bound)
+        assert upper_bound > lower_bound, (
+            "Parameter 'upper_bound' needs to be larger than 'lower_bound', "
+            "but {} <= {}".format(upper_bound, lower_bound)
+        )
         noise = np.random.uniform(low=lower_bound, high=upper_bound, size=arr.shape)
 
     arr_perturbed = copy.copy(arr)
@@ -183,6 +190,8 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
     Rotate array by some given angle.
     Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_angle: rotation angle
     """
     if arr.ndim != 3:
         raise ValueError(
@@ -205,11 +214,17 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
 
 
 def translation_x_direction(
-    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    **kwargs,
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
     Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_baseline: value for pixels that are missing values after translation
+    perturb_dy: translation length
     """
     if arr.ndim != 3:
         raise ValueError(
@@ -234,11 +249,17 @@ def translation_x_direction(
 
 
 def translation_y_direction(
-    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    **kwargs,
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
     Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_baseline: value for pixels that are missing values after translation
+    perturb_dy: translation length
     """
     if arr.ndim != 3:
         raise ValueError(
