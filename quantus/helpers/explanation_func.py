@@ -250,16 +250,7 @@ def generate_captum_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = tuple(kwargs.get("reduce_axes", [1]))
-
-    """ TODO: why is this needed?
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
-    )
-    """
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
@@ -271,7 +262,7 @@ def generate_captum_explanation(
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "IntegratedGradients".lower():
@@ -284,28 +275,28 @@ def generate_captum_explanation(
                 n_steps=10,
                 method="riemann_trapezoid",
             )
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "InputXGradient".lower():
         explanation = (
             InputXGradient(model)
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "Saliency".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "Gradient".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=False)
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "Occlusion".lower():
@@ -317,14 +308,14 @@ def generate_captum_explanation(
                 target=targets,
                 sliding_window_shapes=window_shape,
             )
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "FeatureAblation".lower():
         explanation = (
             FeatureAblation(model)
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "GradCam".lower():
@@ -339,7 +330,7 @@ def generate_captum_explanation(
         explanation = (
             LayerGradCam(model, layer=kwargs["gc_layer"])
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=reduce_axes, keepdims=True)
+            .sum(**reduce_axes)
         )
 
     elif method == "Control Var. Sobel Filter".lower():
@@ -351,9 +342,7 @@ def generate_captum_explanation(
                 # TODO: why is this needed?
                 # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
-        explanation = explanation.mean(
-            axis=reduce_axes, keepdims=True
-        )
+        explanation = explanation.mean(**reduce_axes)
 
     elif method == "Control Var. Constant".lower():
         assert (
@@ -371,9 +360,7 @@ def generate_captum_explanation(
                 size=explanation[0].shape, fill_value=constant_value
             )
 
-        explanation = explanation.mean(
-            axis=reduce_axes, keepdims=True
-        )
+        explanation = explanation.mean(**reduce_axes)
 
     else:
         raise KeyError(
@@ -418,7 +405,7 @@ def generate_zennit_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = tuple(kwargs.get("reduce_axes", [1]))
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
     # Get zennit composite, canonizer, attributor
     # Handle canonizer kwarg
@@ -509,9 +496,7 @@ def generate_zennit_explanation(
             explanation = explanation.cpu().numpy()
 
     # Sum over axes
-    explanation = np.sum(
-        explanation, axis=reduce_axes, keepdims=True
-    )
+    explanation = np.sum(explanation, **reduce_axes)
 
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)

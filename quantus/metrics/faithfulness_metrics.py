@@ -934,7 +934,9 @@ class MonotonicityArya(Metric):
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
-                value=self.kwargs.get("perturb_baseline", "black"), arr=x, return_shape=(1,)
+                value=self.kwargs.get("perturb_baseline", "black"),
+                arr=x,
+                return_shape=(1,),
             )
             x_baseline = np.full(x.shape, baseline_value)
 
