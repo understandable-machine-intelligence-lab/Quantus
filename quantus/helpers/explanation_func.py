@@ -304,9 +304,7 @@ def generate_captum_explanation(
         explanation = (
             Occlusion(model)
             .attribute(
-                inputs=inputs,
-                target=targets,
-                sliding_window_shapes=window_shape,
+                inputs=inputs, target=targets, sliding_window_shapes=window_shape,
             )
             .sum(**reduce_axes)
         )
@@ -463,18 +461,9 @@ def generate_zennit_explanation(
     else:
         canonizers = []
     if composite is not None:
-        composite = composite(
-            **{
-                **composite_kwargs,
-                "canonizers": canonizers,
-            }
-        )
+        composite = composite(**{**composite_kwargs, "canonizers": canonizers,})
     attributor = attributor(
-        **{
-            **attributor_kwargs,
-            "model": model,
-            "composite": composite,
-        }
+        **{**attributor_kwargs, "model": model, "composite": composite,}
     )
 
     n_outputs = model(inputs).shape[1]

@@ -190,10 +190,7 @@ class LocalLipschitzEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -233,10 +230,7 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -425,10 +419,7 @@ class MaxSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -468,10 +459,7 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -661,10 +649,7 @@ class AvgSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -704,10 +689,7 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -895,10 +877,7 @@ class Continuity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
@@ -911,9 +890,7 @@ class Continuity(Metric):
 
         # Get number of patches for input shape (ignore batch and channel dim)
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size,
-            shape=x_batch_s.shape[2:],
-            overlap=True,
+            patch_size=self.patch_size, shape=x_batch_s.shape[2:], overlap=True,
         )
 
         # use tqdm progressbar if not disabled
@@ -950,10 +927,7 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
                 # Taking the first element, since a_perturbed will be expanded to a batch dimension
                 # not expected by the current index management functions
@@ -982,8 +956,7 @@ class Continuity(Metric):
 
                     # Create slice for patch.
                     patch_slice = utils.create_patch_slice(
-                        patch_size=self.patch_size,
-                        coords=top_left_coords,
+                        patch_size=self.patch_size, coords=top_left_coords,
                     )
 
                     a_perturbed_patch = a_perturbed[
