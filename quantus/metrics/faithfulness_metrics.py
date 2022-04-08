@@ -1421,7 +1421,7 @@ class PixelFlipping(Metric):
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
             
-        self.last_results.append(preds)
+            self.last_results.append(preds)
 
         self.all_results.append(self.last_results)
 
@@ -1429,7 +1429,7 @@ class PixelFlipping(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
+        """Calculate the area under the curve (AOC) score for several test samples."""
         return [np.trapz(np.array(results), dx=1.0) for results in self.all_results]
 
 class RegionPerturbation(Metric):
@@ -1726,7 +1726,7 @@ class RegionPerturbation(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
+        """Calculate the area under the curve (AOC) score for several test samples."""
         return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
 
 
@@ -1986,7 +1986,7 @@ class Selectivity(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area over the curve (AOC) score for several test samples."""
+        """Calculate the area under the curve (AOC) score for several test samples."""
         return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
 
 
