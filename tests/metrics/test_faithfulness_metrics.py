@@ -11,6 +11,7 @@ from ...quantus.helpers import perturb_func
 from ...quantus.helpers.explanation_func import explain
 
 
+
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -1010,8 +1011,6 @@ def test_region_perturbation(
                         for s in s_list]), "Test failed."
 
 
-
-
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -1317,3 +1316,4 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
+

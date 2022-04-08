@@ -521,6 +521,7 @@ class IterativeRemovalOfFeatures(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="mean".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
@@ -538,6 +539,7 @@ class IterativeRemovalOfFeatures(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -709,7 +711,11 @@ class IterativeRemovalOfFeatures(Metric):
             # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
             self.last_results.append(np.trapz(np.array(preds), dx=1.0))
 
-        self.last_results = [np.mean(self.last_results)]
+        
+        if self.return_aggregate:
+            self.last_results = [np.mean(self.last_results)]
+        else:
+            self.last_results = self.last_results
 
         self.all_results.append(self.last_results)
 
