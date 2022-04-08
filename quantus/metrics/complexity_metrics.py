@@ -160,10 +160,7 @@ class Sparseness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -195,8 +192,7 @@ class Sparseness(Metric):
                 a = self.normalise_func(a)
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
-                dtype=np.float64,
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
             )
             a += 0.0000001
             a = np.sort(a)
@@ -351,10 +347,7 @@ class Complexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -383,13 +376,9 @@ class Complexity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            a = (
-                np.array(
-                    np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
-                    dtype=np.float64,
-                )
-                / np.sum(np.abs(a))
-            )
+            a = np.array(
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
+            ) / np.sum(np.abs(a))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
@@ -538,10 +527,7 @@ class EffectiveComplexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality

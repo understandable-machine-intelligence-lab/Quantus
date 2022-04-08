@@ -160,10 +160,7 @@ class PointingGame(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -366,10 +363,7 @@ class AttributionLocalisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -588,10 +582,7 @@ class TopKIntersection(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -789,10 +780,7 @@ class RelevanceRankAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -985,10 +973,7 @@ class RelevanceMassAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -1172,10 +1157,7 @@ class AUC(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
 
         # Expand attributions to input dimensionality

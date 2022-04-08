@@ -148,10 +148,7 @@ def plot_superpixel_segments(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Union[List[float], Dict[str, List[float]]],
-    methods=None,
-    *args,
-    **kwargs,
+    results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs,
 ) -> None:
     """
     Plot the model parameter randomization experiment as done in paper:

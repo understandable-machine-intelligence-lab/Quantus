@@ -36,8 +36,7 @@ def assert_model_predictions_deviations(
 
 
 def assert_model_predictions_correct(
-    y_pred: float,
-    y_pred_perturb: float,
+    y_pred: float, y_pred_perturb: float,
 ):
     """Assert that model predictions are the same."""
     if y_pred == y_pred_perturb:
@@ -135,10 +134,7 @@ def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 
-def assert_targets(
-    x_batch: np.array,
-    y_batch: np.array,
-) -> None:
+def assert_targets(x_batch: np.array, y_batch: np.array,) -> None:
     if not isinstance(y_batch, int):
         assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
             "The 'y_batch' should by an integer or a list with "
@@ -254,6 +250,7 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
         )
 
 
+# TODO: Change for batching update, since currently single images are expected
 def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     """
     Checks that indexed_axes fits arr
