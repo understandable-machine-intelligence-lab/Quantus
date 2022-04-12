@@ -16,7 +16,7 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.similar_func import correlation_pearson, correlation_spearman
 from ..helpers.perturb_func import baseline_replacement_by_indices
-from ..helpers.perturb_func import baseline_replacement_by_patch
+from ..helpers.perturb_func import baseline_replacement_by_patch, noisy_linear_imputation
 
 
 class FaithfulnessCorrelation(Metric):
@@ -2250,6 +2250,8 @@ class Infidelity(Metric):
     between 1) a dot product of an attribution and input perturbation and
     2) difference in model output after significant perturbation.
 
+    TODO: list the assumptions.
+
     References:
         1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
         "On the (In)fidelity and Sensitivity of Explanations."
@@ -2379,10 +2381,10 @@ class Infidelity(Metric):
 
             y_pred_diff = y_pred - y_pred_perturb
 
-            a_times_perturb_sum = np.sum((x-x_baseline) * a)
-
+            a_times_perturb_sum = np.sum((x.flatten()-x_baseline) * a)
+            # TODO: mse in similar_func
             self.last_results.append(np.square(y_pred_diff - a_times_perturb_sum))
-
+        # TODO: return aggregate or a list (Union[list, float])
         return np.mean(self.last_results)
 
 
@@ -2415,7 +2417,8 @@ class ROAD(Metric):
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
-            features_in_step (integer): The size of the step, default=1.
+            percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+            noise (noise): Noise added, default=0.01.
         """
         super().__init__()
 
@@ -2428,10 +2431,11 @@ class ROAD(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+            "perturb_func", noisy_linear_imputation
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.features_in_step = self.kwargs.get("features_in_step", 8)
+        self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
+        self.noise = self.kwargs.get("noise", 0.01)
         self.last_results = {}
         self.all_results = {}
 
@@ -2441,7 +2445,7 @@ class ROAD(Metric):
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
-                    "number of pixels k removed per iteration 'features_in_step'"
+                    "percentage of pixels k removed per iteration 'percentage_in_step'"
                 ),
                 citation=(
                     "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective."
@@ -2494,6 +2498,7 @@ class ROAD(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        self.img_size = a_batch[0, :, :].size
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -2506,28 +2511,25 @@ class ROAD(Metric):
                 enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
             )
 
-        self.img_size = x_batch_s.shape[-1] * x_batch_s.shape[-2]
         self.last_results = {
-            k: 0 for k in range(1, self.img_size, self.features_in_step)
+            str(k): 0 for k in self.percentages
         }
         self.all_results = {
-            k: 0 for k in range(1, self.img_size, self.features_in_step)
+            str(k): 0 for k in self.percentages
         }
 
         for sample, (x, y, a) in iterator:
             # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-
             if self.abs:
                 a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
 
-            ordered_indices = np.argsort(a, axis=None)
+            ordered_indices = np.argsort(a, axis=None)[::-1]
 
-            for k in range(1, self.img_size, self.features_in_step):
-                top_k_indices = ordered_indices[::-1][:k]
+            for p in self.percentages:
+                top_k_indices = ordered_indices[:int(self.img_size*p/100)]
 
                 x_perturbed = self.perturb_func(
                     arr=x,
@@ -2543,7 +2545,7 @@ class ROAD(Metric):
                     model.predict(x_input, softmax_act=True, **self.kwargs)
                 )
 
-                self.last_results[k] += y == class_pred_perturb
+                self.last_results[str(p)] += y == class_pred_perturb
 
         # Calculate accuracy for every number of most important pixels removed
         for k in self.last_results:
