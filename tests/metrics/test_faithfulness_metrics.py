@@ -1215,7 +1215,7 @@ def test_sensitivity_n(
         ),
     ],
 )
-def test_ROAD(
+def test_infidelity(
     model,
     data: np.ndarray,
     params: dict,
@@ -1238,7 +1238,7 @@ def test_ROAD(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = Infidelity(**params)(
+    score = Infidelity(**params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -1246,9 +1246,7 @@ def test_ROAD(
         **params,
     )
 
-    assert all(
-        ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-    ), "Test failed."
+    assert score is not None, "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1259,7 +1257,7 @@ def test_ROAD(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_func": baseline_replacement_by_indices,
+                "perturb_func": noisy_linear_imputation,
                 "similarity_func": correlation_spearman,
                 "normalise": True,
                 "explain_func": explain,
@@ -1267,7 +1265,7 @@ def test_ROAD(
                 "abs": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "features_in_step": 8,
+                "percentages": list(range(1, 100, 2)),
                 "img_size": 28 * 28,
             },
             {"min": -1.0, "max": 1.0},
@@ -1276,7 +1274,7 @@ def test_ROAD(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_func": baseline_replacement_by_indices,
+                "perturb_func": noisy_linear_imputation,
                 "similarity_func": correlation_spearman,
                 "normalise": True,
                 "explain_func": explain,
@@ -1284,7 +1282,7 @@ def test_ROAD(
                 "abs": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "features_in_step": 8,
+                "percentages": list(range(1, 100, 2)),
                 "a_batch_generate": False,
                 "img_size": 28 * 28,
             },
@@ -1322,9 +1320,10 @@ def test_ROAD(
         a_batch=a_batch,
         **params,
     )
-    img_size = params.get("img_size", 28 * 28)
-    last_k = img_size - (img_size - 1) % params.get("features_in_step", 8)
 
-    assert (scores[1] <= expected["max"]) & (
-        scores[last_k] >= expected["min"]
+    max_ind = max(scores)
+    min_ind = min(scores)
+
+    assert (scores[min_ind] <= expected["max"]) & (
+        scores[max_ind] >= expected["min"]
     ), "Test failed."

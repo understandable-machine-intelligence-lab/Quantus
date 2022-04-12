@@ -361,3 +361,18 @@ def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
     if omit_first_axis:
         unpad_slice[0] = slice(None)
     return arr[tuple(unpad_slice)]
+
+
+def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
+    """
+    Checks if offset coordinates are within the image frame. Return offset coordinates for valid indices and the
+    list of booleans which identifies valid ids.
+    """
+    x = indices // img_shape[2]
+    y = indices % img_shape[2]
+    x += offset[0]
+    y += offset[1]
+    valid = ~((x < 0) | (y < 0) | (x >= img_shape[1]) | (y >= img_shape[2]))
+    off_coords = indices + offset[0] * img_shape[2] + offset[1]
+    return off_coords[valid], valid
+
