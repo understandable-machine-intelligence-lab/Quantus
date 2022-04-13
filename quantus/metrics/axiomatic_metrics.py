@@ -12,7 +12,10 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.perturb_func import (
+    baseline_replacement_by_indices,
+    baseline_replacement_by_shift,
+)
 
 
 class Completeness(Metric):
@@ -69,10 +72,10 @@ class Completeness(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
@@ -175,11 +178,10 @@ class Completeness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -199,9 +201,12 @@ class Completeness(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
+            print(self.kwargs)
+
             x_baseline = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
+                indexed_axes=np.arange(0, x.ndim),
                 **self.kwargs,
             )
 
@@ -380,18 +385,17 @@ class NonSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -434,9 +438,7 @@ class NonSensitivity(Metric):
                 for _ in range(self.n_samples):
                     # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
-                        arr=x,
-                        indices=a_ix,
-                        **self.kwargs,
+                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                     )
 
                     # Predict on perturbed input x.
@@ -498,10 +500,10 @@ class InputInvariance(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.input_shift = self.kwargs.get("input_shift", -1)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+            "perturb_func", baseline_replacement_by_shift
         )
+        self.input_shift = self.kwargs.get("input_shift", -1)
         self.last_results = []
         self.all_results = []
 
@@ -598,11 +600,10 @@ class InputInvariance(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -625,6 +626,7 @@ class InputInvariance(Metric):
             x_shifted = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
+                indexed_axes=np.arange(0, x.ndim),
                 **self.kwargs,
             )
             x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)

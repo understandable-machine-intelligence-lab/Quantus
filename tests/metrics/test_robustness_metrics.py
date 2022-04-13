@@ -221,7 +221,7 @@ def test_local_lipschitz_estimate(
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "abs": True,
-                "normalise": True
+                "normalise": True,
             },
             {"min": 0.0, "max": 1.0},
         ),

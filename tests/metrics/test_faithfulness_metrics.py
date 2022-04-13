@@ -922,7 +922,7 @@ def test_pixel_flipping(
                 "disable_warnings": True,
                 "explain_func": explain,
                 "method": "Saliency",
-                "perturb_func": perturb_func.baseline_replacement_by_patch,
+                "perturb_func": perturb_func.baseline_replacement_by_indices,
                 "a_batch_generate": False,
                 "return_auc": False,
             },
