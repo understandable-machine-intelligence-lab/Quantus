@@ -158,7 +158,7 @@ class LocalLipschitzEstimate(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -387,7 +387,7 @@ class MaxSensitivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = MaxSensitivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -617,7 +617,7 @@ class AvgSensitivity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = AvgSensitivity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -752,6 +752,7 @@ class Continuity(Metric):
             perturb_func (callable): Input perturbation function, default=translation_x_direction.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=lipschitz_constant.
+            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -773,6 +774,7 @@ class Continuity(Metric):
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.lipschitz_constant
         )
+        self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
 
@@ -845,7 +847,7 @@ class Continuity(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Continuity(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -940,9 +942,7 @@ class Continuity(Metric):
                     a_perturbed = self.normalise_func(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
-                y_pred = float(
-                    model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-                )
+                y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
                 sub_results[self.nr_patches].append(y_pred)
 

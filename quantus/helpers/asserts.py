@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union, Sequence
 
-
 def attributes_check(metric):
     # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
     attr = metric.__dict__
@@ -121,7 +120,7 @@ def assert_nr_segments(nr_segments: int) -> None:
 
 
 def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
-    """Assert that perturbation applied to input caused change so that input and perturbed input is not the smae."""
+    """Assert that perturbation applied to input caused change so that input and perturbed input is not the same."""
     assert (x.flatten() != x_perturbed.flatten()).any(), (
         "The settings for perturbing input e.g., 'perturb_func' "
         "didn't cause change in input. "
@@ -141,7 +140,7 @@ def assert_targets(x_batch: np.array, y_batch: np.array,) -> None:
             "the same number of samples as the 'x_batch' input"
             "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
         )
-
+        
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
     """Asserts on attributions. Assumes channel first layout."""

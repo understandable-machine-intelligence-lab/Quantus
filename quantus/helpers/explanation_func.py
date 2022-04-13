@@ -342,6 +342,9 @@ def generate_captum_explanation(
             )
         explanation = explanation.mean(**reduce_axes)
 
+    elif method == "Control Var. Random Uniform".lower():
+        explanation = torch.rand(size=(inputs.shape[0], *inputs.shape[2:]))
+
     elif method == "Control Var. Constant".lower():
         assert (
             "constant_value" in kwargs
