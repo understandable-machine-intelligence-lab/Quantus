@@ -1,6 +1,5 @@
 import numpy as np
-from typing import Callable, Tuple, Union, List
-
+from typing import Callable, Tuple, Union, Sequence
 
 def attributes_check(metric):
     # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
@@ -36,8 +35,7 @@ def assert_model_predictions_deviations(
 
 
 def assert_model_predictions_correct(
-    y_pred: float,
-    y_pred_perturb: float,
+    y_pred: float, y_pred_perturb: float,
 ):
     """Assert that model predictions are the same."""
     if y_pred == y_pred_perturb:
@@ -135,36 +133,14 @@ def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 
-def assert_targets(
-    x_batch: np.array,
-    y_batch: Union[np.array, int],
-) -> None:
-
-    if isinstance(y_batch, int):
-        return
-
-    # Retrieve the function parameters ('x_batch', 'y_batch') as strings.
-    # Convert type dict_keys to list for convenience.
-    params_str: List[str] = list(locals().keys())
-
-    # Ensure all targets are numpy arrays.
-    for target_str in params_str:
-
-        # locals()[target_str] is a numpy array.
-        # It retrieves the variable with the target_str name.
-        # In this case, it results in either the 'x_batch' or 'y_batch' variable.
-        target: np.ndarray = locals()[target_str]
-
-        assert (
-            type(target) == np.ndarray
-        ), f"Attributions {target_str} should be of type np.ndarray."
-
-    assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
-        "The 'y_batch' should be an integer or a list with "
-        "the same number of samples as the 'x_batch' input"
-        "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
-    )
-
+def assert_targets(x_batch: np.array, y_batch: np.array,) -> None:
+    if not isinstance(y_batch, int):
+        assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
+            "The 'y_batch' should by an integer or a list with "
+            "the same number of samples as the 'x_batch' input"
+            "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
+        )
+        
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
     """Asserts on attributions. Assumes channel first layout."""
@@ -176,11 +152,31 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "include the same number of samples."
         "{} != {}".format(np.shape(x_batch)[0], np.shape(a_batch)[0])
     )
-
-    assert np.shape(x_batch)[2:] == np.shape(a_batch)[2:], (
-        "The inputs 'x_batch' and attributions 'a_batch' "
-        "should share the same dimensions."
-        "{} != {}".format(np.shape(x_batch)[2:], np.shape(a_batch)[2:])
+    assert np.ndim(x_batch) == np.ndim(a_batch), (
+        "The inputs 'x_batch' and attributions 'a_batch' should "
+        "have the same number of dimensions."
+        "{} != {}".format(np.ndim(x_batch), np.ndim(a_batch))
+    )
+    a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
+    x_shape = [s for s in np.shape(x_batch)[1:]]
+    assert a_shape[0] == x_shape[0] or a_shape[-1] == x_shape[-1], (
+        "The dimensions of attribution and input per sample should correspond in either "
+        "the first or last dimensions, but got shapes "
+        "{} and {}".format(a_shape, x_shape)
+    )
+    assert all([a in x_shape for a in a_shape]), (
+        "All attribution dimensions should be included in the input dimensions, "
+        "but got shapes {} and {}".format(a_shape, x_shape)
+    )
+    assert all(
+        [
+            x_shape.index(a) > x_shape.index(a_shape[i])
+            for a in a_shape
+            for i in range(a_shape.index(a))
+        ]
+    ), (
+        "The dimensions of the attribution must correspond to dimensions of the input in the same order, "
+        "but got shapes {} and {}".format(a_shape, x_shape)
     )
     assert not np.all((a_batch == 0)), (
         "The elements in the attribution vector are all equal to zero, "
@@ -251,3 +247,23 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
             f"'{value_name}' must be smaller than input size."
             f" [{value} >= {np.prod(x.shape[2:])}]"
         )
+
+
+# TODO: Change for batching update, since currently single images are expected
+def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
+    """
+    Checks that indexed_axes fits arr
+    """
+    assert len(indexed_axes) <= arr.ndim
+    assert len(indexed_axes) == len(np.arange(indexed_axes[0], indexed_axes[-1] + 1))
+    assert all(
+        [
+            a == b
+            for a, b in list(
+                zip(indexed_axes, np.arange(indexed_axes[0], indexed_axes[-1] + 1))
+            )
+        ]
+    ), "Make sure indexed_axes contains consecutive axes."
+    assert (
+        0 in indexed_axes or arr.ndim - 1 in indexed_axes
+    ), "Make sure indexed_axes contains either the first or last axis of arr."

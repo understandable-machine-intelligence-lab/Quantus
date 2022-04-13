@@ -190,11 +190,10 @@ class LocalLipschitzEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
@@ -222,6 +221,8 @@ class LocalLipschitzEstimate(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -229,10 +230,7 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -287,11 +285,12 @@ class MaxSensitivity(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_radius (float): Perturbation radius, default=0.2.
+            lower_bound (float): Lower Bound of Perturbation, default=0.2.
+            upper_bound (None, float): Upper Bound of Perturbation, default=None.
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
             norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
-            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            perturb_func (callable): Input perturbation function, default=uniform_noise.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=difference.
         """
@@ -308,10 +307,9 @@ class MaxSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_sampling
-        )
-        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
+        self.perturb_func = self.kwargs.get("perturb_func", perturb_func.uniform_noise)
+        self.lower_bound = self.kwargs.get("lower_bound", 0.2)
+        self.upper_bound = self.kwargs.get("upper_bound", None)
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.difference
         )
@@ -324,7 +322,7 @@ class MaxSensitivity(Metric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "amount of noise added 'perturb_radius', the number of samples "
+                    "amount of noise added 'lower_bound' and 'upper_bound', the number of samples "
                     "iterated over 'nr_samples', the function to perturb the input "
                     "'perturb_func', the similarity metric 'similarity_func' as well as "
                     "norm calculations on the numerator and denominator of the sensitivity"
@@ -335,7 +333,7 @@ class MaxSensitivity(Metric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=self.perturb_radius)
+            warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
         self,
@@ -421,11 +419,10 @@ class MaxSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
@@ -453,6 +450,8 @@ class MaxSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -460,10 +459,7 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -520,11 +516,12 @@ class AvgSensitivity(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_radius (float): Perturbation radius, default=0.2.
+            lower_bound (float): Lower Bound of Perturbation, default=0.2.
+            upper_bound (None, float): Upper Bound of Perturbation, default=None.
             nr_samples (integer): The number of samples iterated, default=200.
             norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
             norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
-            perturb_func (callable): Input perturbation function, default=uniform_sampling.
+            perturb_func (callable): Input perturbation function, default=uniform_noise.
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=difference.
         """
@@ -541,10 +538,9 @@ class AvgSensitivity(Metric):
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", perturb_func.uniform_sampling
-        )
-        self.perturb_radius = self.kwargs.get("perturb_radius", 0.2)
+        self.perturb_func = self.kwargs.get("perturb_func", perturb_func.uniform_noise)
+        self.lower_bound = self.kwargs.get("lower_bound", 0.2)
+        self.upper_bound = self.kwargs.get("upper_bound", None)
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.difference
         )
@@ -556,7 +552,7 @@ class AvgSensitivity(Metric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "amount of noise added 'perturb_radius', the number of samples "
+                    "amount of noise added 'lower_bound' and 'upper_bound', the number of samples "
                     "iterated over 'nr_samples', the function to perturb the input "
                     "'perturb_func', the similarity metric 'similarity_func' as well as "
                     "norm calculations on the numerator and denominator of the sensitivity"
@@ -567,7 +563,7 @@ class AvgSensitivity(Metric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=self.perturb_radius)
+            warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
         self,
@@ -653,11 +649,10 @@ class AvgSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -685,6 +680,8 @@ class AvgSensitivity(Metric):
                 # Perturb input.
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     **self.kwargs,
                 )
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -692,10 +689,7 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
 
                 if self.abs:
@@ -776,6 +770,7 @@ class Continuity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", perturb_func.translation_x_direction
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.similarity_func = self.kwargs.get(
             "similarity_func", similar_func.lipschitz_constant
         )
@@ -884,12 +879,12 @@ class Continuity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
@@ -897,9 +892,7 @@ class Continuity(Metric):
 
         # Get number of patches for input shape (ignore batch and channel dim)
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size,
-            shape=x_batch_s.shape[2:],
-            overlap=True,
+            patch_size=self.patch_size, shape=x_batch_s.shape[2:], overlap=True,
         )
 
         # use tqdm progressbar if not disabled
@@ -927,6 +920,8 @@ class Continuity(Metric):
                 dx_step = (step + 1) * self.dx
                 x_perturbed = self.perturb_func(
                     arr=x,
+                    indices=np.arange(0, x.size),
+                    indexed_axes=np.arange(0, x.ndim),
                     perturb_dx=dx_step,
                     **self.kwargs,
                 )
@@ -934,12 +929,11 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model.get_model(),
-                    inputs=x_input,
-                    targets=y,
-                    **self.kwargs,
+                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
                 )
-                a_perturbed = utils.expand_attribution_channel(a_batch, x_batch_s)
+                # Taking the first element, since a_perturbed will be expanded to a batch dimension
+                # not expected by the current index management functions
+                a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
@@ -954,8 +948,7 @@ class Continuity(Metric):
 
                 # create patches by splitting input into grid
                 axis_iterators = [
-                    range(0, x_input.shape[axis], self.patch_size)
-                    for axis in range(1, x_input.ndim)
+                    range(0, x_input.shape[axis], self.patch_size) for axis in a_axes
                 ]
                 for ix_patch, top_left_coords in enumerate(
                     itertools.product(*axis_iterators)
@@ -963,12 +956,12 @@ class Continuity(Metric):
 
                     # Create slice for patch.
                     patch_slice = utils.create_patch_slice(
-                        patch_size=self.patch_size,
-                        coords=top_left_coords,
-                        expand_first_dim=True,
+                        patch_size=self.patch_size, coords=top_left_coords,
                     )
 
-                    a_perturbed_patch = a_perturbed[patch_slice]
+                    a_perturbed_patch = a_perturbed[
+                        utils.expand_indices(a_perturbed, patch_slice, a_axes)
+                    ]
                     if self.abs:
                         a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 

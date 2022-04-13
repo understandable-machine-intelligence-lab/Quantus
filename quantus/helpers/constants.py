@@ -50,11 +50,10 @@ AVAILABLE_METRICS = {
 AVAILABLE_PERTURBATION_FUNCTIONS = {
     "gaussian_noise": gaussian_noise,
     "baseline_replacement_by_indices": baseline_replacement_by_indices,
-    "baseline_replacement_by_patch": baseline_replacement_by_patch,
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    "uniform_sampling": uniform_sampling,
+    "uniform_noise": uniform_noise,
     "no_perturbation": no_perturbation,
 }
 
