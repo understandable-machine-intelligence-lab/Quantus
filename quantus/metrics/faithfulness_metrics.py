@@ -14,7 +14,7 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.similar_func import correlation_pearson, correlation_spearman
+from ..helpers.similar_func import correlation_pearson, correlation_spearman, mse
 from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import baseline_replacement_by_patch, noisy_linear_imputation
 
@@ -2250,7 +2250,10 @@ class Infidelity(Metric):
     between 1) a dot product of an attribution and input perturbation and
     2) difference in model output after significant perturbation.
 
-    TODO: list the assumptions.
+    Assumptions:
+    - The original implementation (https://github.com/chihkuanyeh/saliency_evaluation/
+    blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
+    In this implementation, we use squared patches as the default option.
 
     References:
         1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
@@ -2271,9 +2274,16 @@ class Infidelity(Metric):
         kwargs: Keyword arguments (optional)
             abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
             normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            loss_func (string): Loss function, default="mse".
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            perturb_patch_sizes (list): Size of patches to be perturbed, default=[4].
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            n_perturb_samples (integer): The number of samples to be perturbed, default=10.
+            aggregate (boolean):  Indicates whether to return the mean values or all values, default=True.
+
         """
         super().__init__()
 
@@ -2281,10 +2291,18 @@ class Infidelity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
+        self.loss_func = self.kwargs.get("loss_func", mse)
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+            "perturb_func", baseline_replacement_by_patch
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
+        self.perturb_patch_sizes = self.kwargs.get(
+            "perturb_patch_sizes", [4]
+        )
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
+        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
+        self.aggregate = self.kwargs.get("aggregate", True)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
 
@@ -2293,7 +2311,9 @@ class Infidelity(Metric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "baseline value 'perturb_baseline', perturbation function 'perturb_func'"
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
+                    "number of perturbed samples 'n_perturb_samples', the loss function 'loss_func' "
+                    "aggregation boolean 'aggregate'"
                 ),
                 citation=(
                     "Chih-Kuan, Yeh, et al. 'On the (In)fidelity and Sensitivity of Explanations'"
@@ -2322,6 +2342,8 @@ class Infidelity(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
+        self.nr_channels = x_batch_s.shape[1]
+
         # Wrap the model into an interface
         if model:
             model = utils.get_wrapped_model(model, channel_first)
@@ -2334,8 +2356,6 @@ class Infidelity(Metric):
 
         # Run deprecation warnings.
         warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
 
         if a_batch is None:
             # Asserts.
@@ -2359,7 +2379,11 @@ class Infidelity(Metric):
 
         for x, y, a in iterator:
 
-            a = a.flatten()
+            if self.abs:
+                a = np.abs(a)
+
+            if self.normalise:
+                a = self.normalise_func(a)
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
@@ -2373,19 +2397,70 @@ class Infidelity(Metric):
                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
             )
 
-            # Predict on baseline.
-            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-            y_pred_perturb = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-            )
+            sub_results = []
 
-            y_pred_diff = y_pred - y_pred_perturb
+            for _ in range(self.n_perturb_samples):
 
-            a_times_perturb_sum = np.sum((x.flatten()-x_baseline) * a)
-            # TODO: mse in similar_func
-            self.last_results.append(np.square(y_pred_diff - a_times_perturb_sum))
-        # TODO: return aggregate or a list (Union[list, float])
-        return np.mean(self.last_results)
+                sub_sub_results = []
+
+                for patch_size in self.perturb_patch_sizes:
+
+                    pred_deltas = np.zeros(
+                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                    )
+                    a_sums = np.zeros(
+                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                    )
+
+                    for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
+
+                        for i_y, top_left_y in enumerate(
+                                range(0, x.shape[2], patch_size)
+                        ):
+
+                            # Perturb input patch-wise.
+                            x_temp = x.copy()
+                            patch_slice = utils.create_patch_slice(
+                                patch_size=[patch_size],
+                                coords=[top_left_x, top_left_y],
+                                expand_first_dim=True,
+                            )
+
+                            x_perturbed = self.perturb_func(
+                                x_temp,
+                                **{
+                                    "patch_slice": patch_slice,
+                                    "nr_channels": self.nr_channels,
+                                    "perturb_baseline": self.perturb_baseline,
+                                },
+                            )
+
+                            # Predict on perturbed input x_perturbed.
+                            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+                            y_pred_perturb = float(
+                                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                            )
+
+                            x_diff = (x - x_perturbed).flatten()
+                            a_diff = np.dot(a.flatten(), x_diff)
+
+                            pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
+                            a_sums[i_x][i_y] = np.sum(a_diff)
+
+                    sub_sub_results.append(
+                        self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
+                    )
+
+                sub_results.append(np.mean(sub_sub_results))
+
+            if self.aggregate:
+                self.last_results.append(np.mean(sub_results))
+            else:
+                self.last_results.append(sub_results)
+
+        self.all_results.append(self.last_results)
+
+        return self.all_results
 
 
 class ROAD(Metric):
