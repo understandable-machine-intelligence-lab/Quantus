@@ -16,7 +16,6 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.similar_func import correlation_pearson, correlation_spearman
 from ..helpers.perturb_func import baseline_replacement_by_indices
-from ..helpers.perturb_func import baseline_replacement_by_patch
 
 
 class FaithfulnessCorrelation(Metric):
@@ -189,7 +188,10 @@ class FaithfulnessCorrelation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -228,9 +230,7 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -415,13 +415,15 @@ class FaithfulnessEstimate(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -468,9 +470,7 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -534,10 +534,10 @@ class IterativeRemovalOfFeatures(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -643,7 +643,10 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -694,9 +697,7 @@ class IterativeRemovalOfFeatures(Metric):
                 ]
 
                 x_perturbed = self.perturb_func(
-                    arr=x_input.flatten(),
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -879,13 +880,15 @@ class MonotonicityArya(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -920,9 +923,11 @@ class MonotonicityArya(Metric):
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
-                choice=self.perturb_baseline, arr=x
+                value=self.kwargs.get("perturb_baseline", "black"),
+                arr=x,
+                return_shape=(1,),
             )
-            x_baseline = np.full(x.shape, baseline_value).flatten()
+            x_baseline = np.full(x.shape, baseline_value)
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -933,9 +938,7 @@ class MonotonicityArya(Metric):
                     )
                 ]
                 x_baseline = self.perturb_func(
-                    arr=x_baseline,
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x_baseline, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -1111,13 +1114,15 @@ class MonotonicityNguyen(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -1142,7 +1147,7 @@ class MonotonicityNguyen(Metric):
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred**2
+            inv_pred = inv_pred ** 2
 
             a = a.flatten()
 
@@ -1172,9 +1177,7 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        arr=x,
-                        indices=a_ix,
-                        **self.kwargs,
+                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(
                         x=x, x_perturbed=x_perturbed
@@ -1355,13 +1358,15 @@ class PixelFlipping(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -1393,7 +1398,7 @@ class PixelFlipping(Metric):
             a_indices = np.argsort(-a)
 
             preds = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -1404,9 +1409,7 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1481,7 +1484,7 @@ class RegionPerturbation(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
@@ -1594,7 +1597,10 @@ class RegionPerturbation(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1624,29 +1630,24 @@ class RegionPerturbation(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
-                x, pad_width, mode="constant", omit_first_axis=True
-            )
-            a_pad = utils._pad_array(
-                a, pad_width, mode="constant", omit_first_axis=True
-            )
+            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
+            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
 
             # Create patches across whole input shape and aggregate attributions.
             att_sums = []
             axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width)
-                for axis in range(1, x_pad.ndim)
+                range(pad_width, x_pad.shape[axis] - pad_width) for axis in a_axes
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                    expand_first_dim=True,
+                    patch_size=self.patch_size, coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[patch_slice].sum())
+                att_sums.append(
+                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
+                )
                 patches.append(patch_slice)
 
             if self.order == "random":
@@ -1666,11 +1667,11 @@ class RegionPerturbation(Metric):
             ordered_patches = [patches[p] for p in order]
 
             # Remove overlapping patches
-            blocked_mask = np.zeros(x_input.shape, dtype=bool)
+            blocked_mask = np.zeros(x_pad.shape, dtype=bool)
             ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
-                patch_mask = np.zeros(x_input.shape, dtype=bool)
-                patch_mask[patch_slice] = True
+                patch_mask = np.zeros(x_pad.shape, dtype=bool)
+                patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
                 intersected = blocked_mask & patch_mask
 
                 if not intersected.any():
@@ -1684,19 +1685,20 @@ class RegionPerturbation(Metric):
             for patch_slice in ordered_patches_no_overlap:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
                 x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
+                    indices=patch_slice,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
                 # Remove Padding
                 x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, omit_first_axis=True
+                    x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -1705,7 +1707,6 @@ class RegionPerturbation(Metric):
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
 
-                # TODO: give an option to only return y_pred_perturb here?
                 sub_results.append(y_pred - y_pred_perturb)
 
             self.last_results[sample] = sub_results
@@ -1761,7 +1762,7 @@ class Selectivity(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.patch_size = self.kwargs.get("patch_size", 8)
@@ -1870,7 +1871,10 @@ class Selectivity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -1884,6 +1888,7 @@ class Selectivity(Metric):
             )
 
         for sample, (x, y, a) in iterator:
+
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
@@ -1900,57 +1905,59 @@ class Selectivity(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
-                x, pad_width, mode="constant", omit_first_axis=True
-            )
-            a_pad = utils._pad_array(
-                a, pad_width, mode="constant", omit_first_axis=True
-            )
+            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
+            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
 
             # Get patch indices of sorted attributions (descending).
-            # TODO: currently, image is split into a grid, with the patches as the grid elements.
-            #  I.e., not all possible patches are considered. Consequently,
-            #  not the patch with the highest relevance is chosen first, but the (static) grid element instead.
-            #  This is changed now in regionperturbation. Would this change also be intended here?
-            #  Leaving it as-is for now.
-            #  IF this should be changed, overlapping patches need to be excluded, see RegionPerturbation
             att_sums = []
             axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width, self.patch_size)
-                for axis in range(1, x_pad.ndim)
+                range(pad_width, x_pad.shape[axis] - pad_width) for axis in a_axes
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                    expand_first_dim=True,
+                    patch_size=self.patch_size, coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
-                att_sums.append(a_pad[patch_slice].sum())
+                att_sums.append(
+                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
+                )
                 patches.append(patch_slice)
 
-            # Order attributions according to the most relevant first.
+            # Create ordered list of patches.
             ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
-            # Increasingly perturb the input and store the decrease in function value.
+            # Remove overlapping patches
+            blocked_mask = np.zeros(x_pad.shape, dtype=bool)
+            ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
+                patch_mask = np.zeros(x_pad.shape, dtype=bool)
+                patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
+                intersected = blocked_mask & patch_mask
+
+                if not intersected.any():
+                    ordered_patches_no_overlap.append(patch_slice)
+                    blocked_mask = blocked_mask | patch_mask
+
+            # Increasingly perturb the input and store the decrease in function value.
+            for patch_slice in ordered_patches_no_overlap:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
                 x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
+                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
                     arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
+                    indices=patch_slice,
+                    indexed_axes=a_axes,
                     **self.kwargs,
                 )
 
                 # Remove Padding
                 x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, omit_first_axis=True
+                    x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
 
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
@@ -2143,13 +2150,15 @@ class SensitivityN(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -2193,7 +2202,7 @@ class SensitivityN(Metric):
 
             att_sums = []
             pred_deltas = []
-            x_perturbed = x.copy().flatten()
+            x_perturbed = x.copy()
 
             for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
@@ -2204,9 +2213,7 @@ class SensitivityN(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    **self.kwargs,
+                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
