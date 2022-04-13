@@ -91,6 +91,7 @@ AVAILABLE_XAI_METHODS = {
     "GradCam",
     "Control Var. Sobel Filter",
     "Control Var. Constant",
+    "Control Var. Random Uniform",
 }
 
 
