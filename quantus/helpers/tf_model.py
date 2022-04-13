@@ -17,8 +17,11 @@ class TensorFlowModel(ModelInterface):
     def __init__(self, model, channel_first):
         super().__init__(model, channel_first)
 
-    def predict(self, x, softmax_act=False, **kwargs):
+    def predict(self, x, **kwargs):
         """Predict on the given input."""
+        
+        softmax_act = kwargs.get("softmax", False)
+
         output_act = self.model.layers[-1].activation
         target_act = softmax if softmax_act else linear
 

@@ -23,7 +23,7 @@ def mock_input_tf_array():
         (
             lazy_fixture("mock_input_tf_array"),
             {
-                "softmax_act": False,
+                "softmax": False,
                 "channel_first": False,
             },
             np.array(
@@ -44,7 +44,7 @@ def mock_input_tf_array():
         (
             lazy_fixture("mock_input_tf_array"),
             {
-                "softmax_act": True,
+                "softmax": True,
                 "channel_first": False,
             },
             softmax(

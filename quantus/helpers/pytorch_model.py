@@ -16,18 +16,19 @@ class PyTorchModel(ModelInterface):
     def __init__(self, model, channel_first):
         super().__init__(model, channel_first)
 
-    def predict(self, x, softmax_act=False, **kwargs):
+    def predict(self, x, **kwargs):
         """Predict on the given input."""
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
 
+        softmax = kwargs.get("softmax", False)
         device = kwargs.get("device", None)
         grad = kwargs.get("grad", False)
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
             pred = self.model(torch.Tensor(x).to(device))
-            if softmax_act:
+            if softmax:
                 pred = torch.nn.Softmax()(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
