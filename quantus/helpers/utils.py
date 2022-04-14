@@ -584,13 +584,17 @@ def expand_indices(
     return tuple(expanded_indices)
 
 
-# TODO: adapt for batched processing (if necessary)
 def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     """
     Gets the shape of the arr dimensions not included in axes
     """
+    # TODO: adapt for batched processing (if necessary).
     axes = np.sort(np.array(axes))
     asserts.assert_indexed_axes(arr, axes)
 
     leftover_shape = tuple([arr.shape[i] for i in range(arr.ndim) if i not in axes])
     return leftover_shape
+
+
+def calculate_auc(i: np.array):
+    return np.trapz(np.array(i), dx=1.0)
