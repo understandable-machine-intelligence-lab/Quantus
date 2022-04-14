@@ -47,7 +47,7 @@ def assert_model_predictions_correct(
 
 
 def assert_features_in_step(
-        features_in_step: int, input_shape: Tuple[int, ...]
+    features_in_step: int, input_shape: Tuple[int, ...]
 ) -> None:
     """Assert that features in step is compatible with the image size."""
     assert np.prod(input_shape) % features_in_step == 0, (
