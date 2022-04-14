@@ -16,7 +16,7 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.similar_func import correlation_pearson, correlation_spearman, mse
 from ..helpers.perturb_func import baseline_replacement_by_indices
-from ..helpers.perturb_func import baseline_replacement_by_patch, noisy_linear_imputation
+from ..helpers.perturb_func import noisy_linear_imputation
 
 
 class FaithfulnessCorrelation(Metric):
@@ -2334,7 +2334,7 @@ class Infidelity(Metric):
         self.loss_func = self.kwargs.get("loss_func", mse)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+            "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_patch_sizes = self.kwargs.get(
             "perturb_patch_sizes", [4]
@@ -2406,7 +2406,10 @@ class Infidelity(Metric):
             a_batch = explain_func(
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
@@ -2427,7 +2430,9 @@ class Infidelity(Metric):
 
             # Copy the input x but fill with baseline values.
             baseline_value = utils.get_baseline_value(
-                choice=self.perturb_baseline, arr=x
+                value=self.perturb_baseline,
+                arr=x,
+                return_shape=(1,),
             )
             x_baseline = np.full(x.shape, baseline_value).flatten()
 
@@ -2451,6 +2456,8 @@ class Infidelity(Metric):
                     a_sums = np.zeros(
                         (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
                     )
+                    x_perturbed = x.copy()
+                    pad_width = patch_size - 1
 
                     for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
@@ -2459,20 +2466,23 @@ class Infidelity(Metric):
                         ):
 
                             # Perturb input patch-wise.
-                            x_temp = x.copy()
+                            x_perturbed_pad = utils._pad_array(
+                                x_perturbed, pad_width, mode="edge", padded_axes=a_axes
+                            )
                             patch_slice = utils.create_patch_slice(
-                                patch_size=[patch_size],
-                                coords=[top_left_x, top_left_y],
-                                expand_first_dim=True,
+                                patch_size=patch_size, coords=[top_left_x, top_left_y],
                             )
 
-                            x_perturbed = self.perturb_func(
-                                x_temp,
-                                **{
-                                    "patch_slice": patch_slice,
-                                    "nr_channels": self.nr_channels,
-                                    "perturb_baseline": self.perturb_baseline,
-                                },
+                            x_perturbed_pad = self.perturb_func(
+                                arr=x_perturbed_pad,
+                                indices=patch_slice,
+                                indexed_axes=a_axes,
+                                **self.kwargs,
+                            )
+
+                            # Remove Padding
+                            x_perturbed = utils._unpad_array(
+                                x_perturbed_pad, pad_width, padded_axes=a_axes
                             )
 
                             # Predict on perturbed input x_perturbed.

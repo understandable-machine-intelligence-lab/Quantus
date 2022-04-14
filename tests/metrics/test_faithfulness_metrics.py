@@ -1330,7 +1330,7 @@ def test_sensitivity_n(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_func": baseline_replacement_by_patch,
+                "perturb_func": baseline_replacement_by_indices,
                 "aggregate": False,
                 "normalise": True,
                 "explain_func": explain,
@@ -1346,7 +1346,7 @@ def test_sensitivity_n(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_func": baseline_replacement_by_patch,
+                "perturb_func": baseline_replacement_by_indices,
                 "aggregate": True,
                 "normalise": True,
                 "explain_func": explain,
