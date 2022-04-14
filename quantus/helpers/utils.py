@@ -60,7 +60,14 @@ def get_baseline_value(
                 )
             )
     elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch)
+        fill_dict = get_baseline_dict(arr, patch, **kwargs)
+        if value.lower() == "random":
+            raise ValueError(
+                "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
+                "the current release. Please use 'uniform' instead and pass lower- and upper bounds to "
+                "kwargs as see fit (default values are set to 'uniform_low=0.0' and 'uniform_high=1.0' "
+                "which will replicate the results of 'random').\n"
+            )
         if value.lower() not in fill_dict:
             raise ValueError(f"Ensure that 'value'(str) is in {list(fill_dict.keys())}")
         return np.full(return_shape, fill_dict[value.lower()])
@@ -68,12 +75,17 @@ def get_baseline_value(
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")
 
 
-def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
+def get_baseline_dict(
+    arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
+) -> dict:
     """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
     fill_dict = {
         "mean": float(arr.mean()),
-        "random": float(random.random()),
-        "uniform": float(random.uniform(arr.min(), arr.max())),
+        "uniform": float(
+            np.random.uniform(
+                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0)
+            )
+        ),
         "black": float(arr.min()),
         "white": float(arr.max()),
     }
