@@ -287,6 +287,11 @@ def noisy_linear_imputation(
     indices: Union[int, Sequence[int], Tuple[np.array]],
     **kwargs,
 ) -> np.array:
+    """
+    Based on https://github.com/tleemann/road_evaluation.
+    Calculates noisy linear imputation for the given array and a list of indices indicating which elements are not
+    included in the mask.
+    """
     offset_weight = [
         ((1, 1), 1 / 12),
         ((0, 1), 1 / 6),
