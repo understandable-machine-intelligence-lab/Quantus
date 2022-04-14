@@ -160,7 +160,10 @@ class PointingGame(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -185,11 +188,11 @@ class PointingGame(Metric):
             a = a.flatten()
             s = s.squeeze().flatten().astype(bool)
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Find index of max value.
             max_index = np.where(a == np.max(a))[0]
@@ -363,7 +366,10 @@ class AttributionLocalisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -387,14 +393,14 @@ class AttributionLocalisation(Metric):
             a = a.flatten()
             s = s.flatten().astype(bool)
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
                 warn_func.warn_absolutes_applied()
-
-            if self.normalise:
-                a = self.normalise_func(a)
 
             # Asserts on attributions.
             if np.all((a < 0.0)):
@@ -582,7 +588,10 @@ class TopKIntersection(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -606,11 +615,11 @@ class TopKIntersection(Metric):
 
         for ix, (x, y, a, s) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             top_k_binary_mask = np.zeros(a.shape)
             sorted_indices = np.argsort(a, axis=None)
@@ -780,7 +789,10 @@ class RelevanceRankAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -804,11 +816,11 @@ class RelevanceRankAccuracy(Metric):
             a = a.flatten()
             s = np.where(s.flatten().astype(bool))[0]
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Size of the ground truth mask.
             k = len(s)
@@ -973,7 +985,10 @@ class RelevanceMassAccuracy(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -996,11 +1011,11 @@ class RelevanceMassAccuracy(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Reshape.
             s = s.flatten().astype(bool)
@@ -1157,7 +1172,10 @@ class AUC(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -1178,11 +1196,11 @@ class AUC(Metric):
 
         for ix, (x, y, a, s) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             s = s.flatten()
             s = s.astype(bool)

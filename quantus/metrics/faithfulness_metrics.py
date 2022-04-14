@@ -209,17 +209,15 @@ class FaithfulnessCorrelation(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
 
+            if self.abs:
+                a = np.abs(a)
+
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             pred_deltas = []
             att_sums = []
@@ -230,15 +228,16 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
@@ -423,7 +422,8 @@ class FaithfulnessEstimate(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -445,11 +445,11 @@ class FaithfulnessEstimate(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -470,7 +470,10 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -663,11 +666,11 @@ class IterativeRemovalOfFeatures(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Predict on x.
             x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -699,7 +702,10 @@ class IterativeRemovalOfFeatures(Metric):
                 ]
 
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -712,7 +718,6 @@ class IterativeRemovalOfFeatures(Metric):
             # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
             self.last_results.append(np.trapz(np.array(preds), dx=1.0))
 
-        
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
         else:
@@ -894,7 +899,8 @@ class MonotonicityArya(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -916,11 +922,11 @@ class MonotonicityArya(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -944,7 +950,10 @@ class MonotonicityArya(Metric):
                     )
                 ]
                 x_baseline = self.perturb_func(
-                    arr=x_baseline, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_baseline,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -1128,7 +1137,8 @@ class MonotonicityNguyen(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -1153,15 +1163,15 @@ class MonotonicityNguyen(Metric):
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred ** 2
+            inv_pred = inv_pred**2
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -1183,7 +1193,10 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                        arr=x,
+                        indices=a_ix,
+                        indexed_axes=a_axes,
+                        **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(
                         x=x, x_perturbed=x_perturbed
@@ -1372,7 +1385,8 @@ class PixelFlipping(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -1394,11 +1408,11 @@ class PixelFlipping(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -1415,7 +1429,10 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1423,7 +1440,7 @@ class PixelFlipping(Metric):
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 preds.append(y_pred_perturb)
-            
+
             self.last_results.append(preds)
 
         self.all_results.append(self.last_results)
@@ -1434,6 +1451,7 @@ class PixelFlipping(Metric):
     def get_auc_score(self):
         """Calculate the area under the curve (AOC) score for several test samples."""
         return [np.trapz(np.array(results), dx=1.0) for results in self.all_results]
+
 
 class RegionPerturbation(Metric):
     """
@@ -1628,11 +1646,11 @@ class RegionPerturbation(Metric):
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             patches = []
             sub_results = []
@@ -1651,7 +1669,8 @@ class RegionPerturbation(Metric):
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size, coords=top_left_coords,
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
@@ -1728,7 +1747,11 @@ class RegionPerturbation(Metric):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
+        return [
+            np.trapz(np.array(result), dx=1.0)
+            for results in self.all_results
+            for _, result in results.items()
+        ]
 
 
 class Selectivity(Metric):
@@ -1910,11 +1933,11 @@ class Selectivity(Metric):
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             patches = []
             sub_results = []
@@ -1933,7 +1956,8 @@ class Selectivity(Metric):
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size, coords=top_left_coords,
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
@@ -1994,7 +2018,11 @@ class Selectivity(Metric):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
+        return [
+            np.trapz(np.array(result), dx=1.0)
+            for results in self.all_results
+            for _, result in results.items()
+        ]
 
 
 class SensitivityN(Metric):
@@ -2184,7 +2212,8 @@ class SensitivityN(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -2213,11 +2242,11 @@ class SensitivityN(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -2239,7 +2268,10 @@ class SensitivityN(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 

@@ -178,7 +178,10 @@ class Completeness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -195,11 +198,11 @@ class Completeness(Metric):
 
         for x, y, a in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             print(self.kwargs)
 
@@ -385,7 +388,10 @@ class NonSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
@@ -395,7 +401,8 @@ class NonSensitivity(Metric):
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
         if self.max_steps_per_input is not None:
             asserts.assert_max_steps(
@@ -417,11 +424,11 @@ class NonSensitivity(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
@@ -438,14 +445,19 @@ class NonSensitivity(Metric):
                 for _ in range(self.n_samples):
                     # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
-                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                        arr=x,
+                        indices=a_ix,
+                        indexed_axes=a_axes,
+                        **self.kwargs,
                     )
 
                     # Predict on perturbed input x.
                     x_input = model.shape_input(
                         x_perturbed, x.shape, channel_first=True
                     )
-                    y_pred_perturbed = float(model.predict(x_input, **self.kwargs)[:, y])
+                    y_pred_perturbed = float(
+                        model.predict(x_input, **self.kwargs)[:, y]
+                    )
                     preds.append(y_pred_perturbed)
 
                     vars.append(np.var(preds))
@@ -600,7 +612,10 @@ class InputInvariance(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -617,11 +632,11 @@ class InputInvariance(Metric):
 
         for x, y, a in iterator:
 
-            if self.abs:
-                warn_func.warn_absolutes_skipped()
-
             if self.normalise:
                 warn_func.warn_normalisation_skipped()
+
+            if self.abs:
+                warn_func.warn_absolutes_skipped()
 
             x_shifted = self.perturb_func(
                 arr=x,

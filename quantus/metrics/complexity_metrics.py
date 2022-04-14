@@ -160,7 +160,10 @@ class Sparseness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -179,20 +182,18 @@ class Sparseness(Metric):
 
             a = a.flatten()
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-                    "since otherwise inconsistent results can be expected."
-                )
-
-            if self.normalise:
-                a = self.normalise_func(a)
+                warn_func.warn_absolutes_applied()
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
             )
             a += 0.0000001
             a = np.sort(a)
@@ -347,7 +348,10 @@ class Complexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -364,20 +368,18 @@ class Complexity(Metric):
 
         for x, y, a in iterator:
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                    "since it is required by the metric."
-                )
-
-            if self.normalise:
-                a = self.normalise_func(a)
+                warn_func.warn_absolutes_requirement()
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
             ) / np.sum(np.abs(a))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
@@ -527,7 +529,10 @@ class EffectiveComplexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -546,14 +551,14 @@ class EffectiveComplexity(Metric):
 
             a = a.flatten()
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
                 warn_func.warn_absolutes_applied()
-
-            if self.normalise:
-                a = self.normalise_func(a)
 
             self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
 

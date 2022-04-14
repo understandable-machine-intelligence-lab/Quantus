@@ -190,7 +190,10 @@ class LocalLipschitzEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -209,11 +212,11 @@ class LocalLipschitzEstimate(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             similarity_max = 0.0
             for i in range(self.nr_samples):
@@ -230,13 +233,17 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
+
+                if self.normalise:
+                    a_perturbed = self.normalise_func(a_perturbed)
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
-                if self.normalise:
-                    a_perturbed = self.normalise_func(a_perturbed)
 
                 # Measure similarity.
                 similarity = self.similarity_func(
@@ -419,7 +426,10 @@ class MaxSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -438,11 +448,11 @@ class MaxSensitivity(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             sensitivities_norm_max = 0.0
             for _ in range(self.nr_samples):
@@ -459,14 +469,17 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
-
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
 
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 # Measure sensitivity.
                 sensitivities = self.similarity_func(
@@ -649,7 +662,10 @@ class AvgSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -668,11 +684,11 @@ class AvgSensitivity(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             self.sub_results = []
             for _ in range(self.nr_samples):
@@ -689,14 +705,17 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
-
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
 
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 sensitivities = self.similarity_func(
                     a=a.flatten(), b=a_perturbed.flatten()
@@ -879,7 +898,10 @@ class Continuity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
@@ -892,7 +914,9 @@ class Continuity(Metric):
 
         # Get number of patches for input shape (ignore batch and channel dim)
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size, shape=x_batch_s.shape[2:], overlap=True,
+            patch_size=self.patch_size,
+            shape=x_batch_s.shape[2:],
+            overlap=True,
         )
 
         # use tqdm progressbar if not disabled
@@ -906,11 +930,11 @@ class Continuity(Metric):
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -929,17 +953,20 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
                 # Taking the first element, since a_perturbed will be expanded to a batch dimension
                 # not expected by the current index management functions
                 a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
-
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
                 y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
@@ -956,19 +983,21 @@ class Continuity(Metric):
 
                     # Create slice for patch.
                     patch_slice = utils.create_patch_slice(
-                        patch_size=self.patch_size, coords=top_left_coords,
+                        patch_size=self.patch_size,
+                        coords=top_left_coords,
                     )
 
                     a_perturbed_patch = a_perturbed[
                         utils.expand_indices(a_perturbed, patch_slice, a_axes)
                     ]
-                    if self.abs:
-                        a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 
                     if self.normalise:
                         a_perturbed_patch = self.normalise_func(
                             a_perturbed_patch.flatten()
                         )
+
+                    if self.abs:
+                        a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 
                     # Sum attributions for patch.
                     patch_sum = float(sum(a_perturbed_patch))

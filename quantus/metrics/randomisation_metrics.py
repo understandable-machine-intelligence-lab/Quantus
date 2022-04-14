@@ -167,7 +167,10 @@ class ModelParameterRandomisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -199,13 +202,13 @@ class ModelParameterRandomisation(Metric):
 
             for ix, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
-                if self.abs:
-                    a = np.abs(a)
-                    a_per = np.abs(a_per)
-
                 if self.normalise:
                     a = self.normalise_func(a)
                     a_per = self.normalise_func(a_per)
+
+                if self.abs:
+                    a = np.abs(a)
+                    a_per = np.abs(a_per)
 
                 # Compute distance measure.
                 similarity = self.similarity_func(a_per.flatten(), a.flatten())
@@ -367,7 +370,10 @@ class RandomLogit(Metric):
         if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -386,11 +392,11 @@ class RandomLogit(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Randomly select off-class labels.
             random.seed(a=self.seed)
@@ -410,11 +416,11 @@ class RandomLogit(Metric):
                 **self.kwargs,
             )
 
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
-
             if self.normalise:
                 a_perturbed = self.normalise_func(a_perturbed)
+
+            if self.abs:
+                a_perturbed = np.abs(a_perturbed)
 
             self.last_results.append(
                 self.similarity_func(a.flatten(), a_perturbed.flatten())

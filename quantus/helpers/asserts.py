@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable, Tuple, Union, Sequence
 
+
 def attributes_check(metric):
     # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
     attr = metric.__dict__
@@ -35,7 +36,8 @@ def assert_model_predictions_deviations(
 
 
 def assert_model_predictions_correct(
-    y_pred: float, y_pred_perturb: float,
+    y_pred: float,
+    y_pred_perturb: float,
 ):
     """Assert that model predictions are the same."""
     if y_pred == y_pred_perturb:
@@ -133,14 +135,17 @@ def assert_layer_order(layer_order: str) -> None:
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 
-def assert_targets(x_batch: np.array, y_batch: np.array,) -> None:
+def assert_targets(
+    x_batch: np.array,
+    y_batch: np.array,
+) -> None:
     if not isinstance(y_batch, int):
         assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
             "The 'y_batch' should by an integer or a list with "
             "the same number of samples as the 'x_batch' input"
             "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
         )
-        
+
 
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
     """Asserts on attributions. Assumes channel first layout."""
