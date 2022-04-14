@@ -701,11 +701,11 @@ class IterativeRemovalOfFeatures(Metric):
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                # Normalise the scores to be within [0, 1].
+
+                # Normalise the scores to be within range [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))
 
-            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
-            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
+            self.last_results.append(len(preds) - utils.calculate_auc(np.array(preds)))
 
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
@@ -717,7 +717,7 @@ class IterativeRemovalOfFeatures(Metric):
         return self.last_results
 
     @property
-    def aggregated_score(self):
+    def get_aggregated_score(self):
         """Calculate the area over the curve (AOC) score for several test samples."""
         return [np.mean(results) for results in self.all_results]
 
@@ -1405,8 +1405,8 @@ class PixelFlipping(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(results), dx=1.0) for results in self.all_results]
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return [utils.calculate_auc(np.array(i)) for i in self.all_results]
 
 
 class RegionPerturbation(Metric):
@@ -1702,11 +1702,11 @@ class RegionPerturbation(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
+        """Calculate the area under the curve (AUC) score for several test samples."""
         return [
-            np.trapz(np.array(result), dx=1.0)
+            utils.calculate_auc(np.array(i))
             for results in self.all_results
-            for _, result in results.items()
+            for _, i in results.items()
         ]
 
 
@@ -1925,7 +1925,7 @@ class Selectivity(Metric):
             # Create ordered list of patches.
             ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
-            # Remove overlapping patches
+            # Remove overlapping patches.
             blocked_mask = np.zeros(x_pad.shape, dtype=bool)
             ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
@@ -1939,7 +1939,8 @@ class Selectivity(Metric):
 
             # Increasingly perturb the input and store the decrease in function value.
             for patch_slice in ordered_patches_no_overlap:
-                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+
+                # Pad x_perturbed. The mode should depend on the used perturb_func.
                 x_perturbed_pad = utils._pad_array(
                     x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
@@ -1952,7 +1953,7 @@ class Selectivity(Metric):
                     **self.kwargs,
                 )
 
-                # Remove Padding
+                # Remove padding.
                 x_perturbed = utils._unpad_array(
                     x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
@@ -1973,11 +1974,11 @@ class Selectivity(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
+        """Calculate the area under the curve (AUC) score for several test samples."""
         return [
-            np.trapz(np.array(result), dx=1.0)
+            utils.calculate_auc(np.array(i))
             for results in self.all_results
-            for _, result in results.items()
+            for _, i in results.items()
         ]
 
 
