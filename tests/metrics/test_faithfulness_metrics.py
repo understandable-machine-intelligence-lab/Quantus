@@ -10,7 +10,6 @@ from ...quantus.helpers import *
 from ...quantus.helpers import perturb_func
 from ...quantus.helpers.explanation_func import explain
 
-"""
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -696,6 +695,7 @@ def test_monotonicity_nguyen(
 
     assert scores is not None, "Test failed."
 
+
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -738,7 +738,7 @@ def test_monotonicity_nguyen(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_baseline": "random",
+                "perturb_baseline": "uniform",
                 "features_in_step": 56,
                 "normalise": False,
                 "explain_func": explain,
@@ -754,7 +754,7 @@ def test_monotonicity_nguyen(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_baseline": "random",
+                "perturb_baseline": "uniform",
                 "features_in_step": 112,
                 "normalise": False,
                 "explain_func": explain,
@@ -801,7 +801,7 @@ def test_monotonicity_nguyen(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_baseline": "random",
+                "perturb_baseline": "uniform",
                 "features_in_step": 56,
                 "normalise": True,
                 "explain_func": explain,
@@ -852,7 +852,7 @@ def test_pixel_flipping(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    
+
     metric = PixelFlipping(**params)
 
     scores = metric(
@@ -864,13 +864,21 @@ def test_pixel_flipping(
     )
 
     if params.get("return_auc", True):
-        assert all([(s>=expected["min"] and s<= expected["max"])
-            for s_list in metric.get_auc_score
-                for s in s_list]), "Test failed."
+        assert all(
+            [
+                (s >= expected["min"] and s <= expected["max"])
+                for s_list in metric.get_auc_score
+                for s in s_list
+            ]
+        ), "Test failed."
     else:
-        assert all([(s>=expected["min"] and s<= expected["max"])
-            for s_list in scores
-                for s in s_list]), "Test failed."
+        assert all(
+            [
+                (s >= expected["min"] and s <= expected["max"])
+                for s_list in scores
+                for s in s_list
+            ]
+        ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -997,7 +1005,7 @@ def test_region_perturbation(
         a_batch = None
 
     metric = RegionPerturbation(**params)
-    
+
     scores = metric(
         model=model,
         x_batch=x_batch,
@@ -1008,14 +1016,18 @@ def test_region_perturbation(
 
     if params.get("return_auc", True):
         assert all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in metric.get_auc_score
+            ((s >= expected["min"]) & (s <= expected["max"]))
+            for s in metric.get_auc_score
         ), "Test failed."
     else:
-        assert all([(s>=expected["min"] and s<= expected["max"])
-                    for _, s_list in scores.items()
-                        for s in s_list]), "Test failed."
+        assert all(
+            [
+                (s >= expected["min"] and s <= expected["max"])
+                for _, s_list in scores.items()
+                for s in s_list
+            ]
+        ), "Test failed."
 
-"""
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1042,7 +1054,7 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_baseline": "random",
+                "perturb_baseline": "uniform",
                 "patch_size": 4,
                 "normalise": True,
                 "explain_func": explain,
@@ -1058,7 +1070,7 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
-                "perturb_baseline": "random",
+                "perturb_baseline": "uniform",
                 "patch_size": 4,
                 "normalise": True,
                 "explain_func": explain,
@@ -1172,14 +1184,18 @@ def test_selectivity(
 
     if params.get("return_auc", True):
         assert all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in metric.get_auc_score
+            ((s >= expected["min"]) & (s <= expected["max"]))
+            for s in metric.get_auc_score
         ), "Test failed."
     else:
-        assert all([(s>=expected["min"] and s<= expected["max"])
-                    for _, s_list in scores.items()
-                        for s in s_list]), "Test failed."
+        assert all(
+            [
+                (s >= expected["min"] and s <= expected["max"])
+                for _, s_list in scores.items()
+                for s in s_list
+            ]
+        ), "Test failed."
 
-"""
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1323,5 +1339,3 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-
-"""

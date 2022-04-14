@@ -1,5 +1,4 @@
 """This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
-import random
 import warnings
 from typing import Callable, Dict, List, Union
 
@@ -401,10 +400,10 @@ class RandomLogit(Metric):
                 a = np.abs(a)
 
             # Randomly select off-class labels.
-            random.seed(a=self.seed)
+            np.random.seed(self.seed)
             y_off = np.array(
                 [
-                    random.choice(
+                    np.random.choice(
                         [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
                     )
                 ]

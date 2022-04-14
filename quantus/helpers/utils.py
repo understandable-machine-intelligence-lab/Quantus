@@ -596,5 +596,5 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     return leftover_shape
 
 
-def calculate_auc(i: np.array):
-    return np.trapz(np.array(i), dx=1.0)
+def calculate_auc(i: np.array, dx: int = 1.0):
+    return np.trapz(np.array(i), dx=dx)
