@@ -167,11 +167,10 @@ class ModelParameterRandomisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -368,11 +367,10 @@ class RandomLogit(Metric):
         if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
             )
+
+        # Expand attributions to input dimensionality
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.

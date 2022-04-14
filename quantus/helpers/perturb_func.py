@@ -11,158 +11,226 @@ import scipy
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
-from .utils import get_baseline_value, offset_coordinates
-from .utils import conv2D_numpy
-
-
-def gaussian_noise(
-    arr: np.array, perturb_mean: float = 0.0, perturb_std: float = 0.01, **kwargs
-) -> np.array:
-    """Add gaussian noise to the input."""
-    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
-    return arr + noise
+from .utils import (
+    get_baseline_value,
+    blur_at_indices,
+    expand_indices,
+    get_leftover_shape,
+    offset_coordinates
+)
 
 
 def baseline_replacement_by_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
-    for_all_channels: bool = True,
+    indexed_axes: Sequence[int],
+    perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
 ) -> np.array:
     """
-    Replace indices in an array by given baseline.
-    for_all_channels: Replace complete channel for given index.
-                      Assumes channel first ordering.
+    Replace indices in an array by a given baseline.
+    arr: array to be perturbed
+    indices: array-like, with a subset shape of arr
+    indexed_axes: dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    perturb_baseline: baseline value to replace arr at indices with
     """
-    indices = np.array(indices)
-    if arr.ndim != indices.ndim:
-        if indices.ndim == 1:
-            indices = np.unravel_index(indices, arr.shape)
-        else:
-            raise ValueError("indices dimension doesn't match arr.shape")
-
-    # Make sure that array is perturbed on all channels.
-    # This can only be done if there is more than one dimension.
-    if for_all_channels and arr.ndim > 1:
-        # replace first dimension indices with slice for all channels
-        indices = slice(None), *indices[1:]
-    elif for_all_channels and arr.ndim == 1:
-        warnings.warn("for_all_channels=True but arr has no channel dimension")
-
-    if "fixed_values" in kwargs:
-        choice = kwargs["fixed_values"]
-    elif "perturb_baseline" in kwargs:
-        choice = kwargs["perturb_baseline"]
-    elif "input_shift" in kwargs:
-        choice = kwargs["input_shift"]
+    indices = expand_indices(arr, indices, indexed_axes)
+    baseline_shape = get_leftover_shape(arr, indexed_axes)
 
     arr_perturbed = copy.copy(arr)
-    baseline_value = get_baseline_value(choice=choice, arr=arr, **kwargs)
 
-    if "input_shift" in kwargs:
-        arr_shifted = copy.copy(arr)
-        arr_shifted = np.add(
-            arr_shifted,
-            np.full(shape=arr.shape, fill_value=baseline_value, dtype=float),
-        )
-        arr_perturbed[indices] = arr_shifted[indices]
-    else:
-        arr_perturbed[indices] = baseline_value
+    # Get Baseline
+    baseline_value = get_baseline_value(
+        value=perturb_baseline, arr=arr, return_shape=tuple(baseline_shape), **kwargs
+    )
+
+    # Perturb
+    arr_perturbed[indices] = np.expand_dims(baseline_value, axis=tuple(indexed_axes))
 
     return arr_perturbed
 
 
-def baseline_replacement_by_patch(
-    arr: np.array, patch_slice: Sequence, perturb_baseline: Any, **kwargs
+def baseline_replacement_by_shift(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    input_shift: Union[float, int, str, np.array],
+    **kwargs,
 ) -> np.array:
-    """Replace a single patch in an array by given baseline."""
-    if len(patch_slice) != arr.ndim:
-        raise ValueError(
-            "patch_slice dimensions don't match arr dimensions."
-            f" ({len(patch_slice)} != {arr.ndim})"
-        )
+    """
+    Shift values at indices in an image.
+    arr: array to be perturbed
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    input_shift: value to shift arr at indices with
+    """
+    indices = expand_indices(arr, indices, indexed_axes)
+    baseline_shape = get_leftover_shape(arr, indexed_axes)
 
-    # Preset patch for 'neighbourhood_*' choices.
-    patch = arr[patch_slice]
     arr_perturbed = copy.copy(arr)
-    baseline = get_baseline_value(choice=perturb_baseline, arr=arr, patch=patch)
-    arr_perturbed[patch_slice] = baseline
+
+    # Get Baseline
+    baseline_value = get_baseline_value(
+        value=input_shift, arr=arr, return_shape=tuple(baseline_shape), **kwargs
+    )
+
+    # Shift
+    arr_shifted = copy.copy(arr_perturbed)
+    arr_shifted = np.add(
+        arr_shifted,
+        np.full(
+            shape=arr_shifted.shape,
+            fill_value=np.expand_dims(baseline_value, axis=tuple(indexed_axes)),
+            dtype=float,
+        ),
+    )
+
+    arr_perturbed[indices] = arr_shifted[indices]
     return arr_perturbed
 
 
 def baseline_replacement_by_blur(
-    arr: np.array, patch_slice: Sequence, blur_kernel_size: int = 15, **kwargs
+    arr: np.array,
+    indices: Tuple[np.array],
+    indexed_axes: Sequence[int],
+    blur_kernel_size: Union[int, Sequence[int]] = 15,
+    **kwargs,
 ) -> np.array:
     """
-    Replace a single patch in an array by a blurred version.
-    Blur is performed via a 2D convolution.
-    blur_kernel_size controls the kernel-size of that convolution (Default is 15).
-    Assumes unbatched channel first format.
+    Replace array at indices by a blurred version.
+    Blur is performed via convolution.
+    arr: array to be perturbed
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    blur_kernel_size: controls the kernel-size of that convolution (Default is 15).
     """
-    nr_channels = arr.shape[0]
-    # Create blurred array.
-    blur_kernel_size = (1, *([blur_kernel_size] * (arr.ndim - 1)))
+
+    indices = expand_indices(arr, indices, indexed_axes)
+
+    # Expand blur_kernel_size
+    if isinstance(blur_kernel_size, int):
+        blur_kernel_size = [blur_kernel_size for _ in indexed_axes]
+
+    assert len(blur_kernel_size) == len(indexed_axes)
+
+    # Create kernel and expand dimensions to arr.ndim
     kernel = np.ones(blur_kernel_size, dtype=arr.dtype)
     kernel *= 1.0 / np.prod(blur_kernel_size)
-    kernel = np.tile(kernel, (nr_channels, 1, *([1] * (arr.ndim - 1))))
 
-    if arr.ndim == 3:
-        arr_avg = conv2D_numpy(
-            x=arr,
-            kernel=kernel,
-            stride=1,
-            padding=0,
-            groups=nr_channels,
-            pad_output=True,
-        )
-    elif arr.ndim == 2:
-        raise NotImplementedError("1d support not implemented yet")
-    else:
-        raise ValueError("Blur supports only 2d inputs")
+    # Compute blur array. It is only blurred at indices, otherwise it is equal to arr.
+    # We only blur at indices since otherwise n-d convolution can be quite computationally expensive
+    arr_perturbed = blur_at_indices(arr, kernel, indices, indexed_axes)
 
-    # Perturb array.
-    arr_perturbed = copy.copy(arr)
-    arr_perturbed[patch_slice] = arr_avg[patch_slice]
     return arr_perturbed
 
 
-def uniform_sampling(arr: np.array, perturb_radius: float = 0.02, **kwargs) -> np.array:
-    """Add noise to input as sampled uniformly random from L_infinity ball with a radius."""
-    noise = np.random.uniform(low=-perturb_radius, high=perturb_radius, size=arr.shape)
-    return arr + noise
+def gaussian_noise(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    perturb_mean: float = 0.0,
+    perturb_std: float = 0.01,
+    **kwargs,
+) -> np.array:
+    """
+    Add gaussian noise to the input at indices.
+    arr: array to be perturbed
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    perturb_mean: Mean for gaussian
+    perturb_std: Std for gaussian
+    """
+
+    indices = expand_indices(arr, indices, indexed_axes)
+    noise = np.random.normal(loc=perturb_mean, scale=perturb_std, size=arr.shape)
+
+    arr_perturbed = copy.copy(arr)
+    arr_perturbed[indices] = (arr_perturbed + noise)[indices]
+
+    return arr_perturbed
+
+
+def uniform_noise(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indexed_axes: Sequence[int],
+    lower_bound: float = 0.02,
+    upper_bound: Union[None, float] = None,
+    **kwargs,
+) -> np.array:
+    """
+    Add noise to the input at indices as sampled uniformly random from [-lower_bound, lower_bound]
+    if upper_bound is None, and [lower_bound, upper_bound] otherwise.
+    arr: array to be perturbed
+    indices: array-like, with a subset shape of arr
+    indexed_axes: axes of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    lower_bound: lower bound for uniform sampling
+    upper_bound: upper bound for uniform sampling
+    """
+
+    indices = expand_indices(arr, indices, indexed_axes)
+
+    if upper_bound is None:
+        noise = np.random.uniform(low=-lower_bound, high=lower_bound, size=arr.shape)
+    else:
+        assert upper_bound > lower_bound, (
+            "Parameter 'upper_bound' needs to be larger than 'lower_bound', "
+            "but {} <= {}".format(upper_bound, lower_bound)
+        )
+        noise = np.random.uniform(low=lower_bound, high=upper_bound, size=arr.shape)
+
+    arr_perturbed = copy.copy(arr)
+    arr_perturbed[indices] = (arr_perturbed + noise)[indices]
+
+    return arr_perturbed
 
 
 def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
     Rotate array by some given angle.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_angle: rotation angle
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError(
+            "perturb func 'rotation' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = cv2.getRotationMatrix2D(
-        center=(arr.shape[1] / 2, arr.shape[2] / 2),
-        angle=perturb_angle,
-        scale=1,
+        center=(arr.shape[1] / 2, arr.shape[2] / 2), angle=perturb_angle, scale=1,
     )
     arr_perturbed = cv2.warpAffine(
-        np.moveaxis(arr, 0, 2),
-        matrix,
-        (arr.shape[1], arr.shape[2]),
+        np.moveaxis(arr, 0, 2), matrix, (arr.shape[1], arr.shape[2]),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
     return arr_perturbed
 
 
 def translation_x_direction(
-    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    **kwargs,
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_baseline: value for pixels that are missing values after translation
+    perturb_dy: translation length
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError(
+            "perturb func 'translation_x_direction' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = np.float32([[1, 0, perturb_dx], [0, 1, 0]])
     arr_perturbed = cv2.warpAffine(
@@ -170,9 +238,7 @@ def translation_x_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline,
-            arr=arr,
-            **kwargs,
+            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
@@ -180,14 +246,23 @@ def translation_x_direction(
 
 
 def translation_y_direction(
-    arr: np.array, perturb_baseline: Any, perturb_dx: int = 10, **kwargs
+    arr: np.array,
+    perturb_baseline: Union[float, int, str, np.array],
+    perturb_dx: int = 10,
+    **kwargs,
 ) -> np.array:
     """
     Translate array by some given value in the x-direction.
-    Assumes channel first layout.
+    Assumes image type data and channel first layout.
+    arr: array to be perturbed
+    perturb_baseline: value for pixels that are missing values after translation
+    perturb_dy: translation length
     """
     if arr.ndim != 3:
-        raise ValueError("Check that 'perturb_func' receives a 3D array.")
+        raise ValueError(
+            "perturb func 'translation_y_direction' requires image-type data."
+            "Check that this perturb_func receives a 3D array."
+        )
 
     matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
     arr_perturbed = cv2.warpAffine(
@@ -195,9 +270,7 @@ def translation_y_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            choice=perturb_baseline,
-            arr=arr,
-            **kwargs,
+            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
