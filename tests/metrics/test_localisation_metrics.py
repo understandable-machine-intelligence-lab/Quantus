@@ -329,7 +329,7 @@ def half_in_gt_zeros_bigger_2d_3ch():
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            True
+            True,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -403,7 +403,7 @@ def half_in_gt_zeros_bigger_2d_3ch():
                 "disable_warnings": True,
                 "display_progressbar": True,
             },
-            True
+            True,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -417,10 +417,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
     ],
 )
 def test_pointing_game(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = PointingGame(**params)(
         model=model,
@@ -428,7 +428,7 @@ def test_pointing_game(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     if isinstance(expected, bool):
         assert all(s == expected for s in scores), "Test failed."
@@ -535,7 +535,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.38, # TODO: verify correctness
+            0.38,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -555,7 +555,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.98, # TODO: verify correctness
+            0.98,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -575,7 +575,7 @@ def test_pointing_game(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.4, # TODO: verify correctness
+            0.4,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -616,7 +616,7 @@ def test_pointing_game(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            2.24, # TODO: verify correctness
+            2.24,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -627,15 +627,15 @@ def test_pointing_game(
                 "disable_warnings": False,
                 "display_progressbar": False,
             },
-            5.0176, # TODO: verify correctness
+            5.0176,  # TODO: verify correctness
         ),
     ],
 )
 def test_top_k_intersection(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = TopKIntersection(**params)(
         model=model,
@@ -643,7 +643,7 @@ def test_top_k_intersection(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     print(scores, expected)
     if isinstance(expected, float):
@@ -742,7 +742,7 @@ def test_top_k_intersection(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            {"min": 0.5, "max": 1.0}, # TODO: verify correctness
+            {"min": 0.5, "max": 1.0},  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -774,10 +774,10 @@ def test_top_k_intersection(
     ],
 )
 def test_relevance_rank_accuracy(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = RelevanceRankAccuracy(**params)(
         model=model,
@@ -785,7 +785,7 @@ def test_relevance_rank_accuracy(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     if isinstance(expected, float):
         print(scores)
@@ -914,10 +914,10 @@ def test_relevance_rank_accuracy(
     ],
 )
 def test_relevance_mass_accuracy(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = RelevanceMassAccuracy(**params)(
         model=model,
@@ -925,7 +925,7 @@ def test_relevance_mass_accuracy(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
@@ -1005,7 +1005,7 @@ def test_relevance_mass_accuracy(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.0, # TODO: verify correctness
+            0.0,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1014,7 +1014,7 @@ def test_relevance_mass_accuracy(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            0.33333333333333337, # TODO: verify correctness
+            0.33333333333333337,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
@@ -1037,10 +1037,10 @@ def test_relevance_mass_accuracy(
     ],
 )
 def test_auc(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = AUC(**params)(
         model=model,
@@ -1048,7 +1048,7 @@ def test_auc(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), f"Test failed. {scores[0]}"
@@ -1113,7 +1113,7 @@ def test_auc(
                 "disable_warnings": True,
                 "display_progressbar": False,
             },
-            {"min": 0.8, "max": 0.95}, # TODO: verify correctness
+            {"min": 0.8, "max": 0.95},  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1190,10 +1190,10 @@ def test_auc(
     ],
 )
 def test_attribution_localisation(
-        model,
-        data: dict,
-        params: dict,
-        expected: Union[bool, dict],
+    model,
+    data: dict,
+    params: dict,
+    expected: Union[bool, dict],
 ):
     scores = AttributionLocalisation(**params)(
         model=model,
@@ -1201,7 +1201,7 @@ def test_attribution_localisation(
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params
+        **params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."

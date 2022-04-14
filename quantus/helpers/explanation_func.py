@@ -7,6 +7,9 @@ import random
 from importlib import util
 import cv2
 import warnings
+from .utils import *
+from .normalise_func import *
+from ..helpers import __EXTRAS__
 
 if util.find_spec("torch"):
     import torch
@@ -209,10 +212,12 @@ def generate_tf_explanation(
         or not kwargs.get("abs", True)
         or not kwargs.get("pos_only", True)
         or kwargs.get("neg_only", False)
+        or kwargs.get("reduce_axes", None) is not None
     ):
         raise KeyError(
             "Only normalized absolute explanations are currently supported for TensorFlow models (tf-explain). "
-            "Set normalise=true, abs=true, pos_only=true, neg_only=false."
+            "Set normalise=true, abs=true, pos_only=true, neg_only=false. reduce_axes parameter is not available; "
+            "explanations are always reduced over channel axis."
         )
 
     return explanation
@@ -237,14 +242,15 @@ def generate_captum_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
 
-    """ TODO: why is this needed?
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
+    assert 0 not in kwargs.get(
+        "reduce_axes", [1]
+    ), "Reduction over batch_axis is not available, please do not include axis 0 in 'reduce_axes' kwarg."
+    assert len(kwargs.get("reduce_axes", [1])) <= inputs.ndim - 1, (
+        "Cannot reduce attributions over more axes than each sample has dimensions, but got "
+        "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
-    """
+
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
@@ -256,7 +262,7 @@ def generate_captum_explanation(
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
 
     elif method == "IntegratedGradients".lower():
@@ -269,26 +275,28 @@ def generate_captum_explanation(
                 n_steps=10,
                 method="riemann_trapezoid",
             )
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
 
     elif method == "InputXGradient".lower():
         explanation = (
-            InputXGradient(model).attribute(inputs=inputs, target=targets).sum(axis=1)
+            InputXGradient(model)
+            .attribute(inputs=inputs, target=targets)
+            .sum(**reduce_axes)
         )
 
     elif method == "Saliency".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=True)
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
 
     elif method == "Gradient".lower():
         explanation = (
             Saliency(model)
             .attribute(inputs=inputs, target=targets, abs=False)
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
 
     elif method == "Occlusion".lower():
@@ -296,16 +304,16 @@ def generate_captum_explanation(
         explanation = (
             Occlusion(model)
             .attribute(
-                inputs=inputs,
-                target=targets,
-                sliding_window_shapes=window_shape,
+                inputs=inputs, target=targets, sliding_window_shapes=window_shape,
             )
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
 
     elif method == "FeatureAblation".lower():
         explanation = (
-            FeatureAblation(model).attribute(inputs=inputs, target=targets).sum(axis=1)
+            FeatureAblation(model)
+            .attribute(inputs=inputs, target=targets)
+            .sum(**reduce_axes)
         )
 
     elif method == "GradCam".lower():
@@ -320,26 +328,19 @@ def generate_captum_explanation(
         explanation = (
             LayerGradCam(model, layer=kwargs["gc_layer"])
             .attribute(inputs=inputs, target=targets)
-            .sum(axis=1)
+            .sum(**reduce_axes)
         )
-        """ TODO: why is this needed?
-        explanation = torch.Tensor(
-            cv2.resize(
-                explanation.cpu().data.numpy(),
-                dsize=(kwargs.get("img_size", 224), kwargs.get("img_size", 224)),
-            )
-        )
-        """
 
     elif method == "Control Var. Sobel Filter".lower():
-        explanation = torch.zeros(size=(inputs.shape[0], *inputs.shape[2:]))
+        explanation = torch.zeros(size=inputs.shape)
 
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
-                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1).mean(axis=0)
+                np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
                 # TODO: why is this needed?
                 # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
+        explanation = explanation.mean(**reduce_axes)
 
     elif method == "Control Var. Random Uniform".lower():
         explanation = torch.rand(size=(inputs.shape[0], *inputs.shape[2:]))
@@ -349,16 +350,18 @@ def generate_captum_explanation(
             "constant_value" in kwargs
         ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
 
-        explanation = torch.zeros(size=(inputs.shape[0], *inputs.shape[2:]))
+        explanation = torch.zeros(size=inputs.shape)
 
         # Update the tensor with values per input x.
         for i in range(explanation.shape[0]):
             constant_value = get_baseline_value(
-                choice=kwargs["constant_value"], arr=inputs[i]
-            )
+                value=kwargs["constant_value"], arr=inputs[i], return_shape=(1,)
+            )[0]
             explanation[i] = torch.Tensor().new_full(
                 size=explanation[0].shape, fill_value=constant_value
             )
+
+        explanation = explanation.mean(**reduce_axes)
 
     else:
         raise KeyError(
@@ -394,6 +397,17 @@ def generate_zennit_explanation(
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with zennit."""
+
+    assert 0 not in kwargs.get(
+        "reduce_axes", [1]
+    ), "Reduction over batch_axis is not available, please do not include axis 0 in 'reduce_axes' kwarg."
+    assert len(kwargs.get("reduce_axes", [1])) <= inputs.ndim - 1, (
+        "Cannot reduce attributions over more axes than each sample has dimensions, but got "
+        "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
+    )
+
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
+
     # Get zennit composite, canonizer, attributor
     # Handle canonizer kwarg
     canonizer = kwargs.get("canonizer", None)
@@ -404,7 +418,6 @@ def generate_zennit_explanation(
         )
 
     # Handle attributor kwarg
-    # TODO: we could create a str --> attributor mapping, but I like this better
     attributor = kwargs.get("attributor", zattr.Gradient)
     if not issubclass(attributor, zattr.Attributor):
         raise ValueError(
@@ -440,38 +453,33 @@ def generate_zennit_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
 
-    """ TODO: why is this needed?
-    inputs = inputs.reshape(
-        -1,
-        kwargs.get("nr_channels", 3),
-        kwargs.get("img_size", 224),
-        kwargs.get("img_size", 224),
-    )
-    """
+    # Get kwargs
+    canonizer_kwargs = kwargs.get("canonizer_kwargs", {})
+    composite_kwargs = kwargs.get("composite_kwargs", {})
+    attributor_kwargs = kwargs.get("attributor_kwargs", {})
 
     # Initialize canonizer, composite, and attributor
     if canonizer is not None:
-        canonizers = [canonizer()]
+        canonizers = [canonizer(**canonizer_kwargs)]
     else:
         canonizers = []
     if composite is not None:
-        # TODO: only uses default parameters for each method for now
-        composite = composite(canonizers=canonizers)
-    # TODO: only uses default parameters for each method for now
-    attributor = attributor(model, composite)
+        composite = composite(**{**composite_kwargs, "canonizers": canonizers,})
+    attributor = attributor(
+        **{**attributor_kwargs, "model": model, "composite": composite,}
+    )
 
-    # TODO: there may be a better solution here?
     n_outputs = model(inputs).shape[1]
 
     # Get Attributions
     with attributor:
-
-        # TODO: this assumes one-hot encoded target outputs (e.g., initial relevance).
-        #  Better solution with more choices?
-        eye = torch.eye(n_outputs, device=device)
-        output_target = eye[targets]
-        output_target = output_target.reshape(-1, n_outputs)
-        _, explanation = attributor(inputs, output_target)
+        if "attr_output" in attributor_kwargs.keys():
+            _, explanation = attributor(inputs, None)
+        else:
+            eye = torch.eye(n_outputs, device=device)
+            output_target = eye[targets]
+            output_target = output_target.reshape(-1, n_outputs)
+            _, explanation = attributor(inputs, output_target)
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
@@ -479,9 +487,8 @@ def generate_zennit_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    # TODO: Include alternatives here?
-    # Remove channel axis
-    explanation = np.sum(explanation, axis=1)
+    # Sum over axes
+    explanation = np.sum(explanation, **reduce_axes)
 
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
