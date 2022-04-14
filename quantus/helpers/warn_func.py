@@ -68,4 +68,6 @@ def deprecation_warnings(kwargs: dict = {}) -> None:
         text += "argument 'img_size' is deprecated and will be removed in future versions.\n"
     if "nr_channels" in kwargs:
         text = "argument 'nr_channels' is deprecated and will be removed in future versions.\n"
+    if "max_steps_per_input" in kwargs:
+        text = "argument 'max_steps_per_input' is deprecated and will be removed in future versions.\n"
     print(text)

@@ -130,14 +130,15 @@ class PointingGame(Metric):
             >> metric = PointingGame(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -166,14 +167,14 @@ class PointingGame(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
@@ -336,14 +337,15 @@ class AttributionLocalisation(Metric):
             >> metric = AttributionLocalisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -372,14 +374,14 @@ class AttributionLocalisation(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
@@ -558,14 +560,15 @@ class TopKIntersection(Metric):
             >> metric = TopKIntersection(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -594,7 +597,7 @@ class TopKIntersection(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -604,7 +607,7 @@ class TopKIntersection(Metric):
             x=x_batch_s, value=self.k, value_name="k"
         )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
@@ -759,14 +762,15 @@ class RelevanceRankAccuracy(Metric):
             >> metric = RelevanceRankAccuracy(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -795,14 +799,14 @@ class RelevanceRankAccuracy(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
@@ -955,14 +959,15 @@ class RelevanceMassAccuracy(Metric):
             >> metric = RelevanceMassAccuracy(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -991,14 +996,14 @@ class RelevanceMassAccuracy(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:
@@ -1142,14 +1147,15 @@ class AUC(Metric):
             >> metric = AUC(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **params_call}
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1178,14 +1184,14 @@ class AUC(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
         else:

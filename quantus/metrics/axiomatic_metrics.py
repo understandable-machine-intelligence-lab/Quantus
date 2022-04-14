@@ -155,7 +155,7 @@ class Completeness(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -184,13 +184,13 @@ class Completeness(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -286,7 +286,6 @@ class NonSensitivity(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -394,7 +393,7 @@ class NonSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -404,17 +403,8 @@ class NonSensitivity(Metric):
             features_in_step=self.features_in_step,
             input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -591,7 +581,7 @@ class InputInvariance(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -618,13 +608,13 @@ class InputInvariance(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:

@@ -160,7 +160,8 @@ class LocalLipschitzEstimate(Metric):
             >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -196,13 +197,13 @@ class LocalLipschitzEstimate(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -396,7 +397,8 @@ class MaxSensitivity(Metric):
             >> metric = MaxSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -432,13 +434,13 @@ class MaxSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -632,7 +634,8 @@ class AvgSensitivity(Metric):
             >> metric = AvgSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -668,13 +671,13 @@ class AvgSensitivity(Metric):
                 **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -868,7 +871,8 @@ class Continuity(Metric):
             >> metric = Continuity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -912,14 +916,14 @@ class Continuity(Metric):
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # Get number of patches for input shape (ignore batch and channel dim)
+        # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
             patch_size=self.patch_size,
             shape=x_batch_s.shape[2:],
             overlap=True,
         )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
