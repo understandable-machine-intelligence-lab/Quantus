@@ -10,7 +10,7 @@ from ...quantus.helpers import *
 from ...quantus.helpers import perturb_func
 from ...quantus.helpers.explanation_func import explain
 
-"""
+
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -1174,7 +1174,7 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-"""
+
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1248,8 +1248,6 @@ def test_infidelity(
 
     assert score is not None, "Test failed."
 
-
-"""
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1329,4 +1327,4 @@ def test_ROAD(
     assert (scores[min_ind] <= expected["max"]) & (
         scores[max_ind] >= expected["min"]
     ), "Test failed."
-"""
+
