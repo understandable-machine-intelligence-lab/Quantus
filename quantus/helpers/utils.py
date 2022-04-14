@@ -1,6 +1,5 @@
 """This module contains the utils functions of the library."""
 import re
-import random
 import copy
 import numpy as np
 from typing import Callable, List, Optional, Sequence, Tuple, Union
@@ -92,7 +91,7 @@ def get_baseline_dict(
     if patch is not None:
         fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
         fill_dict["neighbourhood_random_min_max"] = float(
-            random.uniform(patch.min(), patch.max())
+            np.random.uniform(low=patch.min(), high=patch.max())
         )
     return fill_dict
 
