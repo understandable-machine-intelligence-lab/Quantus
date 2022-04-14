@@ -46,41 +46,6 @@ def assert_model_predictions_correct(
         return False
 
 
-def set_warn(call):
-    # TODO. Implement warning logic of decorator if text_warning is an attribute in class.
-    def call_fn(*args):
-        return call_fn
-
-    return call
-    # attr = call.__dict__
-    # print(dir(call))
-    # attr = {}
-    # if "text_warning" in attr:
-    #    call.print_warning(text=attr["text_warning"])
-    # else:
-    #    print("Do nothing.")
-    #    pass
-
-
-def assert_features_in_step(
-    features_in_step: int, input_shape: Tuple[int, ...]
-) -> None:
-    """Assert that features in step is compatible with the image size."""
-    assert np.prod(input_shape) % features_in_step == 0, (
-        "Set 'features_in_step' so that the modulo remainder "
-        "returns zero given the product of the input shape."
-        f" ({np.prod(input_shape)} % {features_in_step} != 0)"
-    )
-
-
-def assert_max_steps(max_steps_per_input: int, input_shape: Tuple[int, ...]) -> None:
-    """Assert that max steps per inputs is compatible with the image size."""
-    assert np.prod(input_shape) % max_steps_per_input == 0, (
-        "Set 'max_steps_per_input' so that the modulo remainder "
-        "returns zero given the product of the input shape."
-    )
-
-
 def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
     """Assert that patch size is compatible with given shape."""
     if isinstance(patch_size, int):
