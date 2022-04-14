@@ -32,7 +32,9 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(img,)
+        return felzenszwalb(
+            img,
+        )
 
 
 def get_baseline_value(
@@ -418,6 +420,7 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
 
         return np.expand_dims(a_batch, axis=tuple(expand_axes))
 
+
 # TODO: adapt for batched processing
 def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
     """
@@ -501,6 +504,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
     )
 
+
 # TODO: adapt for batched processing (if necessary)
 def expand_indices(
     arr: np.array,
@@ -567,6 +571,7 @@ def expand_indices(
         expanded_indices = slice(None), *expanded_indices
 
     return tuple(expanded_indices)
+
 
 # TODO: adapt for batched processing (if necessary)
 def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:

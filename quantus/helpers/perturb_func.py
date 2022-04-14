@@ -200,10 +200,14 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
         )
 
     matrix = cv2.getRotationMatrix2D(
-        center=(arr.shape[1] / 2, arr.shape[2] / 2), angle=perturb_angle, scale=1,
+        center=(arr.shape[1] / 2, arr.shape[2] / 2),
+        angle=perturb_angle,
+        scale=1,
     )
     arr_perturbed = cv2.warpAffine(
-        np.moveaxis(arr, 0, 2), matrix, (arr.shape[1], arr.shape[2]),
+        np.moveaxis(arr, 0, 2),
+        matrix,
+        (arr.shape[1], arr.shape[2]),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
     return arr_perturbed
@@ -234,7 +238,10 @@ def translation_x_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
+            value=perturb_baseline,
+            arr=arr,
+            return_shape=(arr.shape[0]),
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
@@ -266,7 +273,10 @@ def translation_y_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
+            value=perturb_baseline,
+            arr=arr,
+            return_shape=(arr.shape[0]),
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)

@@ -21,6 +21,13 @@ def warn_absolutes_applied() -> None:
     )
 
 
+def warn_absolutes_requirement() -> None:
+    print(
+        "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
+        "since it is required by the metric."
+    )
+
+
 def warn_absolutes_skipped() -> None:
     print(
         "An absolute operation on the attributions is skipped "
