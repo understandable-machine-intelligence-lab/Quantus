@@ -291,6 +291,8 @@ def noisy_linear_imputation(
     Based on https://github.com/tleemann/road_evaluation.
     Calculates noisy linear imputation for the given array and a list of indices indicating which elements are not
     included in the mask.
+    arr: array to be perturbed
+    indices: array-like, subset of all indices in the array to not be included in the mask.
     """
     offset_weight = [
         ((1, 1), 1 / 12),
@@ -315,7 +317,7 @@ def noisy_linear_imputation(
     a = lil_matrix((len(indices), len(indices)))
     # Equation system right-hand side
     b = np.zeros((len(indices), arr.shape[0]))
-    sum_neighbors = np.ones(len(indices))  # Sum of weights assigned
+    sum_neighbors = np.ones(len(indices))
 
     for n in offset_weight:
         offset, weight = n[0], n[1]

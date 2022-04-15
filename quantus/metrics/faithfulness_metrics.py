@@ -2214,11 +2214,11 @@ class SensitivityN(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -2428,14 +2428,6 @@ class Infidelity(Metric):
             if self.normalise:
                 a = self.normalise_func(a)
 
-            # Copy the input x but fill with baseline values.
-            baseline_value = utils.get_baseline_value(
-                value=self.perturb_baseline,
-                arr=x,
-                return_shape=(1,),
-            )
-            x_baseline = np.full(x.shape, baseline_value).flatten()
-
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(
@@ -2486,7 +2478,7 @@ class Infidelity(Metric):
                             )
 
                             # Predict on perturbed input x_perturbed.
-                            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+                            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                             y_pred_perturb = float(
                                 model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
                             )
@@ -2518,8 +2510,8 @@ class ROAD(Metric):
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
 
     The ROAD approach measures the accuracy of the model on the provided test set at each step of an iterative process
-    of removing k most important pixels. At each step k most relevant pixels (MoRF order) are replaced with a filling
-    value and accuracy is measured.
+    of removing k most important pixels. At each step k most relevant pixels (MoRF order) are replaced with noisy linear
+    imputations which removes bias.
 
     References:
         1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
