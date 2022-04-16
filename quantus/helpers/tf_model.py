@@ -19,7 +19,7 @@ class TensorFlowModel(ModelInterface):
 
     def predict(self, x, **kwargs):
         """Predict on the given input."""
-        
+
         softmax_act = kwargs.get("softmax", False)
 
         output_act = self.model.layers[-1].activation

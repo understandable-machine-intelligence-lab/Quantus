@@ -1,5 +1,4 @@
 """This module contains the collection of randomisation metrics to evaluate attribution-based explanations of neural network models."""
-import random
 import warnings
 from typing import Callable, Dict, List, Union
 
@@ -137,14 +136,15 @@ class ModelParameterRandomisation(Metric):
             >> metric = ModelParameterRandomisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -167,10 +167,13 @@ class ModelParameterRandomisation(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
@@ -199,13 +202,13 @@ class ModelParameterRandomisation(Metric):
 
             for ix, (a, a_per) in enumerate(zip(a_batch, a_perturbed)):
 
-                if self.abs:
-                    a = np.abs(a)
-                    a_per = np.abs(a_per)
-
                 if self.normalise:
                     a = self.normalise_func(a)
                     a_per = self.normalise_func(a_per)
+
+                if self.abs:
+                    a = np.abs(a)
+                    a_per = np.abs(a_per)
 
                 # Compute distance measure.
                 similarity = self.similarity_func(a_per.flatten(), a.flatten())
@@ -338,14 +341,15 @@ class RandomLogit(Metric):
             >> metric = RandomLogit(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -367,16 +371,19 @@ class RandomLogit(Metric):
         if a_batch is None:
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -386,17 +393,17 @@ class RandomLogit(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
 
+            if self.abs:
+                a = np.abs(a)
+
             # Randomly select off-class labels.
-            random.seed(a=self.seed)
+            np.random.seed(self.seed)
             y_off = np.array(
                 [
-                    random.choice(
+                    np.random.choice(
                         [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
                     )
                 ]
@@ -410,11 +417,11 @@ class RandomLogit(Metric):
                 **self.kwargs,
             )
 
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
-
             if self.normalise:
                 a_perturbed = self.normalise_func(a_perturbed)
+
+            if self.abs:
+                a_perturbed = np.abs(a_perturbed)
 
             self.last_results.append(
                 self.similarity_func(a.flatten(), a_perturbed.flatten())
