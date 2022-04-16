@@ -3,13 +3,13 @@ from typing import Dict, Optional, Union
 
 import numpy as np
 import scipy
-import random
 from importlib import util
 import cv2
 import warnings
 from .utils import *
 from .normalise_func import *
 from ..helpers import __EXTRAS__
+from ..helpers import constants
 
 if util.find_spec("torch"):
     import torch
@@ -182,7 +182,7 @@ def generate_tf_explanation(
     elif method == "GradCam".lower():
         if "gc_layer" not in kwargs:
             raise ValueError(
-                "Specify convolutional layer name as 'gc_layer' to run GradCam."
+                "Specify a convolutional layer name as 'gc_layer' to run GradCam."
             )
 
         explainer = tf_explain.core.grad_cam.GradCAM()
@@ -204,8 +204,8 @@ def generate_tf_explanation(
 
     else:
         raise KeyError(
-            "Specify a XAI method that already has been implemented {}."
-        ).__format__("XAI_METHODS")
+            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS}."
+        )
 
     if (
         not kwargs.get("normalise", True)
@@ -231,7 +231,9 @@ def generate_captum_explanation(
     **kwargs,
 ) -> np.ndarray:
     """Generate explanation for a torch model with captum."""
+
     method = kwargs.get("method", "Gradient").lower()
+
     # Set model in evaluate mode.
     model.to(device)
     model.eval()
@@ -244,7 +246,7 @@ def generate_captum_explanation(
 
     assert 0 not in kwargs.get(
         "reduce_axes", [1]
-    ), "Reduction over batch_axis is not available, please do not include axis 0 in 'reduce_axes' kwarg."
+    ), "Reduction over batch_axis is not available, please do not include axis 0 in 'reduce_axes' kwargs."
     assert len(kwargs.get("reduce_axes", [1])) <= inputs.ndim - 1, (
         "Cannot reduce attributions over more axes than each sample has dimensions, but got "
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
@@ -304,7 +306,9 @@ def generate_captum_explanation(
         explanation = (
             Occlusion(model)
             .attribute(
-                inputs=inputs, target=targets, sliding_window_shapes=window_shape,
+                inputs=inputs,
+                target=targets,
+                sliding_window_shapes=window_shape,
             )
             .sum(**reduce_axes)
         )
@@ -337,8 +341,6 @@ def generate_captum_explanation(
         for i in range(len(explanation)):
             explanation[i] = torch.Tensor(
                 np.clip(scipy.ndimage.sobel(inputs[i].cpu().numpy()), 0, 1)
-                # TODO: why is this needed?
-                # .reshape(kwargs.get("img_size", 224), kwargs.get("img_size", 224))
             )
         explanation = explanation.mean(**reduce_axes)
 
@@ -365,8 +367,8 @@ def generate_captum_explanation(
 
     else:
         raise KeyError(
-            "Specify a XAI method that already has been implemented {}."
-        ).__format__("XAI_METHODS")
+            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS}."
+        )
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
@@ -408,8 +410,7 @@ def generate_zennit_explanation(
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
-    # Get zennit composite, canonizer, attributor
-    # Handle canonizer kwarg
+    # Get zennit composite, canonizer, attributor and handle canonizer kwargs.
     canonizer = kwargs.get("canonizer", None)
     if not canonizer == None and not issubclass(canonizer, zcanon.Canonizer):
         raise ValueError(
@@ -417,7 +418,7 @@ def generate_zennit_explanation(
             "Please provide None or an instance of zennit.canonizers.Canonizer"
         )
 
-    # Handle attributor kwarg
+    # Handle attributor kwargs.
     attributor = kwargs.get("attributor", zattr.Gradient)
     if not issubclass(attributor, zattr.Attributor):
         raise ValueError(
@@ -425,7 +426,7 @@ def generate_zennit_explanation(
             "Please provide a subclass of zennit.attributon.Attributor"
         )
 
-    # Handle composite kwarg
+    # Handle attributor kwargs.
     composite = kwargs.get("composite", None)
     if not composite == None and isinstance(composite, str):
         if composite not in zcomp.COMPOSITES.keys():
@@ -444,6 +445,7 @@ def generate_zennit_explanation(
                 composite, zcomp.COMPOSITES.keys()
             )
         )
+
     # Set model in evaluate mode.
     model.eval()
 
@@ -453,25 +455,33 @@ def generate_zennit_explanation(
     if not isinstance(targets, torch.Tensor):
         targets = torch.as_tensor(targets).to(device)
 
-    # Get kwargs
     canonizer_kwargs = kwargs.get("canonizer_kwargs", {})
     composite_kwargs = kwargs.get("composite_kwargs", {})
     attributor_kwargs = kwargs.get("attributor_kwargs", {})
 
-    # Initialize canonizer, composite, and attributor
+    # Initialize canonizer, composite, and attributor.
     if canonizer is not None:
         canonizers = [canonizer(**canonizer_kwargs)]
     else:
         canonizers = []
     if composite is not None:
-        composite = composite(**{**composite_kwargs, "canonizers": canonizers,})
+        composite = composite(
+            **{
+                **composite_kwargs,
+                "canonizers": canonizers,
+            }
+        )
     attributor = attributor(
-        **{**attributor_kwargs, "model": model, "composite": composite,}
+        **{
+            **attributor_kwargs,
+            "model": model,
+            "composite": composite,
+        }
     )
 
     n_outputs = model(inputs).shape[1]
 
-    # Get Attributions
+    # Get the attributions.
     with attributor:
         if "attr_output" in attributor_kwargs.keys():
             _, explanation = attributor(inputs, None)
@@ -487,7 +497,7 @@ def generate_zennit_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    # Sum over axes
+    # Sum over the axes.
     explanation = np.sum(explanation, **reduce_axes)
 
     if kwargs.get("normalise", False):

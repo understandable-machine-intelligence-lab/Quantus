@@ -155,7 +155,7 @@ class Completeness(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -178,16 +178,19 @@ class Completeness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -195,11 +198,11 @@ class Completeness(Metric):
 
         for x, y, a in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             print(self.kwargs)
 
@@ -283,7 +286,6 @@ class NonSensitivity(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -385,29 +387,24 @@ class NonSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -417,11 +414,11 @@ class NonSensitivity(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
@@ -438,14 +435,19 @@ class NonSensitivity(Metric):
                 for _ in range(self.n_samples):
                     # Perturb input by indices of attributions.
                     x_perturbed = self.perturb_func(
-                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                        arr=x,
+                        indices=a_ix,
+                        indexed_axes=a_axes,
+                        **self.kwargs,
                     )
 
                     # Predict on perturbed input x.
                     x_input = model.shape_input(
                         x_perturbed, x.shape, channel_first=True
                     )
-                    y_pred_perturbed = float(model.predict(x_input, **self.kwargs)[:, y])
+                    y_pred_perturbed = float(
+                        model.predict(x_input, **self.kwargs)[:, y]
+                    )
                     preds.append(y_pred_perturbed)
 
                     vars.append(np.var(preds))
@@ -579,7 +581,7 @@ class InputInvariance(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -600,16 +602,19 @@ class InputInvariance(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -617,11 +622,11 @@ class InputInvariance(Metric):
 
         for x, y, a in iterator:
 
-            if self.abs:
-                warn_func.warn_absolutes_skipped()
-
             if self.normalise:
                 warn_func.warn_normalisation_skipped()
+
+            if self.abs:
+                warn_func.warn_absolutes_skipped()
 
             x_shifted = self.perturb_func(
                 arr=x,

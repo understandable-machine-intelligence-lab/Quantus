@@ -130,14 +130,15 @@ class Sparseness(Metric):
             >> metric = Sparseness(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -160,16 +161,19 @@ class Sparseness(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -179,20 +183,18 @@ class Sparseness(Metric):
 
             a = a.flatten()
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-                    "since otherwise inconsistent results can be expected."
-                )
-
-            if self.normalise:
-                a = self.normalise_func(a)
+                warn_func.warn_absolutes_applied()
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
             )
             a += 0.0000001
             a = np.sort(a)
@@ -317,14 +319,15 @@ class Complexity(Metric):
             >> metric = Complexity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -347,7 +350,10 @@ class Complexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality
@@ -356,7 +362,7 @@ class Complexity(Metric):
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -364,20 +370,18 @@ class Complexity(Metric):
 
         for x, y, a in iterator:
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
-                print(
-                    "An absolute operation is applied on the attributions (regardless of the 'abs' parameter value)"
-                    "since it is required by the metric."
-                )
-
-            if self.normalise:
-                a = self.normalise_func(a)
+                warn_func.warn_absolutes_requirement()
 
             a = np.array(
-                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)), dtype=np.float64,
+                np.reshape(a, (np.prod(x_batch_s.shape[2:]),)),
+                dtype=np.float64,
             ) / np.sum(np.abs(a))
 
             self.last_results.append(scipy.stats.entropy(pk=a))
@@ -504,7 +508,7 @@ class EffectiveComplexity(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -527,16 +531,19 @@ class EffectiveComplexity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -546,14 +553,14 @@ class EffectiveComplexity(Metric):
 
             a = a.flatten()
 
+            if self.normalise:
+                a = self.normalise_func(a)
+
             if self.abs:
                 a = np.abs(a)
             else:
                 a = np.abs(a)
                 warn_func.warn_absolutes_applied()
-
-            if self.normalise:
-                a = self.normalise_func(a)
 
             self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
 

@@ -759,7 +759,7 @@ def test_get_nr_patches(params: dict, expected: Any):
     assert out == expected["value"]
 
 
-#TODO: Change test cases (and function) for batching update, since currently single images are expected
+# TODO: Change test cases (and function) for batching update, since currently single images are expected
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "params,expected",
@@ -867,7 +867,7 @@ def test_infer_attribution_axes(params: dict, expected: Any):
     assert all([a == b for a, b in list(zip(out, expected["value"]))])
 
 
-#TODO: Change test cases (and function) for batching update, since currently single images are expected
+# TODO: Change test cases (and function) for batching update, since currently single images are expected
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "params,expected",
@@ -958,8 +958,7 @@ def test_expand_indices(params: dict, expected: Any):
     assert all([np.all(a == b) for a, b in list(zip(out, expected["value"]))])
 
 
-
-#TODO: Change test cases (and function) for batching update, since currently single images are expected
+# TODO: Change test cases (and function) for batching update, since currently single images are expected
 @pytest.mark.utils
 @pytest.mark.parametrize(
     "params,expected",

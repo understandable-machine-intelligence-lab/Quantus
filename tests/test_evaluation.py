@@ -145,7 +145,7 @@ def test_evaluate_func(
         targets=y_batch,
         **params,
     )
-    
+
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             results = evaluate(
