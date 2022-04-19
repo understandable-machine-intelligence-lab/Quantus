@@ -584,6 +584,7 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     """
     Checks if offset coordinates are within the image frame. Return offset coordinates for valid indices and the
     list of booleans which identifies valid ids.
+    Based on https://github.com/tleemann/road_evaluation.
     indices (list): list of indices to be offset.
     offset (tuple): offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
     img_shape (tuple): image shape in (channels, height, width) format.
