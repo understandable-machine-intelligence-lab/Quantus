@@ -2374,8 +2374,49 @@ class Infidelity(Metric):
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Infidelity(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -2384,7 +2425,7 @@ class Infidelity(Metric):
 
         self.nr_channels = x_batch_s.shape[1]
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -2407,14 +2448,14 @@ class Infidelity(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -2422,11 +2463,11 @@ class Infidelity(Metric):
 
         for x, y, a in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+            
+            if self.abs:
+                a = np.abs(a)
 
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -2472,7 +2513,7 @@ class Infidelity(Metric):
                                 **self.kwargs,
                             )
 
-                            # Remove Padding
+                            # Remove padding.
                             x_perturbed = utils._unpad_array(
                                 x_perturbed_pad, pad_width, padded_axes=a_axes
                             )
@@ -2583,15 +2624,56 @@ class ROAD(Metric):
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a dictionary whose values contains a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = ROAD(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -2615,12 +2697,12 @@ class ROAD(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        self.img_size = a_batch[0, :, :].size
+        img_size = a_batch[0, :, :].size
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -2636,17 +2718,19 @@ class ROAD(Metric):
         }
 
         for sample, (x, y, a) in iterator:
-            # Predict on input.
-            if self.abs:
-                a = np.abs(a)
 
             if self.normalise:
                 a = self.normalise_func(a)
-
+            
+            if self.abs:
+                a = np.abs(a)
+            
+            # Order indicies.
             ordered_indices = np.argsort(a, axis=None)[::-1]
 
             for p in self.percentages:
-                top_k_indices = ordered_indices[:int(self.img_size*p/100)]
+                
+                top_k_indices = ordered_indices[:int(img_size*p/100)]
 
                 x_perturbed = self.perturb_func(
                     arr=x,
