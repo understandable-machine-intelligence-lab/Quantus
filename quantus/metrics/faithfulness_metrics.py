@@ -4,6 +4,7 @@ import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
+from tqdm import tqdm
 
 from .base import Metric
 from ..helpers import asserts
