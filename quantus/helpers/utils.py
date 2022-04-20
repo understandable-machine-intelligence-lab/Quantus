@@ -1,6 +1,5 @@
 """This module contains the utils functions of the library."""
 import re
-import random
 import copy
 import numpy as np
 from typing import Callable, List, Optional, Sequence, Tuple, Union
@@ -32,7 +31,9 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(img,)
+        return felzenszwalb(
+            img,
+        )
 
 
 def get_baseline_value(
@@ -58,7 +59,14 @@ def get_baseline_value(
                 )
             )
     elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch)
+        fill_dict = get_baseline_dict(arr, patch, **kwargs)
+        if value.lower() == "random":
+            raise ValueError(
+                "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
+                "the current release. Please use 'uniform' instead and pass lower- and upper bounds to "
+                "kwargs as see fit (default values are set to 'uniform_low=0.0' and 'uniform_high=1.0' "
+                "which will replicate the results of 'random').\n"
+            )
         if value.lower() not in fill_dict:
             raise ValueError(f"Ensure that 'value'(str) is in {list(fill_dict.keys())}")
         return np.full(return_shape, fill_dict[value.lower()])
@@ -66,19 +74,24 @@ def get_baseline_value(
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")
 
 
-def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
+def get_baseline_dict(
+    arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
+) -> dict:
     """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
     fill_dict = {
         "mean": float(arr.mean()),
-        "random": float(random.random()),
-        "uniform": float(random.uniform(arr.min(), arr.max())),
+        "uniform": float(
+            np.random.uniform(
+                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0)
+            )
+        ),
         "black": float(arr.min()),
         "white": float(arr.max()),
     }
     if patch is not None:
         fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
         fill_dict["neighbourhood_random_min_max"] = float(
-            random.uniform(patch.min(), patch.max())
+            np.random.uniform(low=patch.min(), high=patch.max())
         )
     return fill_dict
 
@@ -418,6 +431,7 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
 
         return np.expand_dims(a_batch, axis=tuple(expand_axes))
 
+
 # TODO: adapt for batched processing
 def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
     """
@@ -501,6 +515,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         "shape {} and attributions of shape {}".format(x_batch.shape, a_batch.shape)
     )
 
+
 # TODO: adapt for batched processing (if necessary)
 def expand_indices(
     arr: np.array,
@@ -568,11 +583,12 @@ def expand_indices(
 
     return tuple(expanded_indices)
 
-# TODO: adapt for batched processing (if necessary)
+
 def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     """
     Gets the shape of the arr dimensions not included in axes
     """
+    # TODO: adapt for batched processing (if necessary).
     axes = np.sort(np.array(axes))
     asserts.assert_indexed_axes(arr, axes)
 
@@ -597,3 +613,6 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     off_coords = indices + offset[0] * img_shape[2] + offset[1]
     return off_coords[valid], valid
 
+  
+def calculate_auc(i: np.array, dx: int = 1.0):
+    return np.trapz(np.array(i), dx=dx)

@@ -89,7 +89,10 @@ def evaluate(
 
                 # Generate explanations.
                 a_batch = method_func(
-                    model=model, inputs=x_batch, targets=y_batch, **kwargs,
+                    model=model,
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **kwargs,
                 )
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
