@@ -14,8 +14,9 @@ from ..helpers import warn_func
 from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.similar_func import correlation_pearson, correlation_spearman
+from ..helpers.similar_func import correlation_pearson, correlation_spearman, mse
 from ..helpers.perturb_func import baseline_replacement_by_indices
+from ..helpers.perturb_func import noisy_linear_imputation
 
 
 class FaithfulnessCorrelation(Metric):
@@ -153,7 +154,7 @@ class FaithfulnessCorrelation(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
+            >> metric = FaithfulnessCorrelation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -601,7 +602,7 @@ class IterativeRemovalOfFeatures(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = IROF(abs=True, normalise=False)
+            >> metric = IROF(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -711,9 +712,9 @@ class IterativeRemovalOfFeatures(Metric):
             self.last_results = [np.mean(self.last_results)]
         else:
             self.last_results = self.last_results
-
+        
         self.all_results.append(self.last_results)
-
+    
         return self.last_results
 
     @property
@@ -1307,7 +1308,7 @@ class PixelFlipping(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = PixelFlipping(abs=True, normalise=False)
+            >> metric = PixelFlipping(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -1546,7 +1547,7 @@ class RegionPerturbation(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = RegionPerturbation(abs=True, normalise=False)
+            >> metric = RegionPerturbation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -1832,7 +1833,7 @@ class Selectivity(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Selectivity(abs=True, normalise=False)
+            >> metric = Selectivity(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -2124,7 +2125,7 @@ class SensitivityN(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = SensitivityN(abs=True, normalise=False)
+            >> metric = SensitivityN(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order.
@@ -2257,3 +2258,476 @@ class SensitivityN(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+class Infidelity(Metric):
+    """
+    Implementation of Infidelity by Yeh et al., 2019.
+
+    Explanation infidelity represents the expected mean square error
+    between 1) a dot product of an attribution and input perturbation and
+    2) difference in model output after significant perturbation.
+
+    Assumptions:
+    - The original implementation (https://github.com/chihkuanyeh/saliency_evaluation/
+    blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
+    In this implementation, we use squared patches as the default option.
+
+    References:
+        1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
+        "On the (In)fidelity and Sensitivity of Explanations."
+        33rd Conference on Neural Information Processing Systems (NeurIPS 2019), Vancouver, Canada.
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            loss_func (string): Loss function, default="mse".
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            perturb_patch_sizes (list): Size of patches to be perturbed, default=[4].
+            features_in_step (integer): The size of the step, default=1.
+            max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            n_perturb_samples (integer): The number of samples to be perturbed, default=10.
+            aggregate (boolean):  Indicates whether to return the mean values or all values, default=True.
+
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", False)
+        self.loss_func = self.kwargs.get("loss_func", mse)
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", baseline_replacement_by_indices
+        )
+        self.perturb_patch_sizes = self.kwargs.get(
+            "perturb_patch_sizes", [4]
+        )
+        self.features_in_step = self.kwargs.get("features_in_step", 1)
+        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
+        self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
+        self.aggregate = self.kwargs.get("aggregate", True)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.last_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
+                    "number of perturbed samples 'n_perturb_samples', the loss function 'loss_func' "
+                    "aggregation boolean 'aggregate'"
+                ),
+                citation=(
+                    "Chih-Kuan, Yeh, et al. 'On the (In)fidelity and Sensitivity of Explanations'"
+                    "arXiv:1901.09392 (2019)"
+                ),
+            )
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> List[float]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Infidelity(abs=False, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        """
+
+        # Reshape input batch to channel first order.
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        self.nr_channels = x_batch_s.shape[1]
+
+        # Wrap the model into an interface.
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
+        if a_batch is None:
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
+
+        # Asserts.
+        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+
+        # Use tqdm progressbar if not disabled.
+        if not self.display_progressbar:
+            iterator = zip(x_batch_s, y_batch, a_batch)
+        else:
+            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+
+        for x, y, a in iterator:
+
+            if self.normalise:
+                a = self.normalise_func(a)
+            
+            if self.abs:
+                a = np.abs(a)
+
+            # Predict on input.
+            x_input = model.shape_input(x, x.shape, channel_first=True)
+            y_pred = float(
+                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+            )
+
+            sub_results = []
+
+            for _ in range(self.n_perturb_samples):
+
+                sub_sub_results = []
+
+                for patch_size in self.perturb_patch_sizes:
+
+                    pred_deltas = np.zeros(
+                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                    )
+                    a_sums = np.zeros(
+                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                    )
+                    x_perturbed = x.copy()
+                    pad_width = patch_size - 1
+
+                    for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
+
+                        for i_y, top_left_y in enumerate(
+                                range(0, x.shape[2], patch_size)
+                        ):
+
+                            # Perturb input patch-wise.
+                            x_perturbed_pad = utils._pad_array(
+                                x_perturbed, pad_width, mode="edge", padded_axes=a_axes
+                            )
+                            patch_slice = utils.create_patch_slice(
+                                patch_size=patch_size, coords=[top_left_x, top_left_y],
+                            )
+
+                            x_perturbed_pad = self.perturb_func(
+                                arr=x_perturbed_pad,
+                                indices=patch_slice,
+                                indexed_axes=a_axes,
+                                **self.kwargs,
+                            )
+
+                            # Remove padding.
+                            x_perturbed = utils._unpad_array(
+                                x_perturbed_pad, pad_width, padded_axes=a_axes
+                            )
+
+                            # Predict on perturbed input x_perturbed.
+                            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                            y_pred_perturb = float(
+                                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                            )
+
+                            x_diff = (x - x_perturbed).flatten()
+                            a_diff = np.dot(a.flatten(), x_diff)
+
+                            pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
+                            a_sums[i_x][i_y] = np.sum(a_diff)
+
+                    sub_sub_results.append(
+                        self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
+                    )
+
+                sub_results.append(np.mean(sub_sub_results))
+
+            if self.aggregate:
+                self.last_results.append(np.mean(sub_results))
+            else:
+                self.last_results.append(sub_results)
+
+        self.all_results.append(self.last_results)
+
+        return self.all_results
+
+
+class ROAD(Metric):
+    """
+    Implementation of ROAD evaluation strategy by Rong et al., 2022.
+
+    The ROAD approach measures the accuracy of the model on the provided test set at each step of an iterative process
+    of removing k most important pixels. At each step k most relevant pixels (MoRF order) are replaced with noisy linear
+    imputations which removes bias.
+
+    References:
+        1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
+        arXiv:2202.00449 (2022).
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            order (string): Indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
+            percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+            noise (noise): Noise added, default=0.01.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", False)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = plotting.plot_region_perturbation_experiment
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.perturb_func = self.kwargs.get(
+            "perturb_func", noisy_linear_imputation
+        )
+        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
+        self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
+        self.noise = self.kwargs.get("noise", 0.01)
+        self.last_results = {}
+        self.all_results = {}
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
+                    "percentage of pixels k removed per iteration 'percentage_in_step'"
+                ),
+                citation=(
+                    "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective."
+                    "arXiv:2202.00449 (2022)"
+                ),
+            )
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> Dict[int, List[float]]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            last_results: a dictionary whose values contains a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = ROAD(abs=False, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        """
+
+        # Reshape input batch to channel first order.
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        # Wrap the model into an interface.
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
+        if a_batch is None:
+
+            # Asserts.
+            explain_func = self.kwargs.get("explain_func", Callable)
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+            )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        img_size = a_batch[0, :, :].size
+
+        # Asserts.
+        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+
+        # Use tqdm progressbar if not disabled.
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        else:
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            )
+
+        self.last_results = {
+            str(k): 0 for k in self.percentages
+        }
+        self.all_results = {
+            str(k): 0 for k in self.percentages
+        }
+
+        for sample, (x, y, a) in iterator:
+
+            if self.normalise:
+                a = self.normalise_func(a)
+            
+            if self.abs:
+                a = np.abs(a)
+            
+            # Order indicies.
+            ordered_indices = np.argsort(a, axis=None)[::-1]
+
+            for p in self.percentages:
+                
+                top_k_indices = ordered_indices[:int(img_size*p/100)]
+
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=top_k_indices,
+                    **self.kwargs,
+                )
+
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                class_pred_perturb = np.argmax(
+                    model.predict(x_input, softmax_act=True, **self.kwargs)
+                )
+
+                self.last_results[str(p)] += y == class_pred_perturb
+
+        # Calculate accuracy for every number of most important pixels removed
+        for k in self.last_results:
+            self.all_results[k] = self.last_results[k] / len(x_batch_s)
+
+        return self.all_results
