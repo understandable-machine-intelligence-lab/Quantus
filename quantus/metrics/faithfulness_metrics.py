@@ -711,10 +711,10 @@ class IterativeRemovalOfFeatures(Metric):
             self.last_results = [np.mean(self.last_results)]
         else:
             self.last_results = self.last_results
-
-      self.all_results.append(self.last_results)
-
-      return self.last_results
+        
+        self.all_results.append(self.last_results)
+    
+        return self.last_results
 
     @property
     def get_aggregated_score(self):
