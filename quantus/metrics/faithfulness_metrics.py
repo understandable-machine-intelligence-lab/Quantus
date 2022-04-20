@@ -154,7 +154,7 @@ class FaithfulnessCorrelation(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = FaithfulnessCorrelation(abs=True, normalise=False)
+            >> metric = FaithfulnessCorrelation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -610,7 +610,7 @@ class IterativeRemovalOfFeatures(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = IROF(abs=True, normalise=False)
+            >> metric = IROF(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -1330,7 +1330,7 @@ class PixelFlipping(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = PixelFlipping(abs=True, normalise=False)
+            >> metric = PixelFlipping(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -1573,7 +1573,7 @@ class RegionPerturbation(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = RegionPerturbation(abs=True, normalise=False)
+            >> metric = RegionPerturbation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -1854,7 +1854,7 @@ class Selectivity(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Selectivity(abs=True, normalise=False)
+            >> metric = Selectivity(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -2142,7 +2142,7 @@ class SensitivityN(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = SensitivityN(abs=True, normalise=False)
+            >> metric = SensitivityN(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
         # Reshape input batch to channel first order:
@@ -2412,7 +2412,7 @@ class Infidelity(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Infidelity(abs=True, normalise=False)
+            >> metric = Infidelity(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
 
@@ -2662,7 +2662,7 @@ class ROAD(Metric):
             >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = ROAD(abs=True, normalise=False)
+            >> metric = ROAD(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
 
