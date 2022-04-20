@@ -596,5 +596,23 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     return leftover_shape
 
 
+def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
+    """
+    Checks if offset coordinates are within the image frame. Return offset coordinates for valid indices and the
+    list of booleans which identifies valid ids.
+    Based on https://github.com/tleemann/road_evaluation.
+    indices (list): list of indices to be offset.
+    offset (tuple): offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
+    img_shape (tuple): image shape in (channels, height, width) format.
+    """
+    x = indices // img_shape[2]
+    y = indices % img_shape[2]
+    x += offset[0]
+    y += offset[1]
+    valid = ~((x < 0) | (y < 0) | (x >= img_shape[1]) | (y >= img_shape[2]))
+    off_coords = indices + offset[0] * img_shape[2] + offset[1]
+    return off_coords[valid], valid
+
+  
 def calculate_auc(i: np.array, dx: int = 1.0):
     return np.trapz(np.array(i), dx=dx)

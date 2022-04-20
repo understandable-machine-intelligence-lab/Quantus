@@ -8,11 +8,15 @@ import cv2
 import numpy as np
 import scipy
 
+from scipy.sparse import lil_matrix, csc_matrix
+from scipy.sparse.linalg import spsolve
+
 from .utils import (
     get_baseline_value,
     blur_at_indices,
     expand_indices,
     get_leftover_shape,
+    offset_coordinates
 )
 
 
@@ -310,3 +314,69 @@ def translation_y_direction(
 def no_perturbation(arr: np.array, **kwargs) -> np.array:
     """Apply no perturbation to input."""
     return arr
+
+
+def noisy_linear_imputation(
+    arr: np.array,
+    indices: Union[int, Sequence[int], Tuple[np.array]],
+    **kwargs,
+) -> np.array:
+    """
+    Based on https://github.com/tleemann/road_evaluation.
+    Calculates noisy linear imputation for the given array and a list of indices indicating which elements are not
+    included in the mask.
+    arr: array to be perturbed
+    indices: array-like, subset of all indices in the array to not be included in the mask.
+    """
+    offset_weight = [
+        ((1, 1), 1 / 12),
+        ((0, 1), 1 / 6),
+        ((-1, 1), 1 / 12),
+        ((1, -1), 1 / 12),
+        ((0, -1), 1 / 6),
+        ((-1, -1), 1 / 12),
+        ((1, 0), 1 / 6),
+        ((-1, 0), 1 / 6),
+    ]
+    noise = kwargs.get("noise", 0.01)
+    arr_flat = arr.reshape((arr.shape[0], -1))
+
+    mask = np.ones(arr_flat.shape[1])
+    mask[indices] = 0
+
+    ind_to_var_ids = np.zeros(arr_flat.shape[1], dtype=int)
+    ind_to_var_ids[indices] = np.arange(len(indices))
+
+    # Equation system left-hand side
+    a = lil_matrix((len(indices), len(indices)))
+    # Equation system right-hand side
+    b = np.zeros((len(indices), arr.shape[0]))
+    sum_neighbors = np.ones(len(indices))
+
+    for n in offset_weight:
+        offset, weight = n[0], n[1]
+        off_coords, valid = offset_coordinates(indices, offset, arr.shape)
+        valid_ids = np.argwhere(valid == 1).flatten()
+        # Add weighted values to vector b
+        in_off_coord = off_coords[mask[off_coords] == 1]
+        in_off_coord_ids = valid_ids[mask[off_coords] == 1]
+        b[in_off_coord_ids, :] -= weight * arr_flat[:, in_off_coord].T
+        # Add weights to a
+        out_off_coord = off_coords[mask[off_coords] != 1]
+        out_off_coord_ids = valid_ids[mask[off_coords] != 1]
+        variable_ids = ind_to_var_ids[out_off_coord]
+        a[out_off_coord_ids, variable_ids] = weight
+
+        # Reduce weight for invalid coordinates
+        sum_neighbors[np.argwhere(valid == 0).flatten()] = (
+            sum_neighbors[np.argwhere(valid == 0).flatten()] - weight
+        )
+
+    a[np.arange(len(indices)), np.arange(len(indices))] = -sum_neighbors
+    # Solve the system of equations
+    res = np.transpose(spsolve(csc_matrix(a), b))
+    # Fill the values with the solution of the system.
+    arr_flat_copy = np.copy(arr.reshape((arr.shape[0], -1)))
+    arr_flat_copy[:, indices] = res + noise * np.random.randn(*res.shape)
+
+    return arr_flat_copy.reshape(*arr.shape)
