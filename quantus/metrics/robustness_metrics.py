@@ -160,7 +160,8 @@ class LocalLipschitzEstimate(Metric):
             >> metric = LocalLipschitzEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -190,16 +191,19 @@ class LocalLipschitzEstimate(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -209,11 +213,11 @@ class LocalLipschitzEstimate(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             similarity_max = 0.0
             for i in range(self.nr_samples):
@@ -230,13 +234,17 @@ class LocalLipschitzEstimate(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
+
+                if self.normalise:
+                    a_perturbed = self.normalise_func(a_perturbed)
 
                 if self.abs:
                     a_perturbed = np.abs(a_perturbed)
-                if self.normalise:
-                    a_perturbed = self.normalise_func(a_perturbed)
 
                 # Measure similarity.
                 similarity = self.similarity_func(
@@ -389,7 +397,8 @@ class MaxSensitivity(Metric):
             >> metric = MaxSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -419,16 +428,19 @@ class MaxSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Get explanation function and make asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -438,11 +450,11 @@ class MaxSensitivity(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             sensitivities_norm_max = 0.0
             for _ in range(self.nr_samples):
@@ -459,14 +471,17 @@ class MaxSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
-
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
 
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 # Measure sensitivity.
                 sensitivities = self.similarity_func(
@@ -619,7 +634,8 @@ class AvgSensitivity(Metric):
             >> metric = AvgSensitivity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -649,16 +665,19 @@ class AvgSensitivity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
-        # Expand attributions to input dimensionality
+        # Expand attributions to input dimensionality.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -668,11 +687,11 @@ class AvgSensitivity(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             self.sub_results = []
             for _ in range(self.nr_samples):
@@ -689,14 +708,17 @@ class AvgSensitivity(Metric):
 
                 # Generate explanation based on perturbed input x.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
-
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
 
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 sensitivities = self.similarity_func(
                     a=a.flatten(), b=a_perturbed.flatten()
@@ -849,7 +871,8 @@ class Continuity(Metric):
             >> metric = Continuity(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
@@ -879,7 +902,10 @@ class Continuity(Metric):
 
             # Generate explanations.
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs,
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
             )
 
         # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
@@ -890,12 +916,14 @@ class Continuity(Metric):
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch_s.shape[2:])
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # Get number of patches for input shape (ignore batch and channel dim)
+        # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size, shape=x_batch_s.shape[2:], overlap=True,
+            patch_size=self.patch_size,
+            shape=x_batch_s.shape[2:],
+            overlap=True,
         )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -906,11 +934,11 @@ class Continuity(Metric):
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -929,17 +957,20 @@ class Continuity(Metric):
 
                 # Generate explanations on perturbed input.
                 a_perturbed = explain_func(
-                    model=model.get_model(), inputs=x_input, targets=y, **self.kwargs,
+                    model=model.get_model(),
+                    inputs=x_input,
+                    targets=y,
+                    **self.kwargs,
                 )
                 # Taking the first element, since a_perturbed will be expanded to a batch dimension
                 # not expected by the current index management functions
                 a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
-                if self.abs:
-                    a_perturbed = np.abs(a_perturbed)
-
                 if self.normalise:
                     a_perturbed = self.normalise_func(a_perturbed)
+
+                if self.abs:
+                    a_perturbed = np.abs(a_perturbed)
 
                 # Store the prediction score as the last element of the sub_self.last_results dictionary.
                 y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
@@ -956,19 +987,21 @@ class Continuity(Metric):
 
                     # Create slice for patch.
                     patch_slice = utils.create_patch_slice(
-                        patch_size=self.patch_size, coords=top_left_coords,
+                        patch_size=self.patch_size,
+                        coords=top_left_coords,
                     )
 
                     a_perturbed_patch = a_perturbed[
                         utils.expand_indices(a_perturbed, patch_slice, a_axes)
                     ]
-                    if self.abs:
-                        a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 
                     if self.normalise:
                         a_perturbed_patch = self.normalise_func(
                             a_perturbed_patch.flatten()
                         )
+
+                    if self.abs:
+                        a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
 
                     # Sum attributions for patch.
                     patch_sum = float(sum(a_perturbed_patch))

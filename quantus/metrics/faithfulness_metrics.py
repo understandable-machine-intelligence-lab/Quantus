@@ -4,7 +4,6 @@ import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
-from tqdm import tqdm
 
 from .base import Metric
 from ..helpers import asserts
@@ -157,14 +156,14 @@ class FaithfulnessCorrelation(Metric):
             >> metric = FaithfulnessCorrelation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -190,7 +189,7 @@ class FaithfulnessCorrelation(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
@@ -200,7 +199,7 @@ class FaithfulnessCorrelation(Metric):
             x=x_batch_s, value=self.subset_size, value_name="subset_size"
         )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -210,17 +209,15 @@ class FaithfulnessCorrelation(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
 
+            if self.abs:
+                a = np.abs(a)
+
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, **self.kwargs)[:, y]
-            )
+            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             pred_deltas = []
             att_sums = []
@@ -231,15 +228,16 @@ class FaithfulnessCorrelation(Metric):
                 # Randomly mask by subset size.
                 a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, **self.kwargs)[:, y]
-                )
+                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
                 pred_deltas.append(float(y_pred - y_pred_perturb))
 
                 # Sum attributions of the random subset.
@@ -292,7 +290,6 @@ class FaithfulnessEstimate(Metric):
             default=correlation_spearman.
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
@@ -311,7 +308,6 @@ class FaithfulnessEstimate(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", False)
         self.last_results = []
         self.all_results = []
@@ -384,14 +380,14 @@ class FaithfulnessEstimate(Metric):
             >> metric = FaithfulnessEstimate(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -417,26 +413,18 @@ class FaithfulnessEstimate(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -446,11 +434,11 @@ class FaithfulnessEstimate(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -471,7 +459,10 @@ class FaithfulnessEstimate(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -613,14 +604,14 @@ class IterativeRemovalOfFeatures(Metric):
             >> metric = IROF(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -647,14 +638,14 @@ class IterativeRemovalOfFeatures(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -664,11 +655,11 @@ class IterativeRemovalOfFeatures(Metric):
 
         for ix, (x, y, a) in iterator:
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Predict on x.
             x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -700,31 +691,33 @@ class IterativeRemovalOfFeatures(Metric):
                 ]
 
                 x_perturbed = self.perturb_func(
-                    arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                # Normalise the scores to be within [0, 1].
+
+                # Normalise the scores to be within range [0, 1].
                 preds.append(float(y_pred_perturb / y_pred))
 
-            # self.last_results.append(1-auc(preds, np.arange(0, len(preds))))
-            self.last_results.append(np.trapz(np.array(preds), dx=1.0))
-
+            self.last_results.append(len(preds) - utils.calculate_auc(np.array(preds)))
 
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
         else:
             self.last_results = self.last_results
 
-        self.all_results.append(self.last_results)
+      self.all_results.append(self.last_results)
 
-        return self.last_results
+      return self.last_results
 
     @property
-    def aggregated_score(self):
+    def get_aggregated_score(self):
         """Calculate the area over the curve (AOC) score for several test samples."""
         return [np.mean(results) for results in self.all_results]
 
@@ -767,7 +760,6 @@ class MonotonicityArya(Metric):
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
@@ -785,7 +777,6 @@ class MonotonicityArya(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -855,14 +846,14 @@ class MonotonicityArya(Metric):
             >> metric = MonotonicityArya(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -888,26 +879,18 @@ class MonotonicityArya(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -917,11 +900,11 @@ class MonotonicityArya(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -945,7 +928,10 @@ class MonotonicityArya(Metric):
                     )
                 ]
                 x_baseline = self.perturb_func(
-                    arr=x_baseline, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_baseline,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
 
                 # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
@@ -995,7 +981,6 @@ class MonotonicityNguyen(Metric):
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
             features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
@@ -1016,7 +1001,6 @@ class MonotonicityNguyen(Metric):
         self.eps = self.kwargs.get("eps", 1e-5)
         self.nr_samples = self.kwargs.get("nr_samples", 100)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -1089,14 +1073,14 @@ class MonotonicityNguyen(Metric):
             >> metric = MonotonicityNguyen(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1122,26 +1106,18 @@ class MonotonicityNguyen(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -1154,15 +1130,15 @@ class MonotonicityNguyen(Metric):
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
             inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred ** 2
+            inv_pred = inv_pred**2
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (ascending).
             a_indices = np.argsort(a)
@@ -1184,7 +1160,10 @@ class MonotonicityNguyen(Metric):
                 for n in range(self.nr_samples):
 
                     x_perturbed = self.perturb_func(
-                        arr=x, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                        arr=x,
+                        indices=a_ix,
+                        indexed_axes=a_axes,
+                        **self.kwargs,
                     )
                     asserts.assert_perturbation_caused_change(
                         x=x, x_perturbed=x_perturbed
@@ -1244,7 +1223,6 @@ class PixelFlipping(Metric):
             perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
@@ -1262,7 +1240,6 @@ class PixelFlipping(Metric):
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
         self.all_results = []
@@ -1333,14 +1310,14 @@ class PixelFlipping(Metric):
             >> metric = PixelFlipping(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1366,26 +1343,18 @@ class PixelFlipping(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
@@ -1395,11 +1364,11 @@ class PixelFlipping(Metric):
 
             a = a.flatten()
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             # Get indices of sorted attributions (descending).
             a_indices = np.argsort(-a)
@@ -1416,7 +1385,10 @@ class PixelFlipping(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
@@ -1433,8 +1405,9 @@ class PixelFlipping(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(results), dx=1.0) for results in self.all_results]
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return [utils.calculate_auc(np.array(i)) for i in self.all_results]
+
 
 class RegionPerturbation(Metric):
     """
@@ -1576,14 +1549,14 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1609,14 +1582,14 @@ class RegionPerturbation(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -1629,11 +1602,11 @@ class RegionPerturbation(Metric):
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             patches = []
             sub_results = []
@@ -1652,7 +1625,8 @@ class RegionPerturbation(Metric):
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size, coords=top_left_coords,
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
@@ -1728,8 +1702,12 @@ class RegionPerturbation(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return [
+            utils.calculate_auc(np.array(i))
+            for results in self.all_results
+            for _, i in results.items()
+        ]
 
 
 class Selectivity(Metric):
@@ -1857,14 +1835,14 @@ class Selectivity(Metric):
             >> metric = Selectivity(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1890,14 +1868,14 @@ class Selectivity(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -1911,11 +1889,11 @@ class Selectivity(Metric):
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
 
-            if self.abs:
-                a = np.abs(a)
-
             if self.normalise:
                 a = self.normalise_func(a)
+
+            if self.abs:
+                a = np.abs(a)
 
             patches = []
             sub_results = []
@@ -1934,7 +1912,8 @@ class Selectivity(Metric):
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size, coords=top_left_coords,
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
                 )
 
                 # Sum attributions for patch.
@@ -1946,7 +1925,7 @@ class Selectivity(Metric):
             # Create ordered list of patches.
             ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
 
-            # Remove overlapping patches
+            # Remove overlapping patches.
             blocked_mask = np.zeros(x_pad.shape, dtype=bool)
             ordered_patches_no_overlap = []
             for patch_slice in ordered_patches:
@@ -1960,7 +1939,8 @@ class Selectivity(Metric):
 
             # Increasingly perturb the input and store the decrease in function value.
             for patch_slice in ordered_patches_no_overlap:
-                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+
+                # Pad x_perturbed. The mode should depend on the used perturb_func.
                 x_perturbed_pad = utils._pad_array(
                     x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                 )
@@ -1973,7 +1953,7 @@ class Selectivity(Metric):
                     **self.kwargs,
                 )
 
-                # Remove Padding
+                # Remove padding.
                 x_perturbed = utils._unpad_array(
                     x_perturbed_pad, pad_width, padded_axes=a_axes
                 )
@@ -1994,8 +1974,12 @@ class Selectivity(Metric):
 
     @property
     def get_auc_score(self):
-        """Calculate the area under the curve (AOC) score for several test samples."""
-        return [np.trapz(np.array(result), dx=1.0) for results in self.all_results for _, result in results.items()]
+        """Calculate the area under the curve (AUC) score for several test samples."""
+        return [
+            utils.calculate_auc(np.array(i))
+            for results in self.all_results
+            for _, i in results.items()
+        ]
 
 
 class SensitivityN(Metric):
@@ -2048,7 +2032,6 @@ class SensitivityN(Metric):
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
             features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
             softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
             return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
         """
@@ -2069,7 +2052,6 @@ class SensitivityN(Metric):
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.softmax = self.kwargs.get("softmax", True)
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.last_results = []
@@ -2145,14 +2127,14 @@ class SensitivityN(Metric):
             >> metric = SensitivityN(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
-        # Reshape input batch to channel first order:
+        # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -2178,31 +2160,23 @@ class SensitivityN(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions
+        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
         a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step, input_shape=x_batch_s.shape[2:],
+            features_in_step=self.features_in_step,
+            input_shape=x_batch_s.shape[2:],
         )
-        if self.max_steps_per_input is not None:
-            asserts.assert_max_steps(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
-            self.set_features_in_step = utils.get_features_in_step(
-                max_steps_per_input=self.max_steps_per_input,
-                input_shape=x_batch_s.shape[2:],
-            )
 
         max_features = int(0.8 * np.prod(x_batch_s.shape[2:]) // self.features_in_step)
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
 
-        # use tqdm progressbar if not disabled
+        # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
@@ -2240,7 +2214,10 @@ class SensitivityN(Metric):
                     )
                 ]
                 x_perturbed = self.perturb_func(
-                    arr=x_perturbed, indices=a_ix, indexed_axes=a_axes, **self.kwargs,
+                    arr=x_perturbed,
+                    indices=a_ix,
+                    indexed_axes=a_axes,
+                    **self.kwargs,
                 )
                 asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 

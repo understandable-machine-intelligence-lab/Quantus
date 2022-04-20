@@ -37,9 +37,9 @@ def load_1d_1ch_conv_model():
     model = ConvNet1D(n_channels=1, n_classes=10)
     model.eval()
     # TODO: add trained model weights
-    #model.load_state_dict(
+    # model.load_state_dict(
     #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
-    #)
+    # )
     return model
 
 
@@ -49,9 +49,9 @@ def load_1d_3ch_conv_model():
     model = ConvNet1D(n_channels=3, n_classes=10)
     model.eval()
     # TODO: add trained model weights
-    #model.load_state_dict(
+    # model.load_state_dict(
     #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
-    #)
+    # )
     return model
 
 
@@ -60,8 +60,8 @@ def load_1d_3ch_conv_model_tf():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1DTF(n_channels=3, seq_len=100, n_classes=10)
     # TODO: add trained model weights
-    #model = LeNetTF()
-    #model.load_weights("tutorials/assets/mnist_tf_weights/")
+    # model = LeNetTF()
+    # model.load_weights("tutorials/assets/mnist_tf_weights/")
     return model
 
 
