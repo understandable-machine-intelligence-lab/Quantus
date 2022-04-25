@@ -2617,7 +2617,8 @@ class ROAD(Metric):
                 default=None.
 
         Returns
-            last_results: a dictionary whose values contains a list of float(s) with the evaluation outcome of concerned batch
+            all_results: a dictionary whose values contains a list of float(s) with the evaluation for every percentage
+            of pixels removed.
 
         Examples
             # Enable GPU.
