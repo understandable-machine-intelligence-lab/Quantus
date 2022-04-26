@@ -18,6 +18,7 @@ from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.discretize_func import top_n_sign
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1048,7 +1049,7 @@ class Consistency(Metric):
             Explanations." arXiv preprint arXiv:2202.00734 (2022).
 
     Assumptions:
-        -
+        - A used-defined discreization function is used to discretize continuous explanation spaces.
     """
 
     @attributes_check
@@ -1065,7 +1066,8 @@ class Consistency(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            n_clusters (integer): Number of clusters to split the explanation space into, default=10.
+            discretize_func (callable): Explanation space discretization function, returns hash value of an array;
+            arrays with identical elements receive the same hash value, default=top_n_sign.
         """
         super().__init__()
 
@@ -1077,7 +1079,7 @@ class Consistency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.n_clusters = self.kwargs.get("n_clusters", 10)
+        self.discretize_func = self.kwargs.get("discretize_func", top_n_sign)
 
         self.last_results = []
 
@@ -1086,7 +1088,8 @@ class Consistency(Metric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "???"
+                    "Function for discretization of the explanation space 'discretize_func' (return hash value of"
+                    "an np.array used for comparison)."
                 ),
                 citation=(
                     "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
@@ -1165,7 +1168,7 @@ class Consistency(Metric):
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
 
-        centroids, a_labels = kmeans2(a_batch_flat, self.n_clusters)
+        a_labels = np.array(list(map(self.discretize_func, a_batch_flat)))
 
         # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
@@ -1222,7 +1225,8 @@ class Sufficiency(Metric):
             Explanations." arXiv preprint arXiv:2202.00734 (2022).
 
     Assumptions:
-        -
+        - We assume that a given explanation applies to anothers data point if the distance between this explanation
+        and the explanations of the data point is under the user-defined threshold.
     """
 
     @attributes_check

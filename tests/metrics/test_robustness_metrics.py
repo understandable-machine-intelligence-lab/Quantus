@@ -9,7 +9,7 @@ from ...quantus.metrics import *
 from ...quantus.helpers import *
 from ...quantus.helpers.explanation_func import explain
 
-"""
+
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -521,7 +521,6 @@ def test_continuity(
         **params,
     )
     assert scores is not None, "Test failed."
-"""
 
 
 @pytest.mark.robustness
@@ -538,9 +537,55 @@ def test_continuity(
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "discretize_func": floating_points,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "explain_func": explain,
+                    "method": "Saliency",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                    "discretize_func": sign,
+                    "a_batch_generate": True,
+                },
+                {"min": 0.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "explain_func": explain,
+                    "method": "Saliency",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                    "discretize_func": top_n_sign,
+                    "a_batch_generate": False,
+                },
+                {"min": 0.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "explain_func": explain,
+                    "method": "Saliency",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                    "discretize_func": rank,
+                    "a_batch_generate": False,
+                },
+                {"min": 0.0, "max": 1.0},
         ),
     ],
 )
@@ -600,11 +645,27 @@ def test_consistency(
                 "patch_size": 7,
                 "explain_func": explain,
                 "method": "Saliency",
+                "threshold": 0.1,
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "explain_func": explain,
+                    "method": "Saliency",
+                    "threshold": 0.6,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                    "a_batch_generate": True,
+                },
+                {"min": 0.0, "max": 1.0},
         ),
     ],
 )
