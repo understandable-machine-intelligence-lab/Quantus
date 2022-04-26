@@ -5,7 +5,6 @@ from typing import Callable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
-from scipy.spatial.distance import cdist
 
 from .base import Metric
 from ..helpers import asserts
@@ -1093,7 +1092,6 @@ class Consistency(Metric):
                 citation=(
                     "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
                     "Explanations.' arXiv preprint arXiv:2202.00734 (2022)."
-
                 ),
             )
 
@@ -1174,7 +1172,8 @@ class Consistency(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_labels))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
+                total=len(x_batch_s),
             )
 
         y_pred_classes = np.zeros_like(y_batch)
@@ -1190,15 +1189,16 @@ class Consistency(Metric):
             # Predict on input.
             x_input = model.shape_input(x, x.shape, channel_first=True)
             y_pred_classes[ix] = np.argmax(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)
-                )
+                model.predict(x_input, softmax_act=True, **self.kwargs)
+            )
 
         # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_labels))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
+                total=len(x_batch_s),
             )
 
         for ix, (x, y, a, a_label) in iterator:
@@ -1207,192 +1207,9 @@ class Consistency(Metric):
             same_a = np.argwhere(a_labels == a_label).flatten()
             same_a = same_a[same_a != ix]
             pred_same_a = y_pred_classes[same_a]
-            self.last_results.append(np.sum(pred_same_a == pred_a)/len(same_a))
-
-        return np.sum(self.last_results)/len(self.last_results)
-
-
-class Sufficiency(Metric):
-    """
-
-    The (global) sufficiency metric measures the expected local sufficiency. Local sufficiency measures the probability
-    of the prediction label for a given datapoint coinciding with the prediction labels of other data points that the
-    same explanation applies to. For example, if the explanation of a given image is "contains zebra", the local
-    sufficiency metric measures the probability a different that contains zebra having the same prediction label.
-
-    References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
-
-    Assumptions:
-        - We assume that a given explanation applies to anothers data point if the distance between this explanation
-        and the explanations of the data point is under the user-defined threshold.
-    """
-
-    @attributes_check
-    def __init__(self, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            threshold (float): Distance threshold, default=0.6.
-            distance_func (string): Distance function, default = "seuclidean". ( see
-            https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html for more)
-        """
-        super().__init__()
-
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.threshold = self.kwargs.get("threshold", 0.6)
-        self.distance_func = self.kwargs.get("distance_func", "seuclidean")
-
-        self.last_results = []
-
-        # Asserts and warnings.
-        if not self.disable_warnings:
-            warn_func.warn_parameterisation(
-                metric_name=self.__class__.__name__,
-                sensitive_params=(
-                    "distance threshold that determines if images share an attribute 'threshold', "
-                    "distance function 'distance_func'"
-                ),
-                citation=(
-                    "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
-                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)."
-
-                ),
-            )
-
-    def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> Dict[int, List[float]]:
-        """
-        This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
-
-        Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
-
-        Returns
-            metric: value of the metric.
-
-        """
-
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
-            **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        # Get explanation function and make asserts.
-        explain_func = self.kwargs.get("explain_func", Callable)
-        asserts.assert_explain_func(explain_func=explain_func)
-
-        if a_batch is None:
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-
-        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
-        dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)
-        dist_matrix = self.normalise_func(dist_matrix)
-        a_sim_matrix = np.zeros_like(dist_matrix)
-        a_sim_matrix[dist_matrix <= self.threshold] = 1
-
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix)), total=len(x_batch_s)
-            )
-
-        y_pred_classes = np.zeros_like(y_batch)
-
-        for ix, (x, y, a, a_sim) in iterator:
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred_classes[ix] = np.argmax(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)
-                )
-
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix)), total=len(x_batch_s)
-            )
-
-        for ix, (x, y, a, a_sim) in iterator:
-
-            pred_a = y_pred_classes[ix]
-            low_dist_a = np.argwhere(a_sim == 1.0).flatten()
-            low_dist_a = low_dist_a[low_dist_a != ix]
-            pred_low_dist_a = y_pred_classes[low_dist_a]
-            if len(low_dist_a) == 0:
+            if len(same_a) == 0:
                 self.last_results.append(0)
             else:
-                self.last_results.append(np.sum(pred_low_dist_a == pred_a)/len(low_dist_a))
+                self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
 
-        metric = np.sum(self.last_results)/len(self.last_results)
-        return metric
+        return np.sum(self.last_results) / len(self.last_results)
