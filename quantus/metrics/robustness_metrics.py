@@ -5,7 +5,6 @@ from typing import Callable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
-from scipy.cluster.vq import kmeans2
 from scipy.spatial.distance import cdist
 
 from .base import Metric
@@ -1126,7 +1125,7 @@ class Consistency(Metric):
                 default=None.
 
         Returns
-            metric: a values of the metric.
+            metric: value of the metric.
 
         """
 
@@ -1306,7 +1305,7 @@ class Sufficiency(Metric):
                 default=None.
 
         Returns
-            metric: a values of the metric.
+            metric: value of the metric.
 
         """
 
