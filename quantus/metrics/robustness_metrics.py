@@ -1206,6 +1206,7 @@ class Consistency(Metric):
 
             pred_a = y_pred_classes[ix]
             same_a = np.argwhere(a_labels == a_label).flatten()
+            same_a = same_a[same_a != ix]
             pred_same_a = y_pred_classes[same_a]
             self.last_results.append(np.sum(pred_same_a == pred_a)/len(same_a))
 
@@ -1387,6 +1388,7 @@ class Sufficiency(Metric):
 
             pred_a = y_pred_classes[ix]
             low_dist_a = np.argwhere(a_sim == 1.0).flatten()
+            low_dist_a = low_dist_a[low_dist_a != ix]
             pred_low_dist_a = y_pred_classes[low_dist_a]
             if len(low_dist_a) == 0:
                 self.last_results.append(0)
