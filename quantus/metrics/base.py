@@ -41,6 +41,7 @@ class Metric:
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.last_results = []
         self.all_results = []
 
