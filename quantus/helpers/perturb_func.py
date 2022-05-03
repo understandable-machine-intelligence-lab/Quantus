@@ -311,11 +311,6 @@ def translation_y_direction(
     return arr_perturbed
 
 
-def no_perturbation(arr: np.array, **kwargs) -> np.array:
-    """Apply no perturbation to input."""
-    return arr
-
-
 def noisy_linear_imputation(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
@@ -389,3 +384,9 @@ def noisy_linear_imputation(
     arr_flat_copy[:, indices] = res + noise * np.random.randn(*res.shape)
 
     return arr_flat_copy.reshape(*arr.shape)
+
+
+
+def no_perturbation(arr: np.array, **kwargs) -> np.array:
+    """Apply no perturbation to input."""
+    return arr
