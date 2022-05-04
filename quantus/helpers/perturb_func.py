@@ -16,7 +16,7 @@ from .utils import (
     blur_at_indices,
     expand_indices,
     get_leftover_shape,
-    offset_coordinates
+    offset_coordinates,
 )
 
 
@@ -384,7 +384,6 @@ def noisy_linear_imputation(
     arr_flat_copy[:, indices] = res + noise * np.random.randn(*res.shape)
 
     return arr_flat_copy.reshape(*arr.shape)
-
 
 
 def no_perturbation(arr: np.array, **kwargs) -> np.array:
