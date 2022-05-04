@@ -712,9 +712,9 @@ class IterativeRemovalOfFeatures(Metric):
             self.last_results = [np.mean(self.last_results)]
         else:
             self.last_results = self.last_results
-        
+
         self.all_results.append(self.last_results)
-    
+
         return self.last_results
 
     @property
@@ -2314,9 +2314,7 @@ class Infidelity(Metric):
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.perturb_patch_sizes = self.kwargs.get(
-            "perturb_patch_sizes", [4]
-        )
+        self.perturb_patch_sizes = self.kwargs.get("perturb_patch_sizes", [4])
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
@@ -2443,7 +2441,7 @@ class Infidelity(Metric):
 
             if self.normalise:
                 a = self.normalise_func(a)
-            
+
             if self.abs:
                 a = np.abs(a)
 
@@ -2473,7 +2471,7 @@ class Infidelity(Metric):
                     for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
                         for i_y, top_left_y in enumerate(
-                                range(0, x.shape[2], patch_size)
+                            range(0, x.shape[2], patch_size)
                         ):
 
                             # Perturb input patch-wise.
@@ -2481,7 +2479,8 @@ class Infidelity(Metric):
                                 x_perturbed, pad_width, mode="edge", padded_axes=a_axes
                             )
                             patch_slice = utils.create_patch_slice(
-                                patch_size=patch_size, coords=[top_left_x, top_left_y],
+                                patch_size=patch_size,
+                                coords=[top_left_x, top_left_y],
                             )
 
                             x_perturbed_pad = self.perturb_func(
@@ -2497,9 +2496,13 @@ class Infidelity(Metric):
                             )
 
                             # Predict on perturbed input x_perturbed.
-                            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                            x_input = model.shape_input(
+                                x_perturbed, x.shape, channel_first=True
+                            )
                             y_pred_perturb = float(
-                                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
+                                model.predict(
+                                    x_input, softmax_act=False, **self.kwargs
+                                )[:, y]
                             )
 
                             x_diff = (x - x_perturbed).flatten()
@@ -2551,8 +2554,7 @@ class ROAD(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            order (string): Indicates whether attributions are ordered randomly ("random"),
-            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
             noise (noise): Noise added, default=0.01.
         """
@@ -2566,10 +2568,8 @@ class ROAD(Metric):
         self.default_plot_func = plotting.plot_region_perturbation_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", noisy_linear_imputation
-        )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
+        self.perturb_func = self.kwargs.get("perturb_func", noisy_linear_imputation)
+        #self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
         self.noise = self.kwargs.get("noise", 0.01)
         self.last_results = {}
@@ -2688,27 +2688,23 @@ class ROAD(Metric):
                 enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
             )
 
-        self.last_results = {
-            str(k): 0 for k in self.percentages
-        }
-        self.all_results = {
-            str(k): 0 for k in self.percentages
-        }
+        self.last_results = {str(k): 0 for k in self.percentages}
+        self.all_results = {str(k): 0 for k in self.percentages}
 
         for sample, (x, y, a) in iterator:
 
             if self.normalise:
                 a = self.normalise_func(a)
-            
+
             if self.abs:
                 a = np.abs(a)
-            
+
             # Order indicies.
             ordered_indices = np.argsort(a, axis=None)[::-1]
 
             for p in self.percentages:
-                
-                top_k_indices = ordered_indices[:int(img_size*p/100)]
+
+                top_k_indices = ordered_indices[: int(img_size * p / 100)]
 
                 x_perturbed = self.perturb_func(
                     arr=x,
@@ -2726,7 +2722,7 @@ class ROAD(Metric):
 
                 self.last_results[str(p)] += y == class_pred_perturb
 
-        # Calculate accuracy for every number of most important pixels removed
+        # Calculate accuracy for every number of most important pixels removed.
         for k in self.last_results:
             self.all_results[k] = self.last_results[k] / len(x_batch_s)
 
