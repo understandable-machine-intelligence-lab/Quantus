@@ -1,13 +1,14 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
 import math
+import random
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
 
-from .base import Metric
+from .base import Metric, BatchedMetric
 from ..helpers import asserts
 from ..helpers import plotting
 from ..helpers import utils
@@ -1208,7 +1209,7 @@ class MonotonicityNguyen(Metric):
         return self.last_results
 
 
-class PixelFlipping(Metric):
+class PixelFlipping(BatchedMetric):
     """
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
@@ -1232,6 +1233,7 @@ class PixelFlipping(Metric):
             perturb_func: Optional[Callable] = None,
             perturb_func_kwargs: Optional[Dict] = None,
             perturb_baseline: Any = "black",
+            order: str = 'morf',
             features_in_step: int = 1,
             max_steps_per_input: Optional[int] = None,
             plot_func: Optional[Callable] = None,
@@ -1271,16 +1273,6 @@ class PixelFlipping(Metric):
             **perturb_func_kwargs,
         }
 
-        warn_parametrisation_kwargs = {
-            'metric_name': self.__class__.__name__,
-            'sensitive_params': ("baseline value 'perturb_baseline'"),
-            'citation': (
-                "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
-                " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
-                "e0130140"
-            ),
-        }
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -1291,13 +1283,25 @@ class PixelFlipping(Metric):
             plot_func=plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
-            warn_parametrisation_kwargs=warn_parametrisation_kwargs,
             **kwargs,
         )
 
         self.features_in_step = features_in_step
         self.max_steps_per_input = max_steps_per_input
+        self.order = order.lower()
 
+        # Asserts and warnings.
+        self.disable_warnings = disable_warnings
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=("baseline value 'perturb_baseline'"),
+                citation=(
+                    "Bach, Sebastian, et al. 'On pixel-wise explanations for non-linear classifier"
+                    " decisions by layer - wise relevance propagation.' PloS one 10.7 (2015) "
+                    "e0130140"
+                ),
+            )
 
     def __call__(
             self,
@@ -1362,6 +1366,64 @@ class PixelFlipping(Metric):
             **kwargs,
         )
 
+    def generate_perturbed_batches(
+            self,
+            x_batch: np.ndarray,
+            a_batch: np.ndarray,
+            n_steps: int,
+            perturb_func: Callable,
+            perturb_func_kwargs: Dict[str, Any],
+    ) -> Iterator[np.ndarray]:
+
+        # Get indices of sorted attributions (descending).
+        batch_size = x_batch.shape[0]
+        flat_shape = a_batch[0].flatten().shape
+        a_batch_flat = np.zeros((batch_size, *flat_shape))
+        a_batch_indices = np.zeros((batch_size, *flat_shape), dtype=np.int)
+
+        # generate ordered indices for complete batch
+        # TODO: do this in a more readable way or even better: without for-loop
+        for i in range(batch_size):
+            a_batch_flat[i] = a_batch[i].flatten()
+
+            if self.order == "random":
+                # Order attributions randomly.
+                n_indices = len(a_batch_flat[i])
+                a_batch_indices[i] = random.sample(list(range(n_indices)),
+                                                   k=n_indices)
+
+            elif self.order == "morf":
+                # Order attributions according to the most relevant first.
+                a_batch_indices[i] = np.argsort(a_batch_flat[i])[::-1]
+
+            elif self.order == 'lerf':
+                # Order attributions according to the least relevant first.
+                a_batch_indices[i] = np.argsort(a_batch_flat[i])
+
+        x_batch_perturbed = x_batch.copy()
+
+        for step in range(n_steps):
+
+            # Perturb input by indices of attributions.
+            perturb_start_ix = self.features_in_step * step
+            perturb_end_ix = self.features_in_step * (step + 1)
+            perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
+
+            # Inplace perturbation.
+            perturb_funcs.perturb_batch(
+                arr=x_batch_perturbed,
+                indices=perturb_indices,
+                perturb_func=perturb_func,
+                **perturb_func_kwargs,
+            )
+
+            # Check for changes in perturbation.
+            for x, x_perturbed in zip(x_batch, x_batch_perturbed):
+                asserts.assert_perturbation_caused_change(
+                    x=x, x_perturbed=x_perturbed)
+
+            yield x_batch_perturbed
+
     def process_batch(
             self,
             model: ModelInterface,
@@ -1381,36 +1443,35 @@ class PixelFlipping(Metric):
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
 
-        # Get indices of sorted attributions (descending).
-        # TODO: do this in a more readable way or even better: without for-loop
+        # create array for predictions of each step
         batch_size = x_batch.shape[0]
-        flat_shape = a_batch[0].flatten().shape
-        a_batch_flat = np.zeros((batch_size, *flat_shape))
-        a_batch_indices = np.zeros((batch_size, *flat_shape), dtype=np.int)
-        for i in range(batch_size):
-            a_batch_flat[i] = a_batch[i].flatten()
-            a_batch_indices[i] = np.argsort(-a_batch_flat[i])
-
-        n_steps = math.ceil(a_batch_indices.shape[1] / self.features_in_step)
+        n_steps = math.ceil(a_batch[0].size / self.features_in_step)
         preds = [[None for _ in range(n_steps)] for _ in range(batch_size)]
-        x_batch_perturbed = x_batch.copy()
 
-        for step in range(n_steps):
+        # create generator for perturbed batches
+        perturbation_generator = self.generate_perturbed_batches(
+            x_batch=x_batch,
+            a_batch=a_batch,
+            n_steps=n_steps,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+        )
 
-            # Perturb input by indices of attributions.
-            perturb_start_ix = self.features_in_step * step
-            perturb_end_ix = self.features_in_step * (step + 1)
-            perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
+        # Predict on original unperturbed input x.
+        # TODO: do this only if difference-flag is True
+        x_input = model.shape_input(
+            x=x_batch,
+            shape=x_batch.shape,
+            channel_first=True,
+            batched=True,
+        )
+        y_batch_pred = model.predict(
+            x=x_input,
+            softmax_act=True,
+            **model_predict_kwargs,
+        )
 
-            perturb_funcs.perturb_batch(
-                arr=x_batch_perturbed,
-                indices=perturb_indices,
-                perturb_func=perturb_func,
-                **perturb_func_kwargs,
-            )
-            for x, x_perturbed in zip(x_batch, x_batch_perturbed):
-                asserts.assert_perturbation_caused_change(
-                    x=x, x_perturbed=x_perturbed)
+        for step, x_batch_perturbed in enumerate(perturbation_generator):
 
             # Predict on perturbed input x.
             x_input = model.shape_input(
@@ -1426,11 +1487,16 @@ class PixelFlipping(Metric):
                 **model_predict_kwargs,
             )
 
+            #y_batch_pred_target = y_batch_pred[np.arange(len(y_batch)), y_batch.astype(int)]
+            #self.last_results[indices_batch, steps_batch] = y_batch_pred_target
+
             # TODO: get rid of for loop
             iterator = zip(y_batch, y_batch_pred_perturb)
             for ix, (y, y_pred_perturb) in enumerate(iterator):
                 y_pred_perturb = float(y_pred_perturb[y])
-                preds[ix][step] = y_pred_perturb
+                y_pred = float(y_batch_pred[ix, y])
+                # TODO: flag difference output
+                preds[ix][step] = y_pred - y_pred_perturb
 
         return preds
 
@@ -1440,6 +1506,8 @@ class PixelFlipping(Metric):
             Y: np.ndarray,
             A: np.ndarray,
             S: np.ndarray,
+            model,
+            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -1454,7 +1522,7 @@ class PixelFlipping(Metric):
                 max_steps_per_input=self.max_steps_per_input,
                 input_shape=X.shape[2:],
             )
-        return X, Y, A, S
+        return X, Y, A, S, model, model_predict_kwargs
 
 
 class RegionPerturbation(Metric):
