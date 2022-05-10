@@ -1,5 +1,4 @@
 """This module contains the utils functions of the library."""
-import math
 import re
 import random
 from importlib import util
@@ -7,7 +6,6 @@ from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
-from tqdm import tqdm
 
 if util.find_spec("torch"):
     import torch
@@ -63,33 +61,37 @@ def get_baseline_value(
     if isinstance(choice, (float, int)):
         return choice
     elif isinstance(choice, str):
-        fill_dict = get_baseline_dict(arr, patch)
-        if choice.lower() not in fill_dict:
-            raise ValueError(
-                f"Ensure that 'choice'(str) is in {list(fill_dict.keys())}"
-            )
-        return fill_dict[choice.lower()]
+        valid_choices = ["mean", "black", "min", "white", "max",
+                         "random", "uniform", "saltnpepper", "gaussian",
+                         "neighbourhood_mean", "neighbourhood_random_min_max"]
+        if choice not in valid_choices:
+            raise ValueError(f"Ensure that 'choice'(str) is in {valid_choices}")
+        elif choice == "mean":
+            return float(arr.mean())
+        elif choice == "random":
+            return float(random.random())
+        elif choice == "uniform":
+            return float(random.uniform(arr.min(), arr.max()))
+        elif choice == "black" or choice == "min":
+            return float(arr.min())
+        elif choice == "white" or choice == "max":
+            return float(arr.max())
+        elif choice == "saltnpepper":
+            return float(random.choice([arr.min(), arr.max()]))
+        elif choice == "gaussian":
+            return float(random.gauss(mu=arr.mean(), sigma=arr.std()))
+        elif choice == "neighbourhood_mean":
+            if patch is None:
+                raise ValueError("patch must not be None for neighbourhood_mean")
+            return float(patch.mean())
+        elif choice == "neighbourhood_random_min_max":
+            if patch is None:
+                raise ValueError("patch must not be None for neighbourhood_random_min_max")
+            return float(random.uniform(patch.min(), patch.max())),
     else:
         raise ValueError(
             "Specify 'perturb_baseline' or 'constant_value' as a string, integer or float."
         )
-
-
-def get_baseline_dict(arr: np.ndarray, patch: Optional[np.ndarray] = None) -> dict:
-    """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
-    fill_dict = {
-        "mean": float(arr.mean()),
-        "random": float(random.random()),
-        "uniform": float(random.uniform(arr.min(), arr.max())),
-        "black": float(arr.min()),
-        "white": float(arr.max()),
-    }
-    if patch is not None:
-        fill_dict["neighbourhood_mean"] = (float(patch.mean()),)
-        fill_dict["neighbourhood_random_min_max"] = (
-            float(random.uniform(patch.min(), patch.max())),
-        )
-    return fill_dict
 
 
 def get_name(str: str):
@@ -367,36 +369,3 @@ def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
     return arr[tuple(unpad_slice)]
 
 
-def get_number_of_batches(sequence: Sequence, batch_size: int):
-    return math.ceil(len(sequence)/batch_size)
-
-
-def get_batch_generator(*iterables: np.ndarray, batch_size: int,
-                        display_progressbar: bool = False):
-    if iterables[0] is None:
-        raise ValueError("first iterable must not be None!")
-
-    iterables = list(iterables)
-    n_instances = len(iterables[0])
-    n_batches = get_number_of_batches(iterables[0], batch_size=batch_size)
-
-    # check if any of the iterables is None and replace with list of None
-    for i in range(len(iterables)):
-        if iterables[i] is None:
-            iterables[i] = [None for _ in range(n_instances)]
-
-    if not all(len(iterable) == len(iterables[0])
-               for iterable in iterables):
-        raise ValueError("number of batches needs to be equal for all")
-
-    iterator = tqdm(
-        range(0, n_batches),
-        total=n_batches,
-        disable=not display_progressbar,
-    )
-
-    for batch_idx in iterator:
-        batch_start = batch_size * batch_idx
-        batch_end = min(batch_size * (batch_idx + 1), n_instances)
-        batch = tuple(iterable[batch_start:batch_end]  for iterable in iterables)
-        yield batch
