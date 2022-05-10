@@ -1,14 +1,18 @@
 """This module implements the base class for creating evaluation measures."""
+import functools
+import math
 import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 from ..helpers import utils
 from ..helpers import asserts
-from ..helpers import normalise_func
+from ..helpers.model_interface import ModelInterface
+from ..helpers.normalise_func import normalise_batch, normalise_by_negative
 from ..helpers import warn_func
 
 
@@ -23,13 +27,12 @@ class Metric:
             abs: bool = False,
             normalise: bool = False,
             normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            #perturb_kwargs: Optional[Dict[str, Any]] = None,
             perturb_func: Optional[Callable] = None,
-            perturb_func_kwargs: Optional[Dict] = None,
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
             plot_func: Optional[Callable] = None,
             display_progressbar: bool = False,
-            disable_warnings: bool = False,
-            warn_parametrisation_kwargs: Optional[Dict[str, str]] = None,
             **kwargs):
         """
         Initialise the Metric base class.
@@ -48,12 +51,11 @@ class Metric:
             all_results: a list containing the resulting scores of all the calls made on the metric instance
 
         """
-        self.kwargs = kwargs
         self.abs = abs
         self.normalise = normalise
 
         if normalise_func is None:
-            normalise_func = normalise_func.normalise_by_negative
+            self.normalise_func = normalise_by_negative
         self.normalise_func = normalise_func
         if normalise_func_kwargs is None:
             normalise_func_kwargs = {}
@@ -61,6 +63,13 @@ class Metric:
         # this code prioritizes normalise_func_kwargs items over kwargs items
         normalise_func_kwargs = {**kwargs, **normalise_func_kwargs}
         self.normalise_func_kwargs = normalise_func_kwargs
+
+        #if perturb_kwargs is None:
+        #    perturb_kwargs = {}
+        # TODO: deprecate this kind of unspecific kwargs passing
+        # this code prioritizes perturb_kwargs items over kwargs items
+        #perturb_kwargs = {**kwargs, **perturb_kwargs}
+        #self.perturb_kwargs = perturb_kwargs
 
         self.perturb_func = perturb_func
         if perturb_func_kwargs is None:
@@ -72,71 +81,13 @@ class Metric:
 
         self.default_plot_func = plot_func
         self.display_progressbar = display_progressbar
-        self.disable_warnings = disable_warnings
 
         self.last_results = []
         self.all_results = []
 
-        # Asserts and warnings.
-        if not self.disable_warnings:
-            if warn_parametrisation_kwargs is None:
-                raise ValueError(
-                    "no warn_parametrisation_kwargs passed, but warnings are not disabled."
-                )
-            warn_func.warn_parameterisation(**warn_parametrisation_kwargs)
+        # TODO: deprecate this kind of unspecific kwargs passing
+        self.kwargs = kwargs
 
-
-    def __call__(
-            self,
-            model,
-            x_batch: np.ndarray,
-            y_batch: Union[np.ndarray, int],
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            batch_size: int = 64,
-            **kwargs,
-    ) -> Union[int, float, list, dict, None]:
-        """
-        This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
-
-        Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
-            args: optional args
-            kwargs: optional dict
-
-        Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
-
-        Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
-
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
-
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
-
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
-
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Metric(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
-        """
     def __call__(
             self,
             model,
@@ -191,6 +142,114 @@ class Metric:
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
+        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
+            **kwargs,
+        )
+
+        # enable tqdm progressbar if requested
+        iterator = tqdm(
+            enumerate(zip(X, Y, A, S)),
+            total=len(X),
+            disable=not self.display_progressbar,
+        )
+        self.last_results = [None for _ in range(len(X))]
+        for instance_id, (x_instance, y_instance, a_instance, s_instance) in iterator:
+            result = self.process_instance(
+                model=model,
+                x=x_instance,
+                y=y_instance,
+                a=a_instance,
+                s=s_instance,
+                # TODO: pass these as **kwargs
+                perturb_func=self.perturb_func,
+                perturb_func_kwargs=self.perturb_func_kwargs,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+            self.last_results[instance_id] = result
+
+        # Call post-processing
+        self.postprocess()
+
+        self.all_results.append(self.last_results)
+        return self.last_results
+
+    @abstractmethod
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x_instance: np.ndarray,
+            y_instance: np.ndarray,
+            a_instance: np.ndarray,
+            s_instance: Optional[np.ndarray] = None,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+            model_predict_kwargs: Optional[Dict] = None,
+    ):
+        raise NotImplementedError()
+
+    def prepare(
+            self,
+            model,
+            x_batch: np.ndarray,
+            y_batch: Union[np.ndarray, int],
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            explain_func: Optional[Callable] = None,
+            explain_func_kwargs: Optional[Dict] = None,
+            model_predict_kwargs: Optional[Dict] = None,
+            **kwargs,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Metric(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+        # TODO: depracate {x,y,a,s}_batch suffixes
+
         # Reshape input batch to channel first order:
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             self.channel_first = kwargs.get("channel_first")
@@ -200,6 +259,7 @@ class Metric:
 
         # Wrap the model into an interface
         if model:
+            # TODO: add model_predict_kwargs
             model = utils.get_wrapped_model(model, channel_first=self.channel_first)
 
         # get optional kwargs for model.predict call
@@ -210,6 +270,7 @@ class Metric:
         model_predict_kwargs = {**kwargs, **model_predict_kwargs}
 
         # Update kwargs.
+        # TODO: deprecate this kind of unspecific kwargs passing
         self.kwargs = {
             **kwargs,
             **{
@@ -252,57 +313,21 @@ class Metric:
         asserts.assert_attributions(x_batch=X, a_batch=A)
 
         # Call pre-processing
-        X, Y, A, S = self.preprocess(X=X, Y=Y, A=A, S=S)
-
-        if self.abs:
-            # inplace execution
-            np.abs(A, out=A)
+        X, Y, A, S, model, model_predict_kwargs = self.preprocess(
+            X=X, Y=Y, A=A, S=S, model=model, model_predict_kwargs=model_predict_kwargs,
+        )
 
         if self.normalise:
-            # inplace execution
-            normalise_func.normalise_batch(
+            A = normalise_batch(
                 arr=A,
                 normalise_func=self.normalise_func,
                 normalise_func_kwargs=self.normalise_func_kwargs,
             )
 
-        # create generator for generating batches
-        batch_generator = utils.get_batch_generator(
-            X, Y, A, S,
-            batch_size=batch_size,
-            display_progressbar=self.display_progressbar,
-        )
+        if self.abs:
+            A = np.abs(A)
 
-        self.last_results = []
-        for x_batch, y_batch, a_batch, s_batch in batch_generator:
-            result = self.process_batch(
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                s_batch=s_batch,
-                perturb_func=self.perturb_func,
-                perturb_func_kwargs=self.perturb_func_kwargs,
-                model_predict_kwargs=model_predict_kwargs,
-            )
-            self.last_results.extend(result)
-
-        # Call post-processing
-        self.postprocess()
-
-        self.all_results.append(self.last_results)
-        return self.last_results
-
-    @abstractmethod
-    def process_batch(
-            self,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            a_batch: np.ndarray,
-            s_batch: Optional[np.ndarray] = None,
-            **kwargs,
-    ):
-        raise NotImplementedError()
+        return X, Y, A, S, model, model_predict_kwargs
 
     def preprocess(
             self,
@@ -310,10 +335,12 @@ class Metric:
             Y: np.ndarray,
             A: np.ndarray,
             S: np.ndarray,
+            model,
+            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        return X, Y, A, S
+        return X, Y, A, S, model, model_predict_kwargs
 
-    def postprocess(self) -> None:
+    def postprocess(self):
         pass
 
     @property
@@ -403,3 +430,186 @@ class Metric:
             plt.savefig(fname=path_to_save, dpi=400)
 
         return None
+
+
+class BatchedMetric(Metric):
+    """
+    Batched implementation inherited from base Metric class.
+    """
+
+    @asserts.attributes_check
+    def __init__(
+            self,
+            abs: bool = False,
+            normalise: bool = False,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
+            #perturb_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Optional[Callable] = None,
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs):
+        """
+        Initialise the BatchedMetric base class.
+        """
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            #perturb_kwargs=perturb_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
+        )
+
+    def __call__(
+            self,
+            model,
+            x_batch: np.ndarray,
+            y_batch: Union[np.ndarray, int],
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            batch_size: int = 64,
+            explain_func: Optional[Callable] = None,
+            explain_func_kwargs: Optional[Dict] = None,
+            model_predict_kwargs: Optional[Dict] = None,
+            **kwargs,
+    ) -> Union[int, float, list, dict, None]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+            args: optional args
+            kwargs: optional dict
+
+        Returns
+            last_results: a list of float(s) with the evaluation outcome of concerned batch
+
+        Examples
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Metric(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
+        """
+        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
+            **kwargs,
+        )
+
+        # create generator for generating batches
+        batch_generator = self.generate_batches(
+            X, Y, A, S,
+            batch_size=batch_size,
+            display_progressbar=self.display_progressbar,
+        )
+
+        # initialize results array
+        #self.last_results = np.zeros((X.shape[0], n_steps)) * np.nan
+
+        for x_batch, y_batch, a_batch, s_batch in batch_generator:
+            result = self.process_batch(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                s_batch=s_batch,
+                perturb_func=self.perturb_func,
+                perturb_func_kwargs=self.perturb_func_kwargs,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+            self.last_results.extend(result)
+
+        # Call post-processing
+        self.postprocess()
+
+        self.all_results.append(self.last_results)
+        return self.last_results
+
+    @abstractmethod
+    def process_batch(
+            self,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            a_batch: np.ndarray,
+            s_batch: Optional[np.ndarray] = None,
+            **kwargs,
+    ):
+        raise NotImplementedError()
+
+    def postprocess(self):
+        pass
+
+    @staticmethod
+    def get_number_of_batches(sequence: Sequence, batch_size: int):
+        return math.ceil(len(sequence)/batch_size)
+
+    def generate_batches(
+            self,
+            *iterables: np.ndarray, batch_size: int,
+            display_progressbar: bool = False,
+    ):
+        if iterables[0] is None:
+            raise ValueError("first iterable must not be None!")
+
+        iterables = list(iterables)
+        n_instances = len(iterables[0])
+        n_batches = self.get_number_of_batches(iterables[0], batch_size=batch_size)
+
+        # check if any of the iterables is None and replace with list of None
+        for i in range(len(iterables)):
+            if iterables[i] is None:
+                iterables[i] = [None for _ in range(n_instances)]
+
+        if not all(len(iterable) == len(iterables[0])
+                   for iterable in iterables):
+            raise ValueError("number of batches needs to be equal for all")
+
+        iterator = tqdm(
+            range(0, n_batches),
+            total=n_batches,
+            disable=not display_progressbar,
+        )
+
+        for batch_idx in iterator:
+            batch_start = batch_size * batch_idx
+            batch_end = min(batch_size * (batch_idx + 1), n_instances)
+            batch = tuple(iterable[batch_start:batch_end]  for iterable in iterables)
+            yield batch
