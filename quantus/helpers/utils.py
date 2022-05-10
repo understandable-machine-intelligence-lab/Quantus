@@ -17,7 +17,15 @@ if util.find_spec("tensorflow"):
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
-    """Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels."""
+    """
+    Given an image, return segments or so-called 'super-pixels' segments i.e., an 2D mask with segment labels.
+
+    Parameters
+    ----------
+
+    Returns
+
+    """
     if img.ndim != 3:
         raise ValueError(
             "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
@@ -43,7 +51,14 @@ def get_baseline_value(
     patch: Optional[np.ndarray] = None,
     **kwargs,
 ) -> np.array:
-    """Get the baseline value to fill the array with, in the shape of return_shape"""
+    """
+    Get the baseline value to fill the array with, in the shape of return_shape.
+
+    Parameters
+    ----------
+
+    Returns
+    """
 
     if isinstance(value, (float, int)):
         return np.full(return_shape, value)
@@ -77,7 +92,14 @@ def get_baseline_value(
 def get_baseline_dict(
     arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
 ) -> dict:
-    """Make a dicionary of baseline approaches depending on the input x (or patch of input)."""
+    """
+    Make a dicionary of baseline approaches depending on the input x (or patch of input).
+
+    Parameters
+    ----------
+
+    Returns
+    """
     fill_dict = {
         "mean": float(arr.mean()),
         "uniform": float(
@@ -161,7 +183,14 @@ def infer_channel_first(x: np.array):
 
 
 def make_channel_first(x: np.array, channel_first=False):
-    """Reshape batch to channel first."""
+    """
+    Reshape batch to channel first.
+
+    Parameters
+    ----------
+
+    Returns
+    """
     if channel_first:
         return x
 
@@ -194,6 +223,9 @@ def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterf
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
+    Parameters
+    ----------
+
     Returns
         A wrapped ModelInterface model.
     """
@@ -213,7 +245,11 @@ def blur_at_indices(
     indexed_axes: Sequence[int],
 ) -> np.array:
     """
-    Returns a version of arr that is blurred at indices
+    Returns a version of arr that is blurred at indices.
+
+    Parameters
+    ----------
+
     """
 
     assert kernel.ndim == len(
@@ -279,6 +315,10 @@ def create_patch_slice(
 ) -> Tuple[np.ndarray]:
     """
     Create a patch slice from patch size and coordinates.
+
+    Parameters
+    ----------
+
     """
 
     if isinstance(patch_size, int):
@@ -312,7 +352,12 @@ def create_patch_slice(
 def get_nr_patches(
     patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
 ) -> int:
-    """Get number of patches for given shape."""
+    """
+    Get number of patches for given shape.
+
+    Parameters
+    ----------
+    """
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
     patch_size = np.array(patch_size)
@@ -337,7 +382,12 @@ def _pad_array(
     mode: str,
     padded_axes: Sequence[int],
 ):
-    """To allow for any patch_size we add padding to the array."""
+    """
+    To allow for any patch_size we add padding to the array.
+
+    Parameters
+    ----------
+    """
 
     assert (
         len(padded_axes) <= arr.ndim
@@ -372,7 +422,19 @@ def _unpad_array(
     pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
     padded_axes: Sequence[int],
 ):
-    """Remove padding from the array."""
+    """
+    Remove padding from the array.
+
+    Parameters
+    ----------
+        arr: a numpy array of the input to be unpaded
+        pad_witdh: the width of the padding for the different dimensions
+        padded_axes: the axes for padding
+
+    Returns
+        the unpadded array
+
+    """
 
     assert (
         len(padded_axes) <= arr.ndim
@@ -410,7 +472,14 @@ def _unpad_array(
 
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
-    """Expand additional channel dimension(s) for attributions if needed."""
+    """
+    Expand additional channel dimension(s) for attributions if needed.
+
+    Parameters
+    ----------
+        x_batch: a np.ndarray which contains the input data that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+    """
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
@@ -425,18 +494,27 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
     else:
         attr_axes = infer_attribution_axes(a_batch, x_batch)
 
-        # TODO: infer_attribution_axes currently returns dimensions w/o batch dimension
+        # TODO: Infer_attribution_axes currently returns dimensions w/o batch dimension.
         attr_axes = [a + 1 for a in attr_axes]
         expand_axes = [a for a in range(1, x_batch.ndim) if a not in attr_axes]
 
         return np.expand_dims(a_batch, axis=tuple(expand_axes))
 
 
-# TODO: adapt for batched processing
 def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence[int]:
     """
     Infers the axes in x_batch that are covered by a_batch.
+
+    Parameters
+    ----------
+        x_batch: a np.ndarray which contains the input data that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+
+    Returns
+        the axes inferred
     """
+    # TODO: Adapt for batched processing.
+
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
             f"a_batch and x_batch must have same number of batches ({a_batch.shape[0]} != {x_batch.shape[0]})"
@@ -449,7 +527,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
 
-    # TODO: we currently assume here that the batch axis is not carried into the perturbation functions
+    # TODO: We currently assume here that the batch axis is not carried into the perturbation functions.
     a_shape = [s for s in np.shape(a_batch)[1:] if s != 1]
     x_shape = [s for s in np.shape(x_batch)[1:]]
 
@@ -465,6 +543,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
+
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
@@ -473,15 +552,18 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
+
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
+
         if a_batch.ndim == x_batch.ndim and len(a_shape) < a_batch.ndim:
             a_subshapes = [
                 [np.shape(a_batch)[1:][i] for i in range(start, start + len(a_shape))]
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
-                # Inferring channel shape
+
+                # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
                         return np.arange(dim, len(np.shape(a_batch)[1:]))
@@ -503,7 +585,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     else:
-        # Infer attribution axes
+        # Infer attribution axes.
         for dim in range(len(x_shape) + 1):
             if a_shape == x_shape[dim:]:
                 return np.arange(dim, len(x_shape))
@@ -516,7 +598,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
     )
 
 
-# TODO: adapt for batched processing (if necessary)
 def expand_indices(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice]],
@@ -525,10 +606,18 @@ def expand_indices(
     """
     Expands indices to fit array shape. Returns expanded indices.
 
-    indexed_axes refers to all axes that are not indexed by slice(None).
-    """
+    Parameters
+    ----------
+        arr: the input to the expanded
+        indicies: list of indicies
+        indexed_axes: refers to all axes that are not indexed by slice(None).
 
-    # Handle indexed_axes
+    Returns
+
+    """
+    # TODO: Adapt for batched processing.
+
+    # Handle indexed_axes.
     indexed_axes = np.sort(np.array(indexed_axes))
     asserts.assert_indexed_axes(arr, indexed_axes)
 
@@ -553,17 +642,17 @@ def expand_indices(
                 except:
                     raise ValueError("Unsupported type of indices")
 
-    # Check if unraveling is needed
+    # Check if unraveling is needed.
     if np.all([isinstance(i, int) for i in expanded_indices]):
         expanded_indices = np.unravel_index(
             expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
         )
 
-    # Handle case of 1D indices
+    # Handle case of 1D indices.
     if not np.array(expanded_indices).ndim > 1:
         expanded_indices = [np.array(expanded_indices)]
 
-    # Cast to list so item assignment works
+    # Cast to list so item assignment works.
     expanded_indices = list(expanded_indices)
 
     if indexed_axes.size != len(expanded_indices):
@@ -577,7 +666,7 @@ def expand_indices(
                 expanded_indices[i], axis=tuple(range(len(expanded_indices) - 1))
             )
 
-    # Buffer with None-slices if indices index the last axes
+    # Buffer with None-slices if indices index the last axes.
     for i in range(0, indexed_axes[0]):
         expanded_indices = slice(None), *expanded_indices
 
@@ -586,9 +675,18 @@ def expand_indices(
 
 def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     """
-    Gets the shape of the arr dimensions not included in axes
+    Gets the shape of the arr dimensions not included in axes.
+
+    Parameters
+    ----------
+        arr: the input to the expanded
+        axes: a sequence of ints containing the axes
+
+    Returns
+        a tuple of the leftover shape
     """
-    # TODO: adapt for batched processing (if necessary).
+
+    # TODO: Adapt for batched processing.
     axes = np.sort(np.array(axes))
     asserts.assert_indexed_axes(arr, axes)
 
@@ -598,12 +696,17 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
 
 def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     """
-    Checks if offset coordinates are within the image frame. Return offset coordinates for valid indices and the
-    list of booleans which identifies valid ids.
+    Checks if offset coordinates are within the image frame
     Based on https://github.com/tleemann/road_evaluation.
-    indices (list): list of indices to be offset.
-    offset (tuple): offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
-    img_shape (tuple): image shape in (channels, height, width) format.
+      Parameters
+    ----------
+        a tuple of the leftover shape
+        indices (list): list of indices to be offset.
+        offset (tuple): offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
+        img_shape (tuple): image shape in (channels, height, width) format.
+
+    Returns
+         offset coordinates for valid indices and the list of booleans which identifies valid ids.
     """
     x = indices // img_shape[2]
     y = indices % img_shape[2]
@@ -613,6 +716,7 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     off_coords = indices + offset[0] * img_shape[2] + offset[1]
     return off_coords[valid], valid
 
-  
-def calculate_auc(i: np.array, dx: int = 1.0):
-    return np.trapz(np.array(i), dx=dx)
+
+def calculate_auc(values: np.array, dx: int = 1.0):
+    """Calculate area under the curve using the composite trapezoidal rule."""
+    return np.trapz(np.array(values), dx=dx)
