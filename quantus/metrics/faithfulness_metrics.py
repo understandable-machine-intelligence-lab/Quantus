@@ -2870,15 +2870,6 @@ class Sufficiency(Metric):
         a_sim_matrix = np.zeros_like(dist_matrix)
         a_sim_matrix[dist_matrix <= self.threshold] = 1
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix)),
-                total=len(x_batch_s),
-            )
-
         # Predict on input.
         x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
         y_pred_classes = np.argmax(
