@@ -14,7 +14,8 @@ AVAILABLE_METRICS = {
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
         "IROF": IterativeRemovalOfFeatures,
-        # "Infidelity": Infidelity,
+        "ROAD": ROAD,
+        "Infidelity": Infidelity,
     },
     "Robustness": {
         "Continuity Test": Continuity,
@@ -48,13 +49,16 @@ AVAILABLE_METRICS = {
 
 
 AVAILABLE_PERTURBATION_FUNCTIONS = {
-    "gaussian_noise": gaussian_noise,
     "baseline_replacement_by_indices": baseline_replacement_by_indices,
+    "baseline_replacement_by_shift": baseline_replacement_by_shift,
+    "baseline_replacement_by_blur": baseline_replacement_by_blur,
+    "gaussian_noise": gaussian_noise,
+    "uniform_noise": uniform_noise,
     "rotation": rotation,
     "translation_x_direction": translation_x_direction,
     "translation_y_direction": translation_y_direction,
-    "uniform_noise": uniform_noise,
     "no_perturbation": no_perturbation,
+    "noisy_linear_imputation": noisy_linear_imputation,
 }
 
 

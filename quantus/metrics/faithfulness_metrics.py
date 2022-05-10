@@ -2555,8 +2555,7 @@ class ROAD(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            order (string): Indicates whether attributions are ordered randomly ("random"),
-            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
+            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
             percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
             noise (noise): Noise added, default=0.01.
         """
@@ -2571,7 +2570,6 @@ class ROAD(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.perturb_func = self.kwargs.get("perturb_func", noisy_linear_imputation)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
         self.noise = self.kwargs.get("noise", 0.01)
         self.last_results = {}
@@ -2725,7 +2723,7 @@ class ROAD(Metric):
 
                 self.last_results[str(p)] += y == class_pred_perturb
 
-        # Calculate accuracy for every number of most important pixels removed
+        # Calculate accuracy for every number of most important pixels removed.
         for k in self.last_results:
             self.all_results[k] = self.last_results[k] / len(x_batch_s)
 
