@@ -1494,7 +1494,7 @@ def test_ROAD(
     ), "Test failed."
 
 
-@pytest.mark.robustness
+@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
