@@ -1167,15 +1167,6 @@ class Consistency(Metric):
 
         a_labels = np.array(list(map(self.discretize_func, a_batch_flat)))
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_labels))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
-                total=len(x_batch_s),
-            )
-
         # Predict on input.
         x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
         y_pred_classes = np.argmax(
