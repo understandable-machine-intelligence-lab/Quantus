@@ -1176,21 +1176,11 @@ class Consistency(Metric):
                 total=len(x_batch_s),
             )
 
-        y_pred_classes = np.zeros_like(y_batch)
-
-        for ix, (x, y, a, a_label) in iterator:
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred_classes[ix] = np.argmax(
-                model.predict(x_input, softmax_act=True, **self.kwargs)
-            )
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
+        y_pred_classes = np.argmax(
+            model.predict(x_input, softmax_act=True, **self.kwargs), axis=1
+        ).flatten()
 
         # Use tqdm progressbar if not disabled.
         if not self.display_progressbar:
