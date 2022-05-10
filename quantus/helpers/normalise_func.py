@@ -8,9 +8,8 @@ def normalise_batch(
         normalise_func: Callable,
         **normalise_func_kwargs,
 ) -> None:
-    """ inplace normalisation of complete batch """
-    for i in range(len(arr)):
-        arr[i] = normalise_func(arr[i], **normalise_func_kwargs)
+    """ out-of-place normalisation of complete batch """
+    return np.apply_along_axis(normalise_func, 0, arr, **normalise_func_kwargs)
 
 
 def normalise_by_max(a: np.ndarray, **kwargs) -> np.ndarray:
