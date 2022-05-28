@@ -323,7 +323,7 @@ def generate_captum_explanation(
     elif method == "GradCam".lower():
         if "gc_layer" not in kwargs:
             raise ValueError(
-                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[-4][1] to run GradCam."
             )
 
         if isinstance(kwargs["gc_layer"], str):
