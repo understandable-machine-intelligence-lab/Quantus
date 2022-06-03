@@ -39,7 +39,6 @@ def mosaic_creation(images: np.ndarray, labels: np.ndarray, mosaics_per_class: i
     if seed:
         args = [seed]
     rng = random.Random(*args)
-    np_rng = np.random.RandomState(*args)
 
     mosaics_images_list = []
     mosaic_indices_list = []
@@ -57,24 +56,22 @@ def mosaic_creation(images: np.ndarray, labels: np.ndarray, mosaics_per_class: i
         target_class_images_and_indices = list(zip(target_class_images, target_class_image_indices))
 
         no_repetitions = int(math.ceil((2 * mosaics_per_class) / len(target_class_images)))
-        total_target_class_images_and_indices = np.repeat(target_class_images_and_indices, repeats=no_repetitions)
-        np_rng.shuffle(total_target_class_images_and_indices)
+        total_target_class_images_and_indices = target_class_images_and_indices * no_repetitions
+        rng.shuffle(total_target_class_images_and_indices)
 
-        no_label_repetitions = int(math.ceil((2 * mosaics_per_class) / len(outer_classes)))
-        list_outer_images_and_indices = []
-        list_outer_classes = []
+        no_outer_images_per_class = int(math.ceil((2 * mosaics_per_class) / len(outer_classes)))
+        total_outer_images_and_indices = []
+        total_outer_labels = []
         for outer_class in outer_classes:
             outer_class_images = images[labels == outer_class]
             outer_class_images_indices = np.where(labels == outer_class)[0]
             outer_class_images_and_indices = list(zip(outer_class_images, outer_class_images_indices))
 
-            list_outer_images_and_indices.append(np_rng.choice(outer_class_images_and_indices, size=no_label_repetitions))
-            list_outer_classes.append(np.repeat([outer_class], repeats=no_label_repetitions))
+            current_outer_images_and_indices = rng.choices(outer_class_images_and_indices, k=no_outer_images_per_class)
+            total_outer_images_and_indices += current_outer_images_and_indices
+            total_outer_labels += [outer_class] * no_outer_images_per_class
 
-        total_outer_images_and_indices = np.concatenate(list_outer_images_and_indices, axis=0)
-        total_outer_labels = np.concatenate(list_outer_classes, axis=0)
-
-        total_outer = list(zip(total_outer_images_and_indices.tolist(), total_outer_labels.tolist()))
+        total_outer = list(zip(total_outer_images_and_indices, total_outer_labels))
         rng.shuffle(total_outer)
 
         iter_images_and_indices = iter(total_target_class_images_and_indices)
