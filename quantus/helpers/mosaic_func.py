@@ -7,9 +7,9 @@ import numpy as np
 
 def build_single_mosaic(mosaic_images_list: List[np.ndarray]) -> np.ndarray:
     ''' Frame a list of 4 images into a 2x2 mosaic image '''
-    first_row = np.hstack((mosaic_images_list[0], mosaic_images_list[1]))
-    second_row = np.hstack((mosaic_images_list[2], mosaic_images_list[3]))
-    mosaic = np.vstack((first_row, second_row))
+    first_row = np.concatenate((mosaic_images_list[0], mosaic_images_list[1]), axis=1)
+    second_row = np.concatenate((mosaic_images_list[2], mosaic_images_list[3]), axis=1)
+    mosaic = np.concatenate((first_row, second_row), axis=2)
     return mosaic
 
 
