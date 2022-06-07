@@ -1,5 +1,5 @@
 """This module contains the collection of confusion metrics to evaluate attribution-based explanations of neural network models."""
-from typing import Callable, Dict, List, Union, Tuple
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 from tqdm import tqdm
@@ -67,7 +67,7 @@ class Focus(Metric):
             model: ModelInterface,
             x_batch: np.array,
             y_batch: np.array,
-            a_batch: Union[np.array, None],
+            a_batch: Optional[np.array],
             p_batch: List[tuple],
             *args,
             **kwargs,
@@ -81,7 +81,7 @@ class Focus(Metric):
             model: a torch model e.g., torchvision.models that is subject to explanation
             x_batch: a np.ndarray which contains the input mosaics that are explained
             y_batch: a np.ndarray which contains the target classes that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            a_batch: an optional np.ndarray which contains pre-computed attributions i.e., explanations
             p_batch: a List[tuple] which contains the positions of the target class within the mosaic. Each tuple
                      contains 0/1 values referring to (top_left, top_right, bottom_left, bottom_right).
             args: Arguments (optional)
