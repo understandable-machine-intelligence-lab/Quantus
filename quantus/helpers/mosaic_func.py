@@ -6,7 +6,7 @@ import numpy as np
 
 
 def build_single_mosaic(mosaic_images_list: List[np.ndarray]) -> np.ndarray:
-    ''' Frame a list of 4 images into a 2x2 mosaic image '''
+    """Frame a list of 4 images into a 2x2 mosaic image."""
     first_row = np.concatenate((mosaic_images_list[0], mosaic_images_list[1]), axis=1)
     second_row = np.concatenate((mosaic_images_list[2], mosaic_images_list[3]), axis=1)
     mosaic = np.concatenate((first_row, second_row), axis=2)
@@ -22,19 +22,30 @@ def mosaic_creation(images: np.ndarray, labels: np.ndarray, mosaics_per_class: i
             List[Union[int, str]]
         ]:
     """
+    Build a mosaic dataset from an image dataset (images). Each mosaic corresponds to a 2x2 grid. Each one
+    is composed by four images: two belonging to the target class and the other two are chosen randomly from
+    the rest of the classes.
 
     Parameters
     ----------
-    images:
-    labels:
-    mosaics_per_class:
-    seed:
+    images: a np.ndarray which contains the input data
+    labels: a np.ndarray which contains the labels from the input data
+    mosaics_per_class: an integer indicating the number of mosaics per class
+    seed: an integer used to generate a random number (optional)
 
     Returns
     -------
-
-
+    all_mosaics: a np.ndarray which contains the mosaic data
+    mosaic_indices_list: a List[Tuple[int, int, int, int]] which contains the image indices corresponding to the images
+                         composing each mosaic
+    mosaic_labels_list: a List[Tuple[Union[int, str], ...]] which contains the labels of the images composing each
+                        mosaic. Each tuple contains four values referring to (top_left_label, top_right_label,
+                        bottom_left_label, bottom_right_label)
+    p_batch_list: a List[Tuple[int, int, int, int]] which contains the positions of the target class within the mosaic.
+                  Each tuple contains 0 and 1 values (non_target_class and target_class) referring to (top_left, top_right, bottom_left, bottom_right).
+    target_list: a List[Union[int, str]] which contains the target class of each mosaic.
     """
+
     args = []
     if seed:
         args = [seed]

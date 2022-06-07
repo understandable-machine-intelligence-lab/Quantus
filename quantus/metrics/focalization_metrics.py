@@ -57,9 +57,8 @@ class Focus(Metric):
                     "no parameter! No parameters means nothing to be sensistive on."
                 ),
                 citation=(
-                    # TODO: Place right citation
-                    "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective."
-                    "arXiv:2202.00449 (2022)"
+                    "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases.'"
+                    "arXiv:2109.15035 (2021)"
                 ),
             )
 
