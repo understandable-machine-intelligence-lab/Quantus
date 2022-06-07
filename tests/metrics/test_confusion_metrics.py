@@ -11,7 +11,7 @@ from ...quantus.helpers import perturb_func
 from ...quantus.helpers.explanation_func import explain
 
 
-@pytest.mark.focalisation
+@pytest.mark.confusion
 @pytest.mark.parametrize(
     "model,data,params",
     [
@@ -25,8 +25,6 @@ from ...quantus.helpers.explanation_func import explain
         ),
     ],
 )
-
-
 def test_focus(
         model,
         data: np.ndarray,
