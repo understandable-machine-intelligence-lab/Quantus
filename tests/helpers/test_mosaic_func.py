@@ -23,6 +23,13 @@ from ...quantus.helpers import *
                 },
         ),
         (
+                lazy_fixture("load_cifar10_images"),
+                {
+                    "mosaics_per_class": 4,
+                    "seed": 777
+                },
+        ),
+        (
                 lazy_fixture("load_mnist_images"),
                 {
                     "mosaics_per_class": 10,
