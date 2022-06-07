@@ -5,4 +5,4 @@ from .complexity_metrics import *
 from .axiomatic_metrics import *
 from .localisation_metrics import *
 from .randomisation_metrics import *
-from .focalization_metrics import *
+from .confusion_metrics import *

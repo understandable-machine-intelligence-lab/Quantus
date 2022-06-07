@@ -1,4 +1,4 @@
-"""This module contains the collection of focalization metrics to evaluate attribution-based explanations of neural network models."""
+"""This module contains the collection of confusion metrics to evaluate attribution-based explanations of neural network models."""
 from typing import Callable, Dict, List, Union, Tuple
 
 import numpy as np

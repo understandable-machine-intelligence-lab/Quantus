@@ -45,6 +45,9 @@ AVAILABLE_METRICS = {
         "NonSensitivity": NonSensitivity,
         "InputInvariance": InputInvariance,
     },
+    "Confusion": {
+        "Focus": Focus,
+    },
 }
 
 
