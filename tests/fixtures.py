@@ -78,9 +78,10 @@ def load_mnist_images():
     ).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
+
 @pytest.fixture(scope="session", autouse=True)
 def load_cifar10_images():
-    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_batch = torch.as_tensor(
         x_train[:124,:,:,:].reshape(124, 3, 32, 32),
