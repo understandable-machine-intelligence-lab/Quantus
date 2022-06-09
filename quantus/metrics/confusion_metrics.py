@@ -70,7 +70,7 @@ class Focus(Metric):
             p_batch: List[tuple],
             a_batch: Optional[np.array] = None,
             **kwargs,
-    ) -> Dict[int, List[float]]:
+    ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
@@ -92,7 +92,7 @@ class Focus(Metric):
                 default=None.
 
         Returns
-            last_results: a dictionary whose values contains a list of float(s) with the evaluation outcome of concerned batch
+            last_results: a list of floats with the evaluation outcome of concerned batch
 
         Examples
             # TODO: Think about an example using an small dataset mosaics?
@@ -197,8 +197,7 @@ class Focus(Metric):
             focus_score = target_positive_relevance / total_positive_relevance
             self.last_results.append(focus_score)
 
-        self.all_results.append(self.last_results)
-        return self.all_results
+        return self.last_results
 
     def quadrant_top_left(self, hmap: np.ndarray) -> np.ndarray:
         quandrant_hmap = hmap[0:int(self.mosaic_shape[0] / 2), 0:int(self.mosaic_shape[1] / 2)]
