@@ -64,12 +64,11 @@ class Focus(Metric):
 
     def __call__(
             self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.array],
+            model: Optional[ModelInterface],
+            x_batch: Optional[np.array],
+            y_batch: Optional[np.array],
             p_batch: List[tuple],
-            *args,
+            a_batch: Optional[np.array] = None,
             **kwargs,
     ) -> Dict[int, List[float]]:
         """
@@ -120,6 +119,15 @@ class Focus(Metric):
             >> metric = Focus(abs=False, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
         """
+
+        if a_batch is None:
+            try:
+                assert model is not None
+                assert x_batch is not None
+                assert y_batch is not None
+            except AssertionError:
+                raise ValueError("Focus requires either a_batch (explanation maps) or "
+                                 "the necessary arguments to compute it for you (model, x_batch & y_batch).")
 
         # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
