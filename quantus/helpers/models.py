@@ -2,6 +2,7 @@
 from importlib import util
 
 # Import different models depending on which deep learning framework is installed.
+from typing import Tuple
 
 if util.find_spec("torch"):
 
@@ -36,16 +37,28 @@ if util.find_spec("torch"):
     class LeNetAdaptivePooling(torch.nn.Module):
         """Network architecture from with adaptive pooling: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch."""
 
-        def __init__(self):
+        @staticmethod
+        def _eval_adaptive_size(input_size: int) -> int:
+            conv1_output_size = (input_size - 5 + 1) // 2
+            conv2_output_size = (conv1_output_size - 5 + 1) // 2
+            return conv2_output_size
+
+        def __init__(self, input_shape: Tuple[int, int, int]):
             super().__init__()
-            self.conv_1 = torch.nn.Conv2d(1, 6, 5)
+            n_channels = input_shape[0]
+            adaptive_width = self._eval_adaptive_size(input_shape[1])
+            adaptive_height = self._eval_adaptive_size(input_shape[2])
+            adaptive_shape = (adaptive_width, adaptive_height)
+            n_fc_input = adaptive_width * adaptive_height * 16
+
+            self.conv_1 = torch.nn.Conv2d(n_channels, 6, 5)
             self.pool_1 = torch.nn.MaxPool2d(2, 2)
             self.relu_1 = torch.nn.ReLU()
             self.conv_2 = torch.nn.Conv2d(6, 16, 5)
             self.pool_2 = torch.nn.MaxPool2d(2, 2)
             self.relu_2 = torch.nn.ReLU()
-            self.avg_pooling = torch.nn.AdaptiveAvgPool2d((4, 4))
-            self.fc_1 = torch.nn.Linear(256, 120)
+            self.avg_pooling = torch.nn.AdaptiveAvgPool2d(adaptive_shape)
+            self.fc_1 = torch.nn.Linear(n_fc_input, 120)
             self.relu_3 = torch.nn.ReLU()
             self.fc_2 = torch.nn.Linear(120, 84)
             self.relu_4 = torch.nn.ReLU()
