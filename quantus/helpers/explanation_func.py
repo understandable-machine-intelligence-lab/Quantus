@@ -334,6 +334,8 @@ def generate_captum_explanation(
             .attribute(inputs=inputs, target=targets)
             .sum(**reduce_axes)
         )
+        if "interpolate" in kwargs and isinstance(kwargs["interpolate"], tuple):
+            explanation = LayerGradCam.interpolate(explanation, kwargs["interpolate"])
 
     elif method == "Control Var. Sobel Filter".lower():
         explanation = torch.zeros(size=inputs.shape)

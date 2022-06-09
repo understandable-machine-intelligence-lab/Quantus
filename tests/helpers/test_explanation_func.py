@@ -577,6 +577,17 @@ else:
             {"min": 0},
         ),
         (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "method": "GradCam",
+                "gc_layer": "model._modules.get('conv_2')",
+                "abs": True,
+                "interpolate": (32, 32)
+            },
+            {"shape": (1, 32, 32)},
+        ),
+        (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
