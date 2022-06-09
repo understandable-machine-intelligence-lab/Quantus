@@ -185,7 +185,7 @@ class Focus(Metric):
             # a is the explainability mosaic with shape (width, height)
             # TODO: Check this assumption
 
-            total_positive_relevance = np.sum(a[a > 0])
+            total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
             target_positive_relevance = 0
             quadrant_functions_list = [self.quadrant_top_left, self.quadrant_top_right, self.quadrant_bottom_left, self.quadrant_bottom_right]
             for quadrant_p, quadrant_func in zip(p, quadrant_functions_list):
