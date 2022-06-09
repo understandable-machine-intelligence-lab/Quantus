@@ -200,17 +200,17 @@ class Focus(Metric):
         return self.last_results
 
     def quadrant_top_left(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[0:int(self.mosaic_shape[0] / 2), 0:int(self.mosaic_shape[1] / 2)]
+        quandrant_hmap = hmap[:, :int(self.mosaic_shape[1] / 2), :int(self.mosaic_shape[2] / 2)]
         return quandrant_hmap
 
     def quadrant_top_right(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[0:int(self.mosaic_shape[0] / 2), int(self.mosaic_shape[1] / 2):self.mosaic_shape[1]]
+        quandrant_hmap = hmap[:, int(self.mosaic_shape[1] / 2):, :int(self.mosaic_shape[2] / 2)]
         return quandrant_hmap
 
     def quadrant_bottom_left(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[int(self.mosaic_shape[0] / 2):self.mosaic_shape[0], 0:int(self.mosaic_shape[1] / 2)]
+        quandrant_hmap = hmap[:, :int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2):]
         return quandrant_hmap
 
     def quadrant_bottom_right(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[int(self.mosaic_shape[0] / 2):self.mosaic_shape[0], int(self.mosaic_shape[1] / 2):self.mosaic_shape[1]]
+        quandrant_hmap = hmap[:, int(self.mosaic_shape[1] / 2):, int(self.mosaic_shape[2] / 2):]
         return quandrant_hmap
