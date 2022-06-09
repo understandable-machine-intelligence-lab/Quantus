@@ -2,7 +2,7 @@
 import copy
 import random
 import warnings
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -10,9 +10,10 @@ import scipy
 
 from .utils import get_baseline_value
 from .utils import conv2D_numpy
+from ..typing import Patch
 
 
-def perturb_batch(
+def perturb_batch_on_indices(
         arr: np.ndarray,
         indices: np.ndarray,
         perturb_func: Callable,
@@ -20,7 +21,7 @@ def perturb_batch(
 ) -> None:
     """ inplace perturbation of complete batch """
     # TODO: move that to asserts
-    assert arr.shape[0] == indices.shape[0], (
+    assert arr.shape[0] == len(indices), (
         "arr and indices need same number of batches"
     )
 
@@ -28,6 +29,26 @@ def perturb_batch(
         arr[i] = perturb_func(
             arr[i],
             indices=indices[i],
+            **perturb_func_kwargs,
+        )
+
+
+def perturb_batch_on_patches(
+        arr: np.ndarray,
+        patches: List[Patch],
+        perturb_func: Callable,
+        **perturb_func_kwargs,
+) -> None:
+    """ inplace perturbation of complete batch """
+    # TODO: move that to asserts
+    assert arr.shape[0] == len(patches), (
+        "arr and patches need same number of batches"
+    )
+
+    for i in range(len(arr)):
+        arr[i] = perturb_func(
+            arr[i],
+            patch=patches[i],
             **perturb_func_kwargs,
         )
 
@@ -90,25 +111,31 @@ def baseline_replacement_by_indices(
 
 
 def baseline_replacement_by_patch(
-    arr: np.array, patch_slice: Sequence, perturb_baseline: Any, **kwargs
+    arr: np.array, patch: Patch, perturb_baseline: Any, **kwargs
 ) -> np.array:
     """Replace a single patch in an array by given baseline."""
-    if len(patch_slice) != arr.ndim:
+    if len(patch) != arr.ndim:
         raise ValueError(
-            "patch_slice dimensions don't match arr dimensions."
-            f" ({len(patch_slice)} != {arr.ndim})"
+            "patch dimensions don't match arr dimensions."
+            f" ({len(patch)} != {arr.ndim})"
         )
 
     # Preset patch for 'neighbourhood_*' choices.
-    patch = arr[patch_slice]
+    arr_patch = arr[patch]
     arr_perturbed = copy.copy(arr)
-    baseline = get_baseline_value(choice=perturb_baseline, arr=arr, patch=patch)
-    arr_perturbed[patch_slice] = baseline
+
+    # TODO: this is ugly but works, put it in get_baseline_value nethertheless
+    patch_shape = arr[patch].shape
+    baseline = np.zeros(patch_shape).flatten()
+    for i in range(baseline.size):
+        baseline[i] = get_baseline_value(choice=perturb_baseline, arr=arr, patch=arr_patch)
+    baseline = np.reshape(baseline, patch_shape)
+    arr_perturbed[patch] = baseline
     return arr_perturbed
 
 
 def baseline_replacement_by_blur(
-    arr: np.array, patch_slice: Sequence, blur_kernel_size: int = 15, **kwargs
+    arr: np.array, patch: Patch, blur_kernel_size: int = 15, **kwargs
 ) -> np.array:
     """
     Replace a single patch in an array by a blurred version.
@@ -139,7 +166,7 @@ def baseline_replacement_by_blur(
 
     # Perturb array.
     arr_perturbed = copy.copy(arr)
-    arr_perturbed[patch_slice] = arr_avg[patch_slice]
+    arr_perturbed[patch] = arr_avg[patch]
     return arr_perturbed
 
 

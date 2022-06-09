@@ -1,7 +1,7 @@
 """This model creates the ModelInterface for PyTorch."""
 from contextlib import suppress
 from copy import deepcopy
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import torch
 import numpy as np
@@ -13,8 +13,12 @@ from ..helpers import utils
 class PyTorchModel(ModelInterface):
     """Interface for torch models."""
 
-    def __init__(self, model, channel_first):
-        super().__init__(model, channel_first)
+    def __init__(
+            self, model,
+            channel_first: bool = True,
+            predict_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(model, channel_first, predict_kwargs)
 
     def predict(self, x, softmax_act=False, **kwargs):
         """Predict on the given input."""
@@ -23,10 +27,18 @@ class PyTorchModel(ModelInterface):
 
         device = kwargs.get("device", None)
         grad = kwargs.get("grad", False)
+
+        # TODO: check if we want to pass kwargs-argument.
+        # If not, remove unused kwargs argument.
+        predict_kwargs = self.predict_kwargs
+        #device = predict_kwargs.pop("device", None)
+        # TODO: remove this as it depends on pytorch lightning
+        device = self.model.device
+
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred = self.model(torch.Tensor(x).to(device))
+            pred = self.model(torch.Tensor(x).to(device))#, **predict_kwargs)
             if softmax_act:
                 pred = torch.nn.Softmax()(pred)
             if pred.requires_grad:

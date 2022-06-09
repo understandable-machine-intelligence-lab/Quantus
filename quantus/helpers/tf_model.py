@@ -1,5 +1,5 @@
 """This model creates the ModelInterface for Tensorflow."""
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
@@ -14,16 +14,23 @@ from ..helpers import utils
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
-    def __init__(self, model, channel_first):
-        super().__init__(model, channel_first)
+    def __init__(
+            self, model,
+            channel_first: bool = True,
+            predict_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(model, channel_first, predict_kwargs)
 
     def predict(self, x, softmax_act=False, **kwargs):
         """Predict on the given input."""
         output_act = self.model.layers[-1].activation
         target_act = softmax if softmax_act else linear
 
+        # TODO: check if we want to pass kwargs-argument.
+        # If not, remove unused kwargs argument.
+        predict_kwargs = self.predict_kwargs
         if output_act == target_act:
-            return self.model(x, training=False).numpy()
+            return self.model(x, training=False, **predict_kwargs).numpy()
 
         config = self.model.layers[-1].get_config()
         config["activation"] = target_act

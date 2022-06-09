@@ -1,12 +1,12 @@
 """This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
 import warnings
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
 from tqdm import tqdm
 
-from .base import Metric
+from .base import Metric, BatchedMetric
 from ..helpers import asserts
 from ..helpers import utils
 from ..helpers import warn_func
@@ -31,7 +31,18 @@ class PointingGame(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            weighted: bool = False,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -45,20 +56,27 @@ class PointingGame(Metric):
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
+        )
+
+        self.weighted = weighted
+
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
+        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -81,7 +99,6 @@ class PointingGame(Metric):
         y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
-        *args,
         **kwargs,
     ) -> List[float]:
         """
@@ -130,86 +147,54 @@ class PointingGame(Metric):
             >> metric = PointingGame(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape input batch to channel first order:
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+            model,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_segmentations(x_batch=X, s_batch=S)
+        return X, Y, A, S, model
 
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                total=len(x_batch_s),
-            )
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+    ):
+        if np.sum(s) == 0:
+            return np.nan
+        
+        # Reshape.
+        # TODO: this won't work with multichannel attributions
+        a = a.flatten()
+        s = s.flatten().astype(bool)
 
-        for ix, (x, y, a, s) in iterator:
+        # Find indices with max value.
+        max_index = np.argwhere(a == np.max(a))
 
-            # Reshape.
-            a = a.flatten()
-            s = s.squeeze().flatten().astype(bool)
+        # Check if maximum of explanation is on target object class.
+        hit = np.any(s[max_index])
 
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            # Find index of max value.
-            max_index = np.where(a == np.max(a))[0]
-
-            # Check if maximum of explanation is on target object class.
-            if len(max_index) > 1:
-                hit = False
-                for pixel in max_index:
-                    hit = hit or s[pixel]
-            else:
-                hit = bool(s[max_index])
-
-            self.last_results.append(hit)
-
-            # Ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
+        if self.weighted and hit:
+            hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
+        return hit
 
 
 class AttributionLocalisation(Metric):
@@ -228,7 +213,19 @@ class AttributionLocalisation(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            weighted: bool = False,
+            max_size: float = 1.0,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -245,23 +242,32 @@ class AttributionLocalisation(Metric):
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.weighted = self.kwargs.get("weighted", False)
-        self.max_size = self.kwargs.get("max_size", 1.0)
-        self.abs = self.kwargs.get("abs", True)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        if not abs:
+            abs = True
+            warn_func.warn_absolutes_applied()
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
+        )
+
+        self.weighted = weighted
+        self.max_size = max_size
+
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
-        asserts.assert_max_size(max_size=self.max_size)
+        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -285,7 +291,6 @@ class AttributionLocalisation(Metric):
         y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
-        *args,
         **kwargs,
     ) -> List[float]:
         """
@@ -334,107 +339,73 @@ class AttributionLocalisation(Metric):
             >> metric = AttributionLocalisation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape input batch to channel first order:
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+            model,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
+        asserts.assert_segmentations(x_batch=X, s_batch=S)
+        return X, Y, A, S, model
 
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                total=len(x_batch_s),
-            )
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+    ):
+        if np.sum(s) == 0:
+            return np.nan
+        
+        a = a.flatten()
+        s = s.flatten().astype(bool)
 
-        for ix, (x, y, a, s) in iterator:
+        # Asserts on attributions.
+        if np.all((a < 0.0)):
+            raise ValueError("Attributions must not all be less than zero.")
 
-            a = a.flatten()
-            s = s.flatten().astype(bool)
+        # Compute ratio.
+        size_bbox = float(np.sum(s))
+        size_data = np.prod(x.shape[1:])
+        ratio = size_bbox / size_data
 
-            if self.abs:
-                a = np.abs(a)
-            else:
-                a = np.abs(a)
-                warn_func.warn_absolutes_applied()
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            # Asserts on attributions.
-            if np.all((a < 0.0)):
-                raise ValueError("Attributions must not all be less than zero.")
-            if not np.any(s):
-                raise ValueError(
-                    "Segmentation mask must have some non-zero values in its array."
+        # Compute inside/outside ratio.
+        inside_attribution = np.sum(a[s])
+        total_attribution = np.sum(a)
+        inside_attribution_ratio = float(inside_attribution / total_attribution)
+        
+        if ratio <= self.max_size:
+            if inside_attribution_ratio > 1.0:
+                warnings.warn(
+                    "Inside explanation is greater than total explanation"
+                    f" ({inside_attribution} > {total_attribution})"
                 )
+            if not self.weighted:
+                return inside_attribution_ratio
+            else:
+                return float(inside_attribution_ratio * ratio)
 
-            # Compute ratio.
-            size_bbox = float(np.sum(s))
-            size_data = np.prod(x.shape[1:])
-            ratio = size_bbox / size_data
-
-            # Compute inside/outside ratio.
-            inside_attribution = np.sum(a[s])
-            total_attribution = np.sum(a)
-            inside_attribution_ratio = float(inside_attribution / total_attribution)
-
-            if ratio <= self.max_size:
-                if inside_attribution_ratio > 1.0:
-                    warnings.warn(
-                        "Inside explanation is greater than total explanation"
-                        f" ({inside_attribution} > {total_attribution})"
-                    )
-                if not self.weighted:
-                    self.last_results.append(inside_attribution_ratio)
-                else:
-                    self.last_results.append(float(inside_attribution_ratio * ratio))
-
+    def postprocess(self):
         if not self.last_results:
             warnings.warn(
                 "Data contains no object with a size below max_size: Results are empty."
             )
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
 
 class TopKIntersection(Metric):
@@ -451,7 +422,19 @@ class TopKIntersection(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            k: int = 1000,
+            concept_influence: bool = False,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -466,22 +449,28 @@ class TopKIntersection(Metric):
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.k = self.kwargs.get("k", 1000)
-        self.concept_influence = self.kwargs.get("concept_influence", False)
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
+        )
+
+        self.k = k
+        self.concept_influence = concept_influence
+
         self.last_results = []
         self.all_results = []
 
         # Asserts and warnings.
+        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -505,7 +494,6 @@ class TopKIntersection(Metric):
         y_batch: np.array,
         a_batch: Union[np.array, None],
         s_batch: np.array,
-        *args,
         **kwargs,
     ) -> List[float]:
         """
@@ -554,88 +542,59 @@ class TopKIntersection(Metric):
             >> metric = TopKIntersection(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape input batch to channel first order:
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **self.kwargs,
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_segmentations(x_batch=x_batch_s, s_batch=s_batch)
-        asserts.assert_value_smaller_than_input_size(
-            x=x_batch_s, value=self.k, value_name="k"
         )
 
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, s_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
-                total=len(x_batch_s),
-            )
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+    ):
+        if np.sum(s) == 0:
+            return np.nan
+        
+        top_k_binary_mask = np.zeros(a.shape, dtype=bool)
+        sorted_indices = np.argsort(a, axis=None)
+        np.put_along_axis(
+            top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None
+        )
 
-        for ix, (x, y, a, s) in iterator:
+        s = s.astype(bool)
 
-            if self.abs:
-                a = np.abs(a)
+        # Top-k intersection.
+        tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        # Concept influence (with size of object normalised tki score).
+        if self.concept_influence:
+            tki = np.prod(s.shape) / np.sum(s) * tki
 
-            top_k_binary_mask = np.zeros(a.shape)
-            sorted_indices = np.argsort(a, axis=None)
-            np.put_along_axis(
-                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
-            )
+        return tki
 
-            s = s.astype(bool)
-            top_k_binary_mask = top_k_binary_mask.astype(bool)
-
-            # Top-k intersection.
-            tki = 1.0 / self.k * np.sum(np.logical_and(s, top_k_binary_mask))
-
-            # Concept influence (with size of object normalised tki score).
-            if self.concept_influence:
-                tki = np.prod(x.shape[1:]) / np.sum(s) * tki
-
-            self.last_results.append(tki)
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
+    def preprocess(
+            self,
+            X: np.ndarray,
+            Y: np.ndarray,
+            A: np.ndarray,
+            S: np.ndarray,
+            model,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Asserts.
+        asserts.assert_segmentations(x_batch=X, s_batch=S)
+        asserts.assert_value_smaller_than_input_size(
+            x=X, value=self.k, value_name="k"
+        )
+        return X, Y, A, S, model
 
 
 class RelevanceRankAccuracy(Metric):

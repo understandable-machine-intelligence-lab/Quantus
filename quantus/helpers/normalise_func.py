@@ -8,12 +8,16 @@ def normalise_batch(
         normalise_func: Callable,
         **normalise_func_kwargs,
 ) -> None:
-    """ out-of-place normalisation of complete batch """
-    return np.apply_along_axis(normalise_func, 0, arr, **normalise_func_kwargs)
+    """Normalise complete batch by given normalisation function."""
+    # TODO: use something like np.apply_along_axis instead of for-loop
+    arr_norm = np.zeros((arr.shape), dtype=arr.dtype)
+    for instance_id, arr_instance in enumerate(arr):
+        arr_norm[instance_id] = normalise_func(arr_instance, **normalise_func_kwargs)
+    return arr_norm
 
 
 def normalise_by_max(a: np.ndarray, **kwargs) -> np.ndarray:
-    """ "Normalize attributions by the maximum absolute value of the explanation."""
+    """Normalise attributions by the maximum absolute value of the explanation."""
     a /= np.max(np.abs(a))
     return a
 

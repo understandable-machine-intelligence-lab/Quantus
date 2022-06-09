@@ -3,7 +3,7 @@ import itertools
 import math
 import random
 import warnings
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -20,6 +20,7 @@ from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.similar_func import correlation_pearson, correlation_spearman
 from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import baseline_replacement_by_patch
+from ..typing import Patch
 
 
 class FaithfulnessCorrelation(Metric):
@@ -1236,6 +1237,7 @@ class PixelFlipping(BatchedMetric):
             order: str = 'morf',
             features_in_step: int = 1,
             max_steps_per_input: Optional[int] = None,
+            prediction_difference: bool = False,
             plot_func: Optional[Callable] = None,
             display_progressbar: bool = False,
             disable_warnings: bool = False,
@@ -1257,6 +1259,8 @@ class PixelFlipping(BatchedMetric):
             default="black".
             features_in_step (integer): The size of the step, default=1.
             max_steps_per_input (integer): The number of steps per input dimension, default=None.
+            prediction_difference (bool): If true, scores will represent difference to
+                                          unperturbed output on target class, default=False.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative
@@ -1289,8 +1293,10 @@ class PixelFlipping(BatchedMetric):
         self.features_in_step = features_in_step
         self.max_steps_per_input = max_steps_per_input
         self.order = order.lower()
+        self.prediction_difference = prediction_difference
 
         # Asserts and warnings.
+        asserts.assert_attributions_order(order=self.order)
         self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
@@ -1308,10 +1314,10 @@ class PixelFlipping(BatchedMetric):
             model: ModelInterface,
             x_batch: np.array,
             y_batch: np.array,
-            a_batch: Union[np.array, None],
+            a_batch: Optional[np.array] = None,
             batch_size: int = 64,
             **kwargs,
-    ) -> List[float]:
+    ) -> List[List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
@@ -1366,64 +1372,6 @@ class PixelFlipping(BatchedMetric):
             **kwargs,
         )
 
-    def generate_perturbed_batches(
-            self,
-            x_batch: np.ndarray,
-            a_batch: np.ndarray,
-            n_steps: int,
-            perturb_func: Callable,
-            perturb_func_kwargs: Dict[str, Any],
-    ) -> Iterator[np.ndarray]:
-
-        # Get indices of sorted attributions (descending).
-        batch_size = x_batch.shape[0]
-        flat_shape = a_batch[0].flatten().shape
-        a_batch_flat = np.zeros((batch_size, *flat_shape))
-        a_batch_indices = np.zeros((batch_size, *flat_shape), dtype=np.int)
-
-        # generate ordered indices for complete batch
-        # TODO: do this in a more readable way or even better: without for-loop
-        for i in range(batch_size):
-            a_batch_flat[i] = a_batch[i].flatten()
-
-            if self.order == "random":
-                # Order attributions randomly.
-                n_indices = len(a_batch_flat[i])
-                a_batch_indices[i] = random.sample(list(range(n_indices)),
-                                                   k=n_indices)
-
-            elif self.order == "morf":
-                # Order attributions according to the most relevant first.
-                a_batch_indices[i] = np.argsort(a_batch_flat[i])[::-1]
-
-            elif self.order == 'lerf':
-                # Order attributions according to the least relevant first.
-                a_batch_indices[i] = np.argsort(a_batch_flat[i])
-
-        x_batch_perturbed = x_batch.copy()
-
-        for step in range(n_steps):
-
-            # Perturb input by indices of attributions.
-            perturb_start_ix = self.features_in_step * step
-            perturb_end_ix = self.features_in_step * (step + 1)
-            perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
-
-            # Inplace perturbation.
-            perturb_funcs.perturb_batch(
-                arr=x_batch_perturbed,
-                indices=perturb_indices,
-                perturb_func=perturb_func,
-                **perturb_func_kwargs,
-            )
-
-            # Check for changes in perturbation.
-            for x, x_perturbed in zip(x_batch, x_batch_perturbed):
-                asserts.assert_perturbation_caused_change(
-                    x=x, x_perturbed=x_perturbed)
-
-            yield x_batch_perturbed
-
     def process_batch(
             self,
             model: ModelInterface,
@@ -1433,17 +1381,14 @@ class PixelFlipping(BatchedMetric):
             s_batch: Optional[np.ndarray] = None,
             perturb_func: Callable = None,
             perturb_func_kwargs: Optional[Dict] = None,
-            model_predict_kwargs: Optional[Dict] = None,
     ):
         # TODO: use check function for this, but maybe already in __call__
         if perturb_func is None:
             raise ValueError("perturb_func must not be None")
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
 
-        # create array for predictions of each step
+        # create array for scores of each perturbation step
         batch_size = x_batch.shape[0]
         n_steps = math.ceil(a_batch[0].size / self.features_in_step)
         preds = [[None for _ in range(n_steps)] for _ in range(batch_size)]
@@ -1457,19 +1402,15 @@ class PixelFlipping(BatchedMetric):
             perturb_func_kwargs=perturb_func_kwargs,
         )
 
-        # Predict on original unperturbed input x.
-        # TODO: do this only if difference-flag is True
-        x_input = model.shape_input(
-            x=x_batch,
-            shape=x_batch.shape,
-            channel_first=True,
-            batched=True,
-        )
-        y_batch_pred = model.predict(
-            x=x_input,
-            softmax_act=True,
-            **model_predict_kwargs,
-        )
+        if self.prediction_difference:
+            # Predict on original unperturbed input x.
+            x_input = model.shape_input(
+                x=x_batch,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+            y_batch_pred = model.predict(x=x_input, softmax_act=True)
 
         for step, x_batch_perturbed in enumerate(perturbation_generator):
 
@@ -1481,24 +1422,94 @@ class PixelFlipping(BatchedMetric):
                 batched=True,
             )
 
-            y_batch_pred_perturb = model.predict(
-                x=x_input,
-                softmax_act=True,
-                **model_predict_kwargs,
-            )
-
-            #y_batch_pred_target = y_batch_pred[np.arange(len(y_batch)), y_batch.astype(int)]
-            #self.last_results[indices_batch, steps_batch] = y_batch_pred_target
+            y_batch_pred_perturb = model.predict(x=x_input, softmax_act=True)
 
             # TODO: get rid of for loop
             iterator = zip(y_batch, y_batch_pred_perturb)
             for ix, (y, y_pred_perturb) in enumerate(iterator):
-                y_pred_perturb = float(y_pred_perturb[y])
-                y_pred = float(y_batch_pred[ix, y])
-                # TODO: flag difference output
-                preds[ix][step] = y_pred - y_pred_perturb
+                y_pred_perturb_target = float(y_pred_perturb[y])
+
+                # Use difference to prediction on unperturbed input as score.
+                if self.prediction_difference:
+                    y_pred_target = float(y_batch_pred[ix, y])
+                    preds[ix][step] = y_pred_target - y_pred_perturb_target
+
+                # Use prediction on perturbed input as score.
+                else:
+                    preds[ix][step] = y_pred_perturb_target
 
         return preds
+
+    def generate_perturbed_batches(
+            self,
+            x_batch: np.ndarray,
+            a_batch: np.ndarray,
+            n_steps: int,
+            perturb_func: Callable,
+            perturb_func_kwargs: Dict[str, Any],
+    ) -> Iterator[np.ndarray]:
+
+        a_batch_indices = self.get_sorted_attribution_indices(
+            x_batch=x_batch, a_batch=a_batch, order=self.order,
+        )
+
+        x_batch_perturbed = x_batch.copy()
+        for step in range(n_steps):
+
+            # Perturb input by indices of attributions.
+            perturb_start_ix = self.features_in_step * step
+            perturb_end_ix = self.features_in_step * (step + 1)
+            perturb_indices = a_batch_indices[:, perturb_start_ix:perturb_end_ix]
+
+            # Inplace perturbation.
+            perturb_funcs.perturb_batch_on_indices(
+                arr=x_batch_perturbed,
+                indices=perturb_indices,
+                perturb_func=perturb_func,
+                **perturb_func_kwargs,
+            )
+
+            # Check for changes in perturbation.
+            for x, x_perturbed in zip(x_batch, x_batch_perturbed):
+                asserts.assert_perturbation_caused_change(
+                    x=x, x_perturbed=x_perturbed)
+
+            yield x_batch_perturbed
+
+    def get_sorted_attribution_indices(
+            self,
+            x_batch: np.ndarray,
+            a_batch: np.ndarray,
+            order: str,
+    ) -> np.ndarray:
+
+        # Get indices of sorted attributions (descending).
+        batch_size = x_batch.shape[0]
+        flat_shape = a_batch[0].flatten().shape
+        a_batch_flat = np.zeros((batch_size, *flat_shape))
+        a_batch_indices = np.zeros((batch_size, *flat_shape), dtype=np.int)
+
+        # generate ordered indices for complete batch
+        # TODO: do this in a more readable way or even better: without for-loop
+        for i in range(batch_size):
+            a_batch_flat[i] = a_batch[i].flatten()
+
+            if order.lower() == "random":
+                # Order attributions randomly.
+                n_indices = len(a_batch_flat[i])
+                a_batch_indices[i] = random.sample(list(range(n_indices)),
+                                                   k=n_indices)
+
+            elif order.lower() == "morf":
+                # Order attributions according to the most relevant first.
+                a_batch_indices[i] = np.argsort(a_batch_flat[i])[::-1]
+
+            elif order.lower() == 'lerf':
+                # Order attributions according to the least relevant first.
+                a_batch_indices[i] = np.argsort(a_batch_flat[i])
+
+        return a_batch_indices
+        
 
     def preprocess(
             self,
@@ -1507,7 +1518,6 @@ class PixelFlipping(BatchedMetric):
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -1522,10 +1532,10 @@ class PixelFlipping(BatchedMetric):
                 max_steps_per_input=self.max_steps_per_input,
                 input_shape=X.shape[2:],
             )
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
 
-class RegionPerturbation(Metric):
+class RegionPerturbation(BatchedMetric):
     """
 
     Implementation of Region Perturbation by Samek et al., 2015.
@@ -1551,7 +1561,22 @@ class RegionPerturbation(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict] = None,
+            perturb_func: Optional[Callable] = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+            perturb_baseline: Any = "uniform",
+            order: str = 'morf',
+            regions_evaluation: int = 100,
+            patch_size: int = 8,
+            plot_func: Optional[Callable] = None,
+            display_progressbar: bool = False,
+            disable_warnings: bool = False,
+            **kwargs):
         """
         Parameters
         ----------
@@ -1572,28 +1597,41 @@ class RegionPerturbation(Metric):
             order (string): Indicates whether attributions are ordered randomly ("random"),
             according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_patch
+        if plot_func is None:
+            plot_func = plotting.plot_region_perturbation_experiment
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_region_perturbation_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_patch
+        # TODO: deprecate perturb_baseline keyword and use perturb_kwargs exclusively in later versions
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs = {
+            'perturb_baseline': perturb_baseline,
+            **perturb_func_kwargs,
+        }
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            plot_func=plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
-        self.patch_size = self.kwargs.get("patch_size", 8)
-        self.order = self.kwargs.get("order", "MoRF").lower()
-        self.last_results = {}
-        self.all_results = []
+
+        self.regions_evaluation = regions_evaluation
+        self.patch_size = patch_size
+        self.order = order.lower()
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
+        self.disable_warnings = disable_warnings
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
@@ -1610,14 +1648,14 @@ class RegionPerturbation(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> Dict[int, List[float]]:
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.array] = None,
+            batch_size: int = 64,
+            **kwargs,
+    ) -> List[List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
@@ -1663,161 +1701,298 @@ class RegionPerturbation(Metric):
             >> metric = RegionPerturbation(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        # Reshape input batch to channel first order:
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            batch_size=batch_size,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
+    def process_batch(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            a_batch: np.ndarray,
+            s_batch: Optional[np.ndarray] = None,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict] = None,
+    ):
+        # TODO: use check function for this, but maybe already in __call__
+        if perturb_func is None:
+            raise ValueError("perturb_func must not be None")
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
 
-        self.last_results = {k: None for k in range(len(x_batch_s))}
+        # create array for scores of each perturbation step
+        batch_size = x_batch.shape[0]
+        n_steps = self.regions_evaluation
+        preds = [[None for _ in range(n_steps)] for _ in range(batch_size)]
 
-        if a_batch is None:
+        # create generator for perturbed batches
+        perturbation_generator = self.generate_perturbed_batches(
+            x_batch=x_batch,
+            a_batch=a_batch,
+            n_steps=n_steps,
+            patch_size=self.patch_size,
+            perturb_func=perturb_func, 
+           perturb_func_kwargs=perturb_func_kwargs,
+        )
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
+        # Predict on original unperturbed input x.
+        # TODO: do this only if difference-flag is True
+        x_input = model.shape_input(
+            x=x_batch,
+            shape=x_batch.shape,
+            channel_first=True,
+            batched=True,
+        )
+        y_batch_pred = model.predict(x=x_input, softmax_act=True)
 
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
+        for step, x_batch_perturbed in enumerate(perturbation_generator):
 
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # use tqdm progressbar if not disabled
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
-
-        for sample, (x, y, a) in iterator:
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-            )
-
-            if self.abs:
-                a = np.abs(a)
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            patches = []
-            sub_results = []
-            x_perturbed = x.copy()
-
-            # Pad input and attributions. This is needed to allow for any patch_size.
-            pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
-                x, pad_width, mode="constant", omit_first_axis=True
-            )
-            a_pad = utils._pad_array(
-                a, pad_width, mode="constant", omit_first_axis=True
+            # Predict on perturbed input x.
+            x_input = model.shape_input(
+                x=x_batch_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
             )
 
-            # Create patches across whole input shape and aggregate attributions.
-            att_sums = []
-            axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width)
-                for axis in range(1, x_pad.ndim)
+            y_batch_pred_perturb = model.predict(x=x_input, softmax_act=True)
+
+            # TODO: get rid of for loop
+            iterator = zip(y_batch, y_batch_pred_perturb)
+            for ix, (y, y_pred_perturb) in enumerate(iterator):
+                y_pred_perturb = float(y_pred_perturb[y])
+                y_pred = float(y_batch_pred[ix, y])
+                # TODO: flag difference output
+                preds[ix][step] = y_pred - y_pred_perturb
+
+        return preds
+
+    def generate_perturbed_batches(
+            self,
+            x_batch: np.ndarray,
+            a_batch: np.ndarray,
+            n_steps: int,
+            patch_size: int, # TODO: add support for type Sequence[int]
+            perturb_func: Callable,
+            perturb_func_kwargs: Dict[str, Any],
+    ) -> Iterator[np.ndarray]:
+
+        patches_batch, pad_width = self.get_ordered_patches(
+            x_batch=x_batch,
+            a_batch=a_batch,
+            patch_size=patch_size,
+            max_patches=n_steps,
+            overlapping=False,
+            return_indices=False,
+        )
+
+        # TODO: assert max_patches == n_steps
+
+        # Increasingly perturb the input and store the decrease in function value.
+        x_batch_perturbed = x_batch.copy()
+        x_batch_perturbed_last = x_batch_perturbed.copy()
+        for step in range(n_steps):
+
+            # Select patches of current step for each instance in batch.
+            # TODO: There will be an IndexError raised if there's an instance for which
+            # there are less patches available than desired steps. Decide what to do then.
+            patches_batch_step = [
+                patches_instance[step] for patches_instance in patches_batch
             ]
-            for top_left_coords in itertools.product(*axis_iterators):
-                # Create slice for patch.
-                patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                    expand_first_dim=True,
-                )
+            # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+            x_perturbed_pad = utils.pad_array(
+                x_batch_perturbed, pad_width, mode="edge",
+                omit_first_axis=True, batched=True,
+            )
 
-                # Sum attributions for patch.
-                att_sums.append(a_pad[patch_slice].sum())
-                patches.append(patch_slice)
+            # Perturb complete batch inplace.
+            perturb_funcs.perturb_batch_on_patches(
+                arr=x_perturbed_pad,
+                patches=patches_batch_step,
+                perturb_func=perturb_func,
+                **perturb_func_kwargs,
+            )
+            
+            # Remove Padding
+            x_batch_perturbed = utils.unpad_array(
+                x_perturbed_pad, pad_width, omit_first_axis=True, batched=True,
+            )
+            
+            asserts.assert_perturbation_caused_change(
+                x=x_batch_perturbed_last, x_perturbed=x_batch_perturbed)
+            x_batch_perturbed_last = x_batch_perturbed.copy()
 
-            if self.order == "random":
-                # Order attributions randomly.
-                order = np.arange(len(patches))
-                np.random.shuffle(order)
+            yield x_batch_perturbed
 
-            elif self.order == "morf":
-                # Order attributions according to the most relevant first.
-                order = np.argsort(att_sums)[::-1]
+    def get_ordered_patches(
+            self,
+            x_batch: np.ndarray,
+            a_batch: np.ndarray,
+            patch_size: int,
+            max_patches: int,
+            overlapping: bool = False,
+            return_indices: bool = False,  # This doesn't properly work yet.
+                                           # TODO: either fix or remove this!
+    ) -> Tuple[List[List[Patch]], int]:
 
-            else:
-                # Order attributions according to the least relevant first.
-                order = np.argsort(att_sums)
+        batch_size = x_batch.shape[0]
 
-            # Create ordered list of patches.
-            ordered_patches = [patches[p] for p in order]
+        # Pad input and attributions. This is needed to allow for any patch_size.
+        pad_width = patch_size - 1
+        x_batch_pad = utils.pad_array(
+            x_batch, pad_width, mode="constant", omit_first_axis=True, batched=True,
+        )
+        a_batch_pad = utils.pad_array(
+            a_batch, pad_width, mode="constant", omit_first_axis=True, batched=True,
+        )
 
-            # Remove overlapping patches
-            blocked_mask = np.zeros(x_input.shape, dtype=bool)
-            ordered_patches_no_overlap = []
-            for patch_slice in ordered_patches:
-                patch_mask = np.zeros(x_input.shape, dtype=bool)
-                patch_mask[patch_slice] = True
-                intersected = blocked_mask & patch_mask
+        # Create patches across whole input shape. Patches don't have batch axis.
+        patches = []
+        axis_iterators = [
+            range(pad_width, x_batch_pad.shape[axis] - pad_width)
+            # omit batch and channel dimensions
+            for axis in range(2, x_batch_pad.ndim)
+        ]
 
+        # Add channel dimension to axis iterators
+        # TODO: add boolean switch for this
+        #axis_iterators.insert(0, range(x_batch_pad.shape[1]))
+            
+        for top_left_coords in itertools.product(*axis_iterators):
+
+            # Create slice for patch.
+            patch = utils.create_patch(
+                patch_size=patch_size,
+                coords=top_left_coords,
+                expand_first_dim=False, # don't expand channel dimension
+            )
+
+            for channel_id in range(x_batch_pad.shape[1]):
+                channel_patch = (channel_id, *patch)
+                patches.append(channel_patch)
+
+        # Sum attributions for each patch (on instance axis)
+        a_sum_patches = np.zeros((batch_size, len(patches)))
+        for patch_id, patch in enumerate(patches):
+            # Add batch dimension to patch.
+            patch_batch = (slice(None), *patch)
+            a_patch_batch = a_batch_pad[patch_batch]
+            # Take sum on all axes after batch axis.
+            a_sum_patch_batch = np.sum(
+                a_patch_batch, axis=tuple(range(1, a_patch_batch.ndim)),
+            )
+            try:
+                a_sum_patches[:, patch_id] = a_sum_patch_batch.squeeze(axis=-1)
+            except ValueError as e:
+                a_sum_patches[:, patch_id] = a_sum_patch_batch
+
+        # Order attributions by selected method
+        if self.order == "random":
+            # Create order for all instances
+            patch_order_idx_batch = np.zeros((batch_size, len(patches)), dtype=int)
+            for instance_id in range(batch_size):
+                # Order attributions randomly for each instance.
+                patch_order_idx_instance = np.arange(len(patches))
+                np.random.shuffle(patch_order_idx_instance)
+                patch_order_idx_batch[instance_id, :] = patch_order_idx_instance
+
+        elif self.order == "morf":
+            # Order attributions according to the most relevant first.
+            patch_order_idx_batch = np.argsort(a_sum_patches)[:, ::-1]
+
+        elif self.order == "lerf":
+            # Order attributions according to the least relevant first.
+            patch_order_idx_batch = np.argsort(a_sum_patches)
+
+        else:
+            raise ValueError(f"Invalid order passed: {self.order}")
+
+        # Create ordered list of patches for each instance in batch.
+        patches_batch = [
+            [
+                patches[patch_order_idx_instance]
+                for patch_order_idx_instance in patch_order_idx_batch[instance_id]
+            ]
+            for instance_id in range(batch_size)
+        ]
+
+        # Remove overlapping patches if requested.
+        if not overlapping:
+            patches_batch = self.remove_overlapping_patches(
+                patches_batch=patches_batch,
+                x_shape=x_batch.shape,
+                max_patches=max_patches,
+            )
+
+        # Limit returned patches to max_patches
+        patches_batch = [
+            patches_instance[:max_patches] for patches_instance in patches_batch
+        ]
+
+        # Return patches as arrays of indices if requested.
+        if return_indices:
+            patches_batch = utils.transform_patches_to_indices(
+                patches=patches_batch, arr_shape=x_batch.shape,
+            )
+
+        return patches_batch, pad_width
+
+    def remove_overlapping_patches(
+            self,
+            patches_batch: List[List[Patch]],
+            x_shape: Tuple[int, ...],
+            max_patches: int,
+    ) -> List[List[Patch]]:
+
+        blocked_mask = np.zeros(x_shape, dtype=bool)
+        batch_size = len(patches_batch)
+        patches_batch_no_overlap = [[] for _ in range(batch_size)]
+
+        for instance_id, patches_instance in enumerate(patches_batch):
+            for patch in patches_instance:
+                # Create patch mask for current patch
+                patch_mask = np.zeros(x_shape[1:], dtype=bool)
+                patch_mask[patch] = True
+
+                # Check for intersections and add patch if there are none
+                intersected = blocked_mask[instance_id] & patch_mask
                 if not intersected.any():
-                    ordered_patches_no_overlap.append(patch_slice)
-                    blocked_mask = blocked_mask | patch_mask
+                    patches_batch_no_overlap[instance_id].append(patch)
+                    blocked_mask[instance_id] = blocked_mask[instance_id] | patch_mask
 
-                if len(ordered_patches_no_overlap) >= self.regions_evaluation:
+                if len(patches_batch_no_overlap[instance_id]) >= max_patches:
                     break
 
-            # Increasingly perturb the input and store the decrease in function value.
-            for patch_slice in ordered_patches_no_overlap:
-                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-                x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", omit_first_axis=True
-                )
+            # fill up patch slices with empty patch slices
+            # if there are not enough non-overlapping patches
+            # TODO: check if this is acceptable
+            #while len(patches_batch_no_overlap[instance_id]) < max_patches:
+            #    patches_batch_no_overlap[instance_id].append([])
 
-                # Perturb.
-                x_perturbed_pad = self.perturb_func(
-                    arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
-                    **self.kwargs,
-                )
-
-                # Remove Padding
-                x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, omit_first_axis=True
-                )
-
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)[:, y]
-                )
-
-                # TODO: give an option to only return y_pred_perturb here?
-                sub_results.append(y_pred - y_pred_perturb)
-
-            self.last_results[sample] = sub_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
+        return patches_batch_no_overlap
+        
+    def get_patches_batch_for_step(
+            self,
+            patches_batch: List[List[Patch]],
+            step: int,
+    ) -> List[Patch]:
+        
+        # For this step there's no patch available for at least one instance.
+        # TODO: Discuss what to do here. Raise a warning?
+        # Currently it is filled with an empty array to select no values.
+        # That's why the checking of perturbation_caused_change is disabled.
+        
+        #except Exception as e:
+        #    breakpoint()
+            
+        #finally:
+        return patches_batch_step
 
 
 class Selectivity(Metric):
@@ -2005,10 +2180,10 @@ class Selectivity(Metric):
 
             # Pad input and attributions. This is needed to allow for any patch_size.
             pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(
+            x_pad = utils.pad_array(
                 x, pad_width, mode="constant", omit_first_axis=True
             )
-            a_pad = utils._pad_array(
+            a_pad = utils.pad_array(
                 a, pad_width, mode="constant", omit_first_axis=True
             )
 
@@ -2026,7 +2201,7 @@ class Selectivity(Metric):
             ]
             for top_left_coords in itertools.product(*axis_iterators):
                 # Create slice for patch.
-                patch_slice = utils.create_patch_slice(
+                patch_slice = utils.create_patch(
                     patch_size=self.patch_size,
                     coords=top_left_coords,
                     expand_first_dim=True,
@@ -2042,19 +2217,17 @@ class Selectivity(Metric):
             # Increasingly perturb the input and store the decrease in function value.
             for patch_slice in ordered_patches:
                 # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-                x_perturbed_pad = utils._pad_array(
+                x_perturbed_pad = utils.pad_array(
                     x_perturbed, pad_width, mode="edge", omit_first_axis=True
                 )
 
                 # Perturb.
                 x_perturbed_pad = self.perturb_func(
-                    arr=x_perturbed_pad,
-                    patch_slice=patch_slice,
-                    **self.kwargs,
+                    arr=x_perturbed_pad, patch=patch_slice, **self.kwargs,
                 )
 
                 # Remove Padding
-                x_perturbed = utils._unpad_array(
+                x_perturbed = utils.unpad_array(
                     x_perturbed_pad, pad_width, omit_first_axis=True
                 )
 

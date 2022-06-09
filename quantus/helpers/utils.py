@@ -2,7 +2,7 @@
 import re
 import random
 from importlib import util
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -14,6 +14,7 @@ if util.find_spec("tensorflow"):
     import tensorflow as tf
     from ..helpers.tf_model import TensorFlowModel
 
+from ..typing import Patch
 from ..helpers.model_interface import ModelInterface
 
 
@@ -71,7 +72,7 @@ def get_baseline_value(
         elif choice == "random":
             return float(random.random())
         elif choice == "uniform":
-            return float(random.uniform(arr.min(), arr.max()))
+            return float(np.random.uniform(arr.min(), arr.max()))
         elif choice == "black" or choice == "min":
             return float(arr.min())
         elif choice == "white" or choice == "max":
@@ -188,7 +189,11 @@ def make_channel_last(x: np.array, channel_first: bool = True):
         )
 
 
-def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
+def get_wrapped_model(
+        model: ModelInterface,
+        channel_first: bool,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
@@ -196,9 +201,9 @@ def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterf
         A wrapped ModelInterface model.
     """
     if isinstance(model, tf.keras.Model):
-        return TensorFlowModel(model, channel_first)
+        return TensorFlowModel(model, channel_first, predict_kwargs)
     if isinstance(model, torch.nn.modules.module.Module):
-        return PyTorchModel(model, channel_first)
+        return PyTorchModel(model, channel_first, predict_kwargs)
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )
@@ -270,11 +275,11 @@ def conv2D_numpy(
     return output
 
 
-def create_patch_slice(
+def create_patch(
     patch_size: Union[int, Sequence[int]], coords: Sequence[int], expand_first_dim: bool
-) -> Tuple[Sequence[int]]:
+) -> Patch:
     """
-    Create a patch slice from patch size and coordinates.
+    Create a patch from patch size and coordinates.
     expand_first_dim: set to True if you want to add one ':'-slice at the beginning.
     """
     if isinstance(patch_size, int):
@@ -297,15 +302,37 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    patch_slice = [
+    patch = [
         slice(coord, coord + patch_size_dim)
         for coord, patch_size_dim in zip(coords, patch_size)
     ]
     # Prepend slice for all channels.
     if expand_first_dim:
-        patch_slice = [slice(None), *patch_slice]
+        patch = [slice(None), *patch]
 
-    return tuple(patch_slice)
+    return tuple(patch)
+
+
+# TODO: this isn't actually used
+def transform_patch_to_indices(patch, arr_shape): # TODO: add typehint
+    mask = np.zeros(arr_shape, dtype=bool)
+    mask[patch] = True
+    return np.where(mask)
+
+
+def transform_patches_to_indices(patches, arr_shape): #TODO: add typehint
+    # Check if list is batched.
+    if isinstance(patches[0], list):
+        # Recursive call for each patch list in batch.
+        return np.array([
+            transform_patches_to_indices(patches_instance, arr_shape[1:])
+            for patches_instance in patches
+        ])
+
+    return np.array([
+        transform_patch_to_indices(patch, arr_shape)
+        for patch in patches
+    ])
 
 
 def expand_attribution_channel(a: np.ndarray, x: np.ndarray):
@@ -349,23 +376,41 @@ def get_nr_patches(
     return np.prod(shape) // np.prod(patch_size)
 
 
-def _pad_array(arr: np.array, pad_width: int, mode: str, omit_first_axis=True):
+def pad_array(arr: np.ndarray, pad_width: int, mode: str,
+              omit_first_axis: bool = True, batched: bool = True,
+) -> np.ndarray:
     """To allow for any patch_size we add padding to the array."""
     pad_width_list = [(pad_width, pad_width)] * arr.ndim
-    if omit_first_axis:
+    
+    if batched:
         pad_width_list[0] = (0, 0)
+    if omit_first_axis:
+        if batched:
+            pad_width_list[1] = (0, 0)
+        else:
+            pad_width_list[0] = (0, 0)
+            
     arr_pad = np.pad(arr, pad_width_list, mode="constant")
     return arr_pad
 
 
-def _unpad_array(arr: np.array, pad_width: int, omit_first_axis=True):
+def unpad_array(arr: np.ndarray, pad_width: int,
+                omit_first_axis: bool = True, batched: bool = True,
+) -> np.ndarray:
     """Remove padding from the array."""
     unpad_slice = [
         slice(pad_width, arr.shape[axis] - pad_width)
         for axis, _ in enumerate(arr.shape)
     ]
-    if omit_first_axis:
+
+    if batched:
         unpad_slice[0] = slice(None)
+    if omit_first_axis:
+        if batched:
+            unpad_slice[1] = slice(None)
+        else:
+            unpad_slice[0] = slice(None)
+        
     return arr[tuple(unpad_slice)]
 
 

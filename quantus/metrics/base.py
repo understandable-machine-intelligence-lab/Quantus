@@ -142,7 +142,7 @@ class Metric:
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -171,7 +171,6 @@ class Metric:
                 # TODO: pass these as **kwargs
                 perturb_func=self.perturb_func,
                 perturb_func_kwargs=self.perturb_func_kwargs,
-                model_predict_kwargs=model_predict_kwargs,
             )
             self.last_results[instance_id] = result
 
@@ -191,7 +190,6 @@ class Metric:
             s_instance: Optional[np.ndarray] = None,
             perturb_func: Callable = None,
             perturb_func_kwargs: Optional[Dict] = None,
-            model_predict_kwargs: Optional[Dict] = None,
     ):
         raise NotImplementedError()
 
@@ -260,14 +258,8 @@ class Metric:
         # Wrap the model into an interface
         if model:
             # TODO: add model_predict_kwargs
-            model = utils.get_wrapped_model(model, channel_first=self.channel_first)
-
-        # get optional kwargs for model.predict call
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # TODO: deprecate this kind of unspecific kwargs passing
-        # this code prioritizes model_predict_kwargs items over kwargs items
-        model_predict_kwargs = {**kwargs, **model_predict_kwargs}
+            model = utils.get_wrapped_model(model, channel_first=self.channel_first,
+                                            predict_kwargs=model_predict_kwargs)
 
         # Update kwargs.
         # TODO: deprecate this kind of unspecific kwargs passing
@@ -312,22 +304,19 @@ class Metric:
         # Asserts.
         asserts.assert_attributions(x_batch=X, a_batch=A)
 
-        # Call pre-processing
-        X, Y, A, S, model, model_predict_kwargs = self.preprocess(
-            X=X, Y=Y, A=A, S=S, model=model, model_predict_kwargs=model_predict_kwargs,
-        )
+        # Call custom pre-processing from inheriting class.
+        X, Y, A, S, model = self.preprocess(X=X, Y=Y, A=A, S=S, model=model)
 
         if self.normalise:
             A = normalise_batch(
-                arr=A,
-                normalise_func=self.normalise_func,
-                normalise_func_kwargs=self.normalise_func_kwargs,
+                arr=A, normalise_func=self.normalise_func,
+                **self.normalise_func_kwargs,
             )
 
         if self.abs:
             A = np.abs(A)
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def preprocess(
             self,
@@ -336,9 +325,8 @@ class Metric:
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def postprocess(self):
         pass
@@ -522,7 +510,7 @@ class BatchedMetric(Metric):
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{}}
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -553,7 +541,6 @@ class BatchedMetric(Metric):
                 s_batch=s_batch,
                 perturb_func=self.perturb_func,
                 perturb_func_kwargs=self.perturb_func_kwargs,
-                model_predict_kwargs=model_predict_kwargs,
             )
             self.last_results.extend(result)
 

@@ -110,7 +110,7 @@ def assert_attributions_order(order: str) -> None:
     assert order in [
         "random",
         "morf",
-        "lorf",
+        "lerf",
     ], "The order of sorting the attributions must be either random, morf, or lorf."
 
 
@@ -163,22 +163,23 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
         "should share the same dimensions."
         "{} != {}".format(np.shape(x_batch)[2:], np.shape(a_batch)[2:])
     )
-    assert not np.all((a_batch == 0)), (
-        "The elements in the attribution vector are all equal to zero, "
-        "which may cause inconsistent results since many metrics rely on ordering. "
-        "Recompute the explanations."
-    )
-    assert not np.all((a_batch == 1.0)), (
-        "The elements in the attribution vector are all equal to one, "
-        "which may cause inconsistent results since many metrics rely on ordering. "
-        "Recompute the explanations."
-    )
-    assert len(set(a_batch.flatten().tolist())) > 1, (
-        "The attributions are uniformly distributed, "
-        "which may cause inconsistent results since many "
-        "metrics rely on ordering."
-        "Recompute the explanations."
-    )
+    # TODO: restate this as warning. random order metrics don't care
+    #assert not np.all((a_batch == 0)), (
+    #    "The elements in the attribution vector are all equal to zero, "
+    #    "which may cause inconsistent results since many metrics rely on ordering. "
+    #    "Recompute the explanations."
+    #)
+    #assert not np.all((a_batch == 1.0)), (
+    #    "The elements in the attribution vector are all equal to one, "
+    #    "which may cause inconsistent results since many metrics rely on ordering. "
+    #    "Recompute the explanations."
+    #)
+    #assert len(set(a_batch.flatten().tolist())) > 1, (
+    #    "The attributions are uniformly distributed, "
+    #    "which may cause inconsistent results since many "
+    #    "metrics rely on ordering."
+    #    "Recompute the explanations."
+    #)
     assert not np.all((a_batch < 0.0)), "Attributions should not all be less than zero."
 
 

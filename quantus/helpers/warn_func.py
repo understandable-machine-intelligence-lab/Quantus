@@ -56,9 +56,10 @@ def warn_parameterisation(
 
 
 def deprecation_warnings(kwargs: dict = {}) -> None:
-    text = "\n"
+    text = ""
     if "img_size" in kwargs:
         text += "argument 'img_size' is deprecated and will be removed in future versions.\n"
     if "nr_channels" in kwargs:
         text = "argument 'nr_channels' is deprecated and will be removed in future versions.\n"
-    print(text)
+    if text != "":
+        print(text)
