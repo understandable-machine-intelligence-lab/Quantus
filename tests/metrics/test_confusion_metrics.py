@@ -1,6 +1,3 @@
-from typing import Union
-
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -9,6 +6,21 @@ from ...quantus.metrics import *
 from ...quantus.helpers import *
 from ...quantus.helpers import perturb_func
 from ...quantus.helpers.explanation_func import explain
+
+@pytest.fixture
+def load_artificial_attribution():
+    """Build an artificial attribution map"""
+    zeros = np.zeros((1, 28, 28))
+    ones = np.ones((1, 28, 28))
+    mosaics_list = []
+    images = [zeros, ones]
+    indices_list = [tuple([0,0,1,1]), tuple([1,1,0,0]), tuple([0,1,0,1]), tuple([1,0,1,0])]
+    for indices in indices_list:
+        first_row = np.concatenate((images[indices[0]], images[indices[1]]), axis=1)
+        second_row = np.concatenate((images[indices[2]], images[indices[3]]), axis=1)
+        mosaic = np.concatenate((first_row, second_row), axis=2)
+        mosaics_list.append(mosaic)
+    return np.array(mosaics_list)
 
 
 @pytest.fixture()
@@ -171,6 +183,34 @@ def load_mnist_mosaics():
                 },
                 {'exception': ValueError},
         ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                {
+                    "x_batch": np.ones((4, 1, 56, 56)),
+                    "y_batch": np.ones(4),
+                    "p_batch": [tuple([0,0,1,1]), tuple([1,1,0,0]), tuple([0,1,0,1]), tuple([1,0,1,0])],
+                },
+                lazy_fixture("load_artificial_attribution"),
+                {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                {"value": 1},
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                {
+                    "x_batch": np.ones((4, 1, 56, 56)),
+                    "y_batch": np.ones(4),
+                    "p_batch": [tuple([1, 1, 0, 0]), tuple([0, 0, 1, 1]), tuple([1, 0, 1, 0]), tuple([0, 1, 0, 1])],
+                },
+                lazy_fixture("load_artificial_attribution"),
+                {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                {"value": 0},
+        ),
     ],
 )
 def test_focus(
@@ -210,3 +250,5 @@ def test_focus(
 
     assert len(scores) == len(p_batch)
     assert all([0 <= score <= 1 for score in scores])
+    if expected and "value" in expected:
+        assert all((score == expected["value"]) for score in scores)
