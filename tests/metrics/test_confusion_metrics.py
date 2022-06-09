@@ -26,7 +26,7 @@ def load_artificial_attribution():
 @pytest.fixture()
 def load_mnist_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
-    model = LeNetAdaptivePooling()
+    model = LeNetAdaptivePooling(input_shape=(1, 28, 28))
     model.load_state_dict(
         torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
     )
