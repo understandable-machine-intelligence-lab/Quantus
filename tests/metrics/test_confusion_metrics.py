@@ -35,17 +35,15 @@ def load_mnist_mosaics():
     all_mosaics, mosaic_indices_list, mosaic_labels_list, p_batch_list, target_list = mosaics_returns
 
     return {
-        "all_mosaics": all_mosaics,
-        "mosaic_indices_list": mosaic_indices_list,
-        "mosaic_labels_list": mosaic_labels_list,
-        "p_batch_list": p_batch_list,
-        "target_list": target_list,
+        "x_batch": all_mosaics,
+        "y_batch": target_list,
+        "p_batch": p_batch_list,
     }
 
 
 @pytest.mark.confusion
 @pytest.mark.parametrize(
-    "model,data,a_batch,params",
+    "model,mosaic_data,a_batch,params,expected",
     [
         (
                 lazy_fixture("load_mnist_adaptive_lenet_model"),
@@ -53,24 +51,153 @@ def load_mnist_mosaics():
                 None,
                 {
                     "explain_func": explain,
+                    "method": "Gradient",
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "GradientShap",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "IntegratedGradients",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "InputXGradient",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "Saliency",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "Occlusion",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "FeatureAblation",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "GradCam",
+                    "gc_layer": "model._modules.get('conv_2')",
+                    "abs": True,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "Control Var. Sobel Filter",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                {
+                    "x_batch": None,
+                    "y_batch": None,
+                    "p_batch": None,
+                },
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "Gradient",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                {'exception': ValueError},
         ),
     ],
 )
 def test_focus(
-        model,
-        data: np.ndarray,
+        model: Optional[ModelInterface],
+        mosaic_data: Dict[str, Union[np.ndarray, list]],
         a_batch: Optional[np.ndarray],
         params: dict,
+        expected: Optional[dict],
 ):
     x_batch, y_batch, p_batch = (
-        data["all_mosaics"],
-        data["target_list"],
-        data["p_batch_list"]
+        mosaic_data["x_batch"],
+        mosaic_data["y_batch"],
+        mosaic_data["p_batch"]
     )
     metric = Focus(**params)
+
+    if expected and "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            metric(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                p_batch=p_batch,
+                **params,
+            )
+        return
 
     scores = metric(
         model=model,
@@ -81,4 +208,5 @@ def test_focus(
         **params,
     )
 
-
+    assert len(scores) == len(p_batch)
+    assert all([0 <= score <= 1 for score in scores])
