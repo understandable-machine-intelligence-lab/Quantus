@@ -1,8 +1,10 @@
 """This module provides some functionality to evaluate different explanation methods on several evaluation criteria."""
 from typing import Union, Callable, Dict
+
 import numpy as np
-from .metrics import *
-from .helpers.constants import *
+
+from .helpers import asserts
+from .helpers import utils
 from .helpers.model_interface import ModelInterface
 
 
@@ -16,7 +18,6 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    *args,
     **kwargs,
 ) -> dict:
     """
@@ -72,6 +73,7 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
+                        # TODO: what does the method parameter do?
                         **{**kwargs, **{"method": method}},
                     )
                 )
@@ -85,7 +87,7 @@ def evaluate(
             if callable(method_func):
 
                 # Asserts.
-                assert_explain_func(explain_func=method_func)
+                asserts.assert_explain_func(explain_func=method_func)
 
                 # Generate explanations.
                 a_batch = method_func(
@@ -97,7 +99,7 @@ def evaluate(
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
                 # Asserts.
-                assert_attributions(a_batch=a_batch, x_batch=x_batch)
+                asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
             elif isinstance(method_func, np.ndarray):
 

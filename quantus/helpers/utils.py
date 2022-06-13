@@ -2,7 +2,7 @@
 import re
 import copy
 import numpy as np
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from importlib import util
 from skimage.segmentation import slic, felzenszwalb
 from ..helpers.model_interface import ModelInterface
@@ -219,20 +219,41 @@ def make_channel_last(x: np.array, channel_first=True):
         )
 
 
-def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
+def get_wrapped_model(
+        model,
+        channel_first: bool,
+        softmax: bool,
+        device: Optional[str] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
     Parameters
     ----------
+    model: a pytorch or tensorflow model that is to be wrapped.
+    channel_first (boolean): Indicates if model expects channel first or channel last layout.
+    predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
 
     Returns
-        A wrapped ModelInterface model.
+    -------
+    model (ModelInterface): A wrapped ModelInterface model.
     """
     if isinstance(model, tf.keras.Model):
-        return TensorFlowModel(model, channel_first)
+        return TensorFlowModel(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            predict_kwargs=predict_kwargs,
+        )
     if isinstance(model, torch.nn.modules.module.Module):
-        return PyTorchModel(model, channel_first)
+        return PyTorchModel(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            device=device,
+            predict_kwargs=predict_kwargs,
+        )
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )

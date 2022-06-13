@@ -392,17 +392,27 @@ def test_make_channel_last(
     [
         (
             lazy_fixture("load_mnist_model_tf"),
-            {"channel_first": False},
+            {"channel_first": False, "softmax": True},
+            {"type": TensorFlowModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            {"channel_first": False, "softmax": False},
             {"type": TensorFlowModel},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
+            {"type": PyTorchModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            {"channel_first": True, "softmax": False},
             {"type": PyTorchModel},
         ),
         (
             None,
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
             {"exception": ValueError},
         ),
     ],
@@ -414,9 +424,9 @@ def test_get_wrapped_model(
 ):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            out = get_wrapped_model(model, params["channel_first"])
+            out = get_wrapped_model(model, **params)
         return
-    out = get_wrapped_model(model, params["channel_first"])
+    out = get_wrapped_model(model, **params)
     if "type" in expected:
         isinstance(out, expected["type"]), "Test failed."
 
