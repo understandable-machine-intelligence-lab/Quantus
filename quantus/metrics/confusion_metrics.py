@@ -43,7 +43,7 @@ class Focus(Metric):
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_region_perturbation_experiment
+        self.default_plot_func = plotting.plot_focus
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
 
