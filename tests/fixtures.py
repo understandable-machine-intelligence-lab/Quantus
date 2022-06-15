@@ -84,7 +84,7 @@ def load_cifar10_images():
     """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_batch = torch.as_tensor(
-        x_train[:124,:,:,:].reshape(124, 3, 32, 32),
+        x_train[:124, ...].reshape(124, 3, 32, 32),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
