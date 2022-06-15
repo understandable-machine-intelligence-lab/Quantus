@@ -160,7 +160,7 @@ class Focus(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        img_size = a_batch[0, :, :].size
+        img_size = a_batch[0, ...].size
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
