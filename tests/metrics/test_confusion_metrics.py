@@ -248,7 +248,7 @@ def test_focus(
         **params,
     )
 
-    assert len(scores) == len(p_batch)
-    assert all([0 <= score <= 1 for score in scores])
+    assert len(scores) == len(p_batch), "Test failed."
+    assert all([0 <= score <= 1 for score in scores]), "Test failed."
     if expected and "value" in expected:
-        assert all((score == expected["value"]) for score in scores)
+        assert all((score == expected["value"]) for score in scores), "Test failed."
