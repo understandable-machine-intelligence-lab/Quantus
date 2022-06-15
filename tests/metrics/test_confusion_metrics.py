@@ -168,7 +168,43 @@ def load_imagenet_mosaics():
                 None,
                 {
                     "explain_func": explain,
+                    "method": "GradientShap",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
                     "method": "IntegratedGradients",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "InputXGradient",
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                None,
+        ),
+        (
+                lazy_fixture("load_mnist_adaptive_lenet_model"),
+                lazy_fixture("load_mnist_mosaics"),
+                None,
+                {
+                    "explain_func": explain,
+                    "method": "Saliency",
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -245,7 +281,7 @@ def load_imagenet_mosaics():
                     "explain_func": explain,
                     "method": "GradCam",
                     "gc_layer": "model._modules.get('conv_2')",
-                    "abs": True,
+                    "pos_only": True,
                     "interpolate": (64, 64),
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -260,8 +296,9 @@ def load_imagenet_mosaics():
                     "explain_func": explain,
                     "method": "GradCam",
                     "gc_layer": "model._modules.get('layer4')[-1]",
-                    "abs": True,
+                    "pos_only": True,
                     "interpolate": (448, 448),
+                    "interpolate_mode": "bilinear",
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -351,6 +388,7 @@ def test_focus(
             )
         return
 
+    p_batch_len = len(p_batch)
     while len(p_batch) > 0:
         if x_batch is not None:
             x_minibatch, x_batch = x_batch[:10], x_batch[10:]
@@ -375,7 +413,7 @@ def test_focus(
         )
 
     scores = metric.last_results
-    assert len(scores) == len(p_batch), "Test failed."
+    assert len(scores) == p_batch_len, "Test failed."
     assert all([0 <= score <= 1 for score in scores]), "Test failed."
     if expected and "value" in expected:
         assert all((score == expected["value"]) for score in scores), "Test failed."
