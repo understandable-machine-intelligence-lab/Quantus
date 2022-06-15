@@ -15,7 +15,7 @@ def plot_pixel_flipping_experiment(
     """
     Plot the pixel-flipping experiment as done in paper:
 
-    References:
+    References:R
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
@@ -191,4 +191,24 @@ def plot_model_parameter_randomisation_experiment(
 
     if methods:
         plt.legend(methods)
+    plt.show()
+
+
+def plot_focus(
+        scores: List[float],
+        method = None,
+
+) -> None:
+    """
+    Plot the Focus scores as a box plot as done in paper:
+     References:
+        1) "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases. arXiv:2109.15035 (2021)"
+    """
+
+    fig = plt.figure(figsize=(8, 6))
+    plt.boxplot(scores)
+    if method:
+        plt.xlabel(method)
+    plt.ylabel("Focus score")
+    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.show()
