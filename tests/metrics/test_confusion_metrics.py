@@ -266,7 +266,7 @@ def load_imagenet_mosaics():
                     "explain_func": explain,
                     "method": "GradCam",
                     "gc_layer": "model._modules.get('conv_2')",
-                    "abs": True,
+                    "pos_only": True,
                     "interpolate": (56, 56),
                     "disable_warnings": False,
                     "display_progressbar": False,
