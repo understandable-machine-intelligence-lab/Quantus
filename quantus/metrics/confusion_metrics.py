@@ -17,6 +17,13 @@ from ..helpers.normalise_func import normalise_by_negative
 class Focus(Metric):
     """
     Implementation of Focus evaluation strategy by Arias et. al. 2022
+
+    The Focus is computed through mosaics of instances from different classes, and the explanations these generate.
+    Each mosaic contains four images: two images belonging to the target class (the specific class the feature
+    attribution method is expected to explain) and the other two are chosen randomly from the rest of classes.
+    Thus, the Focus estimates the reliability of feature attribution method’s output as the probability of the sampled
+    pixels lying on an image of the target class of the mosaic. This is equivalent to the proportion
+    of positive relevance lying on those images.
     """
 
     @attributes_check
@@ -99,25 +106,39 @@ class Focus(Metric):
             # Enable GPU.
             >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            # Load a pre-trained LeNet classification model with adaptive pooling layer (architecture at quantus/helpers/models).
+            >> model = LeNetAdaptivePooling(input_shape=(1, 28, 28))
+            >> model.load_state_dict(torch.load("assets/mnist", map_location="cpu", pickle_module=pickle))
 
             # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            >> transformer = transforms.Compose([transforms.ToTensor()])
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', train=False, transform=transformer, download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=32, pin_memory=True)
 
             # Load a batch of inputs and outputs to use for XAI evaluation.
             >> x_batch, y_batch = iter(test_loader).next()
             >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            # Create mosaics (for example 10 mosaics per class)
+            >> x_mosaic_batch, _, _, p_mosaic_batch, y_mosaic_batch = mosaic_creation(images=x_batch,
+                                                                       labels=y_batch,
+                                                                       mosaics_per_class=10,
+                                                                       seed=777)
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Focus(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+            >> metric = Focus()
+            >> scores = metric(model=model,
+                           x_batch=x_mosaic_batch,
+                           y_batch=y_mosaic_batch,
+                           a_batch=None,
+                           p_batch=p_mosaic_batch,
+                           **{"explain_func": explain,
+                              "method": "GradCAM",
+                              "gc_layer": "model._modules.get('conv_2')",
+                              "pos_only": True,
+                              "interpolate": (2*28, 2*28),
+                              "interpolate_mode": "bilinear",
+                              "device": device})
         """
 
         if a_batch is None:
