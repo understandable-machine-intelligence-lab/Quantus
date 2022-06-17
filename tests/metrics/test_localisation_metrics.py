@@ -398,49 +398,6 @@ def load_cifar10_mosaics():
     }
 
 
-@pytest.fixture()
-def load_imagenet_resnet18_model():
-    """Load a pre-trained ResNet18 classification model (architecture at quantus/helpers/models)."""
-    model = resnet18(pretrained=True)
-    return model
-
-
-@pytest.fixture()
-def load_imagenet_mosaics():
-    """Load a batch of ImageNet and build mosaics from it."""
-
-    preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-    with open("tutorials/assets/imagenet_images/imagenet1000_clsid_to_labels.txt") as mapper_file:
-        label_map = {line.split(':')[0]: idx for idx, line in enumerate(mapper_file.readlines())}
-
-    x_validation, y_validation = [], []
-    for image_path in glob("tutorials/assets/imagenet_images/images/*/*"):
-        input_img = Image.open(image_path).convert('RGB')
-        input_tensor = preprocess(input_img)
-        input_batch = input_tensor.unsqueeze(0)
-        x_validation.append(input_batch)
-
-        label_str = os.path.basename(os.path.dirname(image_path))
-        label_int = label_map[label_str]
-        y_validation.append(label_int)
-
-    x_batch = torch.concat(x_validation).numpy()
-    y_batch = np.asarray(y_validation)
-
-    mosaics_returns = mosaic_creation(images=x_batch, labels=y_batch, mosaics_per_class=10, seed=777)
-    all_mosaics, mosaic_indices_list, mosaic_labels_list, p_batch_list, target_list = mosaics_returns
-    return {
-        "x_batch": all_mosaics,
-        "y_batch": target_list,
-        "p_batch": p_batch_list,
-    }
-
-
 @pytest.mark.localisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -1490,22 +1447,6 @@ def test_attribution_localisation(
                     "gc_layer": "model._modules.get('conv_2')",
                     "pos_only": True,
                     "interpolate": (64, 64),
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-                None,
-        ),
-        (
-                lazy_fixture("load_imagenet_resnet18_model"),
-                lazy_fixture("load_imagenet_mosaics"),
-                None,
-                {
-                    "explain_func": explain,
-                    "method": "GradCam",
-                    "gc_layer": "model._modules.get('layer4')[-1]",
-                    "pos_only": True,
-                    "interpolate": (448, 448),
-                    "interpolate_mode": "bilinear",
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
