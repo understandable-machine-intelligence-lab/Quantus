@@ -73,7 +73,7 @@ measures to what extent explanations are stable when subject to slight perturbat
 
 <details>
 <summary><b>Localisation</b></summary>
-tests if the explainable evidence is centered around the object of interest (as defined by a bounding box or similar segmentation mask)
+tests if the explainable evidence is centered around a region of interest (RoI). Such RoI may be defined around an object by a bounding box, a segmentation mask or, a cell within a grid.
      <br><br>
 <ul>
     <li><b>Pointing Game </b><a href="https://arxiv.org/abs/1608.00507">(Zhang et al., 2018)</a>: checks whether attribution with the highest score is located within the targeted object
