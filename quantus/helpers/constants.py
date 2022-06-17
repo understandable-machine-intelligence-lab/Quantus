@@ -30,6 +30,7 @@ AVAILABLE_METRICS = {
         "Relevance Rank Accuracy": RelevanceRankAccuracy,
         "Attribution Localisation ": AttributionLocalisation,
         "AUC": AUC,
+        "Focus": Focus,
     },
     "Complexity": {
         "Sparseness": Sparseness,
@@ -44,10 +45,7 @@ AVAILABLE_METRICS = {
         "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
         "InputInvariance": InputInvariance,
-    },
-    "Confusion": {
-        "Focus": Focus,
-    },
+    }
 }
 
 
