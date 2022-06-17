@@ -1,12 +1,12 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
 import warnings
-from typing import Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
 
-from .base import Metric
+from .base import PerturbationMetric
 from ..helpers import asserts
 from ..helpers import plotting
 from ..helpers import utils
@@ -19,7 +19,7 @@ from ..helpers.perturb_func import baseline_replacement_by_indices
 from ..helpers.perturb_func import noisy_linear_imputation
 
 
-class FaithfulnessCorrelation(Metric):
+class FaithfulnessCorrelation(PerturbationMetric):
     """
     Implementation of faithfulness correlation by Bhatt et al., 2020.
 
@@ -43,50 +43,80 @@ class FaithfulnessCorrelation(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
+            nr_runs: int = 100,
+            subset_size: int = 224,
+            return_aggregate: bool = True,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
-            subset_size (integer): The size of subset, default=224.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        similarity_func (callable): Similarity function applied to compare input and perturbed input.
+            If None, the default value is used, default=correlation_pearson.
+        nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
+        subset_size (integer): The size of subset, default=224.
+        return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_pearson.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.nr_runs = self.kwargs.get("nr_runs", 100)
-        self.subset_size = self.kwargs.get("subset_size", 224)
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
-        self.softmax = self.kwargs.get("softmax", False)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = correlation_pearson
+        self.similarity_func = similarity_func
+
+        self.nr_runs = nr_runs
+        self.subset_size = subset_size
+        self.return_aggregate = return_aggregate
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -104,13 +134,18 @@ class FaithfulnessCorrelation(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -118,146 +153,136 @@ class FaithfulnessCorrelation(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = FaithfulnessCorrelation(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = FaithfulnessCorrelation(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_value_smaller_than_input_size(
-            x=x_batch_s, value=self.subset_size, value_name="subset_size"
         )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        a = a.flatten()
 
-        for x, y, a in iterator:
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-            a = a.flatten()
+        pred_deltas = []
+        att_sums = []
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        # For each test data point, execute a couple of runs.
+        for i_ix in range(self.nr_runs):
 
-            if self.abs:
-                a = np.abs(a)
+            # Randomly mask by subset size.
+            a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            pred_deltas.append(float(y_pred - y_pred_perturb))
 
-            pred_deltas = []
-            att_sums = []
+            # Sum attributions of the random subset.
+            att_sums.append(np.sum(a[a_ix]))
 
-            # For each test data point, execute a couple of runs.
-            for i_ix in range(self.nr_runs):
+        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
+        return similarity
 
-                # Randomly mask by subset size.
-                a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
-                )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                pred_deltas.append(float(y_pred - y_pred_perturb))
+        # Asserts.
+        asserts.assert_value_smaller_than_input_size(
+            x=x_batch, value=self.subset_size, value_name="subset_size"
+        )
 
-                # Sum attributions of the random subset.
-                att_sums.append(np.sum(a[a_ix]))
+        return model, x_batch, y_batch, a_batch, s_batch
 
-            similarity = self.similarity_func(a=att_sums, b=pred_deltas)
-            self.last_results.append(similarity)
-
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
 
-class FaithfulnessEstimate(Metric):
+class FaithfulnessEstimate(PerturbationMetric):
     """
     Implementation of Faithfulness Estimate by Alvares-Melis at el., 2018a and 2018b.
 
@@ -270,48 +295,80 @@ class FaithfulnessEstimate(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
+            nr_runs: int = 100,
+            subset_size: int = 224,
+            features_in_step: int = 1,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
-            subset_size (integer): The size of subset, default=224.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        similarity_func (callable): Similarity function applied to compare input and perturbed input.
+            If None, the default value is used, default=correlation_spearman.
+        nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
+        subset_size (integer): The size of subset, default=224.
+        features_in_step (integer): The size of the step, default=1.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.softmax = self.kwargs.get("softmax", False)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = correlation_spearman
+        self.similarity_func = similarity_func
+
+        self.nr_runs = nr_runs
+        self.subset_size = subset_size
+        self.features_in_step = features_in_step
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -328,13 +385,18 @@ class FaithfulnessEstimate(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -342,147 +404,133 @@ class FaithfulnessEstimate(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = FaithfulnessEstimate(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = FaithfulnessEstimate(abs=True, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        a = a.flatten()
 
-        for x, y, a in iterator:
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
 
-            a = a.flatten()
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        pred_deltas = [None for _ in range(n_perturbations)]
+        att_sums = [None for _ in range(n_perturbations)]
 
-            if self.abs:
-                a = np.abs(a)
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
-
-            pred_deltas = []
-            att_sums = []
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (
+                    self.features_in_step * (i_ix + 1)
                 )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                pred_deltas.append(float(y_pred - y_pred_perturb))
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            pred_deltas[i_ix] =  float(y_pred - y_pred_perturb)
 
-                # Sum attributions.
-                att_sums.append(a[a_ix].sum())
+            # Sum attributions.
+            att_sums[i_ix] = a[a_ix].sum()
 
-            self.last_results.append(self.similarity_func(a=att_sums, b=pred_deltas))
+        similarity = self.similarity_func(a=att_sums, b=pred_deltas)
+        return similarity
 
-        self.all_results.append(self.last_results)
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-        return self.last_results
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
+
+        return model, x_batch, y_batch, a_batch, s_batch
 
 
-class IterativeRemovalOfFeatures(Metric):
+class IterativeRemovalOfFeatures(PerturbationMetric):
     """
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
@@ -497,45 +545,74 @@ class IterativeRemovalOfFeatures(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            segmentation_method: str = "slic",
+            return_aggregate: bool = True,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "mean",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+        similarity_func (callable): Similarity function applied to compare input and perturbed input.
+            If None, the default value is used, default=correlation_pearson.
+        nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
+        subset_size (integer): The size of subset, default=224.
+        return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        self.segmentation_method = "slic"
+        self.return_aggregate = return_aggregate
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -552,13 +629,18 @@ class IterativeRemovalOfFeatures(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -566,156 +648,144 @@ class IterativeRemovalOfFeatures(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = IROF(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = IROF(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Predict on x.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-        nr_channels = x_batch_s.shape[1]
-        self.last_results = []
+        # Segment image.
+        segments = utils.get_superpixel_segments(
+            img=np.moveaxis(x, 0, -1).astype("double"),
+            segmentation_method=self.segmentation_method,
+        )
+        nr_segments = segments.max()
+        asserts.assert_nr_segments(nr_segments=nr_segments)
 
-        if a_batch is None:
+        # Calculate average attribution of each segment.
+        att_segs = np.zeros(nr_segments)
+        for i, s in enumerate(range(nr_segments)):
+            att_segs[i] = np.mean(a[:, segments == s])
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
+        # Sort segments based on the mean attribution (descending order).
+        s_indices = np.argsort(-att_segs)
 
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+        preds = []
+
+        for i_ix, s_ix in enumerate(s_indices):
+
+            # Perturb input by indices of attributions.
+            a_ix = np.nonzero(
+                np.repeat((segments == s_ix).flatten(), self.nr_channels)
+            )[0]
+
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
             )
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
 
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+            # Normalise the scores to be within range [0, 1].
+            preds.append(float(y_pred_perturb / y_pred))
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
+        score = len(preds) - utils.calculate_auc(np.array(preds))
+        return score
 
-        for ix, (x, y, a) in iterator:
 
-            if self.normalise:
-                a = self.normalise_func(a)
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer number of input channels and attribution axes for perturbation function.
+        self.nr_channels = x_batch.shape[1]
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-            if self.abs:
-                a = np.abs(a)
+        return model, x_batch, y_batch, a_batch, s_batch
 
-            # Predict on x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
-
-            # Segment image.
-            segments = utils.get_superpixel_segments(
-                img=np.moveaxis(x, 0, -1).astype("double"),
-                segmentation_method=self.segmentation_method,
-            )
-            nr_segments = segments.max()
-            asserts.assert_nr_segments(nr_segments=nr_segments)
-
-            # Calculate average attribution of each segment.
-            att_segs = np.zeros(nr_segments)
-            for i, s in enumerate(range(nr_segments)):
-                att_segs[i] = np.mean(a[:, segments == s])
-
-            # Sort segments based on the mean attribution (descending order).
-            s_indices = np.argsort(-att_segs)
-
-            preds = []
-
-            for i_ix, s_ix in enumerate(s_indices):
-
-                # Perturb input by indices of attributions.
-                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), nr_channels))[
-                    0
-                ]
-
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
-                )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-
-                # Normalise the scores to be within range [0, 1].
-                preds.append(float(y_pred_perturb / y_pred))
-
-            self.last_results.append(len(preds) - utils.calculate_auc(np.array(preds)))
-
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
     @property
     def get_aggregated_score(self):
@@ -723,7 +793,7 @@ class IterativeRemovalOfFeatures(Metric):
         return [np.mean(results) for results in self.all_results]
 
 
-class MonotonicityArya(Metric):
+class MonotonicityArya(PerturbationMetric):
     """
     Implementation of Montonicity Metric by Arya at el., 2019.
 
@@ -743,44 +813,70 @@ class MonotonicityArya(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            concept_influence: bool = False,
+            features_in_step: int = 1,
+            abs: bool = True,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            concept_influence (boolean): Indicates whether concept influence metric is used.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        features_in_step (integer): The size of the step, default=1.
+        concept_influence (boolean): Indicates whether concept influence metric is used, default=False.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        self.concept_influence = concept_influence
+        self.features_in_step = features_in_step
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -794,160 +890,151 @@ class MonotonicityArya(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> List[bool]:
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
+    ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of bool(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = MonotonicityArya(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = MonotonicityArya(abs=True, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
 
-        for x, y, a in iterator:
+        a = a.flatten()
 
-            a = a.flatten()
+        # Get indices of sorted attributions (ascending).
+        a_indices = np.argsort(a)
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        preds = [None for _ in range(n_perturbations)]
 
-            if self.abs:
-                a = np.abs(a)
+        # Copy the input x but fill with baseline values.
+        baseline_value = utils.get_baseline_value(
+            value=self.perturb_func_kwargs["perturb_baseline"],
+            arr=x,
+            return_shape=(1,),
+        )
+        x_baseline = np.full(x.shape, baseline_value)
 
-            # Get indices of sorted attributions (ascending).
-            a_indices = np.argsort(a)
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-            preds = []
-
-            # Copy the input x but fill with baseline values.
-            baseline_value = utils.get_baseline_value(
-                value=self.kwargs.get("perturb_baseline", "black"),
-                arr=x,
-                return_shape=(1,),
-            )
-            x_baseline = np.full(x.shape, baseline_value)
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_baseline = self.perturb_func(
-                    arr=x_baseline,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (
+                    self.features_in_step * (i_ix + 1)
                 )
+            ]
+            x_baseline = self.perturb_func(
+                arr=x_baseline,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
 
-                # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
-                x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                preds.append(y_pred_perturb)
+            # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
+            x_input = model.shape_input(x_baseline, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            preds[i_ix] = y_pred_perturb
 
-            self.last_results.append(np.all(np.diff(preds) >= 0))
+        return np.all(np.diff(preds) >= 0)
 
-        self.all_results.append(self.last_results)
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-        return self.last_results
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
+
+        return model, x_batch, y_batch, a_batch, s_batch
 
 
-class MonotonicityNguyen(Metric):
+class MonotonicityNguyen(PerturbationMetric):
     """
     Implementation of Montonicity Metric by Nguyen at el., 2020.
 
@@ -961,50 +1048,80 @@ class MonotonicityNguyen(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            eps: float = 1e-5,
+            nr_samples: int = 100,
+            features_in_step: int = 1,
+            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
+            abs: bool = True,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "uniform",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        eps (float): Attributions threshold, default=1e-5.
+        nr_samples (integer): The number of samples to iterate over, default=100.
+        features_in_step (integer): The size of the step, default=1.
+        similarity_func (callable): Similarity function applied to compare input and perturbed input.
+            If None, the default value is used, default=correlation_spearman.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="uniform".
-            eps (float): Attributions threshold, default=1e-5.
-            nr_samples (integer): The number of samples to iterate over, default=100.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", True)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = Callable
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.eps = self.kwargs.get("eps", 1e-5)
-        self.nr_samples = self.kwargs.get("nr_samples", 100)
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = correlation_spearman
+        self.similarity_func = similarity_func
+
+        self.eps = eps
+        self.nr_samples = nr_samples
+        self.features_in_step = features_in_step
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -1021,13 +1138,18 @@ class MonotonicityNguyen(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1035,164 +1157,147 @@ class MonotonicityNguyen(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = MonotonicityNguyen(abs=True, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = MonotonicityNguyen(abs=True, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Predict on input x.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-        for x, y, a in iterator:
+        inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
+        inv_pred = inv_pred**2
 
-            # Predict on input x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
+        a = a.flatten()
 
-            inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-            inv_pred = inv_pred**2
+        # Get indices of sorted attributions (ascending).
+        a_indices = np.argsort(a)
 
-            a = a.flatten()
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        atts = [None for _ in range(n_perturbations)]
+        vars = [None for _ in range(n_perturbations)]
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-            if self.abs:
-                a = np.abs(a)
-
-            # Get indices of sorted attributions (ascending).
-            a_indices = np.argsort(a)
-
-            atts = []
-            vars = []
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-
-                y_pred_perturbs = []
-
-                for n in range(self.nr_samples):
-
-                    x_perturbed = self.perturb_func(
-                        arr=x,
-                        indices=a_ix,
-                        indexed_axes=a_axes,
-                        **self.kwargs,
-                    )
-                    asserts.assert_perturbation_caused_change(
-                        x=x, x_perturbed=x_perturbed
-                    )
-
-                    # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, x.shape, channel_first=True
-                    )
-                    y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                    y_pred_perturbs.append(y_pred_perturb)
-
-                vars.append(
-                    float(
-                        np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
-                        * inv_pred
-                    )
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (
+                    self.features_in_step * (i_ix + 1)
                 )
-                atts.append(float(sum(a[a_ix])))
+            ]
 
-            self.last_results.append(self.similarity_func(a=atts, b=vars))
+            y_pred_perturbs = [None for _ in range(self.nr_samples)]
 
-        self.all_results.append(self.last_results)
+            for sample_id in range(self.nr_samples):
 
-        return self.last_results
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=self.a_axes,
+                    **self.perturb_func_kwargs,
+                )
+                asserts.assert_perturbation_caused_change(
+                    x=x, x_perturbed=x_perturbed
+                )
+
+                # Predict on perturbed input x.
+                x_input = model.shape_input(
+                    x_perturbed, x.shape, channel_first=True
+                )
+                y_pred_perturb = float(model.predict(x_input)[:, y])
+                y_pred_perturbs[sample_id] = y_pred_perturb
+
+            vars[i_ix] = float(
+                np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
+                * inv_pred
+            )
+            atts[i_ix] = float(sum(a[a_ix]))
+
+        return self.similarity_func(a=atts, b=vars)
+
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
+
+        return model, x_batch, y_batch, a_batch, s_batch
 
 
-class PixelFlipping(Metric):
+class PixelFlipping(PerturbationMetric):
     """
     Implementation of Pixel-Flipping experiment by Bach et al., 2015.
 
@@ -1207,43 +1312,71 @@ class PixelFlipping(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            features_in_step: int = 1,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        features_in_step (integer): The size of the step, default=1.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result, if None, the default value is used,
+            default=plot_pixel_flipping_experiment.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_pixel_flipping_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_pixel_flipping_experiment
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        self.features_in_step = features_in_step
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -1258,13 +1391,18 @@ class PixelFlipping(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1272,137 +1410,123 @@ class PixelFlipping(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = PixelFlipping(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = PixelFlipping(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        a = a.flatten()
 
-        for x, y, a in iterator:
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
 
-            a = a.flatten()
+        n_perturbations = len(range(0, len(a_indices), self.features_in_step))
+        preds = [None for _ in range(n_perturbations)]
+        x_perturbed = x.copy()
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-            if self.abs:
-                a = np.abs(a)
-
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
-
-            preds = []
-            x_perturbed = x.copy()
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (
+                    self.features_in_step * (i_ix + 1)
                 )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x_perturbed,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                # Predict on perturbed input x.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                preds.append(y_pred_perturb)
+            # Predict on perturbed input x.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            preds[i_ix] = y_pred_perturb
 
-            self.last_results.append(preds)
+        return preds
 
-        self.all_results.append(self.last_results)
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
-        return self.last_results
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
+
+        return model, x_batch, y_batch, a_batch, s_batch
+
 
     @property
     def get_auc_score(self):
@@ -1410,7 +1534,7 @@ class PixelFlipping(Metric):
         return [utils.calculate_auc(np.array(i)) for i in self.all_results]
 
 
-class RegionPerturbation(Metric):
+class RegionPerturbation(PerturbationMetric):
     """
 
     Implementation of Region Perturbation by Samek et al., 2015.
@@ -1436,48 +1560,78 @@ class RegionPerturbation(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            patch_size: int = 8,
+            order: str = "morf",
+            regions_evaluation: int = 100,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "uniform",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_patch.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        patch_size (integer): The patch size for masking, default=8.
+        regions_evaluation (integer): The number of regions to evaluate, default=100.
+        order (string): Indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("morf"), or least relevant first ("lerf"), default="morf".
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="uniform".
-            regions_evaluation (integer): The number of regions to evaluate, default=100.
-            patch_size (integer): The patch size for masking, default=8.
-            order (string): Indicates whether attributions are ordered randomly ("random"),
-            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result. If None, the default is used,
+            default = plot_region_perturbation_experiment
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_region_perturbation_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_region_perturbation_experiment
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.regions_evaluation = self.kwargs.get("regions_evaluation", 100)
-        self.patch_size = self.kwargs.get("patch_size", 8)
-        self.order = self.kwargs.get("order", "MoRF").lower()
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = {}
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        self.patch_size = patch_size
+        self.order = order.lower()
+        self.regions_evaluation = regions_evaluation
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -1497,209 +1651,214 @@ class RegionPerturbation(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> Dict[int, List[float]]:
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
+    ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = RegionPerturbation(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = RegionPerturbation(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-        self.last_results = {k: None for k in range(len(x_batch_s))}
+        patches = []
+        x_perturbed = x.copy()
 
-        if a_batch is None:
+        # Pad input and attributions. This is needed to allow for any patch_size.
+        pad_width = self.patch_size - 1
+        x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=self.a_axes)
+        a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=self.a_axes)
 
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
+        # Create patches across whole input shape and aggregate attributions.
+        att_sums = []
+        axis_iterators = [
+            range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
+        ]
+        for top_left_coords in itertools.product(*axis_iterators):
+            # Create slice for patch.
+            patch_slice = utils.create_patch_slice(
+                patch_size=self.patch_size,
+                coords=top_left_coords,
             )
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
+            # Sum attributions for patch.
+            att_sums.append(
+                a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
+            )
+            patches.append(patch_slice)
 
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
+        if self.order == "random":
+            # Order attributions randomly.
+            order = np.arange(len(patches))
+            np.random.shuffle(order)
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
+        elif self.order == "morf":
+            # Order attributions according to the most relevant first.
+            order = np.argsort(att_sums)[::-1]
+
+        elif self.order == "lerf":
+            # Order attributions according to the least relevant first.
+            order = np.argsort(att_sums)
+
         else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+            raise ValueError(
+                "order must be in ['random', 'morf', 'lerf'] but is: {self.order}"
             )
 
-        for sample, (x, y, a) in iterator:
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
+        # Create ordered list of patches.
+        ordered_patches = [patches[p] for p in order]
 
-            if self.normalise:
-                a = self.normalise_func(a)
+        # Remove overlapping patches
+        blocked_mask = np.zeros(x_pad.shape, dtype=bool)
+        ordered_patches_no_overlap = []
+        for patch_slice in ordered_patches:
+            patch_mask = np.zeros(x_pad.shape, dtype=bool)
+            patch_mask[utils.expand_indices(patch_mask, patch_slice, self.a_axes)] = True
+            #patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
+           # patch_mask[patch_mask_exp] = True
+            intersected = blocked_mask & patch_mask
 
-            if self.abs:
-                a = np.abs(a)
+            if not intersected.any():
+                ordered_patches_no_overlap.append(patch_slice)
+                blocked_mask = blocked_mask | patch_mask
 
-            patches = []
-            sub_results = []
-            x_perturbed = x.copy()
+            if len(ordered_patches_no_overlap) >= self.regions_evaluation:
+                break
 
-            # Pad input and attributions. This is needed to allow for any patch_size.
-            pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
-            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
+        # Increasingly perturb the input and store the decrease in function value.
+        sub_results = [None for _ in range(len(ordered_patches_no_overlap))]
+        for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
+            # Pad x_perturbed. The mode should probably depend on the used perturb_func?
+            x_perturbed_pad = utils._pad_array(
+                x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
+            )
 
-            # Create patches across whole input shape and aggregate attributions.
-            att_sums = []
-            axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width) for axis in a_axes
-            ]
-            for top_left_coords in itertools.product(*axis_iterators):
-                # Create slice for patch.
-                patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                )
+            # Perturb.
+            x_perturbed_pad = self.perturb_func(
+                arr=x_perturbed_pad,
+                indices=patch_slice,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
 
-                # Sum attributions for patch.
-                att_sums.append(
-                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
-                )
-                patches.append(patch_slice)
+            # Remove Padding
+            x_perturbed = utils._unpad_array(
+                x_perturbed_pad, pad_width, padded_axes=self.a_axes
+            )
 
-            if self.order == "random":
-                # Order attributions randomly.
-                order = np.arange(len(patches))
-                np.random.shuffle(order)
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-            elif self.order == "morf":
-                # Order attributions according to the most relevant first.
-                order = np.argsort(att_sums)[::-1]
+            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
 
-            else:
-                # Order attributions according to the least relevant first.
-                order = np.argsort(att_sums)
+            sub_results[patch_id] = y_pred - y_pred_perturb
 
-            # Create ordered list of patches.
-            ordered_patches = [patches[p] for p in order]
+        return sub_results
 
-            # Remove overlapping patches
-            blocked_mask = np.zeros(x_pad.shape, dtype=bool)
-            ordered_patches_no_overlap = []
-            for patch_slice in ordered_patches:
-                patch_mask = np.zeros(x_pad.shape, dtype=bool)
-                patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
-                intersected = blocked_mask & patch_mask
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+        return model, x_batch, y_batch, a_batch, s_batch
 
-                if not intersected.any():
-                    ordered_patches_no_overlap.append(patch_slice)
-                    blocked_mask = blocked_mask | patch_mask
-
-                if len(ordered_patches_no_overlap) >= self.regions_evaluation:
-                    break
-
-            # Increasingly perturb the input and store the decrease in function value.
-            for patch_slice in ordered_patches_no_overlap:
-                # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-                x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
-                )
-
-                # Perturb.
-                x_perturbed_pad = self.perturb_func(
-                    arr=x_perturbed_pad,
-                    indices=patch_slice,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
-                )
-
-                # Remove Padding
-                x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, padded_axes=a_axes
-                )
-
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-
-                sub_results.append(y_pred - y_pred_perturb)
-
-            self.last_results[sample] = sub_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # This metric returns a dict of lists, not a list of lists.
+        self.last_results = {
+            k: self.last_results[k] for k in range(len(x_batch))
+        }
 
     @property
     def get_auc_score(self):
@@ -1711,7 +1870,7 @@ class RegionPerturbation(Metric):
         ]
 
 
-class Selectivity(Metric):
+class Selectivity(PerturbationMetric):
     """
     Implementation of Selectivity test by Montavon et al., 2018.
 
@@ -1720,8 +1879,6 @@ class Selectivity(Metric):
     as the features are being progressively removed and computes an average over
     a large number of examples.
 
-    Note: Plotting only works when return_auc=False.
-
     References:
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
@@ -1729,43 +1886,71 @@ class Selectivity(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            patch_size: int = 8,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        patch_size (integer): The patch size for masking, default=8.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            patch_size (integer): The patch size for masking, default=8.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result. If None, the default is used,
+            default=plot_selectivity_experiment
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_selectivity_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_selectivity_experiment
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.patch_size = self.kwargs.get("patch_size", 8)
-        self.softmax = self.kwargs.get("softmax", True)
-        self.last_results = {}
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        self.patch_size = patch_size
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -1783,195 +1968,194 @@ class Selectivity(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> Dict[int, List[float]]:
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
+    ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a dict of pairs of int(s) and list of float(s) with the evaluation outcome of batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Selectivity(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = Selectivity(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        )
+
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
+
+        patches = []
+        x_perturbed = x.copy()
+
+        # Pad input and attributions. This is needed to allow for any patch_size.
+        pad_width = self.patch_size - 1
+        x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=self.a_axes)
+        a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=self.a_axes)
+
+        # Get patch indices of sorted attributions (descending).
+        att_sums = []
+        axis_iterators = [
+            range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
+        ]
+        for top_left_coords in itertools.product(*axis_iterators):
+            # Create slice for patch.
+            patch_slice = utils.create_patch_slice(
+                patch_size=self.patch_size,
+                coords=top_left_coords,
+            )
+
+            # Sum attributions for patch.
+            att_sums.append(
+                a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
+            )
+            patches.append(patch_slice)
+
+        # Create ordered list of patches.
+        ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
+
+        # Remove overlapping patches.
+        blocked_mask = np.zeros(x_pad.shape, dtype=bool)
+        ordered_patches_no_overlap = []
+        for patch_slice in ordered_patches:
+            patch_mask = np.zeros(x_pad.shape, dtype=bool)
+            patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
+            patch_mask[patch_mask_exp] = True
+            intersected = blocked_mask & patch_mask
+
+            if not intersected.any():
+                ordered_patches_no_overlap.append(patch_slice)
+                blocked_mask = blocked_mask | patch_mask
+
+        # Increasingly perturb the input and store the decrease in function value.
+        sub_results = [None for _ in range(len(ordered_patches_no_overlap))]
+        for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
+
+            # Pad x_perturbed. The mode should depend on the used perturb_func.
+            x_perturbed_pad = utils._pad_array(
+                x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
+            )
+
+            # Perturb.
+            x_perturbed_pad = self.perturb_func(
+                arr=x_perturbed_pad,
+                indices=patch_slice,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+
+            # Remove padding.
+            x_perturbed = utils._unpad_array(
+                x_perturbed_pad, pad_width, padded_axes=self.a_axes
+            )
+
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+
+            sub_results[patch_id] = y_pred_perturb
+
+        return sub_results
+
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+
+        return model, x_batch, y_batch, a_batch, s_batch
+
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # This metric returns a dict of lists, not a list of lists.
+        self.last_results = {
+            k: self.last_results[k] for k in range(len(x_batch))
         }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = {k: None for k in range(len(x_batch_s))}
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
-
-        for sample, (x, y, a) in iterator:
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            patches = []
-            sub_results = []
-            x_perturbed = x.copy()
-
-            # Pad input and attributions. This is needed to allow for any patch_size.
-            pad_width = self.patch_size - 1
-            x_pad = utils._pad_array(x, pad_width, mode="constant", padded_axes=a_axes)
-            a_pad = utils._pad_array(a, pad_width, mode="constant", padded_axes=a_axes)
-
-            # Get patch indices of sorted attributions (descending).
-            att_sums = []
-            axis_iterators = [
-                range(pad_width, x_pad.shape[axis] - pad_width) for axis in a_axes
-            ]
-            for top_left_coords in itertools.product(*axis_iterators):
-                # Create slice for patch.
-                patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
-                )
-
-                # Sum attributions for patch.
-                att_sums.append(
-                    a_pad[utils.expand_indices(a_pad, patch_slice, a_axes)].sum()
-                )
-                patches.append(patch_slice)
-
-            # Create ordered list of patches.
-            ordered_patches = [patches[p] for p in np.argsort(att_sums)[::-1]]
-
-            # Remove overlapping patches.
-            blocked_mask = np.zeros(x_pad.shape, dtype=bool)
-            ordered_patches_no_overlap = []
-            for patch_slice in ordered_patches:
-                patch_mask = np.zeros(x_pad.shape, dtype=bool)
-                patch_mask[utils.expand_indices(patch_mask, patch_slice, a_axes)] = True
-                intersected = blocked_mask & patch_mask
-
-                if not intersected.any():
-                    ordered_patches_no_overlap.append(patch_slice)
-                    blocked_mask = blocked_mask | patch_mask
-
-            # Increasingly perturb the input and store the decrease in function value.
-            for patch_slice in ordered_patches_no_overlap:
-
-                # Pad x_perturbed. The mode should depend on the used perturb_func.
-                x_perturbed_pad = utils._pad_array(
-                    x_perturbed, pad_width, mode="edge", padded_axes=a_axes
-                )
-
-                # Perturb.
-                x_perturbed_pad = self.perturb_func(
-                    arr=x_perturbed_pad,
-                    indices=patch_slice,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
-                )
-
-                # Remove padding.
-                x_perturbed = utils._unpad_array(
-                    x_perturbed_pad, pad_width, padded_axes=a_axes
-                )
-
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-
-                sub_results.append(y_pred_perturb)
-
-            self.last_results[sample] = sub_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
     @property
     def get_auc_score(self):
@@ -1979,11 +2163,11 @@ class Selectivity(Metric):
         return [
             utils.calculate_auc(np.array(i))
             for results in self.all_results
-            for _, i in results.items()
+            for i in results.values()
         ]
 
 
-class SensitivityN(Metric):
+class SensitivityN(PerturbationMetric):
     """
     Implementation of Sensitivity-N test by Ancona et al., 2019.
 
@@ -1994,8 +2178,6 @@ class SensitivityN(Metric):
     Pearson correlation coefficient (PCC) is computed between the sum of the attributions and the variation in the
     target output varying n from one to about 80% of the total number of features, where an average across a thousand
     of samples is reported. Sampling is performed using a uniform probability distribution over the features.
-
-    Note: Plotting only works when return_auc=False.
 
     References:
         1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
@@ -2013,50 +2195,83 @@ class SensitivityN(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
+            n_max_percentage: float = 0.8,
+            features_in_step: int = 1,
+            return_aggregate: bool = True,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "uniform",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+        similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_pearson.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+        n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
+        features_in_step (integer): The size of the step, default=1.
+        return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="uniform".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_sensitivity_n_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        if default_plot_func is None:
+            default_plot_func = plotting.plot_sensitivity_n_experiment
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.softmax = self.kwargs.get("softmax", True)
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
-        self.last_results = []
-        self.all_results = []
+
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = correlation_pearson
+        self.similarity_func = similarity_func
+
+        self.n_max_percentage = n_max_percentage
+        self.features_in_step = features_in_step
+        self.return_aggregate = return_aggregate
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2075,13 +2290,18 @@ class SensitivityN(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2089,158 +2309,156 @@ class SensitivityN(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = SensitivityN(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = SensitivityN(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        self.last_results = []
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch_s.shape[2:],
         )
 
-        max_features = int(0.8 * np.prod(x_batch_s.shape[2:]) // self.features_in_step)
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        a = a.flatten()
 
-        sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
-        sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
+        # Get indices of sorted attributions (descending).
+        a_indices = np.argsort(-a)
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
+        # Predict on x.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-        for sample, (x, y, a) in iterator:
+        att_sums = []
+        pred_deltas = []
+        x_perturbed = x.copy()
 
-            a = a.flatten()
+        for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
 
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            # Get indices of sorted attributions (descending).
-            a_indices = np.argsort(-a)
-
-            # Predict on x.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(model.predict(x_input, **self.kwargs)[:, y])
-
-            att_sums = []
-            pred_deltas = []
-            x_perturbed = x.copy()
-
-            for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
-                # Perturb input by indices of attributions.
-                a_ix = a_indices[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ]
-                x_perturbed = self.perturb_func(
-                    arr=x_perturbed,
-                    indices=a_ix,
-                    indexed_axes=a_axes,
-                    **self.kwargs,
+            # Perturb input by indices of attributions.
+            a_ix = a_indices[
+                (self.features_in_step * i_ix) : (
+                    self.features_in_step * (i_ix + 1)
                 )
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            ]
+            x_perturbed = self.perturb_func(
+                arr=x_perturbed,
+                indices=a_ix,
+                indexed_axes=self.a_axes,
+                **self.perturb_func_kwargs,
+            )
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
-                # Sum attributions.
-                att_sums.append(float(a[a_ix].sum()))
+            # Sum attributions.
+            att_sums.append(float(a[a_ix].sum()))
 
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                y_pred_perturb = float(model.predict(x_input, **self.kwargs)[:, y])
-                pred_deltas.append(y_pred - y_pred_perturb)
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            y_pred_perturb = float(model.predict(x_input)[:, y])
+            pred_deltas.append(y_pred - y_pred_perturb)
 
-            sub_results_att_sums[sample] = att_sums
-            sub_results_pred_deltas[sample] = pred_deltas
+        # Each list-element of self.last_results will be such a dictionary
+        # We will unpack that later in postprocess().
+        return {"att_sums": att_sums, "pred_deltas": pred_deltas}
+
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+
+        # Asserts.
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
+
+        return model, x_batch, y_batch, a_batch, s_batch
+
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        max_features = int(
+            self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
+        )
+
+        # Get pred_deltas and att_sums from result list
+        sub_results_pred_deltas = [r["pred_deltas"] for r in self.last_results]
+        sub_results_att_sums = [r["att_sums"] for r in self.last_results]
 
         # Re-arrange sublists so that they are sorted by n.
         sub_results_pred_deltas_l = {k: [] for k in range(max_features)}
         sub_results_att_sums_l = {k: [] for k in range(max_features)}
 
         for k in range(max_features):
-            for sublist1 in list(sub_results_pred_deltas.values()):
-                sub_results_pred_deltas_l[k].append(sublist1[k])
-            for sublist2 in list(sub_results_att_sums.values()):
-                sub_results_att_sums_l[k].append(sublist2[k])
+            for pred_deltas_instance in sub_results_pred_deltas:
+                sub_results_pred_deltas_l[k].append(pred_deltas_instance[k])
+            for att_sums_instance in sub_results_att_sums:
+                sub_results_att_sums_l[k].append(att_sums_instance[k])
 
         # Measure similarity for each n.
         self.last_results = [
@@ -2252,15 +2470,9 @@ class SensitivityN(Metric):
 
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results
 
 
-class Infidelity(Metric):
+class Infidelity(PerturbationMetric):
     """
     Implementation of Infidelity by Yeh et al., 2019.
 
@@ -2280,47 +2492,92 @@ class Infidelity(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            loss_func: str = "mse",
+            perturb_patch_sizes: List[int] = None,
+            features_in_step: int = 1,
+            max_steps_per_input: Optional[int] = None,
+            n_perturb_samples: int = 10,
+            aggregate: bool = True,
+            abs: bool = False,
+            normalise: bool = False,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "uniform",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
-        This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
-
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            loss_func (string): Loss function, default="mse".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_patch_sizes (list): Size of patches to be perturbed, default=[4].
-            features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
-            n_perturb_samples (integer): The number of samples to be perturbed, default=10.
-            aggregate (boolean):  Indicates whether to return the mean values or all values, default=True.
-
+        loss_func (string): Loss function, default="mse".
+        perturb_patch_sizes (list): List of patch sizes to be perturbed. If None, the defaul is used, default=[4].
+        features_in_step (integer): The size of the step, default=1.
+        max_steps_per_input (integer): The maximum number of steps per input dimension, default=None.
+        n_perturb_samples (integer): The number of samples to be perturbed, default=10.
+        aggregate (boolean):  Indicates whether to return the mean values or all values, default=True.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=baseline_replacement_by_indices.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform".
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
-        super().__init__()
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", False)
-        self.loss_func = self.kwargs.get("loss_func", mse)
-        self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.perturb_func = self.kwargs.get(
-            "perturb_func", baseline_replacement_by_indices
+        if perturb_func is None:
+            perturb_func = baseline_replacement_by_indices
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
         )
-        self.perturb_patch_sizes = self.kwargs.get("perturb_patch_sizes", [4])
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
-        self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
-        self.aggregate = self.kwargs.get("aggregate", True)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.last_results = []
+
+        # Save metric-specific attributes.
+        if isinstance(loss_func, str):
+            if loss_func == "mse":
+                loss_func = mse
+            # TODO: add more loss functions
+            else:
+                raise ValueError(f"loss_func must be in ['mse'] but is: {loss_func}")
+        self.loss_func = loss_func
+
+        if perturb_patch_sizes is None:
+            perturb_patch_sizes = [4]
+        self.perturb_patch_sizes = perturb_patch_sizes
+
+        self.features_in_step = features_in_step
+        self.max_steps_per_input = max_steps_per_input
+        self.n_perturb_samples = n_perturb_samples
+        self.aggregate = aggregate
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2338,13 +2595,18 @@ class Infidelity(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2352,182 +2614,164 @@ class Infidelity(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = Infidelity(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = Infidelity(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        self.nr_channels = x_batch_s.shape[1]
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
-        }
+        )
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Predict on input.
+        x_input = model.shape_input(x, x.shape, channel_first=True)
+        y_pred = float(model.predict(x_input)[:, y])
 
-        if a_batch is None:
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
+        sub_results = []
 
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
+        for _ in range(self.n_perturb_samples):
 
-        # Expand attributions to input dimensionality and infer input dimensions covered by the attributions.
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        a_axes = utils.infer_attribution_axes(a_batch, x_batch_s)
+            sub_sub_results = []
+
+            for patch_size in self.perturb_patch_sizes:
+
+                pred_deltas = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                a_sums = np.zeros(
+                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
+                )
+                x_perturbed = x.copy()
+                pad_width = patch_size - 1
+
+                for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
+
+                    for i_y, top_left_y in enumerate(
+                        range(0, x.shape[2], patch_size)
+                    ):
+
+                        # Perturb input patch-wise.
+                        x_perturbed_pad = utils._pad_array(
+                            x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
+                        )
+                        patch_slice = utils.create_patch_slice(
+                            patch_size=patch_size,
+                            coords=[top_left_x, top_left_y],
+                        )
+
+                        x_perturbed_pad = self.perturb_func(
+                            arr=x_perturbed_pad,
+                            indices=patch_slice,
+                            indexed_axes=self.a_axes,
+                            **self.perturb_func_kwargs,
+                        )
+
+                        # Remove padding.
+                        x_perturbed = utils._unpad_array(
+                            x_perturbed_pad, pad_width, padded_axes=self.a_axes
+                        )
+
+                        # Predict on perturbed input x_perturbed.
+                        x_input = model.shape_input(
+                            x_perturbed, x.shape, channel_first=True
+                        )
+                        y_pred_perturb = float(model.predict(x_input)[:, y])
+
+                        x_diff = (x - x_perturbed).flatten()
+                        a_diff = np.dot(a.flatten(), x_diff)
+
+                        pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
+                        a_sums[i_x][i_y] = np.sum(a_diff)
+
+                sub_sub_results.append(
+                    self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
+                )
+
+            sub_results.append(np.mean(sub_sub_results))
+
+        if self.aggregate:
+            return np.mean(sub_results)
+        return sub_results
+
+
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
-        asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch_s)
+        asserts.assert_features_in_step(
+            features_in_step=self.features_in_step,
+            input_shape=x_batch.shape[2:],
+        )
 
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = zip(x_batch_s, y_batch, a_batch)
-        else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
-
-        for x, y, a in iterator:
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            # Predict on input.
-            x_input = model.shape_input(x, x.shape, channel_first=True)
-            y_pred = float(
-                model.predict(x_input, softmax_act=False, **self.kwargs)[:, y]
-            )
-
-            sub_results = []
-
-            for _ in range(self.n_perturb_samples):
-
-                sub_sub_results = []
-
-                for patch_size in self.perturb_patch_sizes:
-
-                    pred_deltas = np.zeros(
-                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                    )
-                    a_sums = np.zeros(
-                        (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                    )
-                    x_perturbed = x.copy()
-                    pad_width = patch_size - 1
-
-                    for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
-
-                        for i_y, top_left_y in enumerate(
-                            range(0, x.shape[2], patch_size)
-                        ):
-
-                            # Perturb input patch-wise.
-                            x_perturbed_pad = utils._pad_array(
-                                x_perturbed, pad_width, mode="edge", padded_axes=a_axes
-                            )
-                            patch_slice = utils.create_patch_slice(
-                                patch_size=patch_size,
-                                coords=[top_left_x, top_left_y],
-                            )
-
-                            x_perturbed_pad = self.perturb_func(
-                                arr=x_perturbed_pad,
-                                indices=patch_slice,
-                                indexed_axes=a_axes,
-                                **self.kwargs,
-                            )
-
-                            # Remove padding.
-                            x_perturbed = utils._unpad_array(
-                                x_perturbed_pad, pad_width, padded_axes=a_axes
-                            )
-
-                            # Predict on perturbed input x_perturbed.
-                            x_input = model.shape_input(
-                                x_perturbed, x.shape, channel_first=True
-                            )
-                            y_pred_perturb = float(
-                                model.predict(
-                                    x_input, softmax_act=False, **self.kwargs
-                                )[:, y]
-                            )
-
-                            x_diff = (x - x_perturbed).flatten()
-                            a_diff = np.dot(a.flatten(), x_diff)
-
-                            pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
-                            a_sums[i_x][i_y] = np.sum(a_diff)
-
-                    sub_sub_results.append(
-                        self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
-                    )
-
-                sub_results.append(np.mean(sub_sub_results))
-
-            if self.aggregate:
-                self.last_results.append(np.mean(sub_results))
-            else:
-                self.last_results.append(sub_results)
-
-        self.all_results.append(self.last_results)
-
-        return self.all_results
+        return model, x_batch, y_batch, a_batch, s_batch
 
 
-class ROAD(Metric):
+class ROAD(PerturbationMetric):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
 
@@ -2541,39 +2785,72 @@ class ROAD(Metric):
     """
 
     @attributes_check
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            percentages: Optional[List[float]] = None,
+            noise: float = 0.01,
+            abs: bool = False,
+            normalise: bool = True,
+            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+            perturb_func: Callable = None,  # TODO: specify expected function signature
+            perturb_baseline: str = "black",
+            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = True,
+            default_plot_func: Optional[Callable] = None,
+            disable_warnings: bool = False,
+            display_progressbar: bool = False,
+            **kwargs,
+    ):
         """
         Parameters
         ----------
-        args: Arguments (optional)
-        kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
-            noise (noise): Noise added, default=0.01.
-        """
-        super().__init__()
+        percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+        noise (noise): Noise added, default=0.01.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_negative.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func (callable): Input perturbation function. If None, the default value is used,
+            default=noisy_linear_imputation.
+        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black".
+        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=True.
+        default_plot_func (callable): Callable that plots the metrics result.
+        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
 
-        self.args = args
-        self.kwargs = kwargs
-        self.abs = self.kwargs.get("abs", False)
-        self.normalise = self.kwargs.get("normalise", True)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
-        self.default_plot_func = plotting.plot_region_perturbation_experiment
-        self.disable_warnings = self.kwargs.get("disable_warnings", False)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.perturb_func = self.kwargs.get("perturb_func", noisy_linear_imputation)
-        #self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
-        self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
-        self.noise = self.kwargs.get("noise", 0.01)
-        self.last_results = {}
-        self.all_results = {}
+        """
+        if normalise_func is None:
+            normalise_func = normalise_by_negative
+
+        if perturb_func is None:
+            perturb_func = noisy_linear_imputation
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        perturb_func_kwargs["noise"] = noise
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            softmax=softmax,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            **kwargs,
+        )
+
+        # Save metric-specific attributes.
+        if percentages is None:
+            percentages = list(range(1, 100, 2))
+        self.percentages = percentages
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2590,140 +2867,148 @@ class ROAD(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        *args,
-        **kwargs,
-    ) -> Dict[int, List[float]]:
+            self,
+            model,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Optional[np.ndarray] = None,
+            s_batch: Optional[np.ndarray] = None,
+            channel_first: Optional[bool] = None,
+            explain_func: Optional[Callable] = None,  # Specify function signature
+            explain_func_kwargs: Optional[Dict[str, Any]] = None,
+            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            device: Optional[str] = None,
+            **kwargs,
+    ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            args: Arguments (optional)
-            kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-                default=None.
+        ----------
+        model: a torch model e.g., torchvision.models that is subject to explanation
+        x_batch: a np.ndarray which contains the input data that are explained
+        y_batch: a np.ndarray which contains the output labels that are explained
+        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None, default=None.
+        explain_func (callable): Callable generating attributions, default=Callable.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+            default=None.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        kwargs: Keyword arguments (optional)
 
         Returns
-            last_results: a dictionary whose values contains a list of float(s) with the evaluation outcome of concerned batch
+        -------
+        last_results: a list of float(s) with the evaluation outcome of concerned batch
 
         Examples
-            # Enable GPU.
-            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        --------
+        # Enable GPU.
+        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-            >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+        >> model = LeNet()
+        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-            # Load MNIST datasets and make loaders.
-            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+        # Load MNIST datasets and make loaders.
+        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-            # Load a batch of inputs and outputs to use for XAI evaluation.
-            >> x_batch, y_batch = iter(test_loader).next()
-            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+        # Load a batch of inputs and outputs to use for XAI evaluation.
+        >> x_batch, y_batch = iter(test_loader).next()
+        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-            # Generate Saliency attributions of the test set batch of the test set.
-            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+        # Generate Saliency attributions of the test set batch of the test set.
+        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
-            # Initialise the metric and evaluate explanations by calling the metric instance.
-            >> metric = ROAD(abs=False, normalise=False)
-            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency, **{})
+        # Initialise the metric and evaluate explanations by calling the metric instance.
+        >> metric = ROAD(abs=False, normalise=False)
+        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-
-        # Reshape input batch to channel first order.
-        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
-            channel_first = kwargs.get("channel_first")
-        else:
-            channel_first = utils.infer_channel_first(x_batch)
-        x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        # Wrap the model into an interface.
-        if model:
-            model = utils.get_wrapped_model(model, channel_first)
-
-        # Update kwargs.
-        self.kwargs = {
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
             **kwargs,
-            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        )
+
+    def process_instance(
+            self,
+            model: ModelInterface,
+            x: np.ndarray,
+            y: np.ndarray,
+            a: np.ndarray,
+            s: np.ndarray,
+    ):
+        # Order indicies.
+        ordered_indices = np.argsort(a, axis=None)[::-1]
+
+        results_instance = [None for _ in self.percentages]
+        for p_ix, p in enumerate(self.percentages):
+
+            top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
+
+            x_perturbed = self.perturb_func(
+                arr=x,
+                indices=top_k_indices,
+                **self.perturb_func_kwargs,
+            )
+
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+
+            # Predict on perturbed input x and store the difference from predicting on unperturbed input.
+            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+            class_pred_perturb = np.argmax(model.predict(x_input))
+
+            # Write a boolean into the percentage results
+            results_instance[p_ix] = y == class_pred_perturb
+
+        # Return list of booleans for each percentage
+        return results_instance
+
+    def preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+        self.a_size = a_batch[0, :, :].size
+
+        return model, x_batch, y_batch, a_batch, s_batch
+
+    def postprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        results = np.array(self.last_results)
+
+        self.last_results = {
+            str(percentage): np.sum(results[:, p_ix])
+            for p_ix, percentage in enumerate(self.percentages)
         }
 
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
-        if a_batch is None:
-
-            # Asserts.
-            explain_func = self.kwargs.get("explain_func", Callable)
-            asserts.assert_explain_func(explain_func=explain_func)
-
-            # Generate explanations.
-            a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
-            )
-        a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        img_size = a_batch[0, :, :].size
-
-        # Asserts.
-        asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
-
-        # Use tqdm progressbar if not disabled.
-        if not self.display_progressbar:
-            iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
-        else:
-            iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
-            )
-
-        self.last_results = {str(k): 0 for k in self.percentages}
-        self.all_results = {str(k): 0 for k in self.percentages}
-
-        for sample, (x, y, a) in iterator:
-
-            if self.normalise:
-                a = self.normalise_func(a)
-
-            if self.abs:
-                a = np.abs(a)
-
-            # Order indicies.
-            ordered_indices = np.argsort(a, axis=None)[::-1]
-
-            for p in self.percentages:
-
-                top_k_indices = ordered_indices[: int(img_size * p / 100)]
-
-                x_perturbed = self.perturb_func(
-                    arr=x,
-                    indices=top_k_indices,
-                    **self.kwargs,
-                )
-
-                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-
-                # Predict on perturbed input x and store the difference from predicting on unperturbed input.
-                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                class_pred_perturb = np.argmax(
-                    model.predict(x_input, softmax_act=True, **self.kwargs)
-                )
-
-                self.last_results[str(p)] += y == class_pred_perturb
-
         # Calculate accuracy for every number of most important pixels removed.
-        for k in self.last_results:
-            self.all_results[k] = self.last_results[k] / len(x_batch_s)
-
-        return self.all_results
+        self.all_results = {
+            percentage: self.last_results[percentage] / len(x_batch)
+            for percentage in self.last_results.keys()
+        }

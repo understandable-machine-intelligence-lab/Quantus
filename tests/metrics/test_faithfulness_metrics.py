@@ -1014,7 +1014,7 @@ def test_region_perturbation(
         **params,
     )
 
-    if params.get("return_auc", True):
+    if params.pop("return_auc", True):
         assert all(
             ((s >= expected["min"]) & (s <= expected["max"]))
             for s in metric.get_auc_score

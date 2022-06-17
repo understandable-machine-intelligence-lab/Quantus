@@ -82,13 +82,14 @@ def test_predict(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
 ):
     load_mnist_model.eval()
-    model = PyTorchModel(load_mnist_model, channel_first=True)
-    if params.get("training", False):
+    training = params.pop("training", False)
+    model = PyTorchModel(load_mnist_model, **params)
+    if training:
         with pytest.raises(expected["exception"]):
             model.train()
-            out = model.predict(x=data["x"], **params)
+            out = model.predict(x=data["x"])
         return
-    out = model.predict(x=data["x"], **params)
+    out = model.predict(x=data["x"])
     assert np.allclose(out, expected), "Test failed."
 
 

@@ -1,4 +1,5 @@
 from ..metrics import *
+from .normalise_func import *
 from .perturb_func import *
 from .similar_func import *
 

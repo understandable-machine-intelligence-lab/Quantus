@@ -314,6 +314,7 @@ def translation_y_direction(
 def noisy_linear_imputation(
     arr: np.array,
     indices: Union[int, Sequence[int], Tuple[np.array]],
+    noise: float = 0.01,
     **kwargs,
 ) -> np.array:
     """
@@ -336,7 +337,6 @@ def noisy_linear_imputation(
         ((1, 0), 1 / 6),
         ((-1, 0), 1 / 6),
     ]
-    noise = kwargs.get("noise", 0.01)
     arr_flat = arr.reshape((arr.shape[0], -1))
 
     mask = np.ones(arr_flat.shape[1])
