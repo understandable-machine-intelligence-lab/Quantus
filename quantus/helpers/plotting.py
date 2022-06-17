@@ -195,20 +195,25 @@ def plot_model_parameter_randomisation_experiment(
 
 
 def plot_focus(
-        scores: List[float],
-        method = None,
-
+        results: Dict[str, List[float]],
 ) -> None:
     """
-    Plot the Focus scores as a box plot as done in paper:
+    Plot the Focus scores of different methods in a box plot like manner as done in the original paper:
      References:
         1) "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases. arXiv:2109.15035 (2021)"
+
+    Parameters
+    ----------
+        results: a dictionary with the Focus scores obtained using different feature attribution methods. The keys
+                 of the dict must be strings referring to the feature attribution method and values should be a
+                 list of floats corresponding to the Focus scores.
     """
 
     fig = plt.figure(figsize=(8, 6))
-    plt.boxplot(scores)
-    if method:
+    for method, scores in results.items():
+        plt.boxplot(scores)
         plt.xlabel(method)
+
     plt.ylabel("Focus score")
     plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.show()
