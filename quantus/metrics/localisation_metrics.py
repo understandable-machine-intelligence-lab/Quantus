@@ -1293,6 +1293,7 @@ class Focus(Metric):
         (x_batch), some output labels (y_batch) and a torch model (model).
 
         Parameters
+        ----------
             model: a torch model e.g., torchvision.models that is subject to explanation. The model has to be input
                    agnostic i.e. allowing to feed-forward inputs of any size thorugh the network.
             x_batch: a np.ndarray which contains the input mosaics that are explained
