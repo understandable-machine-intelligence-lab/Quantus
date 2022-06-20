@@ -1274,7 +1274,7 @@ class Focus(Metric):
                 ),
                 citation=(
                     "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases.'"
-                    "arXiv:2109.15035 (2021)"
+                    "arXiv:2109.15035 (2022)"
                 ),
             )
 
