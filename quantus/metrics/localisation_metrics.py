@@ -1313,7 +1313,6 @@ class Focus(Metric):
             last_results: a list of floats with the evaluation outcome of concerned batch
 
         Examples
-            # TODO: Think about an example using an small dataset mosaics?
             # Enable GPU.
             >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -1338,7 +1337,7 @@ class Focus(Metric):
 
             # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Focus()
-            >> scores = metric(model=model,
+            >> scores = {method: metric(model=model,
                            x_batch=x_mosaic_batch,
                            y_batch=y_mosaic_batch,
                            a_batch=None,
@@ -1349,7 +1348,10 @@ class Focus(Metric):
                               "pos_only": True,
                               "interpolate": (2*28, 2*28),
                               "interpolate_mode": "bilinear",
-                              "device": device})
+                              "device": device}) for method in ["GradCAM", "IntegratedGradients"]}
+
+            # Plot example!
+            >> metric.plot(results=scores)
         """
 
         if a_batch is None:
