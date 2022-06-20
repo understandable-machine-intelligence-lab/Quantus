@@ -200,7 +200,7 @@ def plot_focus(
     """
     Plot the Focus scores of different methods in a box plot like manner as done in the original paper:
      References:
-        1) "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases. arXiv:2109.15035 (2021)"
+        1) "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases. arXiv:2109.15035 (2022)"
 
     Parameters
     ----------
