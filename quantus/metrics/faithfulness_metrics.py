@@ -1,7 +1,7 @@
 """This module contains the collection of faithfulness metrics to evaluate attribution-based explanations of neural network models."""
 import itertools
 import warnings
-from typing import Callable, Dict, List, Union, Tuple
+from typing import Callable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
