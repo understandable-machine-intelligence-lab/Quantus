@@ -1,6 +1,6 @@
 """This module contains the collection of localisation metrics to evaluate attribution-based explanations of neural network models."""
 import warnings
-from typing import Callable, Dict, List, Union, Optional
+from typing import Callable, List, Union, Optional
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
@@ -628,7 +628,7 @@ class TopKIntersection(Metric):
             top_k_binary_mask = np.zeros(a.shape)
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
-                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
+                top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None
             )
 
             s = s.astype(bool)
@@ -831,7 +831,7 @@ class RelevanceRankAccuracy(Metric):
             k = len(s)
 
             # Sort in descending order.
-            a_sorted = np.argsort(a)[-int(k) :]
+            a_sorted = np.argsort(a)[-int(k):]
 
             # Calculate hits.
             hits = len(np.intersect1d(s, a_sorted))
@@ -1279,13 +1279,13 @@ class Focus(Metric):
             )
 
     def __call__(
-            self,
-            model: Optional[ModelInterface],
-            x_batch: Optional[np.array],
-            y_batch: Optional[np.array],
-            a_batch: Optional[np.array],
-            p_batch: List[tuple],
-            **kwargs,
+        self,
+        model: Optional[ModelInterface],
+        x_batch: Optional[np.array],
+        y_batch: Optional[np.array],
+        a_batch: Optional[np.array],
+        p_batch: List[tuple],
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1360,8 +1360,10 @@ class Focus(Metric):
                 assert x_batch is not None
                 assert y_batch is not None
             except AssertionError:
-                raise ValueError("Focus requires either a_batch (explanation maps) or "
-                                 "the necessary arguments to compute it for you (model, x_batch & y_batch).")
+                raise ValueError(
+                    "Focus requires either a_batch (explanation maps) or "
+                    "the necessary arguments to compute it for you (model, x_batch & y_batch)."
+                )
 
         # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
@@ -1402,9 +1404,7 @@ class Focus(Metric):
         if not self.display_progressbar:
             iterator = enumerate(zip(a_batch, p_batch))
         else:
-            iterator = tqdm(
-                enumerate(zip(a_batch, p_batch)), total=len(x_batch_s)
-            )
+            iterator = tqdm(enumerate(zip(a_batch, p_batch)), total=len(x_batch_s))
 
         self.mosaic_shape = a_batch[0].shape
         for sample, (a, p) in iterator:
@@ -1417,12 +1417,19 @@ class Focus(Metric):
 
             total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
             target_positive_relevance = 0
-            quadrant_functions_list = [self.quadrant_top_left, self.quadrant_top_right, self.quadrant_bottom_left, self.quadrant_bottom_right]
+            quadrant_functions_list = [
+                self.quadrant_top_left,
+                self.quadrant_top_right,
+                self.quadrant_bottom_left,
+                self.quadrant_bottom_right,
+            ]
             for quadrant_p, quadrant_func in zip(p, quadrant_functions_list):
                 if not bool(quadrant_p):
                     continue
                 quadrant_relevance = quadrant_func(a)
-                target_positive_relevance += np.sum(quadrant_relevance[quadrant_relevance > 0])
+                target_positive_relevance += np.sum(
+                    quadrant_relevance[quadrant_relevance > 0]
+                )
 
             focus_score = target_positive_relevance / total_positive_relevance
             self.last_results.append(focus_score)
@@ -1430,17 +1437,25 @@ class Focus(Metric):
         return self.last_results
 
     def quadrant_top_left(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[:, :int(self.mosaic_shape[1] / 2), :int(self.mosaic_shape[2] / 2)]
+        quandrant_hmap = hmap[
+            :, : int(self.mosaic_shape[1] / 2), : int(self.mosaic_shape[2] / 2)
+        ]
         return quandrant_hmap
 
     def quadrant_top_right(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[:, int(self.mosaic_shape[1] / 2):, :int(self.mosaic_shape[2] / 2)]
+        quandrant_hmap = hmap[
+            :, int(self.mosaic_shape[1] / 2):, : int(self.mosaic_shape[2] / 2)
+        ]
         return quandrant_hmap
 
     def quadrant_bottom_left(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[:, :int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2):]
+        quandrant_hmap = hmap[
+            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2):
+        ]
         return quandrant_hmap
 
     def quadrant_bottom_right(self, hmap: np.ndarray) -> np.ndarray:
-        quandrant_hmap = hmap[:, int(self.mosaic_shape[1] / 2):, int(self.mosaic_shape[2] / 2):]
+        quandrant_hmap = hmap[
+            :, int(self.mosaic_shape[1] / 2):, int(self.mosaic_shape[2] / 2):
+        ]
         return quandrant_hmap
