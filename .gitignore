@@ -41,3 +41,5 @@ build/
 # progress
 quantus/analysers/*
 tests/analysers/*
+
+.idea
