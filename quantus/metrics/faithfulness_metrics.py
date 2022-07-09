@@ -2727,3 +2727,19 @@ class ROAD(Metric):
             self.all_results[k] = self.last_results[k] / len(x_batch_s)
 
         return self.all_results
+
+
+class RelativeRepresentationStability(Metric):
+
+    def __call__(self,
+                 model,
+                 x_batch: np.ndarray,
+                 y_batch: Union[np.ndarray, int],
+                 a_batch: Union[np.ndarray, None],
+                 s_batch: Union[np.ndarray, None],
+                 *args,
+                 **kwargs
+                 ) -> Union[int, float, list, dict, None]:
+        pass
+
+

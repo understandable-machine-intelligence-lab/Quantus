@@ -1494,3 +1494,7 @@ def test_ROAD(
         scores[max_ind] >= expected["min"]
     ), "Test failed."
 
+
+def test_relative_representation_stability():
+    pass
+

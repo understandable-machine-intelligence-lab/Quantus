@@ -521,3 +521,11 @@ def test_continuity(
         **params,
     )
     assert scores is not None, "Test failed."
+
+
+def test_relative_input_stability():
+    pass
+
+
+def test_relative_output_stability():
+    pass

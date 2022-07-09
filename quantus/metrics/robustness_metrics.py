@@ -1030,3 +1030,31 @@ class Continuity(Metric):
                 for sample in self.last_results.keys()
             ]
         )
+
+
+class RelativeInputStability(Metric):
+
+    def __call__(self,
+                 model: ModelInterface,
+                 x_batch: np.ndarray,
+                 y_batch: np.ndarray,
+                 a_batch: Union[np.ndarray, None],
+                 s_batch: Union[np.ndarray, None],
+                 *args,
+                 **kwargs
+                 ) -> Union[int, float, list, dict, None]:
+        pass
+
+
+class RelativeOutputStability(Metric):
+
+    def __call__(self,
+                 model,
+                 x_batch: np.ndarray,
+                 y_batch: Union[np.ndarray, int],
+                 a_batch: Union[np.ndarray, None],
+                 s_batch: Union[np.ndarray, None],
+                 *args,
+                 **kwargs
+                 ) -> Union[int, float, list, dict, None]:
+        pass
