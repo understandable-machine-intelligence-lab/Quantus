@@ -1049,7 +1049,7 @@ class RelativeInputStability(Metric):
 class RelativeOutputStability(Metric):
 
     def __call__(self,
-                 model,
+                 model: ModelInterface,
                  x_batch: np.ndarray,
                  y_batch: Union[np.ndarray, int],
                  a_batch: Union[np.ndarray, None],
@@ -1057,4 +1057,67 @@ class RelativeOutputStability(Metric):
                  *args,
                  **kwargs
                  ) -> Union[int, float, list, dict, None]:
-        pass
+        """
+        Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+
+        Parameters:
+            model:
+            x_batch: batch data points used to generate original explanation
+            y_batch: batch of labels
+            a_batch: unused
+            s_batch:
+            args:
+            kwargs:
+              explain_func: a Callable used to generate explanations
+              xs_batch: batch of new data points
+              ys_batch: batch of new labels corresponding to xs_batch
+        """
+
+        explain_func: Callable = kwargs.get('explain_func')
+        if not explain_func:
+            raise TypeError('Must provide explain_func keyword argument')
+        asserts.assert_explain_func(explain_func=explain_func)
+
+        xs_batch = kwargs.get('xs_batch')
+        if not xs_batch:
+            raise TypeError('Must provide xs_batch keyword argument')
+
+        ys_batch = kwargs.get('ys_batch')
+        if not ys_batch:
+            raise TypeError('Must provide ys_batch keyword argument')
+
+        dim = x_batch[0].shape[0] # FIXME
+
+        e_min = 0.00001  # just to prevent denominator from being 0
+
+        e_x = explain_func(
+                    model=model.get_model(),
+                    inputs=x_batch,
+                    targets=y_batch,
+                    **kwargs,
+                )
+
+        e_xs = explain_func(
+            model=model.get_model(),
+            inputs=xs_batch,
+            target=ys_batch,
+            **kwargs
+        )
+
+        nominator = np.linalg.norm(
+            (e_x - e_xs) / e_x,
+            ord=dim,
+            axis=0
+        )
+
+        denominator = np.linalg.norm(
+            (x_batch - xs_batch) / x_batch,
+            ord=dim,
+            axis=0
+        )
+
+        return np.max(
+            nominator / np.max(denominator, e_min, axis=0)
+        )
+
+
