@@ -214,9 +214,10 @@ class PointingGame(Metric):
             else:
                 hit = bool(s[max_index])
 
-            self.last_results.append(hit)
+            self.last_results.append(hit) # ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
 
-            # Ratio = np.sum(binary_mask) / float(binary_mask.shape[0] * binary_mask.shape[1])
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -452,6 +453,9 @@ class AttributionLocalisation(Metric):
                 "Data contains no object with a size below max_size: Results are empty."
             )
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -662,6 +666,9 @@ class TopKIntersection(Metric):
 
             self.last_results.append(tki)
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -868,6 +875,9 @@ class RelevanceRankAccuracy(Metric):
 
             self.last_results.append(rank_accuracy)
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -1065,6 +1075,9 @@ class RelevanceMassAccuracy(Metric):
 
             self.last_results.append(mass_accuracy)
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -1254,6 +1267,9 @@ class AUC(Metric):
             score = auc(x=fpr, y=tpr)
 
             self.last_results.append(score)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 

@@ -210,6 +210,9 @@ class Sparseness(Metric):
                 / (a.shape[0] * np.sum(a))
             )
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -400,6 +403,9 @@ class Complexity(Metric):
 
             self.last_results.append(scipy.stats.entropy(pk=a))
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -585,6 +591,9 @@ class EffectiveComplexity(Metric):
                 warn_func.warn_absolutes_applied()
 
             self.last_results.append(int(np.sum(a > self.eps)))  # int operation?
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 

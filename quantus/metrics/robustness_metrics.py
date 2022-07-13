@@ -270,7 +270,8 @@ class LocalLipschitzEstimate(Metric):
             self.last_results.append(similarity_max)
 
         if self.return_aggregate:
-            self.return_aggregate = self.kwargs.get("return_aggregate", False)
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -510,6 +511,9 @@ class MaxSensitivity(Metric):
 
             # Append max sensitivity score.
             self.last_results.append(sensitivities_norm_max)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -752,6 +756,9 @@ class AvgSensitivity(Metric):
 
             # Append average sensitivity score.
             self.last_results.append(float(np.mean(self.sub_results)))
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -1038,6 +1045,9 @@ class Continuity(Metric):
 
             self.last_results[ix] = sub_results
 
+        if self.return_aggregate:
+            print("A 'return_aggregate' functionality is not implemented for this metric.")
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -1109,8 +1119,8 @@ class Consistency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.return_aggregate = self.kwargs.get("return_aggregate", False)
-        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.sum)
         self.last_results = []
         self.all_results = []
 
@@ -1224,13 +1234,14 @@ class Consistency(Metric):
             same_a = np.argwhere(a_labels == a_label).flatten()
             same_a = same_a[same_a != ix]
             pred_same_a = y_pred_classes[same_a]
+
             if len(same_a) == 0:
                 self.last_results.append(0)
             else:
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
 
-        # Aggregate results.
-        self.last_results = [np.sum(self.last_results) / len(self.last_results)]
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results) / len(self.last_results)]
 
         self.all_results.append(self.last_results)
 
