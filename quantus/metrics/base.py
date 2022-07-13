@@ -54,7 +54,7 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: Union[np.ndarray, int],
         a_batch: Union[np.ndarray, None],
-        s_batch: Union[np.ndarray, None],
+        s_batch: Union[np.ndarray, None] = None,
         *args,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
