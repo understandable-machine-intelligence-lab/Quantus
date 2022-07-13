@@ -16,6 +16,7 @@ from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.discretize_func import top_n_sign
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1030,3 +1031,166 @@ class Continuity(Metric):
                 for sample in self.last_results.keys()
             ]
         )
+
+
+class Consistency(Metric):
+    """
+
+    The (global) consistency metric measures the expected local consistency. Local consistency measures the probability
+    of the prediction label for a given datapoint coinciding with the prediction labels of other data points that
+    the same explanation is being attributed to. For example, if the explanation of a given image is "contains zebra",
+    the local consistency metric measures the probability a different image that the explanation "contains zebra" is
+    being attributed to having the same prediction label.
+
+    References:
+         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
+            Explanations." arXiv preprint arXiv:2202.00734 (2022).
+
+    Assumptions:
+        - A used-defined discreization function is used to discretize continuous explanation spaces.
+    """
+
+    @attributes_check
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args: Arguments (optional)
+        kwargs: Keyword arguments (optional)
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            default=normalise_by_negative.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            discretize_func (callable): Explanation space discretization function, returns hash value of an array;
+            arrays with identical elements receive the same hash value, default=top_n_sign.
+        """
+        super().__init__()
+
+        self.args = args
+        self.kwargs = kwargs
+        self.abs = self.kwargs.get("abs", True)
+        self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.discretize_func = self.kwargs.get("discretize_func", top_n_sign)
+
+        self.last_results = []
+
+        # Asserts and warnings.
+        if not self.disable_warnings:
+            warn_func.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "Function for discretization of the explanation space 'discretize_func' (return hash value of"
+                    "an np.array used for comparison)."
+                ),
+                citation=(
+                    "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
+                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)."
+                ),
+            )
+
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        *args,
+        **kwargs,
+    ) -> Dict[int, List[float]]:
+        """
+        This implementation represents the main logic of the metric and makes the class object callable.
+        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
+        (x_batch), some output labels (y_batch) and a torch model (model).
+
+        Parameters
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            args: Arguments (optional)
+            kwargs: Keyword arguments (optional)
+                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape by default.
+                explain_func (callable): Callable generating attributions, default=Callable.
+                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                default=None.
+
+        Returns
+            metric: value of the metric.
+
+        """
+
+        # Reshape input batch to channel first order.
+        if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
+            channel_first = kwargs.get("channel_first")
+        else:
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch_s = utils.make_channel_first(x_batch, channel_first)
+
+        # Wrap the model into an interface
+        if model:
+            model = utils.get_wrapped_model(model, channel_first)
+
+        # Update kwargs.
+        self.kwargs = {
+            **kwargs,
+            **{k: v for k, v in self.__dict__.items() if k not in ["args", "kwargs"]},
+        }
+
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(self.kwargs)
+
+        self.last_results = []
+
+        # Get explanation function and make asserts.
+        explain_func = self.kwargs.get("explain_func", Callable)
+        asserts.assert_explain_func(explain_func=explain_func)
+
+        if a_batch is None:
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model.get_model(),
+                inputs=x_batch,
+                targets=y_batch,
+                **self.kwargs,
+            )
+
+        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
+
+        a_labels = np.array(list(map(self.discretize_func, a_batch_flat)))
+
+        # Predict on input.
+        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
+        y_pred_classes = np.argmax(
+            model.predict(x_input, softmax_act=True, **self.kwargs), axis=1
+        ).flatten()
+
+        # Use tqdm progressbar if not disabled.
+        if not self.display_progressbar:
+            iterator = enumerate(zip(x_batch_s, y_batch, a_batch, a_labels))
+        else:
+            iterator = tqdm(
+                enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
+                total=len(x_batch_s),
+            )
+
+        for ix, (x, y, a, a_label) in iterator:
+
+            pred_a = y_pred_classes[ix]
+            same_a = np.argwhere(a_labels == a_label).flatten()
+            same_a = same_a[same_a != ix]
+            pred_same_a = y_pred_classes[same_a]
+            if len(same_a) == 0:
+                self.last_results.append(0)
+            else:
+                self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
+
+        return np.sum(self.last_results) / len(self.last_results)

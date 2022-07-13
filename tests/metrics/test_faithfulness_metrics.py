@@ -1339,7 +1339,6 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-    
 
 
 @pytest.mark.faithfulness
@@ -1494,3 +1493,82 @@ def test_ROAD(
         scores[max_ind] >= expected["min"]
     ), "Test failed."
 
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "threshold": 0.1,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "threshold": 0.6,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
+)
+def test_sufficiency(
+    model: ModelInterface,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = Continuity(**params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **params,
+            )
+        return
+
+    scores = Sufficiency(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )
+    assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
