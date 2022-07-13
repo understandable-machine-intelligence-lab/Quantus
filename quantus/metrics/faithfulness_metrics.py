@@ -2701,7 +2701,7 @@ class ROAD(Metric):
         self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
         self.noise = self.kwargs.get("noise", 0.01)
         self.last_results = {}
-        self.all_results = {}
+        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2859,6 +2859,7 @@ class ROAD(Metric):
             print(
                 "A 'return_aggregate' functionality is not implemented for this metric."
             )
+
         for k in self.last_results:
             self.last_results[k] = self.last_results[k] / len(x_batch_s)
 
