@@ -115,6 +115,19 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             },
             1.0,
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "normalise": False,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": True,
+                "display_progressbar": True,
+                "return_aggregate": True,
+            },
+            1.0,
+        ),
     ],
 )
 def test_completeness(
@@ -175,6 +188,7 @@ def test_completeness(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -342,6 +356,7 @@ def test_non_sensitivity(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"dtypes": [True, False]},
         ),
