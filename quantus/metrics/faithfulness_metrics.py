@@ -255,9 +255,7 @@ class FaithfulnessCorrelation(Metric):
             self.last_results.append(similarity)
 
         if self.return_aggregate:
-            self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -490,6 +488,9 @@ class FaithfulnessEstimate(Metric):
                 att_sums.append(a[a_ix].sum())
 
             self.last_results.append(self.similarity_func(a=att_sums, b=pred_deltas))
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -729,9 +730,7 @@ class IterativeRemovalOfFeatures(Metric):
             self.last_results.append(len(preds) - utils.calculate_auc(np.array(preds)))
 
         if self.return_aggregate:
-            self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -967,6 +966,9 @@ class MonotonicityArya(Metric):
                 preds.append(y_pred_perturb)
 
             self.last_results.append(np.all(np.diff(preds) >= 0))
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -1220,6 +1222,9 @@ class MonotonicityNguyen(Metric):
 
             self.last_results.append(self.similarity_func(a=atts, b=vars))
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -1439,6 +1444,9 @@ class PixelFlipping(Metric):
                 preds.append(y_pred_perturb)
 
             self.last_results.append(preds)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -1744,6 +1752,9 @@ class RegionPerturbation(Metric):
 
             self.last_results[sample] = sub_results
 
+        if self.return_aggregate:
+            print("A 'return_aggregate' functionality is not implemented for this metric.")
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -2022,6 +2033,9 @@ class Selectivity(Metric):
                 sub_results.append(y_pred_perturb)
 
             self.last_results[sample] = sub_results
+
+        if self.return_aggregate:
+            print("A 'return_aggregate' functionality is not implemented for this metric.")
 
         self.all_results.append(self.last_results)
 
@@ -2311,9 +2325,7 @@ class SensitivityN(Metric):
         ]
 
         if self.return_aggregate:
-            self.last_results = [np.mean(self.last_results)]
-        else:
-            self.last_results = self.last_results
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -2599,7 +2611,7 @@ class Infidelity(Metric):
 
         self.all_results.append(self.last_results)
 
-        return self.all_results
+        return self.last_results
 
 
 class ROAD(Metric):
@@ -2805,10 +2817,14 @@ class ROAD(Metric):
                 self.last_results[str(p)] += y == class_pred_perturb
 
         # Calculate accuracy for every number of most important pixels removed.
+        if self.return_aggregate:
+            print("A 'return_aggregate' functionality is not implemented for this metric.")
         for k in self.last_results:
-            self.all_results[k] = self.last_results[k] / len(x_batch_s)
+            self.last_results[k] = self.last_results[k] / len(x_batch_s)
 
-        return self.all_results
+        self.all_results.append(last_results)
+
+        return self.last_results
 
 
 class Sufficiency(Metric):
@@ -2860,8 +2876,8 @@ class Sufficiency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.return_aggregate = self.kwargs.get("return_aggregate", False)
-        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.sum)
         self.threshold = self.kwargs.get("threshold", 0.6)
         self.distance_func = self.kwargs.get("distance_func", "seuclidean")
 
@@ -2978,6 +2994,7 @@ class Sufficiency(Metric):
             low_dist_a = np.argwhere(a_sim == 1.0).flatten()
             low_dist_a = low_dist_a[low_dist_a != ix]
             pred_low_dist_a = y_pred_classes[low_dist_a]
+
             if len(low_dist_a) == 0:
                 self.last_results.append(0)
             else:
@@ -2985,8 +3002,8 @@ class Sufficiency(Metric):
                     np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
                 )
 
-        # Aggregate results.
-        self.last_results = [np.sum(self.last_results) / len(self.last_results)]
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results) / len(self.last_results)]
 
         self.all_results.append(self.last_results)
 

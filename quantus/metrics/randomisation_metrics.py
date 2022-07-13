@@ -233,6 +233,9 @@ class ModelParameterRandomisation(Metric):
         if self.display_progressbar:
             pbar.close()
 
+        if self.return_aggregate:
+            print("A 'return_aggregate' functionality is not implemented for this metric.")
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -440,6 +443,9 @@ class RandomLogit(Metric):
             self.last_results.append(
                 self.similarity_func(a.flatten(), a_perturbed.flatten())
             )
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 

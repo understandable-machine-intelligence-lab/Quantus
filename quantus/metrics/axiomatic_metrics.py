@@ -232,6 +232,9 @@ class Completeness(Metric):
             else:
                 self.last_results.append(False)
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -468,6 +471,9 @@ class NonSensitivity(Metric):
                 len(non_features_vars.symmetric_difference(non_features))
             )
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -663,6 +669,9 @@ class InputInvariance(Metric):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
