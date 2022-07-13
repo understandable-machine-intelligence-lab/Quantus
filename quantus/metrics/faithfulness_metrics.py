@@ -110,6 +110,7 @@ class FaithfulnessCorrelation(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -334,6 +335,7 @@ class FaithfulnessEstimate(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -558,6 +560,7 @@ class IterativeRemovalOfFeatures(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -800,6 +803,7 @@ class MonotonicityArya(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[bool]:
@@ -1027,6 +1031,7 @@ class MonotonicityNguyen(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -1264,6 +1269,7 @@ class PixelFlipping(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -1503,6 +1509,7 @@ class RegionPerturbation(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
@@ -1789,6 +1796,7 @@ class Selectivity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
@@ -2081,6 +2089,7 @@ class SensitivityN(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -2344,6 +2353,7 @@ class Infidelity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -2595,6 +2605,7 @@ class ROAD(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
@@ -2801,6 +2812,7 @@ class Sufficiency(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
