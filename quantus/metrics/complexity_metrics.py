@@ -40,13 +40,17 @@ class Sparseness(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -58,6 +62,8 @@ class Sparseness(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -98,10 +104,10 @@ class Sparseness(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -231,13 +237,17 @@ class Complexity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -249,6 +259,8 @@ class Complexity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -288,10 +300,10 @@ class Complexity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -412,28 +424,35 @@ class EffectiveComplexity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            eps (float): Attributions threshold, default=1e-5.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            eps (float): attributions threshold, default=1e-5.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
         self.args = args
         self.kwargs = kwargs
-        self.eps = self.kwargs.get("eps", 1e-5)
         self.abs = self.kwargs.get("abs", True)
         self.normalise = self.kwargs.get("normalise", True)
         self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
+
+        self.eps = self.kwargs.get("eps", 1e-5)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -471,10 +490,10 @@ class EffectiveComplexity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns

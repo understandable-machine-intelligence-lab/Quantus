@@ -37,13 +37,17 @@ class PointingGame(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -55,6 +59,10 @@ class PointingGame(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -237,16 +245,20 @@ class AttributionLocalisation(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
+        args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
             weighted (boolean): Indicates whether the weighted variant of the inside-total relevance ratio is used,
-            default=False.
+            default=False
             max_size (float): The maximum ratio for  the size of the bounding box to image, default=1.0.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -260,6 +272,8 @@ class AttributionLocalisation(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -463,14 +477,18 @@ class TopKIntersection(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
             concept_influence (boolean): Indicates whether concept influence metric is used, default=False.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         super().__init__()
 
@@ -484,6 +502,8 @@ class TopKIntersection(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -669,13 +689,17 @@ class RelevanceRankAccuracy(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -687,6 +711,8 @@ class RelevanceRankAccuracy(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -867,13 +893,17 @@ class RelevanceMassAccuracy(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -885,6 +915,8 @@ class RelevanceMassAccuracy(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -1056,13 +1088,17 @@ class AUC(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
         super().__init__()
 
@@ -1074,6 +1110,8 @@ class AUC(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 

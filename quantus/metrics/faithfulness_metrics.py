@@ -50,22 +50,25 @@ class FaithfulnessCorrelation(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
-            subset_size (integer): The size of subset, default=224.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            nr_runs (integer): the number of runs (for each input and explanation pair), default=100.
+            subset_size (integer): the size of subset, default=224.
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_pearson.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices.
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -77,6 +80,11 @@ class FaithfulnessCorrelation(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
+        self.last_results = []
+        self.all_results = []
+
         self.nr_runs = self.kwargs.get("nr_runs", 100)
         self.subset_size = self.kwargs.get("subset_size", 224)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
@@ -84,10 +92,7 @@ class FaithfulnessCorrelation(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.softmax = self.kwargs.get("softmax", False)
-        self.last_results = []
-        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -126,10 +131,10 @@ class FaithfulnessCorrelation(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -278,22 +283,26 @@ class FaithfulnessEstimate(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            nr_runs (integer): The number of runs (for each input and explanation pair), default=100.
-            subset_size (integer): The size of subset, default=224.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            nr_runs (integer): the number of runs (for each input and explanation pair), default=100.
+            subset_size (integer): the size of subset, default=224.
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
             default=correlation_spearman.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices.
+            features_in_step (integer): the size of the step, default=1.
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -305,6 +314,8 @@ class FaithfulnessEstimate(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -351,10 +362,10 @@ class FaithfulnessEstimate(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -506,19 +517,23 @@ class IterativeRemovalOfFeatures(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic"
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="mean"
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            return_aggregate (boolean): indicates whether an aggregated(mean) metric is returned, default=True
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -530,11 +545,12 @@ class IterativeRemovalOfFeatures(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.segmentation_method = self.kwargs.get("segmentation_method", "slic")
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "mean")
         self.softmax = self.kwargs.get("softmax", True)
         self.last_results = []
@@ -576,10 +592,10 @@ class IterativeRemovalOfFeatures(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -753,19 +769,22 @@ class MonotonicityArya(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            concept_influence (boolean): Indicates whether concept influence metric is used.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black"
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            features_in_step (integer): the size of the step, default=1
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -777,6 +796,8 @@ class MonotonicityArya(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -819,10 +840,10 @@ class MonotonicityArya(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -972,22 +993,26 @@ class MonotonicityNguyen(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="uniform".
-            eps (float): Attributions threshold, default=1e-5.
-            nr_samples (integer): The number of samples to iterate over, default=100.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform"
+            eps (float): Attributions threshold, default=1e-5
+            nr_samples (integer): the number of samples to iterate over, default=100
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            default=correlation_spearman
+            features_in_step (integer): the size of the step, default=1
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -999,6 +1024,8 @@ class MonotonicityNguyen(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -1047,10 +1074,10 @@ class MonotonicityNguyen(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -1219,18 +1246,22 @@ class PixelFlipping(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black"
+            features_in_step (integer): the size of the step, default=1
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -1242,6 +1273,8 @@ class PixelFlipping(Metric):
         self.default_plot_func = plotting.plot_pixel_flipping_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -1285,10 +1318,10 @@ class PixelFlipping(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -1449,21 +1482,25 @@ class RegionPerturbation(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_patch.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="uniform".
-            regions_evaluation (integer): The number of regions to evaluate, default=100.
-            patch_size (integer): The patch size for masking, default=8.
-            order (string): Indicates whether attributions are ordered randomly ("random"),
-            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF".
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_patch
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform"
+            regions_evaluation (integer): the number of regions to evaluate, default=100
+            patch_size (integer): the patch size for masking, default=8
+            order (string): indicates whether attributions are ordered randomly ("random"),
+            according to the most relevant first ("MoRF"), or least relevant first, default="MoRF"
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -1475,6 +1512,8 @@ class RegionPerturbation(Metric):
         self.default_plot_func = plotting.plot_region_perturbation_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -1525,10 +1564,10 @@ class RegionPerturbation(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -1743,18 +1782,22 @@ class Selectivity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            patch_size (integer): The patch size for masking, default=8.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black"
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            patch_size (integer): the patch size for masking, default=8
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -1766,6 +1809,8 @@ class Selectivity(Metric):
         self.default_plot_func = plotting.plot_selectivity_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -1812,10 +1857,10 @@ class Selectivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -2028,22 +2073,26 @@ class SensitivityN(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_pearson.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="uniform".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            n_max_percentage (float): The percentage of features to iteratively evaluatede, fault=0.8.
-            features_in_step (integer): The size of the step, default=1.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            return_aggregate (boolean): Indicates whether an aggregated(mean) metric is returned, default=True.
+            default=correlation_pearson
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="uniform"
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            n_max_percentage (float): the percentage of features to iteratively evaluatede, default=0.
+            features_in_step (integer): the size of the step, default=1
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
+            return_aggregate (boolean): indicates whether an aggregated(mean) metric is returned, default=True
         """
         super().__init__()
 
@@ -2055,6 +2104,8 @@ class SensitivityN(Metric):
         self.default_plot_func = plotting.plot_sensitivity_n_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_pearson)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -2063,7 +2114,6 @@ class SensitivityN(Metric):
         self.n_max_percentage = self.kwargs.get("n_max_percentage", 0.8)
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.softmax = self.kwargs.get("softmax", True)
-        self.return_aggregate = self.kwargs.get("return_aggregate", True)
         self.last_results = []
         self.all_results = []
 
@@ -2105,10 +2155,10 @@ class SensitivityN(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -2300,17 +2350,25 @@ class Infidelity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            loss_func (string): Loss function, default="mse".
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            perturb_patch_sizes (list): Size of patches to be perturbed, default=[4].
-            features_in_step (integer): The size of the step, default=1.
-            max_steps_per_input (integer): The number of steps per input dimension, default=None.
-            n_perturb_samples (integer): The number of samples to be perturbed, default=10.
-            aggregate (boolean):  Indicates whether to return the mean values or all values, default=True.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            loss_func (string): Loss function, default="mse"
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black"
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
+            perturb_patch_sizes (list): Size of patches to be perturbed, default=[4]
+            features_in_step (integer): the size of the step, default=1
+            max_steps_per_input (integer): the number of steps per input dimension, default=None
+            n_perturb_samples (integer): the number of samples to be perturbed, default=10
 
         """
         super().__init__()
@@ -2319,6 +2377,12 @@ class Infidelity(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", False)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.default_plot_func = Callable
+        self.disable_warnings = self.kwargs.get("disable_warnings", False)
+        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.loss_func = self.kwargs.get("loss_func", mse)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "uniform")
         self.perturb_func = self.kwargs.get(
@@ -2328,9 +2392,9 @@ class Infidelity(Metric):
         self.features_in_step = self.kwargs.get("features_in_step", 1)
         self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
-        self.aggregate = self.kwargs.get("aggregate", True)
-        self.display_progressbar = self.kwargs.get("display_progressbar", False)
+
         self.last_results = []
+        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2369,10 +2433,10 @@ class Infidelity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -2528,8 +2592,8 @@ class Infidelity(Metric):
 
                 sub_results.append(np.mean(sub_sub_results))
 
-            if self.aggregate:
-                self.last_results.append(np.mean(sub_results))
+            if self.return_aggregate:
+                self.last_results.append(self.aggregate_func(sub_results))
             else:
                 self.last_results.append(sub_results)
 
@@ -2558,16 +2622,20 @@ class ROAD(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            percentages (list): The list of percentages of the image to be removed, default=list(range(1, 100, 2)).
-            noise (noise): Noise added, default=0.01.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices.
+            percentages (list): the list of percentages of the image to be removed, default=list(range(1, 100, 2)).
+            noise (noise): noise added, default=0.01.
         """
         super().__init__()
 
@@ -2579,6 +2647,8 @@ class ROAD(Metric):
         self.default_plot_func = plotting.plot_region_perturbation_experiment
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get("perturb_func", noisy_linear_imputation)
         self.percentages = self.kwargs.get("percentages", list(range(1, 100, 2)))
         self.noise = self.kwargs.get("noise", 0.01)
@@ -2621,10 +2691,10 @@ class ROAD(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -2765,14 +2835,18 @@ class Sufficiency(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            threshold (float): Distance threshold, default=0.6.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            threshold (float): Distance threshold, default=0.6
             distance_func (string): Distance function, default = "seuclidean". ( see
             https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html for more)
         """
@@ -2786,6 +2860,8 @@ class Sufficiency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.threshold = self.kwargs.get("threshold", 0.6)
         self.distance_func = self.kwargs.get("distance_func", "seuclidean")
 
@@ -2828,10 +2904,10 @@ class Sufficiency(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
