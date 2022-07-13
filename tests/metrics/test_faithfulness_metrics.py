@@ -1555,13 +1555,13 @@ def test_sufficiency(
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            scores = Continuity(**params)(
+            scores = Sufficiency(**params)(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
                 a_batch=a_batch,
                 **params,
-            )
+            )[0]
         return
 
     scores = Sufficiency(**params)(
@@ -1570,5 +1570,5 @@ def test_sufficiency(
         y_batch=y_batch,
         a_batch=a_batch,
         **params,
-    )
+    )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."

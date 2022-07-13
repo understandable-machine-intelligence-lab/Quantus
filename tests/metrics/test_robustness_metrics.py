@@ -537,7 +537,7 @@ def test_continuity(
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "discretize_func": floating_points,
+                "discretise_func": floating_points,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -552,7 +552,7 @@ def test_continuity(
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "discretize_func": sign,
+                "discretise_func": sign,
                 "a_batch_generate": True,
             },
             {"min": 0.0, "max": 1.0},
@@ -567,7 +567,7 @@ def test_continuity(
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "discretize_func": top_n_sign,
+                "discretise_func": top_n_sign,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -582,7 +582,7 @@ def test_continuity(
                 "method": "Saliency",
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "discretize_func": rank,
+                "discretise_func": rank,
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -614,7 +614,7 @@ def test_consistency(
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            scores = Continuity(**params)(
+            scores = Consistency(**params)(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
@@ -629,5 +629,5 @@ def test_consistency(
         y_batch=y_batch,
         a_batch=a_batch,
         **params,
-    )
+    )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."

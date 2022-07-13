@@ -2779,6 +2779,7 @@ class Sufficiency(Metric):
         self.distance_func = self.kwargs.get("distance_func", "seuclidean")
 
         self.last_results = []
+        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -2833,7 +2834,7 @@ class Sufficiency(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -2896,5 +2897,9 @@ class Sufficiency(Metric):
                     np.sum(pred_low_dist_a == pred_a) / len(low_dist_a)
                 )
 
-        metric = np.sum(self.last_results) / len(self.last_results)
-        return metric
+        # Aggregate results.
+        self.last_results = [np.sum(self.last_results) / len(self.last_results)]
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
