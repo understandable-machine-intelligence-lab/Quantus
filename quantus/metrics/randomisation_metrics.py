@@ -98,7 +98,7 @@ class ModelParameterRandomisation(Metric):
         a_batch: Union[np.array, None],
         s_batch: Union[np.array, None] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -194,7 +194,10 @@ class ModelParameterRandomisation(Metric):
                 list(model.get_random_layer_generator(order=self.layer_order))
             )
             n_iterations = n_layers * len(a_batch)
-            pbar = tqdm(total=n_iterations)
+            pbar = tqdm(
+                total=n_iterations,
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
             order=self.layer_order, seed=self.seed
@@ -234,7 +237,9 @@ class ModelParameterRandomisation(Metric):
             pbar.close()
 
         if self.return_aggregate:
-            print("A 'return_aggregate' functionality is not implemented for this metric.")
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
 
         self.all_results.append(self.last_results)
 
@@ -313,7 +318,7 @@ class RandomLogit(Metric):
         a_batch: Union[np.array, None],
         s_batch: Union[np.array, None] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -405,7 +410,9 @@ class RandomLogit(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:

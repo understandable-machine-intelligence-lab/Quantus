@@ -211,7 +211,11 @@ class FaithfulnessCorrelation(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -441,7 +445,11 @@ class FaithfulnessEstimate(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -672,7 +680,9 @@ class IterativeRemovalOfFeatures(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -920,7 +930,11 @@ class MonotonicityArya(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -1157,7 +1171,11 @@ class MonotonicityNguyen(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -1404,7 +1422,11 @@ class PixelFlipping(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -1650,7 +1672,9 @@ class RegionPerturbation(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for sample, (x, y, a) in iterator:
@@ -1753,7 +1777,9 @@ class RegionPerturbation(Metric):
             self.last_results[sample] = sub_results
 
         if self.return_aggregate:
-            print("A 'return_aggregate' functionality is not implemented for this metric.")
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
 
         self.all_results.append(self.last_results)
 
@@ -1946,7 +1972,9 @@ class Selectivity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for sample, (x, y, a) in iterator:
@@ -2035,7 +2063,9 @@ class Selectivity(Metric):
             self.last_results[sample] = sub_results
 
         if self.return_aggregate:
-            print("A 'return_aggregate' functionality is not implemented for this metric.")
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
 
         self.all_results.append(self.last_results)
 
@@ -2256,7 +2286,9 @@ class SensitivityN(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for sample, (x, y, a) in iterator:
@@ -2522,7 +2554,11 @@ class Infidelity(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -2779,7 +2815,9 @@ class ROAD(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         self.last_results = {str(k): 0 for k in self.percentages}
@@ -2818,7 +2856,9 @@ class ROAD(Metric):
 
         # Calculate accuracy for every number of most important pixels removed.
         if self.return_aggregate:
-            print("A 'return_aggregate' functionality is not implemented for this metric.")
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
         for k in self.last_results:
             self.last_results[k] = self.last_results[k] / len(x_batch_s)
 
@@ -2974,7 +3014,9 @@ class Sufficiency(Metric):
         a_sim_matrix[dist_matrix <= self.threshold] = 1
 
         # Predict on input.
-        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
+        x_input = model.shape_input(
+            x_batch, x_batch[0].shape, channel_first=True, batch=True
+        )
         y_pred_classes = np.argmax(
             model.predict(x_input, softmax_act=True, **self.kwargs), axis=1
         ).flatten()
@@ -2986,6 +3028,7 @@ class Sufficiency(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix)),
                 total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a, a_sim) in iterator:
@@ -3003,7 +3046,9 @@ class Sufficiency(Metric):
                 )
 
         if self.return_aggregate:
-            self.last_results = [self.aggregate_func(self.last_results) / len(self.last_results)]
+            self.last_results = [
+                self.aggregate_func(self.last_results) / len(self.last_results)
+            ]
 
         self.all_results.append(self.last_results)
 

@@ -216,7 +216,9 @@ class LocalLipschitzEstimate(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -260,7 +262,7 @@ class LocalLipschitzEstimate(Metric):
                     b=a_perturbed.flatten(),
                     c=x.flatten(),
                     d=x_perturbed.flatten(),
-                    **self.kwargs
+                    **self.kwargs,
                 )
 
                 if similarity > similarity_max:
@@ -460,7 +462,9 @@ class MaxSensitivity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -707,7 +711,9 @@ class AvgSensitivity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -964,7 +970,9 @@ class Continuity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
@@ -1046,7 +1054,9 @@ class Continuity(Metric):
             self.last_results[ix] = sub_results
 
         if self.return_aggregate:
-            print("A 'return_aggregate' functionality is not implemented for this metric.")
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
 
         self.all_results.append(self.last_results)
 
@@ -1214,7 +1224,9 @@ class Consistency(Metric):
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
 
         # Predict on input.
-        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
+        x_input = model.shape_input(
+            x_batch, x_batch[0].shape, channel_first=True, batch=True
+        )
         y_pred_classes = np.argmax(
             model.predict(x_input, softmax_act=True, **self.kwargs), axis=1
         ).flatten()
@@ -1226,6 +1238,7 @@ class Consistency(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
                 total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a, a_label) in iterator:
@@ -1241,7 +1254,9 @@ class Consistency(Metric):
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
 
         if self.return_aggregate:
-            self.last_results = [self.aggregate_func(self.last_results) / len(self.last_results)]
+            self.last_results = [
+                self.aggregate_func(self.last_results) / len(self.last_results)
+            ]
 
         self.all_results.append(self.last_results)
 
