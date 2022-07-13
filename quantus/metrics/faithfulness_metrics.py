@@ -2863,7 +2863,7 @@ class ROAD(Metric):
         for k in self.last_results:
             self.last_results[k] = self.last_results[k] / len(x_batch_s)
 
-        self.all_results.append(last_results)
+        self.all_results.append(self.last_results)
 
         return self.last_results
 
