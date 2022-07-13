@@ -16,7 +16,7 @@ from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.discretize_func import top_n_sign
+from ..helpers.discretise_func import top_n_sign
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1064,7 +1064,7 @@ class Consistency(Metric):
             default_plot_func (callable): Callable that plots the metrics result.
             disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            discretize_func (callable): Explanation space discretization function, returns hash value of an array;
+            discretise_func (callable): Explanation space discretisation function, returns hash value of an array;
             arrays with identical elements receive the same hash value, default=top_n_sign.
         """
         super().__init__()
@@ -1077,16 +1077,17 @@ class Consistency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.discretize_func = self.kwargs.get("discretize_func", top_n_sign)
+        self.discretise_func = self.kwargs.get("discretise_func", top_n_sign)
 
         self.last_results = []
+        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "Function for discretization of the explanation space 'discretize_func' (return hash value of"
+                    "Function for discretisation of the explanation space 'discretise_func' (return hash value of"
                     "an np.array used for comparison)."
                 ),
                 citation=(
@@ -1134,7 +1135,7 @@ class Consistency(Metric):
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
             model = utils.get_wrapped_model(model, channel_first)
 
@@ -1165,7 +1166,7 @@ class Consistency(Metric):
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
 
-        a_labels = np.array(list(map(self.discretize_func, a_batch_flat)))
+        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
 
         # Predict on input.
         x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
@@ -1193,4 +1194,9 @@ class Consistency(Metric):
             else:
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
 
-        return np.sum(self.last_results) / len(self.last_results)
+        # Aggregate results.
+        self.last_results = [np.sum(self.last_results) / len(self.last_results)]
+
+        self.all_results.append(self.last_results)
+
+        return self.last_results
