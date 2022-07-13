@@ -184,7 +184,11 @@ class Sparseness(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -383,7 +387,11 @@ class Complexity(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -575,7 +583,11 @@ class EffectiveComplexity(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 

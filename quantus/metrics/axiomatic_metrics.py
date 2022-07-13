@@ -200,7 +200,11 @@ class Completeness(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -422,7 +426,11 @@ class NonSensitivity(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -640,7 +648,11 @@ class InputInvariance(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
