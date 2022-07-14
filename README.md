@@ -100,7 +100,7 @@ captures to what extent explanations are concise i.e., that few features are use
 
 <details>
 <summary><b>Randomisation</b></summary>
-tests to what extent explanations deteriorate as model parameters are increasingly randomised
+tests to what extent explanations deteriorate as inputs to the evaluation problem e.g., model parameters are increasingly randomised
      <br><br>
 <ul>
     <li><b>Model Parameter Randomisation </b><a href="https://arxiv.org/abs/1810.03292">(Adebayo et. al., 2018)</a>: randomises the parameters of single model layers in a cascading or independent way and measures the distance of the respective explanation to the original explanation
