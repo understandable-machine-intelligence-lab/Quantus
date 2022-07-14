@@ -1416,17 +1416,6 @@ class Focus(Metric):
             >> metric.plot(results=scores)
         """
 
-        if a_batch is None:
-            try:
-                assert model is not None
-                assert x_batch is not None
-                assert y_batch is not None
-            except AssertionError:
-                raise ValueError(
-                    "Focus requires either a_batch (explanation maps) or "
-                    "the necessary arguments to compute it for you (model, x_batch & y_batch)."
-                )
-
         # Reshape input batch to channel first order.
         if "channel_first" in kwargs and isinstance(kwargs["channel_first"], bool):
             channel_first = kwargs.get("channel_first")
@@ -1450,6 +1439,16 @@ class Focus(Metric):
         if a_batch is None:
 
             # Asserts.
+            try:
+                assert model is not None
+                assert x_batch is not None
+                assert y_batch is not None
+            except AssertionError:
+                raise ValueError(
+                    "Focus requires either a_batch (explanation maps) or "
+                    "the necessary arguments to compute it for you (model, x_batch & y_batch)."
+                )
+
             explain_func = self.kwargs.get("explain_func", Callable)
             asserts.assert_explain_func(explain_func=explain_func)
 
