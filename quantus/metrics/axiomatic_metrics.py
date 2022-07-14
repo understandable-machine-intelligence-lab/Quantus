@@ -47,19 +47,22 @@ class Completeness(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            abs (boolean): indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): indicates whether normalise operation is applied on the attribution,
+            default=False.
+            normalise_func (callable): attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            output_func (callable): Function applied to the difference between the model output at the input and the
+            default_plot_func (callable): a Callable that plots the metrics result.
+            disable_warnings (boolean): indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate (boolean): indicates if an aggregated score should be produced over all instances.
+            aggregate_func (Callable): a Callable to aggregate the scores per instance to one float.
+            output_func (callable): a function applied to the difference between the model output at the input and the
             baseline before metric calculation, default=lambda x: x.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices.
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -71,6 +74,8 @@ class Completeness(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.output_func = self.kwargs.get("output_func", lambda x: x)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
@@ -100,6 +105,7 @@ class Completeness(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[bool]:
@@ -115,10 +121,10 @@ class Completeness(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -194,7 +200,11 @@ class Completeness(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -225,6 +235,9 @@ class Completeness(Metric):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -257,17 +270,19 @@ class NonSensitivity(Metric):
         kwargs: Keyword arguments (optional)
             eps (float): Attributions threshold, default=1e-5.
             n_samples (integer): The number of samples to iterate over, default=100.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            abs (boolean): indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): indicates whether normalise operation is applied on the attribution, default=True.
             normalise_func (callable): Attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default_plot_func (callable): a Callable that plots the metrics result.
+            disable_warnings (boolean): indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate (boolean): indicates if an aggregated score should be produced over all instances.
+            aggregate_func (Callable): a Callable to aggregate the scores per instance to one float.
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
             default="black".
             perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction.
         """
         super().__init__()
 
@@ -281,6 +296,8 @@ class NonSensitivity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_indices
         )
@@ -311,6 +328,7 @@ class NonSensitivity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[int]:
@@ -326,10 +344,10 @@ class NonSensitivity(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -408,7 +426,11 @@ class NonSensitivity(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -457,6 +479,9 @@ class NonSensitivity(Metric):
                 len(non_features_vars.symmetric_difference(non_features))
             )
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -481,16 +506,18 @@ class InputInvariance(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution,
+            abs (boolean): indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): indicates whether normalise operation is applied on the attribution,
             default=False.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
+            normalise_func (callable): attribution normalisation function applied in case normalise=True,
             default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            input_shift (integer): Shift to the input data, default=-1.
-            perturb_func (callable): Input perturbation function, default=baseline_replacement_by_indices.
+            default_plot_func (callable): a Callable that plots the metrics result.
+            disable_warnings (boolean): indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate (boolean): indicates if an aggregated score should be produced over all instances.
+            aggregate_func (Callable): a Callable to aggregate the scores per instance to one float.
+            input_shift (integer): shift to the input data, default=-1.
+            perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices.
         """
         super().__init__()
 
@@ -502,6 +529,8 @@ class InputInvariance(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.perturb_func = self.kwargs.get(
             "perturb_func", baseline_replacement_by_shift
         )
@@ -526,6 +555,7 @@ class InputInvariance(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[bool]:
@@ -541,10 +571,10 @@ class InputInvariance(Metric):
             a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
             args: Arguments (optional)
             kwargs: Keyword arguments (optional)
-                channel_first (boolean): Indicates of the image dimensions are channel first, or channel last.
+                channel_first (boolean): indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape by default.
-                explain_func (callable): Callable generating attributions, default=Callable.
-                device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
+                explain_func (callable): a Callable generating attributions, default=Callable.
+                device (string): indicates the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
                 default=None.
 
         Returns
@@ -618,7 +648,11 @@ class InputInvariance(Metric):
         if not self.display_progressbar:
             iterator = zip(x_batch_s, y_batch, a_batch)
         else:
-            iterator = tqdm(zip(x_batch_s, y_batch, a_batch), total=len(x_batch_s))
+            iterator = tqdm(
+                zip(x_batch_s, y_batch, a_batch),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for x, y, a in iterator:
 
@@ -647,6 +681,9 @@ class InputInvariance(Metric):
                 self.last_results.append(True)
             else:
                 self.last_results.append(False)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 

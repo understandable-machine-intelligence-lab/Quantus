@@ -40,7 +40,11 @@ class TensorFlowModel(ModelInterface):
         return new_model(x, training=False).numpy()
 
     def shape_input(
-        self, x: np.array, shape: Tuple[int, ...], channel_first: Optional[bool] = None
+        self,
+        x: np.array,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batch: bool = False,
     ):
         """
         Reshape input into model expected input.
@@ -48,7 +52,10 @@ class TensorFlowModel(ModelInterface):
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first
-        x = x.reshape(1, *shape)
+        if batch:
+            x = x.reshape(x.shape[0], *shape)
+        else:
+            x = x.reshape(1, *shape)
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
