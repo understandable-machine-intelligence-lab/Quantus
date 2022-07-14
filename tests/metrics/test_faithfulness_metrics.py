@@ -1430,7 +1430,7 @@ def test_infidelity(
     assert score is not None, "Test failed."
 
 
-@pytest.mark.road
+@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1504,7 +1504,7 @@ def test_ROAD(
 
     max_ind = max(scores)
     min_ind = min(scores)
-    print(scores)
+
     assert (scores[min_ind] <= expected["max"]) & (
         scores[max_ind] >= expected["min"]
     ), "Test failed."
