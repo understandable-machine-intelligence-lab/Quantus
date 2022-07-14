@@ -18,7 +18,8 @@
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
-[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
+
 ## Table of contents
 
 * [Library overview](#library-overview)
@@ -375,7 +376,7 @@ If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
 interesting or useful in your research, use following Bibtex annotation to cite us:
 
-```
+```bibtex
 @article{hedstrom2022quantus,
       title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
       author={Anna Hedström and
