@@ -15,7 +15,7 @@ __pycache__/
 *.csv
 *.pth
 tutorials/progress/
-tutorials/assets/imagenet_images_/
+tutorials/assets/imagenet_images/
 tutorials/assets/data/
 tutorials/assets/model_objs/
 tests/test_scenarios.md
