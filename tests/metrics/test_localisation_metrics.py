@@ -560,7 +560,7 @@ def test_pointing_game(
                 "display_progressbar": False,
                 "return_aggregate": True,
             },
-            0.98,  # TODO: verify correctness
+            0.9800000000000001,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -650,9 +650,9 @@ def test_top_k_intersection(
         s_batch=data["s_batch"],
         **params,
     )
-    print(scores, expected)
+
     if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+        assert all(round(s, 2) == round(expected, 2) for s in scores), "Test failed."
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
     else:

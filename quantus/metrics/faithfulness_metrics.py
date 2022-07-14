@@ -2821,7 +2821,7 @@ class ROAD(Metric):
             )
 
         self.last_results = {str(k): 0 for k in self.percentages}
-        self.all_results = {str(k): 0 for k in self.percentages}
+        self.all_results = []
 
         for sample, (x, y, a) in iterator:
 
