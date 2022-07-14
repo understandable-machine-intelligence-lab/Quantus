@@ -657,7 +657,7 @@ class TopKIntersection(Metric):
             top_k_binary_mask = np.zeros(a.shape)
             sorted_indices = np.argsort(a, axis=None)
             np.put_along_axis(
-                top_k_binary_mask, sorted_indices[-self.k:], 1, axis=None
+                top_k_binary_mask, sorted_indices[-self.k :], 1, axis=None
             )
 
             s = s.astype(bool)
@@ -870,7 +870,7 @@ class RelevanceRankAccuracy(Metric):
             k = len(s)
 
             # Sort in descending order.
-            a_sorted = np.argsort(a)[-int(k):]
+            a_sorted = np.argsort(a)[-int(k) :]
 
             # Calculate hits.
             hits = len(np.intersect1d(s, a_sorted))
@@ -1304,13 +1304,15 @@ class Focus(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
             last_results: a list containing the resulting scores of the last metric instance call
             all_results: a list containing the resulting scores of all the calls made on the metric instance
         """
@@ -1324,6 +1326,10 @@ class Focus(Metric):
         self.default_plot_func = plotting.plot_focus
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
+        self.last_results = []
+        self.all_results = []
 
         self.mosaic_shape = None
 
@@ -1468,6 +1474,7 @@ class Focus(Metric):
             iterator = tqdm(enumerate(zip(a_batch, p_batch)), total=len(x_batch_s))
 
         self.mosaic_shape = a_batch[0].shape
+
         for sample, (a, p) in iterator:
 
             if self.normalise:
@@ -1478,12 +1485,14 @@ class Focus(Metric):
 
             total_positive_relevance = np.sum(a[a > 0], dtype=np.float64)
             target_positive_relevance = 0
+
             quadrant_functions_list = [
                 self.quadrant_top_left,
                 self.quadrant_top_right,
                 self.quadrant_bottom_left,
                 self.quadrant_bottom_right,
             ]
+
             for quadrant_p, quadrant_func in zip(p, quadrant_functions_list):
                 if not bool(quadrant_p):
                     continue
@@ -1493,7 +1502,13 @@ class Focus(Metric):
                 )
 
             focus_score = target_positive_relevance / total_positive_relevance
+
             self.last_results.append(focus_score)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
+        self.all_results.append(self.last_results)
 
         return self.last_results
 
@@ -1505,18 +1520,18 @@ class Focus(Metric):
 
     def quadrant_top_right(self, hmap: np.ndarray) -> np.ndarray:
         quandrant_hmap = hmap[
-            :, int(self.mosaic_shape[1] / 2):, : int(self.mosaic_shape[2] / 2)
+            :, int(self.mosaic_shape[1] / 2) :, : int(self.mosaic_shape[2] / 2)
         ]
         return quandrant_hmap
 
     def quadrant_bottom_left(self, hmap: np.ndarray) -> np.ndarray:
         quandrant_hmap = hmap[
-            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2):
+            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_hmap
 
     def quadrant_bottom_right(self, hmap: np.ndarray) -> np.ndarray:
         quandrant_hmap = hmap[
-            :, int(self.mosaic_shape[1] / 2):, int(self.mosaic_shape[2] / 2):
+            :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_hmap

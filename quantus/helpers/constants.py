@@ -47,7 +47,7 @@ AVAILABLE_METRICS = {
         "Completeness": Completeness,
         "NonSensitivity": NonSensitivity,
         "InputInvariance": InputInvariance,
-    }
+    },
 }
 
 

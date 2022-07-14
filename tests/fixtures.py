@@ -87,9 +87,7 @@ def load_cifar10_images():
         x_train[:124, ...].reshape(124, 3, 32, 32),
         dtype=torch.float,
     ).numpy()
-    y_batch = torch.as_tensor(
-        y_train[:124].reshape(124), dtype=torch.int64
-    ).numpy()
+    y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 

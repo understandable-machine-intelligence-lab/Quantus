@@ -573,7 +573,7 @@ else:
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
                 "abs": True,
-                "interpolate": (32, 32)
+                "interpolate": (32, 32),
             },
             {"shape": (1, 32, 32)},
         ),

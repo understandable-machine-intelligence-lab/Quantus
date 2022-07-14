@@ -195,7 +195,7 @@ def plot_model_parameter_randomisation_experiment(
 
 
 def plot_focus(
-        results: Dict[str, List[float]],
+    results: Dict[str, List[float]],
 ) -> None:
     """
     Plot the Focus scores of different methods in a box plot like manner as done in the original paper:
@@ -215,5 +215,5 @@ def plot_focus(
         plt.xlabel(method)
 
     plt.ylabel("Focus score")
-    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    plt.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
     plt.show()
