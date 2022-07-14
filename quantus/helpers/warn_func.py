@@ -70,5 +70,6 @@ def deprecation_warnings(kwargs: dict = {}) -> None:
         text = "argument 'nr_channels' is deprecated and will be removed in future versions.\n"
     if "max_steps_per_input" in kwargs:
         text = "argument 'max_steps_per_input' is deprecated and will be removed in future versions.\n"
-    
-    if text != '\n': print(text)
+
+    if text != "\n":
+        print(text)

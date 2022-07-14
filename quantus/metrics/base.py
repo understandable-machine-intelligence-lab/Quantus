@@ -28,8 +28,11 @@ class Metric:
             kwargs: a dictionary of key, value pairs (optional)
             abs: a bool stating if absolute operation should be taken on the attributions
             normalise: a bool stating if the attributions should be normalised
-            normalise_func: Callable that make a normalising transformation of the attributions
-            default_plot_func: Callable that plots the metrics result
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
             last_results: a list containing the resulting scores of the last metric instance call
             all_results: a list containing the resulting scores of all the calls made on the metric instance
 
@@ -42,6 +45,8 @@ class Metric:
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -54,7 +59,7 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: Union[np.ndarray, int],
         a_batch: Union[np.ndarray, None],
-        s_batch: Union[np.ndarray, None],
+        s_batch: Union[np.ndarray, None] = None,
         *args,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
@@ -110,7 +115,6 @@ class Metric:
 
         """
         print(self.__init__.__doc__.split(".")[1].split("References")[0])
-        # print(self.__call__.__doc__.split("callable.")[1].split("Parameters")[0])
 
     @property
     def get_params(self) -> dict:

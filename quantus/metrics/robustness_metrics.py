@@ -44,21 +44,25 @@ class LocalLipschitzEstimate(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            perturb_std (float): The amount of noise added, default=0.1.
-            perturb_mean (float): The mean of noise added, default=0.0.
-            nr_samples (integer): The number of samples iterated, default=200.
-            norm_numerator (callable): Function for norm calculations on the numerator, default=distance_euclidean.
-            norm_denominator (callable): Function for norm calculations on the denominator, default=distance_euclidean.
-            perturb_func (callable): Input perturbation function, default=gaussian_noise.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            perturb_std (float): The amount of noise added, default=0.1
+            perturb_mean (float): The mean of noise added, default=0.0
+            nr_samples (integer): The number of samples iterated, default=200
+            norm_numerator (callable): Function for norm calculations on the numerator, default=distance_euclidean
+            norm_denominator (callable): Function for norm calculations on the denominator, default=distance_euclidean
+            perturb_func (callable): Input perturbation function, default=gaussian_noise
             similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=lipschitz_constant.
+            default=lipschitz_constant
         """
         super().__init__()
 
@@ -70,6 +74,8 @@ class LocalLipschitzEstimate(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get(
             "norm_numerator", similar_func.distance_euclidean
@@ -113,6 +119,7 @@ class LocalLipschitzEstimate(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -209,7 +216,9 @@ class LocalLipschitzEstimate(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -253,6 +262,7 @@ class LocalLipschitzEstimate(Metric):
                     b=a_perturbed.flatten(),
                     c=x.flatten(),
                     d=x_perturbed.flatten(),
+                    **self.kwargs,
                 )
 
                 if similarity > similarity_max:
@@ -260,6 +270,9 @@ class LocalLipschitzEstimate(Metric):
 
             # Append similarity score.
             self.last_results.append(similarity_max)
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -313,6 +326,8 @@ class MaxSensitivity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
@@ -350,6 +365,7 @@ class MaxSensitivity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -446,7 +462,9 @@ class MaxSensitivity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -498,6 +516,9 @@ class MaxSensitivity(Metric):
             # Append max sensitivity score.
             self.last_results.append(sensitivities_norm_max)
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -525,20 +546,24 @@ class AvgSensitivity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            lower_bound (float): Lower Bound of Perturbation, default=0.2.
-            upper_bound (None, float): Upper Bound of Perturbation, default=None.
-            nr_samples (integer): The number of samples iterated, default=200.
-            norm_numerator (callable): Function for norm calculations on the numerator, default=fro_norm.
-            norm_denominator (callable): Function for norm calculations on the denominator, default=fro_norm.
-            perturb_func (callable): Input perturbation function, default=uniform_noise.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            lower_bound (float): lower Bound of Perturbation, default=0.2
+            upper_bound (None, float): upper Bound of Perturbation, default=None
+            nr_samples (integer): the number of samples iterated, default=200.
+            norm_numerator (callable): function for norm calculations on the numerator, default=fro_norm.
+            norm_denominator (callable): function for norm calculations on the denominator, default=fro_norm.
+            perturb_func (callable): input perturbation function, default=uniform_noise.
+            similarity_func (callable): similarity function applied to compare input and perturbed input,
             default=difference.
         """
         super().__init__()
@@ -551,6 +576,8 @@ class AvgSensitivity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.nr_samples = self.kwargs.get("nr_samples", 200)
         self.norm_numerator = self.kwargs.get("norm_numerator", fro_norm)
         self.norm_denominator = self.kwargs.get("norm_denominator", fro_norm)
@@ -587,6 +614,7 @@ class AvgSensitivity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> List[float]:
@@ -683,7 +711,9 @@ class AvgSensitivity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -733,6 +763,9 @@ class AvgSensitivity(Metric):
             # Append average sensitivity score.
             self.last_results.append(float(np.mean(self.sub_results)))
 
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -761,21 +794,25 @@ class Continuity(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            patch_size (integer): The patch size for masking, default=7.
-            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-            nr_steps (integer): The number of steps to iterate over, default=28.
-            perturb_func (callable): Input perturbation function, default=translation_x_direction.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=lipschitz_constant.
-            softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            patch_size (integer): the patch size for masking, default=7.
+            perturb_baseline (string): indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+            default="black"
+            nr_steps (integer): the number of steps to iterate over, default=28
+            perturb_func (callable): input perturbation function, default=translation_x_direction
+            similarity_func (callable): similarity function applied to compare input and perturbed input,
+            default=lipschitz_constant
+            softmax (boolean): indicates wheter to use softmax probabilities or logits in model prediction
         """
         super().__init__()
 
@@ -787,6 +824,11 @@ class Continuity(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.last_results = []
+        self.all_results = []
+
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.patch_size = self.kwargs.get("patch_size", 7)
         self.perturb_baseline = self.kwargs.get("perturb_baseline", "black")
         self.nr_steps = self.kwargs.get("nr_steps", 28)
@@ -798,8 +840,6 @@ class Continuity(Metric):
             "similarity_func", similar_func.lipschitz_constant
         )
         self.softmax = self.kwargs.get("softmax", False)
-        self.last_results = []
-        self.all_results = []
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -824,6 +864,7 @@ class Continuity(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
@@ -929,7 +970,9 @@ class Continuity(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
@@ -1010,6 +1053,11 @@ class Continuity(Metric):
 
             self.last_results[ix] = sub_results
 
+        if self.return_aggregate:
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -1057,15 +1105,19 @@ class Consistency(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            discretise_func (callable): Explanation space discretisation function, returns hash value of an array;
-            arrays with identical elements receive the same hash value, default=top_n_sign.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            discretise_func (callable): the explanation space discretisation function, returns hash value of an array;
+            arrays with identical elements receive the same hash value, default=top_n_sign
         """
         super().__init__()
 
@@ -1077,10 +1129,12 @@ class Consistency(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.discretise_func = self.kwargs.get("discretise_func", top_n_sign)
-
+        self.return_aggregate = self.kwargs.get("return_aggregate", True)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.sum)
         self.last_results = []
         self.all_results = []
+
+        self.discretise_func = self.kwargs.get("discretise_func", top_n_sign)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -1102,6 +1156,7 @@ class Consistency(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
         **kwargs,
     ) -> Dict[int, List[float]]:
@@ -1169,7 +1224,9 @@ class Consistency(Metric):
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
 
         # Predict on input.
-        x_input = model.shape_input(x_batch, x_batch[0].shape, channel_first=True, batch=True)
+        x_input = model.shape_input(
+            x_batch, x_batch[0].shape, channel_first=True, batch=True
+        )
         y_pred_classes = np.argmax(
             model.predict(x_input, softmax_act=True, **self.kwargs), axis=1
         ).flatten()
@@ -1181,6 +1238,7 @@ class Consistency(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
                 total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a, a_label) in iterator:
@@ -1189,13 +1247,16 @@ class Consistency(Metric):
             same_a = np.argwhere(a_labels == a_label).flatten()
             same_a = same_a[same_a != ix]
             pred_same_a = y_pred_classes[same_a]
+
             if len(same_a) == 0:
                 self.last_results.append(0)
             else:
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
 
-        # Aggregate results.
-        self.last_results = [np.sum(self.last_results) / len(self.last_results)]
+        if self.return_aggregate:
+            self.last_results = [
+                self.aggregate_func(self.last_results) / len(self.last_results)
+            ]
 
         self.all_results.append(self.last_results)
 

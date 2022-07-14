@@ -39,18 +39,22 @@ class ModelParameterRandomisation(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
-            layer_order (string): Indicated whether the model is randomized cascadingly or independently.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            similarity_func (callable): similarity function applied to compare input and perturbed input,
+            default=correlation_spearman
+            layer_order (string): indicates whether the model is randomized cascadingly or independently.
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
-            default="independent".
+            default="independent"
         """
         super().__init__()
 
@@ -62,6 +66,8 @@ class ModelParameterRandomisation(Metric):
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.similarity_func = self.kwargs.get("similarity_func", correlation_spearman)
         self.layer_order = kwargs.get("layer_order", "independent")
         self.seed = self.kwargs.get("seed", 42)
@@ -90,8 +96,9 @@ class ModelParameterRandomisation(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -187,7 +194,10 @@ class ModelParameterRandomisation(Metric):
                 list(model.get_random_layer_generator(order=self.layer_order))
             )
             n_iterations = n_layers * len(a_batch)
-            pbar = tqdm(total=n_iterations)
+            pbar = tqdm(
+                total=n_iterations,
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
+            )
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
             order=self.layer_order, seed=self.seed
@@ -226,6 +236,11 @@ class ModelParameterRandomisation(Metric):
         if self.display_progressbar:
             pbar.close()
 
+        if self.return_aggregate:
+            print(
+                "A 'return_aggregate' functionality is not implemented for this metric."
+            )
+
         self.all_results.append(self.last_results)
 
         return self.last_results
@@ -250,16 +265,20 @@ class RandomLogit(Metric):
         ----------
         args: Arguments (optional)
         kwargs: Keyword arguments (optional)
-            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True,
-            default=normalise_by_negative.
-            default_plot_func (callable): Callable that plots the metrics result.
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=ssim.
-            num_classes (integer): Number of prediction classes in the input, default=1000.
+            args: a arguments (optional)
+            kwargs: a dictionary of key, value pairs (optional)
+            abs: a bool stating if absolute operation should be taken on the attributions
+            normalise: a bool stating if the attributions should be normalised
+            normalise_func: a Callable that make a normalising transformation of the attributions
+            default_plot_func: a Callable that plots the metrics result
+            display_progressbar (boolean): indicates whether a tqdm-progress-bar is printed, default=False.
+            return_aggregate: a bool if an aggregated score should be produced for the metric over all instances
+            aggregate_func: a Callable to aggregate the scores per instance to one float
+            last_results: a list containing the resulting scores of the last metric instance call
+            all_results: a list containing the resulting scores of all the calls made on the metric instance
+            similarity_func (callable): similarity function applied to compare input and perturbed input,
+            default=ssim
+            num_classes (integer): number of prediction classes in the input, default=1000
         """
         super().__init__()
 
@@ -267,10 +286,12 @@ class RandomLogit(Metric):
         self.kwargs = kwargs
         self.abs = self.kwargs.get("abs", False)
         self.normalise = self.kwargs.get("normalise", True)
+        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
         self.default_plot_func = Callable
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
-        self.normalise_func = self.kwargs.get("normalise_func", normalise_by_negative)
+        self.return_aggregate = self.kwargs.get("return_aggregate", False)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.similarity_func = self.kwargs.get("similarity_func", ssim)
         self.num_classes = self.kwargs.get("num_classes", 1000)
         self.seed = self.kwargs.get("seed", 42)
@@ -295,8 +316,9 @@ class RandomLogit(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -388,7 +410,9 @@ class RandomLogit(Metric):
             iterator = enumerate(zip(x_batch_s, y_batch, a_batch))
         else:
             iterator = tqdm(
-                enumerate(zip(x_batch_s, y_batch, a_batch)), total=len(x_batch_s)
+                enumerate(zip(x_batch_s, y_batch, a_batch)),
+                total=len(x_batch_s),
+                desc=f"Evaluation of {self.__class__.__name__} metric.",
             )
 
         for ix, (x, y, a) in iterator:
@@ -426,6 +450,9 @@ class RandomLogit(Metric):
             self.last_results.append(
                 self.similarity_func(a.flatten(), a_perturbed.flatten())
             )
+
+        if self.return_aggregate:
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
