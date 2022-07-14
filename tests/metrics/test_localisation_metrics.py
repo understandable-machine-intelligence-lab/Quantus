@@ -337,6 +337,7 @@ def half_in_gt_zeros_bigger_2d_3ch():
             {
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             True,
         ),
@@ -452,6 +453,7 @@ def test_pointing_game(
                 "k": 100,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -462,6 +464,7 @@ def test_pointing_game(
                 "k": 10000,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -543,6 +546,7 @@ def test_pointing_game(
             {
                 "k": 40000,
                 "disable_warnings": True,
+                "return_aggregate": True,
                 "display_progressbar": False,
             },
             {"min": 0.1, "max": 0.25},
@@ -554,8 +558,9 @@ def test_pointing_game(
                 "k": 50,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
-            0.98,  # TODO: verify correctness
+            0.9800000000000001,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -645,9 +650,9 @@ def test_top_k_intersection(
         s_batch=data["s_batch"],
         **params,
     )
-    print(scores, expected)
+
     if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+        assert all(round(s, 2) == round(expected, 2) for s in scores), "Test failed."
     elif "type" in expected:
         assert isinstance(scores, expected["type"]), "Test failed."
     else:
@@ -684,6 +689,7 @@ def test_top_k_intersection(
                 "explain_func": explain,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"type": list},
         ),
@@ -703,6 +709,7 @@ def test_top_k_intersection(
             {
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -836,6 +843,7 @@ def test_relevance_rank_accuracy(
                 "explain_func": explain,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"type": list},
         ),
@@ -845,6 +853,7 @@ def test_relevance_rank_accuracy(
             {
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -946,6 +955,7 @@ def test_relevance_mass_accuracy(
             {
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -955,6 +965,7 @@ def test_relevance_mass_accuracy(
             {
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -1122,6 +1133,7 @@ def test_auc(
                 "weighted": False,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"min": 0.8, "max": 0.85},
         ),
@@ -1132,6 +1144,7 @@ def test_auc(
                 "weighted": False,
                 "disable_warnings": True,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             0.0,
         ),
