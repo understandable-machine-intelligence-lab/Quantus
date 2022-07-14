@@ -34,7 +34,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 Simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 
-Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 25+ different metrics. 
+Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
@@ -346,13 +346,22 @@ With each metric intialisation, warnings are printed to shell in order to make t
         
 ```disable_warnings = True```
 
-in the params of the metric initalisation.
+in the params of the metric initalisation. Additionally, if you want to track progress while evaluating your explanations set:
+
+```display_progressbar = True```
+
+If you want to return an aggreagate score for your test samples you can set the following hyperparameter:
+
+```return_aggregate = True```
+
+fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
 
 ## Contributing
 
 If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
 
 #### Code Style
+
 Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
 We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
 
