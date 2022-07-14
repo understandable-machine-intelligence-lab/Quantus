@@ -16,12 +16,14 @@ AVAILABLE_METRICS = {
         "IROF": IterativeRemovalOfFeatures,
         "ROAD": ROAD,
         "Infidelity": Infidelity,
+        "Sufficiency": Sufficiency,
     },
     "Robustness": {
         "Continuity Test": Continuity,
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
+        "Consistency": Consistency,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
