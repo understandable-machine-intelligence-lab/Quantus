@@ -2855,13 +2855,13 @@ class ROAD(Metric):
                 self.last_results[str(p)] += y == class_pred_perturb
 
         # Calculate accuracy for every number of most important pixels removed.
+        for k in self.last_results:
+            self.last_results[k] = self.last_results[k] / len(x_batch_s)
+
         if self.return_aggregate:
             print(
                 "A 'return_aggregate' functionality is not implemented for this metric."
             )
-
-        for k in self.last_results:
-            self.last_results[k] = self.last_results[k] / len(x_batch_s)
 
         self.all_results.append(self.last_results)
 
