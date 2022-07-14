@@ -573,8 +573,9 @@ else:
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
                 "abs": True,
+                "interpolate": (32, 32)
             },
-            {"min": 0},
+            {"shape": (1, 32, 32)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
