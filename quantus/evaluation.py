@@ -73,7 +73,6 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        # TODO: what does the method parameter do?
                         **{**kwargs, **{"method": method}},
                     )
                 )
