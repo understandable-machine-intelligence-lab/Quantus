@@ -170,7 +170,7 @@ class PointingGame(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -199,7 +199,7 @@ class PointingGame(Metric):
             hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
         return hit
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -379,7 +379,7 @@ class AttributionLocalisation(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -420,7 +420,7 @@ class AttributionLocalisation(Metric):
             else:
                 return float(inside_attribution_ratio * ratio)
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -443,7 +443,7 @@ class AttributionLocalisation(Metric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -614,7 +614,7 @@ class TopKIntersection(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -646,7 +646,7 @@ class TopKIntersection(Metric):
 
         return tki
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -812,7 +812,7 @@ class RelevanceRankAccuracy(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -842,7 +842,7 @@ class RelevanceRankAccuracy(Metric):
 
         return rank_accuracy
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1005,7 +1005,7 @@ class RelevanceRankAccuracy(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1035,7 +1035,7 @@ class RelevanceRankAccuracy(Metric):
 
         return rank_accuracy
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1197,7 +1197,7 @@ class RelevanceMassAccuracy(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1218,7 +1218,7 @@ class RelevanceMassAccuracy(Metric):
 
         return mass_accuracy
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1375,7 +1375,7 @@ class AUC(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1392,7 +1392,7 @@ class AUC(Metric):
         score = auc(x=fpr, y=tpr)
         return score
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,

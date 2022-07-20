@@ -172,7 +172,7 @@ class Sparseness(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -346,7 +346,7 @@ class Complexity(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -517,7 +517,7 @@ class EffectiveComplexity(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,

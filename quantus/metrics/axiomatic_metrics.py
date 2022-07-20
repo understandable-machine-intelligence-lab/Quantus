@@ -196,7 +196,7 @@ class Completeness(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -406,7 +406,7 @@ class NonSensitivity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -452,7 +452,7 @@ class NonSensitivity(PerturbationMetric):
 
             return len(non_features_vars.symmetric_difference(non_features))
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -640,7 +640,7 @@ class InputInvariance(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -670,7 +670,7 @@ class InputInvariance(PerturbationMetric):
         else:
             return False
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
