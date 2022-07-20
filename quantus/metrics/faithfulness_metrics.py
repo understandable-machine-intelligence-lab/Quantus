@@ -611,7 +611,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         )
 
         # Save metric-specific attributes.
-        self.segmentation_method = "slic"
+        self.segmentation_method = segmentation_method
         self.return_aggregate = return_aggregate
 
         # Asserts and warnings.
