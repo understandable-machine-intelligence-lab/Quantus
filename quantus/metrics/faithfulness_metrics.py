@@ -211,7 +211,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -252,7 +252,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
         similarity = self.similarity_func(a=att_sums, b=pred_deltas)
         return similarity
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -270,7 +270,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -462,7 +462,7 @@ class FaithfulnessEstimate(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -510,7 +510,7 @@ class FaithfulnessEstimate(PerturbationMetric):
         similarity = self.similarity_func(a=att_sums, b=pred_deltas)
         return similarity
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -706,7 +706,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -762,7 +762,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         return score
 
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -776,7 +776,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -967,7 +967,7 @@ class MonotonicityArya(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1014,7 +1014,7 @@ class MonotonicityArya(PerturbationMetric):
 
         return np.all(np.diff(preds) >= 0)
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1215,7 +1215,7 @@ class MonotonicityNguyen(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1277,7 +1277,7 @@ class MonotonicityNguyen(PerturbationMetric):
 
         return self.similarity_func(a=atts, b=vars)
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1468,7 +1468,7 @@ class PixelFlipping(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1508,7 +1508,7 @@ class PixelFlipping(PerturbationMetric):
 
         return preds
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1728,7 +1728,7 @@ class RegionPerturbation(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1835,7 +1835,7 @@ class RegionPerturbation(PerturbationMetric):
 
         return sub_results
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -1847,7 +1847,7 @@ class RegionPerturbation(PerturbationMetric):
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2045,7 +2045,7 @@ class Selectivity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -2131,7 +2131,7 @@ class Selectivity(PerturbationMetric):
 
         return sub_results
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2144,7 +2144,7 @@ class Selectivity(PerturbationMetric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2367,7 +2367,7 @@ class SensitivityN(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -2412,10 +2412,10 @@ class SensitivityN(PerturbationMetric):
             pred_deltas.append(y_pred - y_pred_perturb)
 
         # Each list-element of self.last_results will be such a dictionary
-        # We will unpack that later in postprocess().
+        # We will unpack that later in custom_postprocess().
         return {"att_sums": att_sums, "pred_deltas": pred_deltas}
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2434,7 +2434,7 @@ class SensitivityN(PerturbationMetric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2672,7 +2672,7 @@ class Infidelity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -2751,7 +2751,7 @@ class Infidelity(PerturbationMetric):
         return sub_results
 
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2944,7 +2944,7 @@ class ROAD(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -2978,7 +2978,7 @@ class ROAD(PerturbationMetric):
         # Return list of booleans for each percentage
         return results_instance
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -2992,7 +2992,7 @@ class ROAD(PerturbationMetric):
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,

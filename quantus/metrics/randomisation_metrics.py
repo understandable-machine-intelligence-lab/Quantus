@@ -212,7 +212,7 @@ class ModelParameterRandomisation(Metric):
 
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.process_instance(
+                result = self.evaluate_instance(
                     model=random_layer_model,
                     x=None, y=None, s=None,
                     a=a_instance,
@@ -224,7 +224,7 @@ class ModelParameterRandomisation(Metric):
             self.last_results[layer_name] = similarity_scores
 
         # Call post-processing
-        self.postprocess(
+        self.custom_postprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -235,7 +235,7 @@ class ModelParameterRandomisation(Metric):
         self.all_results.append(self.last_results)
         return self.last_results
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -253,7 +253,7 @@ class ModelParameterRandomisation(Metric):
         # Compute distance measure.
         return self.similarity_func(a_perturbed.flatten(), a.flatten())
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -426,7 +426,7 @@ class RandomLogit(Metric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -460,7 +460,7 @@ class RandomLogit(Metric):
 
         return self.similarity_func(a.flatten(), a_perturbed.flatten())
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,

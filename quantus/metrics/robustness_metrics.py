@@ -222,7 +222,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -270,7 +270,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
         return similarity_max
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -484,7 +484,7 @@ class MaxSensitivity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -532,7 +532,7 @@ class MaxSensitivity(PerturbationMetric):
 
         return sensitivities_norm_max
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -745,7 +745,7 @@ class AvgSensitivity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -983,7 +983,7 @@ class Continuity(PerturbationMetric):
             **kwargs,
         )
 
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x: np.ndarray,
@@ -1060,8 +1060,7 @@ class Continuity(PerturbationMetric):
 
         return sub_results
 
-
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,

@@ -143,7 +143,7 @@ class Metric:
         >> metric = Metric(abs=True, normalise=False)
         >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
-        model, x_batch, y_batch, a_batch, s_batch = self.prepare(
+        model, x_batch, y_batch, a_batch, s_batch = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -166,7 +166,7 @@ class Metric:
         )
         self.last_results = [None for _ in x_batch]
         for instance_id, (x_instance, y_instance, a_instance, s_instance) in iterator:
-            result = self.process_instance(
+            result = self.evaluate_instance(
                 model=model,
                 x=x_instance,
                 y=y_instance,
@@ -176,7 +176,7 @@ class Metric:
             self.last_results[instance_id] = result
 
         # Call post-processing
-        self.postprocess(
+        self.custom_postprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -188,7 +188,7 @@ class Metric:
         return self.last_results
 
     @abstractmethod
-    def process_instance(
+    def evaluate_instance(
             self,
             model: ModelInterface,
             x_instance: np.ndarray,
@@ -201,7 +201,7 @@ class Metric:
         '''
         raise NotImplementedError()
 
-    def prepare(
+    def general_preprocess(
             self,
             model,
             x_batch: np.ndarray,
@@ -281,7 +281,7 @@ class Metric:
         asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Call custom pre-processing from inheriting class.
-        model, x_batch, y_batch, a_batch, s_batch = self.preprocess(
+        model, x_batch, y_batch, a_batch, s_batch = self.custom_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -307,7 +307,7 @@ class Metric:
 
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def preprocess(
+    def custom_preprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
@@ -317,7 +317,7 @@ class Metric:
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         return model, x_batch, y_batch, a_batch, s_batch
 
-    def postprocess(
+    def custom_postprocess(
             self,
             model: ModelInterface,
             x_batch: np.ndarray,
