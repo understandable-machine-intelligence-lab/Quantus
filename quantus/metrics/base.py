@@ -22,14 +22,14 @@ class Metric:
     @asserts.attributes_check
     def __init__(
             self,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
+            abs: bool,
+            normalise: bool,
+            normalise_func: Optional[Callable],
+            normalise_func_kwargs: Optional[Dict[str, Any]],
+            softmax: bool,
+            default_plot_func: Optional[Callable],
+            disable_warnings: bool,
+            display_progressbar: bool,
             **kwargs):
         """
         Initialise the Metric base class.
@@ -38,24 +38,21 @@ class Metric:
 
         Parameters
         ----------
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+        abs (boolean): Indicates whether absolute operation is applied on the attribution.
+        normalise (boolean): Indicates whether normalise operation is applied on the attribution.
         normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
+        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+        disable_warnings (boolean): Indicates whether the warnings are printed.
+        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
 
         """
         self.abs = abs
         self.normalise = normalise
         self.softmax = softmax
-
-        if normalise_func is None:
-            self.normalise_func = normalise_by_negative
         self.normalise_func = normalise_func
+
         if normalise_func_kwargs is None:
             normalise_func_kwargs = {}
         # TODO: deprecate this kind of unspecific kwargs passing
@@ -77,15 +74,15 @@ class Metric:
             self,
             model,
             x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray] = None,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict] = None,
-            device: Optional[str] = None,
-            softmax: Optional[bool] = None,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: Optional[np.ndarray],
+            channel_first: Optional[bool],
+            explain_func: Optional[Callable],
+            explain_func_kwargs: Optional[Dict[str, Any]],
+            model_predict_kwargs: Optional[Dict],
+            device: Optional[str],
+            softmax: Optional[bool],
             **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
@@ -103,15 +100,13 @@ class Metric:
         a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
         s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
         channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-            Inferred from the input shape if None, default=None.
-        explain_func (callable): Callable generating attributions, default=Callable.
-        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call, default = {}
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
-            default=None.
+            Inferred from the input shape if None.
+        explain_func (callable): Callable generating attributions.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
         softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used,
-            default=None.
-        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
         kwargs: Keyword arguments (optional)
 
         Returns
@@ -205,15 +200,15 @@ class Metric:
             self,
             model,
             x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray] = None,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            model_predict_kwargs: Optional[Dict] = None,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: Optional[np.ndarray],
+            channel_first: Optional[bool],
+            explain_func: Optional[Callable],
+            explain_func_kwargs: Optional[Dict[str, Any]],
+            softmax: bool,
+            device: Optional[str],
+            model_predict_kwargs: Optional[Dict],
             **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]]:
         '''
@@ -424,15 +419,15 @@ class PerturbationMetric(Metric):
     @asserts.attributes_check
     def __init__(
             self,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
+            abs: bool,
+            normalise: bool,
+            normalise_func: Optional[Callable],
+            normalise_func_kwargs: Optional[Dict[str, Any]],
+            perturb_func: Callable,  # TODO: specify expected function signature
+            perturb_func_kwargs: Optional[Dict[str, Any]],
+            default_plot_func: Optional[Callable],
+            disable_warnings: bool,
+            display_progressbar: bool,
             **kwargs):
 
         # Initialize super-class with passed parameters
