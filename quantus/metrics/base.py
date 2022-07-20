@@ -219,9 +219,9 @@ class Metric:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch = utils.make_channel_first(x_batch, channel_first)
 
-        # Wrap the model into an interface
+        # Wrap the model into an interface.
         if model:
-            # Use attribute value if not passed explicitely.
+            # Use attribute value if not passed explicitly.
             if softmax is None:
                 softmax = self.softmax
             model = utils.get_wrapped_model(
