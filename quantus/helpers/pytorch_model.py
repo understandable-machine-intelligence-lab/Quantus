@@ -28,7 +28,7 @@ class PyTorchModel(ModelInterface):
         )
         self.device = device
 
-    def predict(self, x, grad=False, **kwargs):
+    def predict(self, x: np.ndarray, grad: bool = False, **kwargs):
         """Predict on the given input."""
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
