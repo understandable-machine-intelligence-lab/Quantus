@@ -48,6 +48,10 @@ class Metric:
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
 
         """
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(kwargs)
+        asserts.check_kwargs(kwargs)
+
         self.abs = abs
         self.normalise = normalise
         self.softmax = softmax
@@ -55,9 +59,6 @@ class Metric:
 
         if normalise_func_kwargs is None:
             normalise_func_kwargs = {}
-        # TODO: deprecate this kind of unspecific kwargs passing
-        # this code prioritizes normalise_func_kwargs items over kwargs items
-        normalise_func_kwargs = {**kwargs, **normalise_func_kwargs}
         self.normalise_func_kwargs = normalise_func_kwargs
 
         self.default_plot_func = default_plot_func
@@ -66,9 +67,6 @@ class Metric:
 
         self.last_results = []
         self.all_results = []
-
-        # TODO: deprecate this kind of unspecific kwargs passing
-        self.kwargs = kwargs
 
     def __call__(
             self,
@@ -107,7 +105,6 @@ class Metric:
         softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -138,6 +135,10 @@ class Metric:
         >> metric = Metric(abs=True, normalise=False)
         >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(kwargs)
+        asserts.check_kwargs(kwargs)
+
         model, x_batch, y_batch, a_batch, s_batch = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -150,7 +151,6 @@ class Metric:
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
-            **kwargs,
         )
 
         # Create progress bar if desired.
@@ -209,7 +209,6 @@ class Metric:
             softmax: bool,
             device: Optional[str],
             model_predict_kwargs: Optional[Dict],
-            **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]]:
         '''
         TODO: add documentation.
@@ -232,29 +231,10 @@ class Metric:
                 predict_kwargs=model_predict_kwargs,
             )
 
-        # Update kwargs.
-        # TODO: deprecate this kind of unspecific kwargs passing
-        # TODO: Also state in the docstring, that passing kwargs will currently
-        # overwrite the internal kwargs-attribute from the __init__ call.
-        # This side-effect should be documented as it won't be expected by everyone.
-        self.kwargs = {
-            **kwargs,
-            **{
-                k: v for k, v in self.__dict__.items()
-                if k not in ["args", "kwargs"]
-            },
-        }
-
-        # Run deprecation warnings.
-        warn_func.deprecation_warnings(self.kwargs)
-
         # Save as attribute, some metrics need it during processing.
         self.explain_func = explain_func
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
-        # TODO: deprecate this kind of unspecific kwargs passing
-        # this code prioritizes explain_func_kwargs items over kwargs items
-        self.explain_func_kwargs = {**kwargs, **explain_func_kwargs}
 
         if a_batch is None:
 
@@ -446,7 +426,4 @@ class PerturbationMetric(Metric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        # TODO: deprecate this kind of unspecific kwargs passing
-        # this code prioritizes perturb_func_kwargs items over kwargs items
-        perturb_func_kwargs = {**kwargs, **perturb_func_kwargs}
         self.perturb_func_kwargs = perturb_func_kwargs

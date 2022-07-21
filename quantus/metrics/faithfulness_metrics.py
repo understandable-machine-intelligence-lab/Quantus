@@ -166,7 +166,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -417,7 +416,6 @@ class FaithfulnessEstimate(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -661,7 +659,6 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -922,7 +919,6 @@ class MonotonicityArya(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -1170,7 +1166,6 @@ class MonotonicityNguyen(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -1423,7 +1418,6 @@ class PixelFlipping(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -1683,7 +1677,6 @@ class RegionPerturbation(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -2000,7 +1993,6 @@ class Selectivity(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -2322,7 +2314,6 @@ class SensitivityN(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -2627,7 +2618,6 @@ class Infidelity(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -2899,7 +2889,6 @@ class ROAD(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------

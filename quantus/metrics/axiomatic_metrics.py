@@ -151,7 +151,6 @@ class Completeness(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -361,7 +360,6 @@ class NonSensitivity(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -595,7 +593,6 @@ class InputInvariance(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
