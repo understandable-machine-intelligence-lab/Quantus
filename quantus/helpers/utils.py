@@ -621,7 +621,7 @@ def expand_indices(
     indexed_axes = np.sort(np.array(indexed_axes))
     asserts.assert_indexed_axes(arr, indexed_axes)
 
-    # Handle indices
+    # Handle indices.
     if isinstance(indices, int):
         expanded_indices = [indices]
     else:
@@ -640,7 +640,7 @@ def expand_indices(
                 try:
                     expanded_indices.append(int(idx))
                 except:
-                    raise ValueError("Unsupported type of indices")
+                    raise ValueError("Unsupported type of indices.")
 
     # Check if unraveling is needed.
     if np.all([isinstance(i, int) for i in expanded_indices]):
@@ -659,7 +659,7 @@ def expand_indices(
         raise ValueError("indices dimension doesn't match indexed_axes")
 
     # Ensure array dimensions are kept when indexing.
-    # Expands dimensions of each element in expanded_indices depending on the number of elements
+    # Expands dimensions of each element in expanded_indices depending on the number of elements.
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(

@@ -57,7 +57,7 @@ def warn_parameterisation(
         f"destroy or skew information in the explanation and as a result, affect the overall evaluation outcome."
         f"\n (3) Make sure to validate the choices for hyperparameters of the metric (by calling"
         f" .get_params of the metric instance).\n (4) For further information, see original publication: {citation}."
-        f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric."
+        f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric.\n"
     )
     print(colored(text=text))
 
