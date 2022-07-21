@@ -154,7 +154,6 @@ class PixelFlippingMultiProcess(PerturbationMetric):
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -170,7 +169,7 @@ class PixelFlippingMultiProcess(PerturbationMetric):
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_queue_instance(
             self,
@@ -367,7 +366,6 @@ class PixelFlippingMultiProcessSharedIn(PerturbationMetricSharedIn):
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -383,7 +381,7 @@ class PixelFlippingMultiProcessSharedIn(PerturbationMetricSharedIn):
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_queue_instance(
             self,
@@ -580,7 +578,6 @@ class PixelFlippingMultiProcessSharedInOut(PerturbationMetricSharedInOut):
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -596,7 +593,7 @@ class PixelFlippingMultiProcessSharedInOut(PerturbationMetricSharedInOut):
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_yield_instance(
             self,
@@ -788,7 +785,6 @@ class PixelFlippingMultiProcessSharedInReturnOut(PerturbationMetricSharedInRetur
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -804,7 +800,7 @@ class PixelFlippingMultiProcessSharedInReturnOut(PerturbationMetricSharedInRetur
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_yield_instance(
             self,
@@ -997,7 +993,6 @@ class PixelFlippingMultiProcessPassInReturnOut(PerturbationMetricPassInReturnOut
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -1013,7 +1008,7 @@ class PixelFlippingMultiProcessPassInReturnOut(PerturbationMetricPassInReturnOut
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_yield_instance(
             self,
@@ -1206,7 +1201,6 @@ class PixelFlippingMultiThreadingQueue(PerturbationMetricMultiThreadingQueue):
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -1222,7 +1216,7 @@ class PixelFlippingMultiThreadingQueue(PerturbationMetricMultiThreadingQueue):
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_queue_instance(
             self,
@@ -1419,7 +1413,6 @@ class PixelFlippingMultiThreadingPassInReturnOut(PerturbationMetricMultiThreadin
             A: np.ndarray,
             S: np.ndarray,
             model,
-            model_predict_kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
@@ -1435,7 +1428,7 @@ class PixelFlippingMultiThreadingPassInReturnOut(PerturbationMetricMultiThreadin
                 input_shape=X.shape[2:],
             )
 
-        return X, Y, A, S, model, model_predict_kwargs
+        return X, Y, A, S, model
 
     def perturb_and_yield_instance(
             self,

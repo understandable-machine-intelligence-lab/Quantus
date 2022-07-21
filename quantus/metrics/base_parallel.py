@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
+from .base import Metric, BatchedMetric
 from ..helpers import utils
 from ..helpers import asserts
 from ..helpers.model_interface import ModelInterface
@@ -74,7 +75,7 @@ class PerturbationMetric(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -256,7 +257,7 @@ class PerturbationMetricSharedIn(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -510,7 +511,7 @@ class PerturbationMetricSharedInOut(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -805,7 +806,7 @@ class PerturbationMetricSharedInReturnOut(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -1068,7 +1069,7 @@ class PerturbationMetricPassInReturnOut(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -1280,7 +1281,7 @@ class PerturbationMetricMultiThreadingQueue(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -1461,7 +1462,7 @@ class PerturbationMetricMultiThreadingPassInReturnOut(Metric):
         """
         TODO: documentation
         """
-        X, Y, A, S, model, model_predict_kwargs = self.prepare(
+        X, Y, A, S, model = self.prepare(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
