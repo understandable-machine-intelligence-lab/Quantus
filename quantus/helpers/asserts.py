@@ -248,3 +248,23 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     assert (
         0 in indexed_axes or arr.ndim - 1 in indexed_axes
     ), "Make sure indexed_axes contains either the first or last axis of arr."
+
+
+def check_kwargs(kwargs):
+    """
+    Check that no additional kwargs are passed, i.e. the kwargs dict is empty.
+    Raises an exception with helpful suggestions to fix the issue.
+    """
+    if kwargs:
+        raise ValueError(
+            "There were unexpected keyword arguments passed to the metric method. "
+            "Quantus has undergone heavy API-changes since the last release(s), "
+            "such that a more robust kwargs-passing and error handling can be achieved. "
+            "Passing unexpected keyword arguments is now discouraged. Please adust "
+            "your code to pass them in dictionaries to the arguments named "
+            "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
+            "Please also make sure to check for typos. "
+            f"The questionable arguments are the following: {kwargs}. "
+            "If the expected changes to your codebase are not feasible for you, "
+            "please revert to quantus version 0.1.4. "
+        )

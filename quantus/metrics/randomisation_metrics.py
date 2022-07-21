@@ -140,7 +140,6 @@ class ModelParameterRandomisation(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
@@ -380,7 +379,6 @@ class RandomLogit(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
-        kwargs: Keyword arguments (optional)
 
         Returns
         -------
