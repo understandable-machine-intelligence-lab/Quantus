@@ -79,8 +79,8 @@ class Metric:
             explain_func: Optional[Callable],
             explain_func_kwargs: Optional[Dict[str, Any]],
             model_predict_kwargs: Optional[Dict],
-            device: Optional[str],
             softmax: Optional[bool],
+            device: Optional[str] = None,
             **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
@@ -148,9 +148,9 @@ class Metric:
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
-            model_predict_kwargs=model_predict_kwargs,
         )
 
         # Create progress bar if desired.
@@ -206,9 +206,9 @@ class Metric:
             channel_first: Optional[bool],
             explain_func: Optional[Callable],
             explain_func_kwargs: Optional[Dict[str, Any]],
+            model_predict_kwargs: Optional[Dict],
             softmax: bool,
             device: Optional[str],
-            model_predict_kwargs: Optional[Dict],
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]]:
         '''
         TODO: add documentation.
@@ -235,6 +235,7 @@ class Metric:
         self.explain_func = explain_func
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
+        self.explain_func_kwargs = explain_func_kwargs
 
         if a_batch is None:
 

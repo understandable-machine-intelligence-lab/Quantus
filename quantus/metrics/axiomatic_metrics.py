@@ -192,8 +192,8 @@ class Completeness(PerturbationMetric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
-            device=device,
             softmax=softmax,
+            device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
         )
@@ -341,6 +341,7 @@ class NonSensitivity(PerturbationMetric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -363,6 +364,7 @@ class NonSensitivity(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -402,6 +404,7 @@ class NonSensitivity(PerturbationMetric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -574,6 +577,7 @@ class InputInvariance(PerturbationMetric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -596,6 +600,7 @@ class InputInvariance(PerturbationMetric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}.
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -635,6 +640,7 @@ class InputInvariance(PerturbationMetric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
