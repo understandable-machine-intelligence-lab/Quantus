@@ -388,7 +388,7 @@ def test_non_sensitivity(
     call_params = params.get("call", {})
 
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
         explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
@@ -635,7 +635,7 @@ def test_input_invariance(
     call_params = params.get("call", {})
 
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
         explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
