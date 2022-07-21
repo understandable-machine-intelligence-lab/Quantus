@@ -103,6 +103,7 @@ class PointingGame(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -125,6 +126,7 @@ class PointingGame(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -164,6 +166,7 @@ class PointingGame(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -311,6 +314,7 @@ class AttributionLocalisation(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -333,6 +337,7 @@ class AttributionLocalisation(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -372,6 +377,7 @@ class AttributionLocalisation(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -545,6 +551,7 @@ class TopKIntersection(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -567,6 +574,7 @@ class TopKIntersection(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -606,6 +614,7 @@ class TopKIntersection(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -742,6 +751,7 @@ class RelevanceRankAccuracy(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -764,6 +774,7 @@ class RelevanceRankAccuracy(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -803,6 +814,7 @@ class RelevanceRankAccuracy(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -934,6 +946,7 @@ class RelevanceRankAccuracy(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -956,6 +969,7 @@ class RelevanceRankAccuracy(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -995,6 +1009,7 @@ class RelevanceRankAccuracy(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -1125,6 +1140,7 @@ class RelevanceMassAccuracy(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -1147,6 +1163,7 @@ class RelevanceMassAccuracy(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -1186,6 +1203,7 @@ class RelevanceMassAccuracy(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
@@ -1303,6 +1321,7 @@ class AUC(Metric):
             explain_func: Optional[Callable] = None,  # Specify function signature
             explain_func_kwargs: Optional[Dict[str, Any]] = None,
             model_predict_kwargs: Optional[Dict[str, Any]] = None,
+            softmax: bool = False,
             device: Optional[str] = None,
             **kwargs,
     ) -> List[float]:
@@ -1324,6 +1343,7 @@ class AUC(Metric):
         device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu",
             default=None.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction, default=False.
 
         Returns
         -------
@@ -1363,6 +1383,7 @@ class AUC(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             **kwargs,
