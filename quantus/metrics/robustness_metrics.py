@@ -1006,6 +1006,7 @@ class Continuity(Metric):
                     targets=y,
                     **self.kwargs,
                 )
+
                 # Taking the first element, since a_perturbed will be expanded to a batch dimension
                 # not expected by the current index management functions
                 a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
@@ -1025,6 +1026,7 @@ class Continuity(Metric):
                 axis_iterators = [
                     range(0, x_input.shape[axis], self.patch_size) for axis in a_axes
                 ]
+
                 for ix_patch, top_left_coords in enumerate(
                     itertools.product(*axis_iterators)
                 ):
@@ -1130,7 +1132,7 @@ class Consistency(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
-        self.aggregate_func = self.kwargs.get("aggregate_func", np.sum)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.last_results = []
         self.all_results = []
 
@@ -1244,18 +1246,18 @@ class Consistency(Metric):
         for ix, (x, y, a, a_label) in iterator:
 
             pred_a = y_pred_classes[ix]
-            same_a = np.argwhere(a_labels == a_label).flatten()
-            same_a = same_a[same_a != ix]
-            pred_same_a = y_pred_classes[same_a]
+            same_a = np.argwhere(a == a_label).flatten()
+            diff_a = same_a[same_a != ix]
+            pred_same_a = y_pred_classes[diff_a]
 
             if len(same_a) == 0:
                 self.last_results.append(0)
             else:
-                self.last_results.append(np.sum(pred_same_a == pred_a) / len(same_a))
+                self.last_results.append(np.sum(pred_same_a == pred_a) / len(diff_a))
 
         if self.return_aggregate:
             self.last_results = [
-                self.aggregate_func(self.last_results) / len(self.last_results)
+                self.aggregate_func(self.last_results)
             ]
 
         self.all_results.append(self.last_results)
