@@ -170,13 +170,14 @@ def test_completeness(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    init_params = params.get("init", {})
-    call_params = params.get("call", {})
-
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params["explain_func_kwargs"]
@@ -378,13 +379,14 @@ def test_non_sensitivity(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    init_params = params.get("init", {})
-    call_params = params.get("call", {})
-
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
         explain = params["explain_func"]
         explain_func_kwargs = call_params["explain_func_kwargs"]
@@ -624,13 +626,14 @@ def test_input_invariance(
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    init_params = params.get("init", {})
-    call_params = params.get("call", {})
-
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
         explain = params["explain_func"]
         explain_func_kwargs = call_params["explain_func_kwargs"]
