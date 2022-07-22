@@ -429,7 +429,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "Gradient",
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -449,7 +451,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "Gradient",
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -468,7 +472,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "InputxGradient",
+                    "explain_func_kwargs": {
+                        "method": "InputxGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -488,7 +494,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "InputxGradient",
+                    "explain_func_kwargs": {
+                        "method": "InputxGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -593,7 +601,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "InputXGradient",
+                    "explain_func_kwargs": {
+                        "method": "InputXGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -613,7 +623,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "method": "InputXGradient",
+                    "explain_func_kwargs": {
+                        "method": "InputXGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
