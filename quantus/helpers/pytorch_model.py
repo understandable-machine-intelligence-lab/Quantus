@@ -14,11 +14,12 @@ class PyTorchModel(ModelInterface):
     """Interface for torch models."""
 
     def __init__(
-            self, model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            predict_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
             model=model,
@@ -48,11 +49,11 @@ class PyTorchModel(ModelInterface):
             return pred.cpu().numpy()
 
     def shape_input(
-            self,
-            x: np.array,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batched: bool = False,
+        self,
+        x: np.array,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
     ):
         """
         Reshape input into model expected input.

@@ -120,7 +120,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -158,7 +158,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -244,7 +244,7 @@ def test_completeness(
                         "method": "Saliency",
                     },
                 },
-             },
+            },
             1.0,
         ),
         (
@@ -285,7 +285,7 @@ def test_completeness(
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -305,7 +305,7 @@ def test_completeness(
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -325,7 +325,7 @@ def test_completeness(
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -346,7 +346,7 @@ def test_completeness(
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),
@@ -367,7 +367,7 @@ def test_completeness(
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-                }
+                },
             },
             1.0,
         ),

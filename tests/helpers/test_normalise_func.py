@@ -35,27 +35,43 @@ def atts_denormalise_torch():
     [
         (
             lazy_fixture("atts_normalise_1"),
-            {},
+            {"normalized_axes": [0]},
             np.array([0.2, 0.4, 0.6, 0.8, 0.8, 1.0, -0.2]),
-        )
+        ),
+        (
+            lazy_fixture("atts_normalise_1"),
+            {"normalized_axes": None},
+            np.array([0.2, 0.4, 0.6, 0.8, 0.8, 1.0, -0.2]),
+        ),
     ],
 )
 def test_normalise_by_max(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = normalise_by_max(a=data)
+    out = normalise_by_max(a=data, **params)
     assert all(o == e for o, e in zip(out, expected)), "Test failed."
 
 
 @pytest.mark.normalise_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("atts_normalise_2"), {}, np.array([0.2, 0.4, 0.6, 0.8, 1.0]))],
+    [
+        (
+            lazy_fixture("atts_normalise_2"),
+            {"normalized_axes": [0]},
+            np.array([0.2, 0.4, 0.6, 0.8, 1.0]),
+        ),
+        (
+            lazy_fixture("atts_normalise_2"),
+            {"normalized_axes": None},
+            np.array([0.2, 0.4, 0.6, 0.8, 1.0]),
+        ),
+    ],
 )
 def test_normalise_if_negative(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-    out = normalise_by_negative(a=data)
+    out = normalise_by_negative(a=data, **params)
     assert all(o == e for o, e in zip(out, expected)), "Test failed."
 
 

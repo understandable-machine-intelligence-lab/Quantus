@@ -15,10 +15,11 @@ class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
     def __init__(
-            self, model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            predict_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
             model=model,
@@ -51,11 +52,11 @@ class TensorFlowModel(ModelInterface):
         return new_model(x, training=False, **predict_kwargs).numpy()
 
     def shape_input(
-            self,
-            x: np.ndarray,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batched: bool = False,
+        self,
+        x: np.ndarray,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
     ):
         """
         Reshape input into model expected input.

@@ -44,23 +44,25 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_runs: int = 100,
-            subset_size: int = 224,
-            return_aggregate: bool = True,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_runs: int = 100,
+        subset_size: int = 224,
+        return_aggregate: bool = True,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -93,7 +95,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -134,19 +136,19 @@ class FaithfulnessCorrelation(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -214,12 +216,12 @@ class FaithfulnessCorrelation(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = a.flatten()
 
@@ -255,12 +257,12 @@ class FaithfulnessCorrelation(PerturbationMetric):
         return similarity
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -273,12 +275,12 @@ class FaithfulnessCorrelation(PerturbationMetric):
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
@@ -298,23 +300,25 @@ class FaithfulnessEstimate(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_runs: int = 100,
-            subset_size: int = 224,
-            features_in_step: int = 1,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_runs: int = 100,
+        subset_size: int = 224,
+        features_in_step: int = 1,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -347,7 +351,7 @@ class FaithfulnessEstimate(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -387,19 +391,19 @@ class FaithfulnessEstimate(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -467,12 +471,12 @@ class FaithfulnessEstimate(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = a.flatten()
 
@@ -491,9 +495,7 @@ class FaithfulnessEstimate(PerturbationMetric):
 
             # Perturb input by indices of attributions.
             a_ix = a_indices[
-                (self.features_in_step * i_ix) : (
-                    self.features_in_step * (i_ix + 1)
-                )
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
             x_perturbed = self.perturb_func(
                 arr=x,
@@ -506,7 +508,7 @@ class FaithfulnessEstimate(PerturbationMetric):
             # Predict on perturbed input x.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
             y_pred_perturb = float(model.predict(x_input)[:, y])
-            pred_deltas[i_ix] =  float(y_pred - y_pred_perturb)
+            pred_deltas[i_ix] = float(y_pred - y_pred_perturb)
 
             # Sum attributions.
             att_sums[i_ix] = a[a_ix].sum()
@@ -515,12 +517,12 @@ class FaithfulnessEstimate(PerturbationMetric):
         return similarity
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -550,21 +552,21 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            segmentation_method: str = "slic",
-            return_aggregate: bool = True,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "mean",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        segmentation_method: str = "slic",
+        return_aggregate: bool = True,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "mean",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -598,7 +600,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -633,19 +635,19 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -713,12 +715,12 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Predict on x.
         x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -767,14 +769,13 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         score = len(preds) - utils.calculate_auc(np.array(preds))
         return score
 
-
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer number of input channels and attribution axes for perturbation function.
         self.nr_channels = x_batch.shape[1]
@@ -783,12 +784,12 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if self.return_aggregate:
             self.last_results = [np.mean(self.last_results)]
@@ -820,21 +821,21 @@ class MonotonicityArya(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            concept_influence: bool = False,
-            features_in_step: int = 1,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        concept_influence: bool = False,
+        features_in_step: int = 1,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -864,7 +865,7 @@ class MonotonicityArya(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -896,19 +897,19 @@ class MonotonicityArya(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -976,12 +977,12 @@ class MonotonicityArya(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
 
         a = a.flatten()
@@ -1004,9 +1005,7 @@ class MonotonicityArya(PerturbationMetric):
 
             # Perturb input by indices of attributions.
             a_ix = a_indices[
-                (self.features_in_step * i_ix) : (
-                    self.features_in_step * (i_ix + 1)
-                )
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
             x_baseline = self.perturb_func(
                 arr=x_baseline,
@@ -1023,12 +1022,12 @@ class MonotonicityArya(PerturbationMetric):
         return np.all(np.diff(preds) >= 0)
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -1057,23 +1056,25 @@ class MonotonicityNguyen(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            eps: float = 1e-5,
-            nr_samples: int = 100,
-            features_in_step: int = 1,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "uniform",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        eps: float = 1e-5,
+        nr_samples: int = 100,
+        features_in_step: int = 1,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "uniform",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -1106,7 +1107,7 @@ class MonotonicityNguyen(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -1146,19 +1147,19 @@ class MonotonicityNguyen(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1226,19 +1227,19 @@ class MonotonicityNguyen(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Predict on input x.
         x_input = model.shape_input(x, x.shape, channel_first=True)
         y_pred = float(model.predict(x_input)[:, y])
 
         inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-        inv_pred = inv_pred**2
+        inv_pred = inv_pred ** 2
 
         a = a.flatten()
 
@@ -1253,9 +1254,7 @@ class MonotonicityNguyen(PerturbationMetric):
 
             # Perturb input by indices of attributions.
             a_ix = a_indices[
-                (self.features_in_step * i_ix) : (
-                    self.features_in_step * (i_ix + 1)
-                )
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
 
             y_pred_perturbs = [None for _ in range(self.nr_samples)]
@@ -1268,32 +1267,27 @@ class MonotonicityNguyen(PerturbationMetric):
                     indexed_axes=self.a_axes,
                     **self.perturb_func_kwargs,
                 )
-                asserts.assert_perturbation_caused_change(
-                    x=x, x_perturbed=x_perturbed
-                )
+                asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
-                x_input = model.shape_input(
-                    x_perturbed, x.shape, channel_first=True
-                )
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
                 y_pred_perturb = float(model.predict(x_input)[:, y])
                 y_pred_perturbs[sample_id] = y_pred_perturb
 
             vars[i_ix] = float(
-                np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2)
-                * inv_pred
+                np.mean((np.array(y_pred_perturbs) - np.array(y_pred)) ** 2) * inv_pred
             )
             atts[i_ix] = float(sum(a[a_ix]))
 
         return self.similarity_func(a=atts, b=vars)
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -1323,20 +1317,20 @@ class PixelFlipping(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            features_in_step: int = 1,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        features_in_step: int = 1,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -1366,7 +1360,7 @@ class PixelFlipping(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         if default_plot_func is None:
             default_plot_func = plotting.plot_pixel_flipping_experiment
@@ -1401,19 +1395,19 @@ class PixelFlipping(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1481,12 +1475,12 @@ class PixelFlipping(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = a.flatten()
 
@@ -1501,9 +1495,7 @@ class PixelFlipping(PerturbationMetric):
 
             # Perturb input by indices of attributions.
             a_ix = a_indices[
-                (self.features_in_step * i_ix) : (
-                    self.features_in_step * (i_ix + 1)
-                )
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
             x_perturbed = self.perturb_func(
                 arr=x_perturbed,
@@ -1521,12 +1513,12 @@ class PixelFlipping(PerturbationMetric):
         return preds
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -1538,7 +1530,6 @@ class PixelFlipping(PerturbationMetric):
         )
 
         return model, x_batch, y_batch, a_batch, s_batch
-
 
     @property
     def get_auc_score(self):
@@ -1573,22 +1564,22 @@ class RegionPerturbation(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            patch_size: int = 8,
-            order: str = "morf",
-            regions_evaluation: int = 100,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "uniform",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        patch_size: int = 8,
+        order: str = "morf",
+        regions_evaluation: int = 100,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "uniform",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -1621,7 +1612,7 @@ class RegionPerturbation(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         if default_plot_func is None:
             default_plot_func = plotting.plot_region_perturbation_experiment
@@ -1663,19 +1654,19 @@ class RegionPerturbation(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1743,12 +1734,12 @@ class RegionPerturbation(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Predict on input.
         x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -1806,9 +1797,11 @@ class RegionPerturbation(PerturbationMetric):
         ordered_patches_no_overlap = []
         for patch_slice in ordered_patches:
             patch_mask = np.zeros(x_pad.shape, dtype=bool)
-            patch_mask[utils.expand_indices(patch_mask, patch_slice, self.a_axes)] = True
-            #patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
-           # patch_mask[patch_mask_exp] = True
+            patch_mask[
+                utils.expand_indices(patch_mask, patch_slice, self.a_axes)
+            ] = True
+            # patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
+            # patch_mask[patch_mask_exp] = True
             intersected = blocked_mask & patch_mask
 
             if not intersected.any():
@@ -1850,29 +1843,27 @@ class RegionPerturbation(PerturbationMetric):
         return sub_results
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # This metric returns a dict of lists, not a list of lists.
-        self.last_results = {
-            k: self.last_results[k] for k in range(len(x_batch))
-        }
+        self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}
 
     @property
     def get_auc_score(self):
@@ -1901,20 +1892,20 @@ class Selectivity(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            patch_size: int = 8,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        patch_size: int = 8,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -1944,7 +1935,7 @@ class Selectivity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         if default_plot_func is None:
             default_plot_func = plotting.plot_selectivity_experiment
@@ -1982,19 +1973,19 @@ class Selectivity(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2062,12 +2053,12 @@ class Selectivity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Predict on input.
         x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -2148,12 +2139,12 @@ class Selectivity(PerturbationMetric):
         return sub_results
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -2161,17 +2152,15 @@ class Selectivity(PerturbationMetric):
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # This metric returns a dict of lists, not a list of lists.
-        self.last_results = {
-            k: self.last_results[k] for k in range(len(x_batch))
-        }
+        self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}
 
     @property
     def get_auc_score(self):
@@ -2212,23 +2201,25 @@ class SensitivityN(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            n_max_percentage: float = 0.8,
-            features_in_step: int = 1,
-            return_aggregate: bool = True,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "uniform",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        n_max_percentage: float = 0.8,
+        features_in_step: int = 1,
+        return_aggregate: bool = True,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "uniform",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -2261,7 +2252,7 @@ class SensitivityN(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         if default_plot_func is None:
             default_plot_func = plotting.plot_sensitivity_n_experiment
@@ -2306,19 +2297,19 @@ class SensitivityN(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2386,12 +2377,12 @@ class SensitivityN(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = a.flatten()
 
@@ -2410,9 +2401,7 @@ class SensitivityN(PerturbationMetric):
 
             # Perturb input by indices of attributions.
             a_ix = a_indices[
-                (self.features_in_step * i_ix) : (
-                    self.features_in_step * (i_ix + 1)
-                )
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
             x_perturbed = self.perturb_func(
                 arr=x_perturbed,
@@ -2434,12 +2423,12 @@ class SensitivityN(PerturbationMetric):
         return {"att_sums": att_sums, "pred_deltas": pred_deltas}
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -2453,12 +2442,12 @@ class SensitivityN(PerturbationMetric):
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
@@ -2511,25 +2500,25 @@ class Infidelity(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            loss_func: str = "mse",
-            perturb_patch_sizes: List[int] = None,
-            features_in_step: int = 1,
-            max_steps_per_input: Optional[int] = None,
-            n_perturb_samples: int = 10,
-            aggregate: bool = True,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "uniform",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        loss_func: str = "mse",
+        perturb_patch_sizes: List[int] = None,
+        features_in_step: int = 1,
+        max_steps_per_input: Optional[int] = None,
+        n_perturb_samples: int = 10,
+        aggregate: bool = True,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "uniform",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -2563,7 +2552,7 @@ class Infidelity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -2613,19 +2602,19 @@ class Infidelity(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2693,12 +2682,12 @@ class Infidelity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Predict on input.
         x_input = model.shape_input(x, x.shape, channel_first=True)
@@ -2723,9 +2712,7 @@ class Infidelity(PerturbationMetric):
 
                 for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
 
-                    for i_y, top_left_y in enumerate(
-                        range(0, x.shape[2], patch_size)
-                    ):
+                    for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
 
                         # Perturb input patch-wise.
                         x_perturbed_pad = utils._pad_array(
@@ -2770,14 +2757,13 @@ class Infidelity(PerturbationMetric):
             return np.mean(sub_results)
         return sub_results
 
-
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -2806,21 +2792,21 @@ class ROAD(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            percentages: Optional[List[float]] = None,
-            noise: float = 0.01,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        percentages: Optional[List[float]] = None,
+        noise: float = 0.01,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -2887,19 +2873,19 @@ class ROAD(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -2967,12 +2953,12 @@ class ROAD(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Order indicies.
         ordered_indices = np.argsort(a, axis=None)[::-1]
@@ -3001,12 +2987,12 @@ class ROAD(PerturbationMetric):
         return results_instance
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -3015,12 +3001,12 @@ class ROAD(PerturbationMetric):
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         results = np.array(self.last_results)
 

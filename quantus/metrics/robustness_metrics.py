@@ -15,7 +15,11 @@ from ..helpers.asserts import attributes_check
 from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
-from ..helpers.perturb_func import gaussian_noise, uniform_noise, translation_x_direction
+from ..helpers.perturb_func import (
+    gaussian_noise,
+    uniform_noise,
+    translation_x_direction,
+)
 
 
 class LocalLipschitzEstimate(PerturbationMetric):
@@ -38,25 +42,33 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_numerator: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_denominator: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            output_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_mean: float = 0.0,
-            perturb_std: float = 0.1,
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_numerator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_denominator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        output_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_mean: float = 0.0,
+        perturb_std: float = 0.1,
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -91,8 +103,8 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_mean'] = perturb_mean
-        perturb_func_kwargs['perturb_std'] = perturb_std
+        perturb_func_kwargs["perturb_mean"] = perturb_mean
+        perturb_func_kwargs["perturb_std"] = perturb_std
 
         super().__init__(
             abs=abs,
@@ -145,19 +157,19 @@ class LocalLipschitzEstimate(PerturbationMetric):
             warn_func.warn_noise_zero(noise=perturb_std)
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -225,12 +237,12 @@ class LocalLipschitzEstimate(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         similarity_max = 0.0
         for i in range(self.nr_samples):
@@ -255,7 +267,8 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
             if self.normalise:
                 a_perturbed = self.normalise_func(
-                    a_perturbed, **self.normalise_func_kwargs,
+                    a_perturbed,
+                    **self.normalise_func_kwargs,
                 )
 
             if self.abs:
@@ -273,12 +286,12 @@ class LocalLipschitzEstimate(PerturbationMetric):
         return similarity_max
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
@@ -303,25 +316,33 @@ class MaxSensitivity(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_numerator: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_denominator: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            output_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            lower_bound: float = 0.2,
-            upper_bound: Optional[float] = None,
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_numerator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_denominator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        output_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        lower_bound: float = 0.2,
+        upper_bound: Optional[float] = None,
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -358,8 +379,8 @@ class MaxSensitivity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['lower_bound'] = lower_bound
-        perturb_func_kwargs['upper_bound'] = upper_bound
+        perturb_func_kwargs["lower_bound"] = lower_bound
+        perturb_func_kwargs["upper_bound"] = upper_bound
 
         super().__init__(
             abs=abs,
@@ -409,19 +430,19 @@ class MaxSensitivity(PerturbationMetric):
             warn_func.warn_noise_zero(noise=lower_bound)
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -489,12 +510,12 @@ class MaxSensitivity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         sensitivities_norm_max = 0.0
         for _ in range(self.nr_samples):
@@ -524,11 +545,9 @@ class MaxSensitivity(PerturbationMetric):
                 a_perturbed = np.abs(a_perturbed)
 
             # Measure sensitivity.
-            sensitivities = self.similarity_func(
-                a=a.flatten(), b=a_perturbed.flatten()
-            )
+            sensitivities = self.similarity_func(a=a.flatten(), b=a_perturbed.flatten())
             numerator = self.norm_numerator(a=sensitivities)
-            denominator  = self.norm_denominator(a=x.flatten())
+            denominator = self.norm_denominator(a=x.flatten())
             sensitivities_norm = numerator / denominator
 
             if sensitivities_norm > sensitivities_norm_max:
@@ -537,12 +556,12 @@ class MaxSensitivity(PerturbationMetric):
         return sensitivities_norm_max
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
@@ -567,25 +586,33 @@ class AvgSensitivity(PerturbationMetric):
     """
 
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_numerator: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_denominator: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            output_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            lower_bound: float = 0.2,
-            upper_bound: Optional[float] = None,
-            softmax: bool = False,
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_numerator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_denominator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        output_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        lower_bound: float = 0.2,
+        upper_bound: Optional[float] = None,
+        softmax: bool = False,
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -620,8 +647,8 @@ class AvgSensitivity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['lower_bound'] = lower_bound
-        perturb_func_kwargs['upper_bound'] = upper_bound
+        perturb_func_kwargs["lower_bound"] = lower_bound
+        perturb_func_kwargs["upper_bound"] = upper_bound
 
         super().__init__(
             abs=abs,
@@ -671,19 +698,19 @@ class AvgSensitivity(PerturbationMetric):
             warn_func.warn_noise_zero(noise=lower_bound)
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -752,12 +779,12 @@ class AvgSensitivity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         sub_results = [None for _ in range(self.nr_samples)]
         for sample_idx in range(self.nr_samples):
@@ -788,9 +815,7 @@ class AvgSensitivity(PerturbationMetric):
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            sensitivities = self.similarity_func(
-                a=a.flatten(), b=a_perturbed.flatten()
-            )
+            sensitivities = self.similarity_func(a=a.flatten(), b=a_perturbed.flatten())
             sensitivities_numerator = self.norm_numerator(a=sensitivities)
             sensitivities_denominator = self.norm_denominator(a=x.flatten())
             sensitivities_norm = sensitivities_numerator / sensitivities_denominator
@@ -819,26 +844,34 @@ class Continuity(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_numerator: Optional[Callable] = None,  # TODO: specify expected function signature
-            norm_denominator: Optional[Callable] = None,  # TODO: specify expected function signature
-            nr_samples: int = 200,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            output_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            patch_size: int = 7,
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            nr_steps: int = 28,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_numerator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        norm_denominator: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        nr_samples: int = 200,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        output_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        patch_size: int = 7,
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        nr_steps: int = 28,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -870,7 +903,7 @@ class Continuity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -912,19 +945,19 @@ class Continuity(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -992,12 +1025,12 @@ class Continuity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         sub_results = {k: [] for k in range(self.nr_patches + 1)}
 
@@ -1026,7 +1059,9 @@ class Continuity(PerturbationMetric):
             a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
             if self.normalise:
-                a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+                a_perturbed = self.normalise_func(
+                    a_perturbed, **self.normalise_func_kwargs
+                )
 
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
@@ -1041,7 +1076,7 @@ class Continuity(PerturbationMetric):
                 range(0, x_input.shape[axis], self.patch_size) for axis in self.a_axes
             ]
             for ix_patch, top_left_coords in enumerate(
-                    itertools.product(*axis_iterators)
+                itertools.product(*axis_iterators)
             ):
 
                 # Create slice for patch.
@@ -1055,9 +1090,7 @@ class Continuity(PerturbationMetric):
                 ]
 
                 if self.normalise:
-                    a_perturbed_patch = self.normalise_func(
-                        a_perturbed_patch.flatten()
-                    )
+                    a_perturbed_patch = self.normalise_func(a_perturbed_patch.flatten())
 
                 if self.abs:
                     a_perturbed_patch = np.abs(a_perturbed_patch.flatten())
@@ -1069,12 +1102,12 @@ class Continuity(PerturbationMetric):
         return sub_results
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)

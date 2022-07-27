@@ -35,16 +35,18 @@ class Sparseness(Metric):
 
     @attributes_check
     def __init__(
-            self,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,  # TODO: specify expected function input/output
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function input/output
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -95,19 +97,19 @@ class Sparseness(Metric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -175,12 +177,12 @@ class Sparseness(Metric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = np.array(
             np.reshape(a, (np.prod(x.shape[1:]),)),
@@ -188,9 +190,8 @@ class Sparseness(Metric):
         )
         a += 0.0000001
         a = np.sort(a)
-        score = (
-            (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a))
-            / (a.shape[0] * np.sum(a))
+        score = (np.sum((2 * np.arange(1, a.shape[0] + 1) - a.shape[0] - 1) * a)) / (
+            a.shape[0] * np.sum(a)
         )
         return score
 
@@ -212,16 +213,18 @@ class Complexity(Metric):
 
     @attributes_check
     def __init__(
-            self,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,  # TODO: specify expected function input/output
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function input/output
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -271,19 +274,19 @@ class Complexity(Metric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -351,17 +354,20 @@ class Complexity(Metric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
-        a = np.array(
-            np.reshape(a, (np.prod(x.shape[1:]),)),
-            dtype=np.float64,
-        ) / np.sum(np.abs(a))
+        a = (
+            np.array(
+                np.reshape(a, (np.prod(x.shape[1:]),)),
+                dtype=np.float64,
+            )
+            / np.sum(np.abs(a))
+        )
 
         return scipy.stats.entropy(pk=a)
 
@@ -380,17 +386,19 @@ class EffectiveComplexity(Metric):
 
     @attributes_check
     def __init__(
-            self,
-            eps: float = 1e-5,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,  # TODO: specify expected function input/output
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        eps: float = 1e-5,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function input/output
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -444,19 +452,19 @@ class EffectiveComplexity(Metric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -524,12 +532,12 @@ class EffectiveComplexity(Metric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         a = a.flatten()
         return int(np.sum(a > self.eps))  # casting to int needed?
