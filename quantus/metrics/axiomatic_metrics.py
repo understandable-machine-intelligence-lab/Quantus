@@ -40,20 +40,22 @@ class Completeness(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            output_func: Optional[Callable] = None,  # TODO: specify expected function signature
-            perturb_baseline: str = "black",
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        output_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function signature
+        perturb_baseline: str = "black",
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -83,7 +85,7 @@ class Completeness(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -119,19 +121,19 @@ class Completeness(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -199,12 +201,12 @@ class Completeness(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
 
         x_baseline = self.perturb_func(
@@ -247,22 +249,22 @@ class NonSensitivity(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            eps: float = 1e-5,
-            n_samples: int = 100,
-            features_in_step: int = 1,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            perturb_baseline: str = "black",
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = True,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        eps: float = 1e-5,
+        n_samples: int = 100,
+        features_in_step: int = 1,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        perturb_baseline: str = "black",
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = True,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -294,7 +296,7 @@ class NonSensitivity(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['perturb_baseline'] = perturb_baseline
+        perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
         super().__init__(
             abs=abs,
@@ -331,19 +333,19 @@ class NonSensitivity(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -411,58 +413,52 @@ class NonSensitivity(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
-            a = a.flatten()
+        a = a.flatten()
 
-            non_features = set(list(np.argwhere(a).flatten() < self.eps))
+        non_features = set(list(np.argwhere(a).flatten() < self.eps))
 
-            vars = []
-            for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
+        vars = []
+        for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
 
-                preds = []
-                a_ix = a[
-                    (self.features_in_step * i_ix) : (
-                        self.features_in_step * (i_ix + 1)
-                    )
-                ].astype(int)
+            preds = []
+            a_ix = a[
+                (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
+            ].astype(int)
 
-                for _ in range(self.n_samples):
-                    # Perturb input by indices of attributions.
-                    x_perturbed = self.perturb_func(
-                        arr=x,
-                        indices=a_ix,
-                        indexed_axes=self.a_axes,
-                        **self.perturb_func_kwargs,
-                    )
+            for _ in range(self.n_samples):
+                # Perturb input by indices of attributions.
+                x_perturbed = self.perturb_func(
+                    arr=x,
+                    indices=a_ix,
+                    indexed_axes=self.a_axes,
+                    **self.perturb_func_kwargs,
+                )
 
-                    # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, x.shape, channel_first=True
-                    )
-                    y_pred_perturbed = float(
-                        model.predict(x_input)[:, y]
-                    )
-                    preds.append(y_pred_perturbed)
+                # Predict on perturbed input x.
+                x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                y_pred_perturbed = float(model.predict(x_input)[:, y])
+                preds.append(y_pred_perturbed)
 
-                    vars.append(np.var(preds))
+                vars.append(np.var(preds))
 
-            non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
+        non_features_vars = set(list(np.argwhere(vars).flatten() < self.eps))
 
-            return len(non_features_vars.symmetric_difference(non_features))
+        return len(non_features_vars.symmetric_difference(non_features))
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
@@ -490,19 +486,19 @@ class InputInvariance(PerturbationMetric):
 
     @attributes_check
     def __init__(
-            self,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            input_shift: int = -1,
-            perturb_func: Callable = None,  # TODO: specify expected function signature
-            perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        input_shift: int = -1,
+        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -539,7 +535,7 @@ class InputInvariance(PerturbationMetric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-        perturb_func_kwargs['input_shift'] = input_shift
+        perturb_func_kwargs["input_shift"] = input_shift
 
         super().__init__(
             abs=abs,
@@ -567,19 +563,19 @@ class InputInvariance(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -647,12 +643,12 @@ class InputInvariance(PerturbationMetric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
 
         x_shifted = self.perturb_func(
@@ -666,8 +662,10 @@ class InputInvariance(PerturbationMetric):
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
-            model=model.get_model(), inputs=x_shifted, targets=y,
-            **self.explain_func_kwargs
+            model=model.get_model(),
+            inputs=x_shifted,
+            targets=y,
+            **self.explain_func_kwargs,
         )
 
         # Check if explanation of shifted input is similar to original.
@@ -677,12 +675,12 @@ class InputInvariance(PerturbationMetric):
             return False
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.

@@ -1339,7 +1339,6 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-    
 
 
 @pytest.mark.faithfulness
@@ -1493,4 +1492,3 @@ def test_ROAD(
     assert (scores[min_ind] <= expected["max"]) & (
         scores[max_ind] >= expected["min"]
     ), "Test failed."
-

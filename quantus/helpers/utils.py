@@ -220,11 +220,11 @@ def make_channel_last(x: np.array, channel_first=True):
 
 
 def get_wrapped_model(
-        model,
-        channel_first: bool,
-        softmax: bool,
-        device: Optional[str] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+    model,
+    channel_first: bool,
+    softmax: bool,
+    device: Optional[str] = None,
+    predict_kwargs: Optional[Dict[str, Any]] = None,
 ) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.

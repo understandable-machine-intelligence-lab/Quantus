@@ -7,10 +7,11 @@ class ModelInterface(ABC):
     """Interface for torch and tensorflow models."""
 
     def __init__(
-            self, model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            predict_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
         self.model = model
         self.channel_first = channel_first

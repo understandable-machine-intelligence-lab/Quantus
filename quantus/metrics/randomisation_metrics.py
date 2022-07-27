@@ -33,19 +33,21 @@ class ModelParameterRandomisation(Metric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Callable = None,  # TODO: specify expected function input/output
-            layer_order: str = "independent",
-            seed: int = 42,
-            abs: bool = True,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,  # TODO: specify expected function input/output
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Callable = None,  # TODO: specify expected function input/output
+        layer_order: str = "independent",
+        seed: int = 42,
+        abs: bool = True,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function input/output
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -108,19 +110,19 @@ class ModelParameterRandomisation(Metric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -192,9 +194,7 @@ class ModelParameterRandomisation(Metric):
         self.last_results = {}
 
         # Get number of iterations from number of layers.
-        n_layers = len(
-            list(model.get_random_layer_generator(order=self.layer_order))
-        )
+        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
 
         model_iterator = tqdm(
             model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
@@ -208,7 +208,9 @@ class ModelParameterRandomisation(Metric):
 
             # Generate an explanation with perturbed model.
             a_batch_perturbed = self.explain_func(
-                model=random_layer_model, inputs=x_batch, targets=y_batch,
+                model=random_layer_model,
+                inputs=x_batch,
+                targets=y_batch,
                 **self.explain_func_kwargs,
             )
 
@@ -216,7 +218,9 @@ class ModelParameterRandomisation(Metric):
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
                 result = self.evaluate_instance(
                     model=random_layer_model,
-                    x=None, y=None, s=None,
+                    x=None,
+                    y=None,
+                    s=None,
                     a=a_instance,
                     a_perturbed=a_instance_perturbed,
                 )
@@ -238,13 +242,13 @@ class ModelParameterRandomisation(Metric):
         return self.last_results
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
-            a_perturbed: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+        a_perturbed: np.ndarray,
     ):
         if self.normalise:
             a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
@@ -256,12 +260,12 @@ class ModelParameterRandomisation(Metric):
         return self.similarity_func(a_perturbed.flatten(), a.flatten())
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
@@ -284,19 +288,21 @@ class RandomLogit(Metric):
 
     @attributes_check
     def __init__(
-            self,
-            similarity_func: Callable = None,  # TODO: specify expected function input/output
-            num_classes: int = 1000,
-            seed: int = 42,
-            abs: bool = False,
-            normalise: bool = True,
-            normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-            normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            default_plot_func: Optional[Callable] = None,  # TODO: specify expected function input/output
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            **kwargs,
+        self,
+        similarity_func: Callable = None,  # TODO: specify expected function input/output
+        num_classes: int = 1000,
+        seed: int = 42,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = None,  # TODO: specify expected function input/output
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        **kwargs,
     ):
         """
         Parameters
@@ -350,19 +356,19 @@ class RandomLogit(Metric):
             )
 
     def __call__(
-            self,
-            model,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Optional[np.ndarray] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            explain_func: Optional[Callable] = None,  # Specify function signature
-            explain_func_kwargs: Optional[Dict[str, Any]] = None,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
-            softmax: bool = False,
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -431,12 +437,12 @@ class RandomLogit(Metric):
         )
 
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x: np.ndarray,
-            y: np.ndarray,
-            a: np.ndarray,
-            s: np.ndarray,
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ):
         # Randomly select off-class labels.
         np.random.seed(self.seed)
@@ -465,12 +471,12 @@ class RandomLogit(Metric):
         return self.similarity_func(a.flatten(), a_perturbed.flatten())
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.

@@ -10,7 +10,6 @@ from tqdm import tqdm
 from ..helpers import utils
 from ..helpers import asserts
 from ..helpers.model_interface import ModelInterface
-from ..helpers.normalise_func import normalise_batch, normalise_by_negative
 from ..helpers import warn_func
 
 
@@ -21,16 +20,17 @@ class Metric:
 
     @asserts.attributes_check
     def __init__(
-            self,
-            abs: bool,
-            normalise: bool,
-            normalise_func: Optional[Callable],
-            normalise_func_kwargs: Optional[Dict[str, Any]],
-            softmax: bool,
-            default_plot_func: Optional[Callable],
-            disable_warnings: bool,
-            display_progressbar: bool,
-            **kwargs):
+        self,
+        abs: bool,
+        normalise: bool,
+        normalise_func: Optional[Callable],
+        normalise_func_kwargs: Optional[Dict[str, Any]],
+        softmax: bool,
+        default_plot_func: Optional[Callable],
+        disable_warnings: bool,
+        display_progressbar: bool,
+        **kwargs,
+    ):
         """
         Initialise the Metric base class.
 
@@ -69,19 +69,19 @@ class Metric:
         self.all_results = []
 
     def __call__(
-            self,
-            model,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: Optional[np.ndarray],
-            channel_first: Optional[bool],
-            explain_func: Optional[Callable],
-            explain_func_kwargs: Optional[Dict[str, Any]],
-            model_predict_kwargs: Optional[Dict],
-            softmax: Optional[bool],
-            device: Optional[str] = None,
-            **kwargs,
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: Optional[np.ndarray],
+        channel_first: Optional[bool],
+        explain_func: Optional[Callable],
+        explain_func_kwargs: Optional[Dict[str, Any]],
+        model_predict_kwargs: Optional[Dict],
+        softmax: Optional[bool],
+        device: Optional[str] = None,
+        **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
         TODO: add more specific documentation for inheriting from this class.
@@ -184,35 +184,37 @@ class Metric:
 
     @abstractmethod
     def evaluate_instance(
-            self,
-            model: ModelInterface,
-            x_instance: np.ndarray,
-            y_instance: Optional[np.ndarray] = None,
-            a_instance: Optional[np.ndarray] = None,
-            s_instance: Optional[np.ndarray] = None,
+        self,
+        model: ModelInterface,
+        x_instance: np.ndarray,
+        y_instance: Optional[np.ndarray] = None,
+        a_instance: Optional[np.ndarray] = None,
+        s_instance: Optional[np.ndarray] = None,
     ):
-        '''
+        """
         TODO: add documentation.
-        '''
+        """
         raise NotImplementedError()
 
     def general_preprocess(
-            self,
-            model,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: Optional[np.ndarray],
-            channel_first: Optional[bool],
-            explain_func: Optional[Callable],
-            explain_func_kwargs: Optional[Dict[str, Any]],
-            model_predict_kwargs: Optional[Dict],
-            softmax: bool,
-            device: Optional[str],
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]]:
-        '''
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: Optional[np.ndarray],
+        channel_first: Optional[bool],
+        explain_func: Optional[Callable],
+        explain_func_kwargs: Optional[Dict[str, Any]],
+        model_predict_kwargs: Optional[Dict],
+        softmax: bool,
+        device: Optional[str],
+    ) -> Tuple[
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]
+    ]:
+        """
         TODO: add documentation.
-        '''
+        """
         # Reshape input batch to channel first order:
         if not isinstance(channel_first, bool):  # None is not a boolean instance.
             channel_first = utils.infer_channel_first(x_batch)
@@ -267,10 +269,12 @@ class Metric:
 
         # Normalise with specified keyword arguments if requested.
         if self.normalise:
-            a_batch = normalise_batch(
-                arr=a_batch,
-                normalise_func=self.normalise_func,
-                **self.normalise_func_kwargs,
+            a_batch = self.normalise_func(
+                a=a_batch,
+                normalized_axes=list(range(np.ndim(a_batch)))[
+                    1:
+                ]  # TODO note: this assumes we always have a batch axis. that ok?
+                ** self.normalise_func_kwargs,
             )
 
         # Take absolute if requested.
@@ -284,22 +288,22 @@ class Metric:
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         pass
 
@@ -399,17 +403,18 @@ class PerturbationMetric(Metric):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            abs: bool,
-            normalise: bool,
-            normalise_func: Optional[Callable],
-            normalise_func_kwargs: Optional[Dict[str, Any]],
-            perturb_func: Callable,  # TODO: specify expected function signature
-            perturb_func_kwargs: Optional[Dict[str, Any]],
-            default_plot_func: Optional[Callable],
-            disable_warnings: bool,
-            display_progressbar: bool,
-            **kwargs):
+        self,
+        abs: bool,
+        normalise: bool,
+        normalise_func: Optional[Callable],
+        normalise_func_kwargs: Optional[Dict[str, Any]],
+        perturb_func: Callable,  # TODO: specify expected function signature
+        perturb_func_kwargs: Optional[Dict[str, Any]],
+        default_plot_func: Optional[Callable],
+        disable_warnings: bool,
+        display_progressbar: bool,
+        **kwargs,
+    ):
 
         # Initialize super-class with passed parameters
         super().__init__(
