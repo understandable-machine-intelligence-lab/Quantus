@@ -7,6 +7,8 @@ from .asserts import *
 from .constants import *
 from .norm_func import *
 from .normalise_func import *
+from .mosaic_func import *
+from .discretise_func import *
 from .perturb_func import *
 from .plotting import *
 from .similar_func import *

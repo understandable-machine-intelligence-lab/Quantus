@@ -78,6 +78,7 @@ from ...quantus.helpers.explanation_func import explain
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -214,6 +215,7 @@ def test_local_lipschitz_estimate(
             {
                 "perturb_radius": 0.2,
                 "nr_samples": 10,
+                "return_aggregate": True,
                 "img_size": 28,
                 "nr_channels": 1,
                 "explain_func": explain,
@@ -279,6 +281,7 @@ def test_max_sensitivity(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -347,6 +350,7 @@ def test_max_sensitivity(
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -432,6 +436,7 @@ def test_avg_sensitivity(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"exception": ValueError},
         ),
@@ -474,6 +479,7 @@ def test_avg_sensitivity(
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -523,9 +529,124 @@ def test_continuity(
     assert scores is not None, "Test failed."
 
 
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "discretise_func": floating_points,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "discretise_func": sign,
+                "a_batch_generate": True,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "discretise_func": top_n_sign,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "discretise_func": rank,
+                "a_batch_generate": False,
+                "return_aggregate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
+)
+def test_consistency(
+    model: ModelInterface,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = Consistency(**params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **params,
+            )
+        return
+
+    scores = Consistency(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )[0]
+    assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
+
+
 def test_relative_input_stability():
     pass
 
 
 def test_relative_output_stability():
+    pass
+
+
+def test_relative_representation_stability():
     pass

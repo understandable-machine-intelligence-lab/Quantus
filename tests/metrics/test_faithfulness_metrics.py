@@ -29,6 +29,7 @@ from ...quantus.helpers.explanation_func import explain
                 "max_steps_per_input": 2,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -47,6 +48,7 @@ from ...quantus.helpers.explanation_func import explain
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "softmax": True,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -173,6 +175,7 @@ from ...quantus.helpers.explanation_func import explain
                 "subset_size": 784,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": False,
             },
             {"exception": ValueError},
         ),
@@ -243,6 +246,7 @@ def test_faithfulness_correlation(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "softmax": False,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -312,6 +316,7 @@ def test_faithfulness_correlation(
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "softmax": False,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -384,6 +389,7 @@ def test_faithfulness_estimate(
                 "max_steps_per_input": 2,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 80.0},
         ),
@@ -415,6 +421,7 @@ def test_faithfulness_estimate(
                 "max_steps_per_input": 2,
                 "disable_warnings": True,
                 "display_progressbar": True,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 80.0},
         ),
@@ -429,6 +436,7 @@ def test_faithfulness_estimate(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"exception": ValueError},
         ),
@@ -499,6 +507,7 @@ def test_iterative_removal_of_features(
                 "max_steps_per_input": 2,
                 "disable_warnings": False,
                 "display_progressbar": False,
+                "return_aggregate": True,
             },
             {"allowed_dtypes": [True, False]},
         ),
@@ -546,6 +555,7 @@ def test_iterative_removal_of_features(
                 "max_steps_per_input": 2,
                 "disable_warnings": True,
                 "display_progressbar": True,
+                "return_aggregate": True,
             },
             {"allowed_dtypes": [True, False]},
         ),
@@ -640,6 +650,7 @@ def test_monotonicity_arya(
                 "disable_warnings": True,
                 "display_progressbar": True,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             1.0,
         ),
@@ -933,6 +944,7 @@ def test_pixel_flipping(
                 "perturb_func": perturb_func.baseline_replacement_by_indices,
                 "a_batch_generate": False,
                 "return_auc": False,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1047,6 +1059,7 @@ def test_region_perturbation(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "return_auc": False,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1128,6 +1141,7 @@ def test_region_perturbation(
                 "disable_warnings": False,
                 "display_progressbar": True,
                 "return_auc": True,
+                "return_aggregate": True,
             },
             {"min": 0.0, "max": 100.0},
         ),
@@ -1249,6 +1263,7 @@ def test_selectivity(
                 "disable_warnings": True,
                 "display_progressbar": False,
                 "a_batch_generate": False,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1339,7 +1354,6 @@ def test_sensitivity_n(
     assert all(
         ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
     ), "Test failed."
-    
 
 
 @pytest.mark.faithfulness
@@ -1359,6 +1373,7 @@ def test_sensitivity_n(
                 "disable_warnings": False,
                 "display_progressbar": False,
                 "features_in_step": 8,
+                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1495,6 +1510,82 @@ def test_ROAD(
     ), "Test failed."
 
 
-def test_relative_representation_stability():
-    pass
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "threshold": 0.1,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+                "explain_func": explain,
+                "method": "Saliency",
+                "threshold": 0.6,
+                "disable_warnings": False,
+                "display_progressbar": False,
+                "a_batch_generate": True,
+                "return_aggregate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+    ],
+)
+def test_sufficiency(
+    model: ModelInterface,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
 
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = Sufficiency(**params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **params,
+            )[0]
+        return
+
+    scores = Sufficiency(**params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **params,
+    )[0]
+    assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
