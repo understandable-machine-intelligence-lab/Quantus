@@ -4,6 +4,7 @@ import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
+import scipy.spatial.distance
 from tqdm import tqdm
 
 from .base import Metric
@@ -17,6 +18,9 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.discretise_func import top_n_sign
+
+import jax
+import jax.numpy as jnp
 
 
 class LocalLipschitzEstimate(Metric):
@@ -114,14 +118,14 @@ class LocalLipschitzEstimate(Metric):
             warn_func.warn_noise_zero(noise=self.perturb_std)
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        s_batch: Union[np.array, None] = None,
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            s_batch: Union[np.array, None] = None,
+            *args,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -196,7 +200,6 @@ class LocalLipschitzEstimate(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
-
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -360,14 +363,14 @@ class MaxSensitivity(Metric):
             warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        s_batch: Union[np.array, None] = None,
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            s_batch: Union[np.array, None] = None,
+            *args,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -442,7 +445,6 @@ class MaxSensitivity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
-
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -609,14 +611,14 @@ class AvgSensitivity(Metric):
             warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        s_batch: Union[np.array, None] = None,
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            s_batch: Union[np.array, None] = None,
+            *args,
+            **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -691,7 +693,6 @@ class AvgSensitivity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
-
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -859,14 +860,14 @@ class Continuity(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        s_batch: Union[np.array, None] = None,
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            s_batch: Union[np.array, None] = None,
+            *args,
+            **kwargs,
     ) -> Dict[int, List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -941,7 +942,6 @@ class Continuity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
-
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -1028,7 +1028,7 @@ class Continuity(Metric):
                 ]
 
                 for ix_patch, top_left_coords in enumerate(
-                    itertools.product(*axis_iterators)
+                        itertools.product(*axis_iterators)
                 ):
 
                     # Create slice for patch.
@@ -1153,14 +1153,14 @@ class Consistency(Metric):
             )
 
     def __call__(
-        self,
-        model: ModelInterface,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Union[np.array, None],
-        s_batch: Union[np.array, None] = None,
-        *args,
-        **kwargs,
+            self,
+            model: ModelInterface,
+            x_batch: np.array,
+            y_batch: np.array,
+            a_batch: Union[np.array, None],
+            s_batch: Union[np.array, None] = None,
+            *args,
+            **kwargs,
     ) -> Dict[int, List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1212,7 +1212,6 @@ class Consistency(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
-
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -1264,102 +1263,129 @@ class Consistency(Metric):
 
         return self.last_results
 
-    class RelativeRepresentationStability(Metric):
 
-        def __call__(self,
-                     model,
-                     x_batch: np.ndarray,
-                     y_batch: Union[np.ndarray, int],
-                     a_batch: Union[np.ndarray, None],
-                     s_batch: Union[np.ndarray, None],
-                     *args,
-                     **kwargs
-                     ) -> Union[int, float, list, dict, None]:
-            pass
+def _ris_1_term(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, eps_min) -> float:
+    """
+    ..math::
+        \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{x - x'}{x}||_p, \epsilon_{min})}
 
-    class RelativeInputStability(Metric):
+    The numerator of the metric measures the `p norm of the percent change of explanation ex' on the perturbed
+    instance x'  with respect to the explanation ex on the original point x,
+    the denominator measures the `p norm between (normalized) inputs x and x'
+    and the max term prevents division by zero in cases when norm || (x−x')/x ||_p is less than
+    some small epsilon_min>0
 
-        def __call__(self,
-                     model: ModelInterface,
-                     x_batch: np.ndarray,
-                     y_batch: np.ndarray,
-                     a_batch: Union[np.ndarray, None],
-                     s_batch: Union[np.ndarray, None],
-                     *args,
-                     **kwargs
-                     ) -> Union[int, float, list, dict, None]:
-            pass
+    Parameters
+            x: an input image with
+            xs: a perturbed input image
+            e: explanation for x
+            es: explanation for xs
+            eps_min: prevents division by zero
 
-    class RelativeOutputStability(Metric):
+        Returns
+            float:
+    """
+    e += eps_min
+    x += eps_min
 
-        def __call__(self,
-                     model: ModelInterface,
-                     x_batch: np.ndarray,
-                     y_batch: Union[np.ndarray, int],
-                     a_batch: Union[np.ndarray, None],
-                     s_batch: Union[np.ndarray, None],
-                     *args,
-                     **kwargs
-                     ) -> Union[int, float, list, dict, None]:
-            """
-            Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+    nominator = (e - es) / e
+    nominator = jnp.linalg.norm(nominator)
 
-            Parameters:
-                model:
-                x_batch: batch data points used to generate original explanation
-                y_batch: batch of labels
-                a_batch: unused
-                s_batch:
-                args:
-                kwargs:
-                  explain_func: a Callable used to generate explanations
-                  xs_batch: batch of new data points
-                  ys_batch: batch of new labels corresponding to xs_batch
-            """
+    denominator = (x - xs) / x
+    denominator = jnp.linalg.norm(denominator)
 
-            explain_func: Callable = kwargs.get('explain_func')
-            if not explain_func:
-                raise TypeError('Must provide explain_func keyword argument')
-            asserts.assert_explain_func(explain_func=explain_func)
+    denominator = jnp.max(denominator, initial=eps_min)
 
-            xs_batch = kwargs.get('xs_batch')
-            if not xs_batch:
-                raise TypeError('Must provide xs_batch keyword argument')
+    return nominator / denominator
 
-            ys_batch = kwargs.get('ys_batch')
-            if not ys_batch:
-                raise TypeError('Must provide ys_batch keyword argument')
 
-            dim = x_batch[0].shape[0]  # FIXME
+ris_1_term = jax.vmap(_ris_1_term, in_axes=(0, 0, 0, 0, None), out_axes=0)
 
-            e_min = 0.00001  # just to prevent denominator from being 0
 
-            e_x = explain_func(
-                model=model.get_model(),
-                inputs=x_batch,
-                targets=y_batch,
-                **kwargs,
-            )
 
-            e_xs = explain_func(
-                model=model.get_model(),
-                inputs=xs_batch,
-                target=ys_batch,
-                **kwargs
-            )
+class RelativeInputStability(Metric):
 
-            nominator = np.linalg.norm(
-                (e_x - e_xs) / e_x,
-                ord=dim,
-                axis=0
-            )
 
-            denominator = np.linalg.norm(
-                (x_batch - xs_batch) / x_batch,
-                ord=dim,
-                axis=0
-            )
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
 
-            return np.max(
-                nominator / np.max(denominator, e_min, axis=0)
-            )
+    def __call__(self,
+                 x_batch: np.ndarray,
+                 xs_batch: np.ndarray,
+                 y_batch: np.ndarray,
+                 ys_batch: np.ndarray,
+                 eps_min=1e-9,
+                 *args,
+                 **kwargs,
+                 ) -> Union[int, float, list, dict, None]:
+        """
+                Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+                .. math::
+                    \begin{equation}
+                       RIS(x, x', e_x, e_{x'}) = max_{x'} ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
+                    \end{equation}
+
+                Parameters:
+                    model:
+                    x_batch: batch data points used to generate original explanation
+                    y_batch: batch of labels
+                    kwargs:
+                      explain_func: a Callable used to generate explanations
+                      e_min: a small constant to prevent denominator from being 0
+
+                """
+
+        explain_func: Callable = kwargs.get('explain_func')
+        asserts.assert_explain_func(explain_func)
+        kwargs.pop('explain_func')
+
+
+        e_x = explain_func(
+            model=self.model,
+            inputs=x_batch,
+            targets=y_batch,
+            **kwargs,
+        )
+
+
+        e_xs = explain_func(
+            model=self.model,
+            inputs=xs_batch,
+            targets=ys_batch,
+            **kwargs
+        )
+
+        # FIXME division by 0
+        e_x += eps_min
+        x_batch += eps_min
+
+        nominator = np.linalg.norm((e_x - e_xs) / e_x, axis=(1, 2))
+
+        denominator = np.linalg.norm((x_batch - xs_batch) / x_batch, axis=(1, 2)).reshape(-1)
+
+        denominator = np.asarray([eps_min if i == 0 else i for i in denominator])
+
+        indexes_of_same_labels = np.argwhere(y_batch == ys_batch).reshape(-1)
+
+        arr = list(nominator / denominator) + list(np.take(xs_batch, indexes_of_same_labels))
+
+        return np.max(arr)
+
+
+class RelativeRepresentationStability(Metric):
+
+    def __call__(self,
+                 *args,
+                 **kwargs
+                 ) -> Union[int, float, list, dict, None]:
+        pass
+
+
+class RelativeOutputStability(Metric):
+
+    def __call__(self,
+                 *args,
+                 **kwargs
+                 ) -> Union[int, float, list, dict, None]:
+        pass

@@ -24,8 +24,8 @@ AVAILABLE_METRICS = {
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
         "Relative Input Stability": RelativeInputStability,
-"Relative Representation Stability": RelativeRepresentationStability,
-        "Relative Output Stability": RelativeOutputStability
+        "Relative Representation Stability": RelativeRepresentationStability,
+        "Relative Output Stability": RelativeOutputStability,
         "Consistency": Consistency,
     },
     "Localisation": {
