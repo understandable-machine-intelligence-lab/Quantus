@@ -220,11 +220,9 @@ def assert_explain_func(explain_func: Callable) -> None:
 
 
 def assert_perturb_func(func):
-    assert callable(func), (
-        "Make sure 'perturb_func' is a Callable that takes x_batch, and **kwargs as arguments."
-    )
-
-
+    assert callable(
+        func
+    ), "Make sure 'perturb_func' is a Callable that takes x_batch, and **kwargs as arguments."
 
 
 def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):

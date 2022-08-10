@@ -119,14 +119,14 @@ class LocalLipschitzEstimate(Metric):
             warn_func.warn_noise_zero(noise=self.perturb_std)
 
     def __call__(
-            self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Union[np.array, None],
-            s_batch: Union[np.array, None] = None,
-            *args,
-            **kwargs,
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
+        *args,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -364,14 +364,14 @@ class MaxSensitivity(Metric):
             warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
-            self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Union[np.array, None],
-            s_batch: Union[np.array, None] = None,
-            *args,
-            **kwargs,
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
+        *args,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -612,14 +612,14 @@ class AvgSensitivity(Metric):
             warn_func.warn_noise_zero(noise=self.lower_bound)
 
     def __call__(
-            self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Union[np.array, None],
-            s_batch: Union[np.array, None] = None,
-            *args,
-            **kwargs,
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
+        *args,
+        **kwargs,
     ) -> List[float]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -861,14 +861,14 @@ class Continuity(Metric):
             )
 
     def __call__(
-            self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Union[np.array, None],
-            s_batch: Union[np.array, None] = None,
-            *args,
-            **kwargs,
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
+        *args,
+        **kwargs,
     ) -> Dict[int, List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1029,7 +1029,7 @@ class Continuity(Metric):
                 ]
 
                 for ix_patch, top_left_coords in enumerate(
-                        itertools.product(*axis_iterators)
+                    itertools.product(*axis_iterators)
                 ):
 
                     # Create slice for patch.
@@ -1154,14 +1154,14 @@ class Consistency(Metric):
             )
 
     def __call__(
-            self,
-            model: ModelInterface,
-            x_batch: np.array,
-            y_batch: np.array,
-            a_batch: Union[np.array, None],
-            s_batch: Union[np.array, None] = None,
-            *args,
-            **kwargs,
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        a_batch: Union[np.array, None],
+        s_batch: Union[np.array, None] = None,
+        *args,
+        **kwargs,
     ) -> Dict[int, List[float]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -1256,9 +1256,7 @@ class Consistency(Metric):
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(diff_a))
 
         if self.return_aggregate:
-            self.last_results = [
-                self.aggregate_func(self.last_results)
-            ]
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -1266,7 +1264,9 @@ class Consistency(Metric):
 
 
 @functools.partial(jax.vmap, in_axes=(0, 0, 0, 0, None))
-def ris_objective(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, eps_min) -> float:
+def ris_objective(
+    x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, eps_min
+) -> float:
     """
     ..math::
         \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{x - x'}{x}||_p, \epsilon_{min})}
@@ -1300,17 +1300,17 @@ ris_objective_vectorized = jax.vmap(ris_objective, in_axes=(None, 0, None, 0, No
 
 class RelativeInputStability(Metric):
 
-
     DEFAULT_EPS_MIN = 1e-6
     DEFAULT_NUM_PERTURBATIONS = 10
 
-    def __call__(self,
-                 model: ModelInterface,
-                 x_batch: np.array,
-                 y_batch: np.array,
-                 *args,
-                 **kwargs,
-                 ) -> Union[int, float, list, dict, None]:
+    def __call__(
+        self,
+        model: ModelInterface,
+        x_batch: np.array,
+        y_batch: np.array,
+        *args,
+        **kwargs,
+    ) -> Union[int, float, list, dict, None]:
         """
         Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
         ..math::
@@ -1341,17 +1341,20 @@ class RelativeInputStability(Metric):
          - Compute ris objective, find max value with regard to x'
         """
 
-
-        explain_func: Callable = kwargs.pop('explain_func')
+        explain_func: Callable = kwargs.pop("explain_func")
         asserts.assert_explain_func(explain_func)
 
-        perturb_function: Callable = kwargs.pop('perturb_func', perturb_func.random_noise)
+        perturb_function: Callable = kwargs.pop(
+            "perturb_func", perturb_func.random_noise
+        )
         asserts.assert_perturb_func(perturb_function)
 
-        eps_min = kwargs.pop('eps_min', self.DEFAULT_EPS_MIN)
+        eps_min = kwargs.pop("eps_min", self.DEFAULT_EPS_MIN)
         assert eps_min > 0, "'eps_min' must be > 0"
 
-        num_perturbations = kwargs.pop('num_perturbations', self.DEFAULT_NUM_PERTURBATIONS)
+        num_perturbations = kwargs.pop(
+            "num_perturbations", self.DEFAULT_NUM_PERTURBATIONS
+        )
         assert num_perturbations > 0, "'num_perturbations must be > 0'"
 
         xs_batch = []
@@ -1368,12 +1371,15 @@ class RelativeInputStability(Metric):
         # pull all new images into 0 axes
         xs_batch = np.asarray(xs_batch).reshape(-1, *x_batch.shape[1:])
         # drop images, which cause dims not to be divisible
-        xs_batch = xs_batch[:xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
+        xs_batch = xs_batch[: xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
         # make xs_batch have the same shape as x_batch, with new batching axis at 0
         xs_batch = xs_batch.reshape(-1, *x_batch.shape)
 
         # generate explanations
-        e_xs = [explain_func(model=model, inputs=i, targets=y_batch, **kwargs) for i in xs_batch]
+        e_xs = [
+            explain_func(model=model, inputs=i, targets=y_batch, **kwargs)
+            for i in xs_batch
+        ]
         e_xs = np.asarray(e_xs)
         e_x = explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
 
@@ -1381,22 +1387,11 @@ class RelativeInputStability(Metric):
         return jnp.max(ris, axis=0).to_py()
 
 
-
-
-
 class RelativeRepresentationStability(Metric):
-
-    def __call__(self,
-                 *args,
-                 **kwargs
-                 ) -> Union[int, float, list, dict, None]:
+    def __call__(self, *args, **kwargs) -> Union[int, float, list, dict, None]:
         pass
 
 
 class RelativeOutputStability(Metric):
-
-    def __call__(self,
-                 *args,
-                 **kwargs
-                 ) -> Union[int, float, list, dict, None]:
+    def __call__(self, *args, **kwargs) -> Union[int, float, list, dict, None]:
         pass

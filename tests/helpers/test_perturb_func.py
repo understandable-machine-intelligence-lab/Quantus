@@ -511,13 +511,8 @@ def test_no_perturbation(
 
 
 @pytest.mark.perturb_func
-@pytest.mark.parametrize(
-    "data",
-    [(lazy_fixture("load_mnist_images_tf"))]
-)
-def test_random_noise(
-    data: np.ndarray
-):
-    X = data['x_batch']
+@pytest.mark.parametrize("data", [(lazy_fixture("load_mnist_images_tf"))])
+def test_random_noise(data: np.ndarray):
+    X = data["x_batch"]
     out = random_noise(X)
     assert_perturbation_caused_change(X, out)

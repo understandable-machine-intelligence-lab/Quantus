@@ -47,7 +47,12 @@ EXTRAS = {
         "xmltodict",
         "xml",
     ],
-    "zennit": ["torch==1.10.1", "torchvision==0.11.2", "zennit==0.4.5", "captum==0.4.1"],
+    "zennit": [
+        "torch==1.10.1",
+        "torchvision==0.11.2",
+        "zennit==0.4.5",
+        "captum==0.4.1",
+    ],
 }
 
 # Define setup.
