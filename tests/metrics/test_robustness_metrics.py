@@ -695,28 +695,48 @@ def test_ris_objective(model: ModelInterface, data: np.ndarray, params):
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "Gradient"},
+            {
+                "method": "Gradient",
+                "explain_func": explain,
+                "return_aggregate": True,
+                "num_perturbations": 30,
+            },
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "IntegratedGradients"},
+            {
+                "method": "IntegratedGradients",
+                "explain_func": explain,
+                "return_aggregate": True,
+                "num_perturbations": 30,
+            },
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "InputXGradient"},
+            {
+                "method": "InputXGradient",
+                "explain_func": explain,
+                "return_aggregate": True,
+                "num_perturbations": 30,
+            },
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "Occlusion"},
+            {
+                "method": "Occlusion",
+                "explain_func": explain,
+                "return_aggregate": True,
+                "num_perturbations": 30,
+            },
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
         ),
@@ -730,14 +750,12 @@ def test_relative_input_stability(
         data["x_batch"],
         data["y_batch"],
     )
-    ris = RelativeInputStability()
+    ris = RelativeInputStability(explain_func=explain, num_perturbations=30, **params)
 
     result = ris(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
-        perturb_func=perturb_func.random_noise,
-        explain_func=explain,
         **params,
     )
 

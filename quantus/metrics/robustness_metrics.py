@@ -1301,7 +1301,40 @@ ris_objective_vectorized = jax.vmap(ris_objective, in_axes=(None, 0, None, 0, No
 class RelativeInputStability(Metric):
 
     DEFAULT_EPS_MIN = 1e-6
-    DEFAULT_NUM_PERTURBATIONS = 10
+    DEFAULT_NUM_PERTURBATIONS = 100
+
+    def __init__(self, *args, **kwargs):
+        """
+        Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+        Parameters:
+            kwargs:
+               perturb_func (optional): a Callable used to generate x' in the neighborhood of x, default: perturb_func.random_noise
+               explain_func: a Callable used to generate explanations
+               eps_min (optional): a small constant to prevent denominator from being 0, default 1e-6
+               num_perturbations(optional): number of times perturb_func should be executed, default 10
+        """
+
+        super().__init__(*args, **kwargs)
+
+        explain_func: Callable = kwargs.pop("explain_func")
+        asserts.assert_explain_func(explain_func)
+        self.explain_func = explain_func
+
+        perturb_function: Callable = kwargs.pop(
+            "perturb_func", perturb_func.random_noise
+        )
+        asserts.assert_perturb_func(perturb_function)
+        self.perturb_func = perturb_function
+
+        eps_min = kwargs.pop("eps_min", self.DEFAULT_EPS_MIN)
+        assert eps_min > 0, "'eps_min' must be > 0"
+        self.eps_min = eps_min
+
+        num_perturbations = kwargs.pop(
+            "num_perturbations", self.DEFAULT_NUM_PERTURBATIONS
+        )
+        assert num_perturbations > 0, "'num_perturbations must be > 0'"
+        self.num_perturb = num_perturbations
 
     def __call__(
         self,
@@ -1312,7 +1345,7 @@ class RelativeInputStability(Metric):
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
-        Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+
         ..math::
             RIS(x, x', e_x, e_{x'}) = max_{x'} ris_1_term(x, x', e_x, e_{x'}) ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
 
@@ -1325,14 +1358,7 @@ class RelativeInputStability(Metric):
             model:
             x_batch: batch data points
             y_batch: batch of labels for x_batch
-            kwargs:
-               perturb_func (optional): a Callable used to generate x'
-                   in the neighborhood of x, default: perturb_func.random_noise
-               explain_func: a Callable used to generate explanations
-               eps_min (optional): a small constant to prevent denominator from being 0, default 1e-6
-               num_perturbations(optional): number of times perturb_func should be executed, default 10
-
-               and other kwargs, which are passed to perturb_func, explain_func
+            kwargs: kwargs, which are passed to perturb_func, explain_func, normalize_func, aggregate_func
 
         For each image x:
          - generate N perturbed x' in the neighborhood of x
@@ -1341,26 +1367,9 @@ class RelativeInputStability(Metric):
          - Compute ris objective, find max value with regard to x'
         """
 
-        explain_func: Callable = kwargs.pop("explain_func")
-        asserts.assert_explain_func(explain_func)
-
-        perturb_function: Callable = kwargs.pop(
-            "perturb_func", perturb_func.random_noise
-        )
-        asserts.assert_perturb_func(perturb_function)
-
-        eps_min = kwargs.pop("eps_min", self.DEFAULT_EPS_MIN)
-        assert eps_min > 0, "'eps_min' must be > 0"
-
-        num_perturbations = kwargs.pop(
-            "num_perturbations", self.DEFAULT_NUM_PERTURBATIONS
-        )
-        assert num_perturbations > 0, "'num_perturbations must be > 0'"
-
         xs_batch = []
-
-        for _ in range(self.DEFAULT_NUM_PERTURBATIONS):
-            xs = perturb_function(x_batch, **kwargs)
+        for _ in range(self.num_perturb):
+            xs = self.perturb_func(x_batch, **kwargs)
             logits = model.predict(xs)
             labels = np.argmax(logits, axis=1)
 
@@ -1377,14 +1386,25 @@ class RelativeInputStability(Metric):
 
         # generate explanations
         e_xs = [
-            explain_func(model=model, inputs=i, targets=y_batch, **kwargs)
+            self.explain_func(model=model, inputs=i, targets=y_batch, **kwargs)
             for i in xs_batch
         ]
+        if self.normalise:
+            e_xs = [self.normalise_func(i, **kwargs) for i in e_xs]
         e_xs = np.asarray(e_xs)
-        e_x = explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
+        e_x = self.explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
+        if self.normalise:
+            e_x = self.normalise_func(e_x, **kwargs)
 
-        ris = ris_objective_vectorized(x_batch, xs_batch, e_x, e_xs, eps_min)
-        return jnp.max(ris, axis=0).to_py()
+        ris = ris_objective_vectorized(x_batch, xs_batch, e_x, e_xs, self.eps_min)
+        result = jnp.max(ris, axis=0).to_py()
+        if self.return_aggregate:
+            result = self.aggregate_func(result, **kwargs)
+
+        self.all_results.append(result)
+        self.last_results = [result]
+
+        return result
 
 
 class RelativeRepresentationStability(Metric):
