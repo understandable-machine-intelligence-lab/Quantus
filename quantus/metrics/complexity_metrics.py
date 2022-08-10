@@ -187,7 +187,7 @@ class Sparseness(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -390,7 +390,7 @@ class Complexity(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -586,7 +586,7 @@ class EffectiveComplexity(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:

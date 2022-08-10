@@ -24,6 +24,16 @@ def load_mnist_model():
     return model
 
 
+# @pytest.fixture(scope="session", autouse=True)
+# def load_cifar10_model():
+#    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
+#    model = LeNet(nr_channels=3)
+#    model.load_state_dict(
+#        torch.load("tutorials/assets/cifar10", map_location="cpu", pickle_module=pickle)
+#    )
+#    return model
+
+
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""

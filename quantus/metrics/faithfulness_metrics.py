@@ -214,7 +214,7 @@ class FaithfulnessCorrelation(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -448,7 +448,7 @@ class FaithfulnessEstimate(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -682,7 +682,7 @@ class IterativeRemovalOfFeatures(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a) in iterator:
@@ -718,9 +718,7 @@ class IterativeRemovalOfFeatures(Metric):
             for i_ix, s_ix in enumerate(s_indices):
 
                 # Perturb input by indices of attributions.
-                a_ix = np.nonzero(np.repeat((segments == s_ix).flatten(), nr_channels))[
-                    0
-                ]
+                a_ix = np.nonzero((segments == s_ix).flatten())[0]
 
                 x_perturbed = self.perturb_func(
                     arr=x,
@@ -933,7 +931,7 @@ class MonotonicityArya(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -1174,7 +1172,7 @@ class MonotonicityNguyen(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -1425,7 +1423,7 @@ class PixelFlipping(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -1674,7 +1672,7 @@ class RegionPerturbation(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for sample, (x, y, a) in iterator:
@@ -1974,7 +1972,7 @@ class Selectivity(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for sample, (x, y, a) in iterator:
@@ -2276,7 +2274,11 @@ class SensitivityN(Metric):
             input_shape=x_batch_s.shape[2:],
         )
 
-        max_features = int(0.8 * np.prod(x_batch_s.shape[2:]) // self.features_in_step)
+        max_features = int(
+            self.n_max_percentage
+            * np.prod(x_batch_s.shape[2:])
+            // self.features_in_step
+        )
 
         sub_results_pred_deltas = {k: [] for k in range(len(x_batch_s))}
         sub_results_att_sums = {k: [] for k in range(len(x_batch_s))}
@@ -2288,7 +2290,7 @@ class SensitivityN(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for sample, (x, y, a) in iterator:
@@ -2411,7 +2413,7 @@ class Infidelity(Metric):
             perturb_func (callable): input perturbation function, default=baseline_replacement_by_indices
             perturb_patch_sizes (list): Size of patches to be perturbed, default=[4]
             features_in_step (integer): the size of the step, default=1
-            max_steps_per_input (integer): the number of steps per input dimension, default=None
+
             n_perturb_samples (integer): the number of samples to be perturbed, default=10
 
         """
@@ -2433,8 +2435,6 @@ class Infidelity(Metric):
             "perturb_func", baseline_replacement_by_indices
         )
         self.perturb_patch_sizes = self.kwargs.get("perturb_patch_sizes", [4])
-        self.features_in_step = self.kwargs.get("features_in_step", 1)
-        self.max_steps_per_input = self.kwargs.get("max_steps_per_input", None)
         self.n_perturb_samples = self.kwargs.get("n_perturb_samples", 10)
 
         self.last_results = []
@@ -2517,8 +2517,7 @@ class Infidelity(Metric):
         else:
             channel_first = utils.infer_channel_first(x_batch)
         x_batch_s = utils.make_channel_first(x_batch, channel_first)
-
-        self.nr_channels = x_batch_s.shape[1]
+        nr_channels = x_batch_s.shape[1]
 
         # Wrap the model into an interface.
         if model:
@@ -2557,7 +2556,7 @@ class Infidelity(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -2628,14 +2627,16 @@ class Infidelity(Metric):
                                 )[:, y]
                             )
 
-                            x_diff = (x - x_perturbed).flatten()
-                            a_diff = np.dot(a.flatten(), x_diff)
+                            x_diff = x - x_perturbed
+                            a_diff = np.dot(
+                                np.repeat(a, repeats=nr_channels, axis=0), x_diff
+                            )
 
                             pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
                             a_sums[i_x][i_y] = np.sum(a_diff)
 
                     sub_sub_results.append(
-                        self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
+                        self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
                     )
 
                 sub_results.append(np.mean(sub_sub_results))
@@ -2712,7 +2713,7 @@ class ROAD(Metric):
                     "percentage of pixels k removed per iteration 'percentage_in_step'"
                 ),
                 citation=(
-                    "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective."
+                    "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective.' "
                     "arXiv:2202.00449 (2022)"
                 ),
             )
@@ -2805,7 +2806,6 @@ class ROAD(Metric):
                 model=model.get_model(), inputs=x_batch, targets=y_batch, **self.kwargs
             )
         a_batch = utils.expand_attribution_channel(a_batch, x_batch_s)
-        img_size = a_batch[0, :, :].size
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch_s, a_batch=a_batch)
@@ -2816,12 +2816,13 @@ class ROAD(Metric):
         else:
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
-                total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                total=len(x_batch_s),  # *len(self.percentages),
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
-        self.last_results = {str(k): 0 for k in self.percentages}
+        self.last_results = []
         self.all_results = []
+        accuraies = {p: [] for p in self.percentages}
 
         for sample, (x, y, a) in iterator:
 
@@ -2836,7 +2837,7 @@ class ROAD(Metric):
 
             for p in self.percentages:
 
-                top_k_indices = ordered_indices[: int(img_size * p / 100)]
+                top_k_indices = ordered_indices[: int(x.size * (p / 100))]
 
                 x_perturbed = self.perturb_func(
                     arr=x,
@@ -2848,15 +2849,16 @@ class ROAD(Metric):
 
                 # Predict on perturbed input x and store the difference from predicting on unperturbed input.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-                class_pred_perturb = np.argmax(
+
+                y_pred_label = np.argmax(
                     model.predict(x_input, softmax_act=True, **self.kwargs)
                 )
 
-                self.last_results[str(p)] += y == class_pred_perturb
+                # Calculate accuracy for every number of most important pixels removed.
+                accuraies[p].append(float(y == y_pred_label))
 
-        # Calculate accuracy for every number of most important pixels removed.
-        for k in self.last_results:
-            self.last_results[k] = self.last_results[k] / len(x_batch_s)
+        for p in self.percentages:
+            self.last_results.append(np.mean(accuraies[p]))
 
         if self.return_aggregate:
             print(
@@ -2918,7 +2920,7 @@ class Sufficiency(Metric):
         self.disable_warnings = self.kwargs.get("disable_warnings", False)
         self.display_progressbar = self.kwargs.get("display_progressbar", False)
         self.return_aggregate = self.kwargs.get("return_aggregate", True)
-        self.aggregate_func = self.kwargs.get("aggregate_func", np.sum)
+        self.aggregate_func = self.kwargs.get("aggregate_func", np.mean)
         self.threshold = self.kwargs.get("threshold", 0.6)
         self.distance_func = self.kwargs.get("distance_func", "seuclidean")
 
@@ -2935,7 +2937,7 @@ class Sufficiency(Metric):
                 ),
                 citation=(
                     "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
-                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)."
+                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)"
                 ),
             )
 
@@ -3029,7 +3031,7 @@ class Sufficiency(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, a_sim_matrix)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, a_sim) in iterator:
@@ -3047,9 +3049,7 @@ class Sufficiency(Metric):
                 )
 
         if self.return_aggregate:
-            self.last_results = [
-                self.aggregate_func(self.last_results) / len(self.last_results)
-            ]
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 

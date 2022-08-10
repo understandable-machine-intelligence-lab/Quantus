@@ -1356,7 +1356,7 @@ def test_sensitivity_n(
     ), "Test failed."
 
 
-@pytest.mark.faithfulness
+@pytest.mark.infi
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1365,15 +1365,13 @@ def test_sensitivity_n(
             lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
-                "aggregate": False,
+                "return_aggregate": False,
                 "normalise": True,
                 "explain_func": explain,
                 "method": "Saliency",
                 "abs": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "features_in_step": 8,
-                "return_aggregate": True,
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1382,18 +1380,33 @@ def test_sensitivity_n(
             lazy_fixture("load_mnist_images"),
             {
                 "perturb_func": baseline_replacement_by_indices,
-                "aggregate": True,
-                "normalise": True,
+                "return_aggregate": True,
+                "normalise": False,
                 "explain_func": explain,
                 "method": "Saliency",
-                "abs": True,
+                "abs": False,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "features_in_step": 8,
-                "a_batch_generate": False,
             },
             {"min": -1.0, "max": 1.0},
         ),
+        # (
+        #    lazy_fixture("load_cifar10_model"),
+        #    lazy_fixture("load_cifar10_images"),
+        #    {
+        #        "perturb_func": baseline_replacement_by_indices,
+        #        "aggregate": True,
+        #        "normalise": True,
+        #        "explain_func": explain,
+        #        "method": "Saliency",
+        #        "abs": True,
+        #        "disable_warnings": False,
+        #        "display_progressbar": False,
+        #        "features_in_step": 8,
+        #        "a_batch_generate": False,
+        #    },
+        #    {"min": -1.0, "max": 1.0},
+        # ),
     ],
 )
 def test_infidelity(
@@ -1446,10 +1459,9 @@ def test_infidelity(
                 "abs": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "percentages": list(range(1, 100, 2)),
-                "img_size": 28 * 28,
+                "percentages": list(range(1, 100, 4)),
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": 0.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1463,11 +1475,10 @@ def test_infidelity(
                 "abs": True,
                 "disable_warnings": False,
                 "display_progressbar": False,
-                "percentages": list(range(1, 100, 2)),
+                "percentages": list(range(1, 100, 5)),
                 "a_batch_generate": False,
-                "img_size": 28 * 28,
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": 0.0, "max": 1.0},
         ),
     ],
 )
@@ -1494,6 +1505,7 @@ def test_ROAD(
         a_batch = data["a_batch"]
     else:
         a_batch = None
+
     scores = ROAD(**params)(
         model=model,
         x_batch=x_batch,
@@ -1502,11 +1514,8 @@ def test_ROAD(
         **params,
     )
 
-    max_ind = max(scores)
-    min_ind = min(scores)
-
-    assert (scores[min_ind] <= expected["max"]) & (
-        scores[max_ind] >= expected["min"]
+    assert all(s <= expected["max"] for s in scores) & (
+        all(s >= expected["min"] for s in scores)
     ), "Test failed."
 
 
