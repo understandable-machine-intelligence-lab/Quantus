@@ -196,7 +196,7 @@ class ModelParameterRandomisation(Metric):
             n_iterations = n_layers * len(a_batch)
             pbar = tqdm(
                 total=n_iterations,
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for layer_name, random_layer_model in model.get_random_layer_generator(
@@ -412,7 +412,7 @@ class RandomLogit(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a) in iterator:

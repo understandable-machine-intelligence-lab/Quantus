@@ -190,7 +190,7 @@ class PointingGame(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:
@@ -407,7 +407,7 @@ class AttributionLocalisation(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:
@@ -643,7 +643,7 @@ class TopKIntersection(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:
@@ -852,7 +852,7 @@ class RelevanceRankAccuracy(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:
@@ -1059,7 +1059,7 @@ class RelevanceMassAccuracy(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:
@@ -1257,7 +1257,7 @@ class AUC(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, s_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, s) in iterator:

@@ -218,7 +218,7 @@ class LocalLipschitzEstimate(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a) in iterator:
@@ -464,7 +464,7 @@ class MaxSensitivity(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a) in iterator:
@@ -713,7 +713,7 @@ class AvgSensitivity(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a) in iterator:
@@ -972,7 +972,7 @@ class Continuity(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         self.dx = np.prod(x_batch_s.shape[2:]) // self.nr_steps
@@ -1148,7 +1148,7 @@ class Consistency(Metric):
                 ),
                 citation=(
                     "Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. 'Framework for Evaluating Faithfulness of "
-                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)."
+                    "Explanations.' arXiv preprint arXiv:2202.00734 (2022)"
                 ),
             )
 
@@ -1240,7 +1240,7 @@ class Consistency(Metric):
             iterator = tqdm(
                 enumerate(zip(x_batch_s, y_batch, a_batch, a_labels)),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for ix, (x, y, a, a_label) in iterator:
@@ -1256,9 +1256,7 @@ class Consistency(Metric):
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(diff_a))
 
         if self.return_aggregate:
-            self.last_results = [
-                self.aggregate_func(self.last_results)
-            ]
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
