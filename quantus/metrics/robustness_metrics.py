@@ -1,12 +1,12 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
 import functools
 import itertools
-import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
-from functools import partial
 from tqdm import tqdm
+import jax
+import jax.numpy as jnp
 
 from .base import Metric
 from ..helpers import asserts
@@ -19,9 +19,6 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.discretise_func import top_n_sign
-
-import jax
-import jax.numpy as jnp
 
 
 class LocalLipschitzEstimate(Metric):

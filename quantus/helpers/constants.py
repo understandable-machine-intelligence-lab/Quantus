@@ -23,10 +23,10 @@ AVAILABLE_METRICS = {
         "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
+        "Consistency": Consistency,
         "Relative Input Stability": RelativeInputStability,
         "Relative Representation Stability": RelativeRepresentationStability,
         "Relative Output Stability": RelativeOutputStability,
-        "Consistency": Consistency,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
