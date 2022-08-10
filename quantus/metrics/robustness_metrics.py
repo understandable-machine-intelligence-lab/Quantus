@@ -1,10 +1,11 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
+import functools
 import itertools
 import warnings
 from typing import Callable, Dict, List, Union
 
 import numpy as np
-import scipy.spatial.distance
+from functools import partial
 from tqdm import tqdm
 
 from .base import Metric
@@ -1264,7 +1265,8 @@ class Consistency(Metric):
         return self.last_results
 
 
-def _ris_1_term(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, eps_min) -> float:
+@functools.partial(jax.vmap, in_axes=(0, 0, 0, 0, None))
+def ris_objective(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, eps_min) -> float:
     """
     ..math::
         \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{x - x'}{x}||_p, \epsilon_{min})}
@@ -1299,78 +1301,84 @@ def _ris_1_term(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, ep
     return nominator / denominator
 
 
-ris_1_term = jax.vmap(_ris_1_term, in_axes=(0, 0, 0, 0, None), out_axes=0)
+
+ris_objective_vectorized = jax.vmap(ris_objective, in_axes=(None, 0, None, 0, None))
 
 
 
 class RelativeInputStability(Metric):
 
 
-    def __init__(self, model):
-        super().__init__()
-        self.model = model
+    DEFAULT_EPS_MIN = 1e-6
+    NUM_PERTURBATIONS = 10
 
     def __call__(self,
-                 x_batch: np.ndarray,
-                 xs_batch: np.ndarray,
-                 y_batch: np.ndarray,
-                 ys_batch: np.ndarray,
-                 eps_min=1e-9,
+                 model: ModelInterface,
+                 x_batch: np.array,
+                 y_batch: np.array,
                  *args,
                  **kwargs,
                  ) -> Union[int, float, list, dict, None]:
         """
-                Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
-                .. math::
-                    \begin{equation}
-                       RIS(x, x', e_x, e_{x'}) = max_{x'} ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
-                    \end{equation}
+        Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+        ..math::
+            RIS(x, x', e_x, e_{x'}) = max_{x'} ris_1_term(x, x', e_x, e_{x'}) ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
 
-                Parameters:
-                    model:
-                    x_batch: batch data points used to generate original explanation
-                    y_batch: batch of labels
-                    kwargs:
-                      explain_func: a Callable used to generate explanations
-                      e_min: a small constant to prevent denominator from being 0
+        Parameters:
+            model:
+            x_batch: batch data points
+            y_batch: batch of labels for x_batch
+            kwargs:
+               xs_batch: batch of perturbed data points
+               ys_batch: batch of labels for xs_batch
+               explain_func: a Callable used to generate explanations
+               e_min (optional): a small constant to prevent denominator from being 0
 
-                """
+        For each image, x generate N perturbed x' in neighborhood of x
+        Find x' which result in same label
+        Compute explanations e_x and e_x'
+        Compute ris objective, find max value
+        Vectorizzation/Batching is handled by jax
+        """
 
-        explain_func: Callable = kwargs.get('explain_func')
+
+        explain_func: Callable = kwargs.pop('explain_func')
         asserts.assert_explain_func(explain_func)
-        kwargs.pop('explain_func')
+
+        perturb_function: Callable = kwargs.get('perturb_func', perturb_func.random_noise)
+
+        eps_min = kwargs.pop('eps_min', self.DEFAULT_EPS_MIN)
+
+        xs_batch = []
+        for _ in range(self.NUM_PERTURBATIONS):
+            xs = perturb_function(x_batch)
+            logits = model.predict(xs)
+            labels = np.argmax(logits, axis=1)
+            same_label_indexes = np.argwhere(labels == y_batch)
+            xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
+            xs_batch.append(xs)
 
 
-        e_x = explain_func(
-            model=self.model,
-            inputs=x_batch,
-            targets=y_batch,
-            **kwargs,
-        )
+        e_x = explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
+
+        # pull all new images into 0 axis
+        xs_batch = np.asarray(xs_batch).reshape(-1, *x_batch.shape[1:])
+        # drop images, which cause dims not to be divisible
+        xs_batch = xs_batch[:xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]\
+        # make xs_batch have same shape a x_batch + new batching axis a 0
+        xs_batch = xs_batch.reshape(-1, *x_batch.shape)
+
+        e_xs = [explain_func(model=model, inputs=i, targets=y_batch, **kwargs) for i in xs_batch]
+
+        xs_batch = np.asarray(xs_batch)
+        e_xs = np.asarray(e_xs)
+
+        ris = ris_objective_vectorized(x_batch, xs_batch, e_x, e_xs, eps_min)
+
+        return jnp.max(ris, axis=0).to_py()
 
 
-        e_xs = explain_func(
-            model=self.model,
-            inputs=xs_batch,
-            targets=ys_batch,
-            **kwargs
-        )
 
-        # FIXME division by 0
-        e_x += eps_min
-        x_batch += eps_min
-
-        nominator = np.linalg.norm((e_x - e_xs) / e_x, axis=(1, 2))
-
-        denominator = np.linalg.norm((x_batch - xs_batch) / x_batch, axis=(1, 2)).reshape(-1)
-
-        denominator = np.asarray([eps_min if i == 0 else i for i in denominator])
-
-        indexes_of_same_labels = np.argwhere(y_batch == ys_batch).reshape(-1)
-
-        arr = list(nominator / denominator) + list(np.take(xs_batch, indexes_of_same_labels))
-
-        return np.max(arr)
 
 
 class RelativeRepresentationStability(Metric):

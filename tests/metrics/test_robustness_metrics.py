@@ -1,6 +1,7 @@
 from typing import Union
 
 import numpy as np
+import optax
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -8,7 +9,7 @@ from ..fixtures import *
 from ...quantus.metrics import *
 from ...quantus.helpers import *
 from ...quantus.helpers.explanation_func import explain
-from quantus.metrics.robustness_metrics import ris_1_term
+from quantus.metrics.robustness_metrics import ris_objective
 
 
 @pytest.mark.robustness
@@ -667,7 +668,7 @@ def test_consistency(
         )
     ]
 )
-def test_ris_1_term(
+def test_ris_objective(
         model: ModelInterface,
         data: np.ndarray,
         params
@@ -684,10 +685,47 @@ def test_ris_1_term(
     ex = explain(model, x_batch, y_batch, **params)
     exs = explain(model, xs_batch, ys_batch, **params)
 
-    result = ris_1_term(x_batch, xs_batch, ex, exs, 1e-5)
+    result = ris_objective(x_batch, xs_batch, ex, exs, 1e-5)
     result = result.to_py()
+    print(f'{result = }')
 
     assert (result != np.nan).all(), "Test failed."
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "model,data,params",
+    [
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "Gradient"}
+        )
+    ]
+)
+def test_ris(
+        model: ModelInterface,
+        data: np.ndarray,
+        params
+):
+
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+    ris = RelativeInputStability()
+
+    result = ris(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        perturb_func=perturb_func.random_noise,
+        explain_func=explain,
+        **params
+    )
+
+    print(f'{result = }')
+
 
 
 def test_relative_output_stability():

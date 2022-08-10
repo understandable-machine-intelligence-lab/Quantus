@@ -389,3 +389,9 @@ def noisy_linear_imputation(
 def no_perturbation(arr: np.array, **kwargs) -> np.array:
     """Apply no perturbation to input."""
     return arr
+
+
+def random_noise(arr: Union[np.ndarray, jnp.ndarray], upper_bound=1e-6) -> np.ndarray:
+    noise = np.random.random(arr.shape)
+    noise *= upper_bound
+    return arr + noise

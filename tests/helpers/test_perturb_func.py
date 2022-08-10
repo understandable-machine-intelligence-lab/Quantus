@@ -508,3 +508,17 @@ def test_no_perturbation(
 ):
     out = no_perturbation(arr=data, **params)
     assert (out == data).all() == expected, "Test failed."
+
+
+@pytest.mark.perturb_func
+@pytest.mark.parametrize(
+    "data",
+    [(lazy_fixture("load_mnist_images_tf"))]
+)
+def test_random_noise(
+    data: np.ndarray
+):
+    X = data['x_batch']
+    out = random_noise(X)
+    assert (out != X).all(), "Test failed."
+    assert np.allclose(X, out, atol=1e-5), "Test failed."
