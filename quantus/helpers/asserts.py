@@ -219,6 +219,14 @@ def assert_explain_func(explain_func: Callable) -> None:
     )
 
 
+def assert_perturb_func(func):
+    assert callable(func), (
+        "Make sure 'perturb_func' is a Callable that takes x_batch, and **kwargs as arguments."
+    )
+
+
+
+
 def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):
     """Checks if value is smaller than input size.
     Assumes batch and channel first dimension

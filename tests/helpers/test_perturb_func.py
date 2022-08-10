@@ -520,5 +520,4 @@ def test_random_noise(
 ):
     X = data['x_batch']
     out = random_noise(X)
-    assert (out != X).all(), "Test failed."
-    assert np.allclose(X, out, atol=1e-5), "Test failed."
+    assert_perturbation_caused_change(X, out)

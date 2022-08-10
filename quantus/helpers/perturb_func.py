@@ -391,7 +391,7 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
     return arr
 
 
-def random_noise(arr: Union[np.ndarray, jnp.ndarray], upper_bound=1e-6) -> np.ndarray:
+def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
     noise = np.random.random(arr.shape)
     noise *= upper_bound
     return arr + noise

@@ -1271,12 +1271,6 @@ def ris_objective(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, 
     ..math::
         \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{x - x'}{x}||_p, \epsilon_{min})}
 
-    The numerator of the metric measures the `p norm of the percent change of explanation ex' on the perturbed
-    instance x'  with respect to the explanation ex on the original point x,
-    the denominator measures the `p norm between (normalized) inputs x and x'
-    and the max term prevents division by zero in cases when norm || (x−x')/x ||_p is less than
-    some small epsilon_min>0
-
     Parameters
             x: an input image with
             xs: a perturbed input image
@@ -1287,6 +1281,7 @@ def ris_objective(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, 
         Returns
             float:
     """
+    # Prevents division by 0
     e += eps_min
     x += eps_min
 
@@ -1295,22 +1290,19 @@ def ris_objective(x: np.ndarray, xs: np.ndarray, e: np.ndarray, es: np.ndarray, 
 
     denominator = (x - xs) / x
     denominator = jnp.linalg.norm(denominator)
-
     denominator = jnp.max(denominator, initial=eps_min)
 
     return nominator / denominator
 
 
-
 ris_objective_vectorized = jax.vmap(ris_objective, in_axes=(None, 0, None, 0, None))
-
 
 
 class RelativeInputStability(Metric):
 
 
     DEFAULT_EPS_MIN = 1e-6
-    NUM_PERTURBATIONS = 10
+    DEFAULT_NUM_PERTURBATIONS = 10
 
     def __call__(self,
                  model: ModelInterface,
@@ -1324,57 +1316,68 @@ class RelativeInputStability(Metric):
         ..math::
             RIS(x, x', e_x, e_{x'}) = max_{x'} ris_1_term(x, x', e_x, e_{x'}) ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
 
+        The numerator of the metric measures the `p norm of the percent change of explanation ex' on the perturbed
+        instance x'  with respect to the explanation ex on the original point x,
+        the denominator measures the `p norm between (normalized) inputs x and x'
+        and the max term prevents division by zero in cases when norm || (x−x')/x ||_p is less than
+        some small epsilon_min>0
         Parameters:
             model:
             x_batch: batch data points
             y_batch: batch of labels for x_batch
             kwargs:
-               xs_batch: batch of perturbed data points
-               ys_batch: batch of labels for xs_batch
+               perturb_func (optional): a Callable used to generate x'
+                   in the neighborhood of x, default: perturb_func.random_noise
                explain_func: a Callable used to generate explanations
-               e_min (optional): a small constant to prevent denominator from being 0
+               eps_min (optional): a small constant to prevent denominator from being 0, default 1e-6
+               num_perturbations(optional): number of times perturb_func should be executed, default 10
 
-        For each image, x generate N perturbed x' in neighborhood of x
-        Find x' which result in same label
-        Compute explanations e_x and e_x'
-        Compute ris objective, find max value
-        Vectorizzation/Batching is handled by jax
+               and other kwargs, which are passed to perturb_func, explain_func
+
+        For each image x:
+         - generate N perturbed x' in the neighborhood of x
+         - find x' which results in the same label
+         - Compute explanations e_x and e_x'
+         - Compute ris objective, find max value with regard to x'
         """
 
 
         explain_func: Callable = kwargs.pop('explain_func')
         asserts.assert_explain_func(explain_func)
 
-        perturb_function: Callable = kwargs.get('perturb_func', perturb_func.random_noise)
+        perturb_function: Callable = kwargs.pop('perturb_func', perturb_func.random_noise)
+        asserts.assert_perturb_func(perturb_function)
 
         eps_min = kwargs.pop('eps_min', self.DEFAULT_EPS_MIN)
+        assert eps_min > 0, "'eps_min' must be > 0"
+
+        num_perturbations = kwargs.pop('num_perturbations', self.DEFAULT_NUM_PERTURBATIONS)
+        assert num_perturbations > 0, "'num_perturbations must be > 0'"
 
         xs_batch = []
-        for _ in range(self.NUM_PERTURBATIONS):
-            xs = perturb_function(x_batch)
+
+        for _ in range(self.DEFAULT_NUM_PERTURBATIONS):
+            xs = perturb_function(x_batch, **kwargs)
             logits = model.predict(xs)
             labels = np.argmax(logits, axis=1)
+
             same_label_indexes = np.argwhere(labels == y_batch)
             xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
             xs_batch.append(xs)
 
-
-        e_x = explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
-
-        # pull all new images into 0 axis
+        # pull all new images into 0 axes
         xs_batch = np.asarray(xs_batch).reshape(-1, *x_batch.shape[1:])
         # drop images, which cause dims not to be divisible
-        xs_batch = xs_batch[:xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]\
-        # make xs_batch have same shape a x_batch + new batching axis a 0
+        xs_batch = xs_batch[:xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
+        # make xs_batch have the same shape as x_batch, with new batching axis at 0
         xs_batch = xs_batch.reshape(-1, *x_batch.shape)
 
+        # generate explanations
         e_xs = [explain_func(model=model, inputs=i, targets=y_batch, **kwargs) for i in xs_batch]
-
-        xs_batch = np.asarray(xs_batch)
         e_xs = np.asarray(e_xs)
+        e_x = explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
 
         ris = ris_objective_vectorized(x_batch, xs_batch, e_x, e_xs, eps_min)
-
         return jnp.max(ris, axis=0).to_py()
 
 

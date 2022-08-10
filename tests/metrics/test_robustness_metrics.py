@@ -694,19 +694,44 @@ def test_ris_objective(
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "model,data,params",
+    "model,data,params,expected",
     [
         (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
-            {"method": "Gradient"}
-        )
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {"method": "Gradient"},
+                # The results from original paper were in these bounds
+                {"min": 0, "max": 15}
+        ),
+        (
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {"method": "IntegratedGradients"},
+                # The results from original paper were in these bounds
+                {"min": 0, "max": 15}
+        ),
+        (
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {"method": "InputXGradient"},
+                # The results from original paper were in these bounds
+                {"min": 0, "max": 15}
+        ),
+        (
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {"method": "Occlusion"},
+                # The results from original paper were in these bounds
+                {"min": 0, "max": 15}
+        ),
+
     ]
 )
-def test_ris(
+def test_relative_input_stability(
         model: ModelInterface,
         data: np.ndarray,
-        params
+        params,
+        expected
 ):
 
     x_batch, y_batch = (
@@ -725,6 +750,9 @@ def test_ris(
     )
 
     print(f'{result = }')
+    assert (result >= expected["min"]).all(), "Test failed."
+    assert (result <= expected["max"]).all(), "Test failed."
+
 
 
 
