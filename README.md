@@ -20,6 +20,45 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 [📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
 
+## News and Highlights! :rocket:	
+
+- Latest release: [v0.1.5](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.1.5)!
+- Offers more than **30+ metrics in 6 categories** for XAI evaluation
+- Supports different data types: image and time-series (NLP next up!)
+- Flexible API: evaluate any PyTorch or Tensorflow model with your own customised explanation function(s)
+- Different tutorials covering different datasets, models and explanation functions
+- Latest metrics additions:
+    - <b>Infidelity </b><a href="https://arxiv.org/abs/1901.09392">(Chih-Kuan, Yeh, et al., 2019)</a>
+    - <b>ROAD </b><a href="https://arxiv.org/abs/2202.00449">(Rong, Leemann, et al., 2022)</a>
+    - <b>Focus </b><a href="https://arxiv.org/abs/2109.15035">(Arias et al., 2022)</a>
+    - <b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
+    - <b>Sufficiency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
+
+## Citation
+
+If you find this toolkit or its companion paper
+[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
+interesting or useful in your research, use following Bibtex annotation to cite us:
+
+```bibtex
+@article{hedstrom2022quantus,
+      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
+      author={Anna Hedström and
+              Leander Weber and
+              Dilyara Bareeva and
+              Franz Motzkus and
+              Wojciech Samek and
+              Sebastian Lapuschkin and
+              Marina M.-C. Höhne},
+      year={2022},
+      eprint={2202.06861},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+
+When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 
+
 ## Table of contents
 
 * [Library overview](#library-overview)
@@ -88,6 +127,7 @@ tests if the explainable evidence is centered around a region of interest (RoI) 
     <li><b>Relevance Rank Accuracy </b><a href="https://arxiv.org/abs/2003.07258">(Arras et al., 2021)</a>: measures the ratio of highly attributed pixels within a ground-truth mask towards the size of the ground truth mask
     <li><b>Relevance Mass Accuracy </b><a href="https://arxiv.org/abs/2003.07258">(Arras et al., 2021)</a>: measures the ratio of positively attributed attributions inside the ground-truth mask towards the overall positive attributions
     <li><b>AUC </b><a href="https://doi.org/10.1016/j.patrec.2005.10.010">(Fawcett et al., 2006)</a>: compares the ranking between attributions and a given ground-truth mask
+    <li><b>Focus </b><a href="https://arxiv.org/abs/2109.15035">(Arias et al., 2022)</a>: quantifies the precision of the explanation by creating mosaics of data instances from different classes
 </ul>
 </details>
 
@@ -378,28 +418,3 @@ Before creating a PR, double-check that the following tasks are completed:
 - [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
 - [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
 
-
-## Citation
-
-If you find this toolkit or its companion paper
-[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
-interesting or useful in your research, use following Bibtex annotation to cite us:
-
-```bibtex
-@article{hedstrom2022quantus,
-      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
-      author={Anna Hedström and
-              Leander Weber and
-              Dilyara Bareeva and
-              Franz Motzkus and
-              Wojciech Samek and
-              Sebastian Lapuschkin and
-              Marina M.-C. Höhne},
-      year={2022},
-      eprint={2202.06861},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
-```
-
-When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 
