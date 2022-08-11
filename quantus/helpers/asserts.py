@@ -262,3 +262,8 @@ def assert_is_model_interface(model):
     assert isinstance(
         model, ModelInterface
     ), "Must wrapr your model in quantus.ModelInterface"
+
+
+def assert_model_outputs_logits(model: ModelInterface):
+    assert model.outputs_logits(), 'Model must output logits, encoding probability distribution'
+

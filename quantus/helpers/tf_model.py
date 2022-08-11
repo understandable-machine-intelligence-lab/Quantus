@@ -93,3 +93,19 @@ class TensorFlowModel(ModelInterface):
             np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
+
+    def get_hidden_layers_outputs(self, x):
+        hidden_out = []
+        out = x
+        for layer in self.model.layers[:-1]:
+            out = layer(out)
+            hidden_out.append(out)
+        return hidden_out
+
+
+
+
+
+
+
+

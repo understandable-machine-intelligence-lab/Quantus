@@ -43,3 +43,7 @@ class ModelInterface(ABC):
         Set order to independent for independent randomization.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def get_hidden_layers_outputs(self, x):
+        raise NotImplementedError()

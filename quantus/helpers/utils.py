@@ -185,7 +185,7 @@ def infer_channel_first(x: np.array):
 def move_channel_axis_batch(x_batch, **kwargs):
     # TODO replace duplicates with call to this function
     # Reshape input batch to channel first order.
-    channel_first = kwargs.pop("channel_first", False)
+    channel_first = kwargs.get("channel_first", False)
     is_channel_first = infer_channel_first(x_batch)
     x_batch = (
         make_channel_first(x_batch, is_channel_first)
