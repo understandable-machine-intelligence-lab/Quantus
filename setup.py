@@ -47,7 +47,12 @@ EXTRAS = {
         "xmltodict",
         "xml",
     ],
-    "zennit": ["torch==1.10.1", "torchvision==0.11.2", "zennit==0.4.5", "captum==0.4.1"],
+    "zennit": [
+        "torch==1.10.1",
+        "torchvision==0.11.2",
+        "zennit==0.4.5",
+        "captum==0.4.1",
+    ],
 }
 
 # Define setup.
@@ -60,8 +65,8 @@ setup(
     install_requires=[
         "coverage==6.2",
         "flake8==4.0.1",
-        "matplotlib==3.3.4",
-        "numpy==1.19.5",
+        "matplotlib>=3.3.4",
+        "numpy>=1.19.5",
         "opencv-python==4.5.5.62",
         "protobuf~=3.19.0",
         "pytest==6.2.5",

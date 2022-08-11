@@ -182,6 +182,19 @@ def infer_channel_first(x: np.array):
         )
 
 
+def move_channel_axis_batch(x_batch, **kwargs):
+    # TODO replace duplicates with call to this function
+    # Reshape input batch to channel first order.
+    channel_first = kwargs.pop("channel_first", False)
+    is_channel_first = infer_channel_first(x_batch)
+    x_batch = (
+        make_channel_first(x_batch, is_channel_first)
+        if channel_first
+        else make_channel_last(x_batch, is_channel_first)
+    )
+    return x_batch, channel_first
+
+
 def make_channel_first(x: np.array, channel_first=False):
     """
     Reshape batch to channel first.
@@ -219,7 +232,7 @@ def make_channel_last(x: np.array, channel_first=True):
         )
 
 
-def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
+def get_wrapped_model(model, channel_first: bool) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
@@ -229,6 +242,8 @@ def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterf
     Returns
         A wrapped ModelInterface model.
     """
+    if isinstance(model, ModelInterface):
+        return model
     if isinstance(model, tf.keras.Model):
         return TensorFlowModel(model, channel_first)
     if isinstance(model, torch.nn.modules.module.Module):

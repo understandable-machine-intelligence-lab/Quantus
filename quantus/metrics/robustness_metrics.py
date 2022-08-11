@@ -1344,7 +1344,7 @@ class RelativeInputStability(Metric):
         """
 
         ..math::
-            RIS(x, x', e_x, e_{x'}) = max_{x'} ris_1_term(x, x', e_x, e_{x'}) ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
+            RIS(x, x', e_x, e_{x'}) = max_{x'} ris_objective(x, x', e_x, e_{x'}) ,\forall x' s.t. x' \in N_x; \hat{y_x} = \hat{y_x'}
 
         The numerator of the metric measures the `p norm of the percent change of explanation ex' on the perturbed
         instance x'  with respect to the explanation ex on the original point x,
@@ -1355,7 +1355,7 @@ class RelativeInputStability(Metric):
             model:
             x_batch: batch data points
             y_batch: batch of labels for x_batch
-            kwargs: kwargs, which are passed to perturb_func, explain_func, normalize_func, aggregate_func
+            kwargs: kwargs, which are passed to perturb_func, explain_func
 
         For each image x:
          - generate N perturbed x' in the neighborhood of x
@@ -1364,8 +1364,17 @@ class RelativeInputStability(Metric):
          - Compute ris objective, find max value with regard to x'
         """
 
+        # Reshape input batch to channel first order, if needed
+        x_batch, channel_first = utils.move_channel_axis_batch(x_batch, **kwargs)
+        model = utils.get_wrapped_model(model, channel_first)
+
         xs_batch = []
-        for _ in range(self.num_perturb):
+
+        it = range(self.num_perturb)
+        if self.display_progressbar:
+            it = tqdm(it, desc="Collecting perturbation for RIS")
+
+        for _ in it:
             xs = self.perturb_func(x_batch, **kwargs)
             logits = model.predict(xs)
             labels = np.argmax(logits, axis=1)
@@ -1383,20 +1392,28 @@ class RelativeInputStability(Metric):
 
         # generate explanations
         e_xs = [
-            self.explain_func(model=model, inputs=i, targets=y_batch, **kwargs)
+            self.explain_func(
+                model=model.get_model(), inputs=i, targets=y_batch, **kwargs
+            )
             for i in xs_batch
         ]
-        if self.normalise:
-            e_xs = [self.normalise_func(i, **kwargs) for i in e_xs]
+        e_x = self.explain_func(
+            model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs
+        )
         e_xs = np.asarray(e_xs)
-        e_x = self.explain_func(model=model, inputs=x_batch, targets=y_batch, **kwargs)
+
         if self.normalise:
-            e_x = self.normalise_func(e_x, **kwargs)
+            e_xs = self.normalise_func(e_xs)
+            e_x = self.normalise_func(e_x)
+
+        if self.abs:
+            e_xs = np.abs(e_xs)
+            e_x = np.abs(e_x)
 
         ris = ris_objective_vectorized(x_batch, xs_batch, e_x, e_xs, self.eps_min)
         result = jnp.max(ris, axis=0).to_py()
         if self.return_aggregate:
-            result = self.aggregate_func(result, **kwargs)
+            result = self.aggregate_func(result)
 
         self.all_results.append(result)
         self.last_results = [result]

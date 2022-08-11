@@ -694,6 +694,7 @@ def test_ris_objective(model: ModelInterface, data: np.ndarray, params):
                 "explain_func": explain,
                 "return_aggregate": True,
                 "num_perturbations": 30,
+                "display_progressbar": True,
             },
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
@@ -734,6 +735,20 @@ def test_ris_objective(model: ModelInterface, data: np.ndarray, params):
             # The results from original paper were in these bounds
             {"min": 0, "max": 15},
         ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "method": "Gradient",
+                "explain_func": explain,
+                "return_aggregate": True,
+                "num_perturbations": 30,
+                "normalise": True,
+                "abs": True,
+            },
+            # The results from original paper were in these bounds
+            {"min": 0, "max": 15},
+        ),
     ],
 )
 def test_relative_input_stability(
@@ -744,7 +759,7 @@ def test_relative_input_stability(
         data["x_batch"],
         data["y_batch"],
     )
-    ris = RelativeInputStability(explain_func=explain, num_perturbations=30, **params)
+    ris = RelativeInputStability(**params)
 
     result = ris(
         model=model,
