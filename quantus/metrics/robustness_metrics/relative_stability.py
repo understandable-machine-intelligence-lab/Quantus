@@ -285,7 +285,7 @@ class RelativeOutputStability(RelativeStability):
 
     def _compute_objective(self, x, xs, e, es) -> np.ndarray:
         hx = self.model.predict(x)
-        hxs = self.model.predict(xs)
+        hxs = [self.model.predict(i) for i in xs]
         result = relative_stability_objective_vectorized_over_perturbation_axis(
             jnp.asarray(hx),
             jnp.asarray(hxs),
