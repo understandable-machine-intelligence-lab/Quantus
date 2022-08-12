@@ -157,3 +157,25 @@ if util.find_spec("tensorflow"):
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
+
+    def cnn_2d_3channels_tf(img_height, img_width, num_classes) -> tf.keras.Model:
+        model = tf.keras.Sequential([
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
+            tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
+            tf.keras.layers.MaxPooling2D(),
+            tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
+            tf.keras.layers.MaxPooling2D(),
+            tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu'),
+            tf.keras.layers.MaxPooling2D(),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dense(num_classes)
+        ])
+
+        model.compile(optimizer='adam',
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'],
+                      jit_compile=True
+                      )
+
+        return model

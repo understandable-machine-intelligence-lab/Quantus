@@ -1,4 +1,3 @@
-import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
@@ -253,8 +252,8 @@ def test_precomputed_explanations(model, data, params):
             },
         ),
         (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
+            lazy_fixture("load_cnn_2d_3channels_tf"),
+            lazy_fixture("load_cifar10_images"),
             {
                 "explain_func": quantus.explain,
                 "method": "Occlusion",
@@ -262,12 +261,13 @@ def test_precomputed_explanations(model, data, params):
             },
         ),
         (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
+            lazy_fixture("load_cnn_2d_3channels_tf"),
+            lazy_fixture("load_cifar10_images"),
             {
                 "explain_func": quantus.explain,
                 "method": "GradCam",
                 "num_perturbations": 10,
+                "gc_layer": "conv2d_2",
             },
         ),
     ],
@@ -276,11 +276,10 @@ def test_precomputed_explanations(model, data, params):
         "method = IntegratedGradients",
         "method = InputXGradient",
         "method = Occlusion",
-        "method = GradCam"
+        "method = GradCam",
     ],
 )
 def test_compute_explanations(model, data, params):
-    print(f"{params['method'] = }")
     ris = quantus.RelativeInputStability(**params)
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)

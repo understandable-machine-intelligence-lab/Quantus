@@ -44,6 +44,5 @@ class ModelInterface(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def get_hidden_layers_outputs(self, x):
         raise NotImplementedError()
