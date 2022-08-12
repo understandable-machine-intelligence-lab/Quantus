@@ -11,7 +11,9 @@ if util.find_spec("torch"):
     class LeNet(torch.nn.Module):
         """Network architecture from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch."""
 
-        def __init__(self):
+        def __init__(
+            self,
+        ):
             super().__init__()
             self.conv_1 = torch.nn.Conv2d(1, 6, 5)
             self.pool_1 = torch.nn.MaxPool2d(2, 2)

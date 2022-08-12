@@ -203,7 +203,7 @@ class Completeness(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -213,8 +213,6 @@ class Completeness(Metric):
 
             if self.abs:
                 a = np.abs(a)
-
-            print(self.kwargs)
 
             x_baseline = self.perturb_func(
                 arr=x,
@@ -429,7 +427,7 @@ class NonSensitivity(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
@@ -651,7 +649,7 @@ class InputInvariance(Metric):
             iterator = tqdm(
                 zip(x_batch_s, y_batch, a_batch),
                 total=len(x_batch_s),
-                desc=f"Evaluation of {self.__class__.__name__} metric.",
+                desc=f"Evaluation of {self.__class__.__name__}",
             )
 
         for x, y, a in iterator:
