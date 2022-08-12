@@ -1,5 +1,0 @@
-pre_commit>=2.20.0
-black>=22.6.0
-black[jupyter]
-tensorflow_datasets>=4.6.0
-pandas>=1.4.3
