@@ -1,24 +1,21 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
-import functools
 import itertools
 from typing import Callable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
-import jax
-import jax.numpy as jnp
 
-from quantus.metrics.base import Metric
-from quantus.helpers import asserts
-from quantus.helpers import perturb_func
-from quantus.helpers import similar_func
-from quantus.helpers import utils
-from quantus.helpers import warn_func
-from quantus.helpers.asserts import attributes_check
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.norm_func import fro_norm
-from quantus.helpers.normalise_func import normalise_by_negative
-from quantus.helpers.discretise_func import top_n_sign
+from ..base import Metric
+from ...helpers import asserts
+from ...helpers import perturb_func
+from ...helpers import similar_func
+from ...helpers import utils
+from ...helpers import warn_func
+from ...helpers.asserts import attributes_check
+from ...helpers.model_interface import ModelInterface
+from ...helpers.norm_func import fro_norm
+from ...helpers.normalise_func import normalise_by_negative
+from ...helpers.discretise_func import top_n_sign
 
 
 class LocalLipschitzEstimate(Metric):
@@ -198,6 +195,7 @@ class LocalLipschitzEstimate(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
+
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -443,6 +441,7 @@ class MaxSensitivity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
+
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -691,6 +690,7 @@ class AvgSensitivity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
+
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -940,6 +940,7 @@ class Continuity(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
+
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -1210,6 +1211,7 @@ class Consistency(Metric):
         asserts.assert_explain_func(explain_func=explain_func)
 
         if a_batch is None:
+
             # Generate explanations.
             a_batch = explain_func(
                 model=model.get_model(),
@@ -1253,7 +1255,9 @@ class Consistency(Metric):
                 self.last_results.append(np.sum(pred_same_a == pred_a) / len(diff_a))
 
         if self.return_aggregate:
-            self.last_results = [self.aggregate_func(self.last_results)]
+            self.last_results = [
+                self.aggregate_func(self.last_results)
+            ]
 
         self.all_results.append(self.last_results)
 

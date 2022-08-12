@@ -260,23 +260,13 @@ def test_precomputed_explanations(model, data, params):
                 "method": "Occlusion",
                 "num_perturbations": 10,
             },
-        ),
-        (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
-            {
-                "explain_func": quantus.explain,
-                "method": "GradCam",
-                "num_perturbations": 10,
-            },
-        ),
+        )
     ],
     ids=[
         "method = Gradient",
         "method = IntegratedGradients",
         "method = InputXGradient",
         "method = Occlusion",
-        "method = GradCam",
     ],
 )
 def test_compute_explanations(model, data, params):

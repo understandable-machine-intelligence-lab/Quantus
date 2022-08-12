@@ -1,17 +1,15 @@
 import warnings
-from typing import Union, Dict
-
+from typing import Union, Dict, Callable, Tuple
 import numpy as np
 import jax.numpy as jnp
 import jax
 from abc import abstractmethod, ABC
 import functools
+from tqdm import tqdm
 
 from quantus.metrics.base import Metric
 from quantus.helpers import utils, perturb_func
-from typing import Callable, Tuple
 
-from tqdm import tqdm
 
 
 @functools.partial(jax.jit, static_argnums=(4, 5, 6))
@@ -239,8 +237,8 @@ class RelativeStability(Metric, ABC):
             as_batch = np.asarray([self.normalise_func(i) for i in as_batch])
 
         if self.abs:
-            a_batch = self.abs(a_batch)
-            as_batch = [self.abs(i) for i in as_batch]
+            a_batch = np.abs(a_batch)
+            as_batch = np.abs(as_batch)
 
         return a_batch, np.asarray(as_batch), kwargs
 

@@ -1,8 +1,6 @@
 import numpy as np
 from typing import Callable, Tuple, Union, Sequence
 
-from .model_interface import ModelInterface
-
 
 def attributes_check(metric):
     # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
@@ -250,4 +248,3 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     assert (
         0 in indexed_axes or arr.ndim - 1 in indexed_axes
     ), "Make sure indexed_axes contains either the first or last axis of arr."
-

@@ -40,11 +40,11 @@ class TensorFlowModel(ModelInterface):
         return new_model(x, training=False).numpy()
 
     def shape_input(
-        self,
-        x: np.array,
-        shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
-        batch: bool = False,
+            self,
+            x: np.array,
+            shape: Tuple[int, ...],
+            channel_first: Optional[bool] = None,
+            batch: bool = False,
     ):
         """
         Reshape input into model expected input.
@@ -102,11 +102,3 @@ class TensorFlowModel(ModelInterface):
             hidden_out.append(out)
         hidden_out = np.hstack(hidden_out)
         return hidden_out
-
-
-
-
-
-
-
-

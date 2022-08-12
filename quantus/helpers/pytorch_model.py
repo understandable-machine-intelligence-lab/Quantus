@@ -87,4 +87,3 @@ class PyTorchModel(ModelInterface):
             torch.manual_seed(seed=seed + 1)
             module[1].reset_parameters()
             yield module[0], random_layer_model
-
