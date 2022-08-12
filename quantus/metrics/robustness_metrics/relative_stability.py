@@ -1,9 +1,10 @@
-from typing import Union
+import warnings
+from typing import Union, Dict
 
 import numpy as np
 import jax.numpy as jnp
 import jax
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import functools
 
 from quantus.metrics.base import Metric, ModelInterface
@@ -14,7 +15,7 @@ from typing import Callable, Sequence, Tuple
 from tqdm import tqdm
 
 
-@functools.partial(jax.jit, static_argnums=4)
+#@functools.partial(jax.jit, static_argnums=4)
 def relative_stability_objective(
     x: jnp.ndarray, x_s: jnp.ndarray, a: jnp.ndarray, a_s: jnp.ndarray, eps_min: float
 ) -> jnp.ndarray:
@@ -29,6 +30,10 @@ def relative_stability_objective(
         Returns
             float:
     """
+
+    # Prevent division by 0
+    x += eps_min
+    a += eps_min
 
     nominator = (a - a_s) / a
     nominator = jnp.linalg.norm(nominator, axis=(1, 2))
@@ -51,7 +56,7 @@ relative_stability_objective_vectorized_over_attributions = jax.vmap(
 )
 
 
-class RelativeStability(Metric):
+class RelativeStability(Metric, ABC):
 
     DEFAULT_EPS_MIN = 1e-6
     DEFAULT_NUM_PERTURBATIONS = 100
@@ -108,15 +113,13 @@ class RelativeStability(Metric):
          - In practise we just use max over a finite batch of x'
         """
 
+        #x_batch, channel_first = utils.move_channel_axis_batch(x_batch, **kwargs)
+        self.model = utils.get_wrapped_model(model, False)
 
-        # Reshape input batch to channel first order, if needed
-        x_batch, channel_first = utils.move_channel_axis_batch(x_batch, **kwargs)
-        self.model = utils.get_wrapped_model(model, channel_first)
-
-        xs_batch = self.get_perturbed_inputs(x_batch, y_batch, model, **kwargs)
+        xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
 
         arg, arg_s = self._get_stability_argument(x_batch, xs_batch, **kwargs)
-        ex, exs = self.get_explanations(model, x_batch, y_batch, xs_batch)
+        ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
         result = relative_stability_objective_vectorized_over_attributions(arg, arg_s, ex, exs, self.eps_min)
 
@@ -132,33 +135,31 @@ class RelativeStability(Metric):
 
 
 
-    def get_perturbed_inputs(self, x_batch, y_batch, model, **kwargs) -> np.ndarray:
-        if (
-            "perturb_func" in kwargs and "xs_batch" in kwargs
-        ) or (
-            "perturb_func" not in kwargs and "xs_batch" not in kwargs
-        ):
-            raise ValueError(
-                "Must provide either perturb_func or xs_batch in kwargs"
-            )
+    def _get_perturbed_inputs(self, x_batch, y_batch, **kwargs) -> Tuple[np.ndarray, Dict]:
+        """
+        Returns:
+            xs_batch: of perturbed inputs
+            kwargs: Dict of updated kwargs
+        """
 
+        if 'xs_batch' not in kwargs:
 
-        if 'perturb_func' in kwargs:
+            if 'perturb_func' not in kwargs:
+                warnings.warn('No "perturb_func" provided, using random noise as default')
 
             perturb_function: Callable = kwargs.pop(
                 "perturb_func", perturb_func.random_noise
             )
-            asserts.assert_perturb_func(perturb_function)
 
             xs_batch = []
-            it = range(self.num_perturb)
+            it = range(self.num_perturbations)
 
             if self.display_progressbar:
                 it = tqdm(it, desc=f"Collecting perturbation for {self.name}")
 
             for _ in it:
                 xs = perturb_function(x_batch, **kwargs)
-                logits = model.predict(xs)
+                logits = self.model.predict(xs)
                 labels = np.argmax(logits, axis=1)
 
                 same_label_indexes = np.argwhere(labels == y_batch)
@@ -171,16 +172,22 @@ class RelativeStability(Metric):
             xs_batch = xs_batch[: xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
             # make xs_batch have the same shape as x_batch, with new batching axis at 0
             xs_batch = xs_batch.reshape(-1, *x_batch.shape)
-            return xs_batch
+            return xs_batch, kwargs
 
         xs_batch = kwargs.pop('xs_batch')
         if len(xs_batch.shape) <= len(x_batch.shape):
             raise ValueError('xs_batch must have 1 more batch axis than x_batch')
 
-        return xs_batch
+        return xs_batch, kwargs
 
 
-    def get_explanations(self, model: ModelInterface, x_batch, y_batch, xs_batch, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_explanations(self, x_batch, y_batch, xs_batch, **kwargs) -> Tuple[np.ndarray, np.ndarray, Dict]:
+        """
+                Returns:
+                    a_batch: batch of explanations
+                    as_batch: batch of batches of perturbed explanations
+                    kwargs: Dict of updated kwargs
+        """
         if ('explain_func' in kwargs and ('a_batch' in kwargs or 'as_batch' in kwargs)
         ) or ('explain_func' not in kwargs and ('a_batch' not in kwargs or 'as_batch' in kwargs)):
             raise ValueError('Must provide either explain_func or (a_batch and as_batch)')
@@ -189,7 +196,7 @@ class RelativeStability(Metric):
             explain_func: Callable = kwargs.pop('explain_func')
 
             a_batch = explain_func(
-                model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs
+                model=self.model.get_model(), inputs=x_batch, targets=y_batch, **kwargs
             )
 
             it = xs_batch
@@ -197,7 +204,7 @@ class RelativeStability(Metric):
                 it = tqdm(it, desc=f'Collecting explanations for {self.name}')
 
             as_batch = [
-                explain_func(model=model.get_model(), inputs=i, targets=y_batch, **kwargs) for i in it
+                explain_func(model=self.model.get_model(), inputs=i, targets=y_batch, **kwargs) for i in it
             ]
 
         else:
@@ -213,7 +220,7 @@ class RelativeStability(Metric):
             as_batch = [self.abs(i) for i in as_batch]
 
 
-        return a_batch, np.asarray(as_batch)
+        return a_batch, np.asarray(as_batch), kwargs
 
 
     @abstractmethod
@@ -247,7 +254,7 @@ class RelativeInputStability(RelativeStability):
         return x, xs
 
 
-@functools.partial(jax.jit, static_argnums=4)
+#@functools.partial(jax.jit, static_argnums=4)
 def relative_output_stability_objective(
     h: jnp.ndarray, h_s: jnp.ndarray, a: jnp.ndarray, a_s: np.ndarray, eps_min
 ) -> jnp.ndarray:
@@ -266,7 +273,7 @@ def relative_output_stability_objective(
     #a += eps_min
 
     nominator = (a - a_s) / a
-    nominator = jnp.linalg.norm(nominator, axis=(1, 2))
+    nominator = jnp.linalg.norm(nominator, axis=(-2, -1))
     nominator = nominator.reshape(-1)
 
     denominator = h - h_s

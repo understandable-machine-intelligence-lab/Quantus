@@ -12,6 +12,7 @@ from tensorflow.keras.datasets import cifar10
 import tensorflow as tf
 from ..quantus.helpers.pytorch_model import PyTorchModel
 from ..quantus.helpers.tf_model import TensorFlowModel
+import quantus
 
 
 @pytest.fixture(scope="session", autouse=True)
