@@ -44,3 +44,4 @@ quantus/analysers/*
 tests/analysers/*
 
 .idea
+htmlcov
