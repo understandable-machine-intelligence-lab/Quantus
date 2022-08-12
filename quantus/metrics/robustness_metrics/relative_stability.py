@@ -215,12 +215,12 @@ class RelativeStability(Metric, ABC):
             if self.display_progressbar:
                 it = tqdm(it, desc=f"Collecting explanations for {self.name}")
 
-            as_batch = np.stack([
+            as_batch = [
                 explain_func(
                     model=self.model.get_model(), inputs=i, targets=y_batch, **kwargs
                 )
                 for i in it
-            ])
+            ]
 
         else:
             a_batch = kwargs.pop("a_batch")
@@ -233,13 +233,13 @@ class RelativeStability(Metric, ABC):
 
         if self.normalise:
             a_batch = self.normalise_func(a_batch)
-            as_batch = np.stack([self.normalise_func(i) for i in as_batch])
+            as_batch = [self.normalise_func(i) for i in as_batch]
 
         if self.abs:
             a_batch = np.abs(a_batch)
             as_batch = np.abs(as_batch)
 
-        return a_batch, as_batch, kwargs
+        return a_batch, np.asarray(as_batch), kwargs
 
     @abstractmethod
     def _compute_objective(self, x, xs, e, es) -> np.ndarray:

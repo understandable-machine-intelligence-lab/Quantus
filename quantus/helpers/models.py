@@ -165,7 +165,7 @@ if util.find_spec("tensorflow"):
             tf.keras.layers.MaxPooling2D(),
             tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
             tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu', name='test_conv'),
             tf.keras.layers.MaxPooling2D(),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(128, activation='relu'),

@@ -267,7 +267,7 @@ def test_precomputed_explanations(model, data, params):
                 "explain_func": quantus.explain,
                 "method": "GradCam",
                 "num_perturbations": 10,
-                "gc_layer": "conv2d_2",
+                "gc_layer": "test_conv",
             },
         ),
     ],
