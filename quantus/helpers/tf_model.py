@@ -98,8 +98,9 @@ class TensorFlowModel(ModelInterface):
         hidden_out = []
         out = x
         for layer in self.model.layers[:-1]:
-            out = layer(out)
+            out = layer(out).numpy()
             hidden_out.append(out)
+        hidden_out = np.hstack(hidden_out)
         return hidden_out
 
 

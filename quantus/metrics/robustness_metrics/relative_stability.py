@@ -7,9 +7,9 @@ import jax
 from abc import abstractmethod, ABC
 import functools
 
-from quantus.metrics.base import Metric, ModelInterface
-from quantus.helpers import utils, asserts, perturb_func
-from typing import Callable, Sequence, Tuple
+from quantus.metrics.base import Metric
+from quantus.helpers import utils, perturb_func
+from typing import Callable, Tuple
 
 from tqdm import tqdm
 
@@ -22,7 +22,7 @@ def relative_stability_objective(
         a_s: jnp.ndarray,
         eps_min: float,
         division_in_denominator: bool,
-        denominator_norm_axis
+        denominator_norm_axis: Union[Tuple[int, int], int]
 ) -> jnp.ndarray:
     """
     Parameters
@@ -82,7 +82,6 @@ class RelativeStability(Metric, ABC):
         super().__init__(*args, **kwargs)
 
         self.eps_min = kwargs.pop("eps_min", self.DEFAULT_EPS_MIN)
-
         self.num_perturbations = kwargs.pop("num_perturbations", self.DEFAULT_NUM_PERTURBATIONS)
 
     def __call__(
@@ -92,16 +91,15 @@ class RelativeStability(Metric, ABC):
             y_batch: np.ndarray,
             *args,
             **kwargs
-    ) -> Union[float, Sequence]:
+    ) -> Union[float, np.ndarray]:
 
         """
         A base class for relative stability metrics from https://arxiv.org/pdf/2203.06877.pdf
-
-
         Parameters:
             model:
             x_batch: batch data points
             y_batch: batch of labels for x_batch
+
             perturb_func(optional): a function used to perturbate inputs, must be provided unless no xs_batch provided
             xs_batch(optional): a batch of perturbed inputs
 
@@ -109,7 +107,7 @@ class RelativeStability(Metric, ABC):
             a_batch(optional): pre-computed explanations for x
             as_batch(optional): pre-computed explanations for x'
 
-            kwargs: kwargs, which are passed to perturb_func, explain_func and quantus.
+            kwargs: kwargs, which are passed to perturb_func, explain_func and quantus.Metric base class.
 
         For each image x:
          - generate N perturbed x' in the neighborhood of x
@@ -120,17 +118,16 @@ class RelativeStability(Metric, ABC):
          - In practise we just use max over a finite batch of x'
         """
 
-        # x_batch, channel_first = utils.move_channel_axis_batch(x_batch, **kwargs)
-        self.model = utils.get_wrapped_model(model, False)
+        channel_first = utils.infer_channel_first(x_batch)
+        self.model = utils.get_wrapped_model(model, channel_first)
 
         xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
-
-        arg, arg_s = self._get_stability_argument(x_batch, xs_batch, **kwargs)
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
-        result = self._compute_objective(arg, arg_s, ex, exs)
+        result = self._compute_objective(x_batch, xs_batch, ex, exs)
 
-        result = jnp.max(result, axis=0).to_py()
+        result = jnp.max(result, axis=0)
+
         if self.return_aggregate:
             result = self.aggregate_func(result)
 
@@ -227,17 +224,11 @@ class RelativeStability(Metric, ABC):
 
         return a_batch, np.asarray(as_batch), kwargs
 
-    @abstractmethod
-    def _get_stability_argument(self, x, xs, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        The only non-generic part among all 3 Relative Stability metrics
-        """
-        pass
 
     @abstractmethod
-    def _compute_objective(self, x, xs, e, es) -> jnp.ndarray:
+    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
         """
-        Different relative stabilities slightly differ in objective computation
+        The only non-generic part among all 3 Relative Stability metrics
         """
         pass
 
@@ -255,14 +246,9 @@ class RelativeInputStability(RelativeStability):
         some small epsilon_min>0
     """
 
-    def _get_stability_argument(self, x, xs, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Here it's just the x and x'
-        """
-        return x, xs
-
-    def _compute_objective(self, x, xs, e, es) -> jnp.ndarray:
-        return relative_stability_objective_vectorized_over_perturbation_axis(x, xs, e, es, self.eps_min, True, (1, 2))
+    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
+        result = relative_stability_objective_vectorized_over_perturbation_axis(x, xs, e, es, self.eps_min, True, (1, 2))
+        return result.to_py() # noqa
 
 
 
@@ -271,22 +257,15 @@ class RelativeOutputStability(RelativeStability):
 
     """
     ROS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{h(x) - h(x')}||_p, \epsilon_{min})}
-    where h(x) and h(x') are the output logits for x and x', respectively
-
+       where h(x) and h(x') are the output logits for x and x', respectively
     """
 
-    def _get_stability_argument(self, x, xs, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
         hx = self.model.predict(x)
         hxs = self.model.predict(xs)
-        return hx, hxs
+        result = relative_stability_objective_vectorized_over_perturbation_axis(hx, hxs, e, es, self.eps_min, False, 1)
+        return result.to_py() # noqa
 
-
-    def _compute_objective(self, x, xs, e, es) -> jnp.ndarray:
-        return relative_stability_objective_vectorized_over_perturbation_axis(
-            x, xs, e, es, self.eps_min,
-            division_in_denominator=False,
-            denominator_norm_axis=1
-        )
 
 
 class RelativeRepresentationStability(RelativeStability):
@@ -294,20 +273,13 @@ class RelativeRepresentationStability(RelativeStability):
 
     """
     RRS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{L_x - L_{x'}}{L_x}||_p, \epsilon_{min})}
-
-    where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
-
+       where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
     """
 
-    def _get_stability_argument(self, x, xs, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Iterate over layers (except the last one), collect the output of each layer
-        Stack them in a tensor, or any other work around ???
-        """
+
+    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
         lx = self.model.get_hidden_layers_outputs(x)
-        lx = np.stack(lx)
-
         lxs = [self.model.get_hidden_layers_outputs(i) for i in xs]
-        lxs = [np.stack(i) for i in lxs]
-
-        return lx, np.asarray(lxs)
+        lxs = jnp.asarray(lxs)
+        result = relative_stability_objective_vectorized_over_perturbation_axis(lx, lxs, e, es, self.eps_min, True, 1)
+        return result.to_py() # noqa

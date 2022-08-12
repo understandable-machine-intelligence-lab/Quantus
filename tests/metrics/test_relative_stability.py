@@ -32,12 +32,15 @@ We do not test, do not assert:
     
 
 There are no desired values, the tests are rather just to make sure no exceptions occur during intended usage 🤷🤷  
+
+Since all 3 relative stabilities are exactly the same, except for arguments provided to objective, 
+it's enough just to test 1 class extensively
 '''
 
 
 @pytest.mark.robustness
 def test_relative_stability_objective():
-    x = np.random.random((5, 24, 24, 1))
+    x = np.random.random((5, 28, 28, 1))
 
     res = relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
 
@@ -47,9 +50,32 @@ def test_relative_stability_objective():
 @pytest.mark.robustness
 def test_relative_output_stability_objective():
     h = np.random.random((5, 10))
-    a = np.random.random((5, 24, 24, 1))
+    a = np.random.random((5, 28, 28, 1))
 
     res = relative_stability_objective(h, h, a, a, 0.00001, False, 1)
+
+    assert res.shape == (5,), 'Must output same dimension as inputs batch axis'
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    'model',
+    [
+        (
+                lazy_fixture('load_mnist_model_tf')
+        )
+    ]
+)
+def test_relative_representation_stability_objective(model):
+
+    tf_model = quantus.utils.get_wrapped_model(model, False)
+    x = np.random.random((5, 28, 28, 1))
+    a = np.random.random((5, 28, 28, 1))
+
+    lx = tf_model.get_hidden_layers_outputs(x)
+
+
+    res = relative_stability_objective(lx, lx, a, a, 0.00001, True, 1)
 
     assert res.shape == (5,), 'Must output same dimension as inputs batch axis'
 
@@ -160,6 +186,17 @@ def test_relative_input_stability_compute_perturbations(model, data, params):
     print(f'{result = }')
 
     assert (result != jnp.nan).all(), 'Probably divided by 0'
+
+
+@pytest.mark.robustness
+def test_relative_input_stability_precomputed_explanations():
+    pass
+
+
+
+@pytest.mark.robustness
+def test_relative_input_stability_compute_explanations():
+    pass
 
 
 @pytest.mark.robustness
