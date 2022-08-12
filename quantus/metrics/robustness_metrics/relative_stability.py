@@ -3,19 +3,21 @@ from typing import Union
 import numpy as np
 import jax.numpy as jnp
 import jax
-import functools
 from abc import abstractmethod
+import functools
 
-from quantus import Metric, utils, asserts, perturb_func, ModelInterface
+from quantus.metrics.base import Metric, ModelInterface
+from quantus.helpers import utils, asserts, perturb_func
 from typing import Callable, Sequence, Tuple
+
 
 from tqdm import tqdm
 
 
-@functools.partial(jax.vmap, in_axes=(0, 0, 0, 0, None))
-def relative_stability(
-    x: jnp.ndarray, x_s: jnp.ndarray, a: jnp.ndarray, a_s: np.ndarray, eps_min
-) -> float:
+@functools.partial(jax.jit, static_argnums=4)
+def relative_stability_objective(
+    x: jnp.ndarray, x_s: jnp.ndarray, a: jnp.ndarray, a_s: jnp.ndarray, eps_min: float
+) -> jnp.ndarray:
     """
     Parameters
             x: an input image with
@@ -27,22 +29,25 @@ def relative_stability(
         Returns
             float:
     """
-    # Prevents division by 0
-    a += eps_min
-    x += eps_min
 
     nominator = (a - a_s) / a
-    nominator = jnp.linalg.norm(nominator)
+    nominator = jnp.linalg.norm(nominator, axis=(1, 2))
+    nominator = nominator.reshape(-1)
 
     denominator = (x - x_s) / x
-    denominator = jnp.linalg.norm(denominator)
-    denominator = jnp.max(denominator, initial=eps_min)
+    denominator = jnp.linalg.norm(denominator, axis=(1, 2))
+    denominator = denominator.reshape(-1)
+
+    eps_arr = jnp.full(denominator.shape, eps_min)
+
+    denominator = jnp.stack([denominator, eps_arr])
+    denominator = jnp.max(denominator, axis=0)
 
     return nominator / denominator
 
 
-relative_stability_vectorized_over_attributions = jax.vmap(
-    relative_stability, in_axes=(None, 0, None, 0, None)
+relative_stability_objective_vectorized_over_attributions = jax.vmap(
+    relative_stability_objective, in_axes=(None, 0, None, 0, None)
 )
 
 
@@ -51,7 +56,7 @@ class RelativeStability(Metric):
     DEFAULT_EPS_MIN = 1e-6
     DEFAULT_NUM_PERTURBATIONS = 100
     name: str
-    objective_to_maximize = relative_stability_vectorized_over_attributions
+    objective_to_maximize = relative_stability_objective_vectorized_over_attributions
 
 
     def __init__(self, *args, **kwargs):
@@ -113,7 +118,7 @@ class RelativeStability(Metric):
         arg, arg_s = self._get_stability_argument(x_batch, xs_batch, **kwargs)
         ex, exs = self.get_explanations(model, x_batch, y_batch, xs_batch)
 
-        result = relative_stability_vectorized_over_attributions(arg, arg_s, ex, exs, self.eps_min)
+        result = relative_stability_objective_vectorized_over_attributions(arg, arg_s, ex, exs, self.eps_min)
 
         result = jnp.max(result, axis=0).to_py()
         if self.return_aggregate:
@@ -242,10 +247,48 @@ class RelativeInputStability(RelativeStability):
         return x, xs
 
 
+@functools.partial(jax.jit, static_argnums=4)
+def relative_output_stability_objective(
+    h: jnp.ndarray, h_s: jnp.ndarray, a: jnp.ndarray, a_s: np.ndarray, eps_min
+) -> jnp.ndarray:
+    """
+    Parameters
+            h: output logits for x
+            h_s: output logits for x_s
+            a: explanations for x
+            a_s: explanations for x_s
+            eps_min: prevents division by zero
+
+        Returns
+            float:
+    """
+    # Prevents division by 0
+    #a += eps_min
+
+    nominator = (a - a_s) / a
+    nominator = jnp.linalg.norm(nominator, axis=(1, 2))
+    nominator = nominator.reshape(-1)
+
+    denominator = h - h_s
+    denominator = jnp.linalg.norm(denominator, axis=1)
+
+    eps_arr = jnp.full(denominator.shape, eps_min)
+
+    denominator = jnp.stack([denominator, eps_arr])
+    denominator = jnp.max(denominator, axis=0)
+
+    return nominator / denominator
+
+
+relative_output_stability_objective_vectorized_over_attributions = jax.vmap(
+    relative_output_stability_objective, in_axes=(None, 0, None, 0, None)
+)
+
 
 class RelativeOutputStability(RelativeStability):
 
     name = 'Relative Output Stability'
+    objective_to_maximize = relative_output_stability_objective
 
     """
     ROS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{h(x) - h(x')}||_p, \epsilon_{min})}
@@ -259,37 +302,7 @@ class RelativeOutputStability(RelativeStability):
         return hx, hxs
 
 
-@functools.partial(jax.vmap, in_axes=(0, 0, 0, 0, None))
-def relative_representation_stability(
-    l: jnp.ndarray, l_s: jnp.ndarray, a: jnp.ndarray, a_s: np.ndarray, eps_min
-) -> float:
-    """
-    Parameters
-            x: an input image with
-            x_s: a perturbed input image
-            a: attribution for x: explanation, logits, or model internal state
-            a_s: attribution for x_s: explanation, logits, or model internal state
-            eps_min: prevents division by zero
 
-        Returns
-            float:
-    """
-    # Prevents division by 0
-    a += eps_min
-
-    nominator = (a - a_s) / a
-    nominator = jnp.linalg.norm(nominator)
-
-    denominator = l - l_s
-    denominator = jnp.linalg.norm(denominator)
-    denominator = jnp.max(denominator, initial=eps_min)
-
-    return nominator / denominator
-
-
-relative_representation_stability_vectorized_over_attributions = jax.vmap(
-    relative_representation_stability, in_axes=(None, 0, None, 0, None)
-)
 
 
 class RelativeRepresentationStability(RelativeStability):
@@ -302,7 +315,6 @@ class RelativeRepresentationStability(RelativeStability):
     where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
 
     """
-    objective_to_maximize = relative_representation_stability_vectorized_over_attributions
 
 
     def _get_stability_argument(self, x, xs, **kwargs) -> Tuple[np.ndarray, np.ndarray]:

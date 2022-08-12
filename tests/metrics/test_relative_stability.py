@@ -3,6 +3,7 @@ from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
 import quantus
+from quantus import relative_output_stability_objective, relative_stability_objective
 
 
 '''
@@ -28,26 +29,43 @@ There are no desired values, the tests are rather just to make sure no exception
 
 
 @pytest.mark.robustness
-@pytest.mark.parametrize(
+def test_relative_stability_objective():
+    x = np.random.random((5, 24, 24, 1))
 
-)
-def test_relative_input_stability(
-    model, data: np.ndarray, params, expected
-):
+    res = relative_stability_objective(x, x, x, x, 0.00001)
+
+    assert res.shape == (5,), 'Must output same dimension as inputs batch axis'
+
+
+@pytest.mark.robustness
+def test_relative_output_stability_objective():
+    h = np.random.random((5, 10))
+    a = np.random.random((5, 24, 24, 1))
+
+    res = relative_output_stability_objective(h, h, a, a, 0.00001)
+
+    assert res.shape == (5,), 'Must output same dimension as inputs batch axis'
+
+
+@pytest.mark.robustness
+#@pytest.mark.parametrize()
+def test_invalid_kwargs():
     pass
 
 
 @pytest.mark.robustness
-@pytest.mark.parametrize(
+#@pytest.mark.parametrize()
+def test_relative_input_stability():
+    pass
 
-)
+
+@pytest.mark.robustness
+#@pytest.mark.parametrize()
 def test_relative_output_stability():
     pass
 
 
 @pytest.mark.robustness
-@pytest.mark.parametrize(
-
-)
+#@pytest.mark.parametrize()
 def test_relative_representation_stability():
     pass

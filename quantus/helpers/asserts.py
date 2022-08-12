@@ -221,12 +221,6 @@ def assert_explain_func(explain_func: Callable) -> None:
     )
 
 
-def assert_perturb_func(func):
-    assert callable(
-        func
-    ), "Make sure 'perturb_func' is a Callable that takes x_batch, and **kwargs as arguments."
-
-
 def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):
     """Checks if value is smaller than input size.
     Assumes batch and channel first dimension
@@ -256,14 +250,4 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     assert (
         0 in indexed_axes or arr.ndim - 1 in indexed_axes
     ), "Make sure indexed_axes contains either the first or last axis of arr."
-
-
-def assert_is_model_interface(model):
-    assert isinstance(
-        model, ModelInterface
-    ), "Must wrapr your model in quantus.ModelInterface"
-
-
-def assert_model_outputs_logits(model: ModelInterface):
-    assert model.outputs_logits(), 'Model must output logits, encoding probability distribution'
 

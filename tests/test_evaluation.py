@@ -9,9 +9,7 @@ import torchvision
 from pytest_lazyfixture import lazy_fixture
 
 from .fixtures import *
-from ..quantus import *
-from ..quantus.helpers.explanation_func import explain
-from ..quantus.helpers.pytorch_model import PyTorchModel
+from quantus import *
 
 
 @pytest.mark.evaluate_func
