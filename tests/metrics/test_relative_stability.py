@@ -61,8 +61,16 @@ def test_relative_output_stability_objective():
     [
         (       # no explain func, no pre computed explanations
                 lazy_fixture('load_mnist_model_tf'),
-                lazy_fixture('load_mnist_images'),
+                lazy_fixture('load_mnist_images_tf'),
                 {}
+        ),
+        (
+                lazy_fixture('load_mnist_model_tf'),
+                lazy_fixture('load_mnist_images_tf'),
+                {
+                    # pre-computed perturbations don't have extra batch dimension
+                    'xs_batch': load_mnist_images_tf_direct()['x_batch']
+                }
         )
     ]
 )
