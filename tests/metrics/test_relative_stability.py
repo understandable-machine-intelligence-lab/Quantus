@@ -260,7 +260,7 @@ def test_precomputed_explanations(model, data, params):
                 "method": "Occlusion",
                 "num_perturbations": 10,
             },
-        )
+        ),
     ],
     ids=[
         "method = Gradient",

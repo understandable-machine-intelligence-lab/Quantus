@@ -11,7 +11,6 @@ from quantus.metrics.base import Metric
 from quantus.helpers import utils, perturb_func
 
 
-
 @functools.partial(jax.jit, static_argnums=(4, 5, 6))
 def relative_stability_objective(
     x: jnp.ndarray,
