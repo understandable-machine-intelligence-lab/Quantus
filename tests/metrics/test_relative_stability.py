@@ -149,7 +149,7 @@ def test_pre_computed_perturbations(model, data, params):
     xs = np.asarray([quantus.random_noise(x) for _ in range(5)])
 
     result = ris(model, x, data["y_batch"], xs_batch=xs, **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -190,7 +190,7 @@ def test_compute_perturbations(model, data, params):
     x = data["x_batch"]
 
     result = ris(model, x, data["y_batch"], **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -214,7 +214,7 @@ def test_precomputed_explanations(model, data, params):
         as_batch=np.stack([ex, ex]),
     )
 
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -282,7 +282,7 @@ def test_compute_explanations(model, data, params):
     ris = quantus.RelativeInputStability(**params)
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -335,7 +335,7 @@ def test_params_to_base_class(model, data, params):
     ris = quantus.RelativeInputStability(**params)
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -355,7 +355,7 @@ def test_relative_output_stability(model, data, params):
     ros = quantus.RelativeOutputStability(**params)
 
     result = ros(model, data["x_batch"], data["y_batch"], **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
 
@@ -382,6 +382,6 @@ def test_relative_representation_stability(model, data, params):
     rrs = quantus.RelativeRepresentationStability(**params)
 
     result = rrs(model, data["x_batch"], data["y_batch"], **params)
-    print(f"{result = }")
+    print(f"result = {result}")
 
     assert (result != jnp.nan).all(), "Probably divided by 0"
