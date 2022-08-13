@@ -64,7 +64,7 @@ def test_relative_representation_stability_objective(model):
 
     lx = tf_model.get_hidden_layers_outputs(x)
 
-    res = relative_stability_objective(lx, lx, a, a, 0.00001, True, 1)
+    res = relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
 
     assert res.shape == (5,), "Must output same dimension as inputs batch axis"
 
@@ -257,7 +257,7 @@ def test_precomputed_explanations(model, data, params):
             {
                 "explain_func": quantus.explain,
                 "method": "Occlusion",
-                "num_perturbations": 10,
+                "num_perturbations": 100,
             },
         ),
         (
@@ -266,7 +266,7 @@ def test_precomputed_explanations(model, data, params):
             {
                 "explain_func": quantus.explain,
                 "method": "GradCam",
-                "num_perturbations": 10,
+                "num_perturbations": 100,
                 "gc_layer": "test_conv",
             },
         ),
@@ -370,7 +370,17 @@ def test_relative_output_stability(model, data, params):
             lazy_fixture("load_mnist_images_tf"),
             {"explain_func": quantus.explain, "num_perturbations": 10},
         ),
+        (
+            # This situation caused problems in tutorials
+            lazy_fixture("load_cnn_2d_1channel_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"explain_func": quantus.explain, "num_perturbations": 100},
+        ),
     ],
+    ids=[
+        'leNet + mnist',
+        '2d CNN + mnist'
+    ]
 )
 def test_relative_representation_stability(model, data, params):
     rrs = quantus.RelativeRepresentationStability(**params)

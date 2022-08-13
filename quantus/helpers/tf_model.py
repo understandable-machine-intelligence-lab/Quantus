@@ -100,5 +100,5 @@ class TensorFlowModel(ModelInterface):
         for layer in self.model.layers[:-1]:
             out = layer(out).numpy()
             hidden_out.append(out)
-        hidden_out = np.hstack(hidden_out)
+        hidden_out = np.concatenate([i.reshape(-1) for i in hidden_out])
         return hidden_out

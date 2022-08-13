@@ -163,3 +163,8 @@ def flat_sequence_array(scope="session", autouse=True):
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_3channels_tf():
     return cnn_2d_3channels_tf(32, 32, 10)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cnn_2d_1channel_tf():
+    return cnn_2d_3channels_tf(28, 28, 10, num_channels=1)

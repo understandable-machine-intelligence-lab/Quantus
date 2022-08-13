@@ -119,6 +119,8 @@ class RelativeStability(Metric, ABC):
             )
 
         xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
+        if len(xs_batch) == 0:
+            raise ValueError(f'Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func')
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
         result = self._compute_objective(x_batch, xs_batch, ex, exs)
@@ -316,6 +318,6 @@ class RelativeRepresentationStability(RelativeStability):
             jnp.asarray(es),
             self.eps_min,
             True,
-            1,
+            0,
         )
         return result.to_py()  # noqa
