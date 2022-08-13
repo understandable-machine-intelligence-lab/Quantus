@@ -1,4 +1,4 @@
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazyfixture import lazy_fixture # noqa
 
 from ..fixtures import *
 from ... import quantus
@@ -376,10 +376,7 @@ def test_relative_output_stability(model, data, params):
             {"explain_func": quantus.explain, "num_perturbations": 100},
         ),
     ],
-    ids=[
-        'leNet + mnist',
-        '2d CNN + mnist'
-    ]
+    ids=["leNet + mnist", "2d CNN + mnist"],
 )
 def test_relative_representation_stability(model, data, params):
     rrs = quantus.RelativeRepresentationStability(**params)

@@ -310,7 +310,6 @@ class RelativeRepresentationStability(RelativeStability):
     def _compute_objective(self, x, xs, e, es) -> np.ndarray:
         lx = self.model.get_hidden_layers_outputs(x)
         lxs = [self.model.get_hidden_layers_outputs(i) for i in xs]
-        lxs = jnp.asarray(lxs)
         result = relative_stability_objective_vectorized_over_perturbation_axis(
             jnp.asarray(lx),
             jnp.asarray(lxs),
