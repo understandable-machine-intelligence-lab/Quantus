@@ -1,8 +1,7 @@
 from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
-import quantus
-from quantus import relative_stability_objective
+from ... import quantus
 import jax.numpy as jnp
 
 """
@@ -40,7 +39,7 @@ it's enough just to test 1 class extensively
 def test_relative_input_stability_objective():
     x = np.random.random((5, 28, 28, 1))
 
-    res = relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
+    res = quantus.relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
 
     assert res.shape == (5,), "Must output same dimension as inputs batch axis"
 
@@ -50,7 +49,7 @@ def test_relative_output_stability_objective():
     h = np.random.random((5, 10))
     a = np.random.random((5, 28, 28, 1))
 
-    res = relative_stability_objective(h, h, a, a, 0.00001, False, 1)
+    res = quantus.relative_stability_objective(h, h, a, a, 0.00001, False, 1)
 
     assert res.shape == (5,), "Must output same dimension as inputs batch axis"
 
@@ -64,7 +63,7 @@ def test_relative_representation_stability_objective(model):
 
     lx = tf_model.get_hidden_layers_outputs(x)
 
-    res = relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
+    res = quantus.relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
 
     assert res.shape == (5,), "Must output same dimension as inputs batch axis"
 

@@ -7,8 +7,8 @@ from abc import abstractmethod, ABC
 import functools
 from tqdm import tqdm
 
-from quantus.metrics.base import Metric
-from quantus.helpers import utils, perturb_func
+from ..base import Metric
+from ...helpers import utils, perturb_func
 
 
 @functools.partial(jax.jit, static_argnums=(4, 5, 6))
