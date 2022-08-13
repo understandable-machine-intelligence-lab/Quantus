@@ -11,6 +11,11 @@ from ..base import Metric
 from ...helpers import utils, perturb_func
 
 
+"""
+For example usage, please refer to tutorials/tutorial_getting_started_with_tensorflow.ipynb
+"""
+
+
 @functools.partial(jax.jit, static_argnums=(4, 5, 6))
 def relative_stability_objective(
     x: jnp.ndarray,
