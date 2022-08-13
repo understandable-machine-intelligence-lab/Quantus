@@ -20,7 +20,7 @@ class TensorFlowModel(ModelInterface):
         softmax_act = kwargs.get("softmax", False)
 
         output_act = self.model.layers[-1].activation
-        target_act = tf.keras.actiovations.softmax if softmax_act else tf.keras.activations.linear
+        target_act = tf.keras.activations.softmax if softmax_act else tf.keras.activations.linear
 
         if output_act == target_act:
             return self.model(x, training=False).numpy()
