@@ -36,7 +36,7 @@ else:
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow==2.6.2"],
+    "tensorflow": ["tensorflow>=2.6.2"],
     "extras": extras,
     "tutorials": [
         "torch==1.10.1",
@@ -53,7 +53,7 @@ EXTRAS = {
 # Define setup.
 setup(
     name="quantus",
-    version="0.1.5",
+    version="0.1.6",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
@@ -72,6 +72,8 @@ setup(
         "scipy==1.5.4",
         "termcolor==1.1.0",
         "tqdm==4.62.3",
+        "jax>=0.3.15",
+        "jaxlib>=0.3.15"
     ],
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
