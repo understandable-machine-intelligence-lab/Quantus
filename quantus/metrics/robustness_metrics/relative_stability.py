@@ -68,7 +68,7 @@ class RelativeStability(Metric, ABC):
 
     def __init__(self, *args, **kwargs):
         """
-        Implementation of RIS according to https://arxiv.org/pdf/2203.06877.pdf
+        A base class for relative stability metrics from https://arxiv.org/pdf/2203.06877.pdf
         Parameters:
             kwargs:
                eps_min (optional): a small constant to prevent denominator from being 0, default 1e-6
@@ -87,7 +87,6 @@ class RelativeStability(Metric, ABC):
     ) -> Union[float, np.ndarray]:
 
         """
-        A base class for relative stability metrics from https://arxiv.org/pdf/2203.06877.pdf
         Parameters:
             model:
             x_batch: batch data points

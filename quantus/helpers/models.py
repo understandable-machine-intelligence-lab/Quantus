@@ -158,9 +158,10 @@ if util.find_spec("tensorflow"):
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
 
-    def cnn_2d_3channels_tf(img_height, img_width, num_classes) -> tf.keras.Model:
+    def cnn_2d_3channels_tf(img_height, img_width, num_classes, num_channels=3) -> tf.keras.Model:
+        # https://www.tensorflow.org/tutorials/images/classification
         model = tf.keras.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
             tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
             tf.keras.layers.MaxPooling2D(),
             tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
