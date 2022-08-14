@@ -1,4 +1,4 @@
-from pytest_lazyfixture import lazy_fixture # noqa
+from pytest_lazyfixture import lazy_fixture  # noqa
 
 from ..fixtures import *
 from ... import quantus
@@ -7,7 +7,17 @@ import numpy as np
 """
 Following scenarios are to be tested for each Relative Stability metric
 
-    - Test output shapes of relative stability objectives, which are to maximize (and if they do not fail on expected input shapes)
+    - RS objective: 
+        - single data point
+            - 1 channel
+            - 3 channels
+        - batched
+            - 1 channel
+            - 3 channels 
+        - vectorized over perturbations
+            - 1 channel
+            - 3 channels
+
     - Pre-computed perturbations
     - Pre-computed perturbations shape = x_batch.shape
     - Different perturb functions
@@ -36,42 +46,202 @@ it's enough just to test 1 class extensively
 
 
 @pytest.mark.robustness
-def test_relative_input_stability_objective(capsys):
-    x = np.random.random((5, 28, 28, 1))
-
-    result = quantus.relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
+@pytest.mark.parametrize(
+    "x",
+    [(np.random.random((32, 32, 1))), (np.random.random((32, 32, 3)))],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_input_stability_objective_single_point(x, capsys):
+    result = quantus.relative_stability_objective_single_point(
+        x, x, x, x, 0.00001, True
+    )
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
+
+    assert result != np.nan, "Probably divided by 0"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "x",
+    [(np.random.random((10, 32, 32, 1))), (np.random.random((10, 32, 32, 3)))],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_input_stability_objective_batched(x, capsys):
+    result = quantus.relative_stability_objective_batched(x, x, x, x, 0.00001, True)
+    with capsys.disabled():
+        print(f"result = {result}")
+
+    assert result.shape == (10,), "Must output same dimension as inputs batch axis"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "x,xs",
+    [
+        (np.random.random((10, 32, 32, 1)), np.random.random((5, 10, 32, 32, 1))),
+        (np.random.random((10, 32, 32, 3)), np.random.random((5, 10, 32, 32, 1))),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_input_stability_objective_vectorized_over_perturbations(
+    x, xs, capsys
+):
+    result = quantus.relative_stability_objective_vectorized_over_perturbation_axis(
+        x, xs, x, xs, 0.00001, True
+    )
+    with capsys.disabled():
+        print(f"result = {result}")
+
+    assert result.shape == (5, 10), "Must output same dimension as inputs batch axis"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "h,a",
+    [
+        (np.random.random(10), np.random.random((32, 32, 1))),
+        (np.random.random(10), np.random.random((32, 32, 3))),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_output_stability_objective_single_point(h, a, capsys):
+    result = quantus.relative_stability_objective_single_point(
+        h, h, a, a, 0.00001, False
+    )
+    with capsys.disabled():
+        print(f"result = {result}")
+
+    assert result != np.nan, "Probably divided by 0"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "h,a",
+    [
+        (np.random.random((5, 10)), np.random.random((5, 32, 32, 1))),
+        (np.random.random((5, 10)), np.random.random((5, 32, 32, 3))),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_output_stability_objective_batched(h, a, capsys):
+    result = quantus.relative_stability_objective_batched(h, h, a, a, 0.00001, False)
+    with capsys.disabled():
+        print(f"result = {result}")
 
     assert result.shape == (5,), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
-def test_relative_output_stability_objective(capsys):
-    h = np.random.random((5, 10))
-    a = np.random.random((5, 28, 28, 1))
-
-    result = quantus.relative_stability_objective(h, h, a, a, 0.00001, False, 1)
+@pytest.mark.parametrize(
+    "h,hs,a,a_s",
+    [
+        (
+            np.random.random((5, 10)),
+            np.random.random((10, 5, 10)),
+            np.random.random((5, 32, 32, 1)),
+            np.random.random((10, 5, 32, 32, 1)),
+        ),
+        (
+            np.random.random((5, 10)),
+            np.random.random((10, 5, 10)),
+            np.random.random((5, 32, 32, 3)),
+            np.random.random((10, 5, 32, 32, 3)),
+        ),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_output_stability_objective_vectorized_over_perturbations(
+    h, hs, a, a_s, capsys
+):
+    result = quantus.relative_stability_objective_vectorized_over_perturbation_axis(
+        h, hs, a, a_s, 0.00001, False
+    )
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
+
+    assert result.shape == (
+        10,
+        5,
+    ), "Must output same dimension as inputs batch axis"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "lx,a",
+    [
+        (
+            np.random.random(128),
+            np.random.random((32, 32, 1)),
+        ),
+        (
+            np.random.random(128),
+            np.random.random((32, 32, 3)),
+        ),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_representation_stability_objective_single_point(lx, a, capsys):
+    result = quantus.relative_stability_objective_single_point(
+        lx, lx, a, a, 0.00001, True
+    )
+    with capsys.disabled():
+        print(f"result = {result}")
+
+    assert result != np.nan, "Probably divided by 0"
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "lx,a",
+    [
+        (
+            np.random.random((5, 128)),
+            np.random.random((5, 32, 32, 1)),
+        ),
+        (
+            np.random.random((5, 128)),
+            np.random.random((5, 32, 32, 3)),
+        ),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_representation_stability_objective_batched(lx, a, capsys):
+    result = quantus.relative_stability_objective_batched(lx, lx, a, a, 0.00001, True)
+    with capsys.disabled():
+        print(f"result = {result}")
 
     assert result.shape == (5,), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
-@pytest.mark.parametrize("model", [(lazy_fixture("load_mnist_model_tf"))])
-def test_relative_representation_stability_objective(model, capsys):
-    tf_model = quantus.utils.get_wrapped_model(model, False)
-    x = np.random.random((5, 28, 28, 1))
-    a = np.random.random((5, 28, 28, 1))
-
-    lx = tf_model.get_hidden_layers_outputs(x)
-
-    result = quantus.relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
+@pytest.mark.parametrize(
+    "lx,lxs,a,a_s",
+    [
+        (
+            np.random.random((5, 128)),
+            np.random.random((10, 5, 128)),
+            np.random.random((5, 32, 32, 1)),
+            np.random.random((10, 5, 32, 32, 1)),
+        ),
+        (
+            np.random.random((5, 128)),
+            np.random.random((10, 5, 128)),
+            np.random.random((5, 32, 32, 3)),
+            np.random.random((10, 5, 32, 32, 3)),
+        ),
+    ],
+    ids=["1 channel", "3 channels"],
+)
+def test_relative_representation_stability_objective_vectorized_over_perturbations(lx, lxs, a, a_s, capsys):
+    result = quantus.relative_stability_objective_vectorized_over_perturbation_axis(lx, lxs, a, a_s, 0.00001, True)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
-    assert result.shape == (5,), "Must output same dimension as inputs batch axis"
+    assert result.shape == (
+        10,
+        5,
+    ), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
@@ -156,7 +326,7 @@ def test_pre_computed_perturbations(model, data, params, capsys):
 
     result = ris(model, x, data["y_batch"], xs_batch=xs, **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -198,7 +368,7 @@ def test_compute_perturbations(model, data, params, capsys):
 
     result = ris(model, x, data["y_batch"], **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -223,7 +393,7 @@ def test_precomputed_explanations(model, data, params, capsys):
     )
 
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -292,7 +462,7 @@ def test_compute_explanations(model, data, params, capsys):
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -346,7 +516,7 @@ def test_params_to_base_class(model, data, params, capsys):
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -367,7 +537,7 @@ def test_relative_output_stability(model, data, params, capsys):
 
     result = ros(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -395,6 +565,6 @@ def test_relative_representation_stability(model, data, params, capsys):
 
     result = rrs(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f'result = {result}')
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"

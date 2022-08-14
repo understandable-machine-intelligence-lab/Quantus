@@ -92,10 +92,11 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     def get_hidden_layers_outputs(self, x):
+        # Just flatten out outputs of each layer and concatenate in 2D tensor with shape [batch_size, ...]
         hidden_out = []
         out = x
         for layer in self.model.layers[:-1]:
             out = layer(out).numpy()
             hidden_out.append(out)
-        hidden_out = np.concatenate([i.reshape(-1) for i in hidden_out])
+        hidden_out = np.concatenate([i.reshape(-1) for i in hidden_out]).reshape(x.shape[0], -1)
         return hidden_out

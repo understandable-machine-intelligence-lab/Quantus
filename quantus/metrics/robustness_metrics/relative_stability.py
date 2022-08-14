@@ -15,44 +15,30 @@ For example usage, please refer to tutorials/tutorial_getting_started_with_tenso
 """
 
 
-@functools.partial(jax.jit, static_argnums=(4, 5, 6))
-def relative_stability_objective(
-        x: jnp.ndarray,
-        x_s: jnp.ndarray,
-        a: jnp.ndarray,
-        a_s: jnp.ndarray,
-        eps_min: float,
-        division_in_denominator: bool,
-        denominator_norm_axis: Union[Tuple[int, int], int],
-) -> jnp.ndarray:
-    """
-    Parameters
-            x: an input image / logits for x / internal representation for x
-            x_s: a perturbed input image / logits for x_s / internal representation for x_s
-            a: attribution for x: explanation, logits, or model internal state
-            a_s: attribution for x_s: explanation, logits, or model internal state
-            eps_min: prevents division by zero
-        Returns
-            1D ndarray of floats
-    """
+@functools.partial(jax.jit, static_argnums=(4, 5))
+def relative_stability_objective_single_point(
+    x, x_s, a, a_s, eps_min, division_in_denominator
+):
 
-    nominator = (a - a_s) / jnp.max(jnp.stack([a, jnp.full_like(a, eps_min)]), axis=0)  # prevent division by 0
-    nominator = jnp.linalg.norm(nominator, axis=(1, 2))
-    nominator = nominator.reshape(-1)
+    nominator = (a - a_s) / (a + (a == 0) * eps_min)  # prevent division by 0
+    nominator = jnp.linalg.norm(nominator)
 
     denominator = x - x_s
     if division_in_denominator:
-        denominator /= jnp.max(jnp.stack([x, jnp.full_like(x, eps_min)]), axis=0)  # prevent division by 0
+        denominator /= x + (x == 0) * eps_min
 
-
-    denominator = jnp.linalg.norm(denominator, axis=denominator_norm_axis).reshape(-1)
-    denominator = jnp.max(jnp.stack([denominator, jnp.full_like(denominator, eps_min)]), axis=0)
+    denominator = jnp.linalg.norm(denominator)
+    denominator = jnp.max(jnp.stack([denominator, eps_min]))
 
     return nominator / denominator
 
 
+relative_stability_objective_batched = jax.vmap(
+    relative_stability_objective_single_point, in_axes=(0, 0, 0, 0, None, None)
+)
+
 relative_stability_objective_vectorized_over_perturbation_axis = jax.vmap(
-    relative_stability_objective, in_axes=(None, 0, None, 0, None, None, None)
+    relative_stability_objective_batched, in_axes=(None, 0, None, 0, None, None)
 )
 
 
@@ -64,10 +50,15 @@ class RelativeStability(Metric, ABC):
     def __init__(self, *args, **kwargs):
         """
         A base class for relative stability metrics from https://arxiv.org/pdf/2203.06877.pdf
+        Relative Stability leverages model information to evaluate
+        the stability of an explanation with respect to the change in the
+            a) input data -> Relative Input Stability (RIS)
+            b) intermediate representations -> Relative Representation Stability (RRS)
+            c) output logits -> Relative Output Stability (ROS)
         Parameters:
             kwargs:
-               eps_min (optional): a small constant to prevent denominator from being 0, default 1e-6
-               num_perturbations(optional): number of times perturb_func should be executed, default 10
+               eps_min: Optional[float], a small constant to prevent division by 0 in relative_stability_objective, default 1e-6
+               num_perturbations: Optional[int] number of times perturb_func should be executed, default 100
         """
 
         super().__init__(*args, **kwargs)
@@ -78,21 +69,21 @@ class RelativeStability(Metric, ABC):
         )
 
     def __call__(
-            self, model, x_batch: np.ndarray, y_batch: np.ndarray, *args, **kwargs
+        self, model, x_batch: np.ndarray, y_batch: np.ndarray, *args, **kwargs
     ) -> Union[float, np.ndarray]:
 
         """
         Parameters:
             model:
-            x_batch: batch data points
-            y_batch: batch of labels for x_batch
+            x_batch: np.ndarray, a 4D tensor representing batch of input images
+            y_batch: np.ndarray, a 1D tensor, representing labels for x_batch
 
-            perturb_func(optional): a function used to perturbate inputs, must be provided unless no xs_batch provided
-            xs_batch(optional): a batch of perturbed inputs
+            perturb_func: Optional[Callable], a function used to perturbate inputs, must be provided unless no xs_batch provided
+            xs_batch: Optional[np.ndarray], a 5D tensor representing perturbations of the x_batch, which results in the same labels (optional)
 
-            exp_fun (optional): a function to generate explanations, must be provided unless a_batch, as_batch were not provided
-            a_batch(optional): pre-computed explanations for x
-            as_batch(optional): pre-computed explanations for x'
+            explain_func: Optional[Callable], a function used to generate explanations, must be provided unless a_batch, as_batch were not provided
+            a_batch: Optional[np.ndarray], a 4D tensor with pre-computed explanations for the x_batch
+            as_batch: Optional[np.ndarray], a 5D tensor with pre-computed explanations for xs_batch
 
             kwargs: kwargs, which are passed to perturb_func, explain_func and quantus.Metric base class.
 
@@ -116,12 +107,13 @@ class RelativeStability(Metric, ABC):
         xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
         if len(xs_batch) == 0:
             raise ValueError(
-                f'Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func')
+                f"Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func"
+            )
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
         result = self._compute_objective(x_batch, xs_batch, ex, exs)
 
-        result = jnp.max(result, axis=0)
+        result = jnp.max(result, axis=0).to_py()
 
         if self.return_aggregate:
             result = self.aggregate_func(result)
@@ -132,18 +124,18 @@ class RelativeStability(Metric, ABC):
         return result
 
     def _get_perturbed_inputs(
-            self, x_batch, y_batch, **kwargs
+        self, x_batch, y_batch, **kwargs
     ) -> Tuple[np.ndarray, Dict]:
         """
         Returns:
-            xs_batch: of perturbed inputs
-            kwargs: Dict of updated kwargs
+            xs_batch: np.ndarray, 5D tensor of perturbed inputs x_batchj
+            kwargs: Dict, updated kwargs
         """
 
         if "xs_batch" not in kwargs:
 
             if "perturb_func" not in kwargs:
-                warnings.warn(
+                print(
                     'No "perturb_func" provided, using random noise as default'
                 )
 
@@ -170,8 +162,8 @@ class RelativeStability(Metric, ABC):
             xs_batch = np.vstack(xs_batch)
             # drop images, which cause dims not to be divisible
             xs_batch = xs_batch[
-                       : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
-                       ]
+                : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
+            ]
             # make xs_batch have the same shape as x_batch, with new batching axis at 0
             xs_batch = xs_batch.reshape(-1, *x_batch.shape)
             return xs_batch, kwargs
@@ -183,19 +175,19 @@ class RelativeStability(Metric, ABC):
         return xs_batch, kwargs
 
     def _get_explanations(
-            self, x_batch, y_batch, xs_batch, **kwargs
+        self, x_batch, y_batch, xs_batch, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
         Returns:
-            a_batch: batch of explanations
-            as_batch: batch of batches of perturbed explanations
-            kwargs: Dict of updated kwargs
+            a_batch: np.ndarray, a 4D tensor, representing explanations for x_batch
+            as_batch: np.ndarray, a 5D tensor, representing explanations for xs_batch
+            kwargs: Dict, updated kwargs
         """
         if (
-                "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
+            "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
         ) or (
-                "explain_func" not in kwargs
-                and ("a_batch" not in kwargs or "as_batch" not in kwargs)
+            "explain_func" not in kwargs
+            and ("a_batch" not in kwargs or "as_batch" not in kwargs)
         ):
             raise ValueError(
                 "Must provide either explain_func or (a_batch and as_batch)"
@@ -267,7 +259,6 @@ class RelativeInputStability(RelativeStability):
             jnp.asarray(es),
             self.eps_min,
             True,
-            (1, 2),
         )
         return result.to_py()  # noqa
 
@@ -290,7 +281,6 @@ class RelativeOutputStability(RelativeStability):
             jnp.asarray(es),
             self.eps_min,
             False,
-            1,
         )
         return result.to_py()  # noqa
 
@@ -313,6 +303,5 @@ class RelativeRepresentationStability(RelativeStability):
             jnp.asarray(es),
             self.eps_min,
             True,
-            0,
         )
         return result.to_py()  # noqa
