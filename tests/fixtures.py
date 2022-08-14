@@ -94,7 +94,7 @@ def load_cifar10_images():
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = np.loadtxt("tutorials/assets/mnist_x").reshape((124, 28, 28, 1))
-    y_batch = np.loadtxt("tutorials/assets/mnist_y", dtype=int)
+    y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
