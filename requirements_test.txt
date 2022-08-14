@@ -2,7 +2,7 @@ captum==0.4.1
 coverage==6.2
 flake8==4.0.1
 matplotlib==3.3.4
-numpy>=1.21.6
+numpy==1.21.6
 opencv-python==4.5.5.62
 protobuf~=3.19.0
 pytest==6.2.5
@@ -11,7 +11,7 @@ pytest-lazy-fixture==0.6.3
 scikit-image==0.19.1 ; python_version > '3.6'
 scikit-learn==0.24.2
 scipy==1.5.4
-tensorflow>=2.9.1
+tensorflow==2.9.1
 termcolor==1.1.0
 tf-explain==0.3.1
 torch==1.10.1
