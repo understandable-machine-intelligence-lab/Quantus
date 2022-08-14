@@ -114,9 +114,7 @@ if util.find_spec("tensorflow"):
 
     import tensorflow as tf
 
-    from tensorflow.keras.models import Sequential
-
-    class LeNetTF(Sequential):
+    class LeNetTF(tf.keras.Sequential):
         """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
 
         def __init__(self):
@@ -133,7 +131,7 @@ if util.find_spec("tensorflow"):
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
 
-    class ConvNet1DTF(Sequential):
+    class ConvNet1DTF(tf.keras.Sequential):
         """1D-convolutional architecture."""
 
         def __init__(self, n_channels, seq_len, n_classes):
