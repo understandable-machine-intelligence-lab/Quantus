@@ -549,13 +549,13 @@ def test_relative_output_stability(model, data, params, capsys):
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"explain_func": quantus.explain, "num_perturbations": 10},
+            {"explain_func": quantus.explain},
         ),
         (
             # This situation caused problems in tutorials
             lazy_fixture("load_cnn_2d_1channel_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"explain_func": quantus.explain, "num_perturbations": 100},
+            {"explain_func": quantus.explain},
         ),
     ],
     ids=["leNet + mnist", "2d CNN + mnist"],
