@@ -10,7 +10,6 @@ from tqdm import tqdm
 from ..base import Metric
 from ...helpers import utils, perturb_func
 
-
 """
 For example usage, please refer to tutorials/tutorial_getting_started_with_tensorflow.ipynb
 """
@@ -18,13 +17,13 @@ For example usage, please refer to tutorials/tutorial_getting_started_with_tenso
 
 @functools.partial(jax.jit, static_argnums=(4, 5, 6))
 def relative_stability_objective(
-    x: jnp.ndarray,
-    x_s: jnp.ndarray,
-    a: jnp.ndarray,
-    a_s: jnp.ndarray,
-    eps_min: float,
-    division_in_denominator: bool,
-    denominator_norm_axis: Union[Tuple[int, int], int],
+        x: jnp.ndarray,
+        x_s: jnp.ndarray,
+        a: jnp.ndarray,
+        a_s: jnp.ndarray,
+        eps_min: float,
+        division_in_denominator: bool,
+        denominator_norm_axis: Union[Tuple[int, int], int],
 ) -> jnp.ndarray:
     """
     Parameters
@@ -33,30 +32,21 @@ def relative_stability_objective(
             a: attribution for x: explanation, logits, or model internal state
             a_s: attribution for x_s: explanation, logits, or model internal state
             eps_min: prevents division by zero
-
         Returns
-            float:
+            1D ndarray of floats
     """
 
-    # Prevent division by 0
-    x += eps_min
-    a += eps_min
-
-    nominator = (a - a_s) / a
+    nominator = (a - a_s) / jnp.max(jnp.stack([a, jnp.full_like(a, eps_min)]), axis=0)  # prevent division by 0
     nominator = jnp.linalg.norm(nominator, axis=(1, 2))
     nominator = nominator.reshape(-1)
 
     denominator = x - x_s
     if division_in_denominator:
-        denominator /= x
+        denominator /= jnp.max(jnp.stack([x, jnp.full_like(x, eps_min)]), axis=0)  # prevent division by 0
 
-    denominator = jnp.linalg.norm(denominator, axis=denominator_norm_axis)
-    denominator = denominator.reshape(-1)
 
-    eps_arr = jnp.full(denominator.shape, eps_min)
-
-    denominator = jnp.stack([denominator, eps_arr])
-    denominator = jnp.max(denominator, axis=0)
+    denominator = jnp.linalg.norm(denominator, axis=denominator_norm_axis).reshape(-1)
+    denominator = jnp.max(jnp.stack([denominator, jnp.full_like(denominator, eps_min)]), axis=0)
 
     return nominator / denominator
 
@@ -88,7 +78,7 @@ class RelativeStability(Metric, ABC):
         )
 
     def __call__(
-        self, model, x_batch: np.ndarray, y_batch: np.ndarray, *args, **kwargs
+            self, model, x_batch: np.ndarray, y_batch: np.ndarray, *args, **kwargs
     ) -> Union[float, np.ndarray]:
 
         """
@@ -125,7 +115,8 @@ class RelativeStability(Metric, ABC):
 
         xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
         if len(xs_batch) == 0:
-            raise ValueError(f'Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func')
+            raise ValueError(
+                f'Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func')
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
         result = self._compute_objective(x_batch, xs_batch, ex, exs)
@@ -141,7 +132,7 @@ class RelativeStability(Metric, ABC):
         return result
 
     def _get_perturbed_inputs(
-        self, x_batch, y_batch, **kwargs
+            self, x_batch, y_batch, **kwargs
     ) -> Tuple[np.ndarray, Dict]:
         """
         Returns:
@@ -179,8 +170,8 @@ class RelativeStability(Metric, ABC):
             xs_batch = np.vstack(xs_batch)
             # drop images, which cause dims not to be divisible
             xs_batch = xs_batch[
-                : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
-            ]
+                       : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
+                       ]
             # make xs_batch have the same shape as x_batch, with new batching axis at 0
             xs_batch = xs_batch.reshape(-1, *x_batch.shape)
             return xs_batch, kwargs
@@ -192,7 +183,7 @@ class RelativeStability(Metric, ABC):
         return xs_batch, kwargs
 
     def _get_explanations(
-        self, x_batch, y_batch, xs_batch, **kwargs
+            self, x_batch, y_batch, xs_batch, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
         Returns:
@@ -201,10 +192,10 @@ class RelativeStability(Metric, ABC):
             kwargs: Dict of updated kwargs
         """
         if (
-            "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
+                "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
         ) or (
-            "explain_func" not in kwargs
-            and ("a_batch" not in kwargs or "as_batch" not in kwargs)
+                "explain_func" not in kwargs
+                and ("a_batch" not in kwargs or "as_batch" not in kwargs)
         ):
             raise ValueError(
                 "Must provide either explain_func or (a_batch and as_batch)"

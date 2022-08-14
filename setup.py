@@ -36,7 +36,7 @@ else:
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow>=2.9.1"],
+    "tensorflow": ["tensorflow==2.9.1"],
     "extras": extras,
     "tutorials": [
         "torch==1.10.1",
@@ -61,7 +61,7 @@ setup(
         "coverage==6.2",
         "flake8==4.0.1",
         "matplotlib==3.3.4",
-        "numpy",
+        "numpy==1.23.1",
         "opencv-python==4.5.5.62",
         "protobuf~=3.19.0",
         "pytest==6.2.5",
@@ -72,8 +72,8 @@ setup(
         "scipy==1.5.4",
         "termcolor==1.1.0",
         "tqdm==4.62.3",
-        "jax>=0.3.15",
-        "jaxlib>=0.3.15"
+        "jax==0.3.16",
+        "jaxlib==0.3.15"
     ],
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",

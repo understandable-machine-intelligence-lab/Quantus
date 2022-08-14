@@ -2,7 +2,7 @@ from pytest_lazyfixture import lazy_fixture # noqa
 
 from ..fixtures import *
 from ... import quantus
-import jax.numpy as jnp
+import numpy as np
 
 """
 Following scenarios are to be tested for each Relative Stability metric
@@ -36,36 +36,42 @@ it's enough just to test 1 class extensively
 
 
 @pytest.mark.robustness
-def test_relative_input_stability_objective():
+def test_relative_input_stability_objective(capsys):
     x = np.random.random((5, 28, 28, 1))
 
-    res = quantus.relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
+    result = quantus.relative_stability_objective(x, x, x, x, 0.00001, True, (1, 2))
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert res.shape == (5,), "Must output same dimension as inputs batch axis"
+    assert result.shape == (5,), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
-def test_relative_output_stability_objective():
+def test_relative_output_stability_objective(capsys):
     h = np.random.random((5, 10))
     a = np.random.random((5, 28, 28, 1))
 
-    res = quantus.relative_stability_objective(h, h, a, a, 0.00001, False, 1)
+    result = quantus.relative_stability_objective(h, h, a, a, 0.00001, False, 1)
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert res.shape == (5,), "Must output same dimension as inputs batch axis"
+    assert result.shape == (5,), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
 @pytest.mark.parametrize("model", [(lazy_fixture("load_mnist_model_tf"))])
-def test_relative_representation_stability_objective(model):
+def test_relative_representation_stability_objective(model, capsys):
     tf_model = quantus.utils.get_wrapped_model(model, False)
     x = np.random.random((5, 28, 28, 1))
     a = np.random.random((5, 28, 28, 1))
 
     lx = tf_model.get_hidden_layers_outputs(x)
 
-    res = quantus.relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
+    result = quantus.relative_stability_objective(lx, lx, a, a, 0.00001, True, 0)
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert res.shape == (5,), "Must output same dimension as inputs batch axis"
+    assert result.shape == (5,), "Must output same dimension as inputs batch axis"
 
 
 @pytest.mark.robustness
@@ -143,15 +149,16 @@ def test_invalid_kwargs(model, data, params):
         )
     ],
 )
-def test_pre_computed_perturbations(model, data, params):
+def test_pre_computed_perturbations(model, data, params, capsys):
     ris = quantus.RelativeInputStability(**params)
     x = data["x_batch"]
     xs = np.asarray([quantus.random_noise(x) for _ in range(5)])
 
     result = ris(model, x, data["y_batch"], xs_batch=xs, **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -185,14 +192,15 @@ def test_pre_computed_perturbations(model, data, params):
         "perturb_func = quantus.gaussian_noise, with extra kwargs",
     ],
 )
-def test_compute_perturbations(model, data, params):
+def test_compute_perturbations(model, data, params, capsys):
     ris = quantus.RelativeInputStability(**params)
     x = data["x_batch"]
 
     result = ris(model, x, data["y_batch"], **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -200,7 +208,7 @@ def test_compute_perturbations(model, data, params):
     "model,data,params",
     [(lazy_fixture("load_mnist_model_tf"), lazy_fixture("load_mnist_images_tf"), {})],
 )
-def test_precomputed_explanations(model, data, params):
+def test_precomputed_explanations(model, data, params, capsys):
     x = data["x_batch"]
     ex = quantus.explain(model, x, data["y_batch"])
 
@@ -214,9 +222,10 @@ def test_precomputed_explanations(model, data, params):
         as_batch=np.stack([ex, ex]),
     )
 
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -278,13 +287,14 @@ def test_precomputed_explanations(model, data, params):
         "method = GradCam",
     ],
 )
-def test_compute_explanations(model, data, params):
+def test_compute_explanations(model, data, params, capsys):
     ris = quantus.RelativeInputStability(**params)
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -331,13 +341,14 @@ def test_compute_explanations(model, data, params):
         "return_aggregate = True",
     ],
 )
-def test_params_to_base_class(model, data, params):
+def test_params_to_base_class(model, data, params, capsys):
     ris = quantus.RelativeInputStability(**params)
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -351,13 +362,14 @@ def test_params_to_base_class(model, data, params):
         ),
     ],
 )
-def test_relative_output_stability(model, data, params):
+def test_relative_output_stability(model, data, params, capsys):
     ros = quantus.RelativeOutputStability(**params)
 
     result = ros(model, data["x_batch"], data["y_batch"], **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
 
 
 @pytest.mark.robustness
@@ -378,10 +390,11 @@ def test_relative_output_stability(model, data, params):
     ],
     ids=["leNet + mnist", "2d CNN + mnist"],
 )
-def test_relative_representation_stability(model, data, params):
+def test_relative_representation_stability(model, data, params, capsys):
     rrs = quantus.RelativeRepresentationStability(**params)
 
     result = rrs(model, data["x_batch"], data["y_batch"], **params)
-    print(f"result = {result}")
+    with capsys.disabled():
+        print(f'result = {result}')
 
-    assert (result != jnp.nan).all(), "Probably divided by 0"
+    assert (result != np.nan).all(), "Probably divided by 0"
