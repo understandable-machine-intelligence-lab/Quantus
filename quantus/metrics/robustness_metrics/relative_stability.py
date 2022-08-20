@@ -1,4 +1,3 @@
-import warnings
 from typing import Union, Dict, Callable, Tuple
 import numpy as np
 import jax.numpy as jnp
@@ -132,46 +131,45 @@ class RelativeStability(Metric, ABC):
             kwargs: Dict, updated kwargs
         """
 
-        if "xs_batch" not in kwargs:
+        if "xs_batch" in kwargs:
+            xs_batch = kwargs.pop("xs_batch")
+            if len(xs_batch.shape) <= len(x_batch.shape):
+                raise ValueError("xs_batch must have 1 more batch axis than x_batch")
 
-            if "perturb_func" not in kwargs:
-                print(
-                    'No "perturb_func" provided, using random noise as default'
-                )
-
-            perturb_function: Callable = kwargs.pop(
-                "perturb_func", perturb_func.random_noise
-            )
-
-            xs_batch = []
-            it = range(self.num_perturbations)
-
-            if self.display_progressbar:
-                it = tqdm(it, desc=f"Collecting perturbation for {self.name}")
-
-            for _ in it:
-                xs = perturb_function(x_batch, **kwargs)
-                logits = self.model.predict(xs)
-                labels = np.argmax(logits, axis=1)
-
-                same_label_indexes = np.argwhere(labels == y_batch)
-                xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
-                xs_batch.append(xs)
-
-            # pull all new images into 0 axes
-            xs_batch = np.vstack(xs_batch)
-            # drop images, which cause dims not to be divisible
-            xs_batch = xs_batch[
-                : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
-            ]
-            # make xs_batch have the same shape as x_batch, with new batching axis at 0
-            xs_batch = xs_batch.reshape(-1, *x_batch.shape)
             return xs_batch, kwargs
 
-        xs_batch = kwargs.pop("xs_batch")
-        if len(xs_batch.shape) <= len(x_batch.shape):
-            raise ValueError("xs_batch must have 1 more batch axis than x_batch")
+        if "perturb_func" not in kwargs:
+            print(
+                'No "perturb_func" provided, using random noise as default'
+            )
 
+        perturb_function: Callable = kwargs.pop(
+            "perturb_func", perturb_func.random_noise
+        )
+
+        xs_batch = []
+        it = range(self.num_perturbations)
+
+        if self.display_progressbar:
+            it = tqdm(it, desc=f"Collecting perturbation for {self.name}")
+
+        for _ in it:
+            xs = perturb_function(x_batch, **kwargs)
+            logits = self.model.predict(xs)
+            labels = np.argmax(logits, axis=1)
+
+            same_label_indexes = np.argwhere(labels == y_batch)
+            xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
+            xs_batch.append(xs)
+
+        # pull all new images into 0 axes
+        xs_batch = np.vstack(xs_batch)
+        # drop images, which cause dims not to be divisible
+        xs_batch = xs_batch[
+            : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
+        ]
+        # make xs_batch have the same shape as x_batch, with new batching axis at 0
+        xs_batch = xs_batch.reshape(-1, *x_batch.shape)
         return xs_batch, kwargs
 
     def _get_explanations(
