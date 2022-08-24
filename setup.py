@@ -83,6 +83,6 @@ setup(
     license="CC BY-NC-SA 3.0",
     packages=find_packages(),
     zip_safe=False,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     include_package_data=True,
 )
