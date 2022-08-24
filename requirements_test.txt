@@ -2,7 +2,7 @@ captum==0.4.1
 coverage==6.2
 flake8==4.0.1
 matplotlib==3.3.4
-numpy==1.19.5
+numpy==1.22.0
 opencv-python==4.5.5.62
 protobuf~=3.19.0
 pytest==6.2.5
