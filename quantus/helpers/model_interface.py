@@ -44,9 +44,10 @@ class ModelInterface(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
         """
         Collect all hidden layers outputs (aka intermediate representations),
         and concatenate them in 1D tensor
         """
-        raise NotImplementedError()
+        pass

@@ -87,3 +87,18 @@ class PyTorchModel(ModelInterface):
             torch.manual_seed(seed=seed + 1)
             module[1].reset_parameters()
             yield module[0], random_layer_model
+
+    def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
+        # skip last layer, and module defined by subclassing API
+        hidden_layers = [l for l in self.model.modules() if not isinstance(l, self.model.__class__)][:-1]
+        hidden_outputs = []
+
+        def hook(module, module_in, module_out):
+            arr = module_out.detach().numpy()
+            arr = arr.reshape((arr.shape[0], -1))
+            hidden_outputs.append(arr)
+
+        for l in hidden_layers:
+            l.register_forward_hook(hook)
+        self.model.forward(torch.Tensor(x))
+        return np.hstack(hidden_outputs)

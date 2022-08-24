@@ -9,6 +9,7 @@ import numpy as np
 
 from ..helpers.model_interface import ModelInterface
 from ..helpers import utils
+import tensorflow as tf
 
 
 class TensorFlowModel(ModelInterface):
@@ -94,11 +95,11 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-    def get_hidden_layers_outputs(self, x):
-        hidden_out = []
-        out = x
+    def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
+        hidden_outputs = []
+        layer_input = tf.constant(x)
         for layer in self.model.layers[:-1]:
-            out = layer(out).numpy()
-            hidden_out.append(out)
-        hidden_out = np.concatenate([i.reshape(-1) for i in hidden_out]).reshape(x.shape[0], -1)
-        return hidden_out
+            layer_input = layer(layer_input)
+            hidden_outputs.append(layer_input)
+        hidden_outputs = tf.reshape(tf.ragged.stack(hidden_outputs), (x.shape[0], -1))
+        return hidden_outputs.numpy()
