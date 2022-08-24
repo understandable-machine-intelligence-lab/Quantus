@@ -36,7 +36,7 @@ else:
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow==2.6.2"],
+    "tensorflow": ["tensorflow==2.9.1"],
     "extras": extras,
     "tutorials": [
         "torch==1.10.1",
@@ -61,7 +61,7 @@ setup(
         "coverage==6.2",
         "flake8==4.0.1",
         "matplotlib==3.3.4",
-        "numpy==1.21.6",
+        "numpy",
         "opencv-python==4.5.5.62",
         "protobuf~=3.19.0",
         "pytest==6.2.5",
