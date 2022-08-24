@@ -158,7 +158,14 @@ if util.find_spec("tensorflow"):
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
 
-    def cnn_2d_3channels_tf(img_height, img_width, num_classes, num_channels=3) -> tf.keras.Model:
+
+    def cnn_2d_tf(
+            img_height: int,
+            img_width: int,
+            num_classes: int,
+            num_channels=3
+    ) -> tf.keras.Model:
+        # Architecture adapted from
         # https://www.tensorflow.org/tutorials/images/classification
         model = tf.keras.Sequential([
             tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
@@ -173,10 +180,10 @@ if util.find_spec("tensorflow"):
             tf.keras.layers.Dense(num_classes)
         ])
 
-        model.compile(optimizer='adam',
-                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                      metrics=['accuracy'],
-                      jit_compile=True
-                      )
+        model.compile(
+            optimizer='adam',
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            metrics=['accuracy']
+        )
 
         return model

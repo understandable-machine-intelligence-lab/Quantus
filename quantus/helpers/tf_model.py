@@ -1,7 +1,10 @@
 """This model creates the ModelInterface for Tensorflow."""
 from typing import Optional, Tuple
 
-import tensorflow as tf
+from tensorflow.keras.activations import linear, softmax
+from tensorflow.keras.layers import Dense
+from tensorflow.keras import Model
+from tensorflow.keras.models import clone_model
 import numpy as np
 
 from ..helpers.model_interface import ModelInterface
@@ -20,7 +23,7 @@ class TensorFlowModel(ModelInterface):
         softmax_act = kwargs.get("softmax", False)
 
         output_act = self.model.layers[-1].activation
-        target_act = tf.keras.activations.softmax if softmax_act else tf.keras.activations.linear
+        target_act = softmax if softmax_act else linear
 
         if output_act == target_act:
             return self.model(x, training=False).numpy()
@@ -30,8 +33,8 @@ class TensorFlowModel(ModelInterface):
 
         weights = self.model.layers[-1].get_weights()
 
-        output_layer = tf.keras.layers.Dense(**config)(self.model.layers[-2].output)
-        new_model = tf.keras.Model(inputs=[self.model.input], outputs=[output_layer])
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
 
         return new_model(x, training=False).numpy()
@@ -76,7 +79,7 @@ class TensorFlowModel(ModelInterface):
         Set order to independent for independent randomization.
         """
         original_parameters = self.state_dict()
-        random_layer_model = tf.keras.models.clone_model(self.model)
+        random_layer_model = clone_model(self.model)
 
         layers = [l for l in random_layer_model.layers if len(l.get_weights()) > 0]
 
@@ -92,7 +95,6 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     def get_hidden_layers_outputs(self, x):
-        # Just flatten out outputs of each layer and concatenate in 2D tensor with shape [batch_size, ...]
         hidden_out = []
         out = x
         for layer in self.model.layers[:-1]:
