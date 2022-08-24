@@ -61,7 +61,7 @@ setup(
         "coverage==6.2",
         "flake8==4.0.1",
         "matplotlib==3.3.4",
-        "numpy",
+        "numpy==1.23.2",
         "opencv-python==4.5.5.62",
         "protobuf~=3.19.0",
         "pytest==6.2.5",
