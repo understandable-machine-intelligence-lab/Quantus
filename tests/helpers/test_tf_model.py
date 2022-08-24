@@ -1,7 +1,5 @@
 from functools import reduce
 from operator import and_
-
-import numpy as np
 from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
 
