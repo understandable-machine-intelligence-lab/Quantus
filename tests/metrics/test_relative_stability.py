@@ -233,8 +233,12 @@ def test_relative_representation_stability_objective_batched(lx, a, capsys):
     ],
     ids=["1 channel", "3 channels"],
 )
-def test_relative_representation_stability_objective_vectorized_over_perturbations(lx, lxs, a, a_s, capsys):
-    result = quantus.relative_stability_objective_vectorized_over_perturbation_axis(lx, lxs, a, a_s, 0.00001, True)
+def test_relative_representation_stability_objective_vectorized_over_perturbations(
+    lx, lxs, a, a_s, capsys
+):
+    result = quantus.relative_stability_objective_vectorized_over_perturbation_axis(
+        lx, lxs, a, a_s, 0.00001, True
+    )
     with capsys.disabled():
         print(f"{result = }")
 

@@ -165,8 +165,7 @@ if util.find_spec("tensorflow"):
             num_classes: int,
             num_channels=3
     ) -> tf.keras.Model:
-        # Architecture adapted from
-        # https://www.tensorflow.org/tutorials/images/classification
+        # NN adapted from https://www.tensorflow.org/tutorials/images/classification
         model = tf.keras.Sequential([
             tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
             tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
@@ -179,11 +178,10 @@ if util.find_spec("tensorflow"):
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(num_classes)
         ])
-
         model.compile(
             optimizer='adam',
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=['accuracy']
+            metrics=['accuracy'],
+            jit_compile=True
         )
-
         return model
