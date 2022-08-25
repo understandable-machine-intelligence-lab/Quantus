@@ -1,5 +1,5 @@
 """This model creates the ModelInterface for Tensorflow."""
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
@@ -95,11 +95,28 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-    def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
+    def get_hidden_layers_outputs(self,
+                                  x: np.ndarray,
+                                  layer_names: Optional[List[str]] = None,
+                                  layer_indices: Optional[List[int]] = None,
+                                  ) -> np.ndarray:
+        batch_size = x.shape[0]
+        hidden_layers = self.model.layers[:-1]
         hidden_outputs = []
         layer_input = tf.constant(x)
-        for layer in self.model.layers[:-1]:
-            layer_input = layer(layer_input)
-            hidden_outputs.append(layer_input)
-        hidden_outputs = tf.reshape(tf.ragged.stack(hidden_outputs), (x.shape[0], -1))
+        for layer in hidden_layers:
+            layer_output = layer(layer_input)
+            flat_output = tf.reshape(layer_output, (batch_size, -1))
+            hidden_outputs.append(flat_output)
+            layer_input = layer_output
+
+        hidden_outputs = tf.ragged.stack(hidden_outputs)
+
+        if layer_names:
+            names = list(map(lambda l: l.name, hidden_layers))
+            layer_indices = [i for i, n in enumerate(names) if n in layer_names]
+        if layer_indices:
+            hidden_outputs = tf.gather(hidden_outputs, layer_indices, axis=0)
+
+        hidden_outputs = tf.reshape(hidden_outputs, (batch_size, -1))
         return hidden_outputs.numpy()

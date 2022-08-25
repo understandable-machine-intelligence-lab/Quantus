@@ -138,11 +138,31 @@ def test_get_random_layer_generator(load_mnist_model_tf):
 
 
 @pytest.mark.tf_model
-def test_get_hidden_layer_outputs(load_mnist_model_tf):
-    tf_model = load_mnist_model_tf
+@pytest.mark.parametrize(
+    "tf_model,params", [
+        (
+                lazy_fixture("load_cnn_2d_1channel_tf"),
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_1channel_tf"),
+                {'layer_names': ['conv2d']}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_1channel_tf"),
+                {'layer_indices': [0, 1]}
+        )
+    ],
+    ids=[
+        'all layers',
+        '2nd conv',
+        '1st 2 layers'
+    ]
+)
+def test_get_hidden_layer_outputs(tf_model, params):
     model = TensorFlowModel(model=tf_model, channel_first=False)
     X = np.random.random((32, 28, 28, 1))
-    result = model.get_hidden_layers_outputs(X)
+    result = model.get_hidden_layers_outputs(X, **params)
     assert isinstance(result, np.ndarray), "Must be a np.ndarray"
     assert len(result.shape) == 2, "Must be a batch of 1D tensors"
     assert result.shape[0] == X.shape[0], "Must have same batch size as input"

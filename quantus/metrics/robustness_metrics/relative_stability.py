@@ -10,7 +10,7 @@ from ..base import Metric
 from ...helpers import utils, perturb_func
 
 """
-For example usage, please refer to tutorials/tutorial_getting_started_with_tensorflow.ipynb
+For example usage, refer to tutorials/tutorial_getting_started_with_tensorflow.ipynb
 """
 
 
@@ -106,7 +106,7 @@ class RelativeStability(Metric, ABC):
         xs_batch, kwargs = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
         if len(xs_batch) == 0:
             raise ValueError(
-                f"Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func"
+                "Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func"
             )
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 

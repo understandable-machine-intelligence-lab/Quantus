@@ -1,7 +1,7 @@
 """This model creates the ModelInterface for PyTorch."""
 from contextlib import suppress
 from copy import deepcopy
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import torch
 import numpy as np
@@ -88,17 +88,30 @@ class PyTorchModel(ModelInterface):
             module[1].reset_parameters()
             yield module[0], random_layer_model
 
-    def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
+    def get_hidden_layers_outputs(self, x: np.ndarray,
+                                  layer_names: Optional[List[str]] = None,
+                                  layer_indices: Optional[List[int]] = None,
+                                  ) -> np.ndarray:
         # skip last layer, and module defined by subclassing API
-        hidden_layers = [l for l in self.model.modules() if not isinstance(l, self.model.__class__)][:-1]
+        hidden_layers = [l for l in self.model.named_modules()][:-1]
+        hidden_layers = list(filter(
+            lambda l: not isinstance(l[1], (self.model.__class__, torch.nn.Sequential)),
+            hidden_layers
+        ))
+        if layer_names:
+            hidden_layers = list(filter(lambda l: l[0] in layer_names, hidden_layers))
+        if layer_indices:
+            hidden_layers = [hidden_layers[i] for i in layer_indices]
+
+        batch_size = x.shape[0]
         hidden_outputs = []
 
         def hook(module, module_in, module_out):
             arr = module_out.detach().numpy()
-            arr = arr.reshape((arr.shape[0], -1))
+            arr = arr.reshape((batch_size, -1))
             hidden_outputs.append(arr)
 
-        for l in hidden_layers:
+        for name, l in hidden_layers:
             l.register_forward_hook(hook)
         self.model.forward(torch.Tensor(x))
         return np.hstack(hidden_outputs)

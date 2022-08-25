@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import numpy as np
 
 
@@ -45,9 +45,14 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_hidden_layers_outputs(self, x: np.ndarray) -> np.ndarray:
+    def get_hidden_layers_outputs(self,
+                                  x: np.ndarray,
+                                  layer_names: Optional[List[str]] = None,
+                                  layer_indices: Optional[List[int]] = None,
+                                  ) -> np.ndarray:
         """
-        Collect all hidden layers outputs (aka intermediate representations),
-        and concatenate them in 1D tensor
+        If no layer_names and no layer_indices provided, collect all hidden layers outputs
+        (aka intermediate representations), and concatenate them in 1D tensor.
+        Alternatively, user can provide names or indices of layers of interest.
         """
         pass
