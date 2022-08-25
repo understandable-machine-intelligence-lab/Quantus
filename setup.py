@@ -21,11 +21,11 @@ if (
     and util.find_spec("tensorflow")
     and version("tensorflow") >= "2.0"
 ):
-    extras = ["captum==0.4.1", "tf-explain==0.3.1"]
+    extras = ["captum>=0.4.1", "tf-explain>=0.3.1"]
 elif util.find_spec("torch") and version("torch") >= "1.2":
-    extras = ["captum==0.4.1"]
+    extras = ["captum>=0.4.1"]
 elif util.find_spec("tensorflow") and version("tensorflow") >= "2.0":
-    extras = ["tf-explain==0.3.1"]
+    extras = ["tf-explain>=0.3.1"]
 else:
     extras = []
 
@@ -35,13 +35,13 @@ else:
 
 # Define extras.
 EXTRAS = {
-    "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow==2.6.2"],
+    "torch": ["torch>=1.10.1", "torchvision>=0.11.2"],
+    "tensorflow": ["tensorflow>=2.6.2"],
     "extras": extras,
     "tutorials": [
-        "torch==1.10.1",
-        "torchvision==0.11.2",
-        "captum==0.4.1",
+        "torch>=1.10.1",
+        "torchvision>=0.11.2",
+        "captum>=0.4.1",
         "collections",
         "pandas",
         "xmltodict",
@@ -57,19 +57,19 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     install_requires=[
-        "coverage==6.2",
-        "flake8==4.0.1",
-        "matplotlib==3.3.4",
-        "numpy==1.19.5",
-        "opencv-python==4.5.5.62",
-        "pytest==6.2.5",
-        "pytest-cov==3.0.0",
-        "pytest-lazy-fixture==0.6.3",
-        "scikit-image==0.19.1",
-        "scikit-learn==0.24.2",
-        "scipy==1.5.4",
-        "termcolor==1.1.0",
-        "tqdm==4.62.3",
+        "coverage>=6.2",
+        "flake8>=4.0.1",
+        "matplotlib>=3.3.4",
+        "numpy>=1.19.5",
+        "opencv-python>=4.5.5.62",
+        "pytest>=6.2.5",
+        "pytest-cov>=3.0.0",
+        "pytest-lazy-fixture>=0.6.3",
+        "scikit-image>=0.19.1",
+        "scikit-learn>=0.24.2",
+        "scipy>=1.5.4",
+        "termcolor>=1.1.0",
+        "tqdm>=4.62.3",
     ],
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
