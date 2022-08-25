@@ -110,7 +110,7 @@ class RelativeStability(Metric, ABC):
             )
         ex, exs, kwargs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
 
-        result = self._compute_objective(x_batch, xs_batch, ex, exs)
+        result = self._compute_objective(x_batch, xs_batch, ex, exs, **kwargs)
 
         result = jnp.max(result, axis=0).to_py()
 
@@ -139,9 +139,7 @@ class RelativeStability(Metric, ABC):
             return xs_batch, kwargs
 
         if "perturb_func" not in kwargs:
-            print(
-                'No "perturb_func" provided, using random noise as default'
-            )
+            print('No "perturb_func" provided, using random noise as default')
 
         perturb_function: Callable = kwargs.pop(
             "perturb_func", perturb_func.random_noise
@@ -165,9 +163,7 @@ class RelativeStability(Metric, ABC):
         # pull all new images into 0 axes
         xs_batch = np.vstack(xs_batch)
         # drop images, which cause dims not to be divisible
-        xs_batch = xs_batch[
-            : xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]
-        ]
+        xs_batch = xs_batch[: xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
         # make xs_batch have the same shape as x_batch, with new batching axis at 0
         xs_batch = xs_batch.reshape(-1, *x_batch.shape)
         return xs_batch, kwargs
@@ -229,7 +225,7 @@ class RelativeStability(Metric, ABC):
         return a_batch, np.asarray(as_batch), kwargs
 
     @abstractmethod
-    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
+    def _compute_objective(self, x, xs, e, es, **kwargs) -> np.ndarray:
         """
         The only non-generic part among all 3 Relative Stability metrics
         """
@@ -249,7 +245,7 @@ class RelativeInputStability(RelativeStability):
         some small epsilon_min>0
     """
 
-    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
+    def _compute_objective(self, x, xs, e, es, **kwargs) -> np.ndarray:
         result = relative_stability_objective_vectorized_over_perturbation_axis(
             jnp.asarray(x),
             jnp.asarray(xs),
@@ -269,7 +265,7 @@ class RelativeOutputStability(RelativeStability):
        where h(x) and h(x') are the output logits for x and x', respectively
     """
 
-    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
+    def _compute_objective(self, x, xs, e, es, **kwargs) -> np.ndarray:
         hx = self.model.predict(x)
         hxs = [self.model.predict(i) for i in xs]
         result = relative_stability_objective_vectorized_over_perturbation_axis(
@@ -291,9 +287,20 @@ class RelativeRepresentationStability(RelativeStability):
        where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
     """
 
-    def _compute_objective(self, x, xs, e, es) -> np.ndarray:
-        lx = self.model.get_hidden_layers_outputs(x)
-        lxs = [self.model.get_hidden_layers_outputs(i) for i in xs]
+    def _compute_objective(self, x, xs, e, es, **kwargs) -> np.ndarray:
+        lx = self.model.get_hidden_layers_outputs(
+            x,
+            layer_names=kwargs.get("layer_names"),
+            layer_indices=kwargs.get("layer_indices"),
+        )
+        lxs = [
+            self.model.get_hidden_layers_outputs(
+                i,
+                layer_names=kwargs.get("layer_names"),
+                layer_indices=kwargs.get("layer_indices"),
+            )
+            for i in xs
+        ]
         result = relative_stability_objective_vectorized_over_perturbation_axis(
             jnp.asarray(lx),
             jnp.asarray(lxs),
