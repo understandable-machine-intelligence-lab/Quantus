@@ -226,20 +226,21 @@ def test_get_baseline_value(
     ), "Test failed."
 
 
-@pytest.mark.utils
+@pytest.mark.fixme
 @pytest.mark.parametrize(
-    "data,expected",
+    "data,params,expected",
     [
-        (lazy_fixture("baseline_black_3d"), dict),
-        (lazy_fixture("baseline_black_3d"), dict),
-        (lazy_fixture("baseline_white_3d"), dict),
-        (lazy_fixture("baseline_white_3d"), dict),
-        (lazy_fixture("baseline_mean_3d"), dict),
-        (lazy_fixture("baseline_mean_3d"), dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
     ],
 )
-def test_get_baseline_dict(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = get_baseline_dict(arr=data["arr"])
+def test_get_baseline_dict(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+    out = get_baseline_dict(arr=data["arr"], **params)
+    print(out, type(out))
     assert isinstance(out, dict), "Test failed."
 
 
