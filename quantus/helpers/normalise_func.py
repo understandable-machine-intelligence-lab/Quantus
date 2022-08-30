@@ -58,8 +58,10 @@ def normalise_by_negative(
 
     # Else.
     return_array = np.where(
-        (a.min(axis=normalized_axes, keepdims=True) < 0.0)
-        and (a.max(axis=normalized_axes, keepdims=True) > 0.0),
+        np.logical_and(
+            a.min(axis=normalized_axes, keepdims=True) < 0.0,
+            a.max(axis=normalized_axes, keepdims=True) > 0.0,
+        ),
         (a > 0.0) * a / a.max(axis=normalized_axes, keepdims=True)
         - (a < 0.0) * a / a.min(axis=normalized_axes, keepdims=True),
         return_array,
