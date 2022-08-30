@@ -271,10 +271,9 @@ class Metric:
         if self.normalise:
             a_batch = self.normalise_func(
                 a=a_batch,
-                normalized_axes=list(range(np.ndim(a_batch)))[
-                    1:
-                ]  # TODO note: this assumes we always have a batch axis. that ok?
-                ** self.normalise_func_kwargs,
+                # TODO note: this assumes we always have a batch axis. that ok?
+                normalized_axes=list(range(np.ndim(a_batch)))[1:],
+                **self.normalise_func_kwargs,
             )
 
         # Take absolute if requested.
