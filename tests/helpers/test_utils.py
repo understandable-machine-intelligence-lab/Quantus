@@ -226,7 +226,7 @@ def test_get_baseline_value(
     ), "Test failed."
 
 
-@pytest.mark.fixme
+@pytest.mark.utils
 @pytest.mark.parametrize(
     "data,params,expected",
     [
