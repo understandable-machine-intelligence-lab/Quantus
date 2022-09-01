@@ -159,7 +159,7 @@ if util.find_spec("tensorflow"):
             )
 
 
-    def CNN_2d_TF(
+    def CNN_2D_TF(
             img_height: int,
             img_width: int,
             num_classes: int,
