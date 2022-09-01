@@ -40,6 +40,11 @@ it's enough just to test 1 class extensively
 """
 
 
+def test_cant_instantiate_base_class():
+    with pytest.raises(TypeError):
+        _ = quantus.RelativeStability()
+
+    
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "x,xs",
@@ -444,4 +449,5 @@ def test_relative_representation_stability(model, data, params, capsys):
 
 
 def test_relative_stability_pytorch():
-    pytest.fail("TODO")
+
+    rs = quantus.RelativeStability()

@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Union, Tuple
 import numpy as np
 from tqdm import tqdm
 import jax.numpy as jnp
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from .base import Metric
 from ..helpers import asserts
@@ -1273,7 +1273,7 @@ class Consistency(Metric):
 
 
 
-class RelativeStability(Metric):
+class RelativeStability(Metric, ABC):
     DEFAULT_NUM_PERTURBATIONS = 100
     name: str
 
