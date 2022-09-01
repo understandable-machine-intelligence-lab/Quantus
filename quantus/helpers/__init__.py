@@ -14,6 +14,7 @@ from .plotting import *
 from .similar_func import *
 from .utils import *
 from .warn_func import *
+from .relative_stability_objective import *
 
 # Import files dependent on package installations.
 if __MODELS__:

@@ -8,23 +8,22 @@ from tqdm import tqdm
 import jax.numpy as jnp
 from abc import abstractmethod
 
-from metrics.base import Metric
-from helpers import asserts
-from helpers import perturb_func
-from helpers import similar_func
-from helpers import utils
-from helpers import warn_func
-from helpers.asserts import attributes_check
-from helpers.model_interface import ModelInterface
-from helpers.norm_func import fro_norm
-from helpers.normalise_func import normalise_by_negative
-from helpers.discretise_func import top_n_sign
-from helpers.relative_stability_objective import (
+from .base import Metric
+from ..helpers import asserts
+from ..helpers import perturb_func
+from ..helpers import similar_func
+from ..helpers import utils
+from ..helpers import warn_func
+from ..helpers.asserts import attributes_check
+from ..helpers.model_interface import ModelInterface
+from ..helpers.norm_func import fro_norm
+from ..helpers.normalise_func import normalise_by_negative
+from ..helpers.discretise_func import top_n_sign
+from ..helpers.relative_stability_objective import (
     relative_input_stability_objective,
     relative_output_stability_objective,
     relative_representation_stability_objective
 )
-
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1339,11 +1338,13 @@ class RelativeStability(Metric):
             )
 
         xs_batch = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
+        # In order to avoid TypeError: _get_explanations() got multiple values for argument 'xs_batch'
+        kwargs['xs_batch'] = xs_batch
         if len(xs_batch) == 0:
             raise ValueError(
                 "Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func"
             )
-        ex, exs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
+        ex, exs = self._get_explanations(x_batch, y_batch, **kwargs)
 
         result = self._compute_objective(x_batch, xs_batch, ex, exs, **kwargs)
 

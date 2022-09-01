@@ -4,6 +4,10 @@ import functools
 import jax
 import jax.numpy as jnp
 import numpy as np
+from jax import config
+
+
+config.update("jax_debug_nans", True)
 
 
 @functools.partial(jax.jit, static_argnums=4)
@@ -34,7 +38,7 @@ _relative_input_stability_objective_batched = jax.vmap(
 # Here we batch/vectorize 2. and 4. argument of _relative_input_stability_objective_batched over an additional axis at 0,
 # which represents perturbations of inputs/explanations, and allows us to avoid for-loops.
 _relative_input_stability_objective_vectorized_over_perturbation_axis = jax.vmap(
-    _relative_input_stability_objective_batched, in_axes=(None, 0, None, 0, None, None)
+    _relative_input_stability_objective_batched, in_axes=(None, 0, None, 0, None)
 )
 
 
@@ -103,14 +107,14 @@ def _relative_output_stability_objective_single_point(x, x_s, a, a_s, eps_min):
     return nominator / denominator
 
 
-# Follow the same logic as _relative_input_stability_objective_batched
+# Follows the same logic as _relative_input_stability_objective_batched
 _relative_output_stability_objective_batched = jax.vmap(
     _relative_output_stability_objective_single_point, in_axes=(0, 0, 0, 0, None)
 )
 
 # Follows the same logic as _relative_input_stability_objective_vectorized_over_perturbation_axis
 _relative_output_stability_objective_vectorized_over_perturbation_axis = jax.vmap(
-    _relative_output_stability_objective_batched, in_axes=(None, 0, None, 0, None, None)
+    _relative_output_stability_objective_batched, in_axes=(None, 0, None, 0, None)
 )
 
 
