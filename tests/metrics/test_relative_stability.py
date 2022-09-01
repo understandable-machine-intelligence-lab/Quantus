@@ -449,5 +449,4 @@ def test_relative_representation_stability(model, data, params, capsys):
 
 
 def test_relative_stability_pytorch():
-
-    rs = quantus.RelativeStability()
+    pytest.fail("TODO")
