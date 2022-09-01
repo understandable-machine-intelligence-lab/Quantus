@@ -2,7 +2,7 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, cnn_2d_tf
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2d_TF
 from tensorflow.keras.datasets import cifar10 # noqa
 
 
@@ -162,9 +162,9 @@ def flat_sequence_array(scope="session", autouse=True):
 
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_3channels_tf():
-    return cnn_2d_tf(32, 32, 10)
+    return CNN_2d_TF(32, 32, 10)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_1channel_tf():
-    return cnn_2d_tf(28, 28, 10, num_channels=1)
+    return CNN_2d_TF(28, 28, 10, num_channels=1)
