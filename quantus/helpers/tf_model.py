@@ -6,10 +6,10 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 from tensorflow.keras.models import clone_model
 import numpy as np
+import tensorflow as tf
 
 from ..helpers.model_interface import ModelInterface
 from ..helpers import utils
-import tensorflow as tf
 
 
 class TensorFlowModel(ModelInterface):
@@ -95,11 +95,11 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-    def get_hidden_layers_outputs(self,
-                                  x: np.ndarray,
-                                  layer_names: Optional[List[str]] = None,
-                                  layer_indices: Optional[List[int]] = None,
-                                  ) -> np.ndarray:
+    def get_hidden_layers_representations(self,
+                                          x: np.ndarray,
+                                          layer_names: Optional[List[str]] = None,
+                                          layer_indices: Optional[List[int]] = None,
+                                          ) -> np.ndarray:
         batch_size = x.shape[0]
         hidden_layers = self.model.layers[:-1]
         hidden_outputs = []

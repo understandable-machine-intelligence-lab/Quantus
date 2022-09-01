@@ -35,11 +35,11 @@ class PyTorchModel(ModelInterface):
             return pred.cpu().numpy()
 
     def shape_input(
-        self,
-        x: np.array,
-        shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
-        batch: bool = False,
+            self,
+            x: np.array,
+            shape: Tuple[int, ...],
+            channel_first: Optional[bool] = None,
+            batch: bool = False,
     ):
         """
         Reshape input into model expected input.
@@ -88,23 +88,28 @@ class PyTorchModel(ModelInterface):
             module[1].reset_parameters()
             yield module[0], random_layer_model
 
-    def get_hidden_layers_outputs(self, x: np.ndarray,
-                                  layer_names: Optional[List[str]] = None,
-                                  layer_indices: Optional[List[int]] = None,
-                                  ) -> np.ndarray:
-        # skip last layer, and module defined by subclassing API
-        hidden_layers = [l for l in self.model.named_modules()][:-1]
+    def get_hidden_layers_representations(self, x: np.ndarray,
+                                          layer_names: Optional[List[str]] = None,
+                                          layer_indices: Optional[List[int]] = None,
+                                          ) -> np.ndarray:
+        # skip last layer
+        hidden_layers = [layer for layer in self.model.named_modules()][:-1]
+        # skip modules defined by subclassing API
         hidden_layers = list(filter(
             lambda l: not isinstance(l[1], (self.model.__class__, torch.nn.Sequential)),
             hidden_layers
         ))
         if layer_names:
-            hidden_layers = list(filter(lambda l: l[0] in layer_names, hidden_layers))
+            hidden_layers = list(filter(lambda layer: layer[0] in layer_names, hidden_layers))
         if layer_indices:
             hidden_layers = [hidden_layers[i] for i in layer_indices]
 
         batch_size = x.shape[0]
         hidden_outputs = []
+
+        # We register forward hook on layers of interest,
+        # which just saves the flattened layers' outputs to list,
+        # Then we execute forward pass, and stack them in 2D tensor
 
         def hook(module, module_in, module_out):
             arr = module_out.detach().numpy()

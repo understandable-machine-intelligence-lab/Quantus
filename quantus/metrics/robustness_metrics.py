@@ -1,21 +1,30 @@
 """This module contains the collection of robustness metrics to evaluate attribution-based explanations of neural network models."""
+from __future__ import annotations
 import itertools
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, Tuple
 
 import numpy as np
 from tqdm import tqdm
+import jax.numpy as jnp
+from abc import abstractmethod
 
-from ..base import Metric
-from ...helpers import asserts
-from ...helpers import perturb_func
-from ...helpers import similar_func
-from ...helpers import utils
-from ...helpers import warn_func
-from ...helpers.asserts import attributes_check
-from ...helpers.model_interface import ModelInterface
-from ...helpers.norm_func import fro_norm
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.discretise_func import top_n_sign
+from metrics.base import Metric
+from helpers import asserts
+from helpers import perturb_func
+from helpers import similar_func
+from helpers import utils
+from helpers import warn_func
+from helpers.asserts import attributes_check
+from helpers.model_interface import ModelInterface
+from helpers.norm_func import fro_norm
+from helpers.normalise_func import normalise_by_negative
+from helpers.discretise_func import top_n_sign
+from helpers.relative_stability_objective import (
+    relative_input_stability_objective,
+    relative_output_stability_objective,
+    relative_representation_stability_objective
+)
+
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1260,3 +1269,294 @@ class Consistency(Metric):
         self.all_results.append(self.last_results)
 
         return self.last_results
+
+
+
+
+
+class RelativeStability(Metric):
+    DEFAULT_NUM_PERTURBATIONS = 100
+    name: str
+
+    def __init__(self, *args, **kwargs):
+        """
+        A base class for relative stability metrics from https://arxiv.org/pdf/2203.06877.pdf
+        Relative Stability leverages model information to evaluate
+        the stability of an explanation with respect to the change in the
+            a) input data -> Relative Input Stability (RIS)
+            b) intermediate representations -> Relative Representation Stability (RRS)
+            c) output logits -> Relative Output Stability (ROS)
+        Parameters:
+            kwargs:
+               eps_min: Optional[float], a small constant to prevent division by 0 in relative_stability_objective, default 1e-6
+               num_perturbations: Optional[int] number of times perturb_func should be executed, default 100
+        """
+
+        super().__init__(*args, **kwargs)
+        self.num_perturbations = kwargs.get(
+            "num_perturbations", self.DEFAULT_NUM_PERTURBATIONS
+        )
+
+    def __call__(
+        self,
+            model,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            *args,
+            **kwargs
+    ) -> float | np.ndarray:
+
+        """
+        Parameters:
+            model: instance of tf.keras.Model or torch.nn.Module
+            x_batch: np.ndarray, a 4D tensor representing batch of input images
+            y_batch: np.ndarray, a 1D tensor, representing labels for x_batch
+
+            perturb_func: Optional[Callable], a function used to perturbate inputs, must be provided unless no xs_batch provided
+            xs_batch: Optional[np.ndarray], a 5D tensor representing perturbations of the x_batch, which results in the same labels (optional)
+
+            explain_func: Optional[Callable], a function used to generate explanations, must be provided unless a_batch, as_batch were not provided
+            a_batch: Optional[np.ndarray], a 4D tensor with pre-computed explanations for the x_batch
+            as_batch: Optional[np.ndarray], a 5D tensor with pre-computed explanations for xs_batch
+
+            kwargs: kwargs, which are passed to perturb_func, explain_func and quantus.Metric base class.
+
+        For each image x:
+         - generate N perturbed x' in the neighborhood of x
+            - find x' which results in the same label
+            - or use pre-computed
+         - Compute (or use pre-computed) explanations e_x and e_x'
+         - Compute relative stability objective, find max value with regard to x'
+         - In practise we just use max over a finite batch of x'
+        """
+
+        channel_first = utils.infer_channel_first(x_batch)
+        self.model = utils.get_wrapped_model(model, channel_first)
+
+        if "a_batch" in kwargs and "as_batch" in kwargs and "xs_batch" not in kwargs:
+            raise ValueError(
+                "When providing pre-computed explanations, must also provide x' (xs_batch)"
+            )
+
+        xs_batch = self._get_perturbed_inputs(x_batch, y_batch, **kwargs)
+        if len(xs_batch) == 0:
+            raise ValueError(
+                "Failed to generate perturbation, which result in same labels as x_batch. You might want to increase num_perturbations, or provide other perturb_func"
+            )
+        ex, exs = self._get_explanations(x_batch, y_batch, xs_batch, **kwargs)
+
+        result = self._compute_objective(x_batch, xs_batch, ex, exs, **kwargs)
+
+        result = jnp.max(result, axis=0).to_py()
+
+        if self.return_aggregate:
+            result = self.aggregate_func(result)
+
+        self.all_results.append(result)
+        self.last_results = [result]
+
+        return result
+
+    def _get_perturbed_inputs(
+        self,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            **kwargs
+    ) -> np.ndarray:
+        """
+        Returns:
+            xs_batch: np.ndarray, 5D tensor of perturbed inputs x_batch
+            kwargs: Dict, updated kwargs
+        """
+
+        if "xs_batch" in kwargs:
+            xs_batch = kwargs.get("xs_batch")
+            if len(xs_batch.shape) <= len(x_batch.shape):
+                raise ValueError("xs_batch must have 1 more batch axis than x_batch")
+
+            return xs_batch
+
+        if "perturb_func" not in kwargs:
+            print('No "perturb_func" provided, using random noise as default')
+
+        perturb_function: Callable = kwargs.get(
+            "perturb_func", perturb_func.random_noise
+        )
+
+        xs_batch = []
+        it = range(self.num_perturbations)
+
+        if self.display_progressbar:
+            it = tqdm(it, desc=f"Collecting perturbation for {self.name}")
+
+        for _ in it:
+            xs = perturb_function(x_batch, **kwargs)
+            logits = self.model.predict(xs)
+            labels = np.argmax(logits, axis=1)
+
+            same_label_indexes = np.argwhere(labels == y_batch)
+            xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
+            xs_batch.append(xs)
+
+        # pull all new images into 0 axes
+        xs_batch = np.vstack(xs_batch)
+        # drop images, which cause dims not to be divisible
+        xs_batch = xs_batch[: xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
+        # make xs_batch have the same shape as x_batch, with new batching axis at 0
+        xs_batch = xs_batch.reshape(-1, *x_batch.shape)
+        return xs_batch
+
+    def _get_explanations(
+        self,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            xs_batch: np.ndarray,
+            **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns:
+            a_batch: np.ndarray, a 4D tensor, representing explanations for x_batch
+            as_batch: np.ndarray, a 5D tensor, representing explanations for xs_batch
+        """
+        if (
+            "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
+        ) or (
+            "explain_func" not in kwargs
+            and ("a_batch" not in kwargs or "as_batch" not in kwargs)
+        ):
+            raise ValueError(
+                "Must provide either explain_func or (a_batch and as_batch)"
+            )
+
+        if "explain_func" in kwargs:
+            explain_func: Callable = kwargs.get("explain_func")
+
+            a_batch = explain_func(
+                model=self.model.get_model(), inputs=x_batch, targets=y_batch, **kwargs
+            )
+
+            it = xs_batch
+            if self.display_progressbar:
+                it = tqdm(it, desc=f"Collecting explanations for {self.name}")
+
+            as_batch = [
+                explain_func(
+                    model=self.model.get_model(), inputs=i, targets=y_batch, **kwargs
+                )
+                for i in it
+            ]
+
+        else:
+            a_batch = kwargs.get("a_batch")
+            as_batch = kwargs.get("as_batch")
+
+            if len(as_batch.shape) <= len(a_batch.shape):
+                raise ValueError(
+                    "Batch of perturbed explanations must have 1 more axis"
+                )
+
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch)
+            as_batch = [self.normalise_func(i) for i in as_batch]
+
+        if self.abs:
+            a_batch = np.abs(a_batch)
+            as_batch = np.abs(as_batch)
+
+        return a_batch, np.asarray(as_batch)
+
+    @abstractmethod
+    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
+                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+        """
+        The only non-generic part among all 3 Relative Stability metrics
+        Params:
+           x: a batch of inputs
+           xs: a batch of perturbed inputs
+           e_x: a batch of explanations for x
+           e_xs: a batch of explanations for xs
+        Returns: 2D tensor of shape (num_perturbations, batch_size)
+        """
+        pass
+
+
+class RelativeInputStability(RelativeStability):
+    name = "Relative Input Stability"
+
+    r"""
+    RIS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{x - x'}{x}||_p, \epsilon_{min})}
+
+    The numerator of the metric measures the `p norm of the percent change of explanation ex' on the perturbed
+        instance x'  with respect to the explanation ex on the original point x,
+        the denominator measures the `p norm between (normalized) inputs x and x'
+        and the max term prevents division by zero in cases when norm || (x−x')/x ||_p is less than
+        some small epsilon_min>0
+    """
+
+    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
+                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+
+        result = relative_input_stability_objective(
+            np.asarray(x),
+            np.asarray(xs),
+            np.asarray(e_x),
+            np.asarray(e_xs),
+            **kwargs
+        )
+        return result
+
+
+class RelativeOutputStability(RelativeStability):
+    name = "Relative Output Stability"
+
+    r"""
+    ROS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{h(x) - h(x')}||_p, \epsilon_{min})}
+       where h(x) and h(x') are the output logits for x and x', respectively
+    """
+
+    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
+                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+
+        hx = self.model.predict(x)
+        hxs = [self.model.predict(i) for i in xs]
+        result = relative_output_stability_objective(
+            np.asarray(hx),
+            np.asarray(hxs),
+            np.asarray(e_x),
+            np.asarray(e_xs),
+            **kwargs
+        )
+        return result
+
+
+class RelativeRepresentationStability(RelativeStability):
+    name = "Relative Representation Stability"
+
+    """
+    RRS(x, x', ex, ex') = max \frac{||\frac{e_x - e_{x'}}{e_x}||_p}{max (||\frac{L_x - L_{x'}}{L_x}||_p, \epsilon_{min})}
+       where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
+    """
+
+    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
+                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+        lx = self.model.get_hidden_layers_representations(
+            x,
+            layer_names=kwargs.get("layer_names"),
+            layer_indices=kwargs.get("layer_indices"),
+        )
+        lxs = [
+            self.model.get_hidden_layers_representations(
+                i,
+                layer_names=kwargs.get("layer_names"),
+                layer_indices=kwargs.get("layer_indices"),
+            )
+            for i in xs
+        ]
+        result = relative_representation_stability_objective(
+            np.asarray(lx),
+            np.asarray(lxs),
+            np.asarray(e_x),
+            np.asarray(e_xs),
+            **kwargs
+        )
+        return result

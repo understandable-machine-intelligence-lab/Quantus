@@ -165,7 +165,9 @@ if util.find_spec("tensorflow"):
             num_classes: int,
             num_channels=3
     ) -> tf.keras.Model:
-        # NN adapted from https://www.tensorflow.org/tutorials/images/classification
+        """
+        2D-convolutional NN architecture adapted from https://www.tensorflow.org/tutorials/images/classification
+        """
         model = tf.keras.Sequential([
             tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
             tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),

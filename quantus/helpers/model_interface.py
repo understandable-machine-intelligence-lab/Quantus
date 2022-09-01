@@ -45,14 +45,25 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_hidden_layers_outputs(self,
-                                  x: np.ndarray,
-                                  layer_names: Optional[List[str]] = None,
-                                  layer_indices: Optional[List[int]] = None,
-                                  ) -> np.ndarray:
+    def get_hidden_layers_representations(self,
+                                          x: np.ndarray,
+                                          layer_names: Optional[List[str]] = None,
+                                          layer_indices: Optional[List[int]] = None,
+                                          ) -> np.ndarray:
         """
-        If no layer_names and no layer_indices provided, collect all hidden layers outputs
-        (aka intermediate representations), and concatenate them in 1D tensor.
-        Alternatively, user can provide names or indices of layers of interest.
+        Computes models internal representation of input x.
+        In practice, this means, execute forward pass, and capture output of layers, one is interested in.
+        As authors of https://arxiv.org/pdf/2203.06877.pdf did not provide neither code example
+        nor details what exactly "internal model representation, e.g., output embeddings of hidden layers"
+        should be, we leave it up to user whether all layers are used,
+        or couple specific ones should be selected.
+        User can select layer by providing 'layer_names' (exclusive)OR 'layer_indices'.
+
+        Params:
+            x: 4D tensor, a batch of input datapoints
+            layer_names: a List specifying names of layers, from which output should be captured.
+            layer_indices: a List specifying indices of layers, from which output should be captured.
+                Intended to use in case, when layer names are not unique, or unknown.
+        Returns: np.ndarray, 2D tensor with shape (batch_size, None)
         """
         pass
