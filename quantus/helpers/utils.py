@@ -59,7 +59,7 @@ def get_baseline_value(
 
     Returns
     """
-
+    kwargs["return_shape"] = return_shape
     if isinstance(value, (float, int)):
         return np.full(return_shape, value)
     elif isinstance(value, np.ndarray):
@@ -102,10 +102,9 @@ def get_baseline_dict(
     """
     fill_dict = {
         "mean": float(arr.mean()),
-        "uniform": float(
+        "uniform":
             np.random.uniform(
-                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0)
-            )
+                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0), size=kwargs["return_shape"]
         ),
         "black": float(arr.min()),
         "white": float(arr.max()),
