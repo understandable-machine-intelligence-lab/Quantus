@@ -271,7 +271,7 @@ def blur_at_indices(
         if isinstance(idx, slice) and idx == slice(None):
             none_slices.append(idx)
         elif isinstance(idx, np.ndarray):
-            pad_left = kernel.shape[indexed_axes.index(i)] // 2
+            pad_left = kernel.shape[[p for p in indexed_axes].index(i)] // 2
             array_indices.append(idx + pad_left)
         else:
             raise ValueError("Invalid indices {}".format(indices))
@@ -340,10 +340,8 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    patch_slice = [
-        np.arange(coord, coord + patch_size_dim)
-        for coord, patch_size_dim in zip(coords, patch_size)
-    ]
+    gridcoords = [np.arange(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
+    patch_slice = np.meshgrid(*gridcoords)
 
     return tuple(patch_slice)
 
@@ -406,12 +404,12 @@ def _pad_array(
             pad_width_list.append((0, 0))
         elif isinstance(pad_width, int):
             pad_width_list.append((pad_width, pad_width))
-        elif isinstance(pad_width[padded_axes.index(ax)], int):
+        elif isinstance(pad_width[[p for p in padded_axes].index(ax)], int):
             pad_width_list.append(
-                (pad_width[padded_axes.index(ax)], pad_width[padded_axes.index(ax)])
+                (pad_width[[p for p in padded_axes].index(ax)], pad_width[[p for p in padded_axes].index(ax)])
             )
         else:
-            pad_width_list.append(pad_width[padded_axes.index(ax)])
+            pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
     return arr_pad
 
@@ -453,18 +451,18 @@ def _unpad_array(
             unpad_slice.append(slice(None))
         elif isinstance(pad_width, int):
             unpad_slice.append(slice(pad_width, arr.shape[ax] - pad_width))
-        elif isinstance(pad_width[padded_axes.index(ax)], int):
+        elif isinstance(pad_width[[p for p in padded_axes].index(ax)], int):
             unpad_slice.append(
                 slice(
-                    pad_width[padded_axes.index(ax)],
-                    arr.shape[ax] - pad_width[padded_axes.index(ax)],
+                    pad_width[[p for p in padded_axes].index(ax)],
+                    arr.shape[ax] - pad_width[[p for p in padded_axes].index(ax)],
                 )
             )
         else:
             unpad_slice.append(
                 slice(
-                    pad_width[padded_axes.index(ax)][0],
-                    arr.shape[ax] - pad_width[padded_axes.index(ax)][1],
+                    pad_width[[p for p in padded_axes].index(ax)][0],
+                    arr.shape[ax] - pad_width[[p for p in padded_axes].index(ax)][1],
                 )
             )
     return arr[tuple(unpad_slice)]
