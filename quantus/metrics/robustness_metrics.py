@@ -1008,7 +1008,7 @@ class Continuity(Metric):
                 )
 
                 # Taking the first element, since a_perturbed will be expanded to a batch dimension
-                # not expected by the current index management functions
+                # not expected by the current index management functions.
                 a_perturbed = utils.expand_attribution_channel(a_perturbed, x_input)[0]
 
                 if self.normalise:
@@ -1022,7 +1022,7 @@ class Continuity(Metric):
 
                 sub_results[self.nr_patches].append(y_pred)
 
-                # create patches by splitting input into grid
+                # Create patches by splitting input into grid.
                 axis_iterators = [
                     range(0, x_input.shape[axis], self.patch_size) for axis in a_axes
                 ]
