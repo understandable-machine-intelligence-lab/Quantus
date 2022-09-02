@@ -42,3 +42,6 @@ build/
 # progress
 quantus/analysers/*
 tests/analysers/*
+
+# documentation
+html/
