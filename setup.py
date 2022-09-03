@@ -36,7 +36,7 @@ else:
 # Define extras.
 EXTRAS = {
     "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow==2.6.2"],
+    "tensorflow": ["tensorflow==2.7.4"],
     "extras": extras,
     "tutorials": [
         "torch==1.10.1",
