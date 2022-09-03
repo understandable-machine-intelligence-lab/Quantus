@@ -43,5 +43,7 @@ build/
 quantus/analysers/*
 tests/analysers/*
 
+# documentation
+html/
 .idea
 htmlcov
