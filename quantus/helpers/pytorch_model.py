@@ -35,11 +35,11 @@ class PyTorchModel(ModelInterface):
             return pred.cpu().numpy()
 
     def shape_input(
-            self,
-            x: np.array,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batch: bool = False,
+        self,
+        x: np.array,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batch: bool = False,
     ):
         """
         Reshape input into model expected input.
