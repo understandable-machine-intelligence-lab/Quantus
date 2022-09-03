@@ -2,8 +2,9 @@ import pytest
 import pickle
 import torch
 import numpy as np
+from tensorflow.keras.datasets import cifar10
+
 from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
-from tensorflow.keras.datasets import cifar10 # noqa
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -13,6 +14,7 @@ def load_mnist_model():
     model.load_state_dict(
         torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
     )
+    model.training = False
     return model
 
 
@@ -71,13 +73,8 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
-        dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
+    x_batch = np.loadtxt("tutorials/assets/mnist_x").reshape((124, 1, 28, 28))
+    y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
