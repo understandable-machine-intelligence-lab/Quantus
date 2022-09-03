@@ -92,6 +92,17 @@ class PyTorchModel(ModelInterface):
                                           layer_names: Optional[List[str]] = None,
                                           layer_indices: Optional[List[int]] = None,
                                           ) -> np.ndarray:
+
+        if layer_indices is None:
+            layer_indices = []
+        if layer_names is None:
+            layer_names = []
+
+        def is_layer_of_interest(index, name):
+            if layer_names == [] and layer_indices == []:
+                return True
+            return index in layer_indices or name in layer_names
+
         # skip last layer
         hidden_layers = [layer for layer in self.model.named_modules()][:-1]
         # skip modules defined by subclassing API
@@ -99,10 +110,6 @@ class PyTorchModel(ModelInterface):
             lambda l: not isinstance(l[1], (self.model.__class__, torch.nn.Sequential)),
             hidden_layers
         ))
-        if layer_names:
-            hidden_layers = list(filter(lambda layer: layer[0] in layer_names, hidden_layers))
-        if layer_indices:
-            hidden_layers = [hidden_layers[i] for i in layer_indices]
 
         batch_size = x.shape[0]
         hidden_outputs = []
@@ -116,7 +123,8 @@ class PyTorchModel(ModelInterface):
             arr = arr.reshape((batch_size, -1))
             hidden_outputs.append(arr)
 
-        for name, l in hidden_layers:
-            l.register_forward_hook(hook)
+        for index, (name, layer) in enumerate(hidden_layers):
+            if is_layer_of_interest(index, name):
+                layer.register_forward_hook(hook)
         self.model.forward(torch.Tensor(x))
         return np.hstack(hidden_outputs)

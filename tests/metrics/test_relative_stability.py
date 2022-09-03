@@ -57,7 +57,7 @@ def test_cant_instantiate_base_class():
 def test_relative_input_stability_objective(x, xs, capsys):
     result = quantus.relative_input_stability_objective(x, xs, x, xs)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert result.shape == (5, 10), "Must output same dimension as inputs batch axis"
 
@@ -84,7 +84,7 @@ def test_relative_input_stability_objective(x, xs, capsys):
 def test_relative_output_stability_objective(h, hs, a, a_s, capsys):
     result = quantus.relative_output_stability_objective(h, hs, a, a_s)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert result.shape == (10, 5), "Must output same dimension as inputs batch axis"
 
@@ -111,7 +111,7 @@ def test_relative_output_stability_objective(h, hs, a, a_s, capsys):
 def test_relative_representation_stability_objective(lx, lxs, a, a_s, capsys):
     result = quantus.relative_representation_stability_objective(lx, lxs, a, a_s)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert result.shape == (10, 5), "Must output same dimension as inputs batch axis"
 
@@ -198,7 +198,7 @@ def test_pre_computed_perturbations(model, data, params, capsys):
 
     result = ris(model, x, data["y_batch"], xs_batch=xs, **params)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -240,7 +240,7 @@ def test_compute_perturbations(model, data, params, capsys):
 
     result = ris(model, x, data["y_batch"], **params)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -265,7 +265,7 @@ def test_precomputed_explanations(model, data, params, capsys):
     )
 
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -334,7 +334,7 @@ def test_compute_explanations(model, data, params, capsys):
 
     result = ris(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -399,7 +399,7 @@ def test_relative_output_stability(model, data, params, capsys):
 
     result = ros(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 
@@ -443,7 +443,7 @@ def test_relative_representation_stability(model, data, params, capsys):
 
     result = rrs(model, data["x_batch"], data["y_batch"], **params)
     with capsys.disabled():
-        print(f"{result = }")
+        print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
 

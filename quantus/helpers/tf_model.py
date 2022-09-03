@@ -100,23 +100,28 @@ class TensorFlowModel(ModelInterface):
                                           layer_names: Optional[List[str]] = None,
                                           layer_indices: Optional[List[int]] = None,
                                           ) -> np.ndarray:
+
+
+        if layer_indices is None:
+            layer_indices = []
+        if layer_names is None:
+            layer_names = []
+            
+        def is_layer_of_interest(index, name):
+            if layer_names == [] and layer_indices == []:
+                return True
+            return index in layer_indices or name in layer_names
+
+
         batch_size = x.shape[0]
         hidden_layers = self.model.layers[:-1]
         hidden_outputs = []
         layer_input = tf.constant(x)
-        for layer in hidden_layers:
+        for i, layer in enumerate(hidden_layers):
             layer_output = layer(layer_input)
-            flat_output = tf.reshape(layer_output, (batch_size, -1))
-            hidden_outputs.append(flat_output)
             layer_input = layer_output
+            if is_layer_of_interest(i, layer.name):
+                flat_output = tf.reshape(layer_output, (batch_size, -1))
+                hidden_outputs.append(flat_output.numpy())
 
-        hidden_outputs = tf.ragged.stack(hidden_outputs)
-
-        if layer_names:
-            names = list(map(lambda l: l.name, hidden_layers))
-            layer_indices = [i for i, n in enumerate(names) if n in layer_names]
-        if layer_indices:
-            hidden_outputs = tf.gather(hidden_outputs, layer_indices, axis=0)
-
-        hidden_outputs = tf.reshape(hidden_outputs, (batch_size, -1))
-        return hidden_outputs.numpy()
+        return np.hstack(hidden_outputs)
