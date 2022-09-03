@@ -45,5 +45,6 @@ tests/analysers/*
 
 # documentation
 html/
+
+# pycharm project files
 .idea
-htmlcov

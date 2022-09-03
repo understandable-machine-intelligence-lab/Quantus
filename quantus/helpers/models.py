@@ -163,10 +163,17 @@ if util.find_spec("tensorflow"):
             img_height: int,
             img_width: int,
             num_classes: int,
-            num_channels=3
+            num_channels=3,
+            use_xla=False
     ) -> tf.keras.Model:
         """
         2D-convolutional NN architecture adapted from https://www.tensorflow.org/tutorials/images/classification
+        Params:
+            - img_height: size of images
+            - img_width: width images
+            - num_channels: can take value 1 or 3, for grayscale and RGB encoded images accordingly
+            - use_xla: flag specifying weather to compile model using XLA https://www.tensorflow.org/xla
+        Returns: tf.keras.Model
         """
         model = tf.keras.Sequential([
             tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
@@ -184,6 +191,6 @@ if util.find_spec("tensorflow"):
             optimizer='adam',
             loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=['accuracy'],
-            jit_compile=True
+            jit_compile=use_xla
         )
         return model
