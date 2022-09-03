@@ -1,8 +1,9 @@
 """This module contains example LeNets for PyTorch and tensorflow."""
 from importlib import util
-from typing import Tuple
 
 # Import different models depending on which deep learning framework is installed.
+from typing import Tuple
+
 if util.find_spec("torch"):
 
     import torch
