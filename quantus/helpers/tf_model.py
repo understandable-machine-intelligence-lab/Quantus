@@ -20,6 +20,9 @@ class TensorFlowModel(ModelInterface):
 
     def predict(self, x, **kwargs):
         """Predict on the given input."""
+        #Generally, one should always prefer keras predict to __call__
+        #https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
+        #https://keras.io/api/models/model_training_apis/#:~:text=Number%20of%20samples%20per%20batch,batch_size%20will%20default%20to%2032.
 
         softmax_act = kwargs.get("softmax", False)
 
@@ -27,18 +30,12 @@ class TensorFlowModel(ModelInterface):
         target_act = softmax if softmax_act else linear
 
         if output_act == target_act:
-            return self.model(x, training=False).numpy()
+            return self.model.predict(x)
 
-        config = self.model.layers[-1].get_config()
-        config["activation"] = target_act
-
-        weights = self.model.layers[-1].get_weights()
-
-        output_layer = Dense(**config)(self.model.layers[-2].output)
-        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-        new_model.layers[-1].set_weights(weights)
-
-        return new_model(x, training=False).numpy()
+        self.model.layers[-1].activation = target_act
+        ret_val = self.model.predict(x)
+        self.model.layers[-1].activation = output_act
+        return ret_val
 
     def shape_input(
         self,
@@ -99,6 +96,7 @@ class TensorFlowModel(ModelInterface):
                                           x: np.ndarray,
                                           layer_names: Optional[List[str]] = None,
                                           layer_indices: Optional[List[int]] = None,
+                                          **kwargs
                                           ) -> np.ndarray:
 
 
@@ -112,16 +110,14 @@ class TensorFlowModel(ModelInterface):
                 return True
             return index in layer_indices or name in layer_names
 
-
-        batch_size = x.shape[0]
-        hidden_layers = self.model.layers[:-1]
-        hidden_outputs = []
-        layer_input = tf.constant(x)
-        for i, layer in enumerate(hidden_layers):
-            layer_output = layer(layer_input)
-            layer_input = layer_output
+        outputs_of_interest = []
+        for i, layer in enumerate(self.model.layers):
             if is_layer_of_interest(i, layer.name):
-                flat_output = tf.reshape(layer_output, (batch_size, -1))
-                hidden_outputs.append(flat_output.numpy())
+                outputs_of_interest.append(layer.output)
 
-        return np.hstack(hidden_outputs)
+        sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
+        internal_representation = sub_model.predict(x)
+
+        input_batch_size = x.shape[0]
+        internal_representation = [i.numpy().reshape((input_batch_size, -1)) for i in internal_representation]
+        return np.hstack(internal_representation)

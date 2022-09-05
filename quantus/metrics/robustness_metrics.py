@@ -5,7 +5,7 @@ import itertools
 from typing import Callable, Dict, List, Union, Tuple
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import jax.numpy as jnp
 from abc import abstractmethod, ABC
 
@@ -1520,7 +1520,14 @@ class RelativeOutputStability(RelativeStability):
                            e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
 
         hx = self.model.predict(x)
-        hxs = [self.model.predict(i) for i in xs]
+
+        num_perturbations = xs.shape[0]
+        batch_size = xs.shape[1]
+
+        model_input = xs.reshape((-1, *xs.shape[2:]))
+        hxs_flat = self.model.predict(model_input)
+        hxs = hxs_flat.reshape((num_perturbations, batch_size, *hxs_flat.shape))
+
         result = relative_output_stability_objective(
             np.asarray(hx),
             np.asarray(hxs),
@@ -1546,13 +1553,17 @@ class RelativeRepresentationStability(RelativeStability):
             layer_names=kwargs.get("layer_names"),
             layer_indices=kwargs.get("layer_indices"),
         )
+        it = xs
+        if self.display_progressbar:
+            it = tqdm(it, desc='Collecting internal representations')
+
         lxs = [
             self.model.get_hidden_layers_representations(
                 i,
                 layer_names=kwargs.get("layer_names"),
                 layer_indices=kwargs.get("layer_indices"),
             )
-            for i in xs
+            for i in it
         ]
         result = relative_representation_stability_objective(
             np.asarray(lx),
