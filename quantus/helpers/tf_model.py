@@ -7,6 +7,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.models import clone_model
 import numpy as np
 import tensorflow as tf
+import gc
 
 from ..helpers.model_interface import ModelInterface
 from ..helpers import utils
@@ -121,9 +122,16 @@ class TensorFlowModel(ModelInterface):
             if is_layer_of_interest(i, layer.name):
                 outputs_of_interest.append(layer.output)
 
+
         sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
+        # we don't need TF to trace + compile this model. We're going to call it once only
+        sub_model.run_eagerly = True
         internal_representation = sub_model.predict(x)
         input_batch_size = x.shape[0]
+
+        # Clean-up memory reserved for model's copy
+        del sub_model
+        gc.collect()
 
         if isinstance(internal_representation, np.ndarray):
             # If we requested outputs only of 1 layer, keras will already return np.ndarray
