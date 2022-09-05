@@ -1468,8 +1468,14 @@ class RelativeStability(Metric, ABC):
         return a_batch, np.asarray(as_batch)
 
     @abstractmethod
-    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
-                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+    def _compute_objective(
+            self,
+            x: np.ndarray,
+            xs: np.ndarray,
+            e_x: np.ndarray,
+            e_xs: np.ndarray,
+            **kwargs
+    ) -> np.ndarray | jnp.ndarray:
         """
         The only non-generic part among all 3 Relative Stability metrics
         Params:
@@ -1495,16 +1501,15 @@ class RelativeInputStability(RelativeStability):
         some small epsilon_min>0
     """
 
-    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
-                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
-
-        result = relative_input_stability_objective(
-            np.asarray(x),
-            np.asarray(xs),
-            np.asarray(e_x),
-            np.asarray(e_xs),
+    def _compute_objective(
+            self,
+            x: np.ndarray,
+            xs: np.ndarray,
+            e_x: np.ndarray,
+            e_xs: np.ndarray,
             **kwargs
-        )
+    ) -> np.ndarray | jnp.ndarray:
+        result = relative_input_stability_objective(x, xs, e_x, e_xs, **kwargs)
         return result
 
 
@@ -1516,25 +1521,24 @@ class RelativeOutputStability(RelativeStability):
        where h(x) and h(x') are the output logits for x and x', respectively
     """
 
-    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
-                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
-
+    def _compute_objective(
+            self,
+            x: np.ndarray,
+            xs: np.ndarray,
+            e_x: np.ndarray,
+            e_xs: np.ndarray,
+            **kwargs
+    ) -> np.ndarray | jnp.ndarray:
         hx = self.model.predict(x)
 
         num_perturbations = xs.shape[0]
         batch_size = xs.shape[1]
-
         model_input = xs.reshape((-1, *xs.shape[2:]))
-        hxs_flat = self.model.predict(model_input)
-        hxs = hxs_flat.reshape((num_perturbations, batch_size, *hxs_flat.shape))
 
-        result = relative_output_stability_objective(
-            np.asarray(hx),
-            np.asarray(hxs),
-            np.asarray(e_x),
-            np.asarray(e_xs),
-            **kwargs
-        )
+        hxs_flat = self.model.predict(model_input)
+        hxs = hxs_flat.reshape((num_perturbations, batch_size, *hxs_flat.shape[1:]))
+
+        result = relative_output_stability_objective(hx, hxs, e_x, e_xs, **kwargs)
         return result
 
 
@@ -1546,30 +1550,29 @@ class RelativeRepresentationStability(RelativeStability):
        where L(·) denotes the internal model representation, e.g., output embeddings of hidden layers.
     """
 
-    def _compute_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray,
-                           e_xs: np.ndarray, **kwargs) -> np.ndarray | jnp.ndarray:
+    def _compute_objective(
+            self,
+            x: np.ndarray,
+            xs: np.ndarray,
+            e_x: np.ndarray,
+            e_xs: np.ndarray,
+            **kwargs
+    ) -> np.ndarray | jnp.ndarray:
         lx = self.model.get_hidden_layers_representations(
             x,
             layer_names=kwargs.get("layer_names"),
             layer_indices=kwargs.get("layer_indices"),
         )
-        it = xs
-        if self.display_progressbar:
-            it = tqdm(it, desc='Collecting internal representations')
 
-        lxs = [
-            self.model.get_hidden_layers_representations(
-                i,
-                layer_names=kwargs.get("layer_names"),
-                layer_indices=kwargs.get("layer_indices"),
-            )
-            for i in it
-        ]
-        result = relative_representation_stability_objective(
-            np.asarray(lx),
-            np.asarray(lxs),
-            np.asarray(e_x),
-            np.asarray(e_xs),
-            **kwargs
-        )
+        num_perturbations = xs.shape[0]
+        batch_size = xs.shape[1]
+        model_input = xs.reshape((-1, *xs.shape[2:]))
+
+        lxs_flat = self.model.get_hidden_layers_representations(
+            model_input,
+            layer_names=kwargs.get("layer_names"),
+            layer_indices=kwargs.get("layer_indices"))
+        lxs = lxs_flat.reshape((num_perturbations, batch_size, *lxs_flat.shape[1:]))
+
+        result = relative_representation_stability_objective(lx, lxs, e_x, e_xs, **kwargs)
         return result

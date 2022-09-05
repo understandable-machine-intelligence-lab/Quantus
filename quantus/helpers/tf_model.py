@@ -32,10 +32,16 @@ class TensorFlowModel(ModelInterface):
         if output_act == target_act:
             return self.model.predict(x)
 
-        self.model.layers[-1].activation = target_act
-        ret_val = self.model.predict(x)
-        self.model.layers[-1].activation = output_act
-        return ret_val
+        config = self.model.layers[-1].get_config()
+        config["activation"] = target_act
+
+        weights = self.model.layers[-1].get_weights()
+
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+        new_model.layers[-1].set_weights(weights)
+
+        return new_model.predict(x)
 
     def shape_input(
         self,
@@ -117,7 +123,12 @@ class TensorFlowModel(ModelInterface):
 
         sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
         internal_representation = sub_model.predict(x)
-
         input_batch_size = x.shape[0]
-        internal_representation = [i.numpy().reshape((input_batch_size, -1)) for i in internal_representation]
-        return np.hstack(internal_representation)
+
+        if isinstance(internal_representation, np.ndarray):
+            # If we requested outputs only of 1 layer, keras will already return np.ndarray
+            return internal_representation.reshape((input_batch_size, -1))
+        else:
+            # otherwise, keras returns List of np.ndarray
+            internal_representation = [i.reshape((input_batch_size, -1)) for i in internal_representation]
+            return np.hstack(internal_representation)

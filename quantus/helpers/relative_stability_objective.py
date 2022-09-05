@@ -58,8 +58,10 @@ def relative_input_stability_objective(
        e_xs: 5D tensor of explanations with shape (num_perturbations, batch_size, ...)
     Returns: A 2D tensor with shape (num_perturbations, batch_size)
     """
-    return _relative_input_stability_objective_vectorized_over_perturbation_axis(
-        x, xs, e_x, e_xs, eps_min
+    return (
+        # https://jax.readthedocs.io/en/latest/async_dispatch.html
+        _relative_input_stability_objective_vectorized_over_perturbation_axis(x, xs, e_x, e_xs, eps_min)
+        .block_until_ready()
     )
 
 
@@ -80,8 +82,10 @@ def relative_representation_stability_objective(
            e_xs: 5D tensor of explanations with shape (num_perturbations, batch_size, ...)
         Returns: A 2D tensor with shape (num_perturbations, batch_size)
     """
-    return _relative_input_stability_objective_vectorized_over_perturbation_axis(
-        l_x, l_xs, e_x, e_xs, eps_min
+    return (
+        # https://jax.readthedocs.io/en/latest/async_dispatch.html
+        _relative_input_stability_objective_vectorized_over_perturbation_axis(l_x, l_xs, e_x, e_xs, eps_min)
+        .block_until_ready()
     )
 
 
@@ -134,6 +138,8 @@ def relative_output_stability_objective(
        e_xs: 5D tensor of explanations with shape (num_perturbations, batch_size, ...)
     Returns: A 2D tensor with shape (num_perturbations, batch_size)
     """
-    return _relative_output_stability_objective_vectorized_over_perturbation_axis(
-        h_x, h_xs, e_x, e_xs, eps_min
+    return (
+        # https://jax.readthedocs.io/en/latest/async_dispatch.html
+        _relative_output_stability_objective_vectorized_over_perturbation_axis(h_x, h_xs, e_x, e_xs, eps_min)
+        .block_until_ready()
     )
