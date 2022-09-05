@@ -4,7 +4,7 @@ from typing import Callable, List, Union, Optional
 
 import numpy as np
 from sklearn.metrics import roc_curve, auc
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from .base import Metric
 from ..helpers import asserts

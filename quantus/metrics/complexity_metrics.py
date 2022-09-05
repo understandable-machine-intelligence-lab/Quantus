@@ -4,7 +4,7 @@ from typing import Callable, Dict, List, Union
 
 import numpy as np
 import scipy
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from .base import Metric
 from ..helpers import asserts
