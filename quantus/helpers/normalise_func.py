@@ -4,7 +4,7 @@ import numpy as np
 
 
 def normalise_by_max(
-    a: np.ndarray, normalized_axes: Union[None, Sequence[int]] = None, **kwargs
+    a: np.ndarray, normalized_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
     """Normalise attributions by the maximum absolute value of the explanation."""
 
@@ -19,12 +19,13 @@ def normalise_by_max(
     # Cast Sequence to tuple so numpy accepts it.
     normalized_axes = tuple(normalized_axes)
 
-    a /= np.max(np.abs(a), axis=normalized_axes)
+    a_max = np.max(np.abs(a), axis=normalized_axes, keepdims=True)
+    a = np.divide(a, a_max)
     return a
 
 
 def normalise_by_negative(
-    a: np.ndarray, normalized_axes: Union[None, Sequence[int]] = None, **kwargs
+    a: np.ndarray, normalized_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
 
@@ -42,28 +43,29 @@ def normalise_by_negative(
     # Build return array from three cases.
     return_array = np.zeros(a.shape, dtype=a.dtype)
 
+    # Calculate max and min values.
+    a_max = a.max(axis=normalized_axes, keepdims=True)
+    a_min = a.min(axis=normalized_axes, keepdims=True)
+
     # Case a.min() >= 0.0.
     return_array = np.where(
-        a.min(axis=normalized_axes, keepdims=True) >= 0.0,
-        a / a.max(axis=normalized_axes, keepdims=True),
+        a_min >= 0.0,
+        np.divide(a, a_max, where=a_max!=0),
         return_array,
     )
 
     # Case a.max() <= 0.0.
     return_array = np.where(
-        a.max(axis=normalized_axes, keepdims=True) <= 0.0,
-        -a / a.min(axis=normalized_axes, keepdims=True),
+        a_max <= 0.0,
+        -np.divide(a, a_min, where=a_min!=0),
         return_array,
     )
 
     # Else.
     return_array = np.where(
-        np.logical_and(
-            a.min(axis=normalized_axes, keepdims=True) < 0.0,
-            a.max(axis=normalized_axes, keepdims=True) > 0.0,
-        ),
-        (a > 0.0) * a / a.max(axis=normalized_axes, keepdims=True)
-        - (a < 0.0) * a / a.min(axis=normalized_axes, keepdims=True),
+        np.logical_and(a_min < 0.0, a_max > 0.0),
+        (a > 0.0) * np.divide(a, a_max, where=a_max!=0)
+        - (a < 0.0) * np.divide(a, a_min, where=a_min!=0),
         return_array,
     )
 
