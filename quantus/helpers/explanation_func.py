@@ -84,11 +84,16 @@ def get_explanation(model, inputs, targets, **kwargs):
             return generate_captum_explanation(model, inputs, targets, **kwargs)
         if util.find_spec("zennit"):
             return generate_zennit_explanation(model, inputs, targets, **kwargs)
-    if isinstance(model, tf.keras.Model) and util.find_spec("tf_explain"):
-        return generate_tf_explanation(model, inputs, targets, **kwargs)
+    if isinstance(model, tf.keras.Model):
+        if util.find_spec("tf_explain"):
+            return generate_tf_explanation(model, inputs, targets, **kwargs)
+        else:
+            raise ValueError(
+                f"Model is of type tf.keras.Model but tf_explain is not installed."
+            )
 
     raise ValueError(
-        "Model needs to be tf.keras.Model or torch.nn.modules.module.Module. "
+        f"Model needs to be tf.keras.Model or torch.nn.modules.module.Module but is {type(model)}. "
         "Please install Captum or Zennit for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
     )
 
