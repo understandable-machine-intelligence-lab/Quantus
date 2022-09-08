@@ -47,7 +47,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
                 category=UserWarning,
             )
-    if util.find_spec("zennit"):
+    elif util.find_spec("zennit"):
         if "attributor" not in kwargs:
             warnings.warn(
                 f"Using quantus 'explain' function as an explainer without specifying 'attributor'"
@@ -55,7 +55,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 category=UserWarning,
             )
 
-    if not __EXTRAS__:
+    elif not __EXTRAS__:
         raise ImportError(
             "Explanation library not found. Please install Captum or Zennit for torch>=1.2 models "
             "and tf-explain for TensorFlow>=2.0."
