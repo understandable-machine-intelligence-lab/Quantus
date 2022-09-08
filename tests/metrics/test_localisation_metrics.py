@@ -326,8 +326,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             True,
         ),
@@ -335,8 +337,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             True,
         ),
@@ -344,9 +348,13 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -354,9 +362,13 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -364,8 +376,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             False,
         ),
@@ -373,8 +387,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             False,
         ),
@@ -382,8 +398,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             True,
         ),
@@ -391,8 +409,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             True,
         ),
@@ -400,8 +420,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             True,
         ),
@@ -409,8 +431,10 @@ def half_in_gt_zeros_bigger_2d_3ch():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             True,
         ),
@@ -422,13 +446,16 @@ def test_pointing_game(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = PointingGame(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = PointingGame(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     if isinstance(expected, bool):
         assert all(s == expected for s in scores), "Test failed."
@@ -449,9 +476,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 100,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "k": 100,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -459,9 +488,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "k": 10000,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "k": 10000,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -469,9 +500,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 200,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 200,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.5,
         ),
@@ -479,9 +512,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "k": 40000,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 40000,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.25,
         ),
@@ -489,10 +524,14 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "k": 20,
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 20,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -500,10 +539,14 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "k": 500,
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 500,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -511,9 +554,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_1d_3ch"),
             {
-                "k": 100,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 100,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -521,9 +566,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_2d_3ch"),
             {
-                "k": 10000,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 10000,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -531,9 +578,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
-                "k": 200,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 200,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.38,  # TODO: verify correctness
         ),
@@ -541,9 +590,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
             {
-                "k": 40000,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 40000,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.1, "max": 0.25},
         ),
@@ -551,9 +602,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
-                "k": 50,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 50,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.98,  # TODO: verify correctness
         ),
@@ -561,9 +614,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_zeros_2d_3ch"),
             {
-                "k": 2500,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 2500,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.5,
         ),
@@ -571,9 +626,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
-                "k": 125,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 125,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.4,  # TODO: verify correctness
         ),
@@ -581,9 +638,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_zeros_2d_3ch"),
             {
-                "k": 1250,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "k": 1250,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -591,9 +650,11 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 100,
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "k": 100,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -601,9 +662,11 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "k": 10000,
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "k": 10000,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -611,10 +674,12 @@ def test_pointing_game(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "k": 100,
-                "concept_influence": True,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "k": 100,
+                    "concept_influence": True,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             2.24,  # TODO: verify correctness
         ),
@@ -622,10 +687,12 @@ def test_pointing_game(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "k": 10000,
-                "concept_influence": True,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "k": 10000,
+                    "concept_influence": True,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             5.0176,  # TODO: verify correctness
         ),
@@ -637,13 +704,16 @@ def test_top_k_intersection(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = TopKIntersection(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = TopKIntersection(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     print(scores, expected)
     if isinstance(expected, float):
@@ -663,8 +733,10 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -672,8 +744,10 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -681,9 +755,13 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -691,9 +769,13 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -701,8 +783,10 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_seg_bigger_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -710,8 +794,10 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_seg_bigger_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -719,9 +805,11 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_1d_3ch"),
             {
-                "abs": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "abs": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -729,9 +817,11 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_2d_3ch"),
             {
-                "abs": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "abs": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -739,8 +829,10 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},  # TODO: verify correctness
         ),
@@ -748,8 +840,10 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.5,
         ),
@@ -757,8 +851,10 @@ def test_top_k_intersection(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -766,8 +862,10 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -779,13 +877,16 @@ def test_relevance_rank_accuracy(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = RelevanceRankAccuracy(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = RelevanceRankAccuracy(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     if isinstance(expected, float):
         print(scores)
@@ -805,8 +906,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -814,8 +917,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -823,9 +928,13 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -833,9 +942,13 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -843,8 +956,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_seg_bigger_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -852,8 +967,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_seg_bigger_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.5, "max": 1.0},
         ),
@@ -861,8 +978,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -870,8 +989,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -879,8 +1000,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.5,
         ),
@@ -888,8 +1011,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_zeros_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.5,
         ),
@@ -897,8 +1022,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -906,8 +1033,10 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -919,13 +1048,16 @@ def test_relevance_mass_accuracy(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = RelevanceMassAccuracy(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = RelevanceMassAccuracy(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
@@ -944,8 +1076,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -953,8 +1087,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -962,9 +1098,13 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -972,9 +1112,13 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -982,9 +1126,11 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_non_normalised_1d_3ch"),
             {
-                "normalise": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "normalise": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -992,9 +1138,11 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_non_normalised_2d"),
             {
-                "normalise": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "normalise": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -1002,8 +1150,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_fourth_1d"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,  # TODO: verify correctness
         ),
@@ -1011,8 +1161,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_fourth_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.33333333333333337,  # TODO: verify correctness
         ),
@@ -1020,8 +1172,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -1029,8 +1183,10 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -1042,13 +1198,16 @@ def test_auc(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = AUC(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = AUC(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), f"Test failed. {scores[0]}"
@@ -1067,9 +1226,11 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -1077,9 +1238,11 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
             },
             1.0,
         ),
@@ -1087,10 +1250,14 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "weighted": False,
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -1098,10 +1265,14 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "weighted": False,
-                "explain_func": explain,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"type": list},
         ),
@@ -1109,9 +1280,11 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.8, "max": 0.95},  # TODO: verify correctness
         ),
@@ -1119,9 +1292,11 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             {"min": 0.8, "max": 0.85},
         ),
@@ -1129,9 +1304,11 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -1139,9 +1316,11 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -1149,10 +1328,12 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
             {
-                "weighted": True,
-                "abs": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": True,
+                    "abs": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -1160,10 +1341,12 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
             {
-                "weighted": True,
-                "abs": False,
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "weighted": True,
+                    "abs": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
             },
             0.0,
         ),
@@ -1171,9 +1354,11 @@ def test_auc(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -1181,9 +1366,11 @@ def test_auc(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
             {
-                "weighted": False,
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "weighted": False,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
             },
             1.0,
         ),
@@ -1195,13 +1382,16 @@ def test_attribution_localisation(
     params: dict,
     expected: Union[bool, dict],
 ):
-    scores = AttributionLocalisation(**params)(
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    scores = AttributionLocalisation(**init_params)(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data["a_batch"],
         s_batch=data["s_batch"],
-        **params,
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
