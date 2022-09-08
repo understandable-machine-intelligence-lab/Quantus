@@ -175,7 +175,11 @@ class ModelParameterRandomisation(Metric):
         >> metric = ModelParameterRandomisation(abs=True, normalise=False)
         >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency)
         """
-        model, x_batch, y_batch, a_batch, s_batch = self.prepare(
+        # Run deprecation warnings.
+        warn_func.deprecation_warnings(kwargs)
+        asserts.check_kwargs(kwargs)
+
+        model, x_batch, y_batch, a_batch, s_batch = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -184,10 +188,9 @@ class ModelParameterRandomisation(Metric):
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
-            model_predict_kwargs=model_predict_kwargs,
-            **kwargs,
         )
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
@@ -267,8 +270,8 @@ class ModelParameterRandomisation(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        # Additional explain_func assert, as the one in prepare() won't be
-        # executed when a_batch != None.
+        # Additional explain_func assert, as the one in general_preprocess()
+        # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
         return model, x_batch, y_batch, a_batch, s_batch
@@ -478,8 +481,8 @@ class RandomLogit(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        # Additional explain_func assert, as the one in prepare() won't be
-        # executed when a_batch != None.
+        # Additional explain_func assert, as the one in general_preprocess()
+        # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
         return model, x_batch, y_batch, a_batch, s_batch
