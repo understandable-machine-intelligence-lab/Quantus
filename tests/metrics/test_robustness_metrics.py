@@ -18,12 +18,18 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_std": 0.1,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -31,13 +37,19 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_std": 0.1,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "nr_samples": 10,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -45,12 +57,18 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_std": 0.1,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -58,13 +76,19 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_std": 0.1,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -72,12 +96,18 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_std": 0.1,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -85,13 +115,19 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_std": 0.1,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -107,24 +143,29 @@ def test_local_lipschitz_estimate(
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
+        explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = LocalLipschitzEstimate(**params)(
+    scores = LocalLipschitzEstimate(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
-        **params,
+        **call_params,
     )
     assert scores is not None, "Test failed."
 
@@ -137,11 +178,17 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -149,12 +196,18 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -162,11 +215,17 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -174,12 +233,18 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -187,11 +252,17 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -199,12 +270,18 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -212,16 +289,22 @@ def test_local_lipschitz_estimate(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
-                "explain_func": explain,
-                "method": "Gradient",
-                "disable_warnings": True,
-                "display_progressbar": True,
-                "abs": True,
-                "normalise": True,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "img_size": 28,
+                    "nr_channels": 1,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "abs": True,
+                    "normalise": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -237,24 +320,29 @@ def test_max_sensitivity(
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
+        explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = MaxSensitivity(**params)(
+    scores = MaxSensitivity(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
-        **params,
+        **call_params,
     )
 
     if isinstance(expected, float):
@@ -273,12 +361,18 @@ def test_max_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -286,13 +380,19 @@ def test_max_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -300,12 +400,18 @@ def test_max_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -313,13 +419,19 @@ def test_max_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -327,12 +439,18 @@ def test_max_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -340,13 +458,19 @@ def test_max_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "perturb_radius": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -362,24 +486,29 @@ def test_avg_sensitivity(
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
+        explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = AvgSensitivity(**params)(
+    scores = AvgSensitivity(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
-        **params,
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
@@ -397,13 +526,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "nr_steps": 10,
-                "patch_size": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 10,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"exception": ValueError},
         ),
@@ -411,13 +546,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -425,13 +566,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "nr_steps": 10,
-                "patch_size": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"exception": ValueError},
         ),
@@ -439,13 +586,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": False,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -453,13 +606,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "nr_steps": 10,
-                "patch_size": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"exception": ValueError},
         ),
@@ -467,13 +626,19 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
                 "a_batch_generate": False,
+                "init": {
+                    "nr_steps": 10,
+                    "patch_size": 7,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -489,13 +654,18 @@ def test_continuity(
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
+        explain_func_kwargs = call_params["explain_func_kwargs"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -504,20 +674,20 @@ def test_continuity(
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            scores = Continuity(**params)(
+            scores = Continuity(**init_params)(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
                 a_batch=a_batch,
-                **params,
+                **call_params,
             )
         return
 
-    scores = Continuity(**params)(
+    scores = Continuity(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
-        **params,
+        **call_params,
     )
     assert scores is not None, "Test failed."
