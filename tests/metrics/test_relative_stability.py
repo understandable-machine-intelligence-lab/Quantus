@@ -1,6 +1,4 @@
-import pytest
 from pytest_lazyfixture import lazy_fixture  # noqa
-import numpy as np
 
 from ..fixtures import *  # noqa
 from ... import quantus

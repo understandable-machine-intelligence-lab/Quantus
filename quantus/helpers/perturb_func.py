@@ -1,12 +1,9 @@
 """This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
 import copy
-import random
-import warnings
-from typing import Any, Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union
 
 import cv2
 import numpy as np
-import scipy
 
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve

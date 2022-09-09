@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from tensorflow.keras.datasets import cifar10
 
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -73,26 +73,39 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = np.loadtxt("tutorials/assets/mnist_x").reshape((124, 1, 28, 28))
-    y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
+    x_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        dtype=torch.float,
+    ).numpy()
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_cifar10_images():
     """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (_, _) = cifar10.load_data()
-    x_batch = x_train[:124, ...].reshape(124, 32, 32, 3)
-    y_batch = y_train[:124].reshape(124).astype(int)
+    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    x_batch = torch.as_tensor(
+        x_train[:124, ...].reshape(124, 3, 32, 32),
+        dtype=torch.float,
+    ).numpy()
+    y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = np.loadtxt("tutorials/assets/mnist_x").reshape((124, 28, 28, 1))
-    y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+    x_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        dtype=torch.float,
+    ).numpy()
+    y_batch = torch.as_tensor(
+        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+    ).numpy()
+    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
 
 
 @pytest.fixture
@@ -155,13 +168,3 @@ def flat_sequence_array(scope="session", autouse=True):
         "shape": (3, 28),
         "channel_first": True,
     }
-
-
-@pytest.fixture(scope="session", autouse=True)
-def load_cnn_2d_3channels_tf():
-    return CNN_2D_TF(32, 32, 10)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def load_cnn_2d_1channel_tf():
-    return CNN_2D_TF(28, 28, 10, num_channels=1)

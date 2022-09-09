@@ -157,29 +157,3 @@ if util.find_spec("tensorflow"):
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                 metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
             )
-
-
-    def CNN_2D_TF(
-            img_height: int,
-            img_width: int,
-            num_classes: int,
-            num_channels=3
-    ) -> tf.keras.Model:
-        model = tf.keras.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(img_height, img_width, num_channels)),
-            tf.keras.layers.Conv2D(16, 3, padding='same', activation='relu'),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu'),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu', name='test_conv'),
-            tf.keras.layers.MaxPooling2D(),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(num_classes)
-        ])
-        model.compile(
-            optimizer='adam',
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=['accuracy']
-        )
-        return model
