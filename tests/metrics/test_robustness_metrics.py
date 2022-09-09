@@ -149,7 +149,7 @@ def test_local_lipschitz_estimate(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -326,7 +326,7 @@ def test_max_sensitivity(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -492,7 +492,7 @@ def test_avg_sensitivity(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -660,7 +660,7 @@ def test_continuity(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
