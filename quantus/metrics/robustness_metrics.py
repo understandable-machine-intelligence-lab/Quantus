@@ -1332,11 +1332,10 @@ class RelativeInputStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                perturb_func=kwargs.get('perturb_func'),
                 **kwargs
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
-        if a_batch:
+        if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
             a_batch, as_batch = compute_explanations(
@@ -1468,11 +1467,10 @@ class RelativeOutputStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                perturb_func=kwargs.get('perturb_func'),
                 **kwargs
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
-        if a_batch:
+        if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
             a_batch, as_batch = compute_explanations(
@@ -1531,7 +1529,11 @@ class RelativeOutputStability(Metric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
+        if len(nominator.shape) == 3:
+            # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
+            nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
+        else:
+            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
 
         denominator = h_x - h_xs
 
@@ -1618,11 +1620,10 @@ class RelativeRepresentationStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                perturb_func=kwargs.get('perturb_func'),
                 **kwargs
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
-        if a_batch:
+        if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
             a_batch, as_batch = compute_explanations(
@@ -1687,7 +1688,11 @@ class RelativeRepresentationStability(Metric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
+        if len(nominator.shape) == 3:
+            # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
+            nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
+        else:
+            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
 
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * eps_min  # prevent division by 0

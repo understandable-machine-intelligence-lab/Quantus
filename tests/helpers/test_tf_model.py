@@ -152,34 +152,8 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     ]
 )
 def test_get_hidden_layer_output_sequential(load_cnn_2d_1channel_tf, params, capsys):
-    model = TensorFlowModel(model=load_cnn_2d_1channel_tf, channel_first=False)
+    model = TensorFlowModel(model=load_1d_3ch_conv_model_tf, channel_first=False)
     X = np.random.random((32, 28, 28, 1))
-    result = model.get_hidden_layers_representations(X, **params)
-    with capsys.disabled():
-        print(f'result = {result}')
-    assert isinstance(result, np.ndarray), "Must be a np.ndarray"
-    assert len(result.shape) == 2, "Must be a batch of 1D tensors"
-    assert result.shape[0] == X.shape[0], "Must have same batch size as input"
-
-
-@pytest.mark.tf_model
-@pytest.mark.parametrize(
-    "params", [
-        {},
-        {'layer_names': ['top_conv']},
-        {'layer_indices': [0, 1, 2]}
-    ],
-    ids=[
-        'all layers',
-        '2nd conv',
-        'last 2 layers'
-    ]
-)
-def test_get_hidden_layer_output_eff_net(params, capsys):
-    # This one caused problems, while updating tutorials for TF
-    keras_model = tf.keras.applications.EfficientNetB0()
-    model = TensorFlowModel(model=keras_model, channel_first=False)
-    X = np.random.random((32, 224, 224, 3))
     result = model.get_hidden_layers_representations(X, **params)
     with capsys.disabled():
         print(f'result = {result}')

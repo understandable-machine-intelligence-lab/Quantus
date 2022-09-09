@@ -15,14 +15,15 @@ def compute_perturbed_inputs_with_same_labels(
         y_batch: np.ndarray,
         display_progressbar: bool,
         num_perturbations: int,
-        perturb_func: Optional[Callable],
         **kwargs
 ) -> np.ndarray:
     """Computes perturbations which result in the same labels and stack them in new leading axis"""
 
-    if not perturb_func:
+    if 'perturb_func' not in kwargs:
         warnings.warn('No "perturb_func" provided, using random noise as default')
         perturb_func = random_noise
+    else:
+        perturb_func = kwargs.get('perturb_func')
 
     xs_batch = []
     it = range(num_perturbations)
@@ -52,10 +53,10 @@ def assert_correct_kwargs_provided(a_batch, **kwargs):
     if a_batch is not None and "as_batch" in kwargs and "xs_batch" not in kwargs:
         raise ValueError("When providing pre-computed explanations, must also provide x' (xs_batch)")
 
-    if "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs):
+    if "explain_func" in kwargs and (a_batch is not None or "as_batch" in kwargs):
         raise ValueError("Must provide either explain_func or (a_batch and as_batch)")
 
-    if "explain_func" not in kwargs and ("a_batch" not in kwargs or "as_batch" not in kwargs):
+    if "explain_func" not in kwargs and (a_batch is None or "as_batch" not in kwargs):
         raise ValueError("Must provide either explain_func or (a_batch and as_batch)")
 
 
@@ -71,7 +72,7 @@ def compute_explanations(
         absolute: bool,
         **kwargs
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Computes explanations for x_batch and xs_batch"""
+    """Computes explanations for the x_batch and xs_batch"""
 
     a_batch = explain_func(model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs)
 

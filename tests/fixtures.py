@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from tensorflow.keras.datasets import cifar10
 
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -168,3 +168,13 @@ def flat_sequence_array(scope="session", autouse=True):
         "shape": (3, 28),
         "channel_first": True,
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cnn_2d_3channels_tf():
+    return CNN_2D_TF(28, 28, 10, num_channels=3)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cnn_2d_1channel_tf():
+    return CNN_2D_TF(28, 28, 10, num_channels=1)

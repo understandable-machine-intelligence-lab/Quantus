@@ -30,8 +30,14 @@ Following scenarios are to be tested for each Relative Stability metric
 @pytest.mark.parametrize(
     "x,xs",
     [
-        (np.random.random((10, 32, 32, 1)), np.random.random((10, 32, 32, 1))),
-        (np.random.random((10, 32, 32, 3)), np.random.random((10, 32, 32, 1))),
+        (
+                np.random.random((10, 32, 32, 1)),
+                np.random.random((10, 32, 32, 1))
+        ),
+        (
+                np.random.random((10, 32, 32, 3)),
+                np.random.random((10, 32, 32, 3))
+        ),
     ],
     ids=["1 channel", "3 channels"],
 )
@@ -133,20 +139,20 @@ def test_relative_representation_stability_objective(lx, lxs, a, a_s, capsys):
         "provided pre-computed perturbed explanations, but not perturbed x",
     ],
 )
-def test_invalid_kwargs(load_mnist_model_tf, load_mnist_images_tf, params):
+def test_invalid_kwargs(load_cnn_2d_1channel_tf, load_mnist_images_tf, params):
     with pytest.raises(ValueError):
-        ris = quantus.RelativeInputStability(**params)
-        ris(load_mnist_model_tf, load_mnist_images_tf["x_batch"], load_mnist_images_tf["y_batch"], **params)
+        ris = quantus.RelativeInputStability()
+        ris(load_cnn_2d_1channel_tf, load_mnist_images_tf["x_batch"], load_mnist_images_tf["y_batch"], **params)
 
 
 @pytest.mark.robustness
-def test_pre_computed_perturbations(load_mnist_images_tf, load_mnist_model_tf, capsys):
+def test_pre_computed_perturbations(load_mnist_images_tf, load_cnn_2d_1channel_tf, capsys):
     ris = quantus.RelativeInputStability()
     x = load_mnist_images_tf["x_batch"]
     xs = np.asarray([quantus.random_noise(x) for _ in range(5)])
 
     result = ris(
-        load_mnist_model_tf,
+        load_cnn_2d_1channel_tf,
         x,
         load_mnist_images_tf["y_batch"],
         xs_batch=xs,
@@ -181,11 +187,11 @@ def test_pre_computed_perturbations(load_mnist_images_tf, load_mnist_model_tf, c
         "perturb_func = quantus.gaussian_noise, with extra kwargs",
     ],
 )
-def test_compute_perturbations(load_mnist_model_tf, load_mnist_images_tf, params, capsys):
+def test_compute_perturbations(load_cnn_2d_1channel_tf, load_mnist_images_tf, params, capsys):
     ris = quantus.RelativeInputStability(**params)
     x = load_mnist_images_tf["x_batch"]
 
-    result = ris(load_mnist_model_tf, x, load_mnist_images_tf["y_batch"], **params)
+    result = ris(load_cnn_2d_1channel_tf, x, load_mnist_images_tf["y_batch"], **params)
     with capsys.disabled():
         print(f"result = {result}")
 
@@ -194,13 +200,13 @@ def test_compute_perturbations(load_mnist_model_tf, load_mnist_images_tf, params
 
 
 @pytest.mark.robustness
-def test_precomputed_explanations(load_mnist_model_tf, load_mnist_images_tf, capsys):
+def test_precomputed_explanations(load_cnn_2d_1channel_tf, load_mnist_images_tf, capsys):
     x = load_mnist_images_tf["x_batch"]
-    ex = quantus.explain(load_mnist_model_tf, x, load_mnist_images_tf["y_batch"])
+    ex = quantus.explain(load_cnn_2d_1channel_tf, x, load_mnist_images_tf["y_batch"])
 
     ris = quantus.RelativeInputStability()
     result = ris(
-        load_mnist_model_tf,
+        load_cnn_2d_1channel_tf,
         x,
         load_mnist_images_tf["y_batch"],
         xs_batch=np.stack([x, x]),
@@ -212,59 +218,38 @@ def test_precomputed_explanations(load_mnist_model_tf, load_mnist_images_tf, cap
         print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
-    assert result.shape[0] == data["x_batch"].shape[0], "Must have same batch size"
+    assert result.shape[0] == load_mnist_images_tf["x_batch"].shape[0], "Must have same batch size"
 
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "model,data,params",
+    "params",
     [
-        (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {
-                    "explain_func": quantus.explain,
-                    "method": "Gradient",
-                    "num_perturbations": 10,
-                },
-        ),
-        (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {
-                    "explain_func": quantus.explain,
-                    "method": "IntegratedGradients",
-                    "num_perturbations": 10,
-                },
-        ),
-        (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {
-                    "explain_func": quantus.explain,
-                    "method": "InputXGradient",
-                    "num_perturbations": 10,
-                },
-        ),
-        (
-                lazy_fixture("load_cnn_2d_3channels_tf"),
-                lazy_fixture("load_cifar10_images"),
-                {
-                    "explain_func": quantus.explain,
-                    "method": "Occlusion",
-                    "num_perturbations": 100,
-                },
-        ),
-        (
-                lazy_fixture("load_cnn_2d_3channels_tf"),
-                lazy_fixture("load_cifar10_images"),
-                {
-                    "explain_func": quantus.explain,
-                    "method": "GradCam",
-                    "num_perturbations": 100,
-                    "gc_layer": "test_conv",
-                },
-        ),
+
+        {
+            "explain_func": quantus.explain,
+            "method": "Gradient",
+        },
+        {
+            "explain_func": quantus.explain,
+            "method": "IntegratedGradients",
+        },
+
+        {
+            "explain_func": quantus.explain,
+            "method": "InputXGradient",
+        },
+
+        {
+            "explain_func": quantus.explain,
+            "method": "Occlusion",
+        },
+
+        {
+            "explain_func": quantus.explain,
+            "method": "GradCam",
+            "gc_layer": "test_conv",
+        }
     ],
     ids=[
         "method = Gradient",
@@ -274,15 +259,15 @@ def test_precomputed_explanations(load_mnist_model_tf, load_mnist_images_tf, cap
         "method = GradCam",
     ],
 )
-def test_compute_explanations(model, data, params, capsys):
-    ris = quantus.RelativeInputStability(**params)
+def test_compute_explanations(load_cnn_2d_1channel_tf, load_mnist_images_tf, params, capsys):
+    ris = quantus.RelativeInputStability(num_perturbations=10)
 
-    result = ris(model, data["x_batch"], data["y_batch"], **params)
+    result = ris(load_cnn_2d_1channel_tf, load_mnist_images_tf["x_batch"], load_mnist_images_tf["y_batch"], **params)
     with capsys.disabled():
         print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
-    assert result.shape[0] == data["x_batch"].shape[0], "Must have same batch size"
+    assert result.shape[0] == load_mnist_images_tf["x_batch"].shape[0], "Must have same batch size"
 
 
 @pytest.mark.robustness
@@ -325,64 +310,38 @@ def test_params_to_base_class(metric, params):
 
 
 @pytest.mark.robustness
-@pytest.mark.parametrize(
-    "model,data,params",
-    [
-        (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {"explain_func": quantus.explain, "num_perturbations": 10},
-        ),
-    ],
-)
-def test_relative_output_stability(model, data, params, capsys):
-    ros = quantus.RelativeOutputStability(**params)
+def test_relative_output_stability(load_cnn_2d_1channel_tf, load_mnist_images_tf, capsys):
+    ros = quantus.RelativeOutputStability()
 
-    result = ros(model, data["x_batch"], data["y_batch"], **params)
+    result = ros(load_cnn_2d_1channel_tf, load_mnist_images_tf["x_batch"], load_mnist_images_tf["y_batch"],
+                 explain_func=quantus.explain)
     with capsys.disabled():
         print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
-    assert result.shape[0] == data["x_batch"].shape[0], "Must have same batch size"
+    assert result.shape[0] == load_mnist_images_tf["x_batch"].shape[0], "Must have same batch size"
 
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "model,data,params",
+    "params",
     [
-        (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {"explain_func": quantus.explain},
-        ),
-        (
-                # This situation caused problems in tutorials
-                lazy_fixture("load_cnn_2d_1channel_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {"explain_func": quantus.explain},
-        ),
-        (
-                lazy_fixture("load_cnn_2d_1channel_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {"explain_func": quantus.explain, "layer_names": ["test_conv"]},
-        ),
-        (
-                lazy_fixture("load_cnn_2d_1channel_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {"explain_func": quantus.explain, "layer_indices": [7, 8]},
-        ),
-    ],
-    ids=["leNet + mnist", "2d CNN + mnist", "conv layer only", "last 2 layers"],
-)
-def test_relative_representation_stability(model, data, params, capsys):
-    rrs = quantus.RelativeRepresentationStability(**params)
+        {"explain_func": quantus.explain},
+        {"explain_func": quantus.explain, "layer_names": ["test_conv"]},
+        {"explain_func": quantus.explain, "layer_indices": [7, 8]},
 
-    result = rrs(model, data["x_batch"], data["y_batch"], **params)
+    ],
+    ids=["2d CNN + mnist", "conv layer only", "last 2 layers"],
+)
+def test_relative_representation_stability(load_cnn_2d_1channel_tf, load_mnist_images_tf, params, capsys):
+    rrs = quantus.RelativeRepresentationStability()
+
+    result = rrs(load_cnn_2d_1channel_tf, load_mnist_images_tf["x_batch"], load_mnist_images_tf["y_batch"], **params)
     with capsys.disabled():
         print(f"result = {result}")
 
     assert (result != np.nan).all(), "Probably divided by 0"
-    assert result.shape[0] == data["x_batch"].shape[0], "Must have same batch size"
+    assert result.shape[0] == load_mnist_images_tf["x_batch"].shape[0], "Must have same batch size"
 
 
 @pytest.mark.robustness
@@ -391,15 +350,15 @@ def test_relative_representation_stability(model, data, params, capsys):
     [
         (
                 quantus.RelativeInputStability,
-                {"explain_func": quantus.explain, "num_perturbations": 10},
+                {"explain_func": quantus.explain},
         ),
         (
                 quantus.RelativeOutputStability,
-                {"explain_func": quantus.explain, "num_perturbations": 10},
+                {"explain_func": quantus.explain},
         ),
         (
                 quantus.RelativeRepresentationStability,
-                {"explain_func": quantus.explain, "num_perturbations": 10},
+                {"explain_func": quantus.explain},
         ),
     ],
     ids=["RIS", "ROS", "RRS"],
@@ -407,7 +366,7 @@ def test_relative_representation_stability(model, data, params, capsys):
 def test_relative_stability_pytorch(
         load_mnist_model, load_mnist_images, metric, params, capsys
 ):
-    rs = metric(**params)
+    rs = metric(num_perturbations=10)
     result = rs(
         load_mnist_model,
         load_mnist_images["x_batch"],
