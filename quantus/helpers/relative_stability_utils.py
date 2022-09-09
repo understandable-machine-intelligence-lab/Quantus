@@ -19,6 +19,8 @@ def compute_perturbed_inputs_with_same_labels(
 ) -> np.ndarray:
     """Computes perturbations which result in the same labels and stack them in new leading axis"""
 
+    device = kwargs.get('device', 'cpu')
+
     if 'perturb_func' not in kwargs:
         warnings.warn('No "perturb_func" provided, using random noise as default')
         perturb_func = random_noise
@@ -33,7 +35,7 @@ def compute_perturbed_inputs_with_same_labels(
 
     for _ in it:
         xs = perturb_func(x_batch, **kwargs)
-        logits = model.predict(xs)
+        logits = model.predict(xs, device=device) # noqa
         labels = np.argmax(logits, axis=1)
 
         same_label_indexes = np.argwhere(labels == y_batch)
@@ -78,7 +80,7 @@ def compute_explanations(
 
     it = xs_batch
     if display_progressbar:
-        it = tqdm(it, desc=f"Collecting explanations for")
+        it = tqdm(it, desc=f"Collecting explanations")
 
     as_batch = [
         explain_func(

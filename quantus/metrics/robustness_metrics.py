@@ -1348,6 +1348,7 @@ class RelativeInputStability(Metric):
                 display_progressbar=self.display_progressbar,
                 explain_func=kwargs.get("explain_func"),
                 normalize_func=self.normalise_func,
+                device=kwargs.get('device')
             )
 
         obj_arr = np.asarray(
@@ -1484,6 +1485,7 @@ class RelativeOutputStability(Metric):
                 display_progressbar=self.display_progressbar,
                 explain_func=kwargs.get("explain_func"),
                 normalize_func=self.normalise_func,
+                device=kwargs.get('device')
             )
 
         h_x = model_wrapper.predict(x_batch, **kwargs)
@@ -1640,6 +1642,7 @@ class RelativeRepresentationStability(Metric):
                 display_progressbar=self.display_progressbar,
                 explain_func=kwargs.get("explain_func"),
                 normalize_func=self.normalise_func,
+                device=kwargs.get('device')
             )
 
         l_x = model_wrapper.get_hidden_layers_representations(x_batch, **kwargs)
