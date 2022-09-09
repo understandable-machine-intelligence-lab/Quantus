@@ -91,7 +91,11 @@ class PyTorchModel(ModelInterface):
     def get_hidden_layers_representations(self, x: np.ndarray,
                                           layer_names: Optional[List[str]] = None,
                                           layer_indices: Optional[List[int]] = None,
+                                          **kwargs
                                           ) -> np.ndarray:
+
+
+        device = kwargs.get('device', torch.device('cpu'))
 
         if layer_indices is None:
             layer_indices = []
@@ -119,12 +123,23 @@ class PyTorchModel(ModelInterface):
         # Then we execute forward pass, and stack them in 2D tensor
 
         def hook(module, module_in, module_out):
-            arr = module_out.detach().numpy()
+            arr = module_out.cpu().numpy()
             arr = arr.reshape((batch_size, -1))
             hidden_outputs.append(arr)
 
+
+        new_hooks = []
+        # Save handles of registered hooks, so we can clean them up later
         for index, (name, layer) in enumerate(hidden_layers):
             if is_layer_of_interest(index, name):
-                layer.register_forward_hook(hook)
-        self.model.forward(torch.Tensor(x))
+                handle = layer.register_forward_hook(hook)
+                new_hooks.append(handle)
+
+        # Execute forward pass
+        with torch.no_grad():
+            self.model(torch.Tensor(x).to(device))
+
+        # Cleanup
+        [i.remove() for i in new_hooks]
+
         return np.hstack(hidden_outputs)

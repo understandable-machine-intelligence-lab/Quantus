@@ -1486,14 +1486,14 @@ class RelativeOutputStability(Metric):
                 normalize_func=self.normalise_func,
             )
 
-        h_x = model_wrapper.predict(x_batch)
+        h_x = model_wrapper.predict(x_batch, **kwargs)
 
         # "Merge" axis 0,1
         num_perturbations = xs_batch.shape[0]
         batch_size = xs_batch.shape[1]
         model_input = xs_batch.reshape((-1, *xs_batch.shape[2:]))
 
-        hxs_flat = model_wrapper.predict(model_input)
+        hxs_flat = model_wrapper.predict(model_input, **kwargs)
         # Un-"merge" axis 0,1
         hxs = hxs_flat.reshape((num_perturbations, batch_size, *hxs_flat.shape[1:]))
 
@@ -1642,22 +1642,14 @@ class RelativeRepresentationStability(Metric):
                 normalize_func=self.normalise_func,
             )
 
-        l_x = model_wrapper.get_hidden_layers_representations(
-            x_batch,
-            layer_names=kwargs.get("layer_names"),
-            layer_indices=kwargs.get("layer_indices"),
-        )
+        l_x = model_wrapper.get_hidden_layers_representations(x_batch, **kwargs)
 
         # "Merge" axis 0,1
         num_perturbations = xs_batch.shape[0]
         batch_size = xs_batch.shape[1]
         model_input = xs_batch.reshape((-1, *xs_batch.shape[2:]))
 
-        l_xs_flat = model_wrapper.get_hidden_layers_representations(
-            model_input,
-            layer_names=kwargs.get("layer_names"),
-            layer_indices=kwargs.get("layer_indices"),
-        )
+        l_xs_flat = model_wrapper.get_hidden_layers_representations(model_input, **kwargs)
         # Un-"merge" axis 0,1
         l_xs = l_xs_flat.reshape((num_perturbations, batch_size, *l_xs_flat.shape[1:]))
 

@@ -49,6 +49,7 @@ class ModelInterface(ABC):
                                           x: np.ndarray,
                                           layer_names: Optional[List[str]] = None,
                                           layer_indices: Optional[List[int]] = None,
+                                          **kwargs
                                           ) -> np.ndarray:
         """
         Computes models internal representation of input x.
