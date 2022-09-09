@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Union, Tuple, Optional
 
 import numpy as np
 from tqdm.auto import tqdm
-import jax.numpy as jnp
 from abc import abstractmethod, ABC
 
 from .base import Metric
@@ -1386,13 +1385,17 @@ class RelativeInputStability(Metric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), 1)  # noqa
+        if len(nominator.shape) == 3:
+            # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
+            nominator = np.linalg.norm(nominator, axis=(2, 1)) # noqa
+        else:
+            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
 
         denominator = x - xs
         denominator /= x + (x == 0) * eps_min
 
-        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(3, 2)), 1)  # noqa
-        denominator = np.max(np.stack([denominator, eps_min]))
+        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(3, 2)), axis=1)  # noqa
+        denominator += (denominator == 0) * eps_min
 
         return nominator / denominator
 
@@ -1529,12 +1532,12 @@ class RelativeOutputStability(Metric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), 1)  # noqa
+        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
 
         denominator = h_x - h_xs
 
-        denominator = np.linalg.norm(denominator, axis=(2, 1))  # noqa
-        denominator = np.max(np.stack([denominator, eps_min]))
+        denominator = np.linalg.norm(denominator, axis=1)  # noqa
+        denominator += (denominator == 0) * eps_min # prevent division by 0
 
         return nominator / denominator
 
@@ -1685,13 +1688,13 @@ class RelativeRepresentationStability(Metric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), 1)  # noqa
+        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
 
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * eps_min  # prevent division by 0
 
-        denominator = np.linalg.norm(denominator, axis=(2, 1))  # noqa
-        denominator = np.max(np.stack([denominator, eps_min]))
+        denominator = np.linalg.norm(denominator, axis=1)
+        denominator += (denominator == 0) * eps_min
 
         return nominator / denominator
 

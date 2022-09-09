@@ -49,17 +49,14 @@ def compute_perturbed_inputs_with_same_labels(
 
 
 def assert_correct_kwargs_provided(a_batch, **kwargs):
-    if a_batch and "as_batch" in kwargs and "xs_batch" not in kwargs:
+    if a_batch is not None and "as_batch" in kwargs and "xs_batch" not in kwargs:
         raise ValueError("When providing pre-computed explanations, must also provide x' (xs_batch)")
-    if (
-            "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs)
-    ) or (
-            "explain_func" not in kwargs
-            and ("a_batch" not in kwargs or "as_batch" not in kwargs)
-    ):
-        raise ValueError(
-            "Must provide either explain_func or (a_batch and as_batch)"
-        )
+
+    if "explain_func" in kwargs and ("a_batch" in kwargs or "as_batch" in kwargs):
+        raise ValueError("Must provide either explain_func or (a_batch and as_batch)")
+
+    if "explain_func" not in kwargs and ("a_batch" not in kwargs or "as_batch" not in kwargs):
+        raise ValueError("Must provide either explain_func or (a_batch and as_batch)")
 
 
 def compute_explanations(
