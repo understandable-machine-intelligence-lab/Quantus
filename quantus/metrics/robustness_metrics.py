@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Union, Tuple, Optional
 
 import numpy as np
 from tqdm.auto import tqdm
-from abc import abstractmethod, ABC
 
 from .base import Metric
 from ..helpers import asserts
