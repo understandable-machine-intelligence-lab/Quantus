@@ -23,7 +23,6 @@ class TensorFlowModel(ModelInterface):
         """Predict on the given input."""
         #Generally, one should always prefer keras predict to __call__
         #https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
-        #https://keras.io/api/models/model_training_apis/#:~:text=Number%20of%20samples%20per%20batch,batch_size%20will%20default%20to%2032.
 
         softmax_act = kwargs.get("softmax", False)
 
@@ -31,7 +30,7 @@ class TensorFlowModel(ModelInterface):
         target_act = softmax if softmax_act else linear
 
         if output_act == target_act:
-            return self.model.predict(x)
+            return self.model.predict(x, verbose=0)
 
         config = self.model.layers[-1].get_config()
         config["activation"] = target_act
@@ -42,7 +41,7 @@ class TensorFlowModel(ModelInterface):
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
 
-        return new_model.predict(x)
+        return new_model.predict(x, verbose=0)
 
     def shape_input(
         self,
@@ -126,7 +125,7 @@ class TensorFlowModel(ModelInterface):
         sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
         # we don't need TF to trace + compile this model. We're going to call it once only
         sub_model.run_eagerly = True
-        internal_representation = sub_model.predict(x)
+        internal_representation = sub_model.predict(x, verbose=0)
         input_batch_size = x.shape[0]
 
         # Clean-up memory reserved for model's copy

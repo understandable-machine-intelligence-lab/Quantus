@@ -151,7 +151,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     ]
 )
 def test_get_hidden_layer_output_sequential(load_cnn_2d_1channel_tf, params, capsys):
-    model = TensorFlowModel(model=load_1d_3ch_conv_model_tf, channel_first=False)
+    model = TensorFlowModel(model=load_cnn_2d_1channel_tf, channel_first=False)
     X = np.random.random((32, 28, 28, 1))
     result = model.get_hidden_layers_representations(X, **params)
     with capsys.disabled():
