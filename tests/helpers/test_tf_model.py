@@ -2,7 +2,6 @@ from functools import reduce
 from operator import and_
 from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
-import tensorflow as tf
 
 from ..fixtures import *
 from ...quantus.helpers import *

@@ -1266,7 +1266,6 @@ class Consistency(Metric):
 
 
 class RelativeInputStability(Metric):
-
     def __init__(self, *args, **kwargs):
         """
         Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
@@ -1287,14 +1286,15 @@ class RelativeInputStability(Metric):
         super().__init__(*args, **kwargs)
         self.num_perturbations = kwargs.get("num_perturbations", 50)
 
-    def __call__(self,
-                 model,
-                 x_batch: np.ndarray,
-                 y_batch: np.ndarray,
-                 a_batch: Optional[np.ndarray] = None,
-                 *args,
-                 **kwargs
-                 ) -> np.ndarray | float:
+    def __call__(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: Optional[np.ndarray] = None,
+        *args,
+        **kwargs,
+    ) -> np.ndarray | float:
         """
         Parameters:
             model: instance of tf.keras.Model or torch.nn.Module
@@ -1332,7 +1332,7 @@ class RelativeInputStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                **kwargs
+                **kwargs,
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
         if a_batch is not None:
@@ -1346,27 +1346,24 @@ class RelativeInputStability(Metric):
                 normalize=self.normalise,
                 absolute=self.abs,
                 display_progressbar=self.display_progressbar,
-                explain_func=kwargs.get('explain_func'),
-                normalize_func=self.normalise_func
+                explain_func=kwargs.get("explain_func"),
+                normalize_func=self.normalise_func,
             )
 
-        obj_arr = np.asarray([
-            self.relative_input_stability_objective(x_batch, i, a_batch, j) for i,j in zip(xs_batch, as_batch)]
+        obj_arr = np.asarray(
+            [
+                self.relative_input_stability_objective(x_batch, i, a_batch, j)
+                for i, j in zip(xs_batch, as_batch)
+            ]
         )
         result = np.max(obj_arr, axis=0)
         if self.return_aggregate:
             result = self.aggregate_func(result)
         return result
 
-
-
     @staticmethod
     def relative_input_stability_objective(
-            x: np.ndarray,
-            xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
-            eps_min=1e-6
+        x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray, eps_min=1e-6
     ) -> np.ndarray:
         """
         Computes relative input stabilities maximization objective
@@ -1385,21 +1382,24 @@ class RelativeInputStability(Metric):
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
         if len(nominator.shape) == 3:
             # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
-            nominator = np.linalg.norm(nominator, axis=(2, 1)) # noqa
+            nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
         else:
-            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
+            nominator = np.linalg.norm(
+                np.linalg.norm(nominator, axis=(3, 2)), axis=1
+            )  # noqa
 
         denominator = x - xs
         denominator /= x + (x == 0) * eps_min
 
-        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(3, 2)), axis=1)  # noqa
+        denominator = np.linalg.norm(
+            np.linalg.norm(denominator, axis=(3, 2)), axis=1
+        )  # noqa
         denominator += (denominator == 0) * eps_min
 
         return nominator / denominator
 
 
 class RelativeOutputStability(Metric):
-
     def __init__(self, *args, **kwargs):
         """
         Relative Output Stability leverages the stability of an explanation with respect
@@ -1422,14 +1422,15 @@ class RelativeOutputStability(Metric):
         super().__init__(*args, **kwargs)
         self.num_perturbations = kwargs.get("num_perturbations", 50)
 
-    def __call__(self,
-                 model,
-                 x_batch: np.ndarray,
-                 y_batch: np.ndarray,
-                 a_batch: Optional[np.ndarray] = None,
-                 *args,
-                 **kwargs
-                 ) -> np.ndarray | float:
+    def __call__(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: Optional[np.ndarray] = None,
+        *args,
+        **kwargs,
+    ) -> np.ndarray | float:
         """
         Parameters:
             model: instance of tf.keras.Model or torch.nn.Module
@@ -1467,7 +1468,7 @@ class RelativeOutputStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                **kwargs
+                **kwargs,
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
         if a_batch is not None:
@@ -1481,13 +1482,13 @@ class RelativeOutputStability(Metric):
                 normalize=self.normalise,
                 absolute=self.abs,
                 display_progressbar=self.display_progressbar,
-                explain_func=kwargs.get('explain_func'),
-                normalize_func=self.normalise_func
+                explain_func=kwargs.get("explain_func"),
+                normalize_func=self.normalise_func,
             )
 
         h_x = model_wrapper.predict(x_batch)
 
-        # "Merge" axis 0,1 before
+        # "Merge" axis 0,1
         num_perturbations = xs_batch.shape[0]
         batch_size = xs_batch.shape[1]
         model_input = xs_batch.reshape((-1, *xs_batch.shape[2:]))
@@ -1496,23 +1497,24 @@ class RelativeOutputStability(Metric):
         # Un-"merge" axis 0,1
         hxs = hxs_flat.reshape((num_perturbations, batch_size, *hxs_flat.shape[1:]))
 
-        obj_arr = np.asarray([
-            self.relative_output_stability_objective(h_x, i, a_batch, j) for i, j in zip(hxs, as_batch)
-        ])
+        obj_arr = np.asarray(
+            [
+                self.relative_output_stability_objective(h_x, i, a_batch, j)
+                for i, j in zip(hxs, as_batch)
+            ]
+        )
         result = np.max(obj_arr, axis=0)
         if self.return_aggregate:
             result = self.aggregate_func(result)
         return result
 
-
-
     @staticmethod
     def relative_output_stability_objective(
-            h_x: np.ndarray,
-            h_xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
-            eps_min=1e-6
+        h_x: np.ndarray,
+        h_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+        eps_min=1e-6,
     ) -> np.ndarray:
         """
         Computes relative output stabilities maximization objective
@@ -1533,18 +1535,19 @@ class RelativeOutputStability(Metric):
             # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
             nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
         else:
-            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
+            nominator = np.linalg.norm(
+                np.linalg.norm(nominator, axis=(3, 2)), axis=1
+            )  # noqa
 
         denominator = h_x - h_xs
 
         denominator = np.linalg.norm(denominator, axis=1)  # noqa
-        denominator += (denominator == 0) * eps_min # prevent division by 0
+        denominator += (denominator == 0) * eps_min  # prevent division by 0
 
         return nominator / denominator
 
 
 class RelativeRepresentationStability(Metric):
-
     def __init__(self, *args, **kwargs):
         """
         Relative Output Stability leverages the stability of an explanation with respect
@@ -1567,14 +1570,15 @@ class RelativeRepresentationStability(Metric):
         super().__init__(*args, **kwargs)
         self.num_perturbations = kwargs.get("num_perturbations", 50)
 
-    def __call__(self,
-                 model,
-                 x_batch: np.ndarray,
-                 y_batch: np.ndarray,
-                 a_batch: Optional[np.ndarray] = None,
-                 *args,
-                 **kwargs
-                 ) -> np.ndarray | float:
+    def __call__(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: Optional[np.ndarray] = None,
+        *args,
+        **kwargs,
+    ) -> np.ndarray | float:
         """
         Parameters:
             model: instance of tf.keras.Model or torch.nn.Module
@@ -1620,7 +1624,7 @@ class RelativeRepresentationStability(Metric):
                 y_batch=y_batch,
                 num_perturbations=self.num_perturbations,
                 display_progressbar=self.display_progressbar,
-                **kwargs
+                **kwargs,
             )
         assert_correct_kwargs_provided(a_batch, **kwargs)
         if a_batch is not None:
@@ -1634,32 +1638,35 @@ class RelativeRepresentationStability(Metric):
                 normalize=self.normalise,
                 absolute=self.abs,
                 display_progressbar=self.display_progressbar,
-                explain_func=kwargs.get('explain_func'),
-                normalize_func=self.normalise_func
+                explain_func=kwargs.get("explain_func"),
+                normalize_func=self.normalise_func,
             )
 
         l_x = model_wrapper.get_hidden_layers_representations(
             x_batch,
-            layer_names=kwargs.get('layer_names'),
-            layer_indices=kwargs.get('layer_indices')
+            layer_names=kwargs.get("layer_names"),
+            layer_indices=kwargs.get("layer_indices"),
         )
 
-        # "Merge" axis 0,1 before
+        # "Merge" axis 0,1
         num_perturbations = xs_batch.shape[0]
         batch_size = xs_batch.shape[1]
         model_input = xs_batch.reshape((-1, *xs_batch.shape[2:]))
 
         l_xs_flat = model_wrapper.get_hidden_layers_representations(
             model_input,
-            layer_names=kwargs.get('layer_names'),
-            layer_indices=kwargs.get('layer_indices')
+            layer_names=kwargs.get("layer_names"),
+            layer_indices=kwargs.get("layer_indices"),
         )
         # Un-"merge" axis 0,1
         l_xs = l_xs_flat.reshape((num_perturbations, batch_size, *l_xs_flat.shape[1:]))
 
-        obj_arr = np.asarray([
-            self.relative_representation_stability_objective(l_x, i, a_batch, j) for i, j in zip(l_xs, as_batch)
-        ])
+        obj_arr = np.asarray(
+            [
+                self.relative_representation_stability_objective(l_x, i, a_batch, j)
+                for i, j in zip(l_xs, as_batch)
+            ]
+        )
         result = np.max(obj_arr, axis=0)
         if self.return_aggregate:
             result = self.aggregate_func(result)
@@ -1667,11 +1674,11 @@ class RelativeRepresentationStability(Metric):
 
     @staticmethod
     def relative_representation_stability_objective(
-            l_x: np.ndarray,
-            l_xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
-            eps_min=1e-6
+        l_x: np.ndarray,
+        l_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+        eps_min=1e-6,
     ) -> np.ndarray:
         """
         Computes relative representation stabilities maximization objective
@@ -1692,7 +1699,9 @@ class RelativeRepresentationStability(Metric):
             # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
             nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
         else:
-            nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(3, 2)), axis=1)  # noqa
+            nominator = np.linalg.norm(
+                np.linalg.norm(nominator, axis=(3, 2)), axis=1
+            )  # noqa
 
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * eps_min  # prevent division by 0
@@ -1701,6 +1710,3 @@ class RelativeRepresentationStability(Metric):
         denominator += (denominator == 0) * eps_min
 
         return nominator / denominator
-
-
-
