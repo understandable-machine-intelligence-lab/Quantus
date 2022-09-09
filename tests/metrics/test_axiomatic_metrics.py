@@ -180,7 +180,7 @@ def test_completeness(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -389,7 +389,7 @@ def test_non_sensitivity(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -447,7 +447,6 @@ def test_non_sensitivity(
                     "input_shift": -1,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "features_in_step": 112,
                 },
                 "call": {
                     "explain_func": explain,
@@ -459,10 +458,10 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d"),
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
-                "a_batch_generate": False,
+                "a_batch_generate": True,
                 "init": {
                     "abs": False,
                     "normalise": False,
@@ -490,71 +489,6 @@ def test_non_sensitivity(
                     "input_shift": -1,
                     "disable_warnings": True,
                     "display_progressbar": False,
-                    "features_in_step": 112,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputxGradient",
-                    },
-                },
-            },
-            {"dtypes": [True, False]},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "abs": False,
-                    "normalise": False,
-                    "input_shift": -1,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"dtypes": [True, False]},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": True,
-                "init": {
-                    "abs": False,
-                    "normalise": False,
-                    "input_shift": -1,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                    "features_in_step": 112,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"dtypes": [True, False]},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "abs": True,
-                    "normalise": True,
-                    "input_shift": -1,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
                 },
                 "call": {
                     "explain_func": explain,
@@ -576,7 +510,6 @@ def test_non_sensitivity(
                     "input_shift": -1,
                     "disable_warnings": True,
                     "display_progressbar": False,
-                    "features_in_step": 112,
                 },
                 "call": {
                     "explain_func": explain,
@@ -588,10 +521,10 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d"),
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
-                "a_batch_generate": False,
+                "a_batch_generate": True,
                 "init": {
                     "abs": False,
                     "normalise": False,
@@ -609,17 +542,79 @@ def test_non_sensitivity(
             {"dtypes": [True, False]},
         ),
         (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
             {
-                "a_batch_generate": True,
+                "a_batch_generate": False,
+                "init": {
+                    "abs": False,
+                    "normalise": False,
+                    "input_shift": -1,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "InputxGradient",
+                    },
+                },
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "abs": False,
+                    "normalise": False,
+                    "input_shift": -1,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "abs": True,
+                    "normalise": True,
+                    "input_shift": -1,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            {"dtypes": [True, False]},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {
+                "a_batch_generate": False,
                 "init": {
                     "abs": False,
                     "normalise": False,
                     "input_shift": -1,
                     "disable_warnings": True,
                     "display_progressbar": True,
-                    "features_in_step": 112,
                 },
                 "call": {
                     "explain_func": explain,
@@ -648,7 +643,7 @@ def test_input_invariance(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
