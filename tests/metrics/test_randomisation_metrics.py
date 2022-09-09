@@ -216,7 +216,7 @@ def test_model_parameter_randomisation(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
@@ -396,7 +396,7 @@ def test_random_logit(
 
     if params.get("a_batch_generate", True):
         explain = call_params["explain_func"]
-        explain_func_kwargs = call_params["explain_func_kwargs"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
