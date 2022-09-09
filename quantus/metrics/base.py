@@ -36,6 +36,14 @@ class Metric:
 
         Each of the defined metrics in Quantus, inherits from Metric base class.
 
+        A child metric can benefit from the following class methods:
+        - __call__(): Will call general_preprocess(), apply evaluate_instance() on each
+                      instance and finally call custom_preprocess().
+                      To use this method the child Metric needs to implement
+                      evaluate_instance().
+        - general_preprocess(): Prepares all necessary data structures for evaluation.
+                                Will call custom_preprocess() at the end.
+
         Parameters
         ----------
         abs (boolean): Indicates whether absolute operation is applied on the attribution.
@@ -84,11 +92,13 @@ class Metric:
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
-        TODO: add more specific documentation for inheriting from this class.
-
         This implementation represents the main logic of the metric and makes the class object callable.
-        It completes batch-wise evaluation of some explanations (a_batch) with respect to some input data
-        (x_batch), some output labels (y_batch) and a torch model (model).
+        It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
+        output labels (y_batch) and a torch or tensorflow model (model).
+
+        Calls general_preprocess() with all relevant arguments, calls
+        evaluate_instance() on each instance, and saves results to last_results.
+        Calls custom_postprocess() afterwards. Finally returns last_results.
 
         Parameters
         ----------
@@ -190,9 +200,11 @@ class Metric:
         y_instance: Optional[np.ndarray] = None,
         a_instance: Optional[np.ndarray] = None,
         s_instance: Optional[np.ndarray] = None,
-    ):
+    ) -> Any:
         """
-        TODO: add documentation.
+        This method needs to be implemented to use __call__().
+
+        Gets model and data for a single instance as input, returns result.
         """
         raise NotImplementedError()
 
@@ -213,7 +225,17 @@ class Metric:
         np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]
     ]:
         """
-        TODO: add documentation.
+        Prepares all necessary variables for evaluation.
+
+        - Reshapes data to channel first layout.
+        - Wraps model into ModelInterface.
+        - Creates attribtions if necessary.
+        - Expands attributions to data shape (adds channel dimension).
+        - Calls custom_preprocess().
+        - Normalises attributions if desired.
+        - Takes absolute of attributions if desired.
+        - If no segmentation s_batch given, creates list of Nones with as many
+          elements as there are data instances.
         """
         # Reshape input batch to channel first order:
         if not isinstance(channel_first, bool):  # None is not a boolean instance.
@@ -294,6 +316,10 @@ class Metric:
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Implement this method if you need custom preprocessing of data,
+        model alteration or simply for creating/initializing additional attributes.
+        """
         return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
@@ -304,6 +330,10 @@ class Metric:
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Implement this method if you need custom postprocessing of results or
+        additional attributes.
+        """
         pass
 
     @property
@@ -398,6 +428,8 @@ class Metric:
 class PerturbationMetric(Metric):
     """
     Implementation base PertubationMetric class.
+
+    This metric has additional attributes for perturbations.
     """
 
     @asserts.attributes_check
