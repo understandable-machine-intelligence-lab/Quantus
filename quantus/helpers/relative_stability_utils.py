@@ -67,7 +67,6 @@ def compute_explanations(
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         xs_batch: np.ndarray,
-        explain_func: Optional[Callable],
         display_progressbar: bool,
         normalize: bool,
         normalize_func: Optional[Callable],
@@ -76,6 +75,9 @@ def compute_explanations(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Computes explanations for the x_batch and xs_batch"""
 
+    # We did assert previously that the correct kwargs were provided,
+    # which means if we're here `explain_func` was provided in kwargs
+    explain_func: Callable = kwargs.get("explain_func")
     a_batch = explain_func(model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs)
 
     it = xs_batch
