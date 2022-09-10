@@ -325,7 +325,7 @@ def test_compute_explanations(
     ],
 )
 def test_params_to_base_class(metric, params):
-    ris = metric(**params, )
+    ris = metric(**params)
     for i in params:
         attr = getattr(ris, i)
         assert attr == params[i], "Parameter was not initialized"
