@@ -392,7 +392,8 @@ def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
     """
     Adds the same random noise in to each datapoint.
     Noise values are in [0., upper_bound] interval.
-    Params:
+
+    Parameters:
        arr: 4D tensor representing batch of images
        upper_bound: an upper bound for noise generated, default 1e-6
        kwargs: unused

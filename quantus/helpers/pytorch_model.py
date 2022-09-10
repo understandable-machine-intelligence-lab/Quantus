@@ -88,14 +88,15 @@ class PyTorchModel(ModelInterface):
             module[1].reset_parameters()
             yield module[0], random_layer_model
 
-    def get_hidden_layers_representations(self, x: np.ndarray,
-                                          layer_names: Optional[List[str]] = None,
-                                          layer_indices: Optional[List[int]] = None,
-                                          **kwargs
-                                          ) -> np.ndarray:
+    def get_hidden_layers_representations(
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs
+    ) -> np.ndarray:
 
-
-        device = kwargs.get('device', torch.device('cpu'))
+        device = kwargs.get("device", torch.device("cpu"))
 
         if layer_indices is None:
             layer_indices = []
@@ -110,10 +111,14 @@ class PyTorchModel(ModelInterface):
         # skip last layer
         hidden_layers = [layer for layer in self.model.named_modules()][:-1]
         # skip modules defined by subclassing API
-        hidden_layers = list(filter(
-            lambda l: not isinstance(l[1], (self.model.__class__, torch.nn.Sequential)),
-            hidden_layers
-        ))
+        hidden_layers = list(
+            filter(
+                lambda l: not isinstance(
+                    l[1], (self.model.__class__, torch.nn.Sequential)
+                ),
+                hidden_layers,
+            )
+        )
 
         batch_size = x.shape[0]
         hidden_outputs = []
@@ -126,7 +131,6 @@ class PyTorchModel(ModelInterface):
             arr = module_out.cpu().numpy()
             arr = arr.reshape((batch_size, -1))
             hidden_outputs.append(arr)
-
 
         new_hooks = []
         # Save handles of registered hooks, so we can clean them up later

@@ -21,8 +21,8 @@ class TensorFlowModel(ModelInterface):
 
     def predict(self, x, **kwargs):
         """Predict on the given input."""
-        #Generally, one should always prefer keras predict to __call__
-        #https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
+        # Generally, one should always prefer keras predict to __call__
+        # https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
 
         softmax_act = kwargs.get("softmax", False)
 
@@ -100,19 +100,19 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-    def get_hidden_layers_representations(self,
-                                          x: np.ndarray,
-                                          layer_names: Optional[List[str]] = None,
-                                          layer_indices: Optional[List[int]] = None,
-                                          **kwargs
-                                          ) -> np.ndarray:
-
+    def get_hidden_layers_representations(
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs
+    ) -> np.ndarray:
 
         if layer_indices is None:
             layer_indices = []
         if layer_names is None:
             layer_names = []
-            
+
         def is_layer_of_interest(index, name):
             if layer_names == [] and layer_indices == []:
                 return True
@@ -122,7 +122,6 @@ class TensorFlowModel(ModelInterface):
         for i, layer in enumerate(self.model.layers):
             if is_layer_of_interest(i, layer.name):
                 outputs_of_interest.append(layer.output)
-
 
         sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
         # we don't need TF to trace + compile this model. We're going to call it once only
@@ -139,5 +138,7 @@ class TensorFlowModel(ModelInterface):
             return internal_representation.reshape((input_batch_size, -1))
         else:
             # otherwise, keras returns List of np.ndarray
-            internal_representation = [i.reshape((input_batch_size, -1)) for i in internal_representation]
+            internal_representation = [
+                i.reshape((input_batch_size, -1)) for i in internal_representation
+            ]
             return np.hstack(internal_representation)

@@ -45,12 +45,13 @@ class ModelInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_hidden_layers_representations(self,
-                                          x: np.ndarray,
-                                          layer_names: Optional[List[str]] = None,
-                                          layer_indices: Optional[List[int]] = None,
-                                          **kwargs
-                                          ) -> np.ndarray:
+    def get_hidden_layers_representations(
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs
+    ) -> np.ndarray:
         """
         Computes models internal representation of input x.
         In practice, this means, execute forward pass, and capture output of layers, one is interested in.
@@ -60,11 +61,11 @@ class ModelInterface(ABC):
         or couple specific ones should be selected.
         User can select layer by providing 'layer_names' (exclusive)OR 'layer_indices'.
 
-        Params:
-            x: 4D tensor, a batch of input datapoints
-            layer_names: a List specifying names of layers, from which output should be captured.
-            layer_indices: a List specifying indices of layers, from which output should be captured.
-                Intended to use in case, when layer names are not unique, or unknown.
-        Returns: np.ndarray, 2D tensor with shape (batch_size, None)
+        Parameters:
+            x: np.ndarray, 4D tensor, a batch of input datapoints
+            layer_names: List with names of layers, from which output should be captured.
+            layer_indices: List with Indices of layers, from which output should be captured. Intended to use in case, when layer names are not unique, or unknown.
+        Returns:
+            L(*): np.ndarray, 2D tensor with shape (batch_size, None)
         """
         pass
