@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import Callable, Dict, List, Union, Tuple, Optional
+from typing import Callable, Dict, List, Union, Optional
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -18,7 +18,11 @@ from ..helpers.model_interface import ModelInterface
 from ..helpers.norm_func import fro_norm
 from ..helpers.normalise_func import normalise_by_negative
 from ..helpers.discretise_func import top_n_sign
-from ..helpers.relative_stability_utils import *
+from ..helpers.relative_stability_utils import (
+    compute_explanations,
+    compute_perturbed_inputs_with_same_labels,
+    assert_correct_kwargs_provided,
+)
 
 
 class LocalLipschitzEstimate(Metric):
@@ -1347,10 +1351,11 @@ class RelativeInputStability(Metric):
         if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
+            # Add xs_batch to kwargs in case it was not provided
+            kwargs["xs_batch"] = xs_batch
             a_batch, as_batch = compute_explanations(
                 model=model_wrapper,
                 x_batch=x_batch,
-                xs_batch=xs_batch,
                 y_batch=y_batch,
                 normalize=self.normalise,
                 absolute=self.abs,
@@ -1492,17 +1497,17 @@ class RelativeOutputStability(Metric):
         if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
+            # Add xs_batch to kwargs in case it was not provided
+            kwargs["xs_batch"] = xs_batch
             a_batch, as_batch = compute_explanations(
                 model=model_wrapper,
                 x_batch=x_batch,
-                xs_batch=xs_batch,
                 y_batch=y_batch,
                 normalize=self.normalise,
                 absolute=self.abs,
                 display_progressbar=self.display_progressbar,
-                explain_func=kwargs.get("explain_func"),
                 normalize_func=self.normalise_func,
-                device=kwargs.get("device"),
+                **kwargs
             )
 
         h_x = model_wrapper.predict(x_batch, **kwargs)
@@ -1653,10 +1658,11 @@ class RelativeRepresentationStability(Metric):
         if a_batch is not None:
             as_batch = kwargs.get("as_batch")
         else:
+            # Add xs_batch to kwargs in case it was not provided
+            kwargs["xs_batch"] = xs_batch
             a_batch, as_batch = compute_explanations(
                 model=model_wrapper,
                 x_batch=x_batch,
-                xs_batch=xs_batch,
                 y_batch=y_batch,
                 normalize=self.normalise,
                 absolute=self.abs,

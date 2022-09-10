@@ -40,6 +40,7 @@ class TensorFlowModel(ModelInterface):
         output_layer = Dense(**config)(self.model.layers[-2].output)
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
+        # we don't need TF to trace + compile this model. We're going to call it once only
         new_model.run_eagerly = True
 
         return new_model.predict(x, verbose=0)

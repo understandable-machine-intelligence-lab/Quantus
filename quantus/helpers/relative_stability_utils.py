@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Iterable
 import warnings
 from tqdm.auto import tqdm
 
@@ -42,6 +42,9 @@ def compute_perturbed_inputs_with_same_labels(
         xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
         xs_batch.append(xs)
 
+    if len(xs_batch) == 0:
+       raise ValueError("Not perturbations resulted on same labels, you might want to change perturb_func, or provide additional kwargs to modify it behaviour")
+
     # pull all new images into 0 axes
     xs_batch = np.vstack(xs_batch)
     # drop images, which cause dims not to be divisible
@@ -66,7 +69,6 @@ def compute_explanations(
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
-        xs_batch: np.ndarray,
         display_progressbar: bool,
         normalize: bool,
         normalize_func: Optional[Callable],
@@ -80,7 +82,8 @@ def compute_explanations(
     explain_func: Callable = kwargs.get("explain_func")
     a_batch = explain_func(model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs)
 
-    it = xs_batch
+    # By this moment, we made sure in the actual metric, that xs_batch is in kwargs
+    it: Iterable = kwargs.get('xs_batch')
     if display_progressbar:
         it = tqdm(it, desc=f"Collecting explanations")
 

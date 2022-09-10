@@ -275,7 +275,7 @@ def test_precomputed_explanations(
 def test_compute_explanations(
     load_cnn_2d_1channel_tf, load_mnist_images_tf, params, capsys
 ):
-    ris = quantus.RelativeInputStability(num_perturbations=10)
+    ris = quantus.RelativeInputStability()
 
     result = ris(
         load_cnn_2d_1channel_tf,
@@ -325,7 +325,7 @@ def test_compute_explanations(
     ],
 )
 def test_params_to_base_class(metric, params):
-    ris = metric(**params)
+    ris = metric(**params, )
     for i in params:
         attr = getattr(ris, i)
         assert attr == params[i], "Parameter was not initialized"
@@ -404,7 +404,7 @@ def test_relative_representation_stability(
 def test_relative_stability_pytorch(
     load_mnist_model, load_mnist_images, metric, params, capsys
 ):
-    rs = metric(num_perturbations=10)
+    rs = metric()
     result = rs(
         load_mnist_model,
         load_mnist_images["x_batch"],
