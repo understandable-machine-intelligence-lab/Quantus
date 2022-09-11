@@ -1331,20 +1331,6 @@ class RelativeInputStability(Metric):
          - In practise we just use `max` over a finite `xs_batch`
 
         """
-        if not self.disable_warnings:
-            warn_func.warn_parameterisation(
-                metric_name="RelativeInputStability",
-                sensitive_params=(
-                    "number of times perturbations are generated, namely 'num_perturbations', "
-                    "function used to generate 'xs_batch', namely 'perturb_func', "
-                    "'**kwargs' passed to 'perturb_func'"
-                ),
-                citation=(
-                    "Chirag Agarwal, et. al., 2022. "
-                    '"Rethinking stability for attribution based explanations." '
-                    "https://arxiv.org/pdf/2203.06877.pdf"
-                ),
-            )
         channel_first = utils.infer_channel_first(x_batch)
         model_wrapper = utils.get_wrapped_model(model, channel_first)
 
@@ -1491,20 +1477,6 @@ class RelativeOutputStability(Metric):
          - Compute relative output objective, find max value as subject to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        if not self.disable_warnings:
-            warn_func.warn_parameterisation(
-                metric_name="RelativeInputStability",
-                sensitive_params=(
-                    "number of times perturbations are generated, namely 'num_perturbations', "
-                    "function used to generate 'xs_batch', namely 'perturb_func', "
-                    "'**kwargs' passed to 'perturb_func'"
-                ),
-                citation=(
-                    "Chirag Agarwal, et. al., 2022. "
-                    '"Rethinking stability for attribution based explanations." '
-                    "https://arxiv.org/pdf/2203.06877.pdf"
-                ),
-            )
         channel_first = utils.infer_channel_first(x_batch)
         model_wrapper = utils.get_wrapped_model(model, channel_first)
 
@@ -1668,18 +1640,9 @@ class RelativeRepresentationStability(Metric):
         """
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
-                metric_name="RelativeInputStability",
-                sensitive_params=(
-                    "number of times perturbations are generated, namely 'num_perturbations', "
-                    "function used to generate 'xs_batch', namely 'perturb_func', "
-                    "'**kwargs' passed to 'perturb_func', "
-                    "choice which internal representations use 'layer_names', 'layer_indices'"
-                ),
-                citation=(
-                    "Chirag Agarwal, et. al., 2022. "
-                    '"Rethinking stability for attribution based explanations." '
-                    "https://arxiv.org/pdf/2203.06877.pdf"
-                ),
+                metric_name="Relative Representation Stability",
+                sensitive_params="choice which internal representations use 'layer_names', 'layer_indices'",
+                citation="Chirag Agarwal, et. al., 2022. \"Rethinking stability for attribution based explanations.\" https://arxiv.org/pdf/2203.06877.pdf"
             )
         channel_first = utils.infer_channel_first(x_batch)
         model_wrapper = utils.get_wrapped_model(model, channel_first)

@@ -19,8 +19,6 @@ def compute_perturbed_inputs_with_same_labels(
 ) -> np.ndarray:
     """Computes perturbations which result in the same labels and stack them in new leading axis"""
 
-    device = kwargs.get('device', 'cpu')
-
     if 'perturb_func' not in kwargs:
         warnings.warn('No "perturb_func" provided, using random noise as default')
         perturb_func = random_noise
@@ -35,20 +33,21 @@ def compute_perturbed_inputs_with_same_labels(
 
     for _ in it:
         xs = perturb_func(x_batch, **kwargs)
-        logits = model.predict(xs, device=device) # noqa
+        logits = model.predict(xs, **kwargs)  # noqa
         labels = np.argmax(logits, axis=1)
-
         same_label_indexes = np.argwhere(labels == y_batch)
         xs = xs[same_label_indexes].reshape(-1, *xs.shape[1:])
-        xs_batch.append(xs)
+        if len(xs) != 0:
+            # Skip if no result in the same labels
+            xs_batch.append(xs)
 
     if len(xs_batch) == 0:
-       raise ValueError("Not perturbations resulted on same labels, you might want to change perturb_func, or provide additional kwargs to modify it behaviour")
+        raise ValueError("Not perturbations resulted on same labels, you might want to change perturb_func, or provide additional kwargs to modify it behaviour")
 
     # pull all new images into 0 axes
     xs_batch = np.vstack(xs_batch)
     # drop images, which cause dims not to be divisible
-    xs_batch = xs_batch[: xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
+    xs_batch = xs_batch[:xs_batch.shape[0] // x_batch.shape[0] * x_batch.shape[0]]
     # make xs_batch have the same shape as x_batch, with new batching axis at 0
     xs_batch = xs_batch.reshape(-1, *x_batch.shape)
     return xs_batch
@@ -83,9 +82,9 @@ def compute_explanations(
     a_batch = explain_func(model=model.get_model(), inputs=x_batch, targets=y_batch, **kwargs)
 
     # By this moment, we made sure in the actual metric, that xs_batch is in kwargs
-    it: Iterable = kwargs.get('xs_batch')
+    it = kwargs.get('xs_batch')
     if display_progressbar:
-        it = tqdm(it, desc=f"Collecting explanations")
+        it = tqdm(it, desc=f"Collecting explanations", total=len(it))
 
     as_batch = [
         explain_func(
