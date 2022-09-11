@@ -161,6 +161,9 @@ if util.find_spec("tensorflow"):
     def CNN_2D_TF(
         img_height: int, img_width: int, num_classes: int, num_channels: int
     ) -> tf.keras.Model:
+        """
+        A simple 2D CNN architecture adapted from https://www.tensorflow.org/tutorials/images/classification
+        """
         model = tf.keras.Sequential(
             [
                 tf.keras.layers.Conv2D(
