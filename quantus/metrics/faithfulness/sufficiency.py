@@ -11,7 +11,7 @@ from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 
 
-class Sufficuency(Metric):
+class Sufficiency(Metric):
     """
     Implementation of Sufficiency test by Dasgupta et al., 2022.
 
@@ -139,7 +139,7 @@ class Sufficuency(Metric):
         a: np.ndarray,
         s: np.ndarray,
         **kwargs,
-    ) -> Dict[float]:
+    ) -> float:
 
         instance_id = kwargs["instance_id"]
 
