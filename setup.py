@@ -53,7 +53,7 @@ EXTRAS = {
 # Define setup.
 setup(
     name="quantus",
-    version="0.1.4",
+    version="0.1.6",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
@@ -63,6 +63,7 @@ setup(
         "matplotlib==3.3.4",
         "numpy==1.19.5",
         "opencv-python==4.5.5.62",
+        "protobuf~=3.19.0",
         "pytest==6.2.5",
         "pytest-cov==3.0.0",
         "pytest-lazy-fixture==0.6.3",

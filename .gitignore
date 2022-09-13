@@ -15,6 +15,7 @@ __pycache__/
 *.csv
 *.pth
 tutorials/progress/
+tutorials/assets/imagenet_images/
 tutorials/assets/data/
 tutorials/assets/model_objs/
 tests/test_scenarios.md
@@ -41,3 +42,6 @@ build/
 # progress
 quantus/analysers/*
 tests/analysers/*
+
+# documentation
+html/

@@ -47,7 +47,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 f"in kwargs will produce a vanilla 'Gradient' explanation.\n",
                 category=UserWarning,
             )
-    if util.find_spec("zennit"):
+    elif util.find_spec("zennit"):
         if "attributor" not in kwargs:
             warnings.warn(
                 f"Using quantus 'explain' function as an explainer without specifying 'attributor'"
@@ -55,7 +55,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 category=UserWarning,
             )
 
-    if not __EXTRAS__:
+    elif not __EXTRAS__:
         raise ImportError(
             "Explanation library not found. Please install Captum or Zennit for torch>=1.2 models "
             "and tf-explain for TensorFlow>=2.0."
@@ -220,7 +220,7 @@ def generate_tf_explanation(
         or kwargs.get("reduce_axes", None) is not None
     ):
         raise KeyError(
-            "Only normalized absolute explanations are currently supported for TensorFlow models (tf-explain). "
+            "Only normalizsd absolute explanations are currently supported for TensorFlow models (tf-explain). "
             "Set normalise=true, abs=true, pos_only=true, neg_only=false. reduce_axes parameter is not available; "
             "explanations are always reduced over channel axis."
         )
@@ -328,7 +328,7 @@ def generate_captum_explanation(
     elif method == "GradCam".lower():
         if "gc_layer" not in kwargs:
             raise ValueError(
-                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[1][1][-6] to run GradCam."
+                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[-4][1] to run GradCam."
             )
 
         if isinstance(kwargs["gc_layer"], str):
@@ -339,6 +339,18 @@ def generate_captum_explanation(
             .attribute(inputs=inputs, target=targets)
             .sum(**reduce_axes)
         )
+        if "interpolate" in kwargs:
+            if isinstance(kwargs["interpolate"], tuple):
+                if "interpolate_mode" in kwargs:
+                    explanation = LayerGradCam.interpolate(
+                        explanation,
+                        kwargs["interpolate"],
+                        interpolate_mode=kwargs["interpolate_mode"],
+                    )
+                else:
+                    explanation = LayerGradCam.interpolate(
+                        explanation, kwargs["interpolate"]
+                    )
 
     elif method == "Control Var. Sobel Filter".lower():
         explanation = torch.zeros(size=inputs.shape)
@@ -381,6 +393,8 @@ def generate_captum_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
+    # TODO. Discuss this.
+    """
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
@@ -392,6 +406,7 @@ def generate_captum_explanation(
 
     elif kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
+    """
 
     return explanation
 
@@ -505,6 +520,8 @@ def generate_zennit_explanation(
     # Sum over the axes.
     explanation = np.sum(explanation, **reduce_axes)
 
+    # TODO. Discuss this.
+    """
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
 
@@ -516,5 +533,6 @@ def generate_zennit_explanation(
 
     elif kwargs.get("neg_only", False):
         explanation[explanation > 0] = 0.0
+    """
 
     return explanation
