@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from ..helpers import utils
 from ..helpers import asserts
@@ -15,7 +15,7 @@ from ..helpers import warn_func
 
 class Metric:
     """
-    Implementation base Metric class.
+    Implementation of the base Metric class.
     """
 
     @asserts.attributes_check
@@ -25,7 +25,8 @@ class Metric:
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
-        softmax: bool,
+        return_aggregate: Optional[bool],
+        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -50,7 +51,8 @@ class Metric:
         normalise (boolean): Indicates whether normalise operation is applied on the attribution.
         normalise_func (callable): Attribution normalisation function applied in case normalise=True.
         normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
-        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
+        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+        aggregate_func (callable): Callable that aggregates the scores given an evaluation call..
         default_plot_func (callable): Callable that plots the metrics result.
         disable_warnings (boolean): Indicates whether the warnings are printed.
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
@@ -62,7 +64,8 @@ class Metric:
 
         self.abs = abs
         self.normalise = normalise
-        self.softmax = softmax
+        self.return_aggregate = return_aggregate
+        self.aggregate_func = aggregate_func
         self.normalise_func = normalise_func
 
         if normalise_func_kwargs is None:
@@ -111,14 +114,14 @@ class Metric:
             Inferred from the input shape if None.
         explain_func (callable): Callable generating attributions.
         explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+        softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
 
         Returns
         -------
-        last_results: a list of float(s) with the evaluation outcome of concerned batch
+        last_results: a list of float(s) with the evaluation outcome of concerned batch.
 
         Examples
         --------
@@ -166,21 +169,24 @@ class Metric:
         # Create progress bar if desired.
         iterator = tqdm(
             enumerate(zip(x_batch, y_batch, a_batch, s_batch)),
-            total=len(x_batch),
+            total=len(x_batch), # TODO. Will this work for metrics that has additional for loops?
             disable=not self.display_progressbar,
+            desc=f"Evaluating {self.__class__.__name__} ...",
         )
         self.last_results = [None for _ in x_batch]
         for instance_id, (x_instance, y_instance, a_instance, s_instance) in iterator:
+            kwargs["instance_id"] = instance_id
             result = self.evaluate_instance(
                 model=model,
                 x=x_instance,
                 y=y_instance,
                 a=a_instance,
                 s=s_instance,
+                **kwargs,
             )
             self.last_results[instance_id] = result
 
-        # Call post-processing
+        # Call custom post-processing.
         self.custom_postprocess(
             model=model,
             x_batch=x_batch,
@@ -189,17 +195,30 @@ class Metric:
             s_batch=s_batch,
         )
 
+        if self.return_aggregate:
+            if self.aggregate_func:
+                try:
+                    self.last_results = [self.aggregate_func(self.last_results)]
+                except:
+                    print("The aggregation of evaluation scores failed. Check that "
+                          "'aggregate_func' supplied is appropriate for the data "
+                          "in 'last_results'.")
+            else:
+                raise KeyError("Specify an 'aggregate_func' (Callable) to aggregate evaluation scores.")
+
         self.all_results.append(self.last_results)
+
         return self.last_results
 
     @abstractmethod
     def evaluate_instance(
         self,
         model: ModelInterface,
-        x_instance: np.ndarray,
-        y_instance: Optional[np.ndarray] = None,
-        a_instance: Optional[np.ndarray] = None,
-        s_instance: Optional[np.ndarray] = None,
+        x: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
+        **kwargs,
     ) -> Any:
         """
         This method needs to be implemented to use __call__().
@@ -229,7 +248,7 @@ class Metric:
 
         - Reshapes data to channel first layout.
         - Wraps model into ModelInterface.
-        - Creates attribtions if necessary.
+        - Creates attributions if necessary.
         - Expands attributions to data shape (adds channel dimension).
         - Calls custom_preprocess().
         - Normalises attributions if desired.
@@ -237,6 +256,7 @@ class Metric:
         - If no segmentation s_batch given, creates list of Nones with as many
           elements as there are data instances.
         """
+
         # Reshape input batch to channel first order:
         if not isinstance(channel_first, bool):  # None is not a boolean instance.
             channel_first = utils.infer_channel_first(x_batch)
@@ -244,9 +264,8 @@ class Metric:
 
         # Wrap the model into an interface.
         if model:
+
             # Use attribute value if not passed explicitly.
-            if softmax is None:
-                softmax = self.softmax
             model = utils.get_wrapped_model(
                 model=model,
                 channel_first=channel_first,
@@ -293,7 +312,7 @@ class Metric:
         if self.normalise:
             a_batch = self.normalise_func(
                 a=a_batch,
-                # TODO note: this assumes we always have a batch axis. that ok?
+                # TODO note: this assumes we always have a batch axis. Is that ok?
                 normalized_axes=list(range(np.ndim(a_batch)))[1:],
                 **self.normalise_func_kwargs,
             )
@@ -314,13 +333,15 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        s_batch: np.ndarray
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Implement this method if you need custom preprocessing of data,
-        model alteration or simply for creating/initializing additional attributes.
+        model alteration or simply for creating/initialising additional attributes.
         """
-        return model, x_batch, y_batch, a_batch, s_batch
+        # TODO. Maybe add a custom_batch
+        custom_batch = [None for _ in x_batch]
+        return model, x_batch, y_batch, a_batch, s_batch#, custom_batch
 
     def custom_postprocess(
         self,
@@ -335,51 +356,6 @@ class Metric:
         additional attributes.
         """
         pass
-
-    @property
-    def interpret_scores(self) -> None:
-        """
-
-        Returns
-        -------
-
-        """
-        print(self.__init__.__doc__.split(".")[1].split("References")[0])
-        # print(self.__call__.__doc__.split("callable.")[1].split("Parameters")[0])
-
-    @property
-    def get_params(self) -> dict:
-        """
-        List parameters of metric.
-        Returns: a dictionary with attributes if not excluded from pre-determined list
-        -------
-
-        """
-        attr_exclude = [
-            "args",
-            "kwargs",
-            "all_results",
-            "last_results",
-            "default_plot_func",
-            "disable_warnings",
-            "display_progressbar",
-        ]
-        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
-
-    def set_params(self, key: str, value: Any) -> dict:
-        """
-        Set a parameter of a metric.
-        Parameters
-        ----------
-        key: attribute of metric to mutate
-        value: value to update the key with
-
-        -------
-        Returns: the updated dictionary.
-
-        """
-        self.kwargs[key] = value
-        return self.kwargs
 
     def plot(
         self,
@@ -402,10 +378,8 @@ class Metric:
         kwargs: an optional dict with additional arguments.
 
         Returns: None.
-        -------
 
         """
-
         # Get plotting func if not provided.
         if plot_func is None:
             plot_func = self.default_plot_func
@@ -424,12 +398,39 @@ class Metric:
 
         return None
 
+    @property
+    def interpret_scores(self) -> None:
+        """
+        Get an interpretation of the scores.
+        """
+        print(self.__init__.__doc__.split(".")[1].split("References")[0])
+
+    @property
+    def get_params(self) -> dict:
+        """
+        List parameters of metric.
+        Returns: a dictionary with attributes if not excluded from pre-determined list
+        -------
+
+        """
+        attr_exclude = [
+            "args",
+            "kwargs",
+            "all_results",
+            "last_results",
+            "default_plot_func",
+            "disable_warnings",
+            "display_progressbar",
+        ]
+        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+
 
 class PerturbationMetric(Metric):
     """
     Implementation base PertubationMetric class.
 
-    This metric has additional attributes for perturbations.
+    Metric categories such as Faithfulness and Robustness share certain characteristics when it comes to perturbations.
+    As follows, this metric class is created which has additional attributes for perturbations.
     """
 
     @asserts.attributes_check
@@ -439,20 +440,24 @@ class PerturbationMetric(Metric):
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
-        perturb_func: Callable,  # TODO: specify expected function signature
+        perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
+        return_aggregate: Optional[bool],
+        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
         **kwargs,
     ):
 
-        # Initialize super-class with passed parameters
+        # Initialise super-class with passed parameters.
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
@@ -463,4 +468,5 @@ class PerturbationMetric(Metric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
+
         self.perturb_func_kwargs = perturb_func_kwargs

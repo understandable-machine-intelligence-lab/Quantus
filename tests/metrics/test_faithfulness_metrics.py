@@ -743,7 +743,7 @@ def test_monotonicity_arya(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = MonotonicityArya(**init_params)(
+    scores = Monotonicity(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -834,7 +834,7 @@ def test_monotonicity_arya(
         ),
     ],
 )
-def test_monotonicity_nguyen(
+def test_monotonicity_correlation(
     model,
     data: np.ndarray,
     params: dict,
@@ -861,7 +861,7 @@ def test_monotonicity_nguyen(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = MonotonicityNguyen(**init_params)(
+    scores = MonotonicityCorrelation(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
@@ -1686,7 +1686,7 @@ def test_sensitivity_n(
     ), "Test failed."
 
 
-@pytest.mark.faithfulness
+@pytest.mark.infi
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1735,6 +1735,23 @@ def test_sensitivity_n(
             },
             {"min": -1.0, "max": 1.0},
         ),
+        # (
+        #    lazy_fixture("load_cifar10_model"),
+        #    lazy_fixture("load_cifar10_images"),
+        #    {
+        #        "perturb_func": baseline_replacement_by_indices,
+        #        "aggregate": True,
+        #        "normalise": True,
+        #        "explain_func": explain,
+        #        "method": "Saliency",
+        #        "abs": True,
+        #        "disable_warnings": False,
+        #        "display_progressbar": False,
+        #        "features_in_step": 8,
+        #        "a_batch_generate": False,
+        #    },
+        #    {"min": -1.0, "max": 1.0},
+        # ),
     ],
 )
 def test_infidelity(
@@ -1800,7 +1817,7 @@ def test_infidelity(
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": 0.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1824,7 +1841,7 @@ def test_infidelity(
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": 0.0, "max": 1.0},
         ),
     ],
 )
@@ -1863,9 +1880,103 @@ def test_ROAD(
         **call_params,
     )
 
-    max_ind = max(scores)
-    min_ind = min(scores)
-
-    assert (scores[min_ind] <= expected["max"]) & (
-        scores[max_ind] >= expected["min"]
+    assert all(s <= expected["max"] for s in scores) & (
+        all(s >= expected["min"] for s in scores)
     ), "Test failed."
+
+
+@pytest.mark.faithfulness
+@pytest.mark.parametrize(
+    "model,data,params,expected",
+    [
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "init": {
+                        "threshold": 0.2,
+                        "normalise": False,
+                        "abs": False,
+                        "disable_warnings": False,
+                        "display_progressbar": False,
+                        "img_size": 28 * 28,
+                    },
+                    "call": {
+                        "explain_func": explain,
+                        "explain_func_kwargs": {
+                            "method": "Saliency",
+                        },
+                    },
+                },
+                {"min": 0.0, "max": 1.0},
+        ),
+        (
+                lazy_fixture("load_mnist_model"),
+                lazy_fixture("load_mnist_images"),
+                {
+                    "a_batch_generate": False,
+                    "init": {
+                        "threshold": 0.6,
+                        "normalise": True,
+                        "abs": True,
+                        "disable_warnings": False,
+                        "display_progressbar": False,
+                        "img_size": 28 * 28,
+                    },
+                    "call": {
+                        "explain_func": explain,
+                        "explain_func_kwargs": {
+                            "method": "Saliency",
+                        },
+                    },
+                },
+                {"min": 0.0, "max": 1.0},
+        ),
+    ],
+)
+def test_sufficiency(
+    model: ModelInterface,
+    data: np.ndarray,
+    params: dict,
+    expected: Union[float, dict, bool],
+):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    if params.get("a_batch_generate", True):
+        explain = params["explain_func"]
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **params,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+
+    if "exception" in expected:
+        with pytest.raises(expected["exception"]):
+            scores = Sufficiency(**init_params)(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch,
+                **call_params,
+            )[0]
+        return
+
+    scores = Sufficiency(**init_params)(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
+    )[0]
+    assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."

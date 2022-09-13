@@ -4,7 +4,7 @@ import numpy as np
 
 
 def normalise_by_max(
-    a: np.ndarray, normalized_axes: Optional[Sequence[int]] = None, **kwargs
+    a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
     """Normalise attributions by the maximum absolute value of the explanation."""
 
@@ -12,20 +12,20 @@ def normalise_by_max(
     if np.all(a == 0.0):
         return a
 
-    # Default normalized_axes.
-    if normalized_axes is None:
-        normalized_axes = list(range(np.ndim(a)))
+    # Default normalise_axes.
+    if normalise_axes is None:
+        normalise_axes = list(range(np.ndim(a)))
 
     # Cast Sequence to tuple so numpy accepts it.
-    normalized_axes = tuple(normalized_axes)
+    normalise_axes = tuple(normalise_axes)
 
-    a_max = np.max(np.abs(a), axis=normalized_axes, keepdims=True)
+    a_max = np.max(np.abs(a), axis=normalise_axes, keepdims=True)
     a = np.divide(a, a_max)
     return a
 
 
 def normalise_by_negative(
-    a: np.ndarray, normalized_axes: Optional[Sequence[int]] = None, **kwargs
+    a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
     """Normalise relevance given a relevance matrix (r) [-1, 1]."""
 
@@ -33,19 +33,19 @@ def normalise_by_negative(
     if np.all(a == 0.0):
         return a
 
-    # Default normalized_axes.
-    if normalized_axes is None:
-        normalized_axes = list(range(np.ndim(a)))
+    # Default normalise_axes.
+    if normalise_axes is None:
+        normalise_axes = list(range(np.ndim(a)))
 
     # Cast Sequence to tuple so numpy accepts it.
-    normalized_axes = tuple(normalized_axes)
+    normalise_axes = tuple(normalise_axes)
 
     # Build return array from three cases.
     return_array = np.zeros(a.shape, dtype=a.dtype)
 
     # Calculate max and min values.
-    a_max = a.max(axis=normalized_axes, keepdims=True)
-    a_min = a.min(axis=normalized_axes, keepdims=True)
+    a_max = a.max(axis=normalise_axes, keepdims=True)
+    a_min = a.min(axis=normalise_axes, keepdims=True)
 
     # Case a.min() >= 0.0.
     return_array = np.where(

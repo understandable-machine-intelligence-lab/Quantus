@@ -1,4 +1,4 @@
-"""This modules holds a collection of perturbation functions i..e, ways to perturb an input or an explanation."""
+"""This modules holds a collection of perturbation functions i.e., ways to perturb an input or an explanation."""
 import time
 import warnings
 from termcolor import colored
@@ -42,6 +42,18 @@ def warn_normalisation_skipped() -> None:
     )
 
 
+def warn_segmentation(inside_attribution, total_attribution) -> None:
+    warnings.warn(
+        "Inside explanation is greater than total explanation"
+        f" ({inside_attribution} > {total_attribution}), returning np.nan."
+    )
+
+def warn_empty_segmentation() -> None:
+    warnings.warn(
+        "Return np.nan as result as the segmentation map is empty."
+    )
+
+
 def warn_parameterisation(
     metric_name: str = "Metric",
     sensitive_params: str = "X, Y and Z.",
@@ -57,7 +69,7 @@ def warn_parameterisation(
         f"destroy or skew information in the explanation and as a result, affect the overall evaluation outcome."
         f"\n (3) Make sure to validate the choices for hyperparameters of the metric (by calling"
         f" .get_params of the metric instance).\n (4) For further information, see original publication: {citation}."
-        f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric."
+        f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric.\n"
     )
     print(colored(text=text))
 
@@ -70,4 +82,6 @@ def deprecation_warnings(kwargs: dict = {}) -> None:
         text = "argument 'nr_channels' is deprecated and will be removed in future versions.\n"
     if "max_steps_per_input" in kwargs:
         text = "argument 'max_steps_per_input' is deprecated and will be removed in future versions.\n"
-    print(text)
+
+    if text != "\n":
+        print(text)

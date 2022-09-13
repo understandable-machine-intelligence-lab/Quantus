@@ -11,7 +11,7 @@ from pytest_lazyfixture import lazy_fixture
 from .fixtures import *
 from ..quantus import *
 from ..quantus.helpers.explanation_func import explain
-from ..quantus.helpers.pytorch_model import PyTorchModel
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 
 
 @pytest.mark.evaluate_func
@@ -55,13 +55,9 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_images"),
             {
                 "nr_samples": 10,
-                "abs": True,
                 "explain_func": explain,
                 "method": "IntegratedGradients",
-                "disable_warnings": True,
-                "normalise": False,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'sparseness': Sparseness(**params)}",
+                "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
             {"min": 0.0, "max": 1.0},
@@ -74,10 +70,7 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
                 "nr_samples": 10,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": False,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
             {"min": 0.0, "max": 1.0},
@@ -92,9 +85,7 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
                 "nr_channels": 1,
                 "explain_func": explain,
                 "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": False,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "[params['method']]",
             },
             {"min": 0.0, "max": 1.0},
@@ -107,9 +98,7 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
                 "nr_samples": 10,
                 "explain_func": explain,
                 "method": "InputXGradient",
-                "disable_warnings": True,
-                "normalise": False,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "{params['method']: params['explain_func']}",
             },
             {"min": -1.0, "max": 1.0},
@@ -134,7 +123,8 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
 def test_evaluate_func(
     model,
     data: np.ndarray,
-    params: dict,
+    call_params: dict,
+    explain_func_params: dict,
     expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
