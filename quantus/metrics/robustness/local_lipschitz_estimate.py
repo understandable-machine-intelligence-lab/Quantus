@@ -36,13 +36,13 @@ class LocalLipschitzEstimate(PerturbationMetric):
         norm_numerator: Optional[Callable] = None,
         norm_denominator: Optional[
             Callable
-        ] = None,  # TODO: specify expected function signature
+        ] = None,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,
         perturb_mean: float = 0.0,
         perturb_std: float = 0.1,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -152,7 +152,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        softmax: bool = True,
         device: Optional[str] = None,
         **kwargs,
     ) -> List[float]:

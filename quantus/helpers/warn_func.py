@@ -14,31 +14,16 @@ def warn_noise_zero(noise: float) -> None:
         )
 
 
-def warn_absolutes_applied() -> None:
+def warn_absolute_operation(word: str = "") -> None:
     print(
-        "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-        "since otherwise inconsistent results can be expected."
+        f"An absolute operation should {word}be applied on the attributions, "
+        "otherwise inconsistent results can be expected! Re-set 'abs' parameter accordingly."
     )
 
-
-def warn_absolutes_requirement() -> None:
+def warn_normalise_operation(word: str = "") -> None:
     print(
-        "An absolute operation is applied on the attributions (regardless of set 'abs' parameter) "
-        "since it is required by the metric."
-    )
-
-
-def warn_absolutes_skipped() -> None:
-    print(
-        "An absolute operation on the attributions is skipped "
-        "since inconsistent results can be expected if applied."
-    )
-
-
-def warn_normalisation_skipped() -> None:
-    print(
-        "A normalising operation on the attributions is skipped "
-        "since inconsistent results can be expected if applied."
+        f"A normalising operation should {word}be applied on the attributions, "
+        "otherwise inconsistent results can be expected! Re-set 'normalise' parameter accordingly."
     )
 
 

@@ -59,14 +59,10 @@ class InputInvariance(PerturbationMetric):
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         if normalise:
-            # TODO: document this behaviour
-            normalise = False
-            warn_func.warn_normalisation_skipped()
+            warn_func.warn_normalise_operation(word="not ")
 
         if abs:
-            # TODO: document this behaviour
-            abs = False
-            warn_func.warn_absolutes_skipped()
+            warn_func.warn_absolute_operation(word="not ")
 
         if normalise_func is None:
             normalise_func = normalise_by_negative

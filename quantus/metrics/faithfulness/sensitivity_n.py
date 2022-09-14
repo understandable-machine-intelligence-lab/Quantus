@@ -166,7 +166,7 @@ class SensitivityN(PerturbationMetric):
         a: np.ndarray,
         s: np.ndarray,
         **kwargs,
-    ) -> Dict[float]:
+    ) -> Dict[str, float]:
 
         # Reshape the attributions.
         a = a.flatten()

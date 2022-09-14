@@ -192,7 +192,6 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.shape(s_batch)[1] == 1
     ), "The second dimension of the segmentations 's_batch' should be equal to 1."
-    # TODO.
     assert (
         len(np.nonzero(s_batch)) > 0
     ), "The segmentation 's_batch' must contain non-zero elements."
@@ -230,7 +229,7 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
         )
 
 
-# TODO: Change for batching update, since currently single images are expected
+# TODO: Change for batching update, since currently single images are expected.
 def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     """
     Checks that indexed_axes fits arr
@@ -256,15 +255,16 @@ def check_kwargs(kwargs):
     Raises an exception with helpful suggestions to fix the issue.
     """
     if kwargs:
-        raise ValueError(
+        # TODO. Discuss if raise ValueError!
+        print(
+            f"Please handle the following arguments: {kwargs}. "
             "There were unexpected keyword arguments passed to the metric method. "
             "Quantus has undergone heavy API-changes since the last release(s), "
-            "such that a more robust kwargs-passing and error handling can be achieved. "
-            "Passing unexpected keyword arguments is now discouraged. Please adust "
-            "your code to pass them in dictionaries to the arguments named "
+            "to make the kwargs-passing and error handling more robust and transparent. "
+            "Passing unexpected keyword arguments is now discouraged. Please adjust "
+            "your code to pass your kwargs in dictionaries to the arguments named "
             "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
-            "Please also make sure to check for typos. "
-            f"The questionable arguments are the following: {kwargs}. "
-            "If the expected changes to your codebase are not feasible for you, "
-            "please revert to quantus version 0.1.4. "
+            "And also, always make sure to check for typos. "
+            "If these API changes are not suitable for your project's needs, "
+            "please install quantus using 'pip install quantus==0.1.5' "
         )

@@ -227,6 +227,8 @@ class ModelParameterRandomisation(Metric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        # Asserts.
-        asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
+        # Additional explain_func assert, as the one in general_preprocess()
+        # won't be executed when a_batch != None.
+        asserts.assert_explain_func(explain_func=self.explain_func)
+
         return model, x_batch, y_batch, a_batch, s_batch

@@ -124,6 +124,7 @@ class RelevanceRankAccuracy(Metric):
         s: np.ndarray,
         **kwargs,
     ) -> float:
+
         # Return np.nan as result if segmentation map is empty.
         if np.sum(s) == 0:
             warn_func.warn_empty_segmentation()

@@ -36,7 +36,7 @@ class Continuity(PerturbationMetric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,
         nr_steps: int = 28,
         perturb_baseline: str = "black",
         patch_size: int = 7,

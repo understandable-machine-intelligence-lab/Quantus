@@ -171,7 +171,7 @@ class Metric:
             enumerate(zip(x_batch, y_batch, a_batch, s_batch)),
             total=len(x_batch), # TODO. Will this work for metrics that has additional for loops?
             disable=not self.display_progressbar,
-            desc=f"Evaluating {self.__class__.__name__} ...",
+            desc=f"Evaluating {self.__class__.__name__}",
         )
         self.last_results = [None for _ in x_batch]
         for instance_id, (x_instance, y_instance, a_instance, s_instance) in iterator:
@@ -339,7 +339,7 @@ class Metric:
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
         """
-        # TODO. Maybe add a custom_batch
+        # TODO. Maybe add a custom_batch.
         custom_batch = [None for _ in x_batch]
         return model, x_batch, y_batch, a_batch, s_batch#, custom_batch
 

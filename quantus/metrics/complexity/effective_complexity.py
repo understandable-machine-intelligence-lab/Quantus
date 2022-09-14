@@ -53,9 +53,7 @@ class EffectiveComplexity(Metric):
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         if not abs:
-            # TODO: document this behaviour
-            abs = True
-            warn_func.warn_absolutes_applied()
+            warn_func.warn_absolute_operation()
 
         if normalise_func is None:
             normalise_func = normalise_by_negative

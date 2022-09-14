@@ -35,7 +35,6 @@ class Sparseness(Metric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
         return_aggregate: Optional[bool] = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
@@ -59,9 +58,7 @@ class Sparseness(Metric):
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         if not abs:
-            # TODO: document this behaviour
-            abs = True
-            warn_func.warn_absolutes_applied()
+            warn_func.warn_absolute_operation()
 
         if normalise_func is None:
             normalise_func = normalise_by_negative
@@ -71,7 +68,6 @@ class Sparseness(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            softmax=softmax,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -103,13 +99,14 @@ class Sparseness(Metric):
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,  # Specify function signature
+        explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = False,
         device: Optional[str] = None,
         **kwargs,
     ) -> List[float]:
+
         return super().__call__(
             model=model,
             x_batch=x_batch,
