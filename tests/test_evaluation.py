@@ -1,17 +1,7 @@
-import warnings
-import pickle
-from typing import Union
-
-import numpy as np
-import pytest
-import torch
-import torchvision
 from pytest_lazyfixture import lazy_fixture
-
 from .fixtures import *
 from ..quantus import *
 from ..quantus.helpers.explanation_func import explain
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 
 
 @pytest.mark.evaluate_func
