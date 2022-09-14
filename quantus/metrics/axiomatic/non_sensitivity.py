@@ -5,6 +5,7 @@ import numpy as np
 
 from ..base import Metric
 from ...helpers import warn_func
+from ...helpers import utils
 from ...helpers import asserts
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative

@@ -71,8 +71,6 @@ class Consistency(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -163,6 +161,7 @@ class Consistency(Metric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
+        # Preprocessing.
         self.a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         self.a_labels = np.array(list(map(self.discretise_func, self.a_batch_flat)))
 

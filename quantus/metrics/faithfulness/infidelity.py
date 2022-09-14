@@ -119,7 +119,7 @@ class Infidelity(PerturbationMetric):
         self.features_in_step = features_in_step
         self.max_steps_per_input = max_steps_per_input
         self.n_perturb_samples = n_perturb_samples
-
+        self.nr_channels = None
         self.a_axes = None
 
         # Asserts and warnings.
@@ -231,7 +231,7 @@ class Infidelity(PerturbationMetric):
 
                         x_diff = x - x_perturbed
                         a_diff = np.dot(
-                            np.repeat(a, repeats=nr_channels, axis=0), x_diff
+                            np.repeat(a, repeats=self.nr_channels, axis=0), x_diff
                         )
 
                         pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
@@ -254,7 +254,8 @@ class Infidelity(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        # Infer attribution axes for perturbation function.
+        # Infer number of input channels and attribution axes for perturbation function.
+        self.nr_channels = x_batch.shape[1]
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
