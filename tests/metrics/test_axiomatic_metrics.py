@@ -166,12 +166,17 @@ from ...quantus.helpers.tf_model import TensorFlowModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "normalise": False,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "display_progressbar": True,
-                "return_aggregate": True,
+                "init": {"normalise": False,
+                         "disable_warnings": True,
+                         "display_progressbar": True,
+                         "return_aggregate": True,
+                         },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    }
+                    },
             },
             1.0,
         ),

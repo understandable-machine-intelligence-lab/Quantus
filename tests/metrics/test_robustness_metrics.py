@@ -19,7 +19,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -37,7 +37,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_images"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -56,7 +56,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -74,7 +74,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_images"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": False,
@@ -93,7 +93,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -111,7 +111,7 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_images"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": True,
@@ -130,10 +130,8 @@ from ...quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_images_tf"),
             {
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
-                    "img_size": 28,
-                    "nr_channels": 1,
                     "disable_warnings": True,
                     "display_progressbar": True,
                     "abs": True,
@@ -538,7 +536,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -557,7 +555,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": False,
                     "display_progressbar": False,
@@ -577,7 +575,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -596,7 +594,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": False,
@@ -616,7 +614,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -635,7 +633,7 @@ def test_continuity(
             {
                 "a_batch_generate": False,
                 "init": {
-                    "perturb_radius": 0.2,
+                    "lower_bound": 0.2,
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": True,
@@ -701,13 +699,17 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
-                "discretise_func": floating_points,
+                "init": {
+                    "discretise_func": floating_points,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                         },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -716,28 +718,17 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
-                "discretise_func": sign,
-                "a_batch_generate": True,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
-                "discretise_func": top_n_sign,
+                "init": {
+                    "discretise_func": sign,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
                 "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
@@ -746,15 +737,37 @@ def test_avg_sensitivity(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_steps": 10,
-                "patch_size": 7,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": False,
-                "display_progressbar": False,
-                "discretise_func": rank,
+                "init": {
+                    "discretise_func": top_n_sign,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
                 "a_batch_generate": False,
-                "return_aggregate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "discretise_func": rank,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+                "a_batch_generate": False,
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -770,13 +783,17 @@ def test_consistency(
         data["x_batch"],
         data["y_batch"],
     )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
     if params.get("a_batch_generate", True):
         explain = params["explain_func"]
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **call_params,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -785,20 +802,20 @@ def test_consistency(
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            scores = Consistency(**params)(
+            scores = Consistency(**init_params)(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
                 a_batch=a_batch,
-                **params,
+                **call_params,
             )
         return
 
-    scores = Consistency(**params)(
+    scores = Consistency(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
-        **params,
+        **call_params,
     )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
