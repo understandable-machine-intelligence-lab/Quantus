@@ -97,7 +97,7 @@ class Focus(Metric):
         x_batch: np.array,
         y_batch: np.array,
         a_batch: Optional[np.ndarray],
-        s_batch: np.array,
+        s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -109,17 +109,18 @@ class Focus(Metric):
         """
         # Initialise the metric and evaluate explanations by calling the metric instance.
             >> metric = Focus()
-            >> scores = {method: metric(model=model,
+            >> scores = {method: metric(**init_params)(model=model,
                            x_batch=x_mosaic_batch,
                            y_batch=y_mosaic_batch,
                            a_batch=None,
-                           p_batch=p_mosaic_batch,
-                           **{"explain_func": explain,
+                           **{"p_batch": p_mosaic_batch,
+                           "explain_func": explain,
+                              "explain_func_kwargs": {
                               "method": "GradCAM",
                               "gc_layer": "model._modules.get('conv_2')",
                               "pos_only": True,
                               "interpolate": (2*28, 2*28),
-                              "interpolate_mode": "bilinear",
+                              "interpolate_mode": "bilinear",}
                               "device": device}) for method in ["GradCAM", "IntegratedGradients"]}
 
             # Plot example!
@@ -157,7 +158,7 @@ class Focus(Metric):
             f"This should be a np.ndarray containing one tuple per sample, representing"
             f"the positions of the target class within the mosaic (where each tuple"
             f" contains 0/1 values referring to (top_left, top_right, "
-            f"bottom_left, bottom_right)."
+            f"bottom_left, bottom_right). An example: {'p_batch': [(1, 1, 0, 0), (0, 0, 1, 1), (1, 0, 1, 0), (0, 1, 0, 1)]}"
         )
 
         instance_id = kwargs["instance_id"]

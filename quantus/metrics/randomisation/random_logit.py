@@ -130,7 +130,6 @@ class RandomLogit(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        a_perturbed: np.ndarray, # TODO. Check if this is correct?
         **kwargs,
     ) -> float:
 

@@ -156,7 +156,7 @@ class PixelFlipping(PerturbationMetric):
         # Get indices of sorted attributions (descending).
         a_indices = np.argsort(-a)
 
-        # TODO. Do we need n_perturbations?
+        # Prepare lists.
         n_perturbations = len(range(0, len(a_indices), self.features_in_step))
         preds = [None for _ in range(n_perturbations)]
         x_perturbed = x.copy()

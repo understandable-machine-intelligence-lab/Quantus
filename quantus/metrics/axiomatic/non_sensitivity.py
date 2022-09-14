@@ -3,7 +3,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
+from ..base import PerturbationMetric
 from ...helpers import warn_func
 from ...helpers import utils
 from ...helpers import asserts
@@ -12,7 +12,7 @@ from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_indices
 
 
-class NonSensitivity(Metric):
+class NonSensitivity(PerturbationMetric):
     """
     Implementation of NonSensitivity by Nguyen at el., 2020.
 
@@ -40,7 +40,7 @@ class NonSensitivity(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         perturb_baseline: str = "black",
-        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: Optional[bool] = False,
         aggregate_func: Optional[Callable] = np.mean,
@@ -158,6 +158,7 @@ class NonSensitivity(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
+        **kwargs,
     ) -> int:
         a = a.flatten()
 

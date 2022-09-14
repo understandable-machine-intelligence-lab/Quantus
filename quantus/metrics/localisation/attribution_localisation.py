@@ -62,10 +62,7 @@ class AttributionLocalisation(Metric):
             normalise_func = normalise_by_negative
 
         if not abs:
-            # TODO: why are we forcing this instead of just raising a warning?
-            # TODO: State this behaviour at least in the docstring.
-            abs = True
-            warn_func.warn_absolutes_applied()
+            warn_func.warn_absolute_operation()
 
         super().__init__(
             abs=abs,

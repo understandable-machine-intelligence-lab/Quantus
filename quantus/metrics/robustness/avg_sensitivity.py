@@ -34,13 +34,13 @@ class AvgSensitivity(PerturbationMetric):
         norm_numerator: Optional[Callable] = None,
         norm_denominator: Optional[
             Callable
-        ] = None,  # TODO: specify expected function signature
+        ] = None,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        perturb_func: Callable = None,  # TODO: specify expected function signature
+        perturb_func: Callable = None,
         lower_bound: float = 0.2,
         upper_bound: Optional[float] = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
