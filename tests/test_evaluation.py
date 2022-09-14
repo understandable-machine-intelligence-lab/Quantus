@@ -22,14 +22,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": True,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
             {"min": 0.0, "max": 1.0},
@@ -38,14 +31,8 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": True,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
+                "explain_func_kwargs": {"method": "IntegratedGradients", "explain_func": explain},
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
             {"min": 0.0, "max": 1.0},
@@ -54,9 +41,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "IntegratedGradients",
+                "explain_func_kwargs": {"method": "IntegratedGradients", "explain_func": explain},
                 "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
@@ -66,10 +51,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Saliency",
+                "explain_func_kwargs": {"method": "Saliency", "explain_func": explain},
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
@@ -79,12 +61,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
-                "explain_func": explain,
-                "method": "Saliency",
+                "explain_func_kwargs": {"method": "Saliency", "explain_func": explain},
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "[params['method']]",
             },
@@ -94,10 +71,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "InputXGradient",
+                "explain_func_kwargs": {"method": "InputXGradient", "explain_func": explain},
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "{params['method']: params['explain_func']}",
             },
@@ -107,12 +81,7 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "explain_func": explain,
-                "method": "Gradient",
-                "disable_warnings": True,
-                "normalise": False,
+                "explain_func_kwargs": {"method": "InputXGradient", "explain_func": explain},
                 "eval_metrics": "None",
                 "eval_xai_methods": "{params['method']: None}",
             },
@@ -123,17 +92,16 @@ from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 def test_evaluate_func(
     model,
     data: np.ndarray,
-    call_params: dict,
-    explain_func_params: dict,
+    params: dict,
     expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
-    explain = params["explain_func"]
+    explain = params["explain_func_kwargs"]["explain_func"]
     a_batch = explain(
         model=model,
         inputs=x_batch,
         targets=y_batch,
-        **params,
+        **params["explain_func_kwargs"],
     )
 
     if "exception" in expected:
@@ -146,7 +114,7 @@ def test_evaluate_func(
                 y_batch=y_batch,
                 a_batch=a_batch,
                 agg_func=np.mean,
-                **params,
+                **params["explain_func_kwargs"],
             )
         return
 
@@ -158,15 +126,15 @@ def test_evaluate_func(
         y_batch=y_batch,
         a_batch=a_batch,
         agg_func=np.mean,
-        **params,
+        **params["explain_func_kwargs"],
     )
 
     if "min" in expected and "max" in expected:
         assert (
-            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][list(eval(params["eval_metrics"]).keys())[0]]
             >= expected["min"]
         ), "Test failed."
         assert (
-            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][list(eval(params["eval_metrics"]).keys())[0]]
             <= expected["max"]
         ), "Test failed."

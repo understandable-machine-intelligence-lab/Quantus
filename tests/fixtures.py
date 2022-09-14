@@ -1,10 +1,18 @@
-import numpy as np
-import pickle
+from typing import Tuple
+import os
 import pytest
+import pickle
 import torch
-from tensorflow.keras.datasets import cifar10
-
+import torchvision
+from torchvision import transforms
+import numpy as np
 from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+from tensorflow.keras.models import load_model
+from tensorflow.keras.datasets import cifar10
+import tensorflow as tf
+from ..quantus.helpers.pytorch_model import PyTorchModel
+from ..quantus.helpers.tf_model import TensorFlowModel
+
 
 
 @pytest.fixture(scope="session", autouse=True)
