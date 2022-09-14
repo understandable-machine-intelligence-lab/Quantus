@@ -1,6 +1,5 @@
 """This module provides some functionality to evaluate different explanation methods on several evaluation criteria."""
-from typing import Union, Callable, Dict
-
+from typing import Union, Callable, Dict, Optional
 import numpy as np
 
 from .helpers import asserts
@@ -18,25 +17,11 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    **kwargs,
+    explain_func_kwargs: Optional = None,
+    call_kwargs: Optional = None,
 ) -> dict:
     """
     A methods to evaluate metrics given some explanation methods.
-
-    Parameters
-    ----------
-    metrics
-    xai_methods
-    model
-    x_batch
-    y_batch
-    s_batch
-    agg_func
-    kwargs
-
-    Returns
-    -------
-
     """
 
     if xai_methods is None:
@@ -73,7 +58,8 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        **{**kwargs, **{"method": method}},
+                        explain_func_kwargs={"method": method},
+                        **call_kwargs,
                     )
                 )
 
@@ -93,7 +79,7 @@ def evaluate(
                     model=model,
                     inputs=x_batch,
                     targets=y_batch,
-                    **kwargs,
+                    **explain_func_kwargs,
                 )
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
@@ -123,7 +109,8 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        **{**kwargs, **{"method": method}},
+                        explain_func_kwargs={"method": method},
+                        **call_kwargs,
                     )
                 )
 

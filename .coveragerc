@@ -10,7 +10,6 @@ omit =
     quantus/helpers/models.py
     quantus/helpers/constants.py
     quantus/helpers/plotting.py
-    quantus/metrics/base.py
 
 [report]
 ignore_errors = True
