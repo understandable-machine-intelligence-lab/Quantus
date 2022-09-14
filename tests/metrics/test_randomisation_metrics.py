@@ -183,7 +183,7 @@ from ...quantus.helpers.model_interface import ModelInterface
             lazy_fixture("load_mnist_images"),
             {
                 "init": {
-                    "layer_order": "top_down",
+                    "layer_order": "independent",
                     "similarity_func": correlation_spearman,
                     "normalise": True,
                     "disable_warnings": True,
