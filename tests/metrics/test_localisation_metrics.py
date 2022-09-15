@@ -1788,7 +1788,7 @@ def test_attribution_localisation(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {}
+                "call": {},
             },
             {"value": 1},
         ),

@@ -102,9 +102,10 @@ def get_baseline_dict(
     """
     fill_dict = {
         "mean": float(arr.mean()),
-        "uniform":
-            np.random.uniform(
-                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0), size=kwargs["return_shape"]
+        "uniform": np.random.uniform(
+            low=kwargs.get("uniform_low", 0.0),
+            high=kwargs.get("uniform_high", 1.0),
+            size=kwargs["return_shape"],
         ),
         "black": float(arr.min()),
         "white": float(arr.max()),
@@ -361,7 +362,10 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    gridcoords = [np.arange(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
+    gridcoords = [
+        np.arange(coord, coord + patch_size_dim)
+        for coord, patch_size_dim in zip(coords, patch_size)
+    ]
     patch_slice = np.meshgrid(*gridcoords)
 
     return tuple(patch_slice)
@@ -427,7 +431,10 @@ def _pad_array(
             pad_width_list.append((pad_width, pad_width))
         elif isinstance(pad_width[[p for p in padded_axes].index(ax)], int):
             pad_width_list.append(
-                (pad_width[[p for p in padded_axes].index(ax)], pad_width[[p for p in padded_axes].index(ax)])
+                (
+                    pad_width[[p for p in padded_axes].index(ax)],
+                    pad_width[[p for p in padded_axes].index(ax)],
+                )
             )
         else:
             pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])

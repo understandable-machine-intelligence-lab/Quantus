@@ -41,6 +41,7 @@ def warn_absolute_operation(word: str = "") -> None:
         "otherwise inconsistent results can be expected! Re-set 'abs' parameter accordingly."
     )
 
+
 def warn_normalise_operation(word: str = "") -> None:
     print(
         f"A normalising operation should {word}be applied on the attributions, "
@@ -54,10 +55,9 @@ def warn_segmentation(inside_attribution, total_attribution) -> None:
         f" ({inside_attribution} > {total_attribution}), returning np.nan."
     )
 
+
 def warn_empty_segmentation() -> None:
-    warnings.warn(
-        "Return np.nan as result as the segmentation map is empty."
-    )
+    warnings.warn("Return np.nan as result as the segmentation map is empty.")
 
 
 def warn_parameterisation(

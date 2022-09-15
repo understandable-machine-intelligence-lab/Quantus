@@ -21,7 +21,10 @@ from ..quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "explain_func_kwargs": {"method": "IntegratedGradients", "explain_func": explain},
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                    "explain_func": explain,
+                },
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
@@ -31,7 +34,10 @@ from ..quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "explain_func_kwargs": {"method": "IntegratedGradients", "explain_func": explain},
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                    "explain_func": explain,
+                },
                 "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['method']: a_batch}",
             },
@@ -61,7 +67,10 @@ from ..quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "explain_func_kwargs": {"method": "InputXGradient", "explain_func": explain},
+                "explain_func_kwargs": {
+                    "method": "InputXGradient",
+                    "explain_func": explain,
+                },
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "{params['method']: params['explain_func']}",
             },
@@ -71,7 +80,10 @@ from ..quantus.helpers.explanation_func import explain
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "explain_func_kwargs": {"method": "InputXGradient", "explain_func": explain},
+                "explain_func_kwargs": {
+                    "method": "InputXGradient",
+                    "explain_func": explain,
+                },
                 "eval_metrics": "None",
                 "eval_xai_methods": "{params['method']: None}",
             },
@@ -121,10 +133,14 @@ def test_evaluate_func(
 
     if "min" in expected and "max" in expected:
         assert (
-            results[params["explain_func_kwargs"]["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][
+                list(eval(params["eval_metrics"]).keys())[0]
+            ]
             >= expected["min"]
         ), "Test failed."
         assert (
-            results[params["explain_func_kwargs"]["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][
+                list(eval(params["eval_metrics"]).keys())[0]
+            ]
             <= expected["max"]
         ), "Test failed."

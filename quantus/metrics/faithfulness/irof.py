@@ -213,9 +213,9 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
         # Asserts.
         # TODO. Replace this with something!
-        #asserts.assert_value_smaller_than_input_size(
+        # asserts.assert_value_smaller_than_input_size(
         #    x=x_batch, value=self.subset_size, value_name="subset_size"
-        #)
+        # )
 
         return model, x_batch, y_batch, a_batch, s_batch
 

@@ -71,7 +71,6 @@ from ...quantus.helpers.model_interface import ModelInterface
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
-
                 },
             },
             {"min": -1.0, "max": 1.0},

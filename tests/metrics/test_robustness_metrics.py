@@ -703,7 +703,7 @@ def test_avg_sensitivity(
                     "discretise_func": floating_points,
                     "disable_warnings": True,
                     "display_progressbar": False,
-                         },
+                },
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {

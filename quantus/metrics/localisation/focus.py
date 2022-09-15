@@ -224,12 +224,12 @@ class Focus(Metric):
 
     def quadrant_bottom_left(self, a: np.ndarray) -> np.ndarray:
         quandrant_a = a[
-            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2):
+            :, : int(self.mosaic_shape[1] / 2), int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_a
 
     def quadrant_bottom_right(self, a: np.ndarray) -> np.ndarray:
         quandrant_a = a[
-            :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2):
+            :, int(self.mosaic_shape[1] / 2) :, int(self.mosaic_shape[2] / 2) :
         ]
         return quandrant_a

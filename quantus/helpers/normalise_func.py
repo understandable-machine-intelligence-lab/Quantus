@@ -50,22 +50,22 @@ def normalise_by_negative(
     # Case a.min() >= 0.0.
     return_array = np.where(
         a_min >= 0.0,
-        np.divide(a, a_max, where=a_max!=0),
+        np.divide(a, a_max, where=a_max != 0),
         return_array,
     )
 
     # Case a.max() <= 0.0.
     return_array = np.where(
         a_max <= 0.0,
-        -np.divide(a, a_min, where=a_min!=0),
+        -np.divide(a, a_min, where=a_min != 0),
         return_array,
     )
 
     # Else.
     return_array = np.where(
         np.logical_and(a_min < 0.0, a_max > 0.0),
-        (a > 0.0) * np.divide(a, a_max, where=a_max!=0)
-        - (a < 0.0) * np.divide(a, a_min, where=a_min!=0),
+        (a > 0.0) * np.divide(a, a_max, where=a_max != 0)
+        - (a < 0.0) * np.divide(a, a_min, where=a_min != 0),
         return_array,
     )
 

@@ -169,7 +169,9 @@ class Metric:
         # Create progress bar if desired.
         iterator = tqdm(
             enumerate(zip(x_batch, y_batch, a_batch, s_batch)),
-            total=len(x_batch), # TODO. Will this work for metrics that has additional for loops?
+            total=len(
+                x_batch
+            ),  # TODO. Will this work for metrics that has additional for loops?
             disable=not self.display_progressbar,
             desc=f"Evaluating {self.__class__.__name__}",
         )
@@ -200,11 +202,15 @@ class Metric:
                 try:
                     self.last_results = [self.aggregate_func(self.last_results)]
                 except:
-                    print("The aggregation of evaluation scores failed. Check that "
-                          "'aggregate_func' supplied is appropriate for the data "
-                          "in 'last_results'.")
+                    print(
+                        "The aggregation of evaluation scores failed. Check that "
+                        "'aggregate_func' supplied is appropriate for the data "
+                        "in 'last_results'."
+                    )
             else:
-                raise KeyError("Specify an 'aggregate_func' (Callable) to aggregate evaluation scores.")
+                raise KeyError(
+                    "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
+                )
 
         self.all_results.append(self.last_results)
 
@@ -333,15 +339,17 @@ class Metric:
         x_batch: np.ndarray,
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        s_batch: np.ndarray,
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+    ]:
         """
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
         """
         # TODO. Maybe add a custom_batch.
         custom_batch = [None for _ in x_batch]
-        return model, x_batch, y_batch, a_batch, s_batch#, custom_batch
+        return model, x_batch, y_batch, a_batch, s_batch  # , custom_batch
 
     def custom_postprocess(
         self,
