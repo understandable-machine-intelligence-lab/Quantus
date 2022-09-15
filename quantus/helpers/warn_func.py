@@ -5,6 +5,27 @@ from termcolor import colored
 from .utils import get_name
 
 
+def check_kwargs(kwargs):
+    """
+    Check that no additional kwargs are passed, i.e. the kwargs dict is empty.
+    Raises an exception with helpful suggestions to fix the issue.
+    """
+    if kwargs:
+        # TODO. Discuss if raise ValueError!
+        print(
+            f"Please handle the following arguments: {kwargs}. "
+            "There were unexpected keyword arguments passed to the metric method. "
+            "Quantus has undergone heavy API-changes since the last release(s), "
+            "to make the kwargs-passing and error handling more robust and transparent. "
+            "Passing unexpected keyword arguments is now discouraged. Please adjust "
+            "your code to pass your kwargs in dictionaries to the arguments named "
+            "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
+            "And also, always make sure to check for typos. "
+            "If these API changes are not suitable for your project's needs, "
+            "please install quantus using 'pip install quantus==0.1.5' "
+        )
+
+
 def warn_noise_zero(noise: float) -> None:
     if noise == 0.0:
         print(

@@ -203,7 +203,7 @@ class Selectivity(PerturbationMetric):
                 blocked_mask = blocked_mask | patch_mask
 
         # Increasingly perturb the input and store the decrease in function value.
-        results = [None for _ in range(len(ordered_patches_no_overlap))]
+        results = np.array([None for _ in range(len(ordered_patches_no_overlap))])
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
 
             # Pad x_perturbed. The mode should depend on the used perturb_func.
@@ -251,8 +251,7 @@ class Selectivity(PerturbationMetric):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return [
-            utils.calculate_auc(np.array(i))
-            for results in self.all_results
-            for i in results.values()
-        ]
+        return np.mean([
+            utils.calculate_auc(np.array(curve))
+            for i, curve in enumerate(self.last_results)
+        ])

@@ -38,7 +38,6 @@ class Infidelity(PerturbationMetric):
         loss_func: str = "mse",
         perturb_patch_sizes: List[int] = None,
         features_in_step: int = 1,
-        max_steps_per_input: Optional[int] = None,
         n_perturb_samples: int = 10,
         abs: bool = False,
         normalise: bool = False,
@@ -60,7 +59,6 @@ class Infidelity(PerturbationMetric):
         loss_func (string): Loss function, default="mse".
         perturb_patch_sizes (list): List of patch sizes to be perturbed. If None, the defaul is used, default=[4].
         features_in_step (integer): The size of the step, default=1.
-        max_steps_per_input (integer): The maximum number of steps per input dimension, default=None.
         n_perturb_samples (integer): The number of samples to be perturbed, default=10.
         abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
         normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
@@ -117,7 +115,6 @@ class Infidelity(PerturbationMetric):
         self.perturb_patch_sizes = perturb_patch_sizes
 
         self.features_in_step = features_in_step
-        self.max_steps_per_input = max_steps_per_input
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
         self.a_axes = None

@@ -297,8 +297,7 @@ class RegionPerturbation(PerturbationMetric):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return [
-            utils.calculate_auc(np.array(i))
-            for results in self.all_results
-            for _, i in results.items()
-        ]
+        return np.mean([
+            utils.calculate_auc(np.array(curve))
+            for curve in self.last_results
+        ])

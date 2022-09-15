@@ -154,7 +154,7 @@ class ROAD(PerturbationMetric):
         # Order indices.
         ordered_indices = np.argsort(a, axis=None)[::-1]
 
-        results_instance = [None for _ in self.percentages]
+        results_instance = np.array([None for _ in self.percentages])
 
         for p_ix, p in enumerate(self.percentages):
             top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
@@ -201,18 +201,9 @@ class ROAD(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        results = np.array(self.last_results)
-
-        # TODO. Compare this to the following:
-        # for p in self.percentages:
-        #    self.last_results.append(np.mean(accuraies[p]))
-        self.last_results = {
-            str(percentage): np.sum(results[:, p_ix])
-            for p_ix, percentage in enumerate(self.percentages)
-        }
-
+        # TODO. Compare this to the previous versions!
         # Calculate accuracy for every number of most important pixels removed.
-        self.all_results = {
-            percentage: self.last_results[percentage] / len(x_batch)
-            for percentage in self.last_results.keys()
+        self.last_results = {
+            percentage: np.mean(np.array(self.last_results)[:, p_ix]) #/ len(x_batch)
+            for p_ix, percentage in enumerate(self.percentages)
         }
