@@ -10,6 +10,7 @@ from .utils import *
 from .normalise_func import *
 from ..helpers import __EXTRAS__
 from ..helpers import constants
+from ..helpers import warn_func
 
 if util.find_spec("torch"):
     import torch
@@ -521,6 +522,7 @@ def generate_zennit_explanation(
     explanation = np.sum(explanation, **reduce_axes)
 
     # TODO. Discuss this.
+    warn_func.deprecation_warnings(kwargs)
     """
     if kwargs.get("normalise", False):
         explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)

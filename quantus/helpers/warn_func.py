@@ -83,11 +83,15 @@ def warn_parameterisation(
 def deprecation_warnings(kwargs: dict = {}) -> None:
     text = "\n"
     if "img_size" in kwargs:
-        text += "argument 'img_size' is deprecated and will be removed in future versions.\n"
+        text = "argument 'max_steps_per_input' is deprecated and has been removed from the current release.\n"
     if "nr_channels" in kwargs:
-        text = "argument 'nr_channels' is deprecated and will be removed in future versions.\n"
+        text = "argument 'max_steps_per_input' is deprecated and has been removed from the current release.\n"
     if "max_steps_per_input" in kwargs:
-        text = "argument 'max_steps_per_input' is deprecated and will be removed in future versions.\n"
+        text = "argument 'max_steps_per_input' is deprecated and has been removed from the current release.\n"
+    if "pos_only" in kwargs:
+        text = "argument 'pos_only' is deprecated and has been removed from the current release.\n"
+    if "neg_only" in kwargs:
+        text = "argument 'neg_only' is deprecated and has been removed from the current release.\n"
 
     if text != "\n":
         print(text)
