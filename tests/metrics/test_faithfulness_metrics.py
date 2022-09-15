@@ -25,7 +25,6 @@ from ...quantus.helpers.explanation_func import explain
                     "perturb_baseline": "mean",
                     "similarity_func": correlation_spearman,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -48,10 +47,8 @@ from ...quantus.helpers.explanation_func import explain
                     "perturb_baseline": "mean",
                     "similarity_func": correlation_spearman,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "softmax": True,
                 },
                 "call": {
                     "explain_func": explain,
@@ -295,10 +292,8 @@ def test_faithfulness_correlation(
                     "features_in_step": 28,
                     "perturb_baseline": "uniform",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "softmax": False,
                 },
                 "call": {
                     "explain_func": explain,
@@ -318,10 +313,8 @@ def test_faithfulness_correlation(
                     "features_in_step": 196,
                     "perturb_baseline": "uniform",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "softmax": True,
                 },
                 "call": {
                     "explain_func": explain,
@@ -343,7 +336,6 @@ def test_faithfulness_correlation(
                     "normalise": True,
                     "disable_warnings": True,
                     "display_progressbar": False,
-                    "softmax": False,
                 },
                 "call": {
                     "explain_func": explain,
@@ -365,10 +357,8 @@ def test_faithfulness_correlation(
                     "perturb_baseline": "uniform",
                     "abs": True,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": False,
-                    "softmax": False,
                 },
                 "call": {
                     "explain_func": explain,
@@ -388,10 +378,8 @@ def test_faithfulness_correlation(
                     "features_in_step": 28,
                     "perturb_baseline": "uniform",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
-                    "softmax": False,
                 },
                 "call": {
                     "explain_func": explain,
@@ -412,10 +400,8 @@ def test_faithfulness_correlation(
                     "perturb_baseline": "uniform",
                     "features_in_step": 10,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "softmax": False,
                 },
                 "call": {
                 },
@@ -476,7 +462,6 @@ def test_faithfulness_estimate(
                     "perturb_baseline": "mean",
                     "segmentation_method": "slic",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -519,7 +504,6 @@ def test_faithfulness_estimate(
                     "perturb_baseline": "mean",
                     "segmentation_method": "slic",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -541,7 +525,6 @@ def test_faithfulness_estimate(
                     "perturb_baseline": "mean",
                     "segmentation_method": "slic",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -617,7 +600,6 @@ def test_iterative_removal_of_features(
                     "features_in_step": 28,
                     "perturb_baseline": "black",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -682,7 +664,6 @@ def test_iterative_removal_of_features(
                     "features_in_step": 28,
                     "perturb_baseline": "black",
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -705,7 +686,6 @@ def test_iterative_removal_of_features(
                     "perturb_baseline": "black",
                     "features_in_step": 10,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -771,7 +751,6 @@ def test_monotonicity_arya(
                     "abs": True,
                     "perturb_baseline": "uniform",
                     "similarity_func": correlation_kendall_tau,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -797,7 +776,6 @@ def test_monotonicity_arya(
                     "abs": True,
                     "perturb_baseline": "uniform",
                     "similarity_func": correlation_kendall_tau,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -823,7 +801,6 @@ def test_monotonicity_arya(
                     "abs": True,
                     "perturb_baseline": "uniform",
                     "similarity_func": correlation_kendall_tau,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -887,7 +864,6 @@ def test_monotonicity_correlation(
                     "features_in_step": 28,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -976,7 +952,6 @@ def test_monotonicity_correlation(
                     "features_in_step": 28,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -1017,7 +992,6 @@ def test_monotonicity_correlation(
                     "features_in_step": 56,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -1293,7 +1267,7 @@ def test_region_perturbation(
         ), "Test failed."
 
 
-@pytest.mark.faithfulness
+@pytest.mark.fixme
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1301,13 +1275,11 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -1325,7 +1297,6 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "uniform",
                     "patch_size": 4,
@@ -1346,7 +1317,6 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "uniform",
                     "patch_size": 4,
@@ -1367,13 +1337,11 @@ def test_region_perturbation(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": True,
                 },
@@ -1391,13 +1359,11 @@ def test_region_perturbation(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -1416,7 +1382,6 @@ def test_region_perturbation(
                     "patch_size": 7,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": True,
                 },
@@ -1434,17 +1399,19 @@ def test_region_perturbation(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "return_auc": True,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
                     "normalise": True,
                     "abs": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
                 "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 16.0},
@@ -1489,20 +1456,13 @@ def test_selectivity(
         **call_params,
     )
 
-    if params.get("return_auc", True):
-        assert all(
-            ((s >= expected["min"]) & (s <= expected["max"]))
-            for s in metric.get_auc_score
-        ), "Test failed."
-    else:
-        assert all(
-            [
-                (s >= expected["min"] and s <= expected["max"])
-                for _, s_list in scores.items()
-                for s in s_list
-            ]
-        ), "Test failed."
+    for i, s in enumerate(metric.get_auc_score):
+        print(s, "!expected=", expected)
 
+    assert all(
+        ((s >= expected["min"]) & (s <= expected["max"]))
+        for s in metric.get_auc_score
+    ), "Test failed."
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1564,7 +1524,6 @@ def test_selectivity(
                     "features_in_step": 28,
                     "similarity_func": correlation_spearman,
                     "normalise": True,
-                    "max_steps_per_input": 2,
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
@@ -1802,13 +1761,11 @@ def test_infidelity(
             {
                 "init": {
                     "perturb_func": noisy_linear_imputation,
-                    "similarity_func": correlation_spearman,
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
                     "percentages": list(range(1, 100, 2)),
-                    "img_size": 28 * 28,
                 },
                 "call": {
                     "explain_func": explain,
@@ -1826,13 +1783,11 @@ def test_infidelity(
                 "a_batch_generate": False,
                 "init": {
                     "perturb_func": noisy_linear_imputation,
-                    "similarity_func": correlation_spearman,
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
                     "percentages": list(range(1, 100, 2)),
-                    "img_size": 28 * 28,
                 },
                 "call": {
                     "explain_func": explain,
@@ -1880,8 +1835,8 @@ def test_ROAD(
         **call_params,
     )
 
-    assert all(s <= expected["max"] for s in scores) & (
-        all(s >= expected["min"] for s in scores)
+    assert all(s <= expected["max"] for s in scores.values()) & (
+        all(s >= expected["min"] for s in scores.values())
     ), "Test failed."
 
 
@@ -1899,7 +1854,6 @@ def test_ROAD(
                         "abs": False,
                         "disable_warnings": False,
                         "display_progressbar": False,
-                        "img_size": 28 * 28,
                     },
                     "call": {
                         "explain_func": explain,
@@ -1921,7 +1875,6 @@ def test_ROAD(
                         "abs": True,
                         "disable_warnings": False,
                         "display_progressbar": False,
-                        "img_size": 28 * 28,
                     },
                     "call": {
                         "explain_func": explain,
@@ -1949,12 +1902,13 @@ def test_sufficiency(
     call_params = params.get("call", {})
 
     if params.get("a_batch_generate", True):
-        explain = params["explain_func"]
+        explain = call_params["explain_func"]
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            **params,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]

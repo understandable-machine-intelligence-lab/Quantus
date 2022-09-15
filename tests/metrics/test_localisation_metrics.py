@@ -825,7 +825,7 @@ def test_top_k_intersection(
 
 
 # TODO. Go over, why errors.
-@pytest.mark.fixme
+@pytest.mark.localisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
