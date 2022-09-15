@@ -247,4 +247,3 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     assert (
         0 in indexed_axes or arr.ndim - 1 in indexed_axes
     ), "Make sure indexed_axes contains either the first or last axis of arr."
-

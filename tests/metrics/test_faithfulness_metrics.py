@@ -180,8 +180,7 @@ from ...quantus.helpers.explanation_func import explain
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -200,8 +199,7 @@ from ...quantus.helpers.explanation_func import explain
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"exception": ValueError},
         ),
@@ -403,8 +401,7 @@ def test_faithfulness_correlation(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -528,8 +525,7 @@ def test_faithfulness_estimate(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"exception": ValueError},
         ),
@@ -689,8 +685,7 @@ def test_iterative_removal_of_features(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"allowed_dtypes": [True, False]},
         ),
@@ -804,8 +799,7 @@ def test_monotonicity_arya(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             1.0,
         ),
@@ -977,8 +971,7 @@ def test_monotonicity_correlation(
                     "perturb_baseline": "mean",
                     "disable_warnings": True,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -1017,8 +1010,7 @@ def test_monotonicity_correlation(
                     "perturb_baseline": "mean",
                     "disable_warnings": True,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": 0.0, "max": 10.0},
         ),
@@ -1163,8 +1155,7 @@ def test_pixel_flipping(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1367,8 +1358,7 @@ def test_region_perturbation(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"type": float},
         ),
@@ -1456,7 +1446,8 @@ def test_selectivity(
         **call_params,
     )
     print("type(metric.get_auc_score)", type(metric.get_auc_score))
-    assert (type(metric.get_auc_score) == expected["type"]), "Test failed."
+    assert type(metric.get_auc_score) == expected["type"], "Test failed."
+
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -1568,8 +1559,7 @@ def test_selectivity(
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                },
+                "call": {},
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -1839,45 +1829,45 @@ def test_ROAD(
     "model,data,params,expected",
     [
         (
-                lazy_fixture("load_mnist_model"),
-                lazy_fixture("load_mnist_images"),
-                {
-                    "init": {
-                        "threshold": 0.2,
-                        "normalise": False,
-                        "abs": False,
-                        "disable_warnings": False,
-                        "display_progressbar": False,
-                    },
-                    "call": {
-                        "explain_func": explain,
-                        "explain_func_kwargs": {
-                            "method": "Saliency",
-                        },
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "threshold": 0.2,
+                    "normalise": False,
+                    "abs": False,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
                     },
                 },
-                {"min": 0.0, "max": 1.0},
+            },
+            {"min": 0.0, "max": 1.0},
         ),
         (
-                lazy_fixture("load_mnist_model"),
-                lazy_fixture("load_mnist_images"),
-                {
-                    "a_batch_generate": False,
-                    "init": {
-                        "threshold": 0.6,
-                        "normalise": True,
-                        "abs": True,
-                        "disable_warnings": False,
-                        "display_progressbar": False,
-                    },
-                    "call": {
-                        "explain_func": explain,
-                        "explain_func_kwargs": {
-                            "method": "Saliency",
-                        },
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "threshold": 0.6,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": False,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
                     },
                 },
-                {"min": 0.0, "max": 1.0},
+            },
+            {"min": 0.0, "max": 1.0},
         ),
     ],
 )

@@ -32,9 +32,7 @@ class AvgSensitivity(PerturbationMetric):
         self,
         similarity_func: Optional[Callable] = None,
         norm_numerator: Optional[Callable] = None,
-        norm_denominator: Optional[
-            Callable
-        ] = None,
+        norm_denominator: Optional[Callable] = None,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,

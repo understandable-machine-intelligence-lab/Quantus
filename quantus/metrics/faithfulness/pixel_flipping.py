@@ -205,7 +205,6 @@ class PixelFlipping(PerturbationMetric):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean([
-            utils.calculate_auc(np.array(curve))
-            for curve in self.last_results
-        ])
+        return np.mean(
+            [utils.calculate_auc(np.array(curve)) for curve in self.last_results]
+        )

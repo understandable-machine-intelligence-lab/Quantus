@@ -14,7 +14,6 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
 from ..quantus.helpers.tf_model import TensorFlowModel
 
 
-
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""

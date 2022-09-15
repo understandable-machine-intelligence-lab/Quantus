@@ -11,6 +11,7 @@ from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.similarity_func import correlation_spearman
 
+
 class ModelParameterRandomisation(Metric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.

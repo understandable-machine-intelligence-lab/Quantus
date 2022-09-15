@@ -230,15 +230,17 @@ def test_get_baseline_value(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
     ],
 )
-def test_get_baseline_dict(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_get_baseline_dict(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = get_baseline_dict(arr=data["arr"], **params)
     print(out, type(out))
     assert isinstance(out, dict), "Test failed."

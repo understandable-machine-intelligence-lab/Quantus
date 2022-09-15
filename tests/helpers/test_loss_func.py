@@ -36,4 +36,3 @@ def atts_same():
 def test_mse(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     out = mse(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
-

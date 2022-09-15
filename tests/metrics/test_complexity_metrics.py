@@ -281,9 +281,9 @@ def test_sparseness(
             lazy_fixture("almost_uniform_1d"),
             {
                 "init": {
-                "normalise": False,
-                "disable_warnings": True,
-                "display_progressbar": True,
+                    "normalise": False,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
                 },
             },
             {"max": 1.0, "min": 0.0},
