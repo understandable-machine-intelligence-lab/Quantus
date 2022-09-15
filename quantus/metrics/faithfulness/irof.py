@@ -194,8 +194,9 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
             # Normalise the scores to be within range [0, 1].
             preds.append(float(y_pred_perturb / y_pred))
 
-        score = len(preds) - utils.calculate_auc(np.array(preds))
-        return score
+        # Calculate the area over the curve (AOC) score.
+        aoc = len(preds) - utils.calculate_auc(np.array(preds))
+        return aoc
 
     def custom_preprocess(
         self,
@@ -211,13 +212,14 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
-        asserts.assert_value_smaller_than_input_size(
-            x=x_batch, value=self.subset_size, value_name="subset_size"
-        )
+        # TODO. Replace this with something!
+        #asserts.assert_value_smaller_than_input_size(
+        #    x=x_batch, value=self.subset_size, value_name="subset_size"
+        #)
 
         return model, x_batch, y_batch, a_batch, s_batch
 
     @property
-    def get_aggregated_score(self):
+    def get_aoc_score(self):
         """Calculate the area over the curve (AOC) score for several test samples."""
-        return [np.mean(results) for results in self.all_results]
+        return np.mean(self.last_results)
