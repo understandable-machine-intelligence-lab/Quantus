@@ -606,7 +606,7 @@ def expand_indices(
     Parameters
     ----------
         arr: the input to the expanded
-        indicies: list of indicies
+        indices: list of indices
         indexed_axes: refers to all axes that are not indexed by slice(None).
 
     Returns
@@ -619,18 +619,23 @@ def expand_indices(
     asserts.assert_indexed_axes(arr, indexed_axes)
 
     # Handle indices.
+    tmp_sliced_axes = []
+    tmp_sliced_indices = []
     if isinstance(indices, int):
         expanded_indices = [indices]
     else:
         expanded_indices = []
-        for idx in indices:
+        for i, idx in enumerate(indices):
             if isinstance(idx, slice) and idx == slice(None):
                 pass
             elif isinstance(idx, slice):
                 start = idx.start
-                end = idx.end
+                end = idx.stop
                 step = idx.step
-                expanded_indices.append(np.arange(start, end, step))
+                tmp = np.arange(start, end, step)
+                expanded_indices.append(tmp)
+                tmp_sliced_axes += [i]
+                tmp_sliced_indices += [tmp]
             elif isinstance(idx, np.ndarray):
                 expanded_indices.append(idx)
             else:
@@ -644,6 +649,14 @@ def expand_indices(
         expanded_indices = np.unravel_index(
             expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
         )
+    else:
+        # Meshgrid sliced axes to account for correct slicing
+        tmp_sliced_indices = [idx.T for idx in np.meshgrid(*tmp_sliced_indices)]
+
+        print(tmp_sliced_indices)
+
+        for i, idx in list(zip(tmp_sliced_axes, tmp_sliced_indices)):
+            expanded_indices[i] = idx
 
     # Handle case of 1D indices.
     if not np.array(expanded_indices).ndim > 1:
@@ -666,6 +679,8 @@ def expand_indices(
     # Buffer with None-slices if indices index the last axes.
     for i in range(0, indexed_axes[0]):
         expanded_indices = slice(None), *expanded_indices
+
+    print(expanded_indices)
 
     return tuple(expanded_indices)
 
