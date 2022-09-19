@@ -202,6 +202,8 @@ class NonSensitivity(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
+        custom_batch = [None for _ in range(len(x_batch))]
+
         # Asserts.
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,

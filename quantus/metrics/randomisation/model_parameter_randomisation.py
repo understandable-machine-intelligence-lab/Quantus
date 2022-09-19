@@ -128,7 +128,7 @@ class ModelParameterRandomisation(Metric):
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        model, x_batch, y_batch, a_batch, s_batch = self.general_preprocess(
+        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,

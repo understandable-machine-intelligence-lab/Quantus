@@ -125,6 +125,7 @@ class RelevanceRankAccuracy(Metric):
         s: np.ndarray,
         c: Any,
     ) -> float:
+        # TODO. Fixme, returns 3.985969387755102e-05.
 
         # Return np.nan as result if segmentation map is empty.
         if np.sum(s) == 0:

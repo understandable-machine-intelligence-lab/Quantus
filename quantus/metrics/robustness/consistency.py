@@ -143,7 +143,7 @@ class Consistency(Metric):
         y_pred_classes, a_labels = c[0], c[1]
 
         # Metric logic.
-        pred_a = y_pred_classes[instance_id]
+        pred_a = y_pred_classes[i]
         same_a = np.argwhere(a == a_labels[i]).flatten()
         diff_a = same_a[same_a != i]
         pred_same_a = y_pred_classes[diff_a]
