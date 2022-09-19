@@ -180,7 +180,7 @@ class Metric:
         self.last_results = [None for _ in x_batch]
         for id_instance, (x_instance, y_instance, a_instance, s_instance, c_instance) in iterator:
             result = self.evaluate_instance(
-                i=id_instance,
+                i=int(id_instance),
                 model=model,
                 x=x_instance,
                 y=y_instance,
@@ -288,6 +288,10 @@ class Metric:
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
         self.explain_func_kwargs = explain_func_kwargs
+
+        # Include device in explain_func_kwargs.
+        if device is not None and "device" not in self.explain_func_kwargs:
+            self.explain_func_kwargs["device"] = device
 
         if a_batch is None:
 
