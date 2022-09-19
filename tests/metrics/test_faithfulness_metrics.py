@@ -561,7 +561,7 @@ def test_iterative_removal_of_features(
 
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            scores = IterativeRemovalOfFeatures(**init_params)(
+            scores = IROF(**init_params)(
                 model=model,
                 x_batch=x_batch,
                 y_batch=y_batch,
@@ -570,7 +570,7 @@ def test_iterative_removal_of_features(
             )
         return
 
-    scores = IterativeRemovalOfFeatures(**init_params)(
+    scores = IROF(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
