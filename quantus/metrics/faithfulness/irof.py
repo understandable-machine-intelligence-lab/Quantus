@@ -12,7 +12,7 @@ from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_indices
 
 
-class IterativeRemovalOfFeatures(PerturbationMetric):
+class IROF(PerturbationMetric):
     """
     Implementation of IROF (Iterative Removal of Features) by Rieger at el., 2020.
 
@@ -37,7 +37,7 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         perturb_func: Callable = None,
         perturb_baseline: str = "mean",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = True,
+        return_aggregate: bool = True,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -141,12 +141,13 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> float:
 
         # Predict on x.
@@ -204,18 +205,14 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Infer number of input channels.
         self.nr_channels = x_batch.shape[1]
 
-        # Asserts.
-        # TODO. Replace this with something! @Leander
-        # asserts.assert_value_smaller_than_input_size(
-        #    x=x_batch, value=self.subset_size, value_name="subset_size"
-        # )
-
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     @property
     def get_aoc_score(self):

@@ -44,7 +44,7 @@ class Completeness(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func: Callable = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -149,12 +149,13 @@ class Completeness(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> bool:
         x_baseline = self.perturb_func(
             arr=x,

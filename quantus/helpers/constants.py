@@ -14,7 +14,7 @@ AVAILABLE_METRICS = {
         "Monotonicity-Nguyen": MonotonicityCorrelation,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
-        "IROF": IterativeRemovalOfFeatures,
+        "IROF": IROF,
         "ROAD": ROAD,
         "Infidelity": Infidelity,
         "Sufficiency": Sufficiency,

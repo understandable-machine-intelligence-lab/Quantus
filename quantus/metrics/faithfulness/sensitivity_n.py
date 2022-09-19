@@ -45,7 +45,7 @@ class SensitivityN(PerturbationMetric):
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = True,
+        return_aggregate: bool = True,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -159,12 +159,13 @@ class SensitivityN(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> Dict[str, float]:
 
         # Reshape the attributions.
@@ -213,7 +214,9 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Asserts.
         asserts.assert_features_in_step(
@@ -221,7 +224,7 @@ class SensitivityN(PerturbationMetric):
             input_shape=x_batch.shape[2:],
         )
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     def custom_postprocess(
         self,
@@ -230,7 +233,7 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step

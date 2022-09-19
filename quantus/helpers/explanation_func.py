@@ -394,21 +394,6 @@ def generate_captum_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    # TODO. Discuss this.
-    """
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
-
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
-    """
-
     return explanation
 
 
@@ -520,21 +505,5 @@ def generate_zennit_explanation(
 
     # Sum over the axes.
     explanation = np.sum(explanation, **reduce_axes)
-
-    # TODO. Discuss this.
-    warn_func.deprecation_warnings(kwargs)
-    """
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
-
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
-    """
 
     return explanation

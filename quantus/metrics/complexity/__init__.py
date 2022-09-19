@@ -1,3 +1,3 @@
-from .complexity import *
-from .effective_complexity import *
-from .sparseness import *
+from .complexity import Complexity
+from .effective_complexity import EffectiveComplexity
+from .sparseness import Sparseness

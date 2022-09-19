@@ -11,8 +11,7 @@ def check_kwargs(kwargs):
     Raises an exception with helpful suggestions to fix the issue.
     """
     if kwargs:
-        # TODO. Discuss if raise ValueError!
-        print(
+        raise ValueError(
             f"Please handle the following arguments: {kwargs}. "
             "There were unexpected keyword arguments passed to the metric method. "
             "Quantus has undergone heavy API-changes since the last release(s), "
@@ -80,7 +79,7 @@ def warn_parameterisation(
     print(colored(text=text))
 
 
-def deprecation_warnings(kwargs: dict = {}) -> None:
+def deprecation_warnings(kwargs: dict) -> None:
     text = "\n"
     if "img_size" in kwargs:
         text = "argument 'max_steps_per_input' is deprecated and has been removed from the current release.\n"

@@ -36,7 +36,7 @@ class Consistency(Metric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -83,9 +83,6 @@ class Consistency(Metric):
         if discretise_func is None:
             discretise_func = top_n_sign
         self.discretise_func = discretise_func
-        self.a_batch_flat = None
-        self.a_labels = None
-        self.y_pred_classes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -133,20 +130,23 @@ class Consistency(Metric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> float:
 
-        instance_id = kwargs["instance_id"]
+        # Unpack custom preprocess.
+        y_pred_classes, a_labels = c[0], c[1]
 
-        pred_a = self.y_pred_classes[instance_id]
-        same_a = np.argwhere(a == self.a_labels[instance_id]).flatten()
-        diff_a = same_a[same_a != instance_id]
-        pred_same_a = self.y_pred_classes[diff_a]
+        # Metric logic.
+        pred_a = y_pred_classes[instance_id]
+        same_a = np.argwhere(a == a_labels[i]).flatten()
+        diff_a = same_a[same_a != i]
+        pred_same_a = y_pred_classes[diff_a]
 
         if len(same_a) == 0:
             return 0
@@ -159,15 +159,19 @@ class Consistency(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Preprocessing.
-        self.a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
-        self.a_labels = np.array(list(map(self.discretise_func, self.a_batch_flat)))
+        a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
+        a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
 
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        custom_batch = [y_pred_classes, a_labels]
+
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
