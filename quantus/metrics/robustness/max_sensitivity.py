@@ -112,7 +112,6 @@ class MaxSensitivity(PerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-
         self.nr_samples = nr_samples
 
         # Asserts and warnings.

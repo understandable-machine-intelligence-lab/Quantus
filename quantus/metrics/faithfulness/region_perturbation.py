@@ -106,7 +106,6 @@ class RegionPerturbation(PerturbationMetric):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
-        self.a_axes = None
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -267,20 +266,6 @@ class RegionPerturbation(PerturbationMetric):
             results[patch_id] = y_pred - y_pred_perturb
 
         return results
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
-
-        return model, x_batch, y_batch, a_batch, s_batch
 
     def custom_postprocess(
         self,

@@ -92,7 +92,6 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
 
         # Save metric-specific attributes.
         self.segmentation_method = segmentation_method
-        self.a_axes = None
         self.nr_channels = None
 
         # Asserts and warnings.
@@ -207,12 +206,11 @@ class IterativeRemovalOfFeatures(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        # Infer number of input channels and attribution axes for perturbation function.
+        # Infer number of input channels.
         self.nr_channels = x_batch.shape[1]
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
-        # TODO. Replace this with something!
+        # TODO. Replace this with something! @Leander
         # asserts.assert_value_smaller_than_input_size(
         #    x=x_batch, value=self.subset_size, value_name="subset_size"
         # )

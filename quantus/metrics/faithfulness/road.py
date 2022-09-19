@@ -94,7 +94,6 @@ class ROAD(PerturbationMetric):
         if percentages is None:
             percentages = list(range(1, 100, 2))
         self.percentages = percentages
-        self.a_axes = None
         self.a_size = None
 
         # Asserts and warnings.
@@ -186,8 +185,7 @@ class ROAD(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        # Infer attribution axes for perturbation function as well as the size.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
+        # Infer the size of attributions.
         self.a_size = a_batch[0, :, :].size
 
         return model, x_batch, y_batch, a_batch, s_batch

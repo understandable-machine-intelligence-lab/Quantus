@@ -98,7 +98,6 @@ class Selectivity(PerturbationMetric):
 
         # Save metric-specific attributes.
         self.patch_size = patch_size
-        self.a_axes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -233,20 +232,6 @@ class Selectivity(PerturbationMetric):
             results[patch_id] = y_pred_perturb
 
         return results
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
-
-        return model, x_batch, y_batch, a_batch, s_batch
 
     @property
     def get_auc_score(self):

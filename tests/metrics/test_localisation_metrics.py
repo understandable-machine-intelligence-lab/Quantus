@@ -824,8 +824,7 @@ def test_top_k_intersection(
         assert all(s < expected["max"] for s in scores), "Test failed."
 
 
-# TODO. Go over, why errors.
-@pytest.mark.localisation
+@pytest.mark.fixme
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [

@@ -852,7 +852,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": True,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "features_in_step": 28,
@@ -875,7 +874,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": True,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "features_in_step": 14,
@@ -897,7 +895,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": True,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "uniform",
                     "features_in_step": 56,
@@ -919,7 +916,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "uniform",
                     "features_in_step": 112,
@@ -940,7 +936,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "features_in_step": 28,
@@ -963,7 +958,6 @@ def test_monotonicity_correlation(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "features_in_step": 10,
                     "normalise": False,
@@ -979,7 +973,6 @@ def test_monotonicity_correlation(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": True,
                 "init": {
                     "perturb_baseline": "uniform",
                     "features_in_step": 56,
@@ -1002,7 +995,6 @@ def test_monotonicity_correlation(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "return_auc": True,
                 "init": {
                     "features_in_step": 10,
                     "normalise": False,
@@ -1054,16 +1046,7 @@ def test_pixel_flipping(
         **call_params,
     )
 
-    if params.get("return_auc", True):
-        assert all(
-            [
-                (s >= expected["min"] and s <= expected["max"])
-                for s_list in metric.get_auc_score
-                for s in s_list
-            ]
-        ), "Test failed."
-    else:
-        assert all(
+    assert all(
             [
                 (s >= expected["min"] and s <= expected["max"])
                 for s_list in scores
@@ -1081,7 +1064,6 @@ def test_pixel_flipping(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": True,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
@@ -1104,7 +1086,6 @@ def test_pixel_flipping(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
@@ -1127,7 +1108,6 @@ def test_pixel_flipping(
             lazy_fixture("load_mnist_images"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
@@ -1150,7 +1130,6 @@ def test_pixel_flipping(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "return_auc": False,
                 "init": {
                     "disable_warnings": True,
                     "display_progressbar": False,
@@ -1163,7 +1142,6 @@ def test_pixel_flipping(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": False,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
@@ -1185,7 +1163,6 @@ def test_pixel_flipping(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "return_auc": True,
                 "init": {
                     "perturb_baseline": "mean",
                     "patch_size": 7,
@@ -1243,13 +1220,7 @@ def test_region_perturbation(
         **call_params,
     )
 
-    if params.pop("return_auc", True):
-        assert all(
-            ((s >= expected["min"]) & (s <= expected["max"]))
-            for s in metric.get_auc_score
-        ), "Test failed."
-    else:
-        assert all(
+    assert all(
             [
                 (s >= expected["min"] and s <= expected["max"])
                 for _, s_list in scores.items()
@@ -1258,7 +1229,7 @@ def test_region_perturbation(
         ), "Test failed."
 
 
-@pytest.mark.fixme
+@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1281,7 +1252,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1302,7 +1273,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -1322,7 +1293,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1343,7 +1314,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -1360,7 +1331,7 @@ def test_region_perturbation(
                 },
                 "call": {},
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1382,7 +1353,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -1404,7 +1375,7 @@ def test_region_perturbation(
                     },
                 },
             },
-            {"type": float},
+            {"type": np.float64},
         ),
     ],
 )
@@ -1445,7 +1416,7 @@ def test_selectivity(
         a_batch=a_batch,
         **call_params,
     )
-    print("type(metric.get_auc_score)", type(metric.get_auc_score))
+
     assert type(metric.get_auc_score) == expected["type"], "Test failed."
 
 
@@ -1629,7 +1600,7 @@ def test_sensitivity_n(
     ), "Test failed."
 
 
-@pytest.mark.infi
+@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -1639,12 +1610,12 @@ def test_sensitivity_n(
             {
                 "init": {
                     "perturb_func": baseline_replacement_by_indices,
-                    "aggregate": False,
+                    "return_aggregate": False,
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "features_in_step": 8,
+                    "n_perturb_samples": 10,
                 },
                 "call": {
                     "explain_func": explain,
@@ -1653,7 +1624,7 @@ def test_sensitivity_n(
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1662,12 +1633,12 @@ def test_sensitivity_n(
                 "a_batch_generate": False,
                 "init": {
                     "perturb_func": baseline_replacement_by_indices,
-                    "aggregate": True,
+                    "return_aggregate": False,
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
-                    "features_in_step": 8,
+                    "n_perturb_samples": 5,
                 },
                 "call": {
                     "explain_func": explain,
@@ -1676,25 +1647,31 @@ def test_sensitivity_n(
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {},
         ),
-        # (
-        #    lazy_fixture("load_cifar10_model"),
-        #    lazy_fixture("load_cifar10_images"),
-        #    {
-        #        "perturb_func": baseline_replacement_by_indices,
-        #        "aggregate": True,
-        #        "normalise": True,
-        #        "explain_func": explain,
-        #        "method": "Saliency",
-        #        "abs": True,
-        #        "disable_warnings": False,
-        #        "display_progressbar": False,
-        #        "features_in_step": 8,
-        #        "a_batch_generate": False,
-        #    },
-        #    {"min": -1.0, "max": 1.0},
-        # ),
+         #(
+         #   lazy_fixture("load_cifar10_model"),
+         #   lazy_fixture("load_cifar10_images"),
+         #   {
+         #       "a_batch_generate": True,
+         #       "init": {
+         #           "perturb_func": baseline_replacement_by_indices,
+         #           "return_aggregate": True,
+         #           "normalise": False,
+         #           "abs": True,
+         #           "disable_warnings": False,
+         #           "display_progressbar": False,
+         #           "n_perturb_samples": 5,
+         #       },
+         #       "call": {
+         #           "explain_func": explain,
+         #           "explain_func_kwargs": {
+         #               "method": "Saliency",
+         #           },
+         #       },
+         #   },
+         #   {},
+         #),
     ],
 )
 def test_infidelity(
@@ -1724,15 +1701,17 @@ def test_infidelity(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    score = Infidelity(**init_params)(
+
+    scores = Infidelity(**init_params)(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
     )
+    print("scores=", scores)
 
-    assert score is not None, "Test failed."
+    assert scores is not None, "Test failed."
 
 
 @pytest.mark.faithfulness

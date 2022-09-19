@@ -37,7 +37,6 @@ class Infidelity(PerturbationMetric):
         self,
         loss_func: str = "mse",
         perturb_patch_sizes: List[int] = None,
-        features_in_step: int = 1,
         n_perturb_samples: int = 10,
         abs: bool = False,
         normalise: bool = False,
@@ -105,7 +104,6 @@ class Infidelity(PerturbationMetric):
         if isinstance(loss_func, str):
             if loss_func == "mse":
                 loss_func = mse
-            # TODO: add more loss functions
             else:
                 raise ValueError(f"loss_func must be in ['mse'] but is: {loss_func}")
         self.loss_func = loss_func
@@ -113,11 +111,8 @@ class Infidelity(PerturbationMetric):
         if perturb_patch_sizes is None:
             perturb_patch_sizes = [4]
         self.perturb_patch_sizes = perturb_patch_sizes
-
-        self.features_in_step = features_in_step
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
-        self.a_axes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -235,7 +230,7 @@ class Infidelity(PerturbationMetric):
                         a_sums[i_x][i_y] = np.sum(a_diff)
 
                 sub_results.append(
-                    self.loss_func(a=pred_deltas.flatten(), b=a_diff.flatten())
+                    self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
                 )
 
             results.append(np.mean(sub_results))
@@ -251,14 +246,7 @@ class Infidelity(PerturbationMetric):
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
-        # Infer number of input channels and attribution axes for perturbation function.
+        # Infer number of input channels.
         self.nr_channels = x_batch.shape[1]
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
-
-        # Asserts.
-        asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
-        )
 
         return model, x_batch, y_batch, a_batch, s_batch
