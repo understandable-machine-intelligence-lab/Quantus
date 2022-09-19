@@ -76,6 +76,8 @@ class Metric:
         self.disable_warnings = disable_warnings
         self.display_progressbar = display_progressbar
 
+        self.a_axes = None
+
         self.last_results = []
         self.all_results = []
 
@@ -304,6 +306,9 @@ class Metric:
 
         # Asserts.
         asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
+
+        # Infer attribution axes for perturbation function.
+        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Call custom pre-processing from inheriting class.
         model, x_batch, y_batch, a_batch, s_batch = self.custom_preprocess(

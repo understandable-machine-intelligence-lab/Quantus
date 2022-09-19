@@ -97,7 +97,6 @@ class FaithfulnessEstimate(PerturbationMetric):
             similarity_func = correlation_pearson
         self.similarity_func = similarity_func
         self.features_in_step = features_in_step
-        self.a_axes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -200,9 +199,6 @@ class FaithfulnessEstimate(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
         asserts.assert_features_in_step(

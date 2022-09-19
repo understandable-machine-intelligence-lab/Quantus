@@ -111,7 +111,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
         self.similarity_func = similarity_func
         self.nr_runs = nr_runs
         self.subset_size = subset_size
-        self.a_axes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -211,9 +210,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Asserts.
         asserts.assert_value_smaller_than_input_size(

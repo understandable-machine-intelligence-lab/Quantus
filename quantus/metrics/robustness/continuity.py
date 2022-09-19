@@ -107,7 +107,6 @@ class Continuity(PerturbationMetric):
         if similarity_func is None:
             similarity_func = lipschitz_constant
         self.similarity_func = similarity_func
-
         self.patch_size = patch_size
         self.nr_steps = nr_steps
         self.nr_patches = None
@@ -252,9 +251,6 @@ class Continuity(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-        # Infer attribution axes for perturbation function.
-        self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
