@@ -61,7 +61,7 @@ def plot_selectivity_experiment(
                 label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
             )
     elif isinstance(results, list):
-        pass
+        plt.plot(np.arange(0, len(results)), np.mean(results, axis=0))
     plt.xlabel(f"# Patches removed")
     plt.ylabel(f"Average function value $f(x)$")
     plt.gca().set_yticklabels(

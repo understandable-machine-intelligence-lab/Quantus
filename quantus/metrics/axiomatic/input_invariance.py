@@ -172,6 +172,9 @@ class InputInvariance(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in range(len(x_batch))]
+
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
