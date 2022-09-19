@@ -42,7 +42,7 @@ class NonSensitivity(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func: Callable = None,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -82,9 +82,8 @@ class NonSensitivity(PerturbationMetric):
             perturb_func_kwargs = {}
         perturb_func_kwargs["perturb_baseline"] = perturb_baseline
 
-        # TODO. Is this correct to add them like this given that the metric relies on it in the evaluate_instance?
-        self.perturb_func = perturb_func
-        self.perturb_func_kwargs = perturb_func_kwargs
+        perturb_func = perturb_func
+        perturb_func_kwargs = perturb_func_kwargs
 
         super().__init__(
             abs=abs,
@@ -153,12 +152,13 @@ class NonSensitivity(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> int:
         a = a.flatten()
 
@@ -200,7 +200,7 @@ class NonSensitivity(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
         # Asserts.
         asserts.assert_features_in_step(
@@ -208,4 +208,4 @@ class NonSensitivity(PerturbationMetric):
             input_shape=x_batch.shape[2:],
         )
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch

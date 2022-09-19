@@ -25,6 +25,7 @@ class Complexity(Metric):
         feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
 
     """
+    # TODO. Only bool for return_aggreate..
 
     @asserts.attributes_check
     def __init__(
@@ -33,7 +34,7 @@ class Complexity(Metric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -102,6 +103,7 @@ class Complexity(Metric):
         device: Optional[str] = None,
         **kwargs,
     ) -> List[float]:
+
         return super().__call__(
             model=model,
             x_batch=x_batch,
@@ -119,12 +121,13 @@ class Complexity(Metric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> float:
 
         a = np.array(

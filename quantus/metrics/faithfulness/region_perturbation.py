@@ -43,7 +43,7 @@ class RegionPerturbation(PerturbationMetric):
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -156,12 +156,13 @@ class RegionPerturbation(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> List[float]:
 
         # Predict on input.
@@ -274,7 +275,7 @@ class RegionPerturbation(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
         # This metric returns a dict of lists, not a list of lists.
         self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}

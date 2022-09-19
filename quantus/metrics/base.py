@@ -25,7 +25,7 @@ class Metric:
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: Optional[bool],
+        return_aggregate: bool,
         aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
@@ -154,7 +154,7 @@ class Metric:
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        model, x_batch, y_batch, a_batch, s_batch = self.general_preprocess(
+        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -170,25 +170,25 @@ class Metric:
 
         # Create progress bar if desired.
         iterator = tqdm(
-            enumerate(zip(x_batch, y_batch, a_batch, s_batch)),
+            enumerate(zip(x_batch, y_batch, a_batch, s_batch, custom_batch)),
             total=len(
                 x_batch
-            ),  # TODO. Will this work for metrics that has additional for loops?
+            ),
             disable=not self.display_progressbar,
             desc=f"Evaluating {self.__class__.__name__}",
         )
         self.last_results = [None for _ in x_batch]
-        for instance_id, (x_instance, y_instance, a_instance, s_instance) in iterator:
-            kwargs["instance_id"] = instance_id
+        for id_instance, (x_instance, y_instance, a_instance, s_instance, c_instance) in iterator:
             result = self.evaluate_instance(
+                i=id_instance,
                 model=model,
                 x=x_instance,
                 y=y_instance,
                 a=a_instance,
                 s=s_instance,
-                **kwargs,
+                c=c_instance,
             )
-            self.last_results[instance_id] = result
+            self.last_results[id_instance] = result
 
         # Call custom post-processing.
         self.custom_postprocess(
@@ -221,6 +221,7 @@ class Metric:
     @abstractmethod
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
@@ -249,7 +250,7 @@ class Metric:
         softmax: bool,
         device: Optional[str],
     ) -> Tuple[
-        np.ndarray, np.ndarray, np.ndarray, np.ndarray, ModelInterface, Dict[str, Any]
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any
     ]:
         """
         Prepares all necessary variables for evaluation.
@@ -311,7 +312,7 @@ class Metric:
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Call custom pre-processing from inheriting class.
-        model, x_batch, y_batch, a_batch, s_batch = self.custom_preprocess(
+        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.custom_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -323,7 +324,6 @@ class Metric:
         if self.normalise:
             a_batch = self.normalise_func(
                 a=a_batch,
-                # TODO note: this assumes we always have a batch axis. Is that ok?
                 normalized_axes=list(range(np.ndim(a_batch)))[1:],
                 **self.normalise_func_kwargs,
             )
@@ -336,7 +336,7 @@ class Metric:
         if s_batch is None:
             s_batch = [None for _ in x_batch]
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     def custom_preprocess(
         self,
@@ -346,15 +346,15 @@ class Metric:
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
     ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any
     ]:
         """
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
         """
-        # TODO. Maybe add a custom_batch.
+        # TODO. Add a custom_batch and update call, typing in each metric.
         custom_batch = [None for _ in x_batch]
-        return model, x_batch, y_batch, a_batch, s_batch  # , custom_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     def custom_postprocess(
         self,
@@ -363,7 +363,7 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
         """
         Implement this method if you need custom postprocessing of results or
         additional attributes.
@@ -455,7 +455,7 @@ class PerturbationMetric(Metric):
         normalise_func_kwargs: Optional[Dict[str, Any]],
         perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: Optional[bool],
+        return_aggregate: bool,
         aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,

@@ -1,3 +1,3 @@
-from .completeness import *
-from .input_invariance import *
-from .non_sensitivity import *
+from .completeness import Completeness
+from .input_invariance import InputInvariance
+from .non_sensitivity import NonSensitivity

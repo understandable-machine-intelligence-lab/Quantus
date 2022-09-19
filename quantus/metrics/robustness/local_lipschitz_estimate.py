@@ -44,7 +44,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
         perturb_mean: float = 0.0,
         perturb_std: float = 0.1,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -171,12 +171,13 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> float:
 
         similarity_max = 0.0
@@ -228,10 +229,12 @@ class LocalLipschitzEstimate(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch

@@ -38,7 +38,7 @@ class Sufficiency(Metric):
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -84,8 +84,6 @@ class Sufficiency(Metric):
         # Save metric-specific attributes.
         self.threshold = threshold
         self.distance_func = distance_func
-        self.a_sim_matrix = None
-        self.y_pred_classes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -133,20 +131,23 @@ class Sufficiency(Metric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> float:
 
-        instance_id = kwargs["instance_id"]
+        # Unpack custom preprocess.
+        y_pred_classes, a_sim_matrix = c[0], c[1]
 
-        pred_a = self.y_pred_classes[instance_id]
-        low_dist_a = np.argwhere(self.a_sim_matrix[instance_id] == 1.0).flatten()
-        low_dist_a = low_dist_a[low_dist_a != instance_id]
-        pred_low_dist_a = self.y_pred_classes[low_dist_a]
+        # Metric logic.
+        pred_a = y_pred_classes[i]
+        low_dist_a = np.argwhere(a_sim_matrix[i] == 1.0).flatten()
+        low_dist_a = low_dist_a[low_dist_a != i]
+        pred_low_dist_a = y_pred_classes[low_dist_a]
 
         if len(low_dist_a) == 0:
             return 0
@@ -159,18 +160,21 @@ class Sufficiency(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         dist_matrix = cdist(a_batch_flat, a_batch_flat, self.distance_func, V=None)
         dist_matrix = self.normalise_func(dist_matrix)
-        self.a_sim_matrix = np.zeros_like(dist_matrix)
-        self.a_sim_matrix[dist_matrix <= self.threshold] = 1
+        a_sim_matrix = np.zeros_like(dist_matrix)
+        a_sim_matrix[dist_matrix <= self.threshold] = 1
 
         # Predict on input.
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        # Create the custom batch.
+        custom_batch = [y_pred_classes, a_sim_matrix]
+
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch

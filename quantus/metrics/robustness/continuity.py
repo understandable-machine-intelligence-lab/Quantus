@@ -41,7 +41,7 @@ class Continuity(PerturbationMetric):
         perturb_baseline: str = "black",
         patch_size: int = 7,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -161,12 +161,13 @@ class Continuity(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> Dict:
 
         results = {k: [] for k in range(self.nr_patches + 1)}
@@ -250,7 +251,9 @@ class Continuity(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
@@ -267,7 +270,7 @@ class Continuity(PerturbationMetric):
         asserts.assert_explain_func(explain_func=self.explain_func)
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch.shape[2:])
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     @property
     def aggregated_score(self):

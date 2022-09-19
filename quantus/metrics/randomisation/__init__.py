@@ -1,2 +1,2 @@
-from .model_parameter_randomisation import *
-from .random_logit import *
+from .model_parameter_randomisation import ModelParameterRandomisation
+from .random_logit import RandomLogit

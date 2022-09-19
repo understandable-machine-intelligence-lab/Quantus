@@ -37,7 +37,7 @@ class ROAD(PerturbationMetric):
         perturb_func: Callable = None,
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
-        return_aggregate: Optional[bool] = False,
+        return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
@@ -142,12 +142,13 @@ class ROAD(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        **kwargs,
+        c: Any,
     ) -> List[float]:
 
         # Order indices.
@@ -183,12 +184,14 @@ class ROAD(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+
+        custom_batch = [None for _ in x_batch]
 
         # Infer the size of attributions.
         self.a_size = a_batch[0, :, :].size
 
-        return model, x_batch, y_batch, a_batch, s_batch
+        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 
     def custom_postprocess(
         self,
@@ -197,11 +200,10 @@ class ROAD(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
-        # TODO. Compare this to the previous versions!
         # Calculate accuracy for every number of most important pixels removed.
         self.last_results = {
-            percentage: np.mean(np.array(self.last_results)[:, p_ix])  # / len(x_batch)
+            percentage: np.mean(np.array(self.last_results)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
