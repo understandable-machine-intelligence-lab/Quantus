@@ -175,9 +175,7 @@ class IROF(PerturbationMetric):
         for i_ix, s_ix in enumerate(s_indices):
 
             # Perturb input by indices of attributions.
-            a_ix = np.nonzero(
-                np.repeat((segments == s_ix).flatten(), self.nr_channels)
-            )[0]
+            a_ix = np.nonzero((segments == s_ix).flatten())[0]
 
             x_perturbed = self.perturb_func(
                 arr=x,

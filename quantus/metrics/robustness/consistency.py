@@ -83,6 +83,7 @@ class Consistency(Metric):
         if discretise_func is None:
             discretise_func = top_n_sign
         self.discretise_func = discretise_func
+        self.y_pred_classes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -140,13 +141,13 @@ class Consistency(Metric):
     ) -> float:
 
         # Unpack custom preprocess.
-        y_pred_classes, a_labels = c[0], c[1]
+        a_label = c
 
         # Metric logic.
-        pred_a = y_pred_classes[i]
-        same_a = np.argwhere(a == a_labels[i]).flatten()
+        pred_a = self.y_pred_classes[i]
+        same_a = np.argwhere(a == a_label).flatten()
         diff_a = same_a[same_a != i]
-        pred_same_a = y_pred_classes[diff_a]
+        pred_same_a = self.y_pred_classes[diff_a]
 
         if len(same_a) == 0:
             return 0
@@ -170,8 +171,8 @@ class Consistency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        custom_batch = [y_pred_classes, a_labels]
+        custom_batch = a_labels
 
         return model, x_batch, y_batch, a_batch, s_batch, custom_batch
