@@ -356,7 +356,6 @@ class Metric:
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
         """
-        # TODO. Add a custom_batch and update call, typing in each metric.
         custom_batch = [None for _ in x_batch]
         return model, x_batch, y_batch, a_batch, s_batch, custom_batch
 

@@ -84,6 +84,7 @@ class Sufficiency(Metric):
         # Save metric-specific attributes.
         self.threshold = threshold
         self.distance_func = distance_func
+        self.y_pred_classes = None
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -141,13 +142,13 @@ class Sufficiency(Metric):
     ) -> float:
 
         # Unpack custom preprocess.
-        y_pred_classes, a_sim_matrix = c[0], c[1]
+        a_sim_vector = c
 
         # Metric logic.
-        pred_a = y_pred_classes[i]
-        low_dist_a = np.argwhere(a_sim_matrix[i] == 1.0).flatten()
+        pred_a = self.y_pred_classes[i]
+        low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
         low_dist_a = low_dist_a[low_dist_a != i]
-        pred_low_dist_a = y_pred_classes[low_dist_a]
+        pred_low_dist_a = self.y_pred_classes[low_dist_a]
 
         if len(low_dist_a) == 0:
             return 0
@@ -172,9 +173,10 @@ class Sufficiency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+
+        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         # Create the custom batch.
-        custom_batch = [y_pred_classes, a_sim_matrix]
+        custom_batch = a_sim_matrix
 
         return model, x_batch, y_batch, a_batch, s_batch, custom_batch

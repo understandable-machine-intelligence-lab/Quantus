@@ -57,7 +57,7 @@ def plot_selectivity_experiment(
         for method, scores in results.items():
             plt.plot(
                 np.arange(0, len(scores[0])),
-                np.mean(np.array(list(scores.values())), axis=0),
+                np.mean(np.array(scores[method]), axis=0),
                 label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
             )
     elif isinstance(results, list):
@@ -87,7 +87,7 @@ def plot_region_perturbation_experiment(
         for method, scores in results.items():
             plt.plot(
                 np.arange(0, len(scores[0])),
-                np.mean(np.array(list(scores.values())), axis=0),
+                np.mean(np.array(scores[method]), axis=0),
                 label=f"{str(method.capitalize())}",
             )
     else:
@@ -117,7 +117,7 @@ def plot_sensitivity_n_experiment(
         for method, scores in results.items():
             plt.plot(
                 np.linspace(0, 1, len(scores[0])),
-                np.mean(np.array(list(scores.values())), axis=0),
+                np.mean(np.array(scores[method]), axis=0),
                 label=f"{str(method.capitalize())}",
             )
     else:

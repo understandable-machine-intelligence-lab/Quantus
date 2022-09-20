@@ -101,7 +101,7 @@ class ROAD(PerturbationMetric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
+                    "baseline value 'perturb_baseline', perturbation function 'perturb_func', "
                     "percentage of pixels k removed per iteration 'percentage_in_step'"
                 ),
                 citation=(
@@ -172,7 +172,7 @@ class ROAD(PerturbationMetric):
             class_pred_perturb = np.argmax(model.predict(x_input))
 
             # Write a boolean into the percentage results.
-            results_instance[p_ix] = y == class_pred_perturb
+            results_instance[p_ix] = int(y == class_pred_perturb)
 
         # Return list of booleans for each percentage.
         return results_instance
@@ -203,7 +203,8 @@ class ROAD(PerturbationMetric):
     ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
 
         # Calculate accuracy for every number of most important pixels removed.
+
         self.last_results = {
-            percentage: np.mean(np.array(self.last_results).astype(int)[:, p_ix])
+            percentage: np.mean(np.array(self.last_results)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }
