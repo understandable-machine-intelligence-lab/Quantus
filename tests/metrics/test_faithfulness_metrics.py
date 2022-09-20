@@ -1709,7 +1709,6 @@ def test_infidelity(
         a_batch=a_batch,
         **call_params,
     )
-    print("scores=", scores)
 
     assert scores is not None, "Test failed."
 
@@ -1797,6 +1796,7 @@ def test_ROAD(
         a_batch=a_batch,
         **call_params,
     )
+    print("scores!!!", scores)
 
     assert all(s <= expected["max"] for s in scores.values()) & (
         all(s >= expected["min"] for s in scores.values())
