@@ -311,7 +311,7 @@ def blur_at_indices(
 
 def create_patch_slice(
     patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[np.ndarray]:
+) -> Tuple[slice]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -340,8 +340,7 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    gridcoords = [np.arange(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
-    patch_slice = np.meshgrid(*gridcoords)
+    patch_slice = [slice(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
 
     return tuple(patch_slice)
 
@@ -602,6 +601,10 @@ def expand_indices(
 ) -> Tuple:
     """
     Expands indices to fit array shape. Returns expanded indices.
+        --> if indices are a sequence of ints, they are interpreted as indices to the flattened arr,
+            and subsequently expanded
+        --> if indices contains only slices and 1d sequences for arr, everything is interpreted as slices
+        --> if indices contains already expanded indices, they are returned as is
 
     Parameters
     ----------
@@ -619,8 +622,6 @@ def expand_indices(
     asserts.assert_indexed_axes(arr, indexed_axes)
 
     # Handle indices.
-    tmp_sliced_axes = []
-    tmp_sliced_indices = []
     if isinstance(indices, int):
         expanded_indices = [indices]
     else:
@@ -634,8 +635,6 @@ def expand_indices(
                 step = idx.step
                 tmp = np.arange(start, end, step)
                 expanded_indices.append(tmp)
-                tmp_sliced_axes += [i]
-                tmp_sliced_indices += [tmp]
             elif isinstance(idx, np.ndarray):
                 expanded_indices.append(idx)
             else:
@@ -645,21 +644,18 @@ def expand_indices(
                     raise ValueError("Unsupported type of indices.")
 
     # Check if unraveling is needed.
-    if np.all([isinstance(i, int) for i in expanded_indices]):
+    if np.all([isinstance(idx, int) for idx in expanded_indices]):
         expanded_indices = np.unravel_index(
             expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
         )
-    else:
-        # Meshgrid sliced axes to account for correct slicing
-        tmp_sliced_indices = [idx.T for idx in np.meshgrid(*tmp_sliced_indices)]
+    elif not np.all([isinstance(idx, np.ndarray) and idx.ndim==len(expanded_indices) for idx in expanded_indices]):
+        # Meshgrid sliced axes to account for correct slicing. Correct switched first two axes by meshgrid
+        print(expanded_indices)
+        expanded_indices = [np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx for idx in np.meshgrid(*expanded_indices)]
 
-        print(tmp_sliced_indices)
-
-        for i, idx in list(zip(tmp_sliced_axes, tmp_sliced_indices)):
-            expanded_indices[i] = idx
 
     # Handle case of 1D indices.
-    if not np.array(expanded_indices).ndim > 1:
+    if np.all([isinstance(idx, int) for idx in expanded_indices]):
         expanded_indices = [np.array(expanded_indices)]
 
     # Cast to list so item assignment works.
@@ -673,14 +669,12 @@ def expand_indices(
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(
-                expanded_indices[i], axis=tuple(range(len(expanded_indices) - 1))
+                expanded_indices[i], axis=tuple(range(len(expanded_indices) - expanded_indices[i].ndim))
             )
 
     # Buffer with None-slices if indices index the last axes.
     for i in range(0, indexed_axes[0]):
         expanded_indices = slice(None), *expanded_indices
-
-    print(expanded_indices)
 
     return tuple(expanded_indices)
 
