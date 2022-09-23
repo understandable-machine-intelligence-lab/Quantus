@@ -274,19 +274,6 @@ class RegionPerturbation(PerturbationMetric):
 
         return results
 
-    def custom_postprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Optional[Any]:
-
-        # This metric returns a dict of lists, not a list of lists.
-        self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}
-
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
