@@ -377,7 +377,7 @@ def load_mnist_mosaics():
     return {
         "x_batch": all_mosaics,
         "y_batch": target_list,
-        "p_batch": p_batch_list,
+        "custom_batch": p_batch_list,
     }
 
 
@@ -413,7 +413,7 @@ def load_cifar10_mosaics():
     return {
         "x_batch": all_mosaics,
         "y_batch": target_list,
-        "p_batch": p_batch_list,
+        "custom_batch": p_batch_list,
     }
 
 

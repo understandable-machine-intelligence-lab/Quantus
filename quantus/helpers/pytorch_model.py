@@ -103,31 +103,3 @@ class PyTorchModel(ModelInterface):
             torch.manual_seed(seed=seed + 1)
             module[1].reset_parameters()
             yield module[0], random_layer_model
-
-    def sample(
-        self,
-        mean: float,
-        std: float,
-        noise_type: str = "multiplicative",
-    ):
-        """Sample a model by means of adding noise."""
-        assert noise_type in [
-            "additive",
-            "multiplicative",
-        ], "Set noise_type to either 'multiplicative' or 'additive' (str)."
-
-        distribution = torch.distributions.normal.Normal(loc=mean, scale=std)
-        original_parameters = self.state_dict()
-        model_pert = copy.deepcopy(self.model)
-        model_pert.load_state_dict(original_parameters)
-
-        # If std is not zero, loop over each layer and add Gaussian noise.
-        if not std == 0.0:
-            with torch.no_grad():
-                for layer in model_pert.parameters():
-                    if noise_type == "additive":
-                        layer.add_(distribution.sample(layer.size()).to(layer.device))
-                    elif noise_type == "multiplicative":
-                        layer.mul_(distribution.sample(layer.size()).to(layer.device))
-
-        return model_pert
