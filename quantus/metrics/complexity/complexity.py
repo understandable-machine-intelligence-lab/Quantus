@@ -25,6 +25,7 @@ class Complexity(Metric):
         feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
 
     """
+
     # TODO. Only bool for return_aggreate..
 
     @asserts.attributes_check

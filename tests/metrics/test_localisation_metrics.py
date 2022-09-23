@@ -989,7 +989,9 @@ def test_relevance_mass_accuracy(
     if "type" in expected:
         assert isinstance(scores[0], expected["type"]), "Test failed."
     elif isinstance(expected, float):
-        assert all(round(s, 2) == round(expected, 2) for s in scores) == True, "Test failed."
+        assert (
+            all(round(s, 2) == round(expected, 2) for s in scores) == True
+        ), "Test failed."
     else:
         assert all(s > expected["min"] for s in scores) == True, "Test failed."
         assert all(s < expected["max"] for s in scores) == True, "Test failed."
@@ -1008,7 +1010,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1019,7 +1021,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
@@ -1058,7 +1060,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1069,7 +1071,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
@@ -1081,7 +1083,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1093,7 +1095,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
@@ -1115,7 +1117,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": False,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
@@ -1126,7 +1128,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": True,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1137,7 +1139,7 @@ def test_relevance_mass_accuracy(
                     "display_progressbar": True,
                 },
             },
-            {"min": 0, "max": 1.0}
+            {"min": 0, "max": 1.0},
         ),
     ],
 )
