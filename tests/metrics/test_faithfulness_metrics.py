@@ -1178,7 +1178,7 @@ def test_pixel_flipping(
                     },
                 },
             },
-            {"min": 0.0, "max": 100.0},
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )
@@ -1220,10 +1220,11 @@ def test_region_perturbation(
         **call_params,
     )
 
+
     assert all(
         [
             (s >= expected["min"] and s <= expected["max"])
-            for _, s_list in scores.items()
+            for s_list in scores
             for s in s_list
         ]
     ), "Test failed."

@@ -466,8 +466,6 @@ def test_explain_func(
     expected: Union[float, dict, bool],
 ):
 
-    print(params)
-
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
