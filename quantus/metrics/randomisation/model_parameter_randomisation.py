@@ -35,6 +35,7 @@ class ModelParameterRandomisation(Metric):
         similarity_func: Callable = None,
         layer_order: str = "independent",
         seed: int = 42,
+        return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -55,6 +56,8 @@ class ModelParameterRandomisation(Metric):
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
             default="independent".
         seed (int): Seed used for the random generator, default=42.
+        return_sample_correlation (boolean): Indicates whether return one float per sample, representing the average
+        correlation coefficient across the layers for that sample.
         abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
         normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func (callable): Attribution normalisation function applied in case normalise=True.
@@ -88,6 +91,7 @@ class ModelParameterRandomisation(Metric):
         self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.seed = seed
+        self.return_sample_correlation = return_sample_correlation
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
         self.last_results = {}
@@ -122,7 +126,7 @@ class ModelParameterRandomisation(Metric):
         softmax: bool = False,
         device: Optional[str] = None,
         **kwargs,
-    ) -> Dict[str, List[float]]:
+    ) -> Union[List[float], float, Dict[str, List[float]]]:
 
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
@@ -190,10 +194,13 @@ class ModelParameterRandomisation(Metric):
             s_batch=s_batch,
         )
 
+        if self.return_sample_correlation:
+            self.last_results = self.compute_correlation_per_sample()
+
         if self.return_aggregate:
-            print(
-                "A 'return_aggregate' functionality is not implemented for this metric."
-            )
+            assert self.return_sample_correlation, "You must set 'return_average_correlation_per_sample'" \
+                                                               " to True in order to compute te aggregat"
+            self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
 
@@ -235,3 +242,18 @@ class ModelParameterRandomisation(Metric):
         asserts.assert_explain_func(explain_func=self.explain_func)
 
         return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+
+    def compute_correlation_per_sample(self) -> List[float]:
+
+        assert isinstance(self.last_results, dict), "To compute the average correlation coefficient per layer for " \
+                                                    "Model Parameter Randomisation Test, 'last_result' " \
+                                                    "must be of type dict."
+        layer_length = len(self.last_results[list(self.last_results.keys())[0]])
+        results = {sample: [] for sample in range(layer_length)}
+
+        for sample in results:
+            for layer in self.last_results:
+                results[sample].append(float(self.last_results[layer][sample]))
+            results[sample] = np.mean(results[sample])
+
+        return list(results.values())
