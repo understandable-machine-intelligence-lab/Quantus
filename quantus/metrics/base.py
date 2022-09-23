@@ -163,7 +163,7 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
-            custom_preprocess_batch
+            custom_preprocess_batch,
         ) = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -188,7 +188,7 @@ class Metric:
                     a_batch,
                     s_batch,
                     custom_batch,
-                    custom_preprocess_batch
+                    custom_preprocess_batch,
                 )
             ),
             total=len(x_batch),
@@ -202,7 +202,7 @@ class Metric:
             a_instance,
             s_instance,
             c_instance,
-            p_instance
+            p_instance,
         ) in iterator:
             result = self.evaluate_instance(
                 i=int(id_instance),
@@ -212,7 +212,7 @@ class Metric:
                 a=a_instance,
                 s=s_instance,
                 c=c_instance,
-                p=p_instance
+                p=p_instance,
             )
             self.last_results[id_instance] = result
 
@@ -352,7 +352,7 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
-            custom_preprocess_batch
+            custom_preprocess_batch,
         ) = self.custom_preprocess(
             model=model,
             x_batch=x_batch,
@@ -387,7 +387,7 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
-            custom_preprocess_batch
+            custom_preprocess_batch,
         )
 
     def custom_preprocess(
@@ -413,7 +413,7 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
-            custom_preprocess_batch
+            custom_preprocess_batch,
         )
 
     def custom_postprocess(

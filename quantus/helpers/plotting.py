@@ -6,6 +6,7 @@ from skimage.segmentation import *
 
 from . import warn_func
 
+
 def plot_pixel_flipping_experiment(
     y_batch: np.ndarray,
     scores: List[float],

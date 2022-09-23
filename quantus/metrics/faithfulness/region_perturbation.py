@@ -240,7 +240,9 @@ class RegionPerturbation(PerturbationMetric):
                 break
 
         # Warn
-        warn_func.warn_iterations_exceed_patch_number(self.regions_evaluation, len(ordered_patches_no_overlap))
+        warn_func.warn_iterations_exceed_patch_number(
+            self.regions_evaluation, len(ordered_patches_no_overlap)
+        )
 
         # Increasingly perturb the input and store the decrease in function value.
         results = [None for _ in range(len(ordered_patches_no_overlap))]
