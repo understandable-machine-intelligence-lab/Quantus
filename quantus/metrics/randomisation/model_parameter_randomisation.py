@@ -1,6 +1,6 @@
 """This module contains the implementation of the Model Parameter Sensitivity metric."""
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 from tqdm.auto import tqdm
 
@@ -132,7 +132,14 @@ class ModelParameterRandomisation(Metric):
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.general_preprocess(
+        (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+        ) = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -198,8 +205,10 @@ class ModelParameterRandomisation(Metric):
             self.last_results = self.compute_correlation_per_sample()
 
         if self.return_aggregate:
-            assert self.return_sample_correlation, "You must set 'return_average_correlation_per_sample'" \
-                                                               " to True in order to compute te aggregat"
+            assert self.return_sample_correlation, (
+                "You must set 'return_average_correlation_per_sample'"
+                " to True in order to compute te aggregat"
+            )
             self.last_results = [self.aggregate_func(self.last_results)]
 
         self.all_results.append(self.last_results)
@@ -245,9 +254,11 @@ class ModelParameterRandomisation(Metric):
 
     def compute_correlation_per_sample(self) -> List[float]:
 
-        assert isinstance(self.last_results, dict), "To compute the average correlation coefficient per layer for " \
-                                                    "Model Parameter Randomisation Test, 'last_result' " \
-                                                    "must be of type dict."
+        assert isinstance(self.last_results, dict), (
+            "To compute the average correlation coefficient per layer for "
+            "Model Parameter Randomisation Test, 'last_result' "
+            "must be of type dict."
+        )
         layer_length = len(self.last_results[list(self.last_results.keys())[0]])
         results = {sample: [] for sample in range(layer_length)}
 
