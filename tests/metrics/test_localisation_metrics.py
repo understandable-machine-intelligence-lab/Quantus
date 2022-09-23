@@ -986,12 +986,14 @@ def test_relevance_mass_accuracy(
         **call_params,
     )
 
-    if "type" in expected:
-        assert isinstance(scores[0], expected["type"]), "Test failed."
-    elif isinstance(expected, float):
+    print(scores)
+
+    if isinstance(expected, float):
         assert (
             all(round(s, 2) == round(expected, 2) for s in scores) == True
         ), "Test failed."
+    elif "type" in expected:
+        assert isinstance(scores, expected["type"]), "Test failed."
     else:
         assert all(s > expected["min"] for s in scores) == True, "Test failed."
         assert all(s < expected["max"] for s in scores) == True, "Test failed."
