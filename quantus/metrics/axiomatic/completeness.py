@@ -124,6 +124,7 @@ class Completeness(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
+        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -138,6 +139,7 @@ class Completeness(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -156,6 +158,7 @@ class Completeness(PerturbationMetric):
         a: np.ndarray,
         s: np.ndarray,
         c: Any,
+        p: Any,
     ) -> bool:
         x_baseline = self.perturb_func(
             arr=x,

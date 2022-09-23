@@ -1702,7 +1702,6 @@ def test_attribution_localisation(
                     "explain_func_kwargs": {
                         "method": "GradCam",
                         "gc_layer": "model._modules.get('conv_2')",
-                        "pos_only": True,
                         "interpolate": (56, 56),
                     },
                 },
@@ -1723,7 +1722,6 @@ def test_attribution_localisation(
                     "explain_func_kwargs": {
                         "method": "GradCam",
                         "gc_layer": "model._modules.get('conv_2')",
-                        "pos_only": True,
                         "interpolate": (64, 64),
                     },
                 },
@@ -1753,7 +1751,7 @@ def test_attribution_localisation(
             {
                 "x_batch": None,
                 "y_batch": None,
-                "p_batch": None,
+                "custom_batch": None,
             },
             None,
             {
@@ -1775,7 +1773,7 @@ def test_attribution_localisation(
             {
                 "x_batch": np.ones((4, 1, 56, 56)),
                 "y_batch": np.ones(4),
-                "p_batch": [
+                "custom_batch": [
                     tuple([0, 0, 1, 1]),
                     tuple([1, 1, 0, 0]),
                     tuple([0, 1, 0, 1]),
@@ -1797,7 +1795,7 @@ def test_attribution_localisation(
             {
                 "x_batch": np.ones((4, 1, 56, 56)),
                 "y_batch": np.ones(4),
-                "p_batch": [
+                "custom_batch": [
                     tuple([1, 1, 0, 0]),
                     tuple([0, 0, 1, 1]),
                     tuple([1, 0, 1, 0]),
@@ -1823,14 +1821,13 @@ def test_focus(
     params: dict,
     expected: Optional[dict],
 ):
-    x_batch, y_batch, p_batch = (
+    x_batch, y_batch, custom_batch = (
         mosaic_data["x_batch"],
         mosaic_data["y_batch"],
-        mosaic_data["p_batch"],
+        mosaic_data["custom_batch"],
     )
     init_params = params.get("init", {})
     call_params = params.get("call", {})
-    call_params["p_batch"] = p_batch
 
     metric = Focus(**init_params)
 
@@ -1841,37 +1838,38 @@ def test_focus(
                 x_batch=x_batch,
                 y_batch=y_batch,
                 a_batch=a_batch,
+                custom_batch=custom_batch,
                 **call_params,
             )
         return
 
-    p_batch_len = len(p_batch)
-    while len(p_batch) > 0:
+    custom_batch_len = len(custom_batch)
+    while len(custom_batch) > 0:
         if x_batch is not None:
-            x_minibatch, x_batch = x_batch[:10], x_batch[10:]
+            x_batch_mini, x_batch = x_batch[:10], x_batch[10:]
         else:
-            x_minibatch = None
+            x_batch_mini = None
         if y_batch is not None:
-            y_minibatch, y_batch = y_batch[:10], y_batch[10:]
+            y_batch_mini, y_batch = y_batch[:10], y_batch[10:]
         else:
-            y_minibatch = None
+            y_batch_mini = None
         if a_batch is not None:
-            a_minibatch, a_batch = a_batch[:10], a_batch[10:]
+            a_batch_mini, a_batch = a_batch[:10], a_batch[10:]
         else:
-            a_minibatch = None
+            a_batch_mini = None
 
-        p_minibatch, p_batch = p_batch[:10], p_batch[10:]
-        call_params["p_batch"] = p_minibatch
+        custom_batch_mini, custom_batch = custom_batch[:10], custom_batch[10:]
 
         scores = metric(
             model=model,
-            x_batch=x_minibatch,
-            y_batch=y_minibatch,
-            a_batch=a_minibatch,
+            x_batch=x_batch_mini,
+            y_batch=y_batch_mini,
+            a_batch=a_batch_mini,
+            custom_batch=custom_batch_mini,
             **call_params,
         )
 
-    assert len(scores) == len(p_minibatch), "Test failed."
+    assert len(scores) == len(custom_batch_mini), "Test failed."
     assert all([0 <= score <= 1 for score in scores]), "Test failed."
     if expected and "value" in expected:
         assert all((score == expected["value"]) for score in scores), "Test failed."

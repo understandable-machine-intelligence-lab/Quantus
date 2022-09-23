@@ -37,14 +37,14 @@ def warn_noise_zero(noise: float) -> None:
 def warn_absolute_operation(word: str = "") -> None:
     print(
         f"An absolute operation should {word}be applied on the attributions, "
-        "otherwise inconsistent results can be expected! Re-set 'abs' parameter accordingly."
+        "otherwise inconsistent results can be expected. Re-set 'abs' parameter."
     )
 
 
 def warn_normalise_operation(word: str = "") -> None:
     print(
         f"A normalising operation should {word}be applied on the attributions, "
-        "otherwise inconsistent results can be expected! Re-set 'normalise' parameter accordingly."
+        "otherwise inconsistent results can be expected. Re-set 'normalise' parameter."
     )
 
 
@@ -58,8 +58,10 @@ def warn_segmentation(inside_attribution, total_attribution) -> None:
 def warn_empty_segmentation() -> None:
     warnings.warn("Return np.nan as result as the segmentation map is empty.")
 
+
 def warn_different_array_lengths() -> None:
     warnings.warn("The plotted measurements have different lengths. Clipping to minimum length.")
+
 
 def warn_iterations_exceed_patch_number(n_iterations, n_patches) -> None:
     if n_patches < n_iterations:

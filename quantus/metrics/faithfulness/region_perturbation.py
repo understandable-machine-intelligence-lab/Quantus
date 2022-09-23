@@ -131,6 +131,7 @@ class RegionPerturbation(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
+        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -145,6 +146,7 @@ class RegionPerturbation(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -163,6 +165,7 @@ class RegionPerturbation(PerturbationMetric):
         a: np.ndarray,
         s: np.ndarray,
         c: Any,
+        p: Any,
     ) -> List[float]:
 
         # Predict on input.
@@ -270,6 +273,19 @@ class RegionPerturbation(PerturbationMetric):
             results[patch_id] = y_pred - y_pred_perturb
 
         return results
+
+    def custom_postprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        custom_batch: Optional[np.ndarray],
+    ) -> Optional[Any]:
+
+        # This metric returns a dict of lists, not a list of lists.
+        self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}
 
     @property
     def get_auc_score(self):

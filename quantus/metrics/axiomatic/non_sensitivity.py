@@ -127,6 +127,7 @@ class NonSensitivity(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
+        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -141,6 +142,7 @@ class NonSensitivity(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -159,6 +161,7 @@ class NonSensitivity(PerturbationMetric):
         a: np.ndarray,
         s: np.ndarray,
         c: Any,
+        p: Any,
     ) -> int:
         a = a.flatten()
 
@@ -200,9 +203,12 @@ class NonSensitivity(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+        custom_batch: Optional[np.ndarray],
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
+    ]:
 
-        custom_batch = [None for _ in range(len(x_batch))]
+        custom_preprocess_batch = [None for _ in range(len(x_batch))]
 
         # Asserts.
         asserts.assert_features_in_step(
@@ -210,4 +216,12 @@ class NonSensitivity(PerturbationMetric):
             input_shape=x_batch.shape[2:],
         )
 
-        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+        return (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+            custom_preprocess_batch,
+        )

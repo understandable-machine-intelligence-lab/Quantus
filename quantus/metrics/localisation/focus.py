@@ -98,6 +98,7 @@ class Focus(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray] = None,
+        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -107,14 +108,22 @@ class Focus(Metric):
         **kwargs,
     ) -> List[float]:
         """
-        # Initialise the metric and evaluate explanations by calling the metric instance.
+        For this metric to run we need to get the positions of the target class within the mosaic.
+        This should be a np.ndarray containing one tuple per sample, representing the positions
+        of the target class within the mosaic (where each tuple contains 0/1 values referring to
+        (top_left, top_right, bottom_left, bottom_right).
+
+        An example:
+            >> custom_batch=[(1, 1, 0, 0), (0, 0, 1, 1), (1, 0, 1, 0), (0, 1, 0, 1)]
+
+        How to initialise the metric and evaluate explanations by calling the metric instance?
             >> metric = Focus()
             >> scores = {method: metric(**init_params)(model=model,
                            x_batch=x_mosaic_batch,
                            y_batch=y_mosaic_batch,
                            a_batch=None,
-                           **{"p_batch": p_mosaic_batch,
-                           "explain_func": explain,
+                           custom_batch=p_mosaic_batch,
+                           **{"explain_func": explain,
                               "explain_func_kwargs": {
                               "method": "GradCAM",
                               "gc_layer": "model._modules.get('conv_2')",
@@ -133,6 +142,7 @@ class Focus(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -151,19 +161,8 @@ class Focus(Metric):
         a: np.ndarray,
         s: np.ndarray,
         c: Any,
+        p: Any,
     ) -> float:
-
-        # Get the positions of the target class within the mosaic.
-        assert "p_batch" in kwargs, (
-            f"To evaluate with Focus metric, you must pass 'p_batch' in the call."
-            f"This should be a np.ndarray containing one tuple per sample, representing"
-            f"the positions of the target class within the mosaic (where each tuple"
-            f" contains 0/1 values referring to (top_left, top_right, "
-            f"bottom_left, bottom_right). An example: {'p_batch': [(1, 1, 0, 0), (0, 0, 1, 1), (1, 0, 1, 0), (0, 1, 0, 1)]}"
-        )
-
-        instance_id = kwargs["instance_id"]
-        p = kwargs["p_batch"][instance_id]
 
         # Prepare shapes for mosaics.
         self.mosaic_shape = a.shape
@@ -178,7 +177,7 @@ class Focus(Metric):
             self.quadrant_bottom_right,
         ]
 
-        for quadrant_p, quadrant_func in zip(p, quadrant_functions_list):
+        for quadrant_p, quadrant_func in zip(c, quadrant_functions_list):
             if not bool(quadrant_p):
                 continue
             quadrant_relevance = quadrant_func(a=a)
@@ -197,9 +196,12 @@ class Focus(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+        custom_batch: Optional[np.ndarray],
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
+    ]:
 
-        custom_batch = [None for _ in x_batch]
+        custom_preprocess_batch = [None for _ in x_batch]
 
         # Asserts.
         try:
@@ -211,7 +213,15 @@ class Focus(Metric):
                 "Focus requires either a_batch (explanation maps) or "
                 "the necessary arguments to compute it for you (model, x_batch & y_batch)."
             )
-        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+        return (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+            custom_preprocess_batch,
+        )
 
     def quadrant_top_left(self, a: np.ndarray) -> np.ndarray:
         quandrant_a = a[
