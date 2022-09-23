@@ -18,7 +18,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -32,7 +34,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -46,7 +50,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                   "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -60,7 +66,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -74,7 +82,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': False,})}",
                 "eval_xai_methods": "[params['explain_func_kwargs']['method']]",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -88,7 +98,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func']}",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -102,7 +114,9 @@ from ..quantus.helpers.explanation_func import explain
                 "explain_func": explain,
                 "eval_metrics": "None",
                 "eval_xai_methods": "None",
-                "call_kwargs": { "explain_func": explain, }
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"None": None},
         ),
@@ -126,16 +140,16 @@ def test_evaluate_func(
 
     if "None" in expected:
         results = evaluate(
-                metrics=eval(params["eval_metrics"]),
-                xai_methods=eval(params["eval_xai_methods"]),
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                agg_func=np.mean,
-                explain_func_kwargs=params["explain_func_kwargs"],
-                **call_kwargs
-            )
+            metrics=eval(params["eval_metrics"]),
+            xai_methods=eval(params["eval_xai_methods"]),
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            agg_func=np.mean,
+            explain_func_kwargs=params["explain_func_kwargs"],
+            **call_kwargs,
+        )
         assert results == None, "Test failed."
 
     results = evaluate(
@@ -147,7 +161,7 @@ def test_evaluate_func(
         a_batch=a_batch,
         agg_func=np.mean,
         explain_func_kwargs=params["explain_func_kwargs"],
-        **call_kwargs
+        **call_kwargs,
     )
 
     if "min" in expected and "max" in expected:

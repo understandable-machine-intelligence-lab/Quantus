@@ -21,7 +21,7 @@ def check_kwargs(kwargs):
             "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
             "And also, always make sure to check for typos. "
             "If these API changes are not suitable for your project's needs, "
-            "please install quantus using 'pip install quantus==0.1.5' "
+            "please install quantus using 'pip install quantus==0.1.6' "
         )
 
 
