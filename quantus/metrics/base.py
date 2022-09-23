@@ -154,7 +154,14 @@ class Metric:
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.general_preprocess(
+        (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+        ) = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -171,14 +178,18 @@ class Metric:
         # Create progress bar if desired.
         iterator = tqdm(
             enumerate(zip(x_batch, y_batch, a_batch, s_batch, custom_batch)),
-            total=len(
-                x_batch
-            ),
+            total=len(x_batch),
             disable=not self.display_progressbar,
             desc=f"Evaluating {self.__class__.__name__}",
         )
         self.last_results = [None for _ in x_batch]
-        for id_instance, (x_instance, y_instance, a_instance, s_instance, c_instance) in iterator:
+        for id_instance, (
+            x_instance,
+            y_instance,
+            a_instance,
+            s_instance,
+            c_instance,
+        ) in iterator:
             result = self.evaluate_instance(
                 i=int(id_instance),
                 model=model,
@@ -249,9 +260,7 @@ class Metric:
         model_predict_kwargs: Optional[Dict],
         softmax: bool,
         device: Optional[str],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any
-    ]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
         """
         Prepares all necessary variables for evaluation.
 
@@ -316,7 +325,14 @@ class Metric:
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
         # Call custom pre-processing from inheriting class.
-        model, x_batch, y_batch, a_batch, s_batch, custom_batch = self.custom_preprocess(
+        (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+        ) = self.custom_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -349,9 +365,7 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any
-    ]:
+    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
         """
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.

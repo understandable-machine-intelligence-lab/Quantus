@@ -1047,12 +1047,12 @@ def test_pixel_flipping(
     )
 
     assert all(
-            [
-                (s >= expected["min"] and s <= expected["max"])
-                for s_list in scores
-                for s in s_list
-            ]
-        ), "Test failed."
+        [
+            (s >= expected["min"] and s <= expected["max"])
+            for s_list in scores
+            for s in s_list
+        ]
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1221,12 +1221,12 @@ def test_region_perturbation(
     )
 
     assert all(
-            [
-                (s >= expected["min"] and s <= expected["max"])
-                for _, s_list in scores.items()
-                for s in s_list
-            ]
-        ), "Test failed."
+        [
+            (s >= expected["min"] and s <= expected["max"])
+            for _, s_list in scores.items()
+            for s in s_list
+        ]
+    ), "Test failed."
 
 
 @pytest.mark.faithfulness
@@ -1649,29 +1649,29 @@ def test_sensitivity_n(
             },
             {},
         ),
-         #(
-         #   lazy_fixture("load_cifar10_model"),
-         #   lazy_fixture("load_cifar10_images"),
-         #   {
-         #       "a_batch_generate": True,
-         #       "init": {
-         #           "perturb_func": baseline_replacement_by_indices,
-         #           "return_aggregate": True,
-         #           "normalise": False,
-         #           "abs": True,
-         #           "disable_warnings": False,
-         #           "display_progressbar": False,
-         #           "n_perturb_samples": 5,
-         #       },
-         #       "call": {
-         #           "explain_func": explain,
-         #           "explain_func_kwargs": {
-         #               "method": "Saliency",
-         #           },
-         #       },
-         #   },
-         #   {},
-         #),
+        # (
+        #   lazy_fixture("load_cifar10_model"),
+        #   lazy_fixture("load_cifar10_images"),
+        #   {
+        #       "a_batch_generate": True,
+        #       "init": {
+        #           "perturb_func": baseline_replacement_by_indices,
+        #           "return_aggregate": True,
+        #           "normalise": False,
+        #           "abs": True,
+        #           "disable_warnings": False,
+        #           "display_progressbar": False,
+        #           "n_perturb_samples": 5,
+        #       },
+        #       "call": {
+        #           "explain_func": explain,
+        #           "explain_func_kwargs": {
+        #               "method": "Saliency",
+        #           },
+        #       },
+        #   },
+        #   {},
+        # ),
     ],
 )
 def test_infidelity(
