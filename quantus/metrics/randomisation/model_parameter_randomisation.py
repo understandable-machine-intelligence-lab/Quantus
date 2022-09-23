@@ -255,7 +255,7 @@ class ModelParameterRandomisation(Metric):
     def compute_correlation_per_sample(self) -> List[float]:
 
         assert isinstance(self.last_results, dict), (
-            "To compute the average correlation coefficient per layer for "
+            "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
