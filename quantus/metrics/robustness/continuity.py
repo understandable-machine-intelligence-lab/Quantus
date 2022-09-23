@@ -209,10 +209,12 @@ class Continuity(PerturbationMetric):
 
             results[self.nr_patches].append(y_pred)
 
-            # Create patches by splitting input into grid.
+            # Create patches by splitting input into grid. Take x_input[0] to avoid batch axis,
+            # which a_axes is not tuned for
             axis_iterators = [
-                range(0, x_input.shape[axis], self.patch_size) for axis in self.a_axes
+                range(0, x_input[0].shape[axis], self.patch_size) for axis in self.a_axes
             ]
+
             for ix_patch, top_left_coords in enumerate(
                 itertools.product(*axis_iterators)
             ):
