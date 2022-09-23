@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
+from . import warn_func
 
 def plot_pixel_flipping_experiment(
     y_batch: np.ndarray,
@@ -54,11 +55,15 @@ def plot_selectivity_experiment(
     """
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
+        alllengths = [len(score) for scores in results.values() for score in scores]
+        minlength = np.min(alllengths)
+        if np.any(np.array(alllengths) > minlength):
+            warn_func.warn_different_array_lengths()
         for method, scores in results.items():
             plt.plot(
-                np.arange(0, len(scores[0])),
-                np.mean(np.array(scores[method]), axis=0),
-                label=f"{str(method.capitalize())} ({len(list(scores))} samples)",
+                np.arange(0, len(scores[0][:minlength])),
+                np.mean(np.array([score[:minlength] for score in scores]), axis=0),
+                label=f"{str(method.capitalize())}",
             )
     elif isinstance(results, list):
         plt.plot(np.arange(0, len(results)), np.mean(results, axis=0))
@@ -84,10 +89,14 @@ def plot_region_perturbation_experiment(
     """
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
+        alllengths = [len(score) for scores in results.values() for score in scores]
+        minlength = np.min(alllengths)
+        if np.any(np.array(alllengths) > minlength):
+            warn_func.warn_different_array_lengths()
         for method, scores in results.items():
             plt.plot(
-                np.arange(0, len(scores[0])),
-                np.mean(np.array(scores[method]), axis=0),
+                np.arange(0, len(scores[0][:minlength])),
+                np.mean(np.array([score[:minlength] for score in scores]), axis=0),
                 label=f"{str(method.capitalize())}",
             )
     else:
@@ -116,8 +125,8 @@ def plot_sensitivity_n_experiment(
     if isinstance(results, dict):
         for method, scores in results.items():
             plt.plot(
-                np.linspace(0, 1, len(scores[0])),
-                np.mean(np.array(scores[method]), axis=0),
+                np.arange(0, len(scores)),
+                scores,
                 label=f"{str(method.capitalize())}",
             )
     else:

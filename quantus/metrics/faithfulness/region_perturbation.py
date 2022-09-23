@@ -236,6 +236,9 @@ class RegionPerturbation(PerturbationMetric):
             if len(ordered_patches_no_overlap) >= self.regions_evaluation:
                 break
 
+        # Warn
+        warn_func.warn_iterations_exceed_patch_number(self.regions_evaluation, len(ordered_patches_no_overlap))
+
         # Increasingly perturb the input and store the decrease in function value.
         results = [None for _ in range(len(ordered_patches_no_overlap))]
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
@@ -267,18 +270,6 @@ class RegionPerturbation(PerturbationMetric):
             results[patch_id] = y_pred - y_pred_perturb
 
         return results
-
-    def custom_postprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
-
-        # This metric returns a dict of lists, not a list of lists.
-        self.last_results = {k: self.last_results[k] for k in range(len(x_batch))}
 
     @property
     def get_auc_score(self):

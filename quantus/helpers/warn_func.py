@@ -58,6 +58,16 @@ def warn_segmentation(inside_attribution, total_attribution) -> None:
 def warn_empty_segmentation() -> None:
     warnings.warn("Return np.nan as result as the segmentation map is empty.")
 
+def warn_different_array_lengths() -> None:
+    warnings.warn("The plotted measurements have different lengths. Clipping to minimum length.")
+
+def warn_iterations_exceed_patch_number(n_iterations, n_patches) -> None:
+    if n_patches < n_iterations:
+        warnings.warn(
+            "The number of non-overlapping patches ({}) for this input and attribution"
+            "is lower than the number of iterations specified for this metric ({})."
+            "As a result, the number of measurements may vary for each input.".format(n_patches, n_iterations)
+        )
 
 def warn_parameterisation(
     metric_name: str = "Metric",
