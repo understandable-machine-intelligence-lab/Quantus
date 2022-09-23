@@ -120,6 +120,7 @@ class Consistency(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -138,6 +139,7 @@ class Consistency(Metric):
         a: np.ndarray,
         s: np.ndarray,
         c: Any,
+        p: Any,
     ) -> float:
 
         # Unpack custom preprocess.
@@ -160,9 +162,12 @@ class Consistency(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+        custom_batch: Optional[np.ndarray],
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
+    ]:
 
-        custom_batch = [None for _ in x_batch]
+        custom_preprocess_batch = [None for _ in x_batch]
 
         # Preprocessing.
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
@@ -173,6 +178,14 @@ class Consistency(Metric):
         )
         self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        custom_batch = a_labels
+        custom_preprocess_batch = a_labels
 
-        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+        return (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+            custom_preprocess_batch,
+        )

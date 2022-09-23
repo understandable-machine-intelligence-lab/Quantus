@@ -38,10 +38,10 @@ class Metric:
         Each of the defined metrics in Quantus, inherits from Metric base class.
 
         A child metric can benefit from the following class methods:
-        - __call__(): Will call general_preprocess(), apply evaluate_instance() on each
+        - __call__(): Will call general_preprocess(), apply () on each
                       instance and finally call custom_preprocess().
                       To use this method the child Metric needs to implement
-                      evaluate_instance().
+                      ().
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
@@ -93,6 +93,7 @@ class Metric:
         explain_func_kwargs: Optional[Dict[str, Any]],
         model_predict_kwargs: Optional[Dict],
         softmax: Optional[bool],
+        custom_batch: Optional[Any] = None,
         device: Optional[str] = None,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
@@ -102,7 +103,7 @@ class Metric:
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        evaluate_instance() on each instance, and saves results to last_results.
+        () on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
         Parameters
@@ -112,6 +113,7 @@ class Metric:
         y_batch: a np.ndarray which contains the output labels that are explained
         a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
         s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+        custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
         channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape if None.
         explain_func (callable): Callable generating attributions.
@@ -161,12 +163,14 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
+            custom_preprocess_batch
         ) = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -177,7 +181,16 @@ class Metric:
 
         # Create progress bar if desired.
         iterator = tqdm(
-            enumerate(zip(x_batch, y_batch, a_batch, s_batch, custom_batch)),
+            enumerate(
+                zip(
+                    x_batch,
+                    y_batch,
+                    a_batch,
+                    s_batch,
+                    custom_batch,
+                    custom_preprocess_batch
+                )
+            ),
             total=len(x_batch),
             disable=not self.display_progressbar,
             desc=f"Evaluating {self.__class__.__name__}",
@@ -189,6 +202,7 @@ class Metric:
             a_instance,
             s_instance,
             c_instance,
+            p_instance
         ) in iterator:
             result = self.evaluate_instance(
                 i=int(id_instance),
@@ -198,6 +212,7 @@ class Metric:
                 a=a_instance,
                 s=s_instance,
                 c=c_instance,
+                p=p_instance
             )
             self.last_results[id_instance] = result
 
@@ -208,6 +223,7 @@ class Metric:
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
         )
 
         if self.return_aggregate:
@@ -238,7 +254,8 @@ class Metric:
         y: Optional[np.ndarray] = None,
         a: Optional[np.ndarray] = None,
         s: Optional[np.ndarray] = None,
-        **kwargs,
+        c: Optional[np.ndarray] = None,
+        p: Optional[np.ndarray] = None,
     ) -> Any:
         """
         This method needs to be implemented to use __call__().
@@ -254,13 +271,16 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
+        custom_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
         explain_func: Optional[Callable],
         explain_func_kwargs: Optional[Dict[str, Any]],
         model_predict_kwargs: Optional[Dict],
         softmax: bool,
         device: Optional[str],
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
+    ]:
         """
         Prepares all necessary variables for evaluation.
 
@@ -332,12 +352,14 @@ class Metric:
             a_batch,
             s_batch,
             custom_batch,
+            custom_preprocess_batch
         ) = self.custom_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
         )
 
         # Normalise with specified keyword arguments if requested.
@@ -352,11 +374,21 @@ class Metric:
         if self.abs:
             a_batch = np.abs(a_batch)
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch)
+        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
         if s_batch is None:
             s_batch = [None for _ in x_batch]
+        if custom_batch is None:
+            custom_batch = [None for _ in x_batch]
 
-        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+        return (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+            custom_preprocess_batch
+        )
 
     def custom_preprocess(
         self,
@@ -365,13 +397,24 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
-        """
+        custom_batch: Optional[np.ndarray],
+    ) -> Tuple[
+        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
+    ]:
+        """s
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
         """
-        custom_batch = [None for _ in x_batch]
-        return model, x_batch, y_batch, a_batch, s_batch, custom_batch
+        custom_preprocess_batch = [None for _ in x_batch]
+        return (
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            custom_batch,
+            custom_preprocess_batch
+        )
 
     def custom_postprocess(
         self,
@@ -380,7 +423,8 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-    ) -> Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any]:
+        custom_batch: Optional[np.ndarray],
+    ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
         additional attributes.

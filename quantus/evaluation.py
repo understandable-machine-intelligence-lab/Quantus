@@ -8,7 +8,7 @@ from .helpers.model_interface import ModelInterface
 
 
 def evaluate(
-    metrics: dict, # Initialised metrics.
+    metrics: dict,  # Initialised metrics.
     xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
     model: ModelInterface,
     x_batch: np.ndarray,
@@ -18,7 +18,7 @@ def evaluate(
     agg_func: Callable = lambda x: x,
     progress: bool = False,
     explain_func_kwargs: Optional = None,
-    **call_kwargs
+    **call_kwargs,
 ) -> Optional[dict]:
     """
     A methods to evaluate metrics given some explanation methods.
