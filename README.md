@@ -19,33 +19,10 @@
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
 [📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
-	
-## New API  :rocket:
+        
+## News and Highlights :rocket:
 
-For more transparent kwargs-passing and error handling, we have updated the API of Quantus! The main changes are the following:
-
-- **From implicit to explicit argument passing.** To mitigate the risk of user typos and other undefined behaviours, the new version `0.2.0` forces explicit argument passing of all metric initalisations and calls. Instead of passing all evaluation parameters in one single kwargs list, e.g., 
-  ```python
-  kwargs = {"n_perturb_samples": 10, "abs": False, "normalise": True, "explain_func": quantus.explain, method: "Saliency"}}
-  metric = Infidelity(**kwargs)
-  metric(model=model, x_batch=x, y_batch=y, a_batch=a, s_batch=s, **kwargs)
-  ``` 
-  which could for example result in typos being overlooked, we now separate the parameters into different dictionaries such as `normalise_func_kwargs`, `explain_func_kwargs`, `model_predict_kwargs`. With the new API, the same call looks like this:
-  ```python
-  metric = Infidelity(n_perturb_samples=10, abs=False, normalise=True)
-  metric(model=model, x_batch=x, y_batch=y, a_batch=a, s_batch=s, explain_func=quantus.explain, explain_func_kwargs={"method": "Saliency"})
-  ```
-  In this way, we assert better control over the parameters. If an unexpected argument is passed, an error will now be thrown. 
-  
-- **Extended the `base.Metric` class.** Many metrics share the same logic when it comes to general attributes and pre-processing. To remove duplicate code, we extended the base class, which now includes some key methods `general_preprocessing`, `custom_preprocessing`, `evaluate_instance`, `custom_postprocessing` all which could be used for various `Metric` implementations. 
-
-- **Increased general code-quality.** We have shortended and rewritten scripts where necessary for better code readability. Refactored functions to adhere to [PEP-8](https://www.python.org/dev/peps/pep-0008/). 
-
-If these API changes are not suitable for your project's needs, please install a previous release version such as [v0.1.6](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.1.6) via `pip install quantus==0.1.6`
-            
-## Highlights
-
-- Latest release: [v1.0.0](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v1.0.0)!
+- Please see our latest release [v0.2.0](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0) - UPDATES TO THE API!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types: image and time-series (NLP next up!)
 - Flexible API: evaluate any PyTorch or Tensorflow model with your own customised explanation function(s)
