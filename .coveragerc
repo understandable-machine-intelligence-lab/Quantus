@@ -3,14 +3,13 @@ source = quantus
 omit = 
     /tutorials/*
     /tests/*
-    quantus/analysers/*
+    quantus/metrics/base.py
     quantus/helpers/asserts.py
     quantus/helpers/warn_func.py
     quantus/helpers/model_interface.py
     quantus/helpers/models.py
     quantus/helpers/constants.py
     quantus/helpers/plotting.py
-    quantus/metrics/base.py
 
 [report]
 ignore_errors = True

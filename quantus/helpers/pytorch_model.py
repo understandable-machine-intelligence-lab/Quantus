@@ -1,7 +1,7 @@
 """This model creates the ModelInterface for PyTorch."""
 from contextlib import suppress
 from copy import deepcopy
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import torch
 import numpy as np
@@ -13,22 +13,36 @@ from ..helpers import utils
 class PyTorchModel(ModelInterface):
     """Interface for torch models."""
 
-    def __init__(self, model, channel_first):
-        super().__init__(model, channel_first)
+    def __init__(
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        device: Optional[str] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            predict_kwargs=predict_kwargs,
+        )
+        self.device = device
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, grad: bool = False, **kwargs):
         """Predict on the given input."""
+
+        # Use kwargs of predict call if specified, but don't overwrite object attribute
+        predict_kwargs = {**self.predict_kwargs, **kwargs}
+
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
 
-        softmax = kwargs.get("softmax", False)
-        device = kwargs.get("device", None)
-        grad = kwargs.get("grad", False)
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred = self.model(torch.Tensor(x).to(device))
-            if softmax:
+            pred = self.model(torch.Tensor(x).to(self.device), **predict_kwargs)
+            if self.softmax:
                 pred = torch.nn.Softmax(dim=-1)(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
@@ -39,18 +53,20 @@ class PyTorchModel(ModelInterface):
         x: np.array,
         shape: Tuple[int, ...],
         channel_first: Optional[bool] = None,
-        batch: bool = False,
+        batched: bool = False,
     ):
         """
         Reshape input into model expected input.
         channel_first: Explicitely state if x is formatted channel first (optional).
         """
         if channel_first is None:
-            channel_first = utils.infer_channel_first
-        if batch:
-            x = x.reshape(x.shape[0], *shape)
-        else:
+            channel_first = utils.infer_channel_first(x)
+
+        # Expand first dimension if this is just a single instance.
+        if not batched:
             x = x.reshape(1, *shape)
+
+        # Set channel order according to expected input of model.
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")

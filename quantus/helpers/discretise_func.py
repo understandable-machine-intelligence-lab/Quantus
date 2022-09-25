@@ -1,4 +1,4 @@
-"""This module holds a collection of explanation discretisation functions i..e, methods to split continuous explanation
+"""This module holds a collection of explanation discretisation functions i.e., methods to split continuous explanation
 spaces into discrete counterparts."""
 import numpy as np
 
