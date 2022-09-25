@@ -230,15 +230,17 @@ def test_get_baseline_value(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
     ],
 )
-def test_get_baseline_dict(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_get_baseline_dict(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = get_baseline_dict(arr=data["arr"], **params)
     print(out, type(out))
     assert isinstance(out, dict), "Test failed."
@@ -393,17 +395,27 @@ def test_make_channel_last(
     [
         (
             lazy_fixture("load_mnist_model_tf"),
-            {"channel_first": False},
+            {"channel_first": False, "softmax": True},
+            {"type": TensorFlowModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            {"channel_first": False, "softmax": False},
             {"type": TensorFlowModel},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
+            {"type": PyTorchModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            {"channel_first": True, "softmax": False},
             {"type": PyTorchModel},
         ),
         (
             None,
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
             {"exception": ValueError},
         ),
     ],
@@ -415,9 +427,9 @@ def test_get_wrapped_model(
 ):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            out = get_wrapped_model(model, params["channel_first"])
+            out = get_wrapped_model(model, **params)
         return
-    out = get_wrapped_model(model, params["channel_first"])
+    out = get_wrapped_model(model, **params)
     if "type" in expected:
         isinstance(out, expected["type"]), "Test failed."
 

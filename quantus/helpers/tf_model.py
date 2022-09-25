@@ -1,8 +1,8 @@
 """This model creates the ModelInterface for Tensorflow."""
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-from tensorflow.keras.activations import linear, softmax
 from tensorflow.keras.layers import Dense
+from tensorflow.keras import activations
 from tensorflow.keras import Model
 from tensorflow.keras.models import clone_model
 import numpy as np
@@ -14,19 +14,31 @@ from ..helpers import utils
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
-    def __init__(self, model, channel_first):
-        super().__init__(model, channel_first)
+    def __init__(
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            predict_kwargs=predict_kwargs,
+        )
 
     def predict(self, x, **kwargs):
         """Predict on the given input."""
 
-        softmax_act = kwargs.get("softmax", False)
+        # Use kwargs of predict call if specified, but don't overwrite object attribute
+        predict_kwargs = {**self.predict_kwargs, **kwargs}
 
         output_act = self.model.layers[-1].activation
-        target_act = softmax if softmax_act else linear
+        target_act = activations.softmax if self.softmax else activations.linear
 
         if output_act == target_act:
-            return self.model(x, training=False).numpy()
+            return self.model(x, training=False, **predict_kwargs).numpy()
 
         config = self.model.layers[-1].get_config()
         config["activation"] = target_act
@@ -37,14 +49,14 @@ class TensorFlowModel(ModelInterface):
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
 
-        return new_model(x, training=False).numpy()
+        return new_model(x, training=False, **predict_kwargs).numpy()
 
     def shape_input(
         self,
-        x: np.array,
+        x: np.ndarray,
         shape: Tuple[int, ...],
         channel_first: Optional[bool] = None,
-        batch: bool = False,
+        batched: bool = False,
     ):
         """
         Reshape input into model expected input.
@@ -52,10 +64,11 @@ class TensorFlowModel(ModelInterface):
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first
-        if batch:
-            x = x.reshape(x.shape[0], *shape)
-        else:
+        # Expand first dimension if this is just a single instance.
+        if not batched:
             x = x.reshape(1, *shape)
+
+        # Set channel order according to expected input of model.
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)

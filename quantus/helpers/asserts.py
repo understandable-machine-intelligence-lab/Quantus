@@ -192,7 +192,6 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     assert (
         np.shape(s_batch)[1] == 1
     ), "The second dimension of the segmentations 's_batch' should be equal to 1."
-    # TODO.
     assert (
         len(np.nonzero(s_batch)) > 0
     ), "The segmentation 's_batch' must contain non-zero elements."
@@ -230,7 +229,7 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
         )
 
 
-# TODO: Change for batching update, since currently single images are expected
+# TODO: Change for batching update, since currently single images are expected.
 def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
     """
     Checks that indexed_axes fits arr
