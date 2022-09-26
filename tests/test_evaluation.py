@@ -1,17 +1,7 @@
-import warnings
-import pickle
-from typing import Union
-
-import numpy as np
-import pytest
-import torch
-import torchvision
 from pytest_lazyfixture import lazy_fixture
-
 from .fixtures import *
 from ..quantus import *
 from ..quantus.helpers.explanation_func import explain
-from ..quantus.helpers.pytorch_model import PyTorchModel
 
 
 @pytest.mark.evaluate_func
@@ -22,15 +12,15 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
+                "explain_func_kwargs": {
+                    "method": "Gradient",
+                },
                 "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": True,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
-                "eval_xai_methods": "{params['method']: a_batch}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -38,15 +28,15 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
                 "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": True,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
-                "eval_xai_methods": "{params['method']: a_batch}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -54,15 +44,15 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "nr_samples": 10,
-                "abs": True,
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                },
                 "explain_func": explain,
-                "method": "IntegratedGradients",
-                "disable_warnings": True,
-                "normalise": False,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'sparseness': Sparseness(**params)}",
-                "eval_xai_methods": "{params['method']: a_batch}",
+                "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True,'normalise': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -70,15 +60,15 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
+                "explain_func_kwargs": {
+                    "method": "Gradient",
+                },
                 "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": False,
-                "normalise_func": normalise_by_max,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
-                "eval_xai_methods": "{params['method']: a_batch}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -86,16 +76,15 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
-                "img_size": 28,
-                "nr_channels": 1,
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                },
                 "explain_func": explain,
-                "method": "Saliency",
-                "disable_warnings": True,
-                "normalise": False,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
-                "eval_xai_methods": "[params['method']]",
+                "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': False,})}",
+                "eval_xai_methods": "[params['explain_func_kwargs']['method']]",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
             {"min": 0.0, "max": 1.0},
         ),
@@ -103,31 +92,33 @@ from ..quantus.helpers.pytorch_model import PyTorchModel
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                },
                 "explain_func": explain,
-                "method": "InputXGradient",
-                "disable_warnings": True,
-                "normalise": False,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**params)}",
-                "eval_xai_methods": "{params['method']: params['explain_func']}",
+                "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func']}",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": 0.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "perturb_radius": 0.2,
-                "nr_samples": 10,
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                },
                 "explain_func": explain,
-                "method": "Gradient",
-                "disable_warnings": True,
-                "normalise": False,
                 "eval_metrics": "None",
-                "eval_xai_methods": "{params['method']: None}",
+                "eval_xai_methods": "None",
+                "call_kwargs": {
+                    "explain_func": explain,
+                },
             },
-            {"exception": TypeError},
+            {"None": None},
         ),
     ],
 )
@@ -139,26 +130,27 @@ def test_evaluate_func(
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
+    call_kwargs = params.get("call_kwargs", {})
     a_batch = explain(
         model=model,
         inputs=x_batch,
         targets=y_batch,
-        **params,
+        **params["explain_func_kwargs"],
     )
 
-    if "exception" in expected:
-        with pytest.raises(expected["exception"]):
-            results = evaluate(
-                metrics=eval(params["eval_metrics"]),
-                xai_methods=eval(params["eval_xai_methods"]),
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                agg_func=np.mean,
-                **params,
-            )
-        return
+    if "None" in expected:
+        results = evaluate(
+            metrics=eval(params["eval_metrics"]),
+            xai_methods=eval(params["eval_xai_methods"]),
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            agg_func=np.mean,
+            explain_func_kwargs=params["explain_func_kwargs"],
+            **call_kwargs,
+        )
+        assert results == None, "Test failed."
 
     results = evaluate(
         metrics=eval(params["eval_metrics"]),
@@ -168,15 +160,20 @@ def test_evaluate_func(
         y_batch=y_batch,
         a_batch=a_batch,
         agg_func=np.mean,
-        **params,
+        explain_func_kwargs=params["explain_func_kwargs"],
+        **call_kwargs,
     )
 
     if "min" in expected and "max" in expected:
         assert (
-            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][
+                list(eval(params["eval_metrics"]).keys())[0]
+            ]
             >= expected["min"]
         ), "Test failed."
         assert (
-            results[params["method"]][list(eval(params["eval_metrics"]).keys())[0]]
+            results[params["explain_func_kwargs"]["method"]][
+                list(eval(params["eval_metrics"]).keys())[0]
+            ]
             <= expected["max"]
         ), "Test failed."

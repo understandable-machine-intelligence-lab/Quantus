@@ -1,4 +1,4 @@
-"""Collection of norm functions i..e, ways to measure the norm of a input- (or explanation) vector."""
+"""Collection of norm functions i.e., ways to measure the norm of a input- (or explanation) vector."""
 import numpy as np
 
 

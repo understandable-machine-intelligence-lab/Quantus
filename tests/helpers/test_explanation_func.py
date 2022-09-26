@@ -18,7 +18,6 @@ if util.find_spec("zennit"):
     from zennit import core as zcore
     from zennit import torchvision as ztv
 
-# Still not nice (I actually hate this with a passion)
 if util.find_spec("zennit"):
     zennit_tests = [
         # Zennit
@@ -29,10 +28,9 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": None,
                 "attributor": zattr.Gradient,
-                "normalise": True,
                 "xai_lib": "zennit",
             },
-            {"min": -1},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -41,10 +39,9 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": None,
                 "attributor": zattr.Gradient,
-                "normalise": True,
                 "xai_lib": "zennit",
             },
-            {"min": -1},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -53,10 +50,9 @@ if util.find_spec("zennit"):
                 "canonizer": ztv.SequentialMergeBatchNorm,
                 "composite": zcomp.EpsilonPlus,
                 "attributor": zattr.Gradient,
-                "abs": True,
                 "xai_lib": "zennit",
             },
-            {"min": 0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -65,10 +61,9 @@ if util.find_spec("zennit"):
                 "canonizer": ztv.SequentialMergeBatchNorm,
                 "composite": zcomp.EpsilonPlus,
                 "attributor": zattr.Gradient,
-                "abs": True,
                 "xai_lib": "zennit",
             },
-            {"min": 0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -77,10 +72,8 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "epsilon_alpha2_beta1_flat",
                 "attributor": zattr.Gradient,
-                "pos_only": True,
-                "xai_lib": "zennit",
             },
-            {"min": 0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -89,10 +82,8 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "epsilon_alpha2_beta1_flat",
                 "attributor": zattr.Gradient,
-                "pos_only": True,
-                "xai_lib": "zennit",
             },
-            {"min": 0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -101,10 +92,9 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
             },
-            {"max": 0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -113,10 +103,9 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
             },
-            {"max": 0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -125,11 +114,10 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
                 "reduce_axes": (1,),
             },
-            {"shape": (1, 28, 28)},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -138,11 +126,10 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
                 "reduce_axes": (1, 2),
             },
-            {"shape": (1, 1, 28)},
+            {"shape": (124, 1, 1, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -151,11 +138,10 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
                 "reduce_axes": (3,),
             },
-            {"shape": (1, 28, 1)},
+            {"shape": (124, 1, 28, 1)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -164,7 +150,6 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
                 "reduce_axes": (0, 1),
             },
@@ -177,7 +162,6 @@ if util.find_spec("zennit"):
                 "canonizer": None,
                 "composite": "guided_backprop",
                 "attributor": zattr.Gradient,
-                "neg_only": True,
                 "xai_lib": "zennit",
                 "reduce_axes": (1, 2, 3, 4, 5),
             },
@@ -200,7 +184,7 @@ else:
             {
                 "method": "Saliency",
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -208,97 +192,87 @@ else:
             {
                 "method": "Saliency",
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "GradientShap",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "GradientShap",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "IntegratedGradients",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "IntegratedGradients",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "InputXGradient",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "InputXGradient",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Occlusion",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Occlusion",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "FeatureAblation",
-                "neg_only": True,
             },
-            {"max": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "FeatureAblation",
-                "neg_only": True,
             },
-            {"max": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -306,9 +280,8 @@ else:
             {
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
-                "abs": True,
             },
-            {"min": 0},
+            {"shape": (10, 1, 44)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -316,63 +289,40 @@ else:
             {
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
-                "abs": True,
             },
-            {"min": 0},
+            {"shape": (124, 1, 8, 8)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Control Var. Sobel Filter",
-                "neg_only": True,
             },
-            {"max": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Control Var. Sobel Filter",
-                "neg_only": True,
             },
-            {"max": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "Gradient",
-                "pos_only": True,
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "pos_only": True,
             },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "abs": True,
-            },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -409,299 +359,13 @@ else:
             {"min": 0.0, "max": 1.0},
         ),
         (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "normalise_func": normalise_by_negative,
-            },
-            {"min": -1.0, "max": 1.0},
-        ),
-        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "normalise": True,
-                "normalise_func": normalise_by_negative,
-            },
-            {"min": -1.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Saliency",
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Saliency",
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "GradientShap",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "GradientShap",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "IntegratedGradients",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "IntegratedGradients",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "InputXGradient",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "InputXGradient",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Occlusion",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Occlusion",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "FeatureAblation",
-                "neg_only": True,
-            },
-            {"max": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "FeatureAblation",
-                "neg_only": True,
-            },
-            {"max": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-                "abs": True,
-            },
-            {"min": 0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-                "abs": True,
-                "interpolate": (32, 32),
-            },
-            {"shape": (1, 32, 32)},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Control Var. Sobel Filter",
-                "neg_only": True,
-            },
-            {"max": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Control Var. Sobel Filter",
-                "neg_only": True,
-            },
-            {"max": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "pos_only": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "pos_only": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "abs": True,
-            },
-            {"min": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Control Var. Constant",
-                "constant_value": 0.0,
-            },
-            {"value": 0.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Control Var. Constant",
-                "constant_value": 0.0,
-            },
-            {"value": 0.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "normalise_func": normalise_by_negative,
-            },
-            {"min": -1.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "normalise_func": normalise_by_negative,
-            },
-            {"min": -1.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
                 "reduce_axes": (1,),
             },
-            {"shape": (1, 28, 28)},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -713,28 +377,22 @@ else:
                 "normalise_func": normalise_by_max,
                 "reduce_axes": (1, 2),
             },
-            {"shape": (1, 1, 28)},
+            {"shape": (124, 1, 1, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
                 "reduce_axes": (3,),
             },
-            {"shape": (1, 28, 1)},
+            {"shape": (124, 1, 28, 1)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
                 "reduce_axes": (0, 1),
             },
             {"exception": AssertionError},
@@ -744,9 +402,6 @@ else:
             lazy_fixture("load_mnist_images"),
             {
                 "method": "Gradient",
-                "normalise": True,
-                "abs": True,
-                "normalise_func": normalise_by_max,
                 "reduce_axes": (1, 2, 3, 4, 5, 6),
             },
             {"exception": AssertionError},
@@ -757,36 +412,32 @@ else:
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "Gradient",
-                "abs": True,
             },
-            {"min": 0.0, "max": 1.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "Occlusion",
-                "abs": True,
             },
-            {"min": 0.0, "max": 1.0},
+            {"shape": (124, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "IntegratedGradients",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "InputXGradient",
-                "abs": True,
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -803,7 +454,7 @@ else:
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "InputXGradient", "abs": True, "reduce_axes": (0, 1, 2)},
+            {"method": "InputXGradient", "reduce_axes": (0, 1, 2)},
             {"exception": KeyError},
         ),
     ],
@@ -814,6 +465,7 @@ def test_explain_func(
     params: dict,
     expected: Union[float, dict, bool],
 ):
+
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
@@ -838,7 +490,7 @@ def test_explain_func(
                 s == expected["value"] for s in a_batch.flatten()
             ), "Test failed."
         elif "shape" in expected:
-            assert all(s.shape == expected["shape"] for s in a_batch), "Test failed."
+            assert a_batch.shape == expected["shape"], "Test failed."
         elif "warning" in expected:
             with pytest.warns(expected["warning"]):
                 a_batch = explain(
@@ -856,7 +508,7 @@ def test_explain_func(
             {
                 "method": "Saliency",
             },
-            {"min": 0.0},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -864,7 +516,7 @@ def test_explain_func(
             {
                 "method": "Saliency",
             },
-            {"min": 0.0},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -932,6 +584,8 @@ def test_generate_captum_explanation(
             assert a_batch.min() >= expected["min"], "Test failed."
         elif "min" not in expected and "max" in expected:
             assert a_batch.max() <= expected["max"], "Test failed."
+        elif "shape" in expected:
+            assert a_batch.shape == expected["shape"], "Test failed."
         elif "value" in expected:
             assert all(
                 s == expected["value"] for s in a_batch.flatten()
@@ -956,7 +610,7 @@ def test_generate_captum_explanation(
             {
                 "method": "Gradient",
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -972,7 +626,7 @@ def test_generate_captum_explanation(
             {
                 "method": "Occlusion",
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -988,7 +642,7 @@ def test_generate_captum_explanation(
             {
                 "method": "InputXGradient",
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -1004,7 +658,7 @@ def test_generate_captum_explanation(
             {
                 "method": "IntegratedGradients",
             },
-            {"min": 0.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -1070,6 +724,8 @@ def test_generate_tf_explanation(
             ), "Test failed."
         elif "min" in expected and "max" not in expected:
             assert a_batch.min() >= expected["min"], "Test failed."
+        elif "shape" in expected:
+            assert a_batch.shape == expected["shape"], "Test failed."
         elif "min" not in expected and "max" in expected:
             assert a_batch.max() <= expected["max"], "Test failed."
         elif "value" in expected:
@@ -1088,7 +744,7 @@ def test_generate_tf_explanation(
             {
                 "method": "Gradient",
             },
-            {"min": 0.0, "max": 1.0},
+            {"shape": (124, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -1104,7 +760,7 @@ def test_generate_tf_explanation(
             {
                 "method": "Gradient",
             },
-            {"min": -3},
+            {"shape": (124, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -1112,7 +768,7 @@ def test_generate_tf_explanation(
             {
                 "method": "Gradient",
             },
-            {"min": -3},
+            {"shape": (10, 1, 100)},
         ),
     ],
 )
@@ -1136,14 +792,8 @@ def test_get_explanation(
     if isinstance(expected, float):
         assert all(s == expected for s in a_batch), "Test failed."
     else:
-        if "min" in expected and "max" in expected:
-            assert (a_batch.min() >= expected["min"]) & (
-                a_batch.max() <= expected["max"]
-            ), "Test failed."
-        elif "min" in expected and "max" not in expected:
-            assert a_batch.min() >= expected["min"], "Test failed."
-        elif "min" not in expected and "max" in expected:
-            assert a_batch.max() <= expected["max"], "Test failed."
+        if "shape" in expected:
+            assert (a_batch.shape == expected["shape"]), "Test failed."
         elif "value" in expected:
             assert all(
                 s == expected["value"] for s in a_batch.flatten()
