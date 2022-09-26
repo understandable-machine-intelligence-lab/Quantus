@@ -88,7 +88,7 @@ if util.find_spec("torch"):
             self.pool_2 = torch.nn.MaxPool1d(2, 2)
             self.relu_2 = torch.nn.ReLU()
 
-            # TODO: use closed formula or use LazyLinear layers
+            # TODO: Use closed formula or use LazyLinear layers.
             if n_channels == 1:
                 n_fc_input = 64
             elif n_channels == 3:

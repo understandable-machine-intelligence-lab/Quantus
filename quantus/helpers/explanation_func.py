@@ -10,6 +10,7 @@ from .utils import *
 from .normalise_func import *
 from ..helpers import __EXTRAS__
 from ..helpers import constants
+from ..helpers import warn_func
 
 if util.find_spec("torch"):
     import torch
@@ -84,11 +85,16 @@ def get_explanation(model, inputs, targets, **kwargs):
             return generate_captum_explanation(model, inputs, targets, **kwargs)
         if util.find_spec("zennit"):
             return generate_zennit_explanation(model, inputs, targets, **kwargs)
-    if isinstance(model, tf.keras.Model) and util.find_spec("tf_explain"):
-        return generate_tf_explanation(model, inputs, targets, **kwargs)
+    if isinstance(model, tf.keras.Model):
+        if util.find_spec("tf_explain"):
+            return generate_tf_explanation(model, inputs, targets, **kwargs)
+        else:
+            raise ValueError(
+                f"Model is of type tf.keras.Model but tf_explain is not installed."
+            )
 
     raise ValueError(
-        "Model needs to be tf.keras.Model or torch.nn.modules.module.Module. "
+        f"Model needs to be tf.keras.Model or torch.nn.modules.module.Module but is {type(model)}. "
         "Please install Captum or Zennit for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
     )
 
@@ -215,7 +221,7 @@ def generate_tf_explanation(
         or kwargs.get("reduce_axes", None) is not None
     ):
         raise KeyError(
-            "Only normalized absolute explanations are currently supported for TensorFlow models (tf-explain). "
+            "Only normalizsd absolute explanations are currently supported for TensorFlow models (tf-explain). "
             "Set normalise=true, abs=true, pos_only=true, neg_only=false. reduce_axes parameter is not available; "
             "explanations are always reduced over channel axis."
         )
@@ -388,18 +394,6 @@ def generate_captum_explanation(
         else:
             explanation = explanation.cpu().numpy()
 
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
-
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
-
     return explanation
 
 
@@ -510,18 +504,7 @@ def generate_zennit_explanation(
             explanation = explanation.cpu().numpy()
 
     # Sum over the axes.
+    print(explanation.shape, reduce_axes)
     explanation = np.sum(explanation, **reduce_axes)
-
-    if kwargs.get("normalise", False):
-        explanation = kwargs.get("normalise_func", normalise_by_negative)(explanation)
-
-    if kwargs.get("abs", False):
-        explanation = np.abs(explanation)
-
-    elif kwargs.get("pos_only", False):
-        explanation[explanation < 0] = 0.0
-
-    elif kwargs.get("neg_only", False):
-        explanation[explanation > 0] = 0.0
 
     return explanation
