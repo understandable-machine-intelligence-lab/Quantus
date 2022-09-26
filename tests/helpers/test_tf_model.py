@@ -69,10 +69,8 @@ def test_predict(
     expected: Union[float, dict, bool],
     load_mnist_model_tf,
 ):
-    model = TensorFlowModel(
-        model=load_mnist_model_tf, channel_first=params["channel_first"]
-    )
-    out = model.predict(x=data["x"], **params)
+    model = TensorFlowModel(model=load_mnist_model_tf, **params)
+    out = model.predict(x=data["x"])
     assert np.allclose(out, expected), "Test failed."
 
 

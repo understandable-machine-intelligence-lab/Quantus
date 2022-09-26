@@ -2,7 +2,7 @@
 import re
 import copy
 import numpy as np
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from importlib import util
 from skimage.segmentation import slic, felzenszwalb
 from ..helpers.model_interface import ModelInterface
@@ -102,9 +102,10 @@ def get_baseline_dict(
     """
     fill_dict = {
         "mean": float(arr.mean()),
-        "uniform":
-            np.random.uniform(
-                low=kwargs.get("uniform_low", 0.0), high=kwargs.get("uniform_high", 1.0), size=kwargs["return_shape"]
+        "uniform": np.random.uniform(
+            low=kwargs.get("uniform_low", 0.0),
+            high=kwargs.get("uniform_high", 1.0),
+            size=kwargs["return_shape"],
         ),
         "black": float(arr.min()),
         "white": float(arr.max()),
@@ -218,20 +219,41 @@ def make_channel_last(x: np.array, channel_first=True):
         )
 
 
-def get_wrapped_model(model: ModelInterface, channel_first: bool) -> ModelInterface:
+def get_wrapped_model(
+    model,
+    channel_first: bool,
+    softmax: bool,
+    device: Optional[str] = None,
+    predict_kwargs: Optional[Dict[str, Any]] = None,
+) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
     Parameters
     ----------
+    model: a pytorch or tensorflow model that is to be wrapped.
+    channel_first (boolean): Indicates if model expects channel first or channel last layout.
+    predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
 
     Returns
-        A wrapped ModelInterface model.
+    -------
+    model (ModelInterface): A wrapped ModelInterface model.
     """
     if isinstance(model, tf.keras.Model):
-        return TensorFlowModel(model, channel_first)
+        return TensorFlowModel(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            predict_kwargs=predict_kwargs,
+        )
     if isinstance(model, torch.nn.modules.module.Module):
-        return PyTorchModel(model, channel_first)
+        return PyTorchModel(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            device=device,
+            predict_kwargs=predict_kwargs,
+        )
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )
@@ -311,7 +333,7 @@ def blur_at_indices(
 
 def create_patch_slice(
     patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[np.ndarray]:
+) -> Tuple[slice]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -340,8 +362,7 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    gridcoords = [np.arange(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
-    patch_slice = np.meshgrid(*gridcoords)
+    patch_slice = [slice(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
 
     return tuple(patch_slice)
 
@@ -406,7 +427,10 @@ def _pad_array(
             pad_width_list.append((pad_width, pad_width))
         elif isinstance(pad_width[[p for p in padded_axes].index(ax)], int):
             pad_width_list.append(
-                (pad_width[[p for p in padded_axes].index(ax)], pad_width[[p for p in padded_axes].index(ax)])
+                (
+                    pad_width[[p for p in padded_axes].index(ax)],
+                    pad_width[[p for p in padded_axes].index(ax)],
+                )
             )
         else:
             pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])
@@ -602,11 +626,15 @@ def expand_indices(
 ) -> Tuple:
     """
     Expands indices to fit array shape. Returns expanded indices.
+        --> if indices are a sequence of ints, they are interpreted as indices to the flattened arr,
+            and subsequently expanded
+        --> if indices contains only slices and 1d sequences for arr, everything is interpreted as slices
+        --> if indices contains already expanded indices, they are returned as is
 
     Parameters
     ----------
         arr: the input to the expanded
-        indicies: list of indicies
+        indices: list of indices
         indexed_axes: refers to all axes that are not indexed by slice(None).
 
     Returns
@@ -623,14 +651,15 @@ def expand_indices(
         expanded_indices = [indices]
     else:
         expanded_indices = []
-        for idx in indices:
+        for i, idx in enumerate(indices):
             if isinstance(idx, slice) and idx == slice(None):
                 pass
             elif isinstance(idx, slice):
                 start = idx.start
-                end = idx.end
+                end = idx.stop
                 step = idx.step
-                expanded_indices.append(np.arange(start, end, step))
+                tmp = np.arange(start, end, step)
+                expanded_indices.append(tmp)
             elif isinstance(idx, np.ndarray):
                 expanded_indices.append(idx)
             else:
@@ -640,13 +669,18 @@ def expand_indices(
                     raise ValueError("Unsupported type of indices.")
 
     # Check if unraveling is needed.
-    if np.all([isinstance(i, int) for i in expanded_indices]):
+    if np.all([isinstance(idx, int) for idx in expanded_indices]):
         expanded_indices = np.unravel_index(
             expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
         )
+    elif not np.all([isinstance(idx, np.ndarray) and idx.ndim==len(expanded_indices) for idx in expanded_indices]):
+        # Meshgrid sliced axes to account for correct slicing. Correct switched first two axes by meshgrid
+        print(expanded_indices)
+        expanded_indices = [np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx for idx in np.meshgrid(*expanded_indices)]
+
 
     # Handle case of 1D indices.
-    if not np.array(expanded_indices).ndim > 1:
+    if np.all([isinstance(idx, int) for idx in expanded_indices]):
         expanded_indices = [np.array(expanded_indices)]
 
     # Cast to list so item assignment works.
@@ -660,7 +694,7 @@ def expand_indices(
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(
-                expanded_indices[i], axis=tuple(range(len(expanded_indices) - 1))
+                expanded_indices[i], axis=tuple(range(len(expanded_indices) - expanded_indices[i].ndim))
             )
 
     # Buffer with None-slices if indices index the last axes.

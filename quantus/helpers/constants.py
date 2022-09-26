@@ -1,6 +1,7 @@
 from ..metrics import *
+from .normalise_func import *
 from .perturb_func import *
-from .similar_func import *
+from .similarity_func import *
 
 
 AVAILABLE_METRICS = {
@@ -9,11 +10,11 @@ AVAILABLE_METRICS = {
         "Faithfulness Estimate": FaithfulnessEstimate,
         "Pixel-Flipping": PixelFlipping,
         "Region Segmentation": RegionPerturbation,
-        "Monotonicity-Arya": MonotonicityArya,
-        "Monotonicity-Nguyen": MonotonicityNguyen,
+        "Monotonicity-Arya": Monotonicity,
+        "Monotonicity-Nguyen": MonotonicityCorrelation,
         "Selectivity": Selectivity,
         "SensitivityN": SensitivityN,
-        "IROF": IterativeRemovalOfFeatures,
+        "IROF": IROF,
         "ROAD": ROAD,
         "Infidelity": Infidelity,
         "Sufficiency": Sufficiency,

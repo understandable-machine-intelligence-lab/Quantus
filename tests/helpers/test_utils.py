@@ -230,15 +230,17 @@ def test_get_baseline_value(
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_black_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_white_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
-        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1,2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_black_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_white_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
+        (lazy_fixture("baseline_mean_3d"), {"return_shape": (1, 2)}, dict),
     ],
 )
-def test_get_baseline_dict(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_get_baseline_dict(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
     out = get_baseline_dict(arr=data["arr"], **params)
     print(out, type(out))
     assert isinstance(out, dict), "Test failed."
@@ -393,17 +395,27 @@ def test_make_channel_last(
     [
         (
             lazy_fixture("load_mnist_model_tf"),
-            {"channel_first": False},
+            {"channel_first": False, "softmax": True},
+            {"type": TensorFlowModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            {"channel_first": False, "softmax": False},
             {"type": TensorFlowModel},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
+            {"type": PyTorchModel},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            {"channel_first": True, "softmax": False},
             {"type": PyTorchModel},
         ),
         (
             None,
-            {"channel_first": True},
+            {"channel_first": True, "softmax": True},
             {"exception": ValueError},
         ),
     ],
@@ -415,9 +427,9 @@ def test_get_wrapped_model(
 ):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
-            out = get_wrapped_model(model, params["channel_first"])
+            out = get_wrapped_model(model, **params)
         return
-    out = get_wrapped_model(model, params["channel_first"])
+    out = get_wrapped_model(model, **params)
     if "type" in expected:
         isinstance(out, expected["type"]), "Test failed."
 
@@ -499,56 +511,56 @@ def test_blur_at_indices(
                 "patch_size": 4,
                 "coords": 0,
             },
-            {"value": (np.arange(0, 4),)},
+            {"value": (slice(0, 4),)},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0,),
             },
-            {"value": (np.arange(0, 4),)},
+            {"value": (slice(0, 4),)},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0, 0),
             },
-            {"value": (np.arange(0, 4), np.arange(0, 4))},
+            {"value": (slice(0, 4), slice(0, 4))},
         ),
         (
             {
                 "patch_size": (4, 4),
                 "coords": (0, 0),
             },
-            {"value": (np.arange(0, 4), np.arange(0, 4))},
+            {"value": (slice(0, 4), slice(0, 4))},
         ),
         (
             {
                 "patch_size": (4, 6),
                 "coords": (0, 0),
             },
-            {"value": (np.arange(0, 4), np.arange(0, 6))},
+            {"value": (slice(0, 4), slice(0, 6))},
         ),
         (
             {
                 "patch_size": 10,
                 "coords": (1, 2),
             },
-            {"value": (np.arange(1, 11), np.arange(2, 12))},
+            {"value": (slice(1, 11), slice(2, 12))},
         ),
         (
             {
                 "patch_size": (10, 5),
                 "coords": (1, 2),
             },
-            {"value": (np.arange(1, 11), np.arange(2, 7))},
+            {"value": (slice(1, 11), slice(2, 7))},
         ),
         (
             {
                 "patch_size": 4,
                 "coords": (0, 0, 0),
             },
-            {"value": (np.arange(0, 4), np.arange(0, 4), np.arange(0, 4))},
+            {"value": (slice(0, 4), slice(0, 4), slice(0, 4))},
         ),
         (
             {
@@ -917,6 +929,83 @@ def test_infer_attribution_axes(params: dict, expected: Any):
         ),
         (
             {
+                "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
+                "indices": (slice(0, 2), slice(0, 3)),
+                "indexed_axes": [2, 3],
+            },
+            {"sum": 2973600, "shape": (10, 10, 2, 3)},
+        ),
+        (
+            {
+                "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
+                "indices": (slice(0, 2), slice(0, 3)),
+                "indexed_axes": [0, 1],
+            },
+            {"sum": 389700, "shape": (2, 3, 10, 10)},
+        ),
+        (
+            {
+                "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
+                "indices": (np.array([0, 1]), np.array([3, 4, 5]), np.array([3, 4, 5, 6])),
+                "indexed_axes": [0, 1, 2],
+            },
+            {"sum": 227880, "shape": (2, 3, 4, 10)},
+        ),
+        (
+            {
+                "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
+                "indices": (
+                        slice(None, None, None),
+                        np.array([[[5, 5, 5],
+                                   [5, 5, 5],
+                                   [5, 5, 5]],
+                                  [[6, 6, 6],
+                                   [6, 6, 6],
+                                   [6, 6, 6]]]
+                                 ),
+                        np.array([[[5, 5, 5],
+                                   [6, 6, 6],
+                                   [7, 7, 7]],
+                                  [[5, 5, 5],
+                                   [6, 6, 6],
+                                   [7, 7, 7]]]),
+                        np.array([[[3, 8, 7],
+                                   [3, 8, 7],
+                                   [3, 8, 7]],
+                                  [[3, 8, 7],
+                                   [3, 8, 7],
+                                   [3, 8, 7]]]
+                                 )
+                ),
+                "indexed_axes": [1, 2, 3],
+            },
+            {"value": (
+                        slice(None, None, None),
+                        np.array([[[5, 5, 5],
+                                   [5, 5, 5],
+                                   [5, 5, 5]],
+                                  [[6, 6, 6],
+                                   [6, 6, 6],
+                                   [6, 6, 6]]]
+                                 ),
+                        np.array([[[5, 5, 5],
+                                   [6, 6, 6],
+                                   [7, 7, 7]],
+                                  [[5, 5, 5],
+                                   [6, 6, 6],
+                                   [7, 7, 7]]]),
+                        np.array([[[3, 8, 7],
+                                   [3, 8, 7],
+                                   [3, 8, 7]],
+                                  [[3, 8, 7],
+                                   [3, 8, 7],
+                                   [3, 8, 7]]]
+                                 )
+            )
+            },
+        ),
+        (
+            {
                 "arr": np.ones((2,)),
                 "indices": [1],
                 "indexed_axes": [0, 1, 2, 3],
@@ -954,9 +1043,13 @@ def test_expand_indices(params: dict, expected: Any):
         with pytest.raises(expected["exception"]):
             out = expand_indices(**params)
         return
-
-    out = expand_indices(**params)
-    assert all([np.all(a == b) for a, b in list(zip(out, expected["value"]))])
+    else:
+        out = expand_indices(**params)
+        if "sum" in expected and "shape" in expected:
+            assert params["arr"][out].shape == expected["shape"]
+            assert params["arr"][out].sum() == expected["sum"]
+        else:
+            assert all([np.all(a == b) for a, b in list(zip(out, expected["value"]))])
 
 
 # TODO: Change test cases (and function) for batching update, since currently single images are expected

@@ -1,13 +1,14 @@
 """This module provides some functionality to evaluate different explanation methods on several evaluation criteria."""
-from typing import Union, Callable, Dict
+from typing import Union, Callable, Dict, Optional
 import numpy as np
-from .metrics import *
-from .helpers.constants import *
+
+from .helpers import asserts
+from .helpers import utils
 from .helpers.model_interface import ModelInterface
 
 
 def evaluate(
-    metrics: dict,
+    metrics: dict,  # Initialised metrics.
     xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
     model: ModelInterface,
     x_batch: np.ndarray,
@@ -16,35 +17,22 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    *args,
-    **kwargs,
-) -> dict:
+    explain_func_kwargs: Optional = None,
+    **call_kwargs,
+) -> Optional[dict]:
     """
     A methods to evaluate metrics given some explanation methods.
-
-    Parameters
-    ----------
-    metrics
-    xai_methods
-    model
-    x_batch
-    y_batch
-    s_batch
-    agg_func
-    kwargs
-
-    Returns
-    -------
-
     """
 
     if xai_methods is None:
         print("Define the explanation methods that you want to evaluate.")
+        return None
 
     if metrics is None:
         print(
             "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
         )
+        return None
 
     results = {}
 
@@ -72,7 +60,8 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        **{**kwargs, **{"method": method}},
+                        explain_func_kwargs={"method": method},
+                        **call_kwargs,
                     )
                 )
 
@@ -85,19 +74,19 @@ def evaluate(
             if callable(method_func):
 
                 # Asserts.
-                assert_explain_func(explain_func=method_func)
+                asserts.assert_explain_func(explain_func=method_func)
 
                 # Generate explanations.
                 a_batch = method_func(
                     model=model,
                     inputs=x_batch,
                     targets=y_batch,
-                    **kwargs,
+                    **explain_func_kwargs,
                 )
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
                 # Asserts.
-                assert_attributions(a_batch=a_batch, x_batch=x_batch)
+                asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
             elif isinstance(method_func, np.ndarray):
 
@@ -122,7 +111,8 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        **{**kwargs, **{"method": method}},
+                        explain_func_kwargs={"method": method},
+                        **call_kwargs,
                     )
                 )
 
