@@ -137,21 +137,23 @@ class RelevanceRankAccuracy(Metric):
 
         # Prepare shapes.
         a = a.flatten()
-        s = s.flatten().astype(bool)
+        s = np.where(s.flatten().astype(bool))[0]
 
         # Size of the ground truth mask.
         k = len(s)
 
         # Sort in descending order.
-        a_sorted = np.argsort(a)[-int(k) :]
+        a_sorted = np.argsort(a)[-int(k):]
 
         # Calculate hits.
         hits = len(np.intersect1d(s, a_sorted))
 
         if hits != 0:
-            return hits / float(k)
+            rank_accuracy = hits / float(k)
         else:
-            return 0.0
+            rank_accuracy = 0.0
+
+        return rank_accuracy
 
     def custom_preprocess(
         self,
