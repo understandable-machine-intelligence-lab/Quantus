@@ -262,29 +262,22 @@ The qualitative aspects of the Saliency and Integrated Gradients explanations ma
 1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
 ```python
-# Define params for evaluation.
-params_eval = {
-  "nr_samples": 10,
-  "perturb_radius": 0.1,
-  "norm_numerator": quantus.fro_norm,
-  "norm_denominator": quantus.fro_norm,
-  "perturb_func": quantus.uniform_noise,
-  "similarity_func": quantus.difference,
-  "img_size": 28, 
-  "nr_channels": 1,
-  "normalise": False, 
-  "abs": False,
-  "disable_warnings": True,
-}
-
 # Return max sensitivity scores in an one-liner - by calling the metric instance.
-scores_saliency = quantus.MaxSensitivity(**params_eval)(model=model,
-                                                        x_batch=x_batch,
-                                                        y_batch=y_batch,
-                                                        a_batch=a_batch_saliency,
-                                                        **{"explain_func": quantus.explain, 
-                                                           "method": "Saliency", 
-                                                           "device": device})
+quantus.MaxSensitivity(
+    nr_samples=10,
+    lower_bound=0.2,
+    norm_numerator=quantus.fro_norm,
+    norm_denominator=quantus.fro_norm,
+    perturb_func=quantus.uniform_noise,
+    similarity_func=quantus.difference,
+)(model=model, 
+   x_batch=x_batch,
+   y_batch=y_batch,
+   a_batch=None,
+   device=device,
+   explain_func=quantus.explain, 
+   explain_func_kwargs={"method": "Saliency"})
+
 ```
 
 2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
@@ -298,13 +291,17 @@ metrics = {"max-Sensitivity": quantus.MaxSensitivity(**params_eval),
 xai_methods = {"Saliency": a_batch_saliency,
                "IntegratedGradients": a_batch_intgrad}
 
-results = quantus.evaluate(metrics=metrics,
-                           xai_methods=xai_methods,
-                           model=model,
-                           x_batch=x_batch,
-                           y_batch=y_batch,
-                           agg_func=np.mean,
-                           **{"explain_func": quantus.explain, "device": device})
+results = evaluate(
+        metrics=metrics,
+        xai_methods=xai_methods,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=None,
+        agg_func=np.mean,
+        explain_func_kwargs={},
+    )
+
 # Summarise results in a dataframe.
 df = pd.DataFrame(results)
 df
