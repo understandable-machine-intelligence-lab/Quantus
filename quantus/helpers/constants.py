@@ -26,8 +26,8 @@ AVAILABLE_METRICS = {
         "Avg-Sensitivity": AvgSensitivity,
         "Consistency": Consistency,
         "Relative Input Stability": RelativeInputStability,
-        #"Relative Representation Stability": RelativeRepresentationStability,
-        #"Relative Output Stability": RelativeOutputStability,
+        # "Relative Representation Stability": RelativeRepresentationStability,
+        # "Relative Output Stability": RelativeOutputStability,
     },
     "Localisation": {
         "Pointing Game": PointingGame,
@@ -66,6 +66,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     "translation_y_direction": translation_y_direction,
     "no_perturbation": no_perturbation,
     "noisy_linear_imputation": noisy_linear_imputation,
+    "random_noise": random_noise,
 }
 
 

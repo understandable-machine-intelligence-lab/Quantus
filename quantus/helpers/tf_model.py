@@ -17,15 +17,15 @@ class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
     def __init__(
-            self,
-            model: tf.keras.Model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            predict_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        model: tf.keras.Model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
         if predict_kwargs is None:
             # Disable progress bar while running inference on tf.keras.Model
-            predict_kwargs = {'verbose': 0}
+            predict_kwargs = {"verbose": 0}
 
         super().__init__(
             model=model,
@@ -62,11 +62,11 @@ class TensorFlowModel(ModelInterface):
         return new_model.predict(x, **predict_kwargs)
 
     def shape_input(
-            self,
-            x: np.ndarray,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batched: bool = False,
+        self,
+        x: np.ndarray,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
     ):
         """
         Reshape input into model-expected input.
@@ -118,11 +118,11 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     def get_hidden_layers_representations(
-            self,
-            x: np.ndarray,
-            layer_names: Optional[List[str]] = None,
-            layer_indices: Optional[List[int]] = None,
-            **kwargs
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs
     ) -> np.ndarray:
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute

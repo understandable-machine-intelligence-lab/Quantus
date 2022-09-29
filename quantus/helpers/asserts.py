@@ -1,8 +1,14 @@
+from __future__ import annotations
+
+
 import numpy as np
-from typing import Callable, Tuple, Union, Sequence
+from typing import Callable, Tuple, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from quantus import Metric
 
 
-def attributes_check(metric):
+def attributes_check(metric: Metric):
     # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
     attr = metric.__dict__
     if "perturb_func" in attr:

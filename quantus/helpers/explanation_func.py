@@ -1,16 +1,10 @@
 """This modules contains explainer functions which can be used in conjunction with the metrics in the library."""
-from typing import Dict, Optional, Union
 
-import numpy as np
 import scipy
-from importlib import util
-import cv2
 import warnings
 from .utils import *
 from .normalise_func import *
-from ..helpers import __EXTRAS__
 from ..helpers import constants
-from ..helpers import warn_func
 
 from typing import TYPE_CHECKING
 
@@ -33,7 +27,6 @@ if util.find_spec("tf_explain"):
 
 from ..helpers import __EXTRAS__
 from .model_interface import ModelInterface
-from .normalise_func import normalise_by_negative
 from .utils import get_baseline_value, infer_channel_first, make_channel_last
 
 
@@ -105,10 +98,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: tf.keras.Model,
-        inputs: np.array,
-        targets: np.array,
-        **kwargs
+    model: tf.keras.Model, inputs: np.array, targets: np.array, **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.

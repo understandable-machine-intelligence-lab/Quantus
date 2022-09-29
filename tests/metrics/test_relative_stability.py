@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from pytest_lazyfixture import lazy_fixture  # noqa
 
-from tests.fixtures import *  # noqa
+from ..fixtures import *  # noqa
 import quantus
 from typing import Dict, TYPE_CHECKING
 

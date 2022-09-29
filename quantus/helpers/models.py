@@ -114,7 +114,7 @@ if util.find_spec("tensorflow"):
 
     import tensorflow as tf
 
-    from tensorflow.keras.models import Sequential # noqa
+    from tensorflow.keras.models import Sequential  # noqa
 
     def LeNetTF() -> tf.keras.Model:
         """NN according to LeNet5 architecture"""
@@ -141,7 +141,7 @@ if util.find_spec("tensorflow"):
         )
         # No tf.keras.Model.compile(...) needed for evaluation
         # As per https://keras.io/api/models/model_training_apis/
-        # .compile(...) "Configures the model for training"
+        # tf.keras.Model.compile(...) "Configures the model for training"
         return model
 
     class ConvNet1DTF(tf.keras.Sequential):
@@ -199,5 +199,5 @@ if util.find_spec("tensorflow"):
         )
         # No tf.keras.Model.compile(...) needed for evaluation
         # As per https://keras.io/api/models/model_training_apis/
-        # .compile(...) "Configures the model for training"
+        # tf.keras.Model.compile(...) "Configures the model for training"
         return model
