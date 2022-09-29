@@ -2,28 +2,19 @@ from __future__ import annotations
 
 from typing import Optional, Callable, Dict, List, Union, TYPE_CHECKING
 import numpy as np
-import importlib.util
+from importlib import util
+import functools
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
+    from quantus import ModelInterface
 
-from ... import (
-    attributes_check,
-    normalise_by_negative,
-    PerturbationMetric,
-    uniform_noise,
-    warn_parameterisation,
-    ModelInterface,
-    assert_perturbation_caused_change,
-    infer_channel_first,
-    get_wrapped_model
-)
-
-
-
-
-
+from ..base import PerturbationMetric
+from ...helpers import warn_func
+from ...helpers import asserts
+from ...helpers.normalise_func import normalise_by_negative
+from ...helpers.perturb_func import uniform_noise, random_noise
 
 
 class RelativeInputStability(PerturbationMetric):
@@ -36,28 +27,24 @@ class RelativeInputStability(PerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    @attributes_check
-    def __init__(self,
-                 nr_samples: int = 200,
-                 abs=False,
-
-                 normalise=False,
-                 normalise_func: Optional[Callable] = None,
-                 normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-
-                 perturb_func: Callable = None,
-                 perturb_func_kwargs: Optional[Dict[str, ...]] = None,
-
-                 return_aggregate=False,
-                 aggregate_func: Optional[Callable] = np.mean,
-
-                 disable_warnings=False,
-                 display_progressbar=False,
-
-                 eps_min=1e-6,
-                 default_plot_func: Optional[Callable] = None,
-                 **kwargs: Dict[str, ...],
-                 ):
+    @asserts.attributes_check
+    def __init__(
+            self,
+            nr_samples: int = 200,
+            abs=False,
+            normalise=False,
+            normalise_func: Optional[Callable] = None,
+            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+            return_aggregate=False,
+            aggregate_func: Optional[Callable] = np.mean,
+            disable_warnings=False,
+            display_progressbar=False,
+            eps_min=1e-6,
+            default_plot_func: Optional[Callable] = None,
+            **kwargs: Dict[str, ...],
+    ):
         """
         Parameters:
             nr_samples (integer): The number of samples iterated, default=200.
@@ -84,10 +71,11 @@ class RelativeInputStability(PerturbationMetric):
             normalise_func = normalise_by_negative
 
         if perturb_func is None:
-            perturb_func = uniform_noise
+            perturb_func = random_noise
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
+
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -106,13 +94,13 @@ class RelativeInputStability(PerturbationMetric):
         self.eps_min = eps_min
 
         if not self.disable_warnings:
-            warn_parameterisation(
+            warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
                     "number of times perturbations are sampled 'nr_samples'"
                 ),
-                citation="Chirag Agarwal, et. al., 2022. \"Rethinking stability for attribution based explanations.\" https://arxiv.org/pdf/2203.06877.pdf"
+                citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
 
     def __call__(
@@ -120,17 +108,18 @@ class RelativeInputStability(PerturbationMetric):
             model: tf.keras.Model | torch.nn.Module,
             x_batch: np.ndarray,
             y_batch: np.ndarray,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
 
+            model_predict_kwargs: Optional[Dict[str, ...]] = None,
             explain_func: Optional[Callable] = None,
             explain_func_kwargs: Optional[Dict[str, ...]] = None,
-
             a_batch: Optional[np.ndarray] = None,
-
             device: Optional[str] = None,
             softmax: Optional[bool] = False,
+
+            channel_first: Optional[bool] = True,
+            reshape_input=True,
             **kwargs,
-    ) -> float | np.ndarray:
+    ) -> Union[List[float], float]:
         """
         Args:
             model: instance of tf.keras.Model or torch.nn.Module
@@ -154,10 +143,6 @@ class RelativeInputStability(PerturbationMetric):
          - In practise we just use `max` over a finite `xs_batch`
 
         """
-        if model_predict_kwargs is None:
-            model_predict_kwargs = dict()
-        self.model_predict_kwargs = model_predict_kwargs
-
         return super(PerturbationMetric, self).__call__(
             model=model,
             x_batch=x_batch,
@@ -167,41 +152,39 @@ class RelativeInputStability(PerturbationMetric):
             a_batch=a_batch,
             device=device,
             softmax=softmax,
-            channel_first=None,
-            model_predict_kwargs=self.model_predict_kwargs,
-            s_batch=None
+            channel_first=channel_first,
+            model_predict_kwargs=model_predict_kwargs,
+            s_batch=None,
+            reshape_input=reshape_input
         )
 
-
-    def relative_input_stability_objective(self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray) -> np.ndarray:
+    def relative_input_stability_objective(
+            self,
+            x: np.ndarray,
+            xs: np.ndarray,
+            e_x: np.ndarray,
+            e_xs: np.ndarray
+    ) -> np.ndarray:
         """
         Computes relative input stabilities maximization objective
         as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors
 
         Args:
-            x:    4D tensor of datapoints with shape (batch_size, ...)
-            xs:   4D tensor of perturbed datapoints with shape (batch_size, ...)
-            e_x:  4D tensor of explanations for x with shape (batch_size, ...)
-            e_xs: 4D tensor of explanations for xs with shape (batch_size, ...)
+            x: image
+            xs: perturbed image
+            e_x: explanation for x
+            e_xs: explanation for xs
         Returns:
-            ris_obj: A 1D tensor with shape (batch_size,)
+            ris_obj: float
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self.eps_min)  # prevent division by 0
-        if len(nominator.shape) == 3:
-            # In practise quantus.explain often returns tensors of shape (batch_size, img_height, img_width)
-            nominator = np.linalg.norm(nominator, axis=(2, 1))  # noqa
-        else:
-            nominator = np.linalg.norm(
-                np.linalg.norm(nominator, axis=(3, 2)), axis=1  # noqa
-            )  # noqa
+        nominator = np.linalg.norm(nominator)  # noqa
 
         denominator = x - xs
         denominator /= x + (x == 0) * self.eps_min
 
-        denominator = np.linalg.norm(
-            np.linalg.norm(denominator, axis=(3, 2)), axis=1  # noqa
-        )  # noqa
+        denominator = np.linalg.norm(denominator)
         denominator += (denominator == 0) * self.eps_min
 
         return nominator / denominator
@@ -213,9 +196,9 @@ class RelativeInputStability(PerturbationMetric):
             x: np.ndarray,
             y: int,
             a: Optional[np.ndarray] = None,
-            c: Optional[np.ndarray] = None,
-            p: Optional[np.ndarray] = None,
-            **kwargs
+            c=None,
+            p=None,
+            **kwargs,
     ) -> float:
         """
         Args:
@@ -225,46 +208,46 @@ class RelativeInputStability(PerturbationMetric):
             y: a label for x
             a: pre-computed explanation for x and y
             s: not used
-            c:
-            p:
+            c: not used
+            p: not used
 
         Returns:
 
         """
-        results = []
+        _explain_func = functools.partial(self.explain_func, model=model.get_model(), **self.explain_func_kwargs)
+        _perturb_func = functools.partial(self.perturb_func, **self.perturb_func_kwargs)
+
+        if a is None:
+            a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))
+
+        x_perturbed_batch = []
+
         for _ in range(self.nr_samples):
-
             # Perturb input.
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
-                **self.perturb_func_kwargs,
-            )
-            assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            x_perturbed = _perturb_func(x)
+            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            x_perturbed_batch.append(x_perturbed)
 
-            # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x,
-                targets=y,
-                **self.explain_func_kwargs,
-            )
+        x_perturbed_batch = np.asarray(x_perturbed_batch)
+        y_perturbed_batch = model.predict(x_perturbed_batch)
 
-            y_perturbed = model.predict(np.expand_dims(x, 0), **self.model_predict_kwargs)
-            if y_perturbed[0] != y
+        perturbed_labels = np.argmax(y_perturbed_batch, axis=1)
+        same_label_indexes = np.argwhere(perturbed_labels == y).reshape(-1)
 
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed, **self.normalise_func_kwargs
-                )
+        if len(same_label_indexes) == 0:
+            raise ValueError("No perturbations resolved in the same labels")
 
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+        # only use the perturbations which resolve in the same labels
+        x_perturbed_batch = np.take(x_perturbed_batch, same_label_indexes, axis=0)
 
-            ris_objective = self.relative_input_stability_objective(x, x_perturbed, a, a_perturbed)
+        # Generate explanation based on perturbed input x.
+        a_perturbed_batch = _explain_func(inputs=x_perturbed_batch, targets=np.full(shape=same_label_indexes.shape, fill_value=y))
 
-            results.append(ris_objective)
+        if self.normalise:
+            a_perturbed_batch = self.normalise_func(a_perturbed_batch, **self.normalise_func_kwargs)
 
-        # Append average sensitivity score.
-        return float(np.max(ris_objective))
+        if self.abs:
+            a_perturbed_batch = np.abs(a_perturbed_batch)
+
+        ris_objective_batch = [self.relative_input_stability_objective(x, xs, a, e_xs) for xs, e_xs in zip(x_perturbed_batch, a_perturbed_batch)]
+        return float(np.max(ris_objective_batch))

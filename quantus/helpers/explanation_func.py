@@ -12,6 +12,11 @@ from ..helpers import __EXTRAS__
 from ..helpers import constants
 from ..helpers import warn_func
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+
 if util.find_spec("torch"):
     import torch
 if util.find_spec("captum"):
@@ -100,7 +105,10 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: ModelInterface, inputs: np.array, targets: np.array, **kwargs
+    model: tf.keras.Model,
+        inputs: np.array,
+        targets: np.array,
+        **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
@@ -113,8 +121,6 @@ def generate_tf_explanation(
 
     channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
     inputs = make_channel_last(inputs, channel_first)
-
-    explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()

@@ -2,6 +2,8 @@ import pytest
 import pickle
 import torch
 import numpy as np
+
+
 from tensorflow.keras.datasets import cifar10
 
 from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
@@ -32,7 +34,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights("tutorials/assets/mnist_tf_weights/")
+    model.load_weights("notebooks/assets/lenet_mnist_weights.keras")
     return model
 
 
@@ -98,14 +100,9 @@ def load_cifar10_images():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
-        dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
-    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
+    x_batch = np.loadtxt("tutorials/assets/mnist_x").astype(float).reshape((124, 28, 28, 1))
+    y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
+    return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture
@@ -171,5 +168,24 @@ def flat_sequence_array(scope="session", autouse=True):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_cnn_2d_1channel_tf():
-    return CNN_2D_TF(28, 28, 10, num_channels=1)
+def load_cnn_2d_mnist():
+    model = CNN_2D_TF(28, 28, 10, num_channels=1)
+    model.load_weights('notebooks/assets/cnn_2d_mnist_weights.keras')
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cifar10_images_tf():
+    """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
+    (x_train, y_train), (_, _) = cifar10.load_data()
+    x_batch = x_train[:124].astype(float)
+    y_batch = y_train[:124].astype(int)
+    return {"x_batch": x_batch, "y_batch": y_batch}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cnn_2d_cifar():
+    model = CNN_2D_TF(32, 32, 10, num_channels=3)
+    model.load_weights('notebooks/assets/cnn_2d_cifar_weights.keras')
+    return model
+

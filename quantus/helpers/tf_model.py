@@ -1,10 +1,10 @@
 """This model creates the ModelInterface for Tensorflow."""
 from typing import Any, Dict, Optional, Tuple, List
 
-from tensorflow.keras.layers import Dense
-from tensorflow.keras import activations
-from tensorflow.keras import Model
-from tensorflow.keras.models import clone_model
+from tensorflow.keras.layers import Dense  # noqa
+from tensorflow.keras import activations  # noqa
+from tensorflow.keras import Model  # noqa
+from tensorflow.keras.models import clone_model  # noqa
 import numpy as np
 import tensorflow as tf
 import gc
@@ -17,12 +17,16 @@ class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
     def __init__(
-        self,
-        model,
-        channel_first: bool = True,
-        softmax: bool = False,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+            self,
+            model: tf.keras.Model,
+            channel_first: bool = True,
+            softmax: bool = False,
+            predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
+        if predict_kwargs is None:
+            # Disable progress bar while running inference on tf.keras.Model
+            predict_kwargs = {'verbose': 0}
+
         super().__init__(
             model=model,
             channel_first=channel_first,
@@ -58,15 +62,15 @@ class TensorFlowModel(ModelInterface):
         return new_model.predict(x, **predict_kwargs)
 
     def shape_input(
-        self,
-        x: np.ndarray,
-        shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
-        batched: bool = False,
+            self,
+            x: np.ndarray,
+            shape: Tuple[int, ...],
+            channel_first: Optional[bool] = None,
+            batched: bool = False,
     ):
         """
-        Reshape input into model expected input.
-        channel_first: Explicitely state if x is formatted channel first (optional).
+        Reshape input into model-expected input.
+        channel_first: Explicitly state if x is formatted channel first (optional).
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first
@@ -114,19 +118,22 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     def get_hidden_layers_representations(
-        self,
-        x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs
+            self,
+            x: np.ndarray,
+            layer_names: Optional[List[str]] = None,
+            layer_indices: Optional[List[int]] = None,
+            **kwargs
     ) -> np.ndarray:
+
+        # Use kwargs of predict call if specified, but don't overwrite object attribute
+        predict_kwargs = {**self.predict_kwargs, **kwargs}
 
         if layer_indices is None:
             layer_indices = []
         if layer_names is None:
             layer_names = []
 
-        def is_layer_of_interest(index, name):
+        def is_layer_of_interest(index: int, name: str) -> bool:
             if layer_names == [] and layer_indices == []:
                 return True
             return index in layer_indices or name in layer_names
@@ -139,7 +146,7 @@ class TensorFlowModel(ModelInterface):
         sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
         # we don't need TF to trace + compile this model. We're going to call it once only
         sub_model.run_eagerly = True
-        internal_representation = sub_model.predict(x, verbose=0)
+        internal_representation = sub_model.predict(x, **predict_kwargs)
         input_batch_size = x.shape[0]
 
         # Clean-up memory reserved for model's copy
@@ -149,9 +156,9 @@ class TensorFlowModel(ModelInterface):
         if isinstance(internal_representation, np.ndarray):
             # If we requested outputs only of 1 layer, keras will already return np.ndarray
             return internal_representation.reshape((input_batch_size, -1))
-        else:
-            # otherwise, keras returns List of np.ndarray
-            internal_representation = [
-                i.reshape((input_batch_size, -1)) for i in internal_representation
-            ]
-            return np.hstack(internal_representation)
+
+        # otherwise, keras returns List of np.ndarray
+        internal_representation = [
+            i.reshape((input_batch_size, -1)) for i in internal_representation
+        ]
+        return np.hstack(internal_representation)

@@ -394,7 +394,7 @@ def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
     Noise values are in [0., upper_bound] interval.
 
     Parameters:
-       arr: 4D tensor representing batch of images
+       arr: 3D tensor representing image
        upper_bound: an upper bound for noise generated, default 1e-6
        kwargs: unused
     Returns: np.ndarray of the same shape as input

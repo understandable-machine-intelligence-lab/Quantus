@@ -114,26 +114,37 @@ if util.find_spec("tensorflow"):
 
     import tensorflow as tf
 
-    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.models import Sequential # noqa
 
-    class LeNetTF(Sequential):
-        """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
+    def LeNetTF() -> tf.keras.Model:
+        """NN according to LeNet5 architecture"""
 
-        def __init__(self):
-            super().__init__(
-                [
-                    tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
-                    tf.keras.layers.Dense(128, activation="relu"),
-                    tf.keras.layers.Dense(10),
-                ]
-            )
-            self.compile(
-                optimizer=tf.keras.optimizers.Adam(0.001),
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-            )
+        model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Conv2D(
+                    filters=6,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    input_shape=(28, 28, 1),
+                ),
+                tf.keras.layers.AveragePooling2D(),
+                tf.keras.layers.Conv2D(
+                    filters=16, kernel_size=(3, 3), activation="relu"
+                ),
+                tf.keras.layers.AveragePooling2D(),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(units=120, activation="relu"),
+                tf.keras.layers.Dense(units=84, activation="relu"),
+                tf.keras.layers.Dense(units=10),
+            ],
+            name="LeNetTF",
+        )
+        # No tf.keras.Model.compile(...) needed for evaluation
+        # As per https://keras.io/api/models/model_training_apis/
+        # .compile(...) "Configures the model for training"
+        return model
 
-    class ConvNet1DTF(Sequential):
+    class ConvNet1DTF(tf.keras.Sequential):
         """1D-convolutional architecture."""
 
         def __init__(self, n_channels, seq_len, n_classes):
@@ -186,9 +197,7 @@ if util.find_spec("tensorflow"):
             ],
             name="CNN_2D_TF",
         )
-        model.compile(
-            optimizer="adam",
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=["accuracy"],
-        )
+        # No tf.keras.Model.compile(...) needed for evaluation
+        # As per https://keras.io/api/models/model_training_apis/
+        # .compile(...) "Configures the model for training"
         return model
