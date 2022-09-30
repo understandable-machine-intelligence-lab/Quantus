@@ -117,7 +117,6 @@ class RelativeOutputStability(PerturbationMetric):
         device: Optional[str] = None,
         softmax: Optional[bool] = False,
         channel_first: Optional[bool] = True,
-        reshape_input=True,
         **kwargs,
     ) -> Union[List[float], float]:
         """
@@ -155,7 +154,6 @@ class RelativeOutputStability(PerturbationMetric):
             channel_first=channel_first,
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
-            reshape_input=reshape_input,
         )
 
     def relative_output_stability_objective(

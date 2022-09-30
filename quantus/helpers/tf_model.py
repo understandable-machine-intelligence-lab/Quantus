@@ -144,7 +144,7 @@ class TensorFlowModel(ModelInterface):
         if layer_names is None and layer_indices is None:
             warn("quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
                  "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
-                 "from original model. This can be very computationally expensive.")
+                 " from original model. This can be very computationally expensive.")
 
         if layer_indices is None:
             layer_indices = []

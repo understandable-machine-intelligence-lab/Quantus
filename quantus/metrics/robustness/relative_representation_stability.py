@@ -46,7 +46,7 @@ class RelativeRepresentationStability(PerturbationMetric):
         eps_min=1e-6,
         default_plot_func: Optional[Callable] = None,
         layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
         **kwargs: Dict[str, ...],
     ):
         """
@@ -125,7 +125,6 @@ class RelativeRepresentationStability(PerturbationMetric):
         device: Optional[str] = None,
         softmax: Optional[bool] = False,
         channel_first: Optional[bool] = True,
-        reshape_input: Optional[bool] = True,
         **kwargs: Dict[str, ...],
     ) -> Union[List[float], float]:
         """
@@ -163,7 +162,6 @@ class RelativeRepresentationStability(PerturbationMetric):
             channel_first=channel_first,
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
-            reshape_input=reshape_input,
         )
 
     def relative_representation_stability_objective(
@@ -218,6 +216,8 @@ class RelativeRepresentationStability(PerturbationMetric):
         _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
                                           indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
+        _get_hidden_representations = functools.partial(model.get_hidden_layers_representations, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
+
         if a is None:
             a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))
 
@@ -258,8 +258,8 @@ class RelativeRepresentationStability(PerturbationMetric):
             a_perturbed_batch = np.abs(a_perturbed_batch)
 
 
-        l_x = model.get_hidden_layers_representations(x=np.expand_dims(x, 0), **kwargs)[0]
-        l_xs_batch = model.get_hidden_layers_representations(x=x_perturbed_batch, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
+        l_x = _get_hidden_representations(x=np.expand_dims(x, 0))[0]
+        l_xs_batch = _get_hidden_representations(x=x_perturbed_batch)
 
         rrs_objective_batch = self.relative_representation_stability_objective(l_x=l_x, l_xs=l_xs_batch, e_x=a, e_xs=a_perturbed_batch)
         return float(np.max(rrs_objective_batch))

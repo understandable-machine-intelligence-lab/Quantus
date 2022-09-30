@@ -115,7 +115,6 @@ class RelativeInputStability(PerturbationMetric):
         device: Optional[str] = None,
         softmax: Optional[bool] = False,
         channel_first: Optional[bool] = True,
-        reshape_input=True,
         **kwargs,
     ) -> Union[List[float], float]:
         """
@@ -153,15 +152,10 @@ class RelativeInputStability(PerturbationMetric):
             channel_first=channel_first,
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
-            reshape_input=reshape_input,
         )
 
     def relative_input_stability_objective(
-        self,
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray
+        self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray
     ) -> np.ndarray:
         """
         Computes relative input stabilities maximization objective
@@ -176,7 +170,9 @@ class RelativeInputStability(PerturbationMetric):
             ris_obj: np.ndarray of float
         """
 
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        nominator = (e_x - e_xs) / (
+            e_x + (e_x == 0) * self._eps_min
+        )  # prevent division by 0
         # fmt: off
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
         # fmt: on
@@ -188,7 +184,6 @@ class RelativeInputStability(PerturbationMetric):
         denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(-1, -2)), axis=-1) # noqa
         # fmt: on
         denominator += (denominator == 0) * self._eps_min
-
 
         return nominator / denominator
 
