@@ -29,21 +29,21 @@ class RelativeInputStability(PerturbationMetric):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Optional[Dict[str, ...]] = None,
-            return_aggregate: bool = False,
-            aggregate_func: Optional[Callable] = np.mean,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            eps_min: float = 1e-6,
-            default_plot_func: Optional[Callable] = None,
-            **kwargs: Dict[str, ...],
+        self,
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        eps_min: float = 1e-6,
+        default_plot_func: Optional[Callable] = None,
+        **kwargs: Dict[str, ...],
     ):
         """
         Parameters:
@@ -104,19 +104,19 @@ class RelativeInputStability(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model: tf.keras.Model | torch.nn.Module,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
-            explain_func: Optional[Callable] = None,
-            explain_func_kwargs: Optional[Dict[str, ...]] = None,
-            a_batch: Optional[np.ndarray] = None,
-            device: Optional[str] = None,
-            softmax: Optional[bool] = False,
-            channel_first: Optional[bool] = True,
-            reshape_input=True,
-            **kwargs,
+        self,
+        model: tf.keras.Model | torch.nn.Module,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        explain_func: Optional[Callable] = None,
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        a_batch: Optional[np.ndarray] = None,
+        device: Optional[str] = None,
+        softmax: Optional[bool] = False,
+        channel_first: Optional[bool] = True,
+        reshape_input=True,
+        **kwargs,
     ) -> Union[List[float], float]:
         """
         Args:
@@ -157,11 +157,11 @@ class RelativeInputStability(PerturbationMetric):
         )
 
     def relative_input_stability_objective(
-            self,
-            x: np.ndarray,
-            xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray
+        self,
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray
     ) -> np.ndarray:
         """
         Computes relative input stabilities maximization objective
@@ -177,13 +177,18 @@ class RelativeInputStability(PerturbationMetric):
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        # fmt: off
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
+        # fmt: on
 
         denominator = x - xs
         denominator /= x + (x == 0) * self._eps_min
 
+        # fmt: off
         denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(-1, -2)), axis=-1) # noqa
+        # fmt: on
         denominator += (denominator == 0) * self._eps_min
+
 
         return nominator / denominator
 
@@ -204,10 +209,9 @@ class RelativeInputStability(PerturbationMetric):
         Returns:
             relative output stability: float
         """
-        _explain_func = functools.partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
-        _perturb_func = functools.partial(self.perturb_func, **self.perturb_func_kwargs)
+        _explain_func = functools.partial(self.explain_func, model=model.get_model(), **self.explain_func_kwargs)
+        _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
+                                          indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
         if a is None:
             a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))

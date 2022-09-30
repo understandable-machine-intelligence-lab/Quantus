@@ -31,21 +31,21 @@ class RelativeOutputStability(PerturbationMetric):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Optional[Dict[str, ...]] = None,
-            return_aggregate: bool = False,
-            aggregate_func: Optional[Callable] = np.mean,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            eps_min: float = 1e-6,
-            default_plot_func: Optional[Callable] = None,
-            **kwargs: Dict[str, ...],
+        self,
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        eps_min: float = 1e-6,
+        default_plot_func: Optional[Callable] = None,
+        **kwargs: Dict[str, ...],
     ):
         """
         Parameters:
@@ -106,19 +106,19 @@ class RelativeOutputStability(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model: tf.keras.Model | torch.nn.Module,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
-            explain_func: Optional[Callable] = None,
-            explain_func_kwargs: Optional[Dict[str, ...]] = None,
-            a_batch: Optional[np.ndarray] = None,
-            device: Optional[str] = None,
-            softmax: Optional[bool] = False,
-            channel_first: Optional[bool] = True,
-            reshape_input=True,
-            **kwargs,
+        self,
+        model: tf.keras.Model | torch.nn.Module,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        explain_func: Optional[Callable] = None,
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        a_batch: Optional[np.ndarray] = None,
+        device: Optional[str] = None,
+        softmax: Optional[bool] = False,
+        channel_first: Optional[bool] = True,
+        reshape_input=True,
+        **kwargs,
     ) -> Union[List[float], float]:
         """
         Args:
@@ -159,11 +159,11 @@ class RelativeOutputStability(PerturbationMetric):
         )
 
     def relative_output_stability_objective(
-            self,
-            h_x: np.ndarray,
-            h_xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
+        self,
+        h_x: np.ndarray,
+        h_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
     ) -> np.ndarray:
         """
         Computes relative output stabilities maximization objective
@@ -178,8 +178,12 @@ class RelativeOutputStability(PerturbationMetric):
              ros_obj: np.ndarray of float
         """
 
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
+        nominator = (e_x - e_xs) / (
+            e_x + (e_x == 0) * self._eps_min
+        )  # prevent division by 0
+        nominator = np.linalg.norm(
+            np.linalg.norm(nominator, axis=(-1, -2)), axis=-1
+        )  # noqa
 
         denominator = h_x - h_xs
 
@@ -187,7 +191,6 @@ class RelativeOutputStability(PerturbationMetric):
         denominator += (denominator == 0) * self._eps_min  # prevent division by 0
 
         return nominator / denominator
-
 
     # fmt: off
     def evaluate_instance(self, i: int, model: ModelInterface, x: np.ndarray, y: int, a: Optional[np.ndarray] = None, c=None, p=None, **kwargs) -> float:  # noqa
@@ -209,7 +212,8 @@ class RelativeOutputStability(PerturbationMetric):
         _explain_func = functools.partial(
             self.explain_func, model=model.get_model(), **self.explain_func_kwargs
         )
-        _perturb_func = functools.partial(self.perturb_func, **self.perturb_func_kwargs)
+        _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
+                                          indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
         if a is None:
             a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))

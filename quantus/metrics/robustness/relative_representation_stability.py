@@ -31,23 +31,23 @@ class RelativeRepresentationStability(PerturbationMetric):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            nr_samples: int = 200,
-            abs=False,
-            normalise=False,
-            normalise_func: Optional[Callable] = None,
-            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Optional[Dict[str, ...]] = None,
-            return_aggregate=False,
-            aggregate_func: Optional[Callable] = np.mean,
-            disable_warnings=False,
-            display_progressbar=False,
-            eps_min=1e-6,
-            default_plot_func: Optional[Callable] = None,
-            layer_names: Optional[List[str]] = None,
-            layer_indices: Optional[List[str]] = None,
-            **kwargs: Dict[str, ...],
+        self,
+        nr_samples: int = 200,
+        abs=False,
+        normalise=False,
+        normalise_func: Optional[Callable] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate=False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings=False,
+        display_progressbar=False,
+        eps_min=1e-6,
+        default_plot_func: Optional[Callable] = None,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[str]] = None,
+        **kwargs: Dict[str, ...],
     ):
         """
         Parameters:
@@ -114,19 +114,19 @@ class RelativeRepresentationStability(PerturbationMetric):
             )
 
     def __call__(
-            self,
-            model: tf.keras.Model | torch.nn.Module,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
-            explain_func: Optional[Callable] = None,
-            explain_func_kwargs: Optional[Dict[str, ...]] = None,
-            a_batch: Optional[np.ndarray] = None,
-            device: Optional[str] = None,
-            softmax: Optional[bool] = False,
-            channel_first: Optional[bool] = True,
-            reshape_input: Optional[bool] = True,
-            **kwargs: Dict[str, ...],
+        self,
+        model: tf.keras.Model | torch.nn.Module,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        explain_func: Optional[Callable] = None,
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        a_batch: Optional[np.ndarray] = None,
+        device: Optional[str] = None,
+        softmax: Optional[bool] = False,
+        channel_first: Optional[bool] = True,
+        reshape_input: Optional[bool] = True,
+        **kwargs: Dict[str, ...],
     ) -> Union[List[float], float]:
         """
         Args:
@@ -167,11 +167,11 @@ class RelativeRepresentationStability(PerturbationMetric):
         )
 
     def relative_representation_stability_objective(
-            self,
-            l_x: np.ndarray,
-            l_xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
+        self,
+        l_x: np.ndarray,
+        l_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
     ) -> np.ndarray:
         """
         Computes relative representation stabilities maximization objective
@@ -185,10 +185,10 @@ class RelativeRepresentationStability(PerturbationMetric):
         Returns:
             rrs_obj: np.ndarray of float
         """
-
+        # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
-
+        # fmt: on
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
 
@@ -214,10 +214,9 @@ class RelativeRepresentationStability(PerturbationMetric):
         Returns:
             relative output stability: float
         """
-        _explain_func = functools.partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
-        _perturb_func = functools.partial(self.perturb_func, **self.perturb_func_kwargs)
+        _explain_func = functools.partial(self.explain_func, model=model.get_model(), **self.explain_func_kwargs)
+        _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
+                                          indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
         if a is None:
             a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))
@@ -264,4 +263,3 @@ class RelativeRepresentationStability(PerturbationMetric):
 
         rrs_objective_batch = self.relative_representation_stability_objective(l_x=l_x, l_xs=l_xs_batch, e_x=a, e_xs=a_perturbed_batch)
         return float(np.max(rrs_objective_batch))
-
