@@ -17,14 +17,16 @@ from ...helpers.perturb_func import random_noise
 from ...helpers.utils import expand_attribution_channel
 
 
-class RelativeInputStability(PerturbationMetric):
+class RelativeOutputStability(PerturbationMetric):
     """
-    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
+    Relative Output Stability leverages the stability of an explanation with respect
+    to the change in the output logits
 
-    :math:`RIS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
+    :math:`ROS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||h(x) - h(x')}||_p, \epsilon_{min})},`
+    where `h(x)` and `h(x')` are the output logits for `x` and `x'` respectively
 
     References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf
+            1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf
     """
 
     @asserts.attributes_check
@@ -130,14 +132,14 @@ class RelativeInputStability(PerturbationMetric):
             kwargs: not used, deprecated
 
         Returns:
-            relative input stability: float in case `return_aggregate=True`, otherwise np.ndarray of floats
+            relative output stability: float in case `return_aggregate=True`, otherwise np.ndarray of floats
 
         For each image `x`:
          - generate `num_perturbations` perturbed `xs` in the neighborhood of `x`
          - find `xs` which results in the same label
          - (or use pre-computed)
          - Compute (or use pre-computed) explanations `e_x` and `e_xs`
-         - Compute relative input stability objective, find max value with regard to `xs`
+         - Compute relative output stability objective, find max value with regard to `xs`
          - In practise we just use `max` over a finite `xs_batch`
 
         """
@@ -156,36 +158,36 @@ class RelativeInputStability(PerturbationMetric):
             reshape_input=reshape_input,
         )
 
-    def relative_input_stability_objective(
+    def relative_output_stability_objective(
             self,
-            x: np.ndarray,
-            xs: np.ndarray,
+            h_x: np.ndarray,
+            h_xs: np.ndarray,
             e_x: np.ndarray,
-            e_xs: np.ndarray
+            e_xs: np.ndarray,
     ) -> np.ndarray:
         """
-        Computes relative input stabilities maximization objective
+        Computes relative output stabilities maximization objective
         as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors
 
-        Args:
-            x:    image
-            xs:   batch of perturbed x
-            e_x:  explanation for x
-            e_xs: explanation for xs
+        Parameters:
+           h_x:  logits for x
+           h_xs: logits for xs
+           e_x:  explanations for x
+           e_xs: explanations for xs
         Returns:
-            ris_obj: np.ndarray of float
+             ros_obj: np.ndarray of float
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
 
-        denominator = x - xs
-        denominator /= x + (x == 0) * self._eps_min
+        denominator = h_x - h_xs
 
-        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(-1, -2)), axis=-1) # noqa
-        denominator += (denominator == 0) * self._eps_min
+        denominator = np.linalg.norm(denominator, axis=-1)
+        denominator += (denominator == 0) * self._eps_min  # prevent division by 0
 
         return nominator / denominator
+
 
     # fmt: off
     def evaluate_instance(self, i: int, model: ModelInterface, x: np.ndarray, y: int, a: Optional[np.ndarray] = None, c=None, p=None, **kwargs) -> float:  # noqa
@@ -248,5 +250,8 @@ class RelativeInputStability(PerturbationMetric):
         if self.abs:
             a_perturbed_batch = np.abs(a_perturbed_batch)
 
-        ris_objective_batch = self.relative_input_stability_objective(x=x, xs=x_perturbed_batch, e_x=a, e_xs=a_perturbed_batch)
-        return float(np.max(ris_objective_batch))
+        h_x = model.predict(np.expand_dims(x, 0))[0]
+        h_xs_batch = model.predict(x_perturbed_batch)
+
+        ros_objective_batch = self.relative_output_stability_objective(h_x=h_x, h_xs=h_xs_batch, e_x=a, e_xs=a_perturbed_batch)
+        return float(np.max(ros_objective_batch))

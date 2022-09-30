@@ -26,8 +26,9 @@ AVAILABLE_METRICS = {
         "Avg-Sensitivity": AvgSensitivity,
         "Consistency": Consistency,
         "Relative Input Stability": RelativeInputStability,
-        # "Relative Representation Stability": RelativeRepresentationStability,
-        # "Relative Output Stability": RelativeOutputStability,
+        "Relative Output Stability": RelativeOutputStability,
+        "Relative Representation Stability": RelativeRepresentationStability,
+
     },
     "Localisation": {
         "Pointing Game": PointingGame,

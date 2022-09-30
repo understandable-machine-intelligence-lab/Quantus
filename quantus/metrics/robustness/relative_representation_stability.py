@@ -14,14 +14,15 @@ from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import random_noise
-from ...helpers.utils import expand_attribution_channel
 
 
-class RelativeInputStability(PerturbationMetric):
+class RelativeRepresentationStability(PerturbationMetric):
     """
-    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
+    Relative Output Stability leverages the stability of an explanation with respect
+    to the change in the output logits
 
-    :math:`RIS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
+    :math:`RRS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{L_x - L_{x'}}{L_x}||_p, \epsilon_{min})},`
+    where `L(·)` denotes the internal model representation, e.g., output embeddings of hidden layers.
 
     References:
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf
@@ -31,18 +32,20 @@ class RelativeInputStability(PerturbationMetric):
     def __init__(
             self,
             nr_samples: int = 200,
-            abs: bool = False,
-            normalise: bool = False,
+            abs=False,
+            normalise=False,
             normalise_func: Optional[Callable] = None,
             normalise_func_kwargs: Optional[Dict[str, ...]] = None,
             perturb_func: Callable = None,
             perturb_func_kwargs: Optional[Dict[str, ...]] = None,
-            return_aggregate: bool = False,
+            return_aggregate=False,
             aggregate_func: Optional[Callable] = np.mean,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            eps_min: float = 1e-6,
+            disable_warnings=False,
+            display_progressbar=False,
+            eps_min=1e-6,
             default_plot_func: Optional[Callable] = None,
+            layer_names: Optional[List[str]] = None,
+            layer_indices: Optional[List[str]] = None,
             **kwargs: Dict[str, ...],
     ):
         """
@@ -65,6 +68,9 @@ class RelativeInputStability(PerturbationMetric):
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
             default_plot_func (callable): Callable that plots the metrics result.
             eps_min (float): a small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
+
+            layer_names: List with names of layers, representations of which should be used for RRS computation, default = all
+            layer_indices: List with indices of layers, representations of which should be used for RRS computation, default = all
         """
 
         if normalise_func is None:
@@ -92,6 +98,8 @@ class RelativeInputStability(PerturbationMetric):
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
+        self._layer_names = layer_names
+        self._layer_indices = layer_indices
 
         if not self.disable_warnings:
             warn_func.warn_parameterisation(
@@ -99,6 +107,7 @@ class RelativeInputStability(PerturbationMetric):
                 sensitive_params=(
                     "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
                     "number of times perturbations are sampled 'nr_samples'"
+                    "choice which internal representations to use 'layer_names', 'layer_indices'"
                 ),
                 citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
@@ -115,8 +124,8 @@ class RelativeInputStability(PerturbationMetric):
             device: Optional[str] = None,
             softmax: Optional[bool] = False,
             channel_first: Optional[bool] = True,
-            reshape_input=True,
-            **kwargs,
+            reshape_input: Optional[bool] = True,
+            **kwargs: Dict[str, ...],
     ) -> Union[List[float], float]:
         """
         Args:
@@ -130,7 +139,7 @@ class RelativeInputStability(PerturbationMetric):
             kwargs: not used, deprecated
 
         Returns:
-            relative input stability: float in case `return_aggregate=True`, otherwise np.ndarray of floats
+            relative representation stability: float in case `return_aggregate=True`, otherwise np.ndarray of floats
 
         For each image `x`:
          - generate `num_perturbations` perturbed `xs` in the neighborhood of `x`
@@ -156,33 +165,33 @@ class RelativeInputStability(PerturbationMetric):
             reshape_input=reshape_input,
         )
 
-    def relative_input_stability_objective(
+    def relative_representation_stability_objective(
             self,
-            x: np.ndarray,
-            xs: np.ndarray,
+            l_x: np.ndarray,
+            l_xs: np.ndarray,
             e_x: np.ndarray,
-            e_xs: np.ndarray
+            e_xs: np.ndarray,
     ) -> np.ndarray:
         """
-        Computes relative input stabilities maximization objective
-        as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors
+        Computes relative representation stabilities maximization objective
+        as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors.
 
-        Args:
-            x:    image
-            xs:   batch of perturbed x
+        Parameters:
+            l_x:  internal representations for x
+            l_xs: internal representations for xs
             e_x:  explanation for x
             e_xs: explanation for xs
         Returns:
-            ris_obj: np.ndarray of float
+            rrs_obj: np.ndarray of float
         """
 
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1) # noqa
 
-        denominator = x - xs
-        denominator /= x + (x == 0) * self._eps_min
+        denominator = l_x - l_xs
+        denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
 
-        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(-1, -2)), axis=-1) # noqa
+        denominator = np.linalg.norm(denominator, axis=-1)
         denominator += (denominator == 0) * self._eps_min
 
         return nominator / denominator
@@ -238,8 +247,6 @@ class RelativeInputStability(PerturbationMetric):
             targets=np.full(shape=same_label_indexes.shape, fill_value=y),
         )
 
-        a_perturbed_batch = expand_attribution_channel(a_perturbed_batch, x_perturbed_batch)
-
         if self.normalise:
             a_perturbed_batch = self.normalise_func(
                 a_perturbed_batch, **self.normalise_func_kwargs
@@ -248,5 +255,10 @@ class RelativeInputStability(PerturbationMetric):
         if self.abs:
             a_perturbed_batch = np.abs(a_perturbed_batch)
 
-        ris_objective_batch = self.relative_input_stability_objective(x=x, xs=x_perturbed_batch, e_x=a, e_xs=a_perturbed_batch)
-        return float(np.max(ris_objective_batch))
+
+        l_x = model.get_hidden_layers_representations(x=np.expand_dims(x, 0), **kwargs)[0]
+        l_xs_batch = model.get_hidden_layers_representations(x=x_perturbed_batch, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
+
+        rrs_objective_batch = self.relative_representation_stability_objective(l_x=l_x, l_xs=l_xs_batch, e_x=a, e_xs=a_perturbed_batch)
+        return float(np.max(rrs_objective_batch))
+

@@ -4,3 +4,5 @@ from .continuity import Continuity
 from .local_lipschitz_estimate import LocalLipschitzEstimate
 from .max_sensitivity import MaxSensitivity
 from .relative_input_stability import RelativeInputStability
+from .relative_ouput_stability import RelativeOutputStability
+from .relative_representation_stability import RelativeRepresentationStability
