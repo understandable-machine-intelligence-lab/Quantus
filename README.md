@@ -216,6 +216,7 @@ To use the library, you'll need a couple of ingredients; a model, some input dat
 
 ```python
 import quantus
+from quantus import LeNet
 import torch
 import torchvision
 
