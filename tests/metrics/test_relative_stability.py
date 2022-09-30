@@ -412,3 +412,136 @@ def test_relative_output_stability(
         assert result.shape == (1,)
     else:
         assert result.shape[0] == x_batch.shape[0]
+
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "model,data,init_kwargs,call_kwargs",
+    [
+        # MNIST
+        (
+                lazy_fixture("load_cnn_2d_mnist"),
+                lazy_fixture("load_mnist_images_tf"),
+                {},
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_mnist"),
+                lazy_fixture("load_mnist_images_tf"),
+                {
+
+                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
+                        arr=x, indices=np.arange(0, x.size),
+                        indexed_axes=np.arange(0, x.ndim),
+                        **kwargs
+                    ),
+                    "perturb_func_kwargs": {
+                        "perturb_std": 0.05,
+                        "perturb_mean": 0.03,
+                    }
+                },
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_mnist"),
+                lazy_fixture("load_mnist_images_tf"),
+                {
+                    "normalise": True,
+                    "return_aggregate": True,
+                },
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_mnist"),
+                lazy_fixture("load_mnist_images_tf"),
+                {},
+                {
+                    "explain_func_kwargs": {"method": "IntegratedGradients"}
+                }
+        ),
+        # Cifar10
+        (
+                lazy_fixture("load_cnn_2d_cifar"),
+                lazy_fixture("load_cifar10_images_tf"),
+                {},
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_cifar"),
+                lazy_fixture("load_cifar10_images_tf"),
+                {
+
+                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
+                        arr=x, indices=np.arange(0, x.size),
+                        indexed_axes=np.arange(0, x.ndim),
+                        **kwargs
+                    ),
+                    "perturb_func_kwargs": {
+                        "perturb_std": 0.05,
+                        "perturb_mean": 0.03,
+                    }
+                },
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_cifar"),
+                lazy_fixture("load_cifar10_images_tf"),
+                {
+                    "normalise": True,
+                    "return_aggregate": True,
+                },
+                {}
+        ),
+        (
+                lazy_fixture("load_cnn_2d_cifar"),
+                lazy_fixture("load_cifar10_images_tf"),
+                {},
+                {
+                    "explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}
+                }
+        ),
+
+    ],
+    ids=[
+        "mnist + default perturb_func",
+        "mnist + perturb_func = quantus.gaussian_noise +  kwargs",
+        "mnist + normalise = True +  return_aggregate = True",
+        "mnist + method = IntegratedGradients",
+
+        "cifar10 + default perturb_func",
+        "cifar10 + perturb_func = quantus.gaussian_noise + kwargs",
+        "cifar10 + normalise = True + return_aggregate = True",
+        "cifar10 + method = GradCam",
+    ],
+)
+def test_relative_representation_stability(
+        model: tf.keras.Model,
+        data: Dict[str, np.ndarray],
+        init_kwargs,
+        call_kwargs,
+        capsys
+):
+    with capsys.disabled():
+        ris = RRS_CONSTRUCTOR(**init_kwargs)
+
+        x_batch = data["x_batch"]
+        y_batch = model.predict(x_batch).argmax(axis=1)
+
+        result = ris(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            explain_func=quantus.explain,
+            reshape_input=False,
+            **call_kwargs
+        )
+        result = np.asarray(result)
+        print(f"result = {result}")
+
+    assert (result != np.nan).all()
+
+    if init_kwargs.get("return_aggregate", False):
+        assert result.shape == (1,)
+    else:
+        assert result.shape[0] == x_batch.shape[0]

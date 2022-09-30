@@ -1,15 +1,13 @@
 """This modules contains explainer functions which can be used in conjunction with the metrics in the library."""
+from __future__ import annotations
+
+
+
+
 
 import scipy
 import warnings
-from .utils import *
-from .normalise_func import *
-from ..helpers import constants
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import tensorflow as tf
+from importlib import util
 
 if util.find_spec("torch"):
     import torch
@@ -25,12 +23,23 @@ if util.find_spec("tensorflow"):
 if util.find_spec("tf_explain"):
     import tf_explain
 
+
+from .utils import *
+from .normalise_func import *
+from ..helpers import constants
 from ..helpers import __EXTRAS__
-from .model_interface import ModelInterface
 from .utils import get_baseline_value, infer_channel_first, make_channel_last
 
 
-def explain(model, inputs, targets, **kwargs) -> np.ndarray:
+
+
+
+def explain(
+        model: torch.nn.Module | tf.keras.Model,
+        inputs: np.ndarray,
+        targets: np.ndarray,
+        **kwargs
+) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
 

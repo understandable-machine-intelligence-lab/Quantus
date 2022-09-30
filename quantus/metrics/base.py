@@ -95,7 +95,6 @@ class Metric:
         softmax: Optional[bool],
         custom_batch: Optional[Any] = None,
         device: Optional[str] = None,
-        reshape_input=True,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
@@ -178,7 +177,6 @@ class Metric:
             model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
-            reshape_input=reshape_input
         )
 
         # Create progress bar if desired.
@@ -261,20 +259,8 @@ class Metric:
     ) -> Any:
         """
         This method needs to be implemented to use __call__().
+
         Gets model and data for a single instance as input, returns result.
-
-        Args:
-            i: interation_number
-            model: model used to generate explanations
-            x: a single image
-            y: label for x
-            a: pre-computed explanation for x and y
-            s: a segmentation mask for x
-            c: ???
-            p: ???
-
-        Returns:
-            metric_value: for single instance x
         """
         raise NotImplementedError()
 
@@ -292,7 +278,6 @@ class Metric:
         model_predict_kwargs: Optional[Dict],
         softmax: bool,
         device: Optional[str],
-        reshape_input: bool
     ) -> Tuple[
         ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
     ]:
@@ -309,11 +294,11 @@ class Metric:
         - If no segmentation s_batch given, creates list of Nones with as many
           elements as there are data instances.
         """
-        if reshape_input:
-            # Reshape input batch to channel first order:
-            if not isinstance(channel_first, bool):  # None is not a boolean instance.
-                channel_first = utils.infer_channel_first(x_batch)
-            x_batch = utils.make_channel_first(x_batch, channel_first)
+
+        # Reshape input batch to channel first order:
+        if not isinstance(channel_first, bool):  # None is not a boolean instance.
+            channel_first = utils.infer_channel_first(x_batch)
+        x_batch = utils.make_channel_first(x_batch, channel_first)
 
         # Wrap the model into an interface.
         if model:

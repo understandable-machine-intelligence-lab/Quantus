@@ -43,7 +43,7 @@ def test_predict(
         load_mnist_model_tf,
         mocker
 ):
-    mocker.patch("tf.keras.Model.predict", lambda x: EXPECTED_LOGITS)
+    mocker.patch("tensorflow.keras.Model.predict", lambda x: EXPECTED_LOGITS)
     model = TensorFlowModel(model=load_mnist_model_tf, **params)
     out = model.predict(x=data)
     assert np.allclose(out, expected), "Test failed."

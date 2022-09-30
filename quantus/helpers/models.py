@@ -144,7 +144,7 @@ if util.find_spec("tensorflow"):
         # tf.keras.Model.compile(...) "Configures the model for training"
         return model
 
-    class ConvNet1DTF(tf.keras.Sequential):
+    class ConvNet1DTF(Sequential):
         """1D-convolutional architecture."""
 
         def __init__(self, n_channels, seq_len, n_classes):

@@ -14,6 +14,7 @@ from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import random_noise
+from ...helpers.utils import expand_attribution_channel
 
 
 class RelativeRepresentationStability(PerturbationMetric):
@@ -246,6 +247,8 @@ class RelativeRepresentationStability(PerturbationMetric):
             inputs=x_perturbed_batch,
             targets=np.full(shape=same_label_indexes.shape, fill_value=y),
         )
+
+        a_perturbed_batch = expand_attribution_channel(a_perturbed_batch, x_perturbed_batch)
 
         if self.normalise:
             a_perturbed_batch = self.normalise_func(

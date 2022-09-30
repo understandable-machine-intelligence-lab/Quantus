@@ -1,4 +1,7 @@
 """This model creates the ModelInterface for Tensorflow."""
+from __future__ import annotations
+
+
 from typing import Any, Dict, Optional, Tuple, List
 
 from tensorflow.keras.layers import Dense  # noqa
@@ -8,6 +11,7 @@ from tensorflow.keras.models import clone_model  # noqa
 import numpy as np
 import tensorflow as tf
 import gc
+from warnings import warn
 
 from ..helpers.model_interface import ModelInterface
 from ..helpers import utils
@@ -15,6 +19,10 @@ from ..helpers import utils
 
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
+
+
+    _available_predict_kwargs = ['batch_size', 'verbose', 'steps', 'callbacks', 'max_queue_size', 'workers',
+                                 'use_multiprocessing']
 
     def __init__(
         self,
@@ -34,13 +42,20 @@ class TensorFlowModel(ModelInterface):
             predict_kwargs=predict_kwargs,
         )
 
+
+    def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
+        # Use kwargs of predict call if specified, but don't overwrite object attribute
+        all_kwargs = {**self.predict_kwargs, **kwargs}
+        # Filter only ones which are supported by Keras
+        predict_kwargs = {k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs}
+        return predict_kwargs
+
+
     def predict(self, x, **kwargs):
         """Predict on the given input."""
         # Generally, one should always prefer keras predict to __call__
         # https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
-
-        # Use kwargs of predict call if specified, but don't overwrite object attribute
-        predict_kwargs = {**self.predict_kwargs, **kwargs}
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
 
         output_act = self.model.layers[-1].activation
         target_act = activations.softmax if self.softmax else activations.linear
@@ -124,9 +139,12 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs
     ) -> np.ndarray:
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
 
-        # Use kwargs of predict call if specified, but don't overwrite object attribute
-        predict_kwargs = {**self.predict_kwargs, **kwargs}
+        if layer_names is None and layer_indices is None:
+            warn("quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
+                 "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
+                 "from original model. This can be very computationally expensive.")
 
         if layer_indices is None:
             layer_indices = []
