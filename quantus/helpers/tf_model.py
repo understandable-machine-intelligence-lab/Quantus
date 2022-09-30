@@ -35,7 +35,7 @@ class TensorFlowModel(ModelInterface):
         model: tf.keras.Model,
         channel_first: bool = True,
         softmax: bool = False,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
         if predict_kwargs is None:
             # Disable progress bar while running inference on tf.keras.Model
@@ -130,7 +130,7 @@ class TensorFlowModel(ModelInterface):
         original_parameters = self.state_dict()
         random_layer_model = clone_model(self.model)
 
-        layers = [l for l in random_layer_model.layers if len(l.get_weights()) > 0]
+        layers = [_layer for _layer in random_layer_model.layers if len(_layer.get_weights()) > 0]
 
         if order == "top_down":
             layers = layers[::-1]
@@ -139,7 +139,7 @@ class TensorFlowModel(ModelInterface):
             if order == "independent":
                 random_layer_model.set_weights(original_parameters)
             weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
+            np.random.seed(seed=seed + 1) # noqa
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
