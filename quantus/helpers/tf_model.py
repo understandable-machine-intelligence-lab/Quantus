@@ -20,9 +20,15 @@ from ..helpers import utils
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
-
-    _available_predict_kwargs = ['batch_size', 'verbose', 'steps', 'callbacks', 'max_queue_size', 'workers',
-                                 'use_multiprocessing']
+    _available_predict_kwargs = [
+        "batch_size",
+        "verbose",
+        "steps",
+        "callbacks",
+        "max_queue_size",
+        "workers",
+        "use_multiprocessing",
+    ]
 
     def __init__(
         self,
@@ -42,38 +48,43 @@ class TensorFlowModel(ModelInterface):
             predict_kwargs=predict_kwargs,
         )
 
-
     def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
         # Use kwargs of predict call if specified, but don't overwrite object attribute
         all_kwargs = {**self.predict_kwargs, **kwargs}
         # Filter only ones which are supported by Keras
-        predict_kwargs = {k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs}
+        predict_kwargs = {
+            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
+        }
         return predict_kwargs
 
-
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray | tf.Tensor | List, **kwargs) -> np.ndarray:
         """Predict on the given input."""
         # Generally, one should always prefer keras predict to __call__
         # https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
         predict_kwargs = self._get_predict_kwargs(**kwargs)
 
-        output_act = self.model.layers[-1].activation
-        target_act = activations.softmax if self.softmax else activations.linear
+        output_activation = self.model.layers[-1].activation
+        target_activation = activations.softmax if self.softmax else activations.linear
 
-        if output_act == target_act:
+        if output_activation == target_activation:
             return self.model.predict(x, **predict_kwargs)
 
-        config = self.model.layers[-1].get_config()
-        config["activation"] = target_act
+        if self.softmax and output_activation == activations.linear:
+            logits = self.model.predict(x, **predict_kwargs)
+            return tf.nn.softmax(logits)
 
+        # In this case model has a softmax on top, and we want linear
+        # We have to rebuild the model and replace top with linear activation
+        config = self.model.layers[-1].get_config()
+        config["activation"] = target_activation
         weights = self.model.layers[-1].get_weights()
 
         output_layer = Dense(**config)(self.model.layers[-2].output)
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
+
         # we don't need TF to trace + compile this model. We're going to call it once only
         new_model.run_eagerly = True
-
         return new_model.predict(x, **predict_kwargs)
 
     def shape_input(
@@ -134,17 +145,19 @@ class TensorFlowModel(ModelInterface):
 
     def get_hidden_layers_representations(
         self,
-        x: np.ndarray,
+        x: np.ndarray | tf.Tensor | List,
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         predict_kwargs = self._get_predict_kwargs(**kwargs)
 
         if layer_names is None and layer_indices is None:
-            warn("quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
-                 "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
-                 " from original model. This can be very computationally expensive.")
+            warn(
+                "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
+                "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
+                " from original model. This can be very computationally expensive."
+            )
 
         if layer_indices is None:
             layer_indices = []
