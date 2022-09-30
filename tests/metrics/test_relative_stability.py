@@ -166,11 +166,7 @@ def test_relative_representation_stability_objective(l_x, l_xs, e_x, e_xs, capsy
                 lazy_fixture("load_mnist_images_tf"),
                 {
 
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
@@ -207,11 +203,7 @@ def test_relative_representation_stability_objective(l_x, l_xs, e_x, e_xs, capsy
                 lazy_fixture("load_cifar10_images_tf"),
                 {
 
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
@@ -298,11 +290,7 @@ def test_relative_input_stability(
                 lazy_fixture("load_mnist_images_tf"),
                 {
 
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
@@ -338,12 +326,7 @@ def test_relative_input_stability(
                 lazy_fixture("load_cnn_2d_cifar"),
                 lazy_fixture("load_cifar10_images_tf"),
                 {
-
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
@@ -431,11 +414,7 @@ def test_relative_output_stability(
                 lazy_fixture("load_mnist_images_tf"),
                 {
 
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
@@ -472,11 +451,7 @@ def test_relative_output_stability(
                 lazy_fixture("load_cifar10_images_tf"),
                 {
 
-                    "perturb_func": lambda x, **kwargs: quantus.gaussian_noise(
-                        arr=x, indices=np.arange(0, x.size),
-                        indexed_axes=np.arange(0, x.ndim),
-                        **kwargs
-                    ),
+                    "perturb_func": quantus.gaussian_noise,
                     "perturb_func_kwargs": {
                         "perturb_std": 0.05,
                         "perturb_mean": 0.03,
