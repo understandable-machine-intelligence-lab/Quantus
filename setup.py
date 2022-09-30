@@ -78,7 +78,7 @@ setup(
     author="Anna Hedstrom",
     author_email="hedstroem.anna@gmail.com",
     keywords=["explainable ai", "xai", "machine learning", "deep learning"],
-    license="CC BY-NC-SA 3.0",
+    license="GNU LESSER GENERAL PUBLIC LICENSE VERSION 3",
     packages=find_packages(),
     zip_safe=False,
     python_requires=">=3.7",
