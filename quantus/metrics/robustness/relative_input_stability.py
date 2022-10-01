@@ -121,9 +121,9 @@ class RelativeInputStability(PerturbationMetric):
         Args:
             model: instance of tf.keras.Model or torch.nn.Module
             x_batch: a 4D tensor representing batch of input images
-            y_batch: a 1D tensor, representing labels for x_batch. Can be none, if `xs_batch`, `a_batch` and `as_batch` were provided.
+            y_batch: a 1D tensor, representing predicted labels for x_batch.
             a_batch: a 4D tensor with pre-computed explanations for the x_batch
-            explain_func: a function used to generate explanations, must be provided unless a_batch, as_batch were not provided
+            explain_func: a function used to generate explanations.
             device: a device on which torch should perform computations
             softmax: Indicates whether to use softmax probabilities or logits in model prediction. This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
             kwargs: not used, deprecated
