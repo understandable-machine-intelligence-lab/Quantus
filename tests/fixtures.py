@@ -33,7 +33,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights("notebooks/assets/lenet_mnist_weights.keras")
+    model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
 
@@ -165,7 +165,7 @@ def flat_sequence_array(scope="session", autouse=True):
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_mnist():
     model = CNN_2D_TF(28, 28, 10, num_channels=1)
-    model.load_weights("notebooks/assets/cnn_2d_mnist_weights.keras")
+    model.load_weights("tests/assets/cnn_2d_mnist_weights.keras")
     return model
 
 
@@ -181,5 +181,5 @@ def load_cifar10_images_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_cifar():
     model = CNN_2D_TF(32, 32, 10, num_channels=3)
-    model.load_weights("notebooks/assets/cnn_2d_cifar_weights.keras")
+    model.load_weights("tests/assets/cnn_2d_cifar_weights.keras")
     return model
