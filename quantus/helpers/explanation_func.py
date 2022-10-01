@@ -100,7 +100,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: tf.keras.Model, inputs: np.array, targets: np.array, **kwargs
+    model: ModelInterface, inputs: np.array, targets: np.array, **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
@@ -113,6 +113,8 @@ def generate_tf_explanation(
 
     channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
     inputs = make_channel_last(inputs, channel_first)
+
+    explanation: np.ndarray = np.zeros_like(inputs)
 
     if method == "Gradient".lower():
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()

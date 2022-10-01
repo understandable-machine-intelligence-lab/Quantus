@@ -1,9 +1,7 @@
 """This model creates the ModelInterface for Tensorflow."""
 from __future__ import annotations
 
-
-from typing import Any, Dict, Optional, Tuple, List
-
+from typing import Dict, Optional, Tuple, List
 from tensorflow.keras.layers import Dense  # noqa
 from tensorflow.keras import activations  # noqa
 from tensorflow.keras import Model  # noqa

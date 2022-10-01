@@ -188,17 +188,14 @@ class RelativeInputStability(PerturbationMetric):
         return nominator / denominator
 
     # fmt: off
-    def evaluate_instance(self, i: int, model: ModelInterface, x: np.ndarray, y: int, a: Optional[np.ndarray] = None, c=None, p=None, **kwargs) -> float:  # noqa
+    def evaluate_instance(self, model: ModelInterface, x: np.ndarray, y: int, a: Optional[np.ndarray] = None, **kwargs) -> float:  # noqa
         # fmt: on
         """
         Args:
-            i: index of instance under evaluation
             model: model use to generate predictions, explanations
             x: a 3D tensor representing single image
             y: a label for x
             a: pre-computed explanation for x and y
-            c: not used
-            p: not used
             **kwargs: not used, deprecated
 
         Returns:
