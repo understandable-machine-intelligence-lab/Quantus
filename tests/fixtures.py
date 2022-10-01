@@ -2,7 +2,7 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from tensorflow.keras.datasets import cifar10 # noqa
+from tensorflow.keras.datasets import cifar10  # noqa
 
 
 from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
@@ -74,7 +74,9 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = np.loadtxt("tutorials/assets/mnist_x").reshape((124, 1, 28, 28)).astype(float)
+    x_batch = (
+        np.loadtxt("tutorials/assets/mnist_x").reshape((124, 1, 28, 28)).astype(float)
+    )
     y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
@@ -91,7 +93,9 @@ def load_cifar10_images():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = np.loadtxt("tutorials/assets/mnist_x").astype(float).reshape((124, 28, 28, 1))
+    x_batch = (
+        np.loadtxt("tutorials/assets/mnist_x").astype(float).reshape((124, 28, 28, 1))
+    )
     y_batch = np.loadtxt("tutorials/assets/mnist_y").astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
@@ -161,7 +165,7 @@ def flat_sequence_array(scope="session", autouse=True):
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_mnist():
     model = CNN_2D_TF(28, 28, 10, num_channels=1)
-    model.load_weights('notebooks/assets/cnn_2d_mnist_weights.keras')
+    model.load_weights("notebooks/assets/cnn_2d_mnist_weights.keras")
     return model
 
 
@@ -177,6 +181,5 @@ def load_cifar10_images_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_cnn_2d_cifar():
     model = CNN_2D_TF(32, 32, 10, num_channels=3)
-    model.load_weights('notebooks/assets/cnn_2d_cifar_weights.keras')
+    model.load_weights("notebooks/assets/cnn_2d_cifar_weights.keras")
     return model
-

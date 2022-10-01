@@ -509,11 +509,8 @@ def test_no_perturbation(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data",
-    [
-        lazy_fixture("load_mnist_images_tf"),
-        lazy_fixture("load_mnist_images")
-    ],
-    ids=['channel last', 'channel first']
+    [lazy_fixture("load_mnist_images_tf"), lazy_fixture("load_mnist_images")],
+    ids=["channel last", "channel first"],
 )
 def test_random_noise(data):
     X = data["x_batch"]
