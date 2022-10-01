@@ -1,11 +1,11 @@
 from functools import reduce
 from operator import and_
 
-import numpy as np
+import pytest
 from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
+
 from ...quantus.helpers import *
 from ...quantus.helpers.tf_model import TensorFlowModel
 
@@ -129,12 +129,10 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     ],
     ids=["all layers", "2nd conv", "last 2 layers"],
 )
-def test_get_hidden_layer_output_sequential(load_cnn_2d_mnist, params, capsys):
+def test_get_hidden_layer_output_sequential(load_cnn_2d_mnist, params):
     model = TensorFlowModel(model=load_cnn_2d_mnist, channel_first=False)
     X = np.random.random((32, 28, 28, 1))
     result = model.get_hidden_layers_representations(X, **params)
-    with capsys.disabled():
-        print(f"result = {result}")
     assert isinstance(result, np.ndarray), "Must be a np.ndarray"
     assert len(result.shape) == 2, "Must be a batch of 1D tensors"
     assert result.shape[0] == X.shape[0], "Must have same batch size as input"

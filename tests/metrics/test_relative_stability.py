@@ -3,8 +3,11 @@ from __future__ import annotations
 from pytest_lazyfixture import lazy_fixture  # noqa
 from typing import Dict
 import functools
+import pytest
+import torch
+import tensorflow as tf
+import numpy as np
 
-from ..fixtures import *  # noqa
 from ... import quantus
 
 # fmt: off
@@ -14,7 +17,7 @@ RRS_CONSTRUCTOR = functools.partial(quantus.RelativeRepresentationStability, nr_
 # fmt: on
 
 
-def predict(model: tf.keras.Model| torch.nn.Module, x_batch: np.ndarray) -> np.ndarray:
+def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.ndarray:
     if isinstance(model, torch.nn.Module):
         with torch.no_grad():
             return model(torch.Tensor(x_batch)).argmax(axis=1).numpy()
@@ -106,28 +109,22 @@ def predict(model: tf.keras.Model| torch.nn.Module, x_batch: np.ndarray) -> np.n
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_input_stability(
-    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs, capsys
-):
-    with capsys.disabled():
-        ris = RIS_CONSTRUCTOR(**init_kwargs)
+def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
 
-        x_batch = data["x_batch"]
-        y_batch = predict(model, x_batch)
+    ris = RIS_CONSTRUCTOR(**init_kwargs)
+    x_batch = data["x_batch"]
+    y_batch = predict(model, x_batch)
 
-        result = ris(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            explain_func=quantus.explain,
-            reshape_input=False,
-            **call_kwargs,
-        )
-        result = np.asarray(result)
-        print(f"result = {result}")
-
+    result = ris(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        explain_func=quantus.explain,
+        reshape_input=False,
+        **call_kwargs,
+    )
+    result = np.asarray(result)
     assert (result != np.nan).all()
-
     if init_kwargs.get("return_aggregate", False):
         assert result.shape == (1,)
     else:
@@ -218,28 +215,23 @@ def test_relative_input_stability(
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_output_stability(
-    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs, capsys
-):
-    with capsys.disabled():
-        ris = ROS_CONSTRUCTOR(**init_kwargs)
+def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
 
-        x_batch = data["x_batch"]
-        y_batch = predict(model, x_batch)
+    ris = ROS_CONSTRUCTOR(**init_kwargs)
 
-        result = ris(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            explain_func=quantus.explain,
-            reshape_input=False,
-            **call_kwargs,
-        )
-        result = np.asarray(result)
-        print(f"result = {result}")
+    x_batch = data["x_batch"]
+    y_batch = predict(model, x_batch)
 
+    result = ris(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        explain_func=quantus.explain,
+        reshape_input=False,
+        **call_kwargs,
+    )
+    result = np.asarray(result)
     assert (result != np.nan).all()
-
     if init_kwargs.get("return_aggregate", False):
         assert result.shape == (1,)
     else:
@@ -330,28 +322,23 @@ def test_relative_output_stability(
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_representation_stability(
-    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs, capsys
-):
-    with capsys.disabled():
-        ris = RRS_CONSTRUCTOR(**init_kwargs)
+def test_relative_representation_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
 
-        x_batch = data["x_batch"]
-        y_batch = predict(model, x_batch)
+    ris = RRS_CONSTRUCTOR(**init_kwargs)
 
-        result = ris(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            explain_func=quantus.explain,
-            reshape_input=False,
-            **call_kwargs,
-        )
-        result = np.asarray(result)
-        print(f"result = {result}")
+    x_batch = data["x_batch"]
+    y_batch = predict(model, x_batch)
 
+    result = ris(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        explain_func=quantus.explain,
+        reshape_input=False,
+        **call_kwargs,
+    )
+    result = np.asarray(result)
     assert (result != np.nan).all()
-
     if init_kwargs.get("return_aggregate", False):
         assert result.shape == (1,)
     else:

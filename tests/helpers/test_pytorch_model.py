@@ -1,8 +1,8 @@
 from collections import OrderedDict
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
+import pytest
 
-from ..fixtures import *
 from ...quantus.helpers import *
 from ...quantus.helpers.pytorch_model import PyTorchModel
 
@@ -163,12 +163,10 @@ def test_get_random_layer_generator(load_mnist_model):
     ],
     ids=["all layers", "2nd conv", "1st 2 layers"],
 )
-def test_get_hidden_layers_output(load_mnist_model, params, capsys):
+def test_get_hidden_layers_output(load_mnist_model, params):
     model = PyTorchModel(load_mnist_model, channel_first=True)
     X = np.random.random((32, 1, 28, 28))
     result = model.get_hidden_layers_representations(X, **params)
-    with capsys.disabled():
-        print(f"result = {result}")
     assert isinstance(result, np.ndarray), "Must be a np.ndarray"
     assert len(result.shape) == 2, "Must be a batch of 1D tensors"
     assert result.shape[0] == X.shape[0], "Must have same batch size as input"
