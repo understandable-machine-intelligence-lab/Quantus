@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
 
@@ -60,8 +63,8 @@ class ModelInterface(ABC):
     def get_hidden_layers_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: Optional[Tuple[str]] = None,
+        layer_indices: Optional[Tuple[int]] = None,
         **kwargs
     ) -> np.ndarray:
         """
@@ -75,8 +78,8 @@ class ModelInterface(ABC):
 
         Parameters:
             x: np.ndarray, 4D tensor, a batch of input datapoints
-            layer_names: List with names of layers, from which output should be captured.
-            layer_indices: List with Indices of layers, from which output should be captured. Intended to use in case, when layer names are not unique, or unknown.
+            layer_names: tuple with names of layers, from which output should be captured.
+            layer_indices: tuple with Indices of layers, from which output should be captured. Intended to use in case, when layer names are not unique, or unknown.
         Returns:
             L(*): np.ndarray, 2D tensor with shape (batch_size, None)
         """

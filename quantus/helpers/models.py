@@ -142,6 +142,7 @@ if util.find_spec("tensorflow"):
         # No tf.keras.Model.compile(...) needed for evaluation
         # As per https://keras.io/api/models/model_training_apis/
         # tf.keras.Model.compile(...) "Configures the model for training"
+        # keras will compile the model to graph automatically when it's called on batch of data
         return model
 
     class ConvNet1DTF(Sequential):
@@ -200,4 +201,5 @@ if util.find_spec("tensorflow"):
         # No tf.keras.Model.compile(...) needed for evaluation
         # As per https://keras.io/api/models/model_training_apis/
         # tf.keras.Model.compile(...) "Configures the model for training"
+        # keras will compile the model to graph automatically when it's called on batch of data
         return model

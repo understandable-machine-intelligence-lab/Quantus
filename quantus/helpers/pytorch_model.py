@@ -1,7 +1,7 @@
 """This model creates the ModelInterface for PyTorch."""
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple
 import torch
 import numpy as np
 
@@ -106,8 +106,8 @@ class PyTorchModel(ModelInterface):
     def get_hidden_layers_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: Optional[Tuple[str]] = None,
+        layer_indices: Optional[Tuple[int]] = None,
         **kwargs
     ) -> np.ndarray:
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Callable, Dict, List, Union, TYPE_CHECKING
+from typing import Optional, Callable, Dict, List, Union, TYPE_CHECKING, Tuple
 import numpy as np
 import functools
 
@@ -45,8 +45,8 @@ class RelativeRepresentationStability(PerturbationMetric):
         display_progressbar=False,
         eps_min=1e-6,
         default_plot_func: Optional[Callable] = None,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: Optional[Tuple[str]] = None,
+        layer_indices: Optional[Tuple[int]] = None,
         **kwargs: Dict[str, ...],
     ):
         """
@@ -70,8 +70,8 @@ class RelativeRepresentationStability(PerturbationMetric):
             default_plot_func (callable): Callable that plots the metrics result.
             eps_min (float): a small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
 
-            layer_names: List with names of layers, representations of which should be used for RRS computation, default = all
-            layer_indices: List with indices of layers, representations of which should be used for RRS computation, default = all
+            layer_names: tuple with names of layers, representations of which should be used for RRS computation, default = all
+            layer_indices: tuple with indices of layers, representations of which should be used for RRS computation, default = all
         """
 
         if normalise_func is None:

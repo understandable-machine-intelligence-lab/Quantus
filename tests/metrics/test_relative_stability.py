@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-
-import numpy as np
-import torch
 from pytest_lazyfixture import lazy_fixture  # noqa
 from typing import Dict
 import functools
-import tensorflow as tf
 
 from ..fixtures import *  # noqa
 from ... import quantus
@@ -23,7 +19,7 @@ def predict(model: tf.keras.Model| torch.nn.Module, x_batch: np.ndarray) -> np.n
         with torch.no_grad():
             return model(torch.Tensor(x_batch)).argmax(axis=1).numpy()
     else:
-        return model.predict(x_batch).argmax(1)
+        return model.predict(x_batch, verbose=0).argmax(1)
 
 
 @pytest.mark.robustness

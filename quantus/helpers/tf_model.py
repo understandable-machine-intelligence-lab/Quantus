@@ -8,8 +8,9 @@ from tensorflow.keras import Model  # noqa
 from tensorflow.keras.models import clone_model  # noqa
 import numpy as np
 import tensorflow as tf
-import gc
 from warnings import warn
+from cachetools import cachedmethod, LRUCache
+import operator
 
 from ..helpers.model_interface import ModelInterface
 from ..helpers import utils
@@ -45,6 +46,7 @@ class TensorFlowModel(ModelInterface):
             softmax=softmax,
             predict_kwargs=predict_kwargs,
         )
+        self.cache = LRUCache(100)
 
     def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
         # Use kwargs of predict call if specified, but don't overwrite object attribute
@@ -54,6 +56,20 @@ class TensorFlowModel(ModelInterface):
             k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
         }
         return predict_kwargs
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _build_predict_model_with_softmax_top(self) -> tf.keras.Model:
+        """
+        Returns: tf.keras.Model with softmax activation on top
+        """
+        config = self.model.layers[-1].get_config()
+        config["activation"] = activations.linear
+        weights = self.model.layers[-1].get_weights()
+
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+        new_model.layers[-1].set_weights(weights)
+        return new_model
 
     def predict(self, x: np.ndarray | tf.Tensor | List, **kwargs) -> np.ndarray:
         """Predict on the given input."""
@@ -73,17 +89,8 @@ class TensorFlowModel(ModelInterface):
 
         # In this case model has a softmax on top, and we want linear
         # We have to rebuild the model and replace top with linear activation
-        config = self.model.layers[-1].get_config()
-        config["activation"] = target_activation
-        weights = self.model.layers[-1].get_weights()
-
-        output_layer = Dense(**config)(self.model.layers[-2].output)
-        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-        new_model.layers[-1].set_weights(weights)
-
-        # we don't need TF to trace + compile this model. We're going to call it once only
-        new_model.run_eagerly = True
-        return new_model.predict(x, **predict_kwargs)
+        predict_model = self._build_predict_model_with_softmax_top()
+        return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(
         self,
@@ -145,29 +152,20 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-    def get_hidden_layers_representations(
-        self,
-        x: np.ndarray | tf.Tensor | List,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
-    ) -> np.ndarray:
-        predict_kwargs = self._get_predict_kwargs(**kwargs)
-
-        if layer_names is None and layer_indices is None:
+    @cachedmethod(operator.attrgetter("cache"))
+    def _build_hidden_representation_model(
+        self, layer_names: Tuple[str], layer_indices: Tuple[int]
+    ) -> tf.keras.Model:
+        # Instead of rebuilding model on each image, which is evaluated by metric, we cache it
+        if layer_names == () and layer_indices == ():
             warn(
                 "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
                 "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
                 " from original model. This can be very computationally expensive."
             )
 
-        if layer_indices is None:
-            layer_indices = []
-        if layer_names is None:
-            layer_names = []
-
         def is_layer_of_interest(index: int, name: str) -> bool:
-            if layer_names == [] and layer_indices == []:
+            if layer_names == () and layer_indices == ():
                 return True
             return index in layer_indices or name in layer_names
 
@@ -176,15 +174,33 @@ class TensorFlowModel(ModelInterface):
             if is_layer_of_interest(i, layer.name):
                 outputs_of_interest.append(layer.output)
 
-        sub_model = tf.keras.Model(self.model.input, outputs_of_interest)
-        # we don't need TF to trace + compile this model. We're going to call it once only
-        sub_model.run_eagerly = True
-        internal_representation = sub_model.predict(x, **predict_kwargs)
-        input_batch_size = x.shape[0]
+        hidden_representation_model = tf.keras.Model(
+            self.model.input, outputs_of_interest
+        )
+        return hidden_representation_model
 
-        # Clean-up memory reserved for model's copy
-        del sub_model
-        gc.collect()
+    def get_hidden_layers_representations(
+        self,
+        x: np.ndarray | tf.Tensor | List,
+        layer_names: Optional[Tuple[str]] = None,
+        layer_indices: Optional[Tuple[int]] = None,
+        **kwargs,
+    ) -> np.ndarray:
+        # List is not hashable, so we pass names + indices as tuples
+
+        if layer_indices is None:
+            layer_indices = ()
+        if layer_names is None:
+            layer_names = ()
+
+        hidden_representation_model = self._build_hidden_representation_model(
+            layer_names, layer_indices
+        )
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
+        internal_representation = hidden_representation_model.predict(
+            x, **predict_kwargs
+        )
+        input_batch_size = x.shape[0]
 
         if isinstance(internal_representation, np.ndarray):
             # If we requested outputs only of 1 layer, keras will already return np.ndarray
