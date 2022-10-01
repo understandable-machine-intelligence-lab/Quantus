@@ -111,7 +111,7 @@ class PyTorchModel(ModelInterface):
         **kwargs
     ) -> np.ndarray:
 
-        device = kwargs.get("device", torch.device("cpu"))
+        device = self.device if self.device is not None else "cpu"
 
         if layer_indices is None:
             layer_indices = []
