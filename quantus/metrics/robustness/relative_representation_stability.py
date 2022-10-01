@@ -209,7 +209,9 @@ class RelativeRepresentationStability(PerturbationMetric):
         Returns:
             relative output stability: float
         """
+        # fmt: off
         _explain_func = functools.partial(self.explain_func, model=model.get_model(), **self.explain_func_kwargs)
+        # fmt: on
         _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
                                           indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
@@ -247,9 +249,9 @@ class RelativeRepresentationStability(PerturbationMetric):
         a_perturbed_batch = expand_attribution_channel(a_perturbed_batch, x_perturbed_batch)
 
         if self.normalise:
-            a_perturbed_batch = self.normalise_func(
-                a_perturbed_batch, **self.normalise_func_kwargs
-            )
+            # fmt: off
+            a_perturbed_batch = self.normalise_func(a_perturbed_batch, **self.normalise_func_kwargs)
+            # fmt: on
 
         if self.abs:
             a_perturbed_batch = np.abs(a_perturbed_batch)

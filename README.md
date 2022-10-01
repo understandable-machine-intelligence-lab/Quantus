@@ -416,7 +416,7 @@ Before creating a PR, double-check that the following tasks are completed:
 - [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
 - [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
 - [x] Generally, each change in the codebase should be covered by an appropriate test case
-- [x] Run `pytests tests` (to install mandatory packages for testing run `pip install -r requirements_text.txt`)
+- [x] Run `pytests tests` (to install mandatory packages for testing run `pip install -r requirements_test.txt`)
   - Optionally, you could run `pytest tests -n auto` to split test execution between multiple CPU cores
 - [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
 - [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
