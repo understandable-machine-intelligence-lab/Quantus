@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+
+import numpy as np
+import torch
 from pytest_lazyfixture import lazy_fixture  # noqa
 from typing import Dict
 import functools
@@ -9,10 +12,18 @@ from ..fixtures import *  # noqa
 from ... import quantus
 
 # fmt: off
-RIS_CONSTRUCTOR = functools.partial(quantus.RelativeInputStability,          nr_samples=10, disable_warnings=True)
-ROS_CONSTRUCTOR = functools.partial(quantus.RelativeOutputStability,         nr_samples=10, disable_warnings=True)
-RRS_CONSTRUCTOR = functools.partial(quantus.RelativeRepresentationStability, nr_samples=10, disable_warnings=True)
+RIS_CONSTRUCTOR = functools.partial(quantus.RelativeInputStability,          nr_samples=5, disable_warnings=True)
+ROS_CONSTRUCTOR = functools.partial(quantus.RelativeOutputStability,         nr_samples=5, disable_warnings=True)
+RRS_CONSTRUCTOR = functools.partial(quantus.RelativeRepresentationStability, nr_samples=5, disable_warnings=True)
 # fmt: on
+
+
+def predict(model: tf.keras.Model| torch.nn.Module, x_batch: np.ndarray) -> np.ndarray:
+    if isinstance(model, torch.nn.Module):
+        with torch.no_grad():
+            return model(torch.Tensor(x_batch)).argmax(axis=1).numpy()
+    else:
+        return model.predict(x_batch).argmax(1)
 
 
 @pytest.mark.robustness
@@ -106,12 +117,7 @@ def test_relative_input_stability(
         ris = RIS_CONSTRUCTOR(**init_kwargs)
 
         x_batch = data["x_batch"]
-        # The TF Cifar10 model is not really good, so taking ground truth labels
-        # as predictions will result in ValueError: No perturbations resolved in the same labels
-        if isinstance(model, tf.keras.Model):
-            y_batch = model.predict(x_batch).argmax(axis=1)
-        else:
-            y_batch = data["y_batch"]
+        y_batch = predict(model, x_batch)
 
         result = ris(
             model=model,
@@ -223,12 +229,7 @@ def test_relative_output_stability(
         ris = ROS_CONSTRUCTOR(**init_kwargs)
 
         x_batch = data["x_batch"]
-        # The TF Cifar10 model is not really good, so taking ground truth labels
-        # as predictions will result in ValueError: No perturbations resolved in the same labels
-        if isinstance(model, tf.keras.Model):
-            y_batch = model.predict(x_batch).argmax(axis=1)
-        else:
-            y_batch = data["y_batch"]
+        y_batch = predict(model, x_batch)
 
         result = ris(
             model=model,
@@ -340,12 +341,7 @@ def test_relative_representation_stability(
         ris = RRS_CONSTRUCTOR(**init_kwargs)
 
         x_batch = data["x_batch"]
-        # The TF Cifar10 model is not really good, so taking ground truth labels
-        # as predictions will result in ValueError: No perturbations resolved in the same labels
-        if isinstance(model, tf.keras.Model):
-            y_batch = model.predict(x_batch).argmax(axis=1)
-        else:
-            y_batch = data["y_batch"]
+        y_batch = predict(model, x_batch)
 
         result = ris(
             model=model,
