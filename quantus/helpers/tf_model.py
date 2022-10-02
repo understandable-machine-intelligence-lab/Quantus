@@ -58,10 +58,9 @@ class TensorFlowModel(ModelInterface):
         return predict_kwargs
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_predict_model_with_softmax_top(self) -> tf.keras.Model:
-        """
-        Returns: tf.keras.Model with softmax activation on top
-        """
+    def _build_model_with_linear_top(self) -> tf.keras.Model:
+        # In this case model has a softmax on top, and we want linear
+        # We have to rebuild the model and replace top with linear activation
         config = self.model.layers[-1].get_config()
         config["activation"] = activations.linear
         weights = self.model.layers[-1].get_weights()
@@ -89,7 +88,7 @@ class TensorFlowModel(ModelInterface):
 
         # In this case model has a softmax on top, and we want linear
         # We have to rebuild the model and replace top with linear activation
-        predict_model = self._build_predict_model_with_softmax_top()
+        predict_model = self._build_model_with_linear_top()
         return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(
