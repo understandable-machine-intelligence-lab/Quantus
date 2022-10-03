@@ -74,8 +74,8 @@ def normalise_by_negative(
 
 def denormalise(
     img: np.ndarray,
-    mean: np.ndarray = np.array([0.485, 0.456, 0.406]),
-    std: np.ndarray = np.array([0.229, 0.224, 0.225]),
+    mean: np.ndarray,
+    std: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
     """De-normalise a torch image (using conventional ImageNet values)."""
