@@ -28,7 +28,7 @@ class PyTorchModel(ModelInterface):
         )
         self.device = device
 
-    def predict(self, x: np.ndarray, grad: bool = False, **kwargs):
+    def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
         """Predict on the given input."""
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
@@ -53,7 +53,7 @@ class PyTorchModel(ModelInterface):
         shape: Tuple[int, ...],
         channel_first: Optional[bool] = None,
         batched: bool = False,
-    ):
+    ) -> np.array:
         """
         Reshape input into model expected input.
         channel_first: Explicitely state if x is formatted channel first (optional).
@@ -70,11 +70,11 @@ class PyTorchModel(ModelInterface):
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
 
-    def get_model(self):
-        """Get the original torch/tf model."""
+    def get_model(self) -> torch.nn.Module:
+        """Get the original torch model."""
         return self.model
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Get a dictionary of the model's learnable parameters."""
         return self.model.state_dict()
 
@@ -102,6 +102,44 @@ class PyTorchModel(ModelInterface):
             torch.manual_seed(seed=seed + 1)
             module[1].reset_parameters()
             yield module[0], random_layer_model
+
+    def sample(
+            self,
+            mean: float,
+            std: float,
+            noise_type: str = "multiplicative",
+    ) -> torch.nn.Module:
+        """
+        Sample a model by means of adding normally distributed noise.
+
+        Parameters
+        ----------
+        mean (float): the mean point to sample from.
+        std (float): the standard deviation to sample from.
+        noise_type (str): could be either 'additive' or 'multiplicative'.
+
+        Returns
+        -------
+        model_copy (torch.nn.Module): a noisy copy of the orginal model.
+        """
+
+        distribution = torch.distributions.normal.Normal(loc=mean, scale=std)
+        original_parameters = self.state_dict()
+        model_copy = deepcopy(self.model)
+        model_copy.load_state_dict(original_parameters)
+
+        # If std is not zero, loop over each layer and add Gaussian noise.
+        if not std == 0.0:
+            with torch.no_grad():
+                for layer in model_copy.parameters():
+                    if noise_type == "additive":
+                        layer.add_(distribution.sample(layer.size()).to(layer.device))
+                    elif noise_type == "multiplicative":
+                        layer.mul_(distribution.sample(layer.size()).to(layer.device))
+                    else:
+                        raise ValueError("Set noise_type to either 'multiplicative' "
+                                         "or 'additive' (str) when you sample the model.")
+        return model_copy
 
     def get_hidden_layers_representations(
         self,
