@@ -50,24 +50,25 @@ class ModelParameterRandomisation(Metric):
         """
         Parameters
         ----------
-        similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
-        layer_order (string): Indicated whether the model is randomized cascadingly or independently.
-            Set order=top_down for cascading randomization, set order=independent for independent randomization,
-            default="independent".
-        seed (int): Seed used for the random generator, default=42.
-        return_sample_correlation (boolean): Indicates whether return one float per sample, representing the average
-        correlation coefficient across the layers for that sample.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+                default=correlation_spearman.
+            layer_order (string): Indicated whether the model is randomized cascadingly or independently.
+                Set order=top_down for cascading randomization, set order=independent for independent randomization,
+                default="independent".
+            seed (integer): Seed used for the random generator, default=42.
+            return_sample_correlation (boolean): Indicates whether return one float per sample, representing the average
+            correlation coefficient across the layers for that sample.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

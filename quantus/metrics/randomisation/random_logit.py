@@ -43,20 +43,20 @@ class RandomLogit(Metric):
         """
         Parameters
         ----------
-        similarity_func (callable): Similarity function applied to compare input and perturbed input,
-            default=ssim.
-        num_classes (integer): Number of prediction classes in the input, default=1000.
-        seed (int): Seed used for the random generator, default=42.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input,
+                default=ssim.
+            num_classes (integer): Number of prediction classes in the input, default=1000.
+            seed (integer): Seed used for the random generator, default=42.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

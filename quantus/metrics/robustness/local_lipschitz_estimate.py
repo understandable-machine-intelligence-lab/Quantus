@@ -54,28 +54,29 @@ class LocalLipschitzEstimate(PerturbationMetric):
         """
         Parameters
         ----------
-        similarity_func (callable): Similarity function applied to compare input and perturbed input.
-            If None, the default value is used, default=lipschitz_constant.
-        norm_numerator (callable): Function for norm calculations on the numerator.
-            If None, the default value is used, default=distance_euclidean.
-        norm_denominator (callable): Function for norm calculations on the denominator.
-            If None, the default value is used, default=distance_euclidean.
-        nr_samples (integer): The number of samples iterated, default=200.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=gaussian_noise.
-        perturb_std (float): The amount of noise added, default=0.1.
-        perturb_mean (float): The mean of noise added, default=0.0.
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input.
+                If None, the default value is used, default=lipschitz_constant.
+            norm_numerator (callable): Function for norm calculations on the numerator.
+                If None, the default value is used, default=distance_euclidean.
+            norm_denominator (callable): Function for norm calculations on the denominator.
+                If None, the default value is used, default=distance_euclidean.
+            nr_samples (integer): The number of samples iterated, default=200.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=gaussian_noise.
+            perturb_std (float): The amount of noise added, default=0.1.
+            perturb_mean (float): The mean of noise added, default=0.0.
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

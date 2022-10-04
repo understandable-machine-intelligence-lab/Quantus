@@ -44,19 +44,20 @@ class AttributionLocalisation(Metric):
         """
         Parameters
         ----------
-        weighted (boolean): Indicates whether the weighted variant of the inside-total relevance ratio is used,
-            default=False.
-        max_size (float): The maximum ratio for  the size of the bounding box to image, default=1.0.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            weighted (boolean): Indicates whether the weighted variant of the inside-total relevance ratio is used,
+                default=False.
+            max_size (float): The maximum ratio for  the size of the bounding box to image, default=1.0.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

@@ -47,22 +47,23 @@ class IROF(PerturbationMetric):
         """
         Parameters
         ----------
-        segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
-        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="mean".
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-            default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            segmentation_method (string): Image segmentation method:'slic' or 'felzenszwalb', default="slic".
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=baseline_replacement_by_indices.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+                default="mean".
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+                default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative
