@@ -55,6 +55,3 @@ tutorials/imagenette2-320
 tutorials/imagenette2-320.tgz
 tutorials/bboxes_annotations.tar.gz
 tutorials/bboxes_annotations
-
-notebooks/train_test_cnn.ipynb
-notebooks/train_test_lenet.ipynb
