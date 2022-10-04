@@ -9,6 +9,14 @@ def check_kwargs(kwargs):
     """
     Check that no additional kwargs are passed, i.e. the kwargs dict is empty.
     Raises an exception with helpful suggestions to fix the issue.
+
+    Parameters
+    ----------
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
     if kwargs:
         raise ValueError(
@@ -26,6 +34,17 @@ def check_kwargs(kwargs):
 
 
 def warn_noise_zero(noise: float) -> None:
+    """
+    Warn if noise is zero.
+
+    Parameters
+    ----------
+        noise (float): The amount of noise.
+
+    Returns
+    -------
+        None
+    """
     if noise == 0.0:
         print(
             f"Noise is set to {noise:.2f} which is likely to invalidate the evaluation outcome of the test"
@@ -35,6 +54,17 @@ def warn_noise_zero(noise: float) -> None:
 
 
 def warn_absolute_operation(word: str = "") -> None:
+    """
+    Warn if an absolute operation is applied, where the metric is defined otherwise.
+
+    Parameters
+    ----------
+        word (string): A string for which is '' or 'not '.
+
+    Returns
+    -------
+        None
+    """
     print(
         f"An absolute operation should {word}be applied on the attributions, "
         "otherwise inconsistent results can be expected. Re-set 'abs' parameter."
@@ -42,13 +72,36 @@ def warn_absolute_operation(word: str = "") -> None:
 
 
 def warn_normalise_operation(word: str = "") -> None:
+    """
+    Warn if a normalisation operation is applied, where the metric is defined otherwise.
+
+    Parameters
+    ----------
+        word (string): A string for which is '' or 'not '.
+
+    Returns
+    -------
+        None
+    """
     print(
         f"A normalising operation should {word}be applied on the attributions, "
         "otherwise inconsistent results can be expected. Re-set 'normalise' parameter."
     )
 
 
-def warn_segmentation(inside_attribution, total_attribution) -> None:
+def warn_segmentation(inside_attribution: float, total_attribution: float) -> None:
+    """
+    Warn if the inside explanation is greater than total explanation.
+
+    Parameters
+    ----------
+        inside_attribution (float): The size of inside attribution.
+        total_attribution (float): The size of total attribution.
+
+    Returns
+    -------
+        None
+    """
     warnings.warn(
         "Inside explanation is greater than total explanation"
         f" ({inside_attribution} > {total_attribution}), returning np.nan."
@@ -56,16 +109,42 @@ def warn_segmentation(inside_attribution, total_attribution) -> None:
 
 
 def warn_empty_segmentation() -> None:
+    """
+    Warn if the segmentation mask is empty.
+
+    Returns
+    -------
+        None
+    """
     warnings.warn("Return np.nan as result as the segmentation map is empty.")
 
 
 def warn_different_array_lengths() -> None:
+    """
+    Warn if the array lengths are different, for plotting.
+
+    Returns
+    -------
+        Nones
+    """
     warnings.warn(
         "The plotted measurements have different lengths. Clipping to minimum length."
     )
 
 
-def warn_iterations_exceed_patch_number(n_iterations, n_patches) -> None:
+def warn_iterations_exceed_patch_number(n_iterations: int, n_patches: int) -> None:
+    """
+    Warn if the number of non-overlapping patches is lower than the number of iterations specified for this metric.
+
+    Parameters
+    ----------
+        n_iterations (integer): The number of iterations specified in the metric.
+        n_patches (integer): The number of patches specified in the metric.
+
+    Returns
+    -------
+
+    """
     if n_patches < n_iterations:
         warnings.warn(
             "The number of non-overlapping patches ({}) for this input and attribution"
@@ -81,6 +160,19 @@ def warn_parameterisation(
     sensitive_params: str = "X, Y and Z.",
     citation: str = "INSERT CITATION",
 ):
+    """
+    Warn the parameterisation of the metric.
+
+    Parameters
+    ----------
+        metric_name (string): The metric name.
+        sensitive_params (string): The sensitive parameters of the metric.
+        citation (string): The citation.
+
+    Returns
+    -------
+        None
+    """
 
     time.sleep(1)
 
@@ -97,9 +189,23 @@ def warn_parameterisation(
 
 
 def deprecation_warnings(kwargs: dict) -> None:
+    """
+    Run deprecation warnings.
+
+    Parameters
+    ----------
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
+    """
+
     text = "\n"
     if "img_size" in kwargs:
-        text = "argument '' is deprecated and has been removed from the current release.\n"
+        text = (
+            "argument '' is deprecated and has been removed from the current release.\n"
+        )
     if "nr_channels" in kwargs:
         text = "argument 'max_steps_per_input' is deprecated and has been removed from the current release.\n"
     if "max_steps_per_input" in kwargs:

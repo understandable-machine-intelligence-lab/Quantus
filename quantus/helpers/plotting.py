@@ -1,10 +1,11 @@
 """This module provides some plotting functionality."""
+
 from typing import List, Union, Dict
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
-from . import warn_func
+import warn_func
 
 
 def plot_pixel_flipping_experiment(
@@ -21,7 +22,19 @@ def plot_pixel_flipping_experiment(
         1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
+    Parameters
+    ----------
+        y_batch (np.array): The list of true labels.
+        scores (List[float]): The list of evalution scores.
+        single_class (Union[int, None]): An integer to specify the label to plot.
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
+
     fig = plt.figure(figsize=(8, 6))
     if single_class is None:
         for c in np.unique(y_batch):
@@ -53,7 +66,18 @@ def plot_selectivity_experiment(
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
+
+    Parameters
+    ----------
+        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
+
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
         alllengths = [len(score) for scores in results.values() for score in scores]
@@ -83,11 +107,22 @@ def plot_region_perturbation_experiment(
     """
     Plot the region perturbation experiment as done in paper:
 
-     References:
+    References:
         1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
-         neural network has learned." IEEE transactions on neural networks and
-          learning systems 28.11 (2016): 2660-2673.
+        neural network has learned." IEEE transactions on neural networks and
+        learning systems 28.11 (2016): 2660-2673.
+
+    Parameters
+    ----------
+        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
+
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
         alllengths = [len(score) for scores in results.values() for score in scores]
@@ -121,7 +156,17 @@ def plot_sensitivity_n_experiment(
         1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
         methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
 
+    Parameters
+    ----------
+        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
+
     fig = plt.figure(figsize=(8, 6))
     if isinstance(results, dict):
         for method, scores in results.items():
@@ -141,22 +186,6 @@ def plot_sensitivity_n_experiment(
     plt.show()
 
 
-def plot_superpixel_segments(
-    img: np.ndarray, segments: np.ndarray, *args, **kwargs
-) -> None:
-    fig = plt.figure(figsize=(6, 6))
-    plt.imshow(
-        mark_boundaries(
-            np.reshape(img, (kwargs.get("img_size", 224), kwargs.get("img_size", 224))),
-            segments,
-            mode="subpixel",
-        )
-    )
-    plt.title("Segmentation outcome")
-    plt.grid(False)
-    plt.show()
-
-
 def plot_model_parameter_randomisation_experiment(
     results: Union[List[float], Dict[str, List[float]]],
     methods=None,
@@ -164,11 +193,21 @@ def plot_model_parameter_randomisation_experiment(
     **kwargs,
 ) -> None:
     """
-    Plot the model parameter randomization experiment as done in paper:
-     References:
-        1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
-         neural network has learned." IEEE transactions on neural networks and
-          learning systems 28.11 (2016): 2660-2673.
+    Plot the model parameter randomisation experiment as done in paper:
+
+    References:
+        1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
+        arXiv preprint, arXiv:1810.073292v3 (2018)
+
+    Parameters
+    ----------
+        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -206,17 +245,27 @@ def plot_model_parameter_randomisation_experiment(
 
 def plot_focus(
     results: Dict[str, List[float]],
+    *args,
+    **kwargs,
 ) -> None:
     """
-    Plot the Focus scores of different methods in a box plot like manner as done in the original paper:
-     References:
-        1) "Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods and Finding Biases. arXiv:2109.15035 (2022)"
+    Plot the Focus experiment as done in the paper:
+
+    References:
+        1) Arias-Duart, Anna, et al. 'Focus! Rating XAI Methods
+        and Finding Biases. arXiv:2109.15035 (2022)"
 
     Parameters
     ----------
-        results: a dictionary with the Focus scores obtained using different feature attribution methods. The keys
+        results (Dict[str, List[float]],): A dictionary with the Focus scores obtained using different feature attribution methods. The keys
                  of the dict must be strings referring to the feature attribution method and values should be a
                  list of floats corresponding to the Focus scores.
+        args (optional) Arguments.
+        kwargs (optional): Keyword arguments.
+
+    Returns
+    -------
+        None
     """
 
     fig = plt.figure(figsize=(8, 6))

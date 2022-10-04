@@ -1,4 +1,5 @@
 """This module contains the utils functions of the library."""
+
 import re
 import copy
 import numpy as np
@@ -22,13 +23,14 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
     Parameters
     ----------
-    img (np.ndarray): CxWxH image array.
-    segmentation_method (string): Indicates the segmentation method, i.e. "slic" or "felzenszwalb".
+        img (np.ndarray): CxWxH image array.
+        segmentation_method (string): Indicates the segmentation method, i.e. "slic" or "felzenszwalb".
 
     Returns
     -------
-    img (np.ndarray): CxWxH segmented image array.
+        img (np.ndarray): CxWxH segmented image array.
     """
+
     if img.ndim != 3:
         raise ValueError(
             "Make sure that x is 3 dimensional e.g., (3, 224, 224) to calculate super-pixels."
@@ -59,20 +61,20 @@ def get_baseline_value(
 
     Parameters
     ----------
-    value (Union[float, int, str, np.array]): Either the value (float, int) to fill the array with, a method (str)
-    used to construct baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
-    "neighbourhood_random_min_max"), or the array (np.array) to be returned.
-    arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
-    return_shape (Tuple): CxWxH shape to be returned.
-    patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values. Necessary for "neighbourhood_mean"
-    and "neighbourhood_random_min_max" methods.
-    kwargs: Keyword arguments (optional)
+        value (Union[float, int, str, np.array]): Either the value (float, int) to fill the array with, a method (string)
+        used to construct baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
+        "neighbourhood_random_min_max"), or the array (np.array) to be returned.
+        arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+        return_shape (Tuple): CxWxH shape to be returned.
+        patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values. Necessary for "neighbourhood_mean"
+        and "neighbourhood_random_min_max" methods.
+        kwargs: Keyword arguments (optional)
+
     Returns
-    np.ndarray: Baseline array in return_shape.
     -------
+        np.ndarray: Baseline array in return_shape.
 
     """
-
 
     kwargs["return_shape"] = return_shape
     if isinstance(value, (float, int)):
@@ -98,7 +100,9 @@ def get_baseline_value(
                 "which will replicate the results of 'random').\n"
             )
         if value.lower() not in fill_dict:
-            raise ValueError(f"Ensure that 'value'(str) is in {list(fill_dict.keys())}")
+            raise ValueError(
+                f"Ensure that 'value'(string) is in {list(fill_dict.keys())}"
+            )
         return np.full(return_shape, fill_dict[value.lower()])
     else:
         raise ValueError("Specify 'value' as a np.array, string, integer or float.")
@@ -112,14 +116,14 @@ def get_baseline_dict(
 
     Parameters
     ----------
-    arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
-    patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values. Necessary for "neighbourhood_mean"
-    and "neighbourhood_random_min_max" methods.
-    kwargs: Keyword arguments (optional)
+        arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+        patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values, necessary for "neighbourhood_mean".
+        and "neighbourhood_random_min_max" methods.
+        kwargs: Keyword arguments (optional).
 
     Returns
     -------
-    dict: Maps all available baseline methods to baseline values.
+        fill_dict (dict): Maps all available baseline methods to baseline values.
     """
     fill_dict = {
         "mean": float(arr.mean()),
@@ -139,12 +143,22 @@ def get_baseline_dict(
     return fill_dict
 
 
-def get_name(str: str):
-    """Get the name of the class object."""
+def get_name(name: str):
+    """
+    Get the name of the Metric class object.
 
-    if str.isupper():
-        return str
-    return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
+    Parameters
+    ----------
+        name (string): A metric name.
+
+    Returns
+    -------
+        name (string): A cleaned version of the Metric name.
+    """
+
+    if name.isupper():
+        return name
+    return " ".join(re.sub(r"([A-Z])", r" \1", name).split())
 
 
 def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...]):
@@ -153,12 +167,12 @@ def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...])
 
     Parameters
     ----------
-    max_steps_per_input (int): The number of repeated iterations on an image.
-    input_shape (Tuple[int, ...])): Input shape.
+        max_steps_per_input (integer): The number of repeated iterations on an image.
+        input_shape (Tuple[int, ...])): Input shape.
 
     Returns
     -------
-    (float): Product of the input shape divided by the maximum number of steps.
+        (float): Product of the input shape divided by the maximum number of steps.
     """
     return int(np.prod(input_shape) / max_steps_per_input)
 
@@ -169,12 +183,12 @@ def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> l
 
     Parameters
     ----------
-    perturb_patch_sizes (list): Patch sizes for perturbation.
-    img_size (int): A single dimension of an image array.
+        perturb_patch_sizes (list): Patch sizes for perturbation.
+        img_size (integer): A single dimension of an image array.
 
     Returns
     -------
-    list: All integers within perturb_patch_sizes which are compatible with the image.
+        (list): All integers within perturb_patch_sizes which are compatible with the image.
     """
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
@@ -194,7 +208,7 @@ def infer_channel_first(x: np.array) -> bool:
 
     Parameters
     ----------
-    x (np.array): Input image.
+        x (np.array): Input image.
 
     Returns
     -------
@@ -237,10 +251,11 @@ def make_channel_first(x: np.array, channel_first=False):
 
     Parameters
     ----------
-    x (np.array): Input image.
+        x (np.array): The input image.
 
     Returns
-    np.array: Image in CxWxH format.
+    -------
+        np.array: Image in CxWxH format.
     """
     if channel_first:
         return x
@@ -261,10 +276,11 @@ def make_channel_last(x: np.array, channel_first=True):
 
     Parameters
     ----------
-    x (np.array): Input image.
+        x (np.array): The input image.
 
     Returns
-    np.array: Image in WxHxC format.
+    -------
+        np.array: Image in WxHxC format.
     """
     if not channel_first:
         return x
@@ -284,20 +300,24 @@ def get_wrapped_model(
     channel_first: bool,
     softmax: bool,
     device: Optional[str] = None,
-    predict_kwargs: Optional[Dict[str, Any]] = None,
+    model_predict_kwargs: Optional[Dict[str, Any]] = None,
 ) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
     Parameters
     ----------
-    model: a pytorch or tensorflow model that is to be wrapped.
-    channel_first (boolean): Indicates if model expects channel first or channel last layout.
-    predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method, default = {}
+        model (Union[torch.nn.Module, tf.keras.Model]): A model this will be wrapped in the ModelInterface:
+        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
 
     Returns
     -------
-    model (ModelInterface): A wrapped ModelInterface model.
+        model (ModelInterface): A wrapped ModelInterface model.
     """
     if isinstance(model, tf.keras.Model):
         return TensorFlowModel(
@@ -327,17 +347,18 @@ def blur_at_indices(
 ) -> np.array:
     """
     Creates a version of arr that is blurred at indices.
+
     Parameters
     ----------
-    arr (np.array): Image to blur.
-    kernel (np.array): Kernel used for blurring.
-    indices (Union[int, Sequence[int], Tuple[np.array]]): One/multiple indices, or a tuple of array of indices
-    to blur the image at.
+        arr (np.array): Array to be perturbed.
+        kernel (np.array): Kernel used for blurring.
+        indices (int, Sequence[int], Tuple[np.array]): Array-like, with a subset shape of arr.
+        indexed_axes (Sequence[int]): The dimensions of arr that are indexed. These need to be consecutive,
+                      and either include the first or last dimension of array.
 
-    indexed_axes (Sequence[int]):
     Returns
     -------
-    np.array: A version of arr that is blurred at indices.
+        (np.array): A version of arr that is blurred at indices.
     """
 
     assert kernel.ndim == len(
@@ -406,12 +427,12 @@ def create_patch_slice(
 
     Parameters
     ----------
-    patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
-    coords: Coordinates for creating patches.
+        patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
+        coords (Sequence[int]): Coordinates for creating patches.
 
     Returns
     -------
-    tuple: Patches at all provided coordinates.
+        (tuple): Patches at all provided coordinates.
     """
 
     if isinstance(patch_size, int):
@@ -434,7 +455,10 @@ def create_patch_slice(
     # make sure that each element in tuple is integer
     patch_size = tuple(int(patch_size_dim) for patch_size_dim in patch_size)
 
-    patch_slice = [slice(coord, coord + patch_size_dim) for coord, patch_size_dim in zip(coords, patch_size)]
+    patch_slice = [
+        slice(coord, coord + patch_size_dim)
+        for coord, patch_size_dim in zip(coords, patch_size)
+    ]
 
     return tuple(patch_slice)
 
@@ -447,14 +471,15 @@ def get_nr_patches(
 
     Parameters
     ----------
-    patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
-    shape (shape: Tuple[int, ...]): Image shape.
-    overlap (bool):
+        patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
+        shape (shape: Tuple[int, ...]): The image shape.
+        overlap (bool): Indicates whether overlapping patches is used or not.
 
     Returns
     -------
-    int: Number of patches that fit into the image.
+        (integer): Number of patches that fit into the image.
     """
+
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
     patch_size = np.array(patch_size)
@@ -484,14 +509,14 @@ def _pad_array(
 
     Parameters
     ----------
-    arr (np.array): Array to pad.
-    pad_width (Union[int, Sequence[int], Sequence[Tuple[int]]]): The size of the padding.
-    mode (str): numpy.pad mode (see https://numpy.org/doc/stable/reference/generated/numpy.pad.html)
-    padded_axes (Sequence[int]): Indices of axes to pad.
+        arr (np.array): Array to pad.
+        pad_width (Union[int, Sequence[int], Sequence[Tuple[int]]]): The size of the padding.
+        mode (string): numpy.pad mode (see https://numpy.org/doc/stable/reference/generated/numpy.pad.html)
+        padded_axes (Sequence[int]): Indices of axes to pad.
 
     Returns
     -------
-    np.array: Padded array.
+        (np.array): Padded array.
     """
 
     assert (
@@ -507,6 +532,7 @@ def _pad_array(
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
     pad_width_list = []
+
     for ax in range(arr.ndim):
         if ax not in padded_axes:
             pad_width_list.append((0, 0))
@@ -521,7 +547,9 @@ def _pad_array(
             )
         else:
             pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])
+
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
+
     return arr_pad
 
 
@@ -535,13 +563,14 @@ def _unpad_array(
 
     Parameters
     ----------
-        arr (np.array): a numpy array of the input to be unpaded
-        pad_witdh (Union[int, Sequence[int], Sequence[Tuple[int]]]): the width of the padding for the different
-        dimensions
-        padded_axes (Sequence[int]): the axes for padding
+        arr (np.array): A numpy array of the input to be unpaded.
+        pad_witdh (Union[int, Sequence[int], Sequence[Tuple[int]]]): The width of the padding for the different
+        dimensions.
+        padded_axes (Sequence[int]): The axes for padding.
 
     Returns
-        np.array: the unpadded array
+    -------
+        np.array: The unpadded array.
 
     """
 
@@ -586,12 +615,12 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
 
     Parameters
     ----------
-        x_batch (np.ndarray): a np.ndarray which contains the input data that are explained
-        a_batch (np.ndarray): a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        x_batch (np.ndarray): A np.ndarray which contains the input data that are explained.
+        a_batch (np.ndarray): A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
 
     Returns
     -------
-    np.ndarray: x_batch with dimensions matching those of a_batch.
+        (np.ndarray): A x_batch with dimensions matching those of a_batch.
     """
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
@@ -620,11 +649,12 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
     Parameters
     ----------
-        x_batch (np.ndarray): a np.ndarray which contains the input data that are explained
-        a_batch (np.ndarray): a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        x_batch (np.ndarray): A np.ndarray which contains the input data that are explained.
+        a_batch (np.ndarray): A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
 
     Returns
-        np.ndarray: the axes inferred
+    -------
+        (np.ndarray): The axes inferred.
     """
     # TODO: Adapt for batched processing.
 
@@ -725,12 +755,13 @@ def expand_indices(
 
     Parameters
     ----------
-        arr: the input to the expanded
-        indices: list of indices
-        indexed_axes: refers to all axes that are not indexed by slice(None).
+        arr (np.array): The input to the expanded.
+        indices (Union[int, Sequence[int], Tuple[np.array], Tuple[slice]]): A list of indices.
+        indexed_axes (Sequence[int]): rRefers to all axes that are not indexed by slice(None).
 
     Returns
-    tuple: Expanded indices.
+    -------
+        (tuple): Expanded indices.
     """
     # TODO: Adapt for batched processing.
 
@@ -765,11 +796,18 @@ def expand_indices(
         expanded_indices = np.unravel_index(
             expanded_indices, tuple([arr.shape[i] for i in indexed_axes])
         )
-    elif not np.all([isinstance(idx, np.ndarray) and idx.ndim==len(expanded_indices) for idx in expanded_indices]):
+    elif not np.all(
+        [
+            isinstance(idx, np.ndarray) and idx.ndim == len(expanded_indices)
+            for idx in expanded_indices
+        ]
+    ):
         # Meshgrid sliced axes to account for correct slicing. Correct switched first two axes by meshgrid
         print(expanded_indices)
-        expanded_indices = [np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx for idx in np.meshgrid(*expanded_indices)]
-
+        expanded_indices = [
+            np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx
+            for idx in np.meshgrid(*expanded_indices)
+        ]
 
     # Handle case of 1D indices.
     if np.all([isinstance(idx, int) for idx in expanded_indices]):
@@ -786,7 +824,8 @@ def expand_indices(
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(
-                expanded_indices[i], axis=tuple(range(len(expanded_indices) - expanded_indices[i].ndim))
+                expanded_indices[i],
+                axis=tuple(range(len(expanded_indices) - expanded_indices[i].ndim)),
             )
 
     # Buffer with None-slices if indices index the last axes.
@@ -802,11 +841,12 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
 
     Parameters
     ----------
-        arr (np.array): the input to the expanded
-        axes (Sequence[int]): a sequence of ints containing the axes
+        arr (np.array): The input to the expanded.
+        axes (Sequence[int]): A sequence of ints containing the axes.
 
     Returns
-        tuple: Leftover shape
+    -------
+        leftover_shape (Tuple): The leftover shape.
     """
 
     # TODO: Adapt for batched processing.
@@ -819,18 +859,17 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
 
 def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     """
-    Checks if offset coordinates are within the image frame
-    Based on https://github.com/tleemann/road_evaluation.
+    Checks if offset coordinates are within the image frame.
+        Adapted from: https://github.com/tleemann/road_evaluation.
 
     Parameters
     ----------
-        a tuple of the leftover shape
-        indices (list): list of indices to be offset.
-        offset (tuple): offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
-        img_shape (tuple): image shape in (channels, height, width) format.
+        indices (list): List of indices to be offset.
+        offset (tuple): Offset for the coordinates, e.g. offset (1,1) adds 1 to both coordinates.
+        img_shape (tuple): Image shape in (channels, height, width) format.
 
     Returns
-         list: offset coordinates for valid indices and the list of booleans which identifies valid ids.
+         (list): Offset coordinates for valid indices and the list of booleans which identifies valid ids.
     """
     x = indices // img_shape[2]
     y = indices % img_shape[2]
@@ -847,11 +886,11 @@ def calculate_auc(values: np.array, dx: int = 1.0):
 
     Parameters
     ----------
-    values: Input array.
-    dx: The spacing between sample points. The default is 1.
+        values (np.array): Input array.
+        dx (integer): The spacing between sample points. The default is 1.
 
     Returns
     -------
-    np.array: Definite integral of values.
+        np.array: Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
