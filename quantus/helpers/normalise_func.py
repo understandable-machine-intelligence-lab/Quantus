@@ -116,4 +116,4 @@ def denormalise(
     -------
         (np.array): a denormalised array.
     """
-    return (np.array(img) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
+    return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)

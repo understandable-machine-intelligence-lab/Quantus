@@ -19,18 +19,18 @@ def attributes_check(metric):
     """
     attr = metric.__dict__
     if "abs" in attr:
-        if not bool(attr["perturb_func"]):
+        if not bool(attr["abs"]):
             raise TypeError("The 'abs' must be a bool.")
     if "normalise" in attr:
-        assert normalise(attr["normalise"]), "The 'normalise' must be a bool."
+        assert bool(attr["normalise"]), "The 'normalise' must be a bool."
     if "return_aggregate" in attr:
         assert bool(attr["return_aggregate"]), "The 'return_aggregate' must be a bool."
     if "disable_warnings" in attr:
-        assert callable(
+        assert bool(
             attr["disable_warnings"]
         ), "The 'disable_warnings' must be a bool."
     if "display_progressbar" in attr:
-        assert callable(
+        assert bool(
             attr["display_progressbar"]
         ), "The 'display_progressbar' must be a bool."
     return metric
