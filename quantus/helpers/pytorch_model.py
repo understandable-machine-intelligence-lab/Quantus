@@ -19,21 +19,45 @@ class PyTorchModel(ModelInterface):
         channel_first: bool = True,
         softmax: bool = False,
         device: Optional[str] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
+        """
+        Initialisation of PyTorchModel class.
+
+        Parameters
+        ----------
+            model (Union[torch.nn.Module, tf.keras.Model]): A model this will be wrapped in the ModelInterface:
+            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
+            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
+                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+            device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+            model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+        """
         super().__init__(
             model=model,
             channel_first=channel_first,
             softmax=softmax,
-            predict_kwargs=predict_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
         )
         self.device = device
 
     def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
-        """Predict on the given input."""
+        """
+        Predict on the given input.
+
+        Parameters
+        ----------
+            x (np.array): A given input that the wrapped model predicts on.
+            grad (boolean): Indicates if gradient-calculation is disabled or not.
+            kwargs (optional): Keyword arguments.
+
+        Returns:
+            (np.array): predictions of the same dimension and shape as the input, values in the range [0, 1].
+        """
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
-        predict_kwargs = {**self.predict_kwargs, **kwargs}
+        model_predict_kwargs = {**self.model_predict_kwargs, **kwargs}
 
         if self.model.training:
             raise AttributeError("Torch model needs to be in the evaluation mode.")
@@ -41,7 +65,7 @@ class PyTorchModel(ModelInterface):
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred = self.model(torch.Tensor(x).to(self.device), **predict_kwargs)
+            pred = self.model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
             if self.softmax:
                 pred = torch.nn.Softmax(dim=-1)(pred)
             if pred.requires_grad:
@@ -57,7 +81,18 @@ class PyTorchModel(ModelInterface):
     ) -> np.array:
         """
         Reshape input into model expected input.
-        channel_first: Explicitely state if x is formatted channel first (optional).
+
+        Parameters
+        ----------
+            x (np.array): A given input that is shaped.
+            shape (Tuple[int...): The shape of the input.
+            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+                    Inferred from the input shape if None.
+            batched (boolean): Indicates if the first dimension should be expanded or not, if it is just a single instance.
+
+        Returns
+        -------
+            (np.array): A reshaped input.
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first(x)
@@ -72,18 +107,31 @@ class PyTorchModel(ModelInterface):
         raise ValueError("Channel first order expected for a torch model.")
 
     def get_model(self) -> torch.nn.Module:
-        """Get the original torch model."""
+        """
+        Get the original torch model.
+        """
         return self.model
 
     def state_dict(self) -> dict:
-        """Get a dictionary of the model's learnable parameters."""
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
         return self.model.state_dict()
 
     def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        Set order to top_down for cascading randomization.
-        Set order to independent for independent randomization.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+            order (string): The various ways that a model's weights of a layer can be randomised.
+            seed (integer): The seed of the random layer generator.
+
+        Returns
+        -------
+            layer.name (string), random_layer_model (torch.nn.Module): the layer name and the model.
         """
         original_parameters = self.state_dict()
         random_layer_model = deepcopy(self.model)
@@ -105,23 +153,23 @@ class PyTorchModel(ModelInterface):
             yield module[0], random_layer_model
 
     def sample(
-            self,
-            mean: float,
-            std: float,
-            noise_type: str = "multiplicative",
+        self,
+        mean: float,
+        std: float,
+        noise_type: str = "multiplicative",
     ) -> torch.nn.Module:
         """
         Sample a model by means of adding normally distributed noise.
 
         Parameters
         ----------
-        mean (float): the mean point to sample from.
-        std (float): the standard deviation to sample from.
-        noise_type (str): could be either 'additive' or 'multiplicative'.
+            mean (float): The mean point to sample from.
+            std (float): The standard deviation to sample from.
+            noise_type (string): Noise type could be either 'additive' or 'multiplicative'.
 
         Returns
         -------
-        model_copy (torch.nn.Module): a noisy copy of the orginal model.
+            model_copy (torch.nn.Module): A noisy copy of the orginal model.
         """
 
         distribution = torch.distributions.normal.Normal(loc=mean, scale=std)
@@ -138,6 +186,8 @@ class PyTorchModel(ModelInterface):
                     elif noise_type == "multiplicative":
                         layer.mul_(distribution.sample(layer.size()).to(layer.device))
                     else:
-                        raise ValueError("Set noise_type to either 'multiplicative' "
-                                         "or 'additive' (str) when you sample the model.")
+                        raise ValueError(
+                            "Set noise_type to either 'multiplicative' "
+                            "or 'additive' (string) when you sample the model."
+                        )
         return model_copy
