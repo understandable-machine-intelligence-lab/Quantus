@@ -1,4 +1,5 @@
 """This module implements the base class for creating evaluation measures."""
+
 import warnings
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -40,8 +41,7 @@ class Metric:
         A child metric can benefit from the following class methods:
         - __call__(): Will call general_preprocess(), apply () on each
                       instance and finally call custom_preprocess().
-                      To use this method the child Metric needs to implement
-                      ().
+                      To use this method the child Metric needs to implement ().
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
@@ -58,6 +58,7 @@ class Metric:
             display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
             kwargs (optional): Keyword arguments.
         """
+
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
@@ -93,8 +94,8 @@ class Metric:
         explain_func_kwargs: Optional[Dict[str, Any]],
         model_predict_kwargs: Optional[Dict],
         softmax: Optional[bool],
-        custom_batch: Optional[Any] = None,
         device: Optional[str] = None,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
@@ -108,25 +109,25 @@ class Metric:
 
         Parameters
         ----------
-            model: a torch model e.g., torchvision.models that is subject to explanation
-            x_batch: a np.ndarray which contains the input data that are explained
-            y_batch: a np.ndarray which contains the output labels that are explained
-            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-            s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
             channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             explain_func (callable): Callable generating attributions.
             explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
             model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
-            device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
             softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
                 This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+            device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
             kwargs (optional): Keyword arguments.
 
         Returns
         -------
-        last_results: a list of float(s) with the evaluation outcome of concerned batch.
+            last_results (list): a list of float(s) with the evaluation outcome of concerned batch.
 
         Examples
         --------
@@ -175,13 +176,13 @@ class Metric:
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
             model_predict_kwargs=model_predict_kwargs,
             softmax=softmax,
             device=device,
+            custom_batch=custom_batch,
         )
 
         # Create progress bar if desired.
@@ -264,8 +265,18 @@ class Metric:
     ) -> Any:
         """
         This method needs to be implemented to use __call__().
-
         Gets model and data for a single instance as input, returns result.
+
+        Parameters
+        ----------
+            i (integer): The evaluation instance.
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x (np.array): The input to be evaluated on an instance basis.
+            y (np.array): The output to be evaluated on an instance basis.
+            a (np.array): The explanation to be evaluated on an instance basis.
+            a (np.array): The segmentation to be evaluated on an instance basis.
+            c (Any): The custom input to be evaluated on an instance basis.
+            c (Any): The custom preprocess input to be evaluated on an instance basis.
         """
         raise NotImplementedError()
 
@@ -276,28 +287,52 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
-        custom_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
         explain_func: Optional[Callable],
         explain_func_kwargs: Optional[Dict[str, Any]],
         model_predict_kwargs: Optional[Dict],
         softmax: bool,
         device: Optional[str],
+        custom_batch: Optional[np.ndarray],
     ) -> Tuple[
         ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
     ]:
         """
         Prepares all necessary variables for evaluation.
 
-        - Reshapes data to channel first layout.
-        - Wraps model into ModelInterface.
-        - Creates attributions if necessary.
-        - Expands attributions to data shape (adds channel dimension).
-        - Calls custom_preprocess().
-        - Normalises attributions if desired.
-        - Takes absolute of attributions if desired.
-        - If no segmentation s_batch given, creates list of Nones with as many
-          elements as there are data instances.
+            - Reshapes data to channel first layout.
+            - Wraps model into ModelInterface.
+            - Creates attributions if necessary.
+            - Expands attributions to data shape (adds channel dimension).
+            - Calls custom_preprocess().
+            - Normalises attributions if desired.
+            - Takes absolute of attributions if desired.
+            - If no segmentation s_batch given, creates list of Nones with as many
+              elements as there are data instances.
+
+        Parameters
+        ----------
+
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
+            explain_func (callable): Callable generating attributions.
+            explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
+            model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
+                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+            device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+            kwargs (optional): Keyword arguments.
+
+        Returns
+        -------
+            (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]): A general preprocess.
+
         """
 
         # Reshape input batch to channel first order:
@@ -314,7 +349,7 @@ class Metric:
                 channel_first=channel_first,
                 softmax=softmax,
                 device=device,
-                predict_kwargs=model_predict_kwargs,
+                model_predict_kwargs=model_predict_kwargs,
             )
 
         # Save as attribute, some metrics need it during processing.
@@ -406,9 +441,23 @@ class Metric:
     ) -> Tuple[
         ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
     ]:
-        """s
+        """
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
+
+        Parameters
+        ----------
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+            (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]): A custom preprocess.
+
         """
         custom_preprocess_batch = [None for _ in x_batch]
         return (
@@ -433,6 +482,19 @@ class Metric:
         """
         Implement this method if you need custom postprocessing of results or
         additional attributes.
+
+        Parameters
+        ----------
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+            (Any): Can be implemented, optionally by the user.
         """
         pass
 
@@ -450,14 +512,15 @@ class Metric:
 
         Parameters
         ----------
-        plot_func: a Callable with the actual plotting logic.
-        show: a boolean to state if the plot shall be shown.
-        path_to_save: a string that specifies the path to save file.
-        args: an optional with additional arguments.
-        kwargs: an optional dict with additional arguments.
+            plot_func (callable): A Callable with the actual plotting logic.
+            show (boolean): A boolean to state if the plot shall be shown.
+            path_to_save (str): A string that specifies the path to save file.
+            args (optional): An optional with additional arguments.
+            kwargs (optional): An optional dict with additional arguments.
 
-        Returns: None.
-
+        Returns
+        -------
+            None
         """
         # Get plotting func if not provided.
         if plot_func is None:
@@ -488,9 +551,10 @@ class Metric:
     def get_params(self) -> dict:
         """
         List parameters of metric.
-        Returns: a dictionary with attributes if not excluded from pre-determined list
-        -------
 
+        Returns
+        -------
+             (dict): A dictionary with attributes if not excluded from pre-determined list.
         """
         attr_exclude = [
             "args",
@@ -528,6 +592,24 @@ class PerturbationMetric(Metric):
         display_progressbar: bool,
         **kwargs,
     ):
+        """
+        Initialise the PerturbationMetric base class.
+
+        Parameters
+        ----------
+            abs (boolean): Indicates whether absolute operation is applied on the attribution.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
+            perturb_func (callable): Input perturbation function.
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call..
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
+            kwargs (optional): Keyword arguments.
+        """
 
         # Initialise super-class with passed parameters.
         super().__init__(

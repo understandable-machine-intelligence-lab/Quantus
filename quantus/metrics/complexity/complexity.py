@@ -135,9 +135,12 @@ class Complexity(Metric):
         p: Any,
     ) -> float:
 
-        a = np.array(
-            np.reshape(a, (np.prod(x.shape[1:]),)),
-            dtype=np.float64,
-        ) / np.sum(np.abs(a))
+        a = (
+            np.array(
+                np.reshape(a, (np.prod(x.shape[1:]),)),
+                dtype=np.float64,
+            )
+            / np.sum(np.abs(a))
+        )
 
         return scipy.stats.entropy(pk=a)

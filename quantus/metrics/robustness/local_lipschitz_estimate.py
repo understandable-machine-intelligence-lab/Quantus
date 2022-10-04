@@ -219,7 +219,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
                     a=a.flatten(),
                     b=a_perturbed.flatten(),
                     c=x.flatten(),
-                    d=x_perturbed.flatten()
+                    d=x_perturbed.flatten(),
                 )
                 similarity_max = max(similarity, similarity_max)
 
