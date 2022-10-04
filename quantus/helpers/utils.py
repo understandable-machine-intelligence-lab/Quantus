@@ -22,9 +22,12 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
     Parameters
     ----------
+    img (np.ndarray): CxWxH image array.
+    segmentation_method (string): Indicates the segmentation method, i.e. "slic" or "felzenszwalb".
 
     Returns
-
+    -------
+    img (np.ndarray): CxWxH segmented image array.
     """
     if img.ndim != 3:
         raise ValueError(
@@ -56,16 +59,28 @@ def get_baseline_value(
 
     Parameters
     ----------
-
+    value (Union[float, int, str, np.array]): Either the value (float, int) to fill the array with, a method (str)
+    used to construct baseline array ("mean", "uniform", "black", "white", "neighbourhood_mean" or
+    "neighbourhood_random_min_max"), or the array (np.array) to be returned.
+    arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+    return_shape (Tuple): CxWxH shape to be returned.
+    patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values. Necessary for "neighbourhood_mean"
+    and "neighbourhood_random_min_max" methods.
+    kwargs: Keyword arguments (optional)
     Returns
+    np.ndarray: Baseline array in return_shape.
+    -------
+
     """
+    #TODO Anna: this whole function seems unneccesary complicated, I would refactor it.
+    #TODO Anna: maybe it's better just to pass arr, return_shape is superfluous (what if arr.shape!=return_shape?).
     kwargs["return_shape"] = return_shape
     if isinstance(value, (float, int)):
         return np.full(return_shape, value)
     elif isinstance(value, np.ndarray):
         if value.ndim == 0:
             return np.full(return_shape, value)
-        elif value.shape == return_shape:
+        elif value.shape == return_shape: #TODO Anna: what's the point of passing value as an np.array, if we just return it?
             return value
         else:
             raise ValueError(
@@ -74,7 +89,7 @@ def get_baseline_value(
                 )
             )
     elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch, **kwargs)
+        fill_dict = get_baseline_dict(arr, patch, **kwargs) # TODO Anna: Why do we calculate the whole dictionary, when we just need the value for one string?
         if value.lower() == "random":
             raise ValueError(
                 "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
@@ -93,12 +108,18 @@ def get_baseline_dict(
     arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
 ) -> dict:
     """
-    Make a dicionary of baseline approaches depending on the input x (or patch of input).
+    Make a dictionary of baseline approaches depending on the input x (or patch of input).
 
     Parameters
     ----------
+    arr (np.ndarray): CxWxH image array used to calculate baseline values, i.e. for "mean", "black" and "white" methods.
+    patch (Optional[np.ndarray]): CxWxH patch array to calculate baseline values. Necessary for "neighbourhood_mean"
+    and "neighbourhood_random_min_max" methods.
+    kwargs: Keyword arguments (optional)
 
     Returns
+    -------
+    dict: Maps all available baseline methods to baseline values.
     """
     fill_dict = {
         "mean": float(arr.mean()),
@@ -120,44 +141,72 @@ def get_baseline_dict(
 
 def get_name(str: str):
     """Get the name of the class object."""
+    # TODO Anna: What does it do? Looks a bit hacky. Maybe it's better to introduce direct mapping dictionary?
     if str.isupper():
         return str
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
 
 
 def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...]):
-    """Get the number of features in the iteration."""
-    return np.prod(input_shape) / max_steps_per_input
+    """
+    Get the number of features in the iteration.
+
+    Parameters
+    ----------
+    max_steps_per_input (int): The number of repeated iterations on an image.
+    input_shape (Tuple[int, ...])): Input shape.
+
+    Returns
+    -------
+    (float): Product of the input shape divided by the maximum number of steps.
+    """
+    return np.prod(input_shape) / max_steps_per_input #TODO: this is supposed to be an integer, but can be a float.
 
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
-    """Remove patch sizes that are not compatible with input size."""
+    """
+    Remove patch sizes that are not compatible with input size.
+
+    Parameters
+    ----------
+    perturb_patch_sizes (list): Patch sizes for perturbation.
+    img_size (int): A single dimension of an image array.
+
+    Returns
+    -------
+    list: All integers within perturb_patch_sizes which are compatible with the image.
+    """
     return [i for i in perturb_patch_sizes if img_size % i == 0]
 
 
-def infer_channel_first(x: np.array):
+def infer_channel_first(x: np.array) -> bool:
     """
     Infer if the channels are first.
 
-    For 1d input:
-
-        Assumes
+    Assumes:
+        For 1d input:
             nr_channels < sequence_length
-        Returns
+
+        For 2d input:
+            nr_channels < img_width and nr_channels < img_height
+
+    For higher dimensional input an error is raised.
+
+    Parameters
+    ----------
+    x (np.array): Input image.
+
+    Returns
+    -------
+        For 1d input:
             True if input shape is (nr_batch, nr_channels, sequence_length).
             False if input shape is (nr_batch, sequence_length, nr_channels).
             An error is raised if the two last dimensions are equal.
 
-    For 2d input:
-
-        Assumes
-            nr_channels < img_width and nr_channels < img_height
-        Returns
+        For 2d input:
             True if input shape is (nr_batch, nr_channels, img_width, img_height).
             False if input shape is (nr_batch, img_width, img_height, nr_channels).
             An error is raised if the three last dimensions are equal.
-
-    For higher dimensional input an error is raised.
     """
     err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order."
 
@@ -188,8 +237,10 @@ def make_channel_first(x: np.array, channel_first=False):
 
     Parameters
     ----------
+    x (np.array): Input image.
 
     Returns
+    np.array: Image in CxWxH format.
     """
     if channel_first:
         return x
@@ -205,7 +256,16 @@ def make_channel_first(x: np.array, channel_first=False):
 
 
 def make_channel_last(x: np.array, channel_first=True):
-    """Reshape batch to channel last."""
+    """
+    Reshape batch to channel last.
+
+    Parameters
+    ----------
+    x (np.array): Input image.
+
+    Returns
+    np.array: Image in WxHxC format.
+    """
     if not channel_first:
         return x
 
@@ -266,11 +326,18 @@ def blur_at_indices(
     indexed_axes: Sequence[int],
 ) -> np.array:
     """
-    Returns a version of arr that is blurred at indices.
-
+    Creates a version of arr that is blurred at indices.
     Parameters
     ----------
+    arr (np.array): Image to blur.
+    kernel (np.array): Kernel used for blurring.
+    indices (Union[int, Sequence[int], Tuple[np.array]]): One/multiple indices, or a tuple of array of indices
+    to blur the image at.
+    indexed_axes (Sequence[int]): #TODO Anna: ???
 
+    Returns
+    -------
+    np.array: A version of arr that is blurred at indices.
     """
 
     assert kernel.ndim == len(
@@ -339,7 +406,12 @@ def create_patch_slice(
 
     Parameters
     ----------
+    patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
+    coords: Coordinates for creating patches.
 
+    Returns
+    -------
+    tuple: Patches at all provided coordinates.
     """
 
     if isinstance(patch_size, int):
@@ -375,6 +447,13 @@ def get_nr_patches(
 
     Parameters
     ----------
+    patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
+    shape (shape: Tuple[int, ...]): Image shape.
+    overlap (bool): TODO: unused!
+
+    Returns
+    -------
+    int: Number of patches that fit into the image.
     """
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
@@ -399,12 +478,20 @@ def _pad_array(
     pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
     mode: str,
     padded_axes: Sequence[int],
-):
+) -> np.array:
     """
-    To allow for any patch_size we add padding to the array.
+    Pad an array according to the mode.
 
     Parameters
     ----------
+    arr (np.array): Array to pad.
+    pad_width (Union[int, Sequence[int], Sequence[Tuple[int]]]): The size of the padding.
+    mode (str): numpy.pad mode (see https://numpy.org/doc/stable/reference/generated/numpy.pad.html)
+    padded_axes (Sequence[int]): Indices of axes to pad.
+
+    Returns
+    -------
+    np.array: Padded array.
     """
 
     assert (
@@ -448,12 +535,13 @@ def _unpad_array(
 
     Parameters
     ----------
-        arr: a numpy array of the input to be unpaded
-        pad_witdh: the width of the padding for the different dimensions
-        padded_axes: the axes for padding
+        arr (np.array): a numpy array of the input to be unpaded
+        pad_witdh (Union[int, Sequence[int], Sequence[Tuple[int]]]): the width of the padding for the different
+        dimensions
+        padded_axes (Sequence[int]): the axes for padding
 
     Returns
-        the unpadded array
+        np.array: the unpadded array
 
     """
 
@@ -498,8 +586,12 @@ def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
 
     Parameters
     ----------
-        x_batch: a np.ndarray which contains the input data that are explained
-        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        x_batch (np.ndarray): a np.ndarray which contains the input data that are explained
+        a_batch (np.ndarray): a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+
+    Returns
+    -------
+    np.ndarray: x_batch with dimensions matching those of a_batch.
     """
     if a_batch.shape[0] != x_batch.shape[0]:
         raise ValueError(
@@ -528,11 +620,11 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
     Parameters
     ----------
-        x_batch: a np.ndarray which contains the input data that are explained
-        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+        x_batch (np.ndarray): a np.ndarray which contains the input data that are explained
+        a_batch (np.ndarray): a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
 
     Returns
-        the axes inferred
+        np.ndarray: the axes inferred
     """
     # TODO: Adapt for batched processing.
 
@@ -638,7 +730,7 @@ def expand_indices(
         indexed_axes: refers to all axes that are not indexed by slice(None).
 
     Returns
-
+    tuple: Expanded indices.
     """
     # TODO: Adapt for batched processing.
 
@@ -710,11 +802,11 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
 
     Parameters
     ----------
-        arr: the input to the expanded
-        axes: a sequence of ints containing the axes
+        arr (np.array): the input to the expanded
+        axes (Sequence[int]): a sequence of ints containing the axes
 
     Returns
-        a tuple of the leftover shape
+        tuple: Leftover shape
     """
 
     # TODO: Adapt for batched processing.
@@ -729,7 +821,8 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     """
     Checks if offset coordinates are within the image frame
     Based on https://github.com/tleemann/road_evaluation.
-      Parameters
+
+    Parameters
     ----------
         a tuple of the leftover shape
         indices (list): list of indices to be offset.
@@ -737,7 +830,7 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
         img_shape (tuple): image shape in (channels, height, width) format.
 
     Returns
-         offset coordinates for valid indices and the list of booleans which identifies valid ids.
+         list: offset coordinates for valid indices and the list of booleans which identifies valid ids.
     """
     x = indices // img_shape[2]
     y = indices % img_shape[2]
@@ -749,5 +842,16 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
 
 
 def calculate_auc(values: np.array, dx: int = 1.0):
-    """Calculate area under the curve using the composite trapezoidal rule."""
+    """
+    Calculate area under the curve using the composite trapezoidal rule.
+
+    Parameters
+    ----------
+    values: Input array.
+    dx: The spacing between sample points. The default is 1.
+
+    Returns
+    -------
+    np.array: Definite integral of values.
+    """
     return np.trapz(np.array(values), dx=dx)
