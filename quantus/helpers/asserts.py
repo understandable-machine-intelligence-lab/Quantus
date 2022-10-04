@@ -26,9 +26,7 @@ def attributes_check(metric):
     if "return_aggregate" in attr:
         assert bool(attr["return_aggregate"]), "The 'return_aggregate' must be a bool."
     if "disable_warnings" in attr:
-        assert bool(
-            attr["disable_warnings"]
-        ), "The 'disable_warnings' must be a bool."
+        assert bool(attr["disable_warnings"]), "The 'disable_warnings' must be a bool."
     if "display_progressbar" in attr:
         assert bool(
             attr["display_progressbar"]
