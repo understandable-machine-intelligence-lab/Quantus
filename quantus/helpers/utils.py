@@ -324,7 +324,7 @@ def get_wrapped_model(
             model=model,
             channel_first=channel_first,
             softmax=softmax,
-            predict_kwargs=predict_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
         )
     if isinstance(model, torch.nn.modules.module.Module):
         return PyTorchModel(
@@ -332,7 +332,7 @@ def get_wrapped_model(
             channel_first=channel_first,
             softmax=softmax,
             device=device,
-            predict_kwargs=predict_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
         )
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."

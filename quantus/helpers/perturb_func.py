@@ -335,7 +335,7 @@ def translation_y_direction(
             "Check that this perturb_func receives a 3D array."
         )
 
-    matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
+    matrix = np.float32([[1, 0, 0], [0, 1, perturb_dy]])
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),
         matrix,
