@@ -5,14 +5,14 @@ Thank you for taking interest in contributions to Quantus! We encourage you to c
 <!-- omit in toc -->
 ## Table of Contents
 
-- [Reporting Bugs](#get-started)
-- [General Guide to Making Changes](#make-changes)
-  - [Development Installation](#dev-installation)
+- [Reporting Bugs](#reporting-bugs)
+- [General Guide to Making Changes](#general-guide-to-making-changes)
+  - [Development Installation](#development-installation)
+  - [Branching](#branching)
   - [Code Style](#code-style)
   - [Unit Tests](#unit-tests)
-  - [Checklist](#checklist)
-  - [Before You Commit](#before-commit)
-  - [Pull Requests](#pr)
+  - [Before You Create a Pull Request](#before-you-create-a-pull-request)
+  - [Pull Requests](#pull-requests)
 - [Contributing a New Metric](#contributing-a-new-metric)
 - [License](#license)
 
@@ -44,6 +44,9 @@ pip install -r requirements_test.txt
 pip install -e .
 ```
 
+### Branching
+Before you start making changes to the code, create a local branch from the latest version of `main`.
+
 ### Code Style
 Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
 We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
@@ -65,11 +68,13 @@ pytest -m faithfulness -s
 ```
 For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
 ### Documentation
-Make sure to add docstrings to every class, method and function that you add to the codebase.
+Make sure to add docstrings to every class, method and function that you add to the codebase. The docstring should include a descriptions of all parameters and returns. Use the existing documentation as an example.
+TODO: Automatic docstring generation.
 
-### Checklist
+### Before You Create a Pull Request
 Before creating a PR, double-check that the following tasks are completed:
 
+- Make sure that the latest version of the code from the `main` branch is merged into your working branch.
 - Run `black` to format source code:
 ```bash
 black quantus/INSERT_YOUR_FILE_NAME.py
@@ -86,10 +91,59 @@ pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --c
 ```
 
 ### Pull Requests
-TODO
+Once you are done with the changes:
+- Create a [pull request](https://github.com/understandable-machine-intelligence-lab/Quantus/compare)
+- Provide a summary of the changes you are introducing.
+- In case you are resolving an issue, don't forget to link it.
+- Add [annahedstroem](https://github.com/annahedstroem) as a reviewer.
 
 ## Contributing a New Metric
-TODO
+We always welcome extensions to our collection of evaluation metrics. This short desciption provides a guideline to introducing a new metric into Quantus. We strongly encourage you to take example from already implemented metrics.
 
+### Theoretic Foundations
+Currently, we support six subgroups of evaluation metrics: 
+- faithfulness
+- robustness
+- localisation
+- complexity
+- randomisation 
+- axiomatic.
+
+See more detailed description of those in [README](https://github.com/understandable-machine-intelligence-lab/Quantus#library-overview).
+Identify which category your metric belongs to and create a Python file for your metric class in the respective folder in `quantus/metrics`.
+
+### Metric Class
+Every metric class inherits from the base `Metric` class: `quantus/metrics/base.py`. Importantly, Faithfulness and Robustness inherit not from the `Metric` class directly, but rather from its child `PerturbationMetric`.
+
+A child metric can benefit from the following class methods:
+- `__call__()`: Will call general_preprocess(), apply() on each instance and finally call custom_preprocess(). To use this method the child Metric needs to implement evaluate_instance().
+- `general_preprocess()`: Prepares all necessary data structures for evaluation. Will call custom_preprocess() at the end.
+
+The following methods are expected to be implemented in the metric class:
+- `__init__()`: Initialize the metric.
+- `__call__()`: Typically, calls `__call__()` in the base class.
+- `evaluate_instance()`: Gets model and data for a single instance as input, returns evaluation result.
+
+The following methods are optimal for implementation:
+- `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional steps can be added here.
+
+### Using Helpers
+In the `quantus/helpers` folder you might find functions relevant to your implementation. Use search function and go through the function docstrings to explore your options. 
+
+If you find yourself developing some functionality of a more general scope, consider adding this code to a respective file, or creating a new module in `quantus/helpers`.
+
+### Warnings
+The `__init__()` method of a metric class typically call a warning that includes the following information:
+- Metric name
+- Sensitive parameters
+- Proper citation of the source paper (!)
+
+### Documenting a Metric
+Declaration of a method class should be followed by:
+- A detailed description of the metric
+- References
+- Assumtions
+
+Otherwise, please remember to add a description for all parameters and returns of each new method/function, as well as a description of the purpose of the method/function itself.
 ## License
-This guide is based on the **contributing-gen**. [Make your own](https://github.com/bttger/contributing-gen)!
+Please note that by contributing to the project you agree that it will be licensed under the [License](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/LICENSE).
