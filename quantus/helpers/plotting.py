@@ -23,7 +23,7 @@ def plot_pixel_flipping_experiment(
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
     Parameters
-    ----------
+    ----------pip install pyod
         y_batch (np.array): The list of true labels.
         scores (List[float]): The list of evalution scores.
         single_class (Union[int, None]): An integer to specify the label to plot.

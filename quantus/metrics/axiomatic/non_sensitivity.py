@@ -174,7 +174,7 @@ class NonSensitivity(PerturbationMetric):
             preds = []
             a_ix = a[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
-            ].astype(integer)
+            ].astype(int)
 
             for _ in range(self.n_samples):
 
