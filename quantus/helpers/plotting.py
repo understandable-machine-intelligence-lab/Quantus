@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.segmentation import *
 
-import warn_func
+from . import warn_func
 
 
 def plot_pixel_flipping_experiment(
