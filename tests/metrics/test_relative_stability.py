@@ -3,11 +3,8 @@ from __future__ import annotations
 from pytest_lazyfixture import lazy_fixture  # noqa
 from typing import Dict
 import functools
-import pytest
-import torch
-import tensorflow as tf
-import numpy as np
 
+from ..fixtures import *
 from ... import quantus
 
 # fmt: off
@@ -32,13 +29,13 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         # MNIST
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -50,7 +47,7 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -59,20 +56,20 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
         # Cifar10
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -84,7 +81,7 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -93,7 +90,7 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),
@@ -138,13 +135,13 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         # MNIST
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -156,7 +153,7 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -165,20 +162,20 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
         # Cifar10
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -190,7 +187,7 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -199,7 +196,7 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),
@@ -245,13 +242,13 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
         # MNIST
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini"),
+            lazy_fixture("load_mnist_images_tf_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -263,7 +260,7 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -272,20 +269,20 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
         # Cifar10
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini"),
+            lazy_fixture("load_mnist_images_mini_batch"),
             {
                 "perturb_func": quantus.gaussian_noise,
                 "perturb_func_kwargs": {
@@ -297,7 +294,7 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -306,7 +303,7 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
         ),
         (
             lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini"),
+            lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),

@@ -1,11 +1,12 @@
+import numpy as np
+import pytest
 from functools import reduce
 from operator import and_
-
-import pytest
+from typing import Union
 from scipy.special import softmax
 from pytest_lazyfixture import lazy_fixture
 
-
+from ..fixtures import *
 from ...quantus.helpers import *
 from ...quantus.helpers.tf_model import TensorFlowModel
 
@@ -49,7 +50,11 @@ EXPECTED_LOGITS = np.array(
     ],
 )
 def test_predict(
-    data: np.ndarray, params: dict, expected: np.ndarray, load_mnist_model_tf, mocker
+        data: np.ndarray,
+        params: dict,
+        expected: np.ndarray,
+        load_mnist_model_tf,
+        mocker
 ):
     mocker.patch(
         "tensorflow.keras.Model.predict", lambda x, *args, **kwargs: EXPECTED_LOGITS
@@ -104,6 +109,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
+
         old = old_weights[layer_name]
         new = random_layer_model.get_layer(layer_name).get_weights()
 
