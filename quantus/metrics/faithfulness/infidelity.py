@@ -55,25 +55,26 @@ class Infidelity(PerturbationMetric):
         """
         Parameters
         ----------
-        loss_func (string): Loss function, default="mse".
-        perturb_patch_sizes (list): List of patch sizes to be perturbed. If None, the defaul is used, default=[4].
-        features_in_step (integer): The size of the step, default=1.
-        n_perturb_samples (integer): The number of samples to be perturbed, default=10.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=False.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
-        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-            default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            loss_func (string): Loss function, default="mse".
+            perturb_patch_sizes (list): List of patch sizes to be perturbed. If None, the defaul is used, default=[4].
+            features_in_step (integer): The size of the step, default=1.
+            n_perturb_samples (integer): The number of samples to be perturbed, default=10.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=False.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=baseline_replacement_by_indices.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+                default="black".
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+                default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

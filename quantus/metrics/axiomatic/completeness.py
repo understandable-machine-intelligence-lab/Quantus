@@ -54,24 +54,25 @@ class Completeness(PerturbationMetric):
         """
         Parameters
         ----------
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        output_func (callable): Function applied to the difference between the model output at the input and the
-            baseline before metric calculation. If output_func=None, the default value is used, default=lambda x: x.
-        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction, default=False.
-        return_aggregate (boolean): Indicates if an aggregated score should be produced over all instances.
-        aggregate_func (Callable): A Callable to aggregate the scores per instance to one float.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            output_func (callable): Function applied to the difference between the model output at the input and the
+                baseline before metric calculation. If output_func=None, the default value is used, default=lambda x: x.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+                default="black".
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=baseline_replacement_by_indices.
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction, default=False.
+            return_aggregate (boolean): Indicates if an aggregated score should be produced over all instances.
+            aggregate_func (Callable): A Callable to aggregate the scores per instance to one float.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

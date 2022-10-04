@@ -50,33 +50,33 @@ class Continuity(PerturbationMetric):
     ):
         """
         Parameters
-        ----------
-
-        similarity_func (callable): Similarity function applied to compare input and perturbed input.
-            If None, the default value is used, default=difference.
-        norm_numerator (callable): Function for norm calculations on the numerator.
-            If None, the default value is used, default=fro_norm
-        norm_denominator (callable): Function for norm calculations on the denominator.
-            If None, the default value is used, default=fro_norm
-        nr_samples (integer): The number of samples iterated, default=200.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=translation_x_direction.
-        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="black".
-        patch_size (integer): The patch size for masking, default=7.
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        nr_steps (integer): The number of steps to iterate over, default=28.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-        default_plot_func (callable): Callable that plots the metrics result.
+            ----------
+            similarity_func (callable): Similarity function applied to compare input and perturbed input.
+                If None, the default value is used, default=difference.
+            norm_numerator (callable): Function for norm calculations on the numerator.
+                If None, the default value is used, default=fro_norm
+            norm_denominator (callable): Function for norm calculations on the denominator.
+                If None, the default value is used, default=fro_norm
+            nr_samples (integer): The number of samples iterated, default=200.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=translation_x_direction.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+                default="black".
+            patch_size (integer): The patch size for masking, default=7.
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            nr_steps (integer): The number of steps to iterate over, default=28.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            default_plot_func (callable): Callable that plots the metrics result.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative

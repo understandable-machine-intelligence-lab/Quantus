@@ -43,20 +43,21 @@ class InputInvariance(PerturbationMetric):
         """
         Parameters
         ----------
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        input_shift (integer): Shift to the input data, default=-1.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be produced over all instances.
-        aggregate_func (Callable): A Callable to aggregate the scores per instance to one float.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=False.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=False.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            input_shift (integer): Shift to the input data, default=-1.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=baseline_replacement_by_indices.
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be produced over all instances.
+            aggregate_func (Callable): A Callable to aggregate the scores per instance to one float.
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise:
             warn_func.warn_normalise_operation(word="not ")

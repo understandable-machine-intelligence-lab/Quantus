@@ -47,16 +47,16 @@ class Metric:
 
         Parameters
         ----------
-        abs (boolean): Indicates whether absolute operation is applied on the attribution.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call..
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
-
+            abs (boolean): Indicates whether absolute operation is applied on the attribution.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call..
+            default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
+            kwargs (optional): Keyword arguments.
         """
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
@@ -108,20 +108,21 @@ class Metric:
 
         Parameters
         ----------
-        model: a torch model e.g., torchvision.models that is subject to explanation
-        x_batch: a np.ndarray which contains the input data that are explained
-        y_batch: a np.ndarray which contains the output labels that are explained
-        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
-        custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
-        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-            Inferred from the input shape if None.
-        explain_func (callable): Callable generating attributions.
-        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
-        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+            model: a torch model e.g., torchvision.models that is subject to explanation
+            x_batch: a np.ndarray which contains the input data that are explained
+            y_batch: a np.ndarray which contains the output labels that are explained
+            a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
+            s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
+            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
+            explain_func (callable): Callable generating attributions.
+            explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
+            model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+            device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
+                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+            kwargs (optional): Keyword arguments.
 
         Returns
         -------
@@ -129,28 +130,32 @@ class Metric:
 
         Examples
         --------
-        # Enable GPU.
-        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            >> import quantus
+            >> from quantus import LeNet
+            >> import torch
 
-        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-        >> model = LeNet()
-        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # Load MNIST datasets and make loaders.
-        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
 
-        # Load a batch of inputs and outputs to use for XAI evaluation.
-        >> x_batch, y_batch = iter(test_loader).next()
-        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-        # Generate Saliency attributions of the test set batch of the test set.
-        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-        # Initialise the metric and evaluate explanations by calling the metric instance.
-        >> metric = Metric(abs=True, normalise=False)
-        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Metric(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)

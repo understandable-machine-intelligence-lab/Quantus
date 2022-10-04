@@ -50,26 +50,27 @@ class MonotonicityCorrelation(PerturbationMetric):
         """
         Parameters
         ----------
-        similarity_func (callable): Similarity function applied to compare input and perturbed input.
-            If None, the default value is used, default=correlation_spearman.
-        eps (float): Attributions threshold, default=1e-5.
-        nr_samples (integer): The number of samples to iterate over, default=100.
-        features_in_step (integer): The size of the step, default=1.
-        abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
-        perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
-            default="uniform".
-        perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-        aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-            default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            similarity_func (callable): Similarity function applied to compare input and perturbed input.
+                If None, the default value is used, default=correlation_spearman.
+            eps (float): Attributions threshold, default=1e-5.
+            nr_samples (integer): The number of samples to iterate over, default=100.
+            features_in_step (integer): The size of the step, default=1.
+            abs (boolean): Indicates whether absolute operation is applied on the attribution, default=True.
+            normalise (boolean): Indicates whether normalise operation is applied on the attribution, default=True.
+            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
+                If normalise_func=None, the default value is used, default=normalise_by_negative.
+            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
+            perturb_func (callable): Input perturbation function. If None, the default value is used,
+                default=baseline_replacement_by_indices.
+            perturb_baseline (string): Indicates the type of baseline: "mean", "random", "uniform", "black" or "white",
+                default="uniform".
+            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
+            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
+            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
+                default_plot_func (callable): Callable that plots the metrics result.
+            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
+            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
+            kwargs (optional): Keyword arguments.
         """
         if normalise_func is None:
             normalise_func = normalise_by_negative
