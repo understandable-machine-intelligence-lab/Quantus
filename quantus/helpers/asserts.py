@@ -317,12 +317,20 @@ def assert_value_smaller_than_input_size(
             f" [{value} >= {np.prod(x.shape[2:])}]"
         )
 
+def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]) -> None:
+    """
+    Checks that indexed_axes fits the given array.
 
-# TODO: Change for batching update, since currently single images are expected.
-def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
+    Parameters
+    ----------
+    arr (np.array): a given array that we want to check indexed_axes against.
+    indexed_axes (sequence): the sequence with indices, wiht axes.
+
+    Returns
+    -------
+    None
     """
-    Checks that indexed_axes fits arr
-    """
+    # TODO: Change for batching update, since currently single images are expected.
     assert len(indexed_axes) <= arr.ndim
     assert len(indexed_axes) == len(np.arange(indexed_axes[0], indexed_axes[-1] + 1))
     assert all(
