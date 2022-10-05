@@ -8,11 +8,15 @@ Welcome to Quantus's documentation!
 
 Quantus is an eXplainable AI toolkit for responsible evaluation of neural network explanations.
 
+Hello world.
+
+
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Getting started
 
+   getting_started/gettting_started
    getting_started/installation
    getting_started/usage_example
    getting_started/application_icml2022
@@ -20,21 +24,8 @@ Quantus is an eXplainable AI toolkit for responsible evaluation of neural networ
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
-
-   tutorials/1
-   tutorials/2
-   tutorials/3
-   tutorials/4
-   tutorials/5
-   tutorials/6
-   tutorials/7
-
-
-.. toctree::
    :maxdepth: 4
-   :caption: API documentation
+   :caption: API Documentation
 
    docs_api/quantus
 
@@ -47,9 +38,20 @@ Quantus is an eXplainable AI toolkit for responsible evaluation of neural networ
    docs_dev/examples
 
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
 
 .. toctree::
    :maxdepth: 1
    :caption: Other
 
-   GitHub Repository <https://https://github.com/understandable-machine-intelligence-lab/Quantus>
+   GitHub Repository <https://github.com/understandable-machine-intelligence-lab/Quantus>
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Guidelines
+
+   guidelines/guidelines_and_disclaimers
