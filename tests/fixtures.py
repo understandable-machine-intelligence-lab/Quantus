@@ -6,10 +6,11 @@ import torch
 import torchvision
 from torchvision import transforms
 import numpy as np
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.datasets import cifar10
-import tensorflow as tf
+
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 from ..quantus.helpers.pytorch_model import PyTorchModel
 from ..quantus.helpers.tf_model import TensorFlowModel
 

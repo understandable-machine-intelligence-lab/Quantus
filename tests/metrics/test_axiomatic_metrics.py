@@ -5,11 +5,11 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from ..fixtures import *
-from ..quantus.metrics import *
-from ..quantus.helpers import *
-from ..quantus.helpers.explanation_func import explain
-from ..quantus.helpers.pytorch_model import PyTorchModel
-from ..quantus.helpers.tf_model import TensorFlowModel
+from ...quantus.metrics import *
+from ...quantus.helpers import *
+from ...quantus.helpers.explanation_func import explain
+from ...quantus.helpers.pytorch_model import PyTorchModel
+from ...quantus.helpers.tf_model import TensorFlowModel
 
 
 @pytest.mark.axiomatic
