@@ -324,21 +324,23 @@ def get_wrapped_model(
     -------
         model (ModelInterface): A wrapped ModelInterface model.
     """
-    if isinstance(model, tf.keras.Model):
-        return TensorFlowModel(
-            model=model,
-            channel_first=channel_first,
-            softmax=softmax,
-            model_predict_kwargs=model_predict_kwargs,
-        )
-    if isinstance(model, torch.nn.modules.module.Module):
-        return PyTorchModel(
-            model=model,
-            channel_first=channel_first,
-            softmax=softmax,
-            device=device,
-            model_predict_kwargs=model_predict_kwargs,
-        )
+    if util.find_spec("tensorflow"):
+        if isinstance(model, tf.keras.Model):
+            return TensorFlowModel(
+                model=model,
+                channel_first=channel_first,
+                softmax=softmax,
+                model_predict_kwargs=model_predict_kwargs,
+            )
+    if util.find_spec("torch"):
+        if isinstance(model, torch.nn.modules.module.Module):
+            return PyTorchModel(
+                model=model,
+                channel_first=channel_first,
+                softmax=softmax,
+                device=device,
+                model_predict_kwargs=model_predict_kwargs,
+            )
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )
