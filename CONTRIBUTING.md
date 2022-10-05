@@ -1,7 +1,7 @@
 <!-- omit in toc -->
 # Contributing to Quantus
 
-Thank you for taking interest in contributions to Quantus! We encourage you to contribute new features/metrics, optimize, refactor and report any bugs you may come across. In this guide you will get an overview of the workflow and best practices for contributing to Quantus.
+Thank you for taking interest in contributions to Quantus! We encourage you to contribute new features/metrics, optimize, refactor and report any bugs you may come across. In this guide, you will get an overview of the workflow and best practices for contributing to Quantus.
 <!-- omit in toc -->
 ## Table of Contents
 
@@ -68,7 +68,7 @@ pytest -m faithfulness -s
 ```
 For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
 ### Documentation
-Make sure to add docstrings to every class, method and function that you add to the codebase. The docstring should include a descriptions of all parameters and returns. Use the existing documentation as an example.
+Make sure to add docstrings to every class, method and function that you add to the codebase. The docstring should include a description of all parameters and returns. Use the existing documentation as an example.
 TODO: Automatic docstring generation.
 
 ### Before You Create a Pull Request
@@ -98,7 +98,7 @@ Once you are done with the changes:
 - Add [annahedstroem](https://github.com/annahedstroem) as a reviewer.
 
 ## Contributing a New Metric
-We always welcome extensions to our collection of evaluation metrics. This short desciption provides a guideline to introducing a new metric into Quantus. We strongly encourage you to take example from already implemented metrics.
+We always welcome extensions to our collection of evaluation metrics. This short description provides a guideline to introducing a new metric into Quantus. We strongly encourage you to take an example from already implemented metrics.
 
 ### Theoretic Foundations
 Currently, we support six subgroups of evaluation metrics: 
@@ -109,7 +109,7 @@ Currently, we support six subgroups of evaluation metrics:
 - randomisation 
 - axiomatic.
 
-See more detailed description of those in [README](https://github.com/understandable-machine-intelligence-lab/Quantus#library-overview).
+See a more detailed description of those in [README](https://github.com/understandable-machine-intelligence-lab/Quantus#library-overview).
 Identify which category your metric belongs to and create a Python file for your metric class in the respective folder in `quantus/metrics`.
 
 ### Metric Class
@@ -128,9 +128,9 @@ The following methods are optimal for implementation:
 - `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional steps can be added here.
 
 ### Using Helpers
-In the `quantus/helpers` folder you might find functions relevant to your implementation. Use search function and go through the function docstrings to explore your options. 
+In the `quantus/helpers` folder, you might find functions relevant to your implementation. Use search function and go through the function docstrings to explore your options. 
 
-If you find yourself developing some functionality of a more general scope, consider adding this code to a respective file, or creating a new module in `quantus/helpers`.
+If you find yourself developing some functionality of more general scope, consider adding this code to a respective file, or creating a new module in `quantus/helpers`.
 
 ### Warnings
 The `__init__()` method of a metric class typically call a warning that includes the following information:
@@ -142,7 +142,7 @@ The `__init__()` method of a metric class typically call a warning that includes
 Declaration of a method class should be followed by:
 - A detailed description of the metric
 - References
-- Assumtions
+- Assumptions
 
 Otherwise, please remember to add a description for all parameters and returns of each new method/function, as well as a description of the purpose of the method/function itself.
 ## License
