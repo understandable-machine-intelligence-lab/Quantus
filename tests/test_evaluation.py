@@ -1,6 +1,17 @@
+from typing import Union
+import pytest
+import numpy as np
 from pytest_lazyfixture import lazy_fixture
-from .fixtures import *
-from ..quantus import *
+
+from .fixtures import (
+    load_1d_3ch_conv_model,
+    almost_uniform_1d_no_abatch,
+    load_mnist_model,
+    load_mnist_images,
+)
+from ..quantus.metrics.robustness import MaxSensitivity
+from ..quantus.metrics.complexity import Sparseness
+from ..quantus.evaluation import evaluate
 from ..quantus.helpers.explanation_func import explain
 
 

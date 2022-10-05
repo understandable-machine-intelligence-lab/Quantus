@@ -273,7 +273,7 @@ def test_filter_compatible_patch_sizes(
     ],
 )
 def test_get_name(data: np.ndarray, expected: Union[float, dict, bool]):
-    out = get_name(str=data)
+    out = get_name(name=data)
     assert out == expected, "Test failed."
 
 
@@ -946,7 +946,11 @@ def test_infer_attribution_axes(params: dict, expected: Any):
         (
             {
                 "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
-                "indices": (np.array([0, 1]), np.array([3, 4, 5]), np.array([3, 4, 5, 6])),
+                "indices": (
+                    np.array([0, 1]),
+                    np.array([3, 4, 5]),
+                    np.array([3, 4, 5, 6]),
+                ),
                 "indexed_axes": [0, 1, 2],
             },
             {"sum": 227880, "shape": (2, 3, 4, 10)},
@@ -955,53 +959,50 @@ def test_infer_attribution_axes(params: dict, expected: Any):
             {
                 "arr": np.arange(0, 10000).reshape((10, 10, 10, 10)),
                 "indices": (
-                        slice(None, None, None),
-                        np.array([[[5, 5, 5],
-                                   [5, 5, 5],
-                                   [5, 5, 5]],
-                                  [[6, 6, 6],
-                                   [6, 6, 6],
-                                   [6, 6, 6]]]
-                                 ),
-                        np.array([[[5, 5, 5],
-                                   [6, 6, 6],
-                                   [7, 7, 7]],
-                                  [[5, 5, 5],
-                                   [6, 6, 6],
-                                   [7, 7, 7]]]),
-                        np.array([[[3, 8, 7],
-                                   [3, 8, 7],
-                                   [3, 8, 7]],
-                                  [[3, 8, 7],
-                                   [3, 8, 7],
-                                   [3, 8, 7]]]
-                                 )
+                    slice(None, None, None),
+                    np.array(
+                        [
+                            [[5, 5, 5], [5, 5, 5], [5, 5, 5]],
+                            [[6, 6, 6], [6, 6, 6], [6, 6, 6]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[5, 5, 5], [6, 6, 6], [7, 7, 7]],
+                            [[5, 5, 5], [6, 6, 6], [7, 7, 7]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[3, 8, 7], [3, 8, 7], [3, 8, 7]],
+                            [[3, 8, 7], [3, 8, 7], [3, 8, 7]],
+                        ]
+                    ),
                 ),
                 "indexed_axes": [1, 2, 3],
             },
-            {"value": (
-                        slice(None, None, None),
-                        np.array([[[5, 5, 5],
-                                   [5, 5, 5],
-                                   [5, 5, 5]],
-                                  [[6, 6, 6],
-                                   [6, 6, 6],
-                                   [6, 6, 6]]]
-                                 ),
-                        np.array([[[5, 5, 5],
-                                   [6, 6, 6],
-                                   [7, 7, 7]],
-                                  [[5, 5, 5],
-                                   [6, 6, 6],
-                                   [7, 7, 7]]]),
-                        np.array([[[3, 8, 7],
-                                   [3, 8, 7],
-                                   [3, 8, 7]],
-                                  [[3, 8, 7],
-                                   [3, 8, 7],
-                                   [3, 8, 7]]]
-                                 )
-            )
+            {
+                "value": (
+                    slice(None, None, None),
+                    np.array(
+                        [
+                            [[5, 5, 5], [5, 5, 5], [5, 5, 5]],
+                            [[6, 6, 6], [6, 6, 6], [6, 6, 6]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[5, 5, 5], [6, 6, 6], [7, 7, 7]],
+                            [[5, 5, 5], [6, 6, 6], [7, 7, 7]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[3, 8, 7], [3, 8, 7], [3, 8, 7]],
+                            [[3, 8, 7], [3, 8, 7], [3, 8, 7]],
+                        ]
+                    ),
+                )
             },
         ),
         (

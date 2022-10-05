@@ -793,7 +793,7 @@ def test_get_explanation(
         assert all(s == expected for s in a_batch), "Test failed."
     else:
         if "shape" in expected:
-            assert (a_batch.shape == expected["shape"]), "Test failed."
+            assert a_batch.shape == expected["shape"], "Test failed."
         elif "value" in expected:
             assert all(
                 s == expected["value"] for s in a_batch.flatten()
