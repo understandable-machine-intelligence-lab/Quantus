@@ -39,6 +39,7 @@ jobs:
       uses: wearerequired/lint-action@v2.1.0
       with:
           black: true
+          black_auto_fix: true
           flake8: true
           mypy: true
     - name: Test with pytest
