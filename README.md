@@ -396,23 +396,4 @@ fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggre
 
 ## Contributing
 
-If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
-
-#### Code Style
-
-Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
-We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
-
-#### Testing
-Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
-
-#### Workflow
-
-Before creating a PR, double-check that the following tasks are completed:
-
-- [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Make `pytests` and add under `tests/` folder (to install mandatory packages for testing run `pip install -r requirements_text.txt`)
-- [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
-- [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
-
+We welcome any sort of contribution to Quantus. For a detailed contribution guide, please refer to [Contributing](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/CONTRIBUTING.md) documentation first.
