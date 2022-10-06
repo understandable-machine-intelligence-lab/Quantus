@@ -269,19 +269,20 @@ class Metric:
         p: Optional[np.ndarray] = None,
     ) -> Any:
         """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
         This method needs to be implemented to use __call__().
-        Gets model and data for a single instance as input, returns result.
 
         Parameters
         ----------
             i (integer): The evaluation instance.
-            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x (np.array): The input to be evaluated on an instance basis.
-            y (np.array): The output to be evaluated on an instance basis.
-            a (np.array): The explanation to be evaluated on an instance basis.
-            a (np.array): The segmentation to be evaluated on an instance basis.
-            c (Any): The custom input to be evaluated on an instance basis.
-            c (Any): The custom preprocess input to be evaluated on an instance basis.
+            model (ModelInteface): A ModelInteface that is subject to explanation.
+            x (np.array): The input to be evaluated on an instance-basis.
+            y (np.array): The output to be evaluated on an instance-basis.
+            a (np.array): The explanation to be evaluated on an instance-basis.
+            a (np.array): The segmentation to be evaluated on an instance-basis.
+            c (Any): The custom input to be evaluated on an instance-basis.
+            p (Any): The custom preprocess input to be evaluated on an instance-basis.
         """
         raise NotImplementedError()
 
@@ -461,7 +462,8 @@ class Metric:
 
         Returns
         -------
-            (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]): A custom preprocess.
+            (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]): In addition to the
+            x_batch, y_batch, a_batch, s_batch and custom_batch, returning a custom preprocess (custom_preprocess_batch).
 
         """
         custom_preprocess_batch = [None for _ in x_batch]
