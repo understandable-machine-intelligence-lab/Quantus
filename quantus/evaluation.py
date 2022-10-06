@@ -14,8 +14,8 @@ from .helpers.model_interface import ModelInterface
 
 
 def evaluate(
-    metrics: dict,  # Initialised metrics.
-    xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], list],
+    metrics: Dict,
+    xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], List[str]],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
@@ -27,7 +27,28 @@ def evaluate(
     **call_kwargs,
 ) -> Optional[dict]:
     """
-    A methods to evaluate metrics given some explanation methods.
+    A method to evaluate some explanation methods given some metrics.
+
+    Parameters
+    ----------
+        metrics (Dict): A dictionary with intialised metrics.
+        xai_methods (Union[Dict[str, Callable], Dict[str, np.ndarray], list]): Pass the different explanation methods, either:
+        as a List[str] using the included explanation methods in Quantus. Or as a dictionary with where the keys are the
+        name of the explanation methods and the values are the explanations (np.array). Alternatively, pass an explanation function
+        to compute on-the-fly instead of passing pre-computed attributions as the dictionary values.
+        model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: A np.ndarray which contains the input data that are explained.
+        y_batch: A np.ndarray which contains the output labels that are explained.
+        a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+        s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+        agg_func (callable): Indicates how to aggregates scores e.g., pass np.mean.
+        progress (boolean): Indicates if progress should be printed to std, or not.
+        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
+        call_kwargs (optional): Keyword arguments for the call of the metrics.
+
+    Returns
+    -------
+        results (dict): A dictionary with the results.
     """
 
     if xai_methods is None:
