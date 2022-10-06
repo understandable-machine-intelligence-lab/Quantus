@@ -2,11 +2,23 @@
 
 **Quantus is an eXplainable AI toolkit for responsible evaluation of neural network explanations.**
 
+<p align="center">
+  <img width="550" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+</p>
+<p><small>
+Figure: a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which
+gradient-based method — Saliency, Integrated Gradients, GradientShap or FusionGrad
+is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic
+quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter
+e.g. pixel replacement strategy of a faithfulness test influences the ranking of XAI methods.
+</small></p>
+
 [📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
 
 This documentation is complementary to Quantus repository's [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) and provides documentation
 for how to install Quantus (**Installation**), how to contribute to the project (**Developer Documentation**) and on the interface (**API Documentation**).
-For further guidance on how to best use the library, please read the user guidelines (**Guidelines**). More information about how to get started can be be found in the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus)
+For further guidance on how what to think about when using Quantus, please read the user guidelines (**Guidelines**).
+More information about how to get started can be be found below (**Getting started**) including
 with various examples in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
 Quantus can be installed from [PyPI](https://pypi.org/project/quantus/)
@@ -43,7 +55,7 @@ docs_api/modules
 :caption: Developer Documentation
 :maxdepth: 1
 
-docs_dev/contribution_guide
+docs_dev/CONTRIBUTING.md
 ```
 
 ```{toctree}
