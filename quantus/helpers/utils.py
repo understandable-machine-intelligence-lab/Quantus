@@ -72,15 +72,15 @@ def get_baseline_value(
     -------
 
     """
-    #TODO Anna: this whole function seems unneccesary complicated, I would refactor it.
-    #TODO Anna: maybe it's better just to pass arr, return_shape is superfluous (what if arr.shape!=return_shape?).
+
+
     kwargs["return_shape"] = return_shape
     if isinstance(value, (float, int)):
         return np.full(return_shape, value)
     elif isinstance(value, np.ndarray):
         if value.ndim == 0:
             return np.full(return_shape, value)
-        elif value.shape == return_shape: #TODO Anna: what's the point of passing value as an np.array, if we just return it?
+        elif value.shape == return_shape:
             return value
         else:
             raise ValueError(
@@ -89,7 +89,7 @@ def get_baseline_value(
                 )
             )
     elif isinstance(value, str):
-        fill_dict = get_baseline_dict(arr, patch, **kwargs) # TODO Anna: Why do we calculate the whole dictionary, when we just need the value for one string?
+        fill_dict = get_baseline_dict(arr, patch, **kwargs)
         if value.lower() == "random":
             raise ValueError(
                 "'random' as a choice for 'perturb_baseline' is deprecated and has been removed from "
@@ -141,7 +141,7 @@ def get_baseline_dict(
 
 def get_name(str: str):
     """Get the name of the class object."""
-    # TODO Anna: What does it do? Looks a bit hacky. Maybe it's better to introduce direct mapping dictionary?
+
     if str.isupper():
         return str
     return " ".join(re.sub(r"([A-Z])", r" \1", str).split())
@@ -160,7 +160,7 @@ def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...])
     -------
     (float): Product of the input shape divided by the maximum number of steps.
     """
-    return np.prod(input_shape) / max_steps_per_input #TODO: this is supposed to be an integer, but can be a float.
+    return int(np.prod(input_shape) / max_steps_per_input)
 
 
 def filter_compatible_patch_sizes(perturb_patch_sizes: list, img_size: int) -> list:
@@ -299,21 +299,23 @@ def get_wrapped_model(
     -------
     model (ModelInterface): A wrapped ModelInterface model.
     """
-    if isinstance(model, tf.keras.Model):
-        return TensorFlowModel(
-            model=model,
-            channel_first=channel_first,
-            softmax=softmax,
-            predict_kwargs=predict_kwargs,
-        )
-    if isinstance(model, torch.nn.modules.module.Module):
-        return PyTorchModel(
-            model=model,
-            channel_first=channel_first,
-            softmax=softmax,
-            device=device,
-            predict_kwargs=predict_kwargs,
-        )
+    if util.find_spec("tensorflow"):
+        if isinstance(model, tf.keras.Model):
+            return TensorFlowModel(
+                model=model,
+                channel_first=channel_first,
+                softmax=softmax,
+                predict_kwargs=predict_kwargs,
+            )
+    if util.find_spec("torch"):
+        if isinstance(model, torch.nn.modules.module.Module):
+            return PyTorchModel(
+                model=model,
+                channel_first=channel_first,
+                softmax=softmax,
+                device=device,
+                predict_kwargs=predict_kwargs,
+            )
     raise ValueError(
         "Model needs to be tf.keras.Model or torch.nn.modules.module.Module."
     )
@@ -333,8 +335,8 @@ def blur_at_indices(
     kernel (np.array): Kernel used for blurring.
     indices (Union[int, Sequence[int], Tuple[np.array]]): One/multiple indices, or a tuple of array of indices
     to blur the image at.
-    indexed_axes (Sequence[int]): #TODO Anna: ???
 
+    indexed_axes (Sequence[int]):
     Returns
     -------
     np.array: A version of arr that is blurred at indices.
@@ -449,7 +451,7 @@ def get_nr_patches(
     ----------
     patch_size (Union[int, Sequence[int]]): One- or multidimensional patch size.
     shape (shape: Tuple[int, ...]): Image shape.
-    overlap (bool): TODO: unused!
+    overlap (bool):
 
     Returns
     -------
