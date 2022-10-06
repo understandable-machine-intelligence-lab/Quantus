@@ -40,13 +40,13 @@ jobs:
     - name: Lint Action
       uses: wearerequired/lint-action@v2.1.0
       with:
-          auto_fix: true
+          #auto_fix: true
           black: true
-          black_auto_fix: true
+          #black_auto_fix: true
           flake8: true
-          flake8_auto_fix: false
+          #flake8_auto_fix: false
           mypy: true
-          mypy_auto_fix: false
+          #mypy_auto_fix: false
     - name: Test with pytest
       run: |
         pytest
