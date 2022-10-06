@@ -20,13 +20,15 @@ from ..helpers import warn_func
 if util.find_spec("torch"):
     import torch
 if util.find_spec("captum"):
-    from captum.attr import (GradientShap,
-                             IntegratedGradients,
-                             InputXGradient,
-                             Saliency,
-                             Occlusion,
-                             FeatureAblation,
-                             LayerGradCam)
+    from captum.attr import (
+        GradientShap,
+        IntegratedGradients,
+        InputXGradient,
+        Saliency,
+        Occlusion,
+        FeatureAblation,
+        LayerGradCam,
+    )
 if util.find_spec("zennit"):
     from zennit import canonizers as zcanon
     from zennit import composites as zcomp
