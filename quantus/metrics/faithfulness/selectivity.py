@@ -163,6 +163,24 @@ class Selectivity(PerturbationMetric):
         c: Any,
         p: Any,
     ) -> List[float]:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+            i (integer): The evaluation instance.
+            model (ModelInteface): A ModelInteface that is subject to explanation.
+            x (np.array): The input to be evaluated on an instance-basis.
+            y (np.array): The output to be evaluated on an instance-basis.
+            a (np.array): The explanation to be evaluated on an instance-basis.
+            a (np.array): The segmentation to be evaluated on an instance-basis.
+            c (Any): The custom input to be evaluated on an instance-basis.
+            p (Any): The custom preprocess input to be evaluated on an instance-basis.
+
+        Returns
+        -------
+            (List[float]): The evaluation results.
+        """
 
         # Predict on input.
         x_input = model.shape_input(x, x.shape, channel_first=True)
