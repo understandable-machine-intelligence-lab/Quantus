@@ -11,8 +11,7 @@ import scipy
 from importlib import util
 import cv2
 import warnings
-from .utils import *
-from .normalise_func import *
+from .normalise_func import normalise_by_negative
 from ..helpers import __EXTRAS__
 from ..helpers import constants
 from ..helpers import warn_func
