@@ -1,5 +1,3 @@
 sphinx
 sphinx-rtd-theme
 myst
-#myst-nb
-rst-to-myst

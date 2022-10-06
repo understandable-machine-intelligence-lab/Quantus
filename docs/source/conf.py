@@ -7,7 +7,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from datetime import datetime
 import sys, os
-#sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 
@@ -23,16 +22,8 @@ release = 'v0.2.1'
 
 extensions = ['myst_parser',
               "sphinx.ext.autodoc",
-              #'myst_nb',
-              #'myst_parser',
-              #'sphinx.ext.coverage',
-              #'sphinx.ext.napoleon',
-              #'autoapi.extension'
               "numpydoc"
               ]
-
-# Napolean settings.
-#napoleon_numpy_docstring = True
 
 source_suffix = ['.rst', '.md']
 
@@ -50,5 +41,3 @@ html_theme_options = {
 }
 html_logo = "assets/quantus_logo 2.png"
 html_static_path = ["", "_static"]
-
-#autoapi_dirs = ['../../quantus']
