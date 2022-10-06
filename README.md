@@ -392,7 +392,7 @@ If you want to return an aggreagate score for your test samples you can set the 
 
 ```return_aggregate = True```
 
-fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
+for which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
 
 ## Contributing
 
