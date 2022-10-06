@@ -7,7 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from datetime import datetime
 import sys, os
+#sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../..'))
+
 
 # -- Project information -----------------------------------------------------
 
@@ -24,7 +26,7 @@ extensions = ['myst_parser',
               #'myst_nb',
               #'myst_parser',
               #'sphinx.ext.coverage',
-              'sphinx.ext.napoleon',
+              #'sphinx.ext.napoleon',
               #'autoapi.extension'
               "numpydoc"
               ]

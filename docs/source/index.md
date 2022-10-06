@@ -2,23 +2,21 @@
 
 **Quantus is an eXplainable AI toolkit for responsible evaluation of neural network explanations.**
 
-[📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
 
 This documentation is complementary to Quantus repository's [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) and provides documentation
 for how to install Quantus (**Installation**), how to contribute to the project (**Developer Documentation**) and on the interface (**API Documentation**).
-For further guidance on how to best use the library, please read the user guidelines (**Guidelines**).
-
-More information about how to get started can be be found in the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus)
+For further guidance on how to best use the library, please read the user guidelines (**Guidelines**). More information about how to get started can be be found in the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus)
 with various examples in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
 Quantus can be installed from [PyPI](https://pypi.org/project/quantus/)
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).
-For alternative ways to install Quantus package, read more under **Installation**.
 
 ```setup
 pip install quantus
 ```
 
+For alternative ways to install Quantus package, read more under **Installation**.
 
 ```{toctree}
 :caption: Installation
@@ -38,7 +36,7 @@ getting_started/getting_started_example
 :caption: API Documentation
 :maxdepth: 1
 
-docs_api/quantus
+docs_api/modules
 ```
 
 ```{toctree}
@@ -79,4 +77,4 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 }
 ```
 
-When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors.
+When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors.
