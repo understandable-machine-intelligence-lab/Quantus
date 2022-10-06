@@ -201,7 +201,7 @@ class Complexity(Metric):
         c: Any,
         p: Any,
     ) -> float:
-        """"
+        """ "
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters

@@ -9,6 +9,7 @@
 import numpy as np
 from typing import Callable, Tuple, Union, Sequence
 
+
 def attributes_check(metric):
     """
     Basic check of all the metrics, passed as a decorator.
