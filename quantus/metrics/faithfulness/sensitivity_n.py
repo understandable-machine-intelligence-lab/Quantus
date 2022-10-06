@@ -352,7 +352,23 @@ class SensitivityN(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Optional[Any]:
+    ) -> List[float]:
+        """
+        Post-process the evaluation results.
+
+        Parameters
+        ----------
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+            (List[float]): Returns the post-processed results.
+        """
 
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
