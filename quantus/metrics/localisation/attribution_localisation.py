@@ -133,9 +133,9 @@ class AttributionLocalisation(Metric):
 
         Parameters
         ----------
-            model: A torch or tensorflow model that is subject to explanation.
-            x_batch: A np.ndarray which contains the input data that are explained.
-            y_batch: A np.ndarray which contains the output labels that are explained.
+            model (Union[torch.nn.Module, tf.keras.Model]): A torch or tensorflow model that is subject to explanation.
+            x_batch (np.ndarray): A np.ndarray which contains the input data that are explained.
+            y_batch (np.ndarray): A np.ndarray which contains the output labels that are explained.
             a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
             s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
             channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
@@ -273,9 +273,9 @@ class AttributionLocalisation(Metric):
 
         Parameters
         ----------
-            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x_batch: A np.ndarray which contains the input data that are explained.
-            y_batch: A np.ndarray which contains the output labels that are explained.
+            model (Union[torch.nn.Module, tf.keras.Model]): A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch (np.ndarray): A np.ndarray which contains the input data that are explained.
+            y_batch (np.ndarray): A np.ndarray which contains the output labels that are explained.
             a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
             s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
             custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
