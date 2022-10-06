@@ -37,9 +37,9 @@ def evaluate(
         as a List[str] using the included explanation methods in Quantus. Or as a dictionary with where the keys are the
         name of the explanation methods and the values are the explanations (np.array). Alternatively, pass an explanation function
         to compute on-the-fly instead of passing pre-computed attributions as the dictionary values.
-        model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: A np.ndarray which contains the input data that are explained.
-        y_batch: A np.ndarray which contains the output labels that are explained.
+        model (Union[torch.nn.Module, tf.keras.Model]): A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch (np.ndarray): A np.ndarray which contains the input data that are explained.
+        y_batch (np.ndarray): A np.ndarray which contains the output labels that are explained.
         a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
         s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
         agg_func (callable): Indicates how to aggregates scores e.g., pass np.mean.
