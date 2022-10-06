@@ -113,7 +113,7 @@ For more use cases, please see notebooks in `/tutorials` folder which includes e
 ... and more.
 
 
-## Misc functionality
+### Misc functionality
 
 With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one.
 If you are replacing a function within the Quantus framework, make sure that your new function:
@@ -181,4 +181,4 @@ If you want to return an aggreagate score for your test samples you can set the 
 
 ```return_aggregate = True```
 
-fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
+for which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.

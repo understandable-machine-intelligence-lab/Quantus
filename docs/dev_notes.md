@@ -11,3 +11,6 @@ http://localhost:63342/Projects/quantus/docs/build/html/index.html#
 
 # Convert every .rst file under the docs directory
 > rst2myst convert docs/**/*.rst
+
+# A copy is made of CONTRIBUTING.md to docs_dev/CONTRIBUTING.md. To avoid any inconsistencies, edit in
+# CONTRIBUTING.md and overwrite in docs_dev/CONTRIBUTING.md.
