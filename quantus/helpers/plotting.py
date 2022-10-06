@@ -262,9 +262,7 @@ def plot_focus(
 
     Parameters
     ----------
-        results (Dict[str, List[float]],): A dictionary with the Focus scores obtained using different feature attribution methods. The keys
-                 of the dict must be strings referring to the feature attribution method and values should be a
-                 list of floats corresponding to the Focus scores.
+        results (Dict[str, List[float]],): A dictionary with the Focus scores obtained using different feature attribution methods.
         args (optional) Arguments.
         kwargs (optional): Keyword arguments.
 

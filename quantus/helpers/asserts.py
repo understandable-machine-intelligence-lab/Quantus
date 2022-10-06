@@ -304,7 +304,7 @@ def assert_value_smaller_than_input_size(
     x: np.ndarray, value: int, value_name: str
 ) -> None:
     """
-    Checks if value is smaller than input size, assumes batch and channel first dimension
+    Checks if value is smaller than input size, assumes batch and channel first dimension.
 
     Parameters
     ----------
