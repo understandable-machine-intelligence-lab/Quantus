@@ -318,7 +318,23 @@ class ROAD(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Optional[Any]:
+    ) -> Dict[int, float]:
+        """
+        Post-process the evaluation results.
+
+        Parameters
+        ----------
+            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            x_batch: A np.ndarray which contains the input data that are explained.
+            y_batch: A np.ndarray which contains the output labels that are explained.
+            a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+            s_batch: A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+            (Dict[int, float]): Returns the post-processed results.
+        """
 
         # Calculate accuracy for every number of most important pixels removed.
 
