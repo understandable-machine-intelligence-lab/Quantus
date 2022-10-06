@@ -114,7 +114,7 @@ class Metric:
 
         Parameters
         ----------
-            model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+            model: A torch or tensorflow model that is subject to explanation.
             x_batch: A np.ndarray which contains the input data that are explained.
             y_batch: A np.ndarray which contains the output labels that are explained.
             a_batch: A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
@@ -127,15 +127,17 @@ class Metric:
             softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
                 This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
             device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-            custom_batch (Any): Gives flexibility ot the user to use for evaluation, can hold any variable.
+            custom_batch (Any): An Any object that can be passed to the evaluation process.
+                Gives flexibility to the user to adapt for implementing their own metric.
             kwargs (optional): Keyword arguments.
 
         Returns
         -------
-            last_results (list): a list of float(s) with the evaluation outcome of concerned batch.
+            last_results (list): a list of Any with the evaluation scores of the concerned batch.
 
-        Examples
+        Examples:
         --------
+            # Minimal imports.
             >> import quantus
             >> from quantus import LeNet
             >> import torch
@@ -163,6 +165,7 @@ class Metric:
             >> metric = Metric(abs=True, normalise=False)
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
+
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
@@ -315,6 +318,8 @@ class Metric:
             - Takes absolute of attributions if desired.
             - If no segmentation s_batch given, creates list of Nones with as many
               elements as there are data instances.
+            - If no custom_batch given, creates list of Nones with as many
+              elements as there are data instances.
 
         Parameters
         ----------
@@ -420,7 +425,7 @@ class Metric:
         if self.abs:
             a_batch = np.abs(a_batch)
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
+        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch).
         if s_batch is None:
             s_batch = [None for _ in x_batch]
         if custom_batch is None:
@@ -451,6 +456,11 @@ class Metric:
         Implement this method if you need custom preprocessing of data,
         model alteration or simply for creating/initialising additional attributes.
 
+        If this function is implemented for your metric, make sure to add in the metric-specific
+        function custom_preprocess():
+
+        >> custom_preprocess_batch = [None for _ in x_batch]
+
         Parameters
         ----------
             model: A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
@@ -463,7 +473,7 @@ class Metric:
         Returns
         -------
             (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]): In addition to the
-            x_batch, y_batch, a_batch, s_batch and custom_batch, returning a custom preprocess (custom_preprocess_batch).
+            x_batch, y_batch, a_batch, s_batch and custom_batch, returning a custom preprocess batch (custom_preprocess_batch).
 
         """
         custom_preprocess_batch = [None for _ in x_batch]
