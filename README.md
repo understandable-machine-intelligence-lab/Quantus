@@ -15,7 +15,7 @@
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 <!--[![License](https://img.shields.io/github/license/understandable-machine-intelligence-lab/Quantus)](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/master/LICENSE)-->
-[![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)]
+[![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)
 (https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
