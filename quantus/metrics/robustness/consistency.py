@@ -26,12 +26,12 @@ class Consistency(Metric):
     the local consistency metric measures the probability a different image that the explanation "contains zebra" is
     being attributed to having the same prediction label.
 
+    Assumptions:
+        - A used-defined discreization function is used to discretize continuous explanation spaces.
+
     References:
          1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
             Explanations." arXiv preprint arXiv:2202.00734 (2022).
-
-    Assumptions:
-        - A used-defined discreization function is used to discretize continuous explanation spaces.
     """
 
     @asserts.attributes_check

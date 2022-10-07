@@ -29,6 +29,11 @@ class Selectivity(PerturbationMetric):
     as the features are being progressively removed and computes an average over
     a large number of examples.
 
+    Assumptions:
+        - The original metric definition relies on perturbation functionality suited only for images.
+        Therefore, only apply the metric to 3-dimensional (image) data. To extend the applicablity
+        to other data domains, adjustments to the current implementation might be necessary.
+
     References:
         1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
         "Methods for interpreting and understanding deep neural networks."
@@ -113,6 +118,9 @@ class Selectivity(PerturbationMetric):
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the patch size for masking"
                     " 'patch_size'"
+                ),
+                data_domain_applicability=(
+                    f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
                 citation=(
                     "Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. 'Methods for "

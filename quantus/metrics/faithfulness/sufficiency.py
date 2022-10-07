@@ -26,13 +26,13 @@ class Sufficiency(Metric):
     same explanation applies to. For example, if the explanation of a given image is "contains zebra", the local
     sufficiency metric measures the probability a different that contains zebra having the same prediction label.
 
-    References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
-
     Assumptions:
         - We assume that a given explanation applies to 'anothers' data point if the distance between
         the explanation and the explanations of the data point is under the user-defined threshold.
+
+    References:
+         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
+            Explanations." arXiv preprint arXiv:2202.00734 (2022).
     """
 
     @asserts.attributes_check

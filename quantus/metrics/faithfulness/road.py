@@ -26,6 +26,11 @@ class ROAD(PerturbationMetric):
     of removing k most important pixels. At each step k most relevant pixels (MoRF order) are replaced with noisy linear
     imputations which removes bias.
 
+    Assumptions:
+        - The original metric definition relies on perturbation functionality suited only for images.
+        Therefore, only apply the metric to 3-dimensional (image) data. To extend the applicablity
+        to other data domains, adjustments to the current implementation might be necessary.
+
     References:
         1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
         arXiv:2202.00449 (2022).
@@ -110,6 +115,9 @@ class ROAD(PerturbationMetric):
                 sensitive_params=(
                     "baseline value 'perturb_baseline', perturbation function 'perturb_func', "
                     "percentage of pixels k removed per iteration 'percentage_in_step'"
+                ),
+                data_domain_applicability=(
+                    f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
                 citation=(
                     "Rong, Leemann, et al. 'Evaluating Feature Attribution: An Information-Theoretic Perspective.' "

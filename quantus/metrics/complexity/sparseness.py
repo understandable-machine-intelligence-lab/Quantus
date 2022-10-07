@@ -24,14 +24,13 @@ class Sparseness(Metric):
     test asks that features that are truly predictive of the output F(x) should have significant contributions, and
     similarly, that irrelevant (or weakly-relevant) features should have negligible contributions.
 
+    Assumptions:
+        - Based on the implementation of the authors as found on the following link:
+        <https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py>.
+
     References:
         1) Chalasani, Prasad, et al. "Concise explanations of neural networks using adversarial training."
         International Conference on Machine Learning. PMLR, 2020.
-
-    Assumptions:
-        Based on authors' implementation as found on the following link:
-        https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py.
-
     """
 
     @asserts.attributes_check

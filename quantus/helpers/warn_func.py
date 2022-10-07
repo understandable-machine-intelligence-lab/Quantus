@@ -165,6 +165,7 @@ def warn_iterations_exceed_patch_number(n_iterations: int, n_patches: int) -> No
 def warn_parameterisation(
     metric_name: str = "Metric",
     sensitive_params: str = "X, Y and Z.",
+    data_domain_applicability: str = "",
     citation: str = "INSERT CITATION",
 ):
     """
@@ -174,6 +175,7 @@ def warn_parameterisation(
     ----------
         metric_name (string): The metric name.
         sensitive_params (string): The sensitive parameters of the metric.
+        data_domain_applicability(string): The applicability when it comes to data domains, default = "".
         citation (string): The citation.
 
     Returns
@@ -186,7 +188,7 @@ def warn_parameterisation(
     print("Warnings and information:")
     text = (
         f" (1) The {get_name(metric_name)} metric is likely to be sensitive to the choice of "
-        f"{sensitive_params}. \n (2) If attributions are normalised or their absolute values are taken it may "
+        f"{sensitive_params}. {data_domain_applicability} \n (2) If attributions are normalised or their absolute values are taken it may "
         f"destroy or skew information in the explanation and as a result, affect the overall evaluation outcome."
         f"\n (3) Make sure to validate the choices for hyperparameters of the metric (by calling"
         f" .get_params of the metric instance).\n (4) For further information, see original publication: {citation}."
