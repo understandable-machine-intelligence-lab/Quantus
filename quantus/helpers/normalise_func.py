@@ -1,4 +1,11 @@
 """This module provides some basic functionality to normalise and denormalise images."""
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
 from typing import Callable, Dict, Optional, Union, Sequence
 import numpy as np
 
@@ -6,9 +13,25 @@ import numpy as np
 def normalise_by_max(
     a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
-    """Normalise attributions by the maximum absolute value of the explanation."""
+    """
+    Normalise attributions by the maximum absolute value of the explanation.
 
-    # No normalization if a is only zeros.
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+        the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    a: np.ndarray
+         a normalised array.
+    """
+
+    # No normalisation if a is only zeros.
     if np.all(a == 0.0):
         return a
 
@@ -27,9 +50,25 @@ def normalise_by_max(
 def normalise_by_negative(
     a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None, **kwargs
 ) -> np.ndarray:
-    """Normalise relevance given a relevance matrix (r) [-1, 1]."""
+    """
+    Normalise attributions between [-1, 1].
 
-    # No normalization if a is only zeros.
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+            the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    a: np.ndarray
+         a normalised array.
+    """
+
+    # No normalisation if a is only zeros.
     if np.all(a == 0.0):
         return a
 
@@ -73,10 +112,27 @@ def normalise_by_negative(
 
 
 def denormalise(
-    img: np.ndarray,
+    a: np.ndarray,
     mean: np.ndarray,
     std: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    """De-normalise a torch image (using conventional ImageNet values)."""
-    return (np.array(img) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
+    """
+
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    mean: np.ndarray
+         The mean points to sample from, len(mean) = nr_channels.
+    std: np.ndarray
+         The standard deviations to sample from, len(mean) = nr_channels.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    np.ndarray
+        A denormalised array.
+    """
+    return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)

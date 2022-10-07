@@ -15,10 +15,11 @@
 <!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
 <!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
 <!--[![License](https://img.shields.io/github/license/understandable-machine-intelligence-lab/Quantus)](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/master/LICENSE)-->
+[![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
-[📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
         
 ## News and Highlights! :rocket:
 
@@ -57,7 +58,7 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 }
 ```
 
-When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 
+When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above).
 
 ## Table of contents
 
@@ -67,7 +68,7 @@ When applying individual metrics of Quantus, please make sure to also properly c
 * [Tutorials](#tutorials)
 * [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
-* [Citation](#citation)
+<!--* [Citation](#citation)-->
 
 ## Library overview 
 
@@ -172,7 +173,6 @@ The first iteration has been developed primarily for image classification tasks,
 Please read the user guidelines for further guidance on how to best use the library. 
 
 ## Installation
-
 
 Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) 
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
@@ -312,7 +312,7 @@ When comparing the max-Sensitivity scores for the Saliency and Integrated Gradie
 
 ## Tutorials
 
-To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
+To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `lower_bound` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
 
 For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
 
@@ -376,9 +376,6 @@ quantus.AVAILABLE_NORMALISATION_FUNCTIONS
 
 # To get the scores of the last evaluated batch.
 metric_instance_called.last_results
-
-# To get the scores of all the evaluated batches.
-metric_instance_called.all_results
 ````
 With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
         
@@ -392,7 +389,7 @@ If you want to return an aggreagate score for your test samples you can set the 
 
 ```return_aggregate = True```
 
-fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
+for which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
 
 ## Contributing
 

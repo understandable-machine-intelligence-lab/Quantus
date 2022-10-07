@@ -1220,7 +1220,6 @@ def test_region_perturbation(
         **call_params,
     )
 
-
     assert all(
         [
             (s >= expected["min"] and s <= expected["max"])

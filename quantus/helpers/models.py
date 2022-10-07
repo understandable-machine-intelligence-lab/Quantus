@@ -1,4 +1,11 @@
-"""This module contains example LeNets for PyTorch and tensorflow."""
+"""This module contains example LeNets and other simple architectures for PyTorch and tensorflow."""
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
 from importlib import util
 
 # Import different models depending on which deep learning framework is installed.
@@ -9,7 +16,10 @@ if util.find_spec("torch"):
     import torch
 
     class LeNet(torch.nn.Module):
-        """Network architecture from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch."""
+        """
+        A torch implementation of LeNet architecture.
+            Adapted from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch.
+        """
 
         def __init__(
             self,
@@ -37,7 +47,10 @@ if util.find_spec("torch"):
             return x
 
     class LeNetAdaptivePooling(torch.nn.Module):
-        """Network architecture from with adaptive pooling: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch."""
+        """
+        A torch implementation of LeNet architecture, with adaptive pooling.
+            Adapted from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch.
+        """
 
         @staticmethod
         def _eval_adaptive_size(input_size: int) -> int:
@@ -77,7 +90,9 @@ if util.find_spec("torch"):
             return x
 
     class ConvNet1D(torch.nn.Module):
-        """1D-convolutional architecture inspired from LeNet."""
+        """
+        A torch implementation of 1D-convolutional architecture inspired from LeNet.
+        """
 
         def __init__(self, n_channels, n_classes):
             super().__init__()
@@ -117,7 +132,10 @@ if util.find_spec("tensorflow"):
     from tensorflow.keras.models import Sequential
 
     class LeNetTF(Sequential):
-        """Network architecture adapted from: https://www.tensorflow.org/datasets/keras_example."""
+        """
+        A Tensorflow implementation of LeNet architecture.
+            Adapted from: https://www.tensorflow.org/datasets/keras_example.
+        """
 
         def __init__(self):
             super().__init__(
@@ -134,7 +152,9 @@ if util.find_spec("tensorflow"):
             )
 
     class ConvNet1DTF(Sequential):
-        """1D-convolutional architecture."""
+        """
+        A Tensorflow implementation of 1D-convolutional architecture.
+        """
 
         def __init__(self, n_channels, seq_len, n_classes):
             super().__init__(

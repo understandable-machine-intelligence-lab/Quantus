@@ -1,7 +1,18 @@
+"""This module contains constants and simple methods to retreive the available metrics, perturbation-,
+similarity-, normalisation- functions and explanation methods in Quantus."""
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
+from typing import List, Dict
 from ..metrics import *
 from .normalise_func import *
 from .perturb_func import *
 from .similarity_func import *
+from .loss_func import *
 
 
 AVAILABLE_METRICS = {
@@ -103,25 +114,73 @@ AVAILABLE_XAI_METHODS = {
 }
 
 
-def available_categories() -> list:
+def available_categories() -> List[str]:
+    """
+    Retrieve the available metric categories in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available metric categories in Quantus.
+    """
     return [c for c in AVAILABLE_METRICS.keys()]
 
 
-def available_metrics() -> dict:
+def available_metrics() -> Dict[str, str]:
+    """
+    Retrieve the available metrics in Quantus.
+
+    Returns
+    -------
+    Dict[str, str]
+        With the available metrics, under each category in Quantus.
+    """
     return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
-def available_methods() -> list:
+def available_methods() -> List[str]:
+    """
+    Retrieve the available explanation methods in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available explanation methods in Quantus.
+    """
     return [c for c in AVAILABLE_XAI_METHODS.keys()]
 
 
-def available_perturbation_functions() -> list:
+def available_perturbation_functions() -> List[str]:
+    """
+    Retrieve the available perturbation functions in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available perturbation functions in Quantus.
+    """
     return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
 
 
-def available_similarity_functions() -> list:
+def available_similarity_functions() -> List[str]:
+    """
+    Retrieve the available similarity functions in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available similarity functions in Quantus.
+    """
     return [c for c in AVAILABLE_SIMILARITY_FUNCTIONS.keys()]
 
 
-def available_normalisation_functions() -> list:
+def available_normalisation_functions() -> List[str]:
+    """
+    Retrieve the available normalisation functions in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available normalisation functions in Quantus.
+    """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]

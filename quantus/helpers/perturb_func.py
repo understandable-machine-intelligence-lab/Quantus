@@ -1,4 +1,11 @@
 """This modules holds a collection of perturbation functions i.e., ways to perturb an input or an explanation."""
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
 import copy
 import random
 import warnings
@@ -32,11 +39,22 @@ def baseline_replacement_by_indices(
 
     Parameters
     ----------
-        arr: array to be perturbed
-        indices: array-like, with a subset shape of arr
-        indexed_axes: dimensions of arr that are indexed. These need to be consecutive,
-                      and either include the first or last dimension of array.
-        perturb_baseline: baseline value to replace arr at indices with
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    indexed_axes: sequence
+        The dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
     indices = expand_indices(arr, indices, indexed_axes)
     baseline_shape = get_leftover_shape(arr, indexed_axes)
@@ -66,12 +84,24 @@ def baseline_replacement_by_shift(
 
     Parameters
     ----------
-        arr: array to be perturbed
-        indices: array-like, with a subset shape of arr
-        indexed_axes: axes of arr that are indexed. These need to be consecutive,
-                      and either include the first or last dimension of array.
-        input_shift: value to shift arr at indices with
+        arr: np.ndarray
+             Array to be perturbed.
+        indices: int, sequence, tuple
+            Array-like, with a subset shape of arr.
+        indexed_axes: sequence
+            The dimensions of arr that are indexed.
+            These need to be consecutive, and either include the first or last dimension of array.
+        input_shift: float, int, str, np.ndarray
+            Value to shift arr at indices with.
+        kwargs: optional
+            Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
+
     indices = expand_indices(arr, indices, indexed_axes)
     baseline_shape = get_leftover_shape(arr, indexed_axes)
 
@@ -105,16 +135,26 @@ def baseline_replacement_by_blur(
     **kwargs,
 ) -> np.array:
     """
-    Replace array at indices by a blurred version.
+    Replace array at indices by a blurred version, performed via convolution.
 
     Parameters
     ----------
-        Blur is performed via convolution.
-        arr: array to be perturbed
-        indices: array-like, with a subset shape of arr
-        indexed_axes: axes of arr that are indexed. These need to be consecutive,
-                      and either include the first or last dimension of array.
-        blur_kernel_size: controls the kernel-size of that convolution (Default is 15).
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    indexed_axes: sequence
+        The dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    blur_kernel_size: int, sequence
+            Controls the kernel-size of that convolution (Default is 15).
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
 
     indices = expand_indices(arr, indices, indexed_axes)
@@ -149,12 +189,24 @@ def gaussian_noise(
 
     Parameters
     ----------
-        arr: array to be perturbed
-        indices: array-like, with a subset shape of arr
-        indexed_axes: axes of arr that are indexed. These need to be consecutive,
-                      and either include the first or last dimension of array.
-        perturb_mean: Mean for gaussian
-        perturb_std: Std for gaussian
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    indexed_axes: sequence
+        The dimensions of arr that are indexed.
+        These need to be consecutive, and either include the first or last dimension of array.
+    perturb_mean (float):
+        The mean for gaussian noise.
+    perturb_std (float):
+        The standard deviation for gaussian noise.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
 
     indices = expand_indices(arr, indices, indexed_axes)
@@ -180,12 +232,24 @@ def uniform_noise(
 
     Parameters
     ----------
-        arr: array to be perturbed
-        indices: array-like, with a subset shape of arr
-        indexed_axes: axes of arr that are indexed. These need to be consecutive,
-                      and either include the first or last dimension of array.
-        lower_bound: lower bound for uniform sampling
-        upper_bound: upper bound for uniform sampling
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    indexed_axes: sequence
+        The dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    lower_bound: float
+            The lower bound for uniform sampling.
+    upper_bound: float, optional
+            The upper bound for uniform sampling.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
 
     indices = expand_indices(arr, indices, indexed_axes)
@@ -207,14 +271,23 @@ def uniform_noise(
 
 def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
     """
-    Rotate array by some given angle.
-    Assumes image type data and channel first layout.
+     Rotate array by some given angle, assumes image type data and channel first layout.
 
-    Parameters
-    ----------
-        arr: array to be perturbed
-        perturb_angle: rotation angle
+     Parameters
+     ----------
+     arr: np.ndarray
+         Array to be perturbed.
+     perturb_angle: float
+        The angle to perturb.
+     kwargs: optional
+        Keyword arguments.
+
+    Returns
+     -------
+     arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
+
     if arr.ndim != 3:
         raise ValueError(
             "perturb func 'rotation' requires image-type data."
@@ -242,15 +315,25 @@ def translation_x_direction(
     **kwargs,
 ) -> np.array:
     """
-    Translate array by some given value in the x-direction.
-    Assumes image type data and channel first layout.
+     Translate array by some given value in the x-direction, assumes image type data and channel first layout.
 
-    Parameters
-    ----------
-        arr: array to be perturbed
-        perturb_baseline: value for pixels that are missing values after translation
-        perturb_dy: translation length
+     Parameters
+     ----------
+     arr: np.ndarray
+         Array to be perturbed.
+     perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+     perturb_dx: integer
+        The translation length in features, e.g., pixels.
+     kwargs: optional
+        Keyword arguments.
+
+    Returns
+     -------
+     arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
+
     if arr.ndim != 3:
         raise ValueError(
             "perturb func 'translation_x_direction' requires image-type data."
@@ -276,26 +359,36 @@ def translation_x_direction(
 def translation_y_direction(
     arr: np.array,
     perturb_baseline: Union[float, int, str, np.array],
-    perturb_dx: int = 10,
+    perturb_dy: int = 10,
     **kwargs,
 ) -> np.array:
     """
-    Translate array by some given value in the x-direction.
-    Assumes image type data and channel first layout.
+     Translate array by some given value in the y-direction, assumes image type data and channel first layout.
 
-    Parameters
-    ----------
-        arr: array to be perturbed
-        perturb_baseline: value for pixels that are missing values after translation
-        perturb_dy: translation length
+     Parameters
+     ----------
+     arr: np.ndarray
+         Array to be perturbed.
+     perturb_baseline: float, int, str, np.ndarray
+        The baseline values to replace arr at indices with.
+     perturb_dy: integer
+        The translation length in features, e.g., pixels.
+     kwargs: optional
+        Keyword arguments.
+
+    Returns
+     -------
+     arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
+
     if arr.ndim != 3:
         raise ValueError(
             "perturb func 'translation_y_direction' requires image-type data."
             "Check that this perturb_func receives a 3D array."
         )
 
-    matrix = np.float32([[1, 0, 0], [0, 1, perturb_dx]])
+    matrix = np.float32([[1, 0, 0], [0, 1, perturb_dy]])
     arr_perturbed = cv2.warpAffine(
         np.moveaxis(arr, 0, 2),
         matrix,
@@ -318,14 +411,28 @@ def noisy_linear_imputation(
     **kwargs,
 ) -> np.array:
     """
-    Based on https://github.com/tleemann/road_evaluation.
-    Calculates noisy linear imputation for the given array and a list of indices indicating which elements are not
-    included in the mask.
+    Calculates noisy linear imputation for the given array and a list of indices indicating
+    which elements are not included in the mask.
+        Adapted from: https://github.com/tleemann/road_evaluation.
 
     Parameters
     ----------
-        arr: array to be perturbed
-        indices: array-like, subset of all indices in the array to not be included in the mask.
+    arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    indexed_axes: sequence
+        The dimensions of arr that are indexed. These need to be consecutive,
+                  and either include the first or last dimension of array.
+    noise: float
+        The amount of noise added.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr_perturbed: np.ndarray
+         The array which some of its indices have been perturbed.
     """
     offset_weight = [
         ((1, 1), 1 / 12),
@@ -387,5 +494,19 @@ def noisy_linear_imputation(
 
 
 def no_perturbation(arr: np.array, **kwargs) -> np.array:
-    """Apply no perturbation to input."""
+    """
+    Apply no perturbation to input.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+         Array to be perturbed.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    arr: np.ndarray
+         Array unperturbed.
+    """
     return arr
