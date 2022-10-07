@@ -68,7 +68,7 @@ When applying the individual metrics of Quantus, please make sure to also proper
 * [Tutorials](#tutorials)
 * [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
-* [Citation](#citation)
+<!--* [Citation](#citation)-->
 
 ## Library overview 
 
