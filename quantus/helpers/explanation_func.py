@@ -603,7 +603,6 @@ def generate_zennit_explanation(
             explanation = explanation.cpu().numpy()
 
     # Sum over the axes.
-    print(explanation.shape, reduce_axes)
     explanation = np.sum(explanation, **reduce_axes)
 
     return explanation
