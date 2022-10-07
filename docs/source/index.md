@@ -3,7 +3,7 @@
 **Quantus is an eXplainable AI toolkit for responsible evaluation of neural network explanations.**
 
 <p align="center">
-  <img width="550" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+  <img width="525" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
 <p><small>
 Figure: a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which
@@ -15,11 +15,13 @@ e.g. pixel replacement strategy of a faithfulness test influences the ranking of
 
 [📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
 
+
 This documentation is complementary to Quantus repository's [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) and provides documentation
 for how to install Quantus (**Installation**), how to contribute to the project (**Developer Documentation**) and on the interface (**API Documentation**).
-For further guidance on how what to think about when using Quantus, please read the user guidelines (**Guidelines**).
-More information about how to get started can be be found below (**Getting started**) including
-with various examples in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
+For further guidance on what to think about when applying Quantus, please read the user guidelines (**Guidelines**).
+
+Do you want to get started? Please have a look at our simple MNIST/torch/Saliency/IntGrad toy example (**Getting started**).
+For more examples, check the [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
 Quantus can be installed from [PyPI](https://pypi.org/project/quantus/)
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).
@@ -28,7 +30,7 @@ Quantus can be installed from [PyPI](https://pypi.org/project/quantus/)
 pip install quantus
 ```
 
-For alternative ways to install Quantus package, read more under **Installation**.
+For alternative ways to install Quantus, read more under **Installation**.
 
 ```{toctree}
 :caption: Installation
@@ -59,7 +61,7 @@ docs_dev/CONTRIBUTING.md
 ```
 
 ```{toctree}
-:caption: User Guidelines
+:caption: Guidelines
 :maxdepth: 2
 
 guidelines/guidelines_and_disclaimers
