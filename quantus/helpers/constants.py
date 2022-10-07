@@ -120,7 +120,8 @@ def available_categories() -> List[str]:
 
     Returns
     -------
-        List[str]: With the available metric categories in Quantus.
+    List[str]
+        With the available metric categories in Quantus.
     """
     return [c for c in AVAILABLE_METRICS.keys()]
 
@@ -131,7 +132,8 @@ def available_metrics() -> Dict[str, str]:
 
     Returns
     -------
-        Dict[str, str]: With the available metrics, under each category in Quantus.
+    Dict[str, str]
+        With the available metrics, under each category in Quantus.
     """
     return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
@@ -142,7 +144,8 @@ def available_methods() -> List[str]:
 
     Returns
     -------
-        List[str]: With the available explanation methods in Quantus.
+    List[str]
+        With the available explanation methods in Quantus.
     """
     return [c for c in AVAILABLE_XAI_METHODS.keys()]
 
@@ -153,7 +156,8 @@ def available_perturbation_functions() -> List[str]:
 
     Returns
     -------
-        List[str]: With the available perturbation functions in Quantus.
+    List[str]
+        With the available perturbation functions in Quantus.
     """
     return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
 
@@ -164,7 +168,8 @@ def available_similarity_functions() -> List[str]:
 
     Returns
     -------
-        List[str]: With the available similarity functions in Quantus.
+    List[str]
+        With the available similarity functions in Quantus.
     """
     return [c for c in AVAILABLE_SIMILARITY_FUNCTIONS.keys()]
 
@@ -175,6 +180,7 @@ def available_normalisation_functions() -> List[str]:
 
     Returns
     -------
-        List[str]: With the available normalisation functions in Quantus.
+    List[str]
+        With the available normalisation functions in Quantus.
     """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]

@@ -19,11 +19,12 @@ def check_kwargs(kwargs):
 
     Parameters
     ----------
-        kwargs (optional): Keyword arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
     if kwargs:
         raise ValueError(
@@ -46,11 +47,12 @@ def warn_noise_zero(noise: float) -> None:
 
     Parameters
     ----------
-        noise (float): The amount of noise.
+    noise: float
+        The amount of noise.
 
     Returns
     -------
-        None
+    None
     """
     if noise == 0.0:
         print(
@@ -66,11 +68,12 @@ def warn_absolute_operation(word: str = "") -> None:
 
     Parameters
     ----------
-        word (string): A string for which is '' or 'not '.
+    word: string
+        A string for which is '' or 'not '.
 
     Returns
     -------
-        None
+    None
     """
     print(
         f"An absolute operation should {word}be applied on the attributions, "
@@ -84,11 +87,12 @@ def warn_normalise_operation(word: str = "") -> None:
 
     Parameters
     ----------
-        word (string): A string for which is '' or 'not '.
+    word: string
+        A string for which is '' or 'not '.
 
     Returns
     -------
-        None
+    None
     """
     print(
         f"A normalising operation should {word}be applied on the attributions, "
@@ -102,12 +106,14 @@ def warn_segmentation(inside_attribution: float, total_attribution: float) -> No
 
     Parameters
     ----------
-        inside_attribution (float): The size of inside attribution.
-        total_attribution (float): The size of total attribution.
+    inside_attribution: float
+        The size of inside attribution.
+    total_attribution: float
+        The size of total attribution.
 
     Returns
     -------
-        None
+    None
     """
     warnings.warn(
         "Inside explanation is greater than total explanation"
@@ -121,7 +127,7 @@ def warn_empty_segmentation() -> None:
 
     Returns
     -------
-        None
+    None
     """
     warnings.warn("Return np.nan as result as the segmentation map is empty.")
 
@@ -132,7 +138,7 @@ def warn_different_array_lengths() -> None:
 
     Returns
     -------
-        Nones
+    None
     """
     warnings.warn(
         "The plotted measurements have different lengths. Clipping to minimum length."
@@ -145,12 +151,14 @@ def warn_iterations_exceed_patch_number(n_iterations: int, n_patches: int) -> No
 
     Parameters
     ----------
-        n_iterations (integer): The number of iterations specified in the metric.
-        n_patches (integer): The number of patches specified in the metric.
+    n_iterations: integer
+        The number of iterations specified in the metric.
+    n_patches: integer
+        The number of patches specified in the metric.
 
     Returns
     -------
-
+    None
     """
     if n_patches < n_iterations:
         warnings.warn(
@@ -173,14 +181,18 @@ def warn_parameterisation(
 
     Parameters
     ----------
-        metric_name (string): The metric name.
-        sensitive_params (string): The sensitive parameters of the metric.
-        data_domain_applicability(string): The applicability when it comes to data domains, default = "".
-        citation (string): The citation.
+    metric_name: string
+        The metric name.
+    sensitive_params: string
+        The sensitive parameters of the metric.
+    data_domain_applicability string
+        The applicability when it comes to data domains, default = "".
+    citation: string
+        The citation.
 
     Returns
     -------
-        None
+    None
     """
 
     time.sleep(1)
@@ -203,11 +215,12 @@ def deprecation_warnings(kwargs: dict) -> None:
 
     Parameters
     ----------
-        kwargs (optional): Keyword arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     text = "\n"

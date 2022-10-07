@@ -16,13 +16,17 @@ def floating_points(a: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): Numpy array with shape (x,).
-        kwargs (optional): Keyword arguments.
-            n (integer): Number of floating point digits.
+    a: np.ndarray
+         Numpy array with shape (x,).
+    kwargs: optional
+            Keyword arguments.
+        n: integer
+        Number of floating point digits.
 
     Returns
     -------
-        (float): Returns the hash values of the resulting array.
+    float
+        Returns the hash values of the resulting array.
     """
     n = kwargs.get("n", 2)
     discretized_arr = a.round(decimals=n)
@@ -35,12 +39,15 @@ def sign(a: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): Numpy array with shape (x,).
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         Numpy array with shape (x,).
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        (float): Returns the hash values of the resulting array.
+    float
+        Returns the hash values of the resulting array.
     """
     discretized_arr = np.sign(a)
     return hash(bytes(discretized_arr))
@@ -52,13 +59,17 @@ def top_n_sign(a: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): Numpy array with shape (x,).
-        kwargs (optional): Keyword arguments.
-            n (integer): Number of floating point digits.
+    a: np.ndarray
+         Numpy array with shape (x,).
+    kwargs: optional
+            Keyword arguments.
+        n: integer
+        Number of floating point digits.
 
     Returns
     -------
-        (float): Returns the hash values of the resulting array.
+    float
+        Returns the hash values of the resulting array.
     """
     n = kwargs.get("n", 5)
     discretized_arr = np.sign(a)[:n]
@@ -71,12 +82,15 @@ def rank(a: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): Numpy array with shape (x,).
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         Numpy array with shape (x,).
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        (float): Returns the hash values of the resulting array.
+    float
+        Returns the hash values of the resulting array.
     """
     discretized_arr = np.argsort(a)[::-1]
     return hash(bytes(discretized_arr))

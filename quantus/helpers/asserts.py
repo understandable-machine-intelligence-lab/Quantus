@@ -16,11 +16,13 @@ def attributes_check(metric):
 
     Parameters
     ----------
-        metric (base.Metric class): The metric class.
+    metric: base.Metric class
+        The metric class.
 
     Returns
     -------
-        metric (base.Metric class): The metric class.
+    base.Metric class
+        The metric class.
 
     """
     attr = metric.__dict__
@@ -44,16 +46,18 @@ def assert_features_in_step(
     features_in_step: int, input_shape: Tuple[int, ...]
 ) -> None:
     """
-    Assert that features in step is compatible with the image size.
+        Assert that features in step is compatible with the image size.
 
-    Parameters
-    ----------
-        features_in_step (integer): The number of features e.g., pixels included in each iteration.
-        input_shape (Tuple[int...): The shape of the input.
+        Parameters
+        ----------
+        features_in_step: integer
+            The number of features e.g., pixels included in each iteration.
+        input_shape: Tuple[int...]
+            The shape of the input.
 
-    Returns
-    -------
-        None
+        Returns
+        -------
+    None
     """
     assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
@@ -68,12 +72,14 @@ def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
 
     Parameters
     ----------
-        patch_size (integer): The size of the patch_size, assumed to tbe squared.
-        input_shape (Tuple[int...): the shape of the input.
+    patch_size: integer
+        The size of the patch_size, assumed to tbe squared.
+    input_shape: Tuple[int...]
+        the shape of the input.
 
     Returns
     -------
-        None
+    None
     """
 
     if isinstance(patch_size, int):
@@ -104,11 +110,12 @@ def assert_attributions_order(order: str) -> None:
 
     Parameters
     ----------
-        order (string): The different orders that attributions could be ranked in.
+    order: string
+        The different orders that attributions could be ranked in.
 
     Returns
     -------
-        None
+    None
     """
     assert order in [
         "random",
@@ -123,11 +130,12 @@ def assert_nr_segments(nr_segments: int) -> None:
 
     Parameters
     ----------
-        nr_segments (integer): The number of segments that the segmentaito algorithm produced.
+    nr_segments: integer
+        The number of segments that the segmentaito algorithm produced.
 
     Returns
     -------
-        None
+    None
     """
     assert (
         nr_segments > 1
@@ -140,12 +148,14 @@ def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) ->
 
     Parameters
     ----------
-        x (np.array): The original input that is considered unperturbed.
-        x_perturbed (np.array): The perturbed input.
+    x: np.ndarray
+         The original input that is considered unperturbed.
+    x_perturbed: np.ndarray
+         The perturbed input.
 
     Returns
     -------
-        None
+    None
     """
     assert (x.flatten() != x_perturbed.flatten()).any(), (
         "The settings for perturbing input e.g., 'perturb_func' "
@@ -160,11 +170,12 @@ def assert_layer_order(layer_order: str) -> None:
 
     Parameters
     ----------
-        layer_order (string): The various ways that a model's weights of a layer can be randomised.
+    layer_order: string
+        The various ways that a model's weights of a layer can be randomised.
 
     Returns
     -------
-        None
+    None
     """
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
@@ -175,12 +186,14 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
 
     Parameters
     ----------
-        x_batch (np.array): The batch of input to compare the shape of the attributions with.
-        a_batch (np.array): The batch of attributions.
+    x_batch: np.ndarray
+         The batch of input to compare the shape of the attributions with.
+    a_batch: np.ndarray
+         The batch of attributions.
 
     Returns
     -------
-        None
+    None
     """
     assert (
         type(a_batch) == np.ndarray
@@ -241,12 +254,14 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
 
     Parameters
     ----------
-        x_batch (np.array): The batch of input to compare the shape of the attributions with.
-        s_batch (np.array): The batch of segmentations.
+    x_batch: np.ndarray
+         The batch of input to compare the shape of the attributions with.
+    s_batch: np.ndarray
+         The batch of segmentations.
 
     Returns
     -------
-        None
+    None
     """
     assert (
         type(s_batch) == np.ndarray
@@ -275,11 +290,12 @@ def assert_plot_func(plot_func: Callable) -> None:
 
     Parameters
     ----------
-        plot_func (callable): An plot function input, asusmed to be a Callable.
+    plot_func: callable
+        An plot function input, asusmed to be a Callable.
 
     Returns
     -------
-        None
+    None
     """
     assert callable(plot_func), "Make sure that 'plot_func' is a callable."
 
@@ -290,11 +306,12 @@ def assert_explain_func(explain_func: Callable) -> None:
 
     Parameters
     ----------
-        explain_func (callable): An plot function input, asusmed to be a Callable.
+    explain_func: callable
+        An plot function input, asusmed to be a Callable.
 
     Returns
     -------
-        None
+    None
     """
     assert callable(explain_func), (
         "Make sure 'explain_func' is a Callable that takes model, x_batch, "
@@ -310,13 +327,16 @@ def assert_value_smaller_than_input_size(
 
     Parameters
     ----------
-        x (np.array): The input to check the value against.
-        value (integer): The value that must be smaller than input size.
-        value_name (string): The hyperparameter to check, e.g., "k" for TopKIntersection.
+    x: np.ndarray
+         The input to check the value against.
+    value: integer
+        The value that must be smaller than input size.
+    value_name: string
+        The hyperparameter to check, e.g., "k" for TopKIntersection.
 
     Returns
     -------
-        None
+    None
     """
     if value >= np.prod(x.shape[2:]):
         raise ValueError(
@@ -331,12 +351,14 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]) -> None:
 
     Parameters
     ----------
-        arr (np.array): A given array that we want to check indexed_axes against.
-        indexed_axes (sequence): The sequence with indices, wiht axes.
+    arr: np.ndarray
+         A given array that we want to check indexed_axes against.
+    indexed_axes: sequence
+            The sequence with indices, with axes.
 
     Returns
     -------
-        None
+    None
     """
     # TODO: Change for batching update, since currently single images are expected.
     assert len(indexed_axes) <= arr.ndim

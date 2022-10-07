@@ -18,13 +18,17 @@ def normalise_by_max(
 
     Parameters
     ----------
-        a (np.array): the array to normalise, e.g., an image or an explanation.
-        normalise_axes (Optional[Sequence[int]]): the axes to normalise over.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+        the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        a (np.array): a normalised array.
+    a: np.ndarray
+         a normalised array.
     """
 
     # No normalisation if a is only zeros.
@@ -51,13 +55,17 @@ def normalise_by_negative(
 
     Parameters
     ----------
-        a (np.array): the array to normalise, e.g., an image or an explanation.
-        normalise_axes (Optional[Sequence[int]]): the axes to normalise over.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+            the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        a (np.array): a normalised array.
+    a: np.ndarray
+         a normalised array.
     """
 
     # No normalisation if a is only zeros.
@@ -113,13 +121,18 @@ def denormalise(
 
     Parameters
     ----------
-        a (np.array): the array to normalise, e.g., an image or an explanation.
-        mean (np.array): The mean points to sample from, len(mean) = nr_channels.
-        std (np.array): The standard deviations to sample from, len(mean) = nr_channels.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    mean: np.ndarray
+         The mean points to sample from, len(mean) = nr_channels.
+    std: np.ndarray
+         The standard deviations to sample from, len(mean) = nr_channels.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (np.array): a denormalised array.
+    np.ndarray
+        A denormalised array.
     """
     return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)

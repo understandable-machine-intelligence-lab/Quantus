@@ -15,14 +15,19 @@ def mse(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-    a (np.array): Array to calculate MSE with.
-    b (np.array): Array to calculate MSE with.
-    kwargs (optional): Keyword arguments.
-        normalise_mse (boolean): Indicates whether to returned a normalised MSE calculation or not.
+    a: np.ndarray
+             Array to calculate MSE with.
+    b: np.ndarray
+             Array to calculate MSE with.
+    kwargs: optional
+            Keyword arguments.
+        normalise_mse: boolean
+            Indicates whether to returned a normalised MSE calculation or not.
 
     Returns
     -------
-    (float): A floating point of MSE.
+    float:
+        A floating point of MSE.
     """
 
     normalise = kwargs.get("normalise_mse", False)
