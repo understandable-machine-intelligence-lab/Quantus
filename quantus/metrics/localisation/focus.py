@@ -87,7 +87,7 @@ class Focus(Metric):
             warn_func.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
-                    "no parameter! No parameters means nothing to be sensitive on."
+                    "no parameter. No parameters means nothing to be sensitive on. "
                     "Note, however, that Focus only works with image data and "
                     "a 'p_batch' must be provided when calling the metric to "
                     "represent the positions of the target class"
