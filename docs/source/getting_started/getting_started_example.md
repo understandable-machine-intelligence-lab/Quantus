@@ -165,9 +165,6 @@ quantus.AVAILABLE_NORMALISATION_FUNCTIONS
 
 # To get the scores of the last evaluated batch.
 metric_instance_called.last_results
-
-# To get the scores of all the evaluated batches.
-metric_instance_called.all_results
 ````
 With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set:
 
