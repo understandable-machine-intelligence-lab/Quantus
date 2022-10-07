@@ -27,6 +27,9 @@ class Completeness(PerturbationMetric):
     evidence at the output/ or some function of the model output. Or, that the attributions
     add up to the difference between the model output F at the input x and the baseline b.
 
+    Assumptions:
+        - This implementation does completeness test against logits, not softmax.
+
     References:
         1) Completeness - Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. "Axiomatic attribution for deep networks."
         International Conference on Machine Learning. PMLR, 2017.
@@ -34,9 +37,6 @@ class Completeness(PerturbationMetric):
         features through propagating activation differences." International Conference on Machine Learning. PMLR, 2017.
         3) Conservation - Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting
         and understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
-
-    Assumptions:
-        This implementation does completeness test against logits, not softmax.
     """
 
     @asserts.attributes_check

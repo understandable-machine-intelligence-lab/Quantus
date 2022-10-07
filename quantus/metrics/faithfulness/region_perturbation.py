@@ -29,11 +29,15 @@ class RegionPerturbation(PerturbationMetric):
     progressively remove information from the image x, a process referred to as
     region perturbation, at the specified locations.
 
+    Assumptions:
+        - The original metric definition relies on image-patch functionality. Therefore, only apply the
+        metric to 3-dimensional (image) data. To extend the applicablity to other data domains,
+        adjustments to the current implementation might be necessary.
+
     References:
         1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
         neural network has learned." IEEE transactions on neural networks and
         learning systems 28.11 (2016): 2660-2673.
-
     """
 
     @asserts.attributes_check
@@ -123,6 +127,9 @@ class RegionPerturbation(PerturbationMetric):
                     "baseline value 'perturb_baseline'"
                     ", the patch size for masking 'patch_size'"
                     " and number of regions to evaluate 'regions_evaluation'"
+                ),
+                data_domain_applicability=(
+                    f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
                 citation=(
                     "Samek, Wojciech, et al. 'Evaluating the visualization of what a deep"

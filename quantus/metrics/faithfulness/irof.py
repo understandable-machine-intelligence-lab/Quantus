@@ -26,6 +26,11 @@ class IROF(PerturbationMetric):
     of feature segments (superpixels) as they are iteratively removed (and prediction scores are collected),
     averaged over several test samples.
 
+    Assumptions:
+        - The original metric definition relies on image-segmentation functionality. Therefore, only apply the
+        metric to 3-dimensional (image) data. To extend the applicablity to other data domains,
+        adjustments to the current implementation might be necessary.
+
     References:
         1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
         explanation methods." arXiv preprint arXiv:2003.08747 (2020).
@@ -109,6 +114,9 @@ class IROF(PerturbationMetric):
                     "baseline value 'perturb_baseline' and the method to segment "
                     "the image 'segmentation_method' (including all its associated"
                     " hyperparameters), also, IROF only works with image data"
+                ),
+                data_domain_applicability=(
+                    f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
                 citation=(
                     "Rieger, Laura, and Lars Kai Hansen. 'Irof: a low resource evaluation metric "

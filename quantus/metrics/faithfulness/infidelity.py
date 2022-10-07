@@ -28,9 +28,12 @@ class Infidelity(PerturbationMetric):
     2) difference in model output after significant perturbation.
 
     Assumptions:
-    - The original implementation (https://github.com/chihkuanyeh/saliency_evaluation/
-    blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
-    In this implementation, we use squared patches as the default option.
+        - The original implementation (https://github.com/chihkuanyeh/saliency_evaluation/
+        blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
+        In this implementation, we use squared patches as the default option.
+        - Since we use squared patches in this implementation, the metric is only applicable
+        to 3-dimensional (image) data. To extend the applicablity to other data domains, adjustments
+        to the current implementation might be necessary.
 
     References:
         1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
@@ -129,6 +132,9 @@ class Infidelity(PerturbationMetric):
                     "baseline value 'perturb_baseline', perturbation function 'perturb_func',"
                     "number of perturbed samples 'n_perturb_samples', the loss function 'loss_func' "
                     "aggregation boolean 'aggregate'"
+                ),
+                data_domain_applicability=(
+                    f"Also, the current implementation only works for 3-dimensional (image) data."
                 ),
                 citation=(
                     "Chih-Kuan, Yeh, et al. 'On the (In)fidelity and Sensitivity of Explanations'"

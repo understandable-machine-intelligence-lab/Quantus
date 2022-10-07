@@ -26,13 +26,13 @@ class ModelParameterRandomisation(Metric):
     attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
     at a time.
 
+    Assumptions:
+        - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
+        HOG and SSIM. We have set Spearman as the default value.
+
     References:
         1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
         arXiv preprint, arXiv:1810.073292v3 (2018)
-
-    Assumptions:
-        In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
-        HOG and SSIM. We have set Spearman as the default value.
     """
 
     @asserts.attributes_check
