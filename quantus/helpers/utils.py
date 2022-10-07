@@ -868,7 +868,6 @@ def expand_indices(
         ]
     ):
         # Meshgrid sliced axes to account for correct slicing. Correct switched first two axes by meshgrid
-        print(expanded_indices)
         expanded_indices = [
             np.swapaxes(idx, 0, 1) if idx.ndim > 1 else idx
             for idx in np.meshgrid(*expanded_indices)
