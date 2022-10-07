@@ -341,14 +341,14 @@ class LocalLipschitzEstimate(PerturbationMetric):
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-                # Measure similarity.
-                similarity = self.similarity_func(
-                    a=a.flatten(),
-                    b=a_perturbed.flatten(),
-                    c=x.flatten(),
-                    d=x_perturbed.flatten(),
-                )
-                similarity_max = max(similarity, similarity_max)
+            # Measure similarity.
+            similarity = self.similarity_func(
+                a=a.flatten(),
+                b=a_perturbed.flatten(),
+                c=x.flatten(),
+                d=x_perturbed.flatten(),
+            )
+            similarity_max = max(similarity, similarity_max)
 
         return similarity_max
 
