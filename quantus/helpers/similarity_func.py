@@ -20,13 +20,17 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.stats.spearmanr(a, b)[0]
 
@@ -37,13 +41,17 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.stats.pearsonr(a, b)[0]
 
@@ -54,13 +62,17 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.stats.kendalltau(a, b)[0]
 
@@ -71,13 +83,17 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.spatial.distance.euclidean(u=a, v=b)
 
@@ -88,13 +104,17 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.spatial.distance.cityblock(u=a, v=b)
 
@@ -105,13 +125,17 @@ def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.spatial.distance.chebyshev(u=a, v=b)
 
@@ -130,15 +154,21 @@ def lipschitz_constant(
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        c (np.array): The third array to use for similarity scoring.
-        d (np.array): The fourth array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    c: np.ndarray
+         The third array to use for similarity scoring.
+    d: np.ndarray
+         The fourth array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     eps = 1e-10
 
@@ -157,13 +187,17 @@ def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return np.mean(abs(a - b))
 
@@ -174,13 +208,17 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return scipy.spatial.distance.cosine(u=a, v=b)
 
@@ -191,13 +229,17 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return skimage.metrics.structural_similarity(
         im1=a, im2=b, win_size=kwargs.get("win_size", None)
@@ -210,12 +252,16 @@ def difference(a: np.array, b: np.array, **kwargs) -> float:
 
     Parameters
     ----------
-        a (np.array): The first array to use for similarity scoring.
-        b (np.array): The second array to use for similarity scoring.
-        kwargs (optional): Keyword arguments.
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        (float): The similarity score.
+    float
+        The similarity score.
     """
     return a - b

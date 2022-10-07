@@ -28,16 +28,21 @@ def plot_pixel_flipping_experiment(
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
 
     Parameters
-    ----------pip install pyod
-        y_batch (np.array): The list of true labels.
-        scores (List[float]): The list of evalution scores.
-        single_class (Union[int, None]): An integer to specify the label to plot.
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    ----------
+    y_batch: np.ndarray
+         The list of true labels.
+    scores: list
+            The list of evalution scores.
+    single_class: integer, optional
+            An integer to specify the label to plot.
+    args: optional
+            Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -74,13 +79,16 @@ def plot_selectivity_experiment(
 
     Parameters
     ----------
-        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    results: list, dict
+            The results fromm the Selectivity experiment(s).
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -119,13 +127,16 @@ def plot_region_perturbation_experiment(
 
     Parameters
     ----------
-        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    results: list, dict
+            The results fromm the Selectivity experiment(s).
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -163,13 +174,16 @@ def plot_sensitivity_n_experiment(
 
     Parameters
     ----------
-        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    results: list, dict
+        The results fromm the Selectivity experiment(s).
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -206,13 +220,16 @@ def plot_model_parameter_randomisation_experiment(
 
     Parameters
     ----------
-        results (Union[List[float], Dict[str, List[float]]]): The results fromm the Selectivity experiment(s).
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    results: list, dict
+        The results fromm the Selectivity experiment(s).
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))
@@ -262,13 +279,16 @@ def plot_focus(
 
     Parameters
     ----------
-        results (Dict[str, List[float]],): A dictionary with the Focus scores obtained using different feature attribution methods.
-        args (optional) Arguments.
-        kwargs (optional): Keyword arguments.
+    results: dict
+        A dictionary with the Focus scores obtained using different feature attribution methods.
+    args: optional
+        Arguments.
+    kwargs: optional
+        Keyword arguments.
 
     Returns
     -------
-        None
+    None
     """
 
     fig = plt.figure(figsize=(8, 6))

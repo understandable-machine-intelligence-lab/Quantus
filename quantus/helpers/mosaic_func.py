@@ -19,11 +19,13 @@ def build_single_mosaic(mosaic_images_list: List[np.ndarray]) -> np.ndarray:
 
     Parameters
     ----------
-        mosaic_images_list (List[np.array]): a list of four images.
+    mosaic_images_list: List[np.array]
+        A list of four images.
 
     Returns
     -------
-        mosaic (np.array): the single 2x2 mosaic built from a list of images.
+    mosaic: np.ndarray
+         The single 2x2 mosaic built from a list of images.
     """
     first_row = np.concatenate((mosaic_images_list[0], mosaic_images_list[1]), axis=1)
     second_row = np.concatenate((mosaic_images_list[2], mosaic_images_list[3]), axis=1)
@@ -50,22 +52,27 @@ def mosaic_creation(
 
     Parameters
     ----------
-        images (np.array): A np.ndarray which contains the input data.
-        labels (np.array): A np.ndarray which contains the labels from the input data.
-        mosaics_per_class (integer): An integer indicating the number of mosaics per class.
-        seed (integer): An integer used to generate a random number (optional)..
+    images: np.ndarray
+         A np.ndarray which contains the input data.
+    labels: np.ndarray
+         A np.ndarray which contains the labels from the input data.
+    mosaics_per_class: integer
+        An integer indicating the number of mosaics per class.
+    seed: integer
+        An integer used to generate a random number (optional)..
 
     Returns
     -------
-        all_mosaics (np.array): a np.ndarray which contains the mosaic data
-        mosaic_indices_list: a List[Tuple[int, int, int, int]] which contains the image indices corresponding to the images
-                             composing each mosaic
-        mosaic_labels_list (List[Tuple[Union[int, str], ...]]): a List[Tuple[Union[int, str], ...]] which contains the labels of the images composing each
-                            mosaic. Each tuple contains four values referring to (top_left_label, top_right_label,
-                            bottom_left_label, bottom_right_label)
-        p_batch_list (List[Tuple[int, int, int, int]]): a List[Tuple[int, int, int, int]] which contains the positions of the target class within the mosaic.
-                      Each tuple contains 0 and 1 values (non_target_class and target_class) referring to (top_left, top_right, bottom_left, bottom_right).
-        target_list (List[Union[int, str]]): a List[Union[int, str]] which contains the target class of each mosaic.
+    all_mosaics: np.ndarray
+         a np.ndarray which contains the mosaic data
+    mosaic_indices_list: a List[Tuple[int, int, int, int]] which contains the image indices corresponding to the images
+                         composing each mosaic
+    mosaic_labels_list (List[Tuple[Union[int, str], ...]]): a List[Tuple[Union[int, str], ...]] which contains the labels of the images composing each
+                        mosaic. Each tuple contains four values referring to (top_left_label, top_right_label,
+                        bottom_left_label, bottom_right_label)
+    p_batch_list (List[Tuple[int, int, int, int]]): a List[Tuple[int, int, int, int]] which contains the positions of the target class within the mosaic.
+                  Each tuple contains 0 and 1 values (non_target_class and target_class) referring to (top_left, top_right, bottom_left, bottom_right).
+    target_list (List[Union[int, str]]): a List[Union[int, str]] which contains the target class of each mosaic.
     """
 
     args = []

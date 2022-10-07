@@ -26,12 +26,15 @@ class ModelInterface(ABC):
 
         Parameters
         ----------
-            model (Union[torch.nn.Module, tf.keras.Model]): A model this will be wrapped in the ModelInterface:
-            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape if None.
-            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
-                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-            model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+        model: Union[torch.nn, tf.keras.Model]
+            A model this will be wrapped in the ModelInterface:
+        channel_first: boolean, optional
+             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
         """
         self.model = model
         self.channel_first = channel_first
@@ -49,8 +52,10 @@ class ModelInterface(ABC):
 
         Parameters
         ----------
-            x (np.array): A given input that the wrapped model predicts on.
-            kwargs (optional): Keyword arguments.
+        x: np.ndarray
+         A given input that the wrapped model predicts on.
+        kwargs: optional
+            Keyword arguments.
         """
         raise NotImplementedError
 
@@ -67,10 +72,13 @@ class ModelInterface(ABC):
 
         Parameters
         ----------
-            x (np.array): A given input that is shaped.
-            shape (Tuple[int...): The shape of the input.
-            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-                    Inferred from the input shape if None.
+        x: np.ndarray
+            A given input that is shaped.
+        shape: Tuple[int...]
+            The shape of the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
         """
         raise NotImplementedError
 

@@ -33,12 +33,15 @@ class TensorFlowModel(ModelInterface):
 
         Parameters
         ----------
-            model (Union[torch.nn.Module, tf.keras.Model]): A model this will be wrapped in the ModelInterface:
-            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-                Inferred from the input shape if None.
-            softmax (boolean): Indicates whether to use softmax probabilities or logits in model prediction.
-                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-            model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
+        model: Union[torch.nn, tf.keras.Model]
+            A model this will be wrapped in the ModelInterface:
+        channel_first: boolean, optional
+             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
         """
         super().__init__(
             model=model,
@@ -53,11 +56,15 @@ class TensorFlowModel(ModelInterface):
 
         Parameters
         ----------
-            x (np.array): A given input that the wrapped model predicts on.
-            kwargs (optional): Keyword arguments.
+        x: np.ndarray
+            A given input that the wrapped model predicts on.
+        kwargs: optional
+            Keyword arguments.
 
-        Returns:
-            (np.array): predictions of the same dimension and shape as the input, values in the range [0, 1].
+        Returns
+        --------
+        np.ndarray
+            predictions of the same dimension and shape as the input, values in the range [0, 1].
         """
 
         # Use kwargs of predict call if specified, but don't overwrite object attribute
@@ -92,15 +99,20 @@ class TensorFlowModel(ModelInterface):
 
         Parameters
         ----------
-            x (np.array): A given input that is shaped.
-            shape (Tuple[int...): The shape of the input.
-            channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
-                    Inferred from the input shape if None.
-            batched (boolean): Indicates if the first dimension should be expanded or not, if it is just a single instance.
+        x: np.ndarray
+             A given input that is shaped.
+        shape: Tuple[int...]
+            The shape of the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        batched: boolean
+            Indicates if the first dimension should be expanded or not, if it is just a single instance.
 
         Returns
         -------
-            (np.array): A reshaped input.
+        np.ndarray
+            A reshaped input.
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first
@@ -137,12 +149,15 @@ class TensorFlowModel(ModelInterface):
 
         Parameters
         ----------
-            order (string): The various ways that a model's weights of a layer can be randomised.
-            seed (integer): The seed of the random layer generator.
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
 
         Returns
         -------
-            layer.name (string), random_layer_model (tf.keras.Model): the layer name and the model.
+        layer.name, random_layer_model: string, torch.nn
+            The layer name and the model.
         """
         original_parameters = self.state_dict()
         random_layer_model = clone_model(self.model)

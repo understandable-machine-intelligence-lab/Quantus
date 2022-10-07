@@ -52,14 +52,19 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
 
     Parameters
     ----------
-    model (Union[torch.nn.Module, tf.keras.Model]): A model that is used for explanation.
-    inputs (np.array): The inputs that ought to be explained.
-    targets (np.array): The target lables that should be used in the explanation.
-    kwargs (optional): Keyword arguments.
+    model: Union[torch.nn, tf.keras.Model]
+            A model that is used for explanation.
+    inputs: np.ndarray
+             The inputs that ought to be explained.
+    targets: np.ndarray
+             The target lables that should be used in the explanation.
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-    explanation (np.array): Returns np.ndarray of same shape as inputs.
+    explanation: np.ndarray
+             Returns np.ndarray of same shape as inputs.
     """
 
     if util.find_spec("captum") or util.find_spec("tf_explain"):
@@ -97,17 +102,22 @@ def get_explanation(model, inputs, targets, **kwargs):
 
     Parameters
     ----------
-        model (Union[torch.nn.Module, tf.keras.Model]): A model that is used for explanation.
-        inputs (np.array): The inputs that ought to be explained.
-        targets (np.array): The target lables that should be used in the explanation.
-        kwargs (optional): Keyword arguments.
+    model: Union[torch.nn, tf.keras.Model]
+            A model that is used for explanation.
+    inputs: np.ndarray
+         The inputs that ought to be explained.
+    targets: np.ndarray
+         The target lables that should be used in the explanation.
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        explanation (np.array): Returns np.ndarray of same shape as inputs.
+    explanation: np.ndarray
+         Returns np.ndarray of same shape as inputs.
     """
     xai_lib = kwargs.get("xai_lib", "captum")
-    if isinstance(model, torch.nn.modules.module.Module):
+    if isinstance(model, torch.nn.Module):
         if util.find_spec("captum") and util.find_spec("zennit"):
             if xai_lib == "captum":
                 return generate_captum_explanation(model, inputs, targets, **kwargs)
@@ -126,7 +136,7 @@ def get_explanation(model, inputs, targets, **kwargs):
             )
 
     raise ValueError(
-        f"Model needs to be tf.keras.Model or torch.nn.modules.module.Module but is {type(model)}. "
+        f"Model needs to be tf.keras.Model or torch.nn.Module but is {type(model)}. "
         "Please install Captum or Zennit for torch>=1.2 models and tf-explain for TensorFlow>=2.0."
     )
 
@@ -140,14 +150,19 @@ def generate_tf_explanation(
 
     Parameters
     ----------
-        model (Union[torch.nn.Module, tf.keras.Model]): A model that is used for explanation.
-        inputs (np.array): The inputs that ought to be explained.
-        targets (np.array): The target lables that should be used in the explanation.
-        kwargs (optional): Keyword arguments.
+    model: Union[torch.nn, tf.keras.Model]
+            A model that is used for explanation.
+    inputs: np.ndarray
+         The inputs that ought to be explained.
+    targets: np.ndarray
+         The target lables that should be used in the explanation.
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        explanation (np.array): Returns np.ndarray of same shape as inputs.
+    explanation: np.ndarray
+         Returns np.ndarray of same shape as inputs.
 
     """
     method = kwargs.get("method", "Gradient").lower()
@@ -284,15 +299,21 @@ def generate_captum_explanation(
     Generate explanation for a torch model with captum.
     Parameters
     ----------
-        model (Union[torch.nn.Module, tf.keras.Model]): A model that is used for explanation.
-        inputs (np.array): The inputs that ought to be explained.
-        targets (np.array): The target lables that should be used in the explanation.
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        kwargs (optional): Keyword arguments.
+    model: Union[torch.nn, tf.keras.Model]
+        A model that is used for explanation.
+    inputs: np.ndarray
+         The inputs that ought to be explained.
+    targets: np.ndarray
+         The target lables that should be used in the explanation.
+    device: string
+        Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        explanation (np.array): Returns np.ndarray of same shape as inputs.
+    explanation: np.ndarray
+         Returns np.ndarray of same shape as inputs.
     """
 
     method = kwargs.get("method", "Gradient").lower()
@@ -466,15 +487,21 @@ def generate_zennit_explanation(
 
     Parameters
     ----------
-        model (Union[torch.nn.Module, tf.keras.Model]): A model that is used for explanation.
-        inputs (np.array): The inputs that ought to be explained.
-        targets (np.array): The target lables that should be used in the explanation.
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        kwargs (optional): Keyword arguments.
+    model: Union[torch.nn, tf.keras.Model]
+        A model that is used for explanation.
+    inputs: np.ndarray
+         The inputs that ought to be explained.
+    targets: np.ndarray
+         The target lables that should be used in the explanation.
+    device: string
+        Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+    kwargs: optional
+            Keyword arguments.
 
     Returns
     -------
-        explanation (np.array): Returns np.ndarray of same shape as inputs.
+    explanation: np.ndarray
+         Returns np.ndarray of same shape as inputs.
 
     """
 

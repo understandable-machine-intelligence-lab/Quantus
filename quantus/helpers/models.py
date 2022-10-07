@@ -15,7 +15,7 @@ if util.find_spec("torch"):
 
     import torch
 
-    class LeNet(torch.nn.Module):
+    class LeNet(torch.nn):
         """
         A torch implementation of LeNet architecture.
             Adapted from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch.
@@ -46,7 +46,7 @@ if util.find_spec("torch"):
             x = self.fc_3(x)
             return x
 
-    class LeNetAdaptivePooling(torch.nn.Module):
+    class LeNetAdaptivePooling(torch.nn):
         """
         A torch implementation of LeNet architecture, with adaptive pooling.
             Adapted from: https://github.com/ChawDoe/LeNet5-MNIST-PyTorch.
@@ -89,7 +89,7 @@ if util.find_spec("torch"):
             x = self.fc_3(x)
             return x
 
-    class ConvNet1D(torch.nn.Module):
+    class ConvNet1D(torch.nn):
         """
         A torch implementation of 1D-convolutional architecture inspired from LeNet.
         """
