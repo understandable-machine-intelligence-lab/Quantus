@@ -8,7 +8,8 @@
 
 import time
 import warnings
-from termcolor import colored
+
+import numpy as np
 from .utils import get_name
 
 
@@ -206,7 +207,7 @@ def warn_parameterisation(
         f" .get_params of the metric instance).\n (4) For further information, see original publication: {citation}."
         f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric.\n"
     )
-    print(colored(text=text))
+    print(text)
 
 
 def deprecation_warnings(kwargs: dict) -> None:
@@ -239,3 +240,26 @@ def deprecation_warnings(kwargs: dict) -> None:
 
     if text != "\n":
         print(text)
+
+
+def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
+    """
+    Warn that perturbation applied to input caused change so that input and perturbed input is not the same.
+
+    Parameters
+    ----------
+    x: np.ndarray
+         The original input that is considered unperturbed.
+    x_perturbed: np.ndarray
+         The perturbed input.
+
+    Returns
+    -------
+    None
+    """
+    if (x.flatten() != x_perturbed.flatten()).any():
+        warnings.warn(
+            "The settings for perturbing input e.g., 'perturb_func' "
+            "didn't cause change in input. "
+            "Reconsider the parameter settings."
+        )
