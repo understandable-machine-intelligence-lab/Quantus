@@ -100,7 +100,10 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        explain_func_kwargs={"method": method},
+                        explain_func_kwargs={
+                            **explain_func_kwargs,
+                            **{"method": method},
+                        },
                         **call_kwargs,
                     )
                 )
@@ -121,7 +124,7 @@ def evaluate(
                     model=model,
                     inputs=x_batch,
                     targets=y_batch,
-                    **explain_func_kwargs,
+                    **{**explain_func_kwargs, **{"method": method}},
                 )
                 a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
@@ -151,7 +154,10 @@ def evaluate(
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        explain_func_kwargs={"method": method},
+                        explain_func_kwargs={
+                            **explain_func_kwargs,
+                            **{"method": method},
+                        },
                         **call_kwargs,
                     )
                 )

@@ -40,7 +40,7 @@ class RandomLogit(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = None,
+        aggregate_func: Optional[Callable] = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -187,7 +187,7 @@ class RandomLogit(Metric):
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
             >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
             >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)

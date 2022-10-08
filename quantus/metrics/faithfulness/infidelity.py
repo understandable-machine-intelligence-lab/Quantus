@@ -233,7 +233,7 @@ class Infidelity(PerturbationMetric):
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
             >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
             >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -355,6 +355,9 @@ class Infidelity(PerturbationMetric):
                         # Predict on perturbed input x_perturbed.
                         x_input = model.shape_input(
                             x_perturbed, x.shape, channel_first=True
+                        )
+                        warn_func.warn_perturbation_caused_no_change(
+                            x=x, x_perturbed=x_input
                         )
                         y_pred_perturb = float(model.predict(x_input)[:, y])
 
