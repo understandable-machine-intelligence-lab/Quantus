@@ -81,11 +81,11 @@ def load_1d_3ch_conv_model_tf():
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tutorials/assets/data/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+        np.loadtxt("tutorials/assets/data/mnist_y"), dtype=torch.int64
     ).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
@@ -106,11 +106,11 @@ def load_cifar10_images():
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tutorials/assets/data/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+        np.loadtxt("tutorials/assets/data/mnist_y"), dtype=torch.int64
     ).numpy()
     return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
 
