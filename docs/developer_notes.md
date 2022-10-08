@@ -4,8 +4,8 @@
 # and here: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 
 > cd docs
-> sphinx-apidoc -o source/docs_api ../quantus --module-first -f --separate
 > make clean
+> sphinx-apidoc -o source/docs_api ../quantus --module-first -f --separate
 > make html
 
 # Step 2.
