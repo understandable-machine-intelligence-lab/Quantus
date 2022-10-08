@@ -10,7 +10,6 @@ import time
 import warnings
 
 import numpy as np
-from termcolor import colored
 from .utils import get_name
 
 
@@ -208,7 +207,7 @@ def warn_parameterisation(
         f" .get_params of the metric instance).\n (4) For further information, see original publication: {citation}."
         f"\n (5) To disable these warnings set 'disable_warnings' = True when initialising the metric.\n"
     )
-    print(colored(text=text))
+    print(text)
 
 
 def deprecation_warnings(kwargs: dict) -> None:
