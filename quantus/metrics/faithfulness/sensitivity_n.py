@@ -9,6 +9,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+
 from ..base import PerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
@@ -322,7 +323,7 @@ class SensitivityN(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Sum attributions.
             att_sums.append(float(a[a_ix].sum()))

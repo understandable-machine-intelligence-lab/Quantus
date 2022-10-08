@@ -8,6 +8,8 @@
 
 import time
 import warnings
+
+import numpy as np
 from termcolor import colored
 from .utils import get_name
 
@@ -239,3 +241,26 @@ def deprecation_warnings(kwargs: dict) -> None:
 
     if text != "\n":
         print(text)
+
+
+def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
+    """
+    Warn that perturbation applied to input caused change so that input and perturbed input is not the same.
+
+    Parameters
+    ----------
+    x: np.ndarray
+         The original input that is considered unperturbed.
+    x_perturbed: np.ndarray
+         The perturbed input.
+
+    Returns
+    -------
+    None
+    """
+    if (x.flatten() != x_perturbed.flatten()).any():
+        warnings.warn(
+            "The settings for perturbing input e.g., 'perturb_func' "
+            "didn't cause change in input. "
+            "Reconsider the parameter settings."
+        )

@@ -358,11 +358,11 @@ def load_mnist_adaptive_lenet_model():
 def load_mnist_mosaics():
     """Load a batch of MNIST digits and build mosaics from them"""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tutorials/assets/data/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+        np.loadtxt("tutorials/assets/data/mnist_y"), dtype=torch.int64
     ).numpy()
     mosaics_returns = mosaic_creation(
         images=x_batch, labels=y_batch, mosaics_per_class=10, seed=777

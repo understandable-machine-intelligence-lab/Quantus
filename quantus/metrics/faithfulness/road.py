@@ -9,6 +9,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+
 from ..base import PerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
@@ -298,7 +299,7 @@ class ROAD(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x and store the difference from predicting on unperturbed input.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)

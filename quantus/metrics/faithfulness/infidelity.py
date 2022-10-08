@@ -356,6 +356,9 @@ class Infidelity(PerturbationMetric):
                         x_input = model.shape_input(
                             x_perturbed, x.shape, channel_first=True
                         )
+                        warn_func.warn_perturbation_caused_no_change(
+                            x=x, x_perturbed=x_input
+                        )
                         y_pred_perturb = float(model.predict(x_input)[:, y])
 
                         x_diff = x - x_perturbed

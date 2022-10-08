@@ -129,8 +129,9 @@ if util.find_spec("torch"):
         A torch implementation of 3D-LeNet architecture.
             Adapted from: <https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#sphx-glr-beginner-blitz-cifar10-tutorial-py>
         """
+
         def __init__(self):
-            super(Net, self).__init__()
+            super(LeNet3D, self).__init__()
             self.conv_1 = torch.nn.Conv2d(3, 6, 5)
             self.pool_1 = torch.nn.MaxPool2d(2, 2)
             self.pool_2 = torch.nn.MaxPool2d(2, 2)
@@ -151,6 +152,7 @@ if util.find_spec("torch"):
             x = self.relu_4(self.fc_2(x))
             x = self.fc_3(x)
             return x
+
 
 if util.find_spec("tensorflow"):
 
