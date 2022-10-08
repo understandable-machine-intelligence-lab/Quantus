@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = "Quantus"
 copyright = f"{str(datetime.utcnow().year)}, Anna Hedström"
 author = 'Anna Hedström'
-release = 'v0.2.1'
+release = 'v0.2.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
