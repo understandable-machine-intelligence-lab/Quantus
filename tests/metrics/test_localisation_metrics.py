@@ -386,7 +386,7 @@ def load_cifar10_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(3, 32, 32))
     model.load_state_dict(
-        torch.load("tutorials/assets/cifar10", map_location="cpu", pickle_module=pickle)
+        torch.load("tests/assets/cifar10", map_location="cpu", pickle_module=pickle)
     )
     return model
 
