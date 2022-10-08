@@ -16,8 +16,7 @@ __pycache__/
 *.pth
 tutorials/progress/
 tutorials/assets/imagenet_images/
-tutorials/assets/data/
-tutorials/assets/model_objs/
+tutorials/assets/models/
 tests/test_scenarios.md
 
 # dev
