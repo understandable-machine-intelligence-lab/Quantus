@@ -34,5 +34,5 @@ dist/
 *.egg-info/
 build/
 
-# documentation
-html/
+# tutorials
+tutorials/sample_data/
