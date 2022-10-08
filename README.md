@@ -223,7 +223,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
-model.load_state_dict(torch.load("tutorials/assets/mnist"))
+model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
 # Load datasets and make loaders.
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -253,7 +253,7 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
 <p align="center">
-    <img src="tutorials/assets/mnist_example.png" alt="drawing" width="450"/>
+    <img src="tutorials/assets/pytests/mnist_model_example.png" alt="drawing" width="450"/>
 </p>
 
 The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
