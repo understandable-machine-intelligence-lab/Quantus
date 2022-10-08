@@ -349,7 +349,7 @@ def load_mnist_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(1, 28, 28))
     model.load_state_dict(
-        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+        torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
     )
     return model
 
@@ -358,11 +358,11 @@ def load_mnist_adaptive_lenet_model():
 def load_mnist_mosaics():
     """Load a batch of MNIST digits and build mosaics from them"""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/data/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/data/mnist_y"), dtype=torch.int64
+        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
     ).numpy()
     mosaics_returns = mosaic_creation(
         images=x_batch, labels=y_batch, mosaics_per_class=10, seed=777
