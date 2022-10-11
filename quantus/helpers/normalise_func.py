@@ -102,6 +102,7 @@ def normalise_by_negative(
     )
 
     # Else.
+    # TODO: TEMPORARY SOLUTION: CHANGE WHEN BUG IS IDENTIFIED.
     with warnings.catch_warnings():
         warnings.filterwarnings('error')
         try:

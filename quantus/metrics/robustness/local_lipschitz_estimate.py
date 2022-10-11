@@ -14,7 +14,7 @@ from ..base import PerturbationMetric
 from ...helpers import asserts
 from ...helpers import warn_func
 from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from ...helpers.normalise_func import normalise_by_max
 from ...helpers.perturb_func import gaussian_noise
 from ...helpers.similarity_func import lipschitz_constant, distance_euclidean
 
@@ -78,7 +78,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -104,7 +104,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = gaussian_noise

@@ -14,7 +14,7 @@ from ...helpers import plotting
 from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from ...helpers.normalise_func import normalise_by_max
 
 
 class Focus(Metric):
@@ -57,7 +57,7 @@ class Focus(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -74,7 +74,7 @@ class Focus(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         # Save metric-specific attributes.
         self.mosaic_shape = mosaic_shape
