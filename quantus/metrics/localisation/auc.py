@@ -211,8 +211,6 @@ class AUC(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
     ) -> float:
         """
          Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -230,10 +228,6 @@ class AUC(Metric):
               The explanation to be evaluated on an instance-basis.
          a: np.ndarray
               The segmentation to be evaluated on an instance-basis.
-         c: any
-             The custom input to be evaluated on an instance-basis.
-         p: any
-             The custom preprocess input to be evaluated on an instance-basis.
 
          Returns
          -------
@@ -262,15 +256,14 @@ class AUC(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
             Implementation of custom_preprocess_batch.
 
             Parameters
             ----------
-                model (Union[torch.nn.Module, tf.keras.Model]): A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+                model: (Union[torch.nn.Module, tf.keras.Model])
+                A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
                 x_batch: np.ndarray
                 A np.ndarray which contains the input data that are explained.
                 y_batch: np.ndarray
@@ -284,22 +277,10 @@ class AUC(Metric):
 
             Returns
             -------
-                (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]):     In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
+                (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]):
+                     In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
         returning a custom preprocess batch (custom_preprocess_batch).
 
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )

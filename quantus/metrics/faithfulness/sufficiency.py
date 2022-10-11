@@ -237,8 +237,7 @@ class Sufficiency(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
+        a_sim_vector: Any,  # TODO: specify type
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -257,19 +256,14 @@ class Sufficiency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
+        a_sim_vector: any
             The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
         float
             The evaluation results.
         """
-
-        # Unpack custom preprocess.
-        a_sim_vector = c
 
         # Metric logic.
         pred_a = self.y_pred_classes[i]
@@ -289,9 +283,7 @@ class Sufficiency(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
 
@@ -330,15 +322,4 @@ class Sufficiency(Metric):
 
         self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        # Create the custom batch.
-        custom_preprocess_batch = a_sim_matrix
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+        return {'a_sim_vector_batch': a_sim_matrix}

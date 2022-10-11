@@ -252,8 +252,7 @@ class Focus(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
+        c: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -274,8 +273,6 @@ class Focus(Metric):
             The segmentation to be evaluated on an instance-basis.
         c: any
             The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -316,9 +313,7 @@ class Focus(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
 
@@ -343,9 +338,6 @@ class Focus(Metric):
             In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
             returning a custom preprocess batch (custom_preprocess_batch).
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         try:
             assert model is not None
@@ -356,15 +348,9 @@ class Focus(Metric):
                 "Focus requires either a_batch (explanation maps) or "
                 "the necessary arguments to compute it for you (model, x_batch & y_batch)."
             )
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+
+        # Overwrite custom_batch to have only 'c' as instance input.
+        return {'c_batch': custom_batch, 'custom_batch': None}
 
     def quadrant_top_left(self, a: np.ndarray) -> np.ndarray:
         quandrant_a = a[

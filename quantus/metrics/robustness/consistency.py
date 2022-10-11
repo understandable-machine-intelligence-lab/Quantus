@@ -236,8 +236,7 @@ class Consistency(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
+        a_label: Any,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -266,9 +265,6 @@ class Consistency(Metric):
         float
             The evaluation results.
         """
-        # Unpack custom preprocess.
-        a_label = c
-
         # Metric logic.
         pred_a = self.y_pred_classes[i]
         same_a = np.argwhere(a == a_label).flatten()
@@ -287,9 +283,7 @@ class Consistency(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
 
@@ -314,9 +308,6 @@ class Consistency(Metric):
             In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
             returning a custom preprocess batch (custom_preprocess_batch).
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Preprocessing.
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
@@ -326,14 +317,4 @@ class Consistency(Metric):
         )
         self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        custom_preprocess_batch = a_labels
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+        return {'a_label_batch': a_labels}
