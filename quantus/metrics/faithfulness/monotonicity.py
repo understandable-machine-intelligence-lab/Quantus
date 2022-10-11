@@ -31,9 +31,9 @@ class Monotonicity(PerturbationMetric):
     and thus result in monotonically increasing model performance.
 
     References:
-        1) Arya, Vijay, et al. "One explanation does not fit all: A toolkit and taxonomy of ai explainability
+        1) Vijay Arya et al.: "One explanation does not fit all: A toolkit and taxonomy of ai explainability
         techniques." arXiv preprint arXiv:1909.03012 (2019).
-        2) Luss, Ronny, et al. "Generating contrastive explanations with monotonic attribute functions."
+        2) Ronny Luss et al.: "Generating contrastive explanations with monotonic attribute functions."
         arXiv preprint arXiv:1905.12698 (2019).
     """
 

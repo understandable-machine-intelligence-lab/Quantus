@@ -36,7 +36,7 @@ class RegionPerturbation(PerturbationMetric):
         adjustments to the current implementation might be necessary.
 
     References:
-        1) Samek, Wojciech, et al. "Evaluating the visualization of what a deep
+        1) Wojciech Samek et al.: "Evaluating the visualization of what a deep
         neural network has learned." IEEE transactions on neural networks and
         learning systems 28.11 (2016): 2660-2673.
     """

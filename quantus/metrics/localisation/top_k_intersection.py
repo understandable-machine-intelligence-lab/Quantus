@@ -25,7 +25,7 @@ class TopKIntersection(Metric):
     overlap between the ground truth object mask and the attribution mask should be maximal.
 
     References:
-        1) Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. "Interpretable Semantic Photo
+        1) Jonas Theiner et al.: "Interpretable Semantic Photo
         Geolocalization." arXiv preprint arXiv:2104.14995 (2021).
     """
 

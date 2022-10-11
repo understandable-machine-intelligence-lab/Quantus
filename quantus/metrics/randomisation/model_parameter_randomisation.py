@@ -31,8 +31,8 @@ class ModelParameterRandomisation(Metric):
         HOG and SSIM. We have set Spearman as the default value.
 
     References:
-        1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
-        arXiv preprint, arXiv:1810.073292v3 (2018)
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
+        NeurIPS (2018): 9525-9536.
     """
 
     @asserts.attributes_check

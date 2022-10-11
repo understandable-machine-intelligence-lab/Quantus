@@ -29,8 +29,8 @@ class Focus(Metric):
     of positive relevance lying on those images.
 
     References:
-        1) Anna Arias-Duart, Ferran Parés, Dario Garcia-Gasulla, Victor Gimenez-Abalos. "Focus! Rating XAI Methods
-        and Finding Biases" arXiv preprint arXiv:2109.15035 (2022).
+        1) Anna Arias-Duart et al.: "Focus! Rating XAI Methods
+        and Finding Biases" FUZZ-IEEE (2022): 1-8.
     """
 
     @asserts.attributes_check

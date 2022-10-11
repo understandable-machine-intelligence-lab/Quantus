@@ -29,7 +29,7 @@ class MonotonicityCorrelation(PerturbationMetric):
     then they are not providing the correct importance of the feature.
 
     References:
-        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 

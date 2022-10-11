@@ -33,7 +33,7 @@ class IROF(PerturbationMetric):
         adjustments to the current implementation might be necessary.
 
     References:
-        1) Rieger, Laura, and Lars Kai Hansen. "Irof: a low resource evaluation metric for
+        1) Laura Rieger and Lars Kai Hansen. "Irof: a low resource evaluation metric for
         explanation methods." arXiv preprint arXiv:2003.08747 (2020).
 
     """

@@ -29,7 +29,7 @@ class Sparseness(Metric):
         <https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py>.
 
     References:
-        1) Chalasani, Prasad, et al. "Concise explanations of neural networks using adversarial training."
+        1) Prasad Chalasani et al.: "Concise explanations of neural networks using adversarial training."
         International Conference on Machine Learning. PMLR, 2020.
     """
 

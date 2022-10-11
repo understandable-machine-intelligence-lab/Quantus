@@ -38,8 +38,8 @@ class FaithfulnessCorrelation(PerturbationMetric):
     average over multiple runs and several test samples.
 
     References:
-        1) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating feature-based model
-        explanations." arXiv preprint arXiv:2005.00631 (2020).
+        1) Umang Bhatt et al.: "Evaluating and aggregating feature-based model
+        explanations." IJCAI (2020): 3016-3022.
 
     """
 

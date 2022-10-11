@@ -31,11 +31,11 @@ class Completeness(PerturbationMetric):
         - This implementation does completeness test against logits, not softmax.
 
     References:
-        1) Completeness - Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. "Axiomatic attribution for deep networks."
+        1) Completeness - Mukund Sundararajan et al.: "Axiomatic attribution for deep networks."
         International Conference on Machine Learning. PMLR, 2017.
-        2) Summation to delta - Shrikumar, Avanti, Peyton Greenside, and Anshul Kundaje. "Learning important
+        2) Summation to delta - Avanti Shrikumar et al.: "Learning important
         features through propagating activation differences." International Conference on Machine Learning. PMLR, 2017.
-        3) Conservation - Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting
+        3) Conservation - Grégoire Montavon et al.: "Methods for interpreting
         and understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
     """
 

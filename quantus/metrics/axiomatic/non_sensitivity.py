@@ -26,11 +26,11 @@ class NonSensitivity(PerturbationMetric):
     functionally dependent on.
 
     References:
-        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
-        2) Ancona, Marco, et al. "Explaining Deep Neural Networks with a Polynomial Time Algorithm for Shapley
-        Values Approximation." arXiv preprint arXiv:1903.10992 (2019).
-        3) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller. "Methods for interpreting and
+        2) Marco Ancona et al.: "Explaining Deep Neural Networks with a Polynomial Time Algorithm for Shapley
+        Values Approximation." ICML (2019): 272-281.
+        3) Grégoire Montavon et al.: "Methods for interpreting and
         understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
     """

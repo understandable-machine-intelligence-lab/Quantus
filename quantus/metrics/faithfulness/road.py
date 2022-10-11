@@ -33,7 +33,7 @@ class ROAD(PerturbationMetric):
         to other data domains, adjustments to the current implementation might be necessary.
 
     References:
-        1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
+        1) Leemann Rong et al.: "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
         arXiv:2202.00449 (2022).
     """
 

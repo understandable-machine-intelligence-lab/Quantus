@@ -25,9 +25,9 @@ class AttributionLocalisation(Metric):
     targeted object class.
 
     References:
-        1) Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S.
+        1) Max Kohlbrenner et al.:
            "Towards Best Practice in Explaining Neural Network Decisions with LRP."
-           arXiv preprint arXiv:1910.09840v2 (2020).
+           IJCNN (2020): 1-7.
 
     """
 
