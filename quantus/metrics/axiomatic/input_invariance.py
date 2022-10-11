@@ -26,8 +26,7 @@ class InputInvariance(PerturbationMetric):
     on the attributions, the expectation is that if the model show no response, then the explanations should not.
 
     References:
-        Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., Dähne Sven,
-        Erhan Dumitru and Kim Been. "THE (UN)RELIABILITY OF SALIENCY METHODS" Article (2017).
+        Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
     """
 
     @asserts.attributes_check

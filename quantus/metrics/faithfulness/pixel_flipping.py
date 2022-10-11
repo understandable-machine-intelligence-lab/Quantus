@@ -30,7 +30,7 @@ class PixelFlipping(PerturbationMetric):
     onto the prediction scores (mean prediction is calculated).
 
     References:
-        1) Bach, Sebastian, et al. "On pixel-wise explanations for non-linear classifier
+        1) Sebastian Bach et al.: "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
     """
 

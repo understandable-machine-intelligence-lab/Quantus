@@ -24,7 +24,7 @@ class AUC(Metric):
     AUC is a ranking metric and  compares the ranking between attributions and a given ground-truth mask
 
     References:
-        1) Fawcett, Tom. 'An introduction to ROC analysis' "Pattern Recognition Letters" Vol 27, Issue 8, 2006
+        1) Tom Fawcett: 'An introduction to ROC analysis' "Pattern Recognition Letters" Vol 27, Issue 8, 2006
 
     """
 

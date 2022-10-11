@@ -25,8 +25,8 @@ class RandomLogit(Metric):
     a randomly chosen non-target class.
 
     References:
-        1) Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "When Explanations Lie: Why Many Modified BP
-        Attributions Fail."arXiv preprint, arXiv:1912.09818v6 (2020)
+        1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
+        Attributions Fail." ICML (2020): 9046-9057.
     """
 
     @asserts.attributes_check

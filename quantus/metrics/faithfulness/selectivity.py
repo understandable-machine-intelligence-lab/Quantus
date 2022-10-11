@@ -36,7 +36,7 @@ class Selectivity(PerturbationMetric):
         to other data domains, adjustments to the current implementation might be necessary.
 
     References:
-        1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
+        1) Grégoire Montavon et al.:
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
     """

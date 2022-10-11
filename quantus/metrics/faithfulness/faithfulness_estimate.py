@@ -28,8 +28,8 @@ class FaithfulnessEstimate(PerturbationMetric):
     showing the aggregate statistics.
 
     References:
-        1) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
-        neural networks." arXiv preprint arXiv:1806.07538 (2018).
+        1) David Alvarez-Melis and Tommi S. Jaakkola.: "Towards robust interpretability with self-explaining
+        neural networks." NeurIPS (2018): 7786-7795.
     """
 
     @asserts.attributes_check

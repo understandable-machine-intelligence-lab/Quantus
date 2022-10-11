@@ -28,10 +28,10 @@ class AvgSensitivity(PerturbationMetric):
     change under slight perturbation - the average sensitivity is captured.
 
     References:
-        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
-        arXiv preprint arXiv:1901.09392 (2019).
-        2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
-        feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
+        1) Chih-Kuan Yeh et al. "On the (in) fidelity and sensitivity for explanations."
+        NeurIPS (2019): 10965-10976.
+        2) Umang Bhatt et al.: "Evaluating and aggregating
+        feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
     @asserts.attributes_check

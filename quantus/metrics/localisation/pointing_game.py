@@ -26,7 +26,7 @@ class PointingGame(Metric):
     an object of the specified class.
 
     References:
-        1) Zhang, Jianming, Baral, Sarah Adel, Lin, Zhe, Brandt, Jonathan, Shen, Xiaohui, and Sclaroff, Stan.
+        1) Jianming Zhang et al.:
            "Top-Down Neural Attention by Excitation Backprop." International Journal of Computer Vision
            (2018) 126:1084-1102.
 

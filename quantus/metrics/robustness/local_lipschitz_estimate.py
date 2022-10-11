@@ -29,11 +29,11 @@ class LocalLipschitzEstimate(PerturbationMetric):
     where f(x) is the explanation for input x and x' is the perturbed input.
 
     References:
-        1) Alvarez-Melis, David, and Tommi S. Jaakkola. "On the robustness of interpretability methods."
+        1) David Alvarez-Melis and Tommi S. Jaakkola. "On the robustness of interpretability methods."
         arXiv preprint arXiv:1806.08049 (2018).
 
-        2) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
-        neural networks." arXiv preprint arXiv:1806.07538 (2018).
+        2) David Alvarez-Melis and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
+        neural networks." NeurIPS (2018): 7786-7795.
     """
 
     @asserts.attributes_check

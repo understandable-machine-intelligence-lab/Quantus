@@ -464,7 +464,7 @@ class Metric:
         if self.normalise:
             a_batch = self.normalise_func(
                 a=a_batch,
-                normalized_axes=list(range(np.ndim(a_batch)))[1:],
+                normalise_axes=list(range(np.ndim(a_batch)))[1:],
                 **self.normalise_func_kwargs,
             )
 

@@ -36,7 +36,7 @@ class Infidelity(PerturbationMetric):
         to the current implementation might be necessary.
 
     References:
-        1) Chih-Kuan Yeh, Cheng-Yu Hsieh, and Arun Sai Suggala.
+        1) Chih-Kuan Yeh et al.:
         "On the (In)fidelity and Sensitivity of Explanations."
         33rd Conference on Neural Information Processing Systems (NeurIPS 2019), Vancouver, Canada.
     """

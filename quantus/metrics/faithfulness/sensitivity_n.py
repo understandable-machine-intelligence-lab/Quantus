@@ -34,8 +34,8 @@ class SensitivityN(PerturbationMetric):
     of samples is reported. Sampling is performed using a uniform probability distribution over the features.
 
     References:
-        1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
-        methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
+        1) Marco Ancona et al.: "Towards better understanding of gradient-based attribution
+        methods for deep neural networks." ICLR (Poster) (2018).
 
     """
 

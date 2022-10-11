@@ -31,8 +31,8 @@ class Sufficiency(Metric):
         the explanation and the explanations of the data point is under the user-defined threshold.
 
     References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
+         1) Sanjoy Dasgupta et al.: "Framework for Evaluating Faithfulness of Local
+            Explanations." ICML (2022): 4794-4815.
     """
 
     @asserts.attributes_check

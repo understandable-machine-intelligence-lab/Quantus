@@ -25,8 +25,8 @@ class RelevanceMassAccuracy(Metric):
     attributed scores should be within the bounding box of the targeted object.
 
     References:
-        1) Arras, Leila, Osman, Ahmed, and Samek, Wojciech. "Ground Truth Evaluation of Neural Network Explanations
-        with CLEVR-XAI." arXiv preprint, arXiv:2003.07258v2 (2021)
+        1) Leila Arras et al.: "CLEVR-XAI: A benchmark dataset for the ground
+        truth evaluation of neural network explanations." Inf. Fusion 81 (2022): 14-40.
     """
 
     @asserts.attributes_check
