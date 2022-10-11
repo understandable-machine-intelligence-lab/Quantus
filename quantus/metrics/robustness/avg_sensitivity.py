@@ -300,7 +300,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
         Returns
         -------
-        float
+        np.ndarray
             The evaluation results.
         """
         batch_size = x_batch.shape[0]

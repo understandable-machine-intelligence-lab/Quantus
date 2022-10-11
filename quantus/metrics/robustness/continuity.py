@@ -268,7 +268,7 @@ class Continuity(PerturbationMetric):
         s: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
-    ) -> bool:
+    ) -> Dict:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 

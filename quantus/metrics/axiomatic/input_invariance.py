@@ -238,7 +238,7 @@ class InputInvariance(BatchedPerturbationMetric):
         s_batch: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
-    ) -> bool:
+    ) -> np.ndarray:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -261,7 +261,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         Returns
         -------
-           : boolean
+           : np.ndarray
             The evaluation results.
 
         """
