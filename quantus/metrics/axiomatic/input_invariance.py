@@ -14,7 +14,7 @@ from quantus.helpers import warn_func
 from quantus.helpers import asserts
 from quantus.helpers.model_interface import ModelInterface
 from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import baseline_replacement_by_indices
+from quantus.helpers.perturb_func import baseline_replacement_by_shift
 from quantus.metrics.base import PerturbationMetric
 
 
