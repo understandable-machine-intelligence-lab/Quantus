@@ -168,11 +168,6 @@ class BatchedMetric(Metric):
         >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         # Run deprecation warnings.
-        # TODO: Move this type of warning into the for loop.
-        #       We want to be flexible and add custom metric call kwargs to
-        #       the calling of self.evaluate_instance().
-        #       Check there if the implemented method of the child class
-        #       has this keyword specified. If not, raise a warning.
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
