@@ -224,8 +224,6 @@ class Sparseness(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -244,10 +242,6 @@ class Sparseness(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------

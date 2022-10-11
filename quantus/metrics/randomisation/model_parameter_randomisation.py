@@ -234,15 +234,7 @@ class ModelParameterRandomisation(Metric):
         if custom_batch is None:
             custom_batch = [None for _ in x_batch]
 
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.general_preprocess(
+        data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -373,9 +365,7 @@ class ModelParameterRandomisation(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
@@ -400,22 +390,9 @@ class ModelParameterRandomisation(Metric):
             In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
             returning a custom preprocess batch (custom_preprocess_batch).
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
 
     def compute_correlation_per_sample(self) -> List[float]:
 

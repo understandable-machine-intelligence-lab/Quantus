@@ -255,8 +255,6 @@ class ROAD(PerturbationMetric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -275,10 +273,6 @@ class ROAD(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -319,9 +313,7 @@ class ROAD(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
@@ -346,21 +338,8 @@ class ROAD(PerturbationMetric):
             In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
             returning a custom preprocess batch (custom_preprocess_batch).
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Infer the size of attributions.
         self.a_size = a_batch[0, :, :].size
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
 
     def custom_postprocess(
         self,
@@ -369,8 +348,7 @@ class ROAD(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Dict[int, float]:
+    ) -> None:
         """
         Post-process the evaluation results.
 
