@@ -230,10 +230,6 @@ class ModelParameterRandomisation(Metric):
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
-        if custom_batch is None:
-            custom_batch = [None for _ in x_batch]
-
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -248,6 +244,11 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
+        # TODO: this is cumbersome. Handle this more conveniently.
+        model = data['model']
+        x_batch = data['x_batch']
+        y_batch = data['y_batch']
+        a_batch = data['a_batch']
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.last_results = {}
