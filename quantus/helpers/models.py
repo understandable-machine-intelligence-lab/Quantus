@@ -7,10 +7,10 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from importlib import util
-
-# Import different models depending on which deep learning framework is installed.
 from typing import Tuple
 
+
+# Import different models depending on which deep learning framework is installed.
 if util.find_spec("torch"):
 
     import torch
@@ -157,7 +157,6 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
 
     import tensorflow as tf
-
     from tensorflow.keras.models import Sequential
 
     class LeNetTF(Sequential):

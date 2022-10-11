@@ -4,26 +4,23 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from importlib import util
-
-__EXTRAS__ = util.find_spec("captum") or util.find_spec("tf_explain")
-__MODELS__ = util.find_spec("torch") or util.find_spec("tensorflow")
-
-from .asserts import *
-from .constants import *
-from .norm_func import *
-from .normalise_func import *
-from .mosaic_func import *
-from .loss_func import *
-from .discretise_func import *
-from .perturb_func import *
-from .plotting import *
-from .similarity_func import *
-from .utils import *
-from .warn_func import *
+from quantus.helpers.asserts import *
+from quantus.helpers.constants import *
+from quantus.helpers.discretise_func import *
+from quantus.helpers.loss_func import *
+from quantus.helpers.mosaic_func import *
+from quantus.helpers.norm_func import *
+from quantus.helpers.normalise_func import *
+from quantus.helpers.perturb_func import *
+from quantus.helpers.plotting import *
+from quantus.helpers.similarity_func import *
+from quantus.helpers.utils import *
+from quantus.helpers.warn_func import *
 
 # Import files dependent on package installations.
+__EXTRAS__ = util.find_spec("captum") or util.find_spec("tf_explain")
+__MODELS__ = util.find_spec("torch") or util.find_spec("tensorflow")
 if __MODELS__:
-    from .models import *
+    from quantus.helpers.models import *
 if __EXTRAS__:
-    from .explanation_func import *
+    from quantus.helpers.explanation_func import *

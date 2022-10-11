@@ -6,8 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Callable, Dict, Optional, Union, Sequence
 import warnings
+from typing import Optional, Sequence
+
 import numpy as np
 
 

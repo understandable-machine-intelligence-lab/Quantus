@@ -8,11 +8,12 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import List, Dict
-from ..metrics import *
-from .normalise_func import *
-from .perturb_func import *
-from .similarity_func import *
-from .loss_func import *
+
+from quantus.helpers.loss_func import *
+from quantus.helpers.normalise_func import *
+from quantus.helpers.perturb_func import *
+from quantus.helpers.similarity_func import *
+from quantus.metrics import *
 
 
 AVAILABLE_METRICS = {

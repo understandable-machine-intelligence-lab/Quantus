@@ -6,19 +6,19 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from ..base import PerturbationMetric
-from ...helpers import utils
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_max
-from ...helpers.perturb_func import translation_x_direction
-from ...helpers.similarity_func import lipschitz_constant
-
+from quantus.helpers import asserts
+from quantus.helpers import utils
+from quantus.helpers import warn_func
+from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers.perturb_func import translation_x_direction
+from quantus.helpers.similarity_func import lipschitz_constant
+from quantus.metrics.base import PerturbationMetric
 
 class Continuity(PerturbationMetric):
     """

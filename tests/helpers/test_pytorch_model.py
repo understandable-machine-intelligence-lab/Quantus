@@ -9,9 +9,9 @@ from collections import OrderedDict
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 
-from ..fixtures import *
-from ...quantus.helpers import *
-from ...quantus.helpers.pytorch_model import PyTorchModel
+from tests.fixtures import *
+from quantus.helpers import *
+from quantus.helpers.pytorch_model import PyTorchModel
 
 
 @pytest.fixture

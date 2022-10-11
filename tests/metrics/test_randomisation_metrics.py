@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.metrics import *
-from ...quantus.helpers import *
-from ...quantus.helpers.explanation_func import explain
-from ...quantus.helpers.model_interface import ModelInterface
+from tests.fixtures import *
+from quantus.metrics import *
+from quantus.helpers import *
+from quantus.helpers.explanation_func import explain
+from quantus.helpers.model_interface import ModelInterface
 
 
 @pytest.mark.randomisation

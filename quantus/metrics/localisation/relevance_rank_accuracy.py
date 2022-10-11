@@ -7,13 +7,14 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from ..base import Metric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_max
+from quantus.helpers import asserts
+from quantus.helpers import warn_func
+from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class RelevanceRankAccuracy(Metric):
