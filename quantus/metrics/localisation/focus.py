@@ -248,9 +248,9 @@ class Focus(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
         c: np.ndarray = None,
     ) -> float:
         """

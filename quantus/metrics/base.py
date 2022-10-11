@@ -258,9 +258,9 @@ class Metric:
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -410,6 +410,15 @@ class Metric:
 
         # Call custom pre-processing from inheriting class.
         custom_preprocess_dict = self.custom_preprocess(**data)
+
+        # Save data coming from custom preprocess to data dict.
+        if custom_preprocess_dict:
+            for key, value in custom_preprocess_dict.items():
+                data[key] = value
+
+        # Remove custom_batch if not used.
+        if data['custom_batch'] is None:
+            del data['custom_batch']
 
         # Save data coming from custom preprocess to data dict.
         if custom_preprocess_dict:
@@ -767,9 +776,9 @@ class PerturbationMetric(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
     ) -> Any:
@@ -796,3 +805,4 @@ class PerturbationMetric(Metric):
             Keyword arguments to be passed to perturb_func.
         """
         raise NotImplementedError()
+
