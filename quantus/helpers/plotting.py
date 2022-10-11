@@ -7,10 +7,11 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import List, Union, Dict
-import numpy as np
-import matplotlib.pyplot as plt
 
-from . import warn_func
+import matplotlib.pyplot as plt
+import numpy as np
+
+from quantus.helpers import warn_func
 
 
 def plot_pixel_flipping_experiment(

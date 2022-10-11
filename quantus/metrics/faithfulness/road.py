@@ -7,16 +7,16 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
+from quantus.helpers import asserts
+from quantus.helpers import warn_func
+from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers.perturb_func import noisy_linear_imputation
+from quantus.metrics.base import PerturbationMetric
 
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_max
-from ...helpers.perturb_func import noisy_linear_imputation
 
 
 class ROAD(PerturbationMetric):

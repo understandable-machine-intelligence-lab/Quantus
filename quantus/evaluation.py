@@ -7,11 +7,12 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Union, Callable, Dict, Optional, List
+
 import numpy as np
 
-from .helpers import asserts
-from .helpers import utils
-from .helpers.model_interface import ModelInterface
+from quantus.helpers import asserts
+from quantus.helpers import utils
+from quantus.helpers.model_interface import ModelInterface
 
 
 def evaluate(

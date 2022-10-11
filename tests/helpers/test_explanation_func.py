@@ -7,8 +7,8 @@ import torchvision
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers import *
+from tests.fixtures import *
+from quantus.helpers import *
 
 # This is not nice
 if util.find_spec("zennit"):

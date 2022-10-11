@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers.models import LeNet
-from ...quantus.helpers.utils import *
+from tests.fixtures import *
+from quantus.helpers.models import LeNet
+from quantus.helpers.utils import *
 
 
 @pytest.fixture

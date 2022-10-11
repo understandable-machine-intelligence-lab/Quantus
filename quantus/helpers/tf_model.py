@@ -8,14 +8,14 @@
 
 from typing import Any, Dict, Optional, Tuple
 
-from tensorflow.keras.layers import Dense
+import numpy as np
 from tensorflow.keras import activations
 from tensorflow.keras import Model
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import clone_model
-import numpy as np
 
-from ..helpers.model_interface import ModelInterface
-from ..helpers import utils
+from quantus.helpers import utils
+from quantus.helpers.model_interface import ModelInterface
 
 
 class TensorFlowModel(ModelInterface):

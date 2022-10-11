@@ -10,11 +10,11 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple
 
-import torch
 import numpy as np
+import torch
 
-from ..helpers.model_interface import ModelInterface
-from ..helpers import utils
+from quantus.helpers import utils
+from quantus.helpers.model_interface import ModelInterface
 
 
 class PyTorchModel(ModelInterface):

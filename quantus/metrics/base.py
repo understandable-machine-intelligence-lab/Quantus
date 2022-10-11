@@ -14,10 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..helpers import utils
-from ..helpers import asserts
-from ..helpers.model_interface import ModelInterface
-from ..helpers import warn_func
+from quantus.helpers import asserts
+from quantus.helpers import utils
+from quantus.helpers import warn_func
+from quantus.helpers.model_interface import ModelInterface
 
 
 class Metric:

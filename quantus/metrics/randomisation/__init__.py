@@ -4,5 +4,5 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from .model_parameter_randomisation import ModelParameterRandomisation
-from .random_logit import RandomLogit
+from quantus.metrics.randomisation.model_parameter_randomisation import ModelParameterRandomisation
+from quantus.metrics.randomisation.random_logit import RandomLogit
