@@ -21,6 +21,11 @@ or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de)
   - [Before You Create a Pull Request](#before-you-create-a-pull-request)
   - [Pull Requests](#pull-requests)
 - [Contributing a New Metric](#contributing-a-new-metric)
+  - [Theoretical Foundations](#theoretical-foundations)
+  - [Metric Class](#metric-class)
+  - [Using Helpers](#using-helpers)
+  - [Warnings](#warnings)
+  - [Documenting a Metric](#documenting-a-metric)
 - [License](#license)
 
 ## Reporting Bugs
@@ -126,6 +131,7 @@ Currently, we support six subgroups of evaluation metrics:
 See a more detailed description of those in [README](https://github.com/understandable-machine-intelligence-lab/Quantus#library-overview).
 Identify which category your metric belongs to and create a Python file for your metric class in the respective folder in `quantus/metrics`.
 
+Add the metric to the `__init__.py` file in the respective folder.
 ### Metric Class
 Every metric class inherits from the base `Metric` class: `quantus/metrics/base.py`. Importantly, Faithfulness and Robustness inherit not from the `Metric` class directly, but rather from its child `PerturbationMetric`.
 

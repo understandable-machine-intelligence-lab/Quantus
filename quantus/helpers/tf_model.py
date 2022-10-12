@@ -115,7 +115,7 @@ class TensorFlowModel(ModelInterface):
             A reshaped input.
         """
         if channel_first is None:
-            channel_first = utils.infer_channel_first
+            channel_first = utils.infer_channel_first(x)
         # Expand first dimension if this is just a single instance.
         if not batched:
             x = x.reshape(1, *shape)

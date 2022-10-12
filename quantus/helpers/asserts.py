@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import numpy as np
-from typing import Callable, Tuple, Sequence
+from typing import Callable, Tuple, Sequence, Union
 
 
 def attributes_check(metric):
@@ -66,7 +66,7 @@ def assert_features_in_step(
     )
 
 
-def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
+def assert_patch_size(patch_size: Union[int, tuple], shape: Tuple[int, ...]) -> None:
     """
     Assert that patch size is compatible with given image shape.
 
@@ -86,6 +86,7 @@ def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
         patch_size = (patch_size,)
     patch_size = np.array(patch_size)
 
+    assert isinstance(patch_size, np.ndarray)
     if len(patch_size) == 1 and len(shape) != 1:
         patch_size = tuple(patch_size for _ in shape)
     elif patch_size.ndim != 1:

@@ -53,7 +53,7 @@ class SensitivityN(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = True,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -158,13 +158,13 @@ class SensitivityN(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = True,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = True,
         device: Optional[str] = None,
+        custom_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -264,12 +264,13 @@ class SensitivityN(PerturbationMetric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        c: Any,
-        p: Any,
-    ) -> Dict[str, float]:
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
+        c: Any = None,
+        p: Any = None,
+        a_perturbed: Optional[np.ndarray] = None,
+    ) -> Dict[str, List[float]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -294,7 +295,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-            (Dict[str, float]): The evaluation results.
+            (Dict[str, List[float]]): The evaluation results.
         """
 
         # Reshape the attributions.
@@ -398,7 +399,7 @@ class SensitivityN(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> List[float]:
+    ) -> None:
         """
         Post-process the evaluation results.
 
@@ -419,8 +420,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-           : list
-            Returns the post-processed results.
+           None
         """
 
         max_features = int(
@@ -428,12 +428,12 @@ class SensitivityN(PerturbationMetric):
         )
 
         # Get pred_deltas and att_sums from result list.
-        sub_results_pred_deltas = [r["pred_deltas"] for r in self.last_results]
-        sub_results_att_sums = [r["att_sums"] for r in self.last_results]
+        sub_results_pred_deltas: List[Any] = [r["pred_deltas"] for r in self.last_results]
+        sub_results_att_sums: List[Any] = [r["att_sums"] for r in self.last_results]
 
         # Re-arrange sub-lists so that they are sorted by n.
-        sub_results_pred_deltas_l = {k: [] for k in range(max_features)}
-        sub_results_att_sums_l = {k: [] for k in range(max_features)}
+        sub_results_pred_deltas_l: Dict[int, Any] = {k: [] for k in range(max_features)}
+        sub_results_att_sums_l: Dict[int, Any] = {k: [] for k in range(max_features)}
 
         for k in range(max_features):
             for pred_deltas_instance in sub_results_pred_deltas:
