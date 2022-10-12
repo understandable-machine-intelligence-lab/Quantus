@@ -244,7 +244,6 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        # TODO: this is cumbersome. Handle this more conveniently.
         model = data['model']
         x_batch = data['x_batch']
         y_batch = data['y_batch']
@@ -316,11 +315,11 @@ class ModelParameterRandomisation(Metric):
     def evaluate_instance(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
-        a_perturbed: np.ndarray = None,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        a_perturbed: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.

@@ -232,7 +232,7 @@ class Metric:
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
-        self.custom_postprocess(*data)
+        self.custom_postprocess(**data)
 
         if self.return_aggregate:
             if self.aggregate_func:
