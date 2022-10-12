@@ -6,14 +6,13 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-
 from ..base import PerturbationMetric
-from ...helpers import warn_func
 from ...helpers import asserts
-from ...helpers import utils
+from ...helpers import warn_func
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_indices
@@ -266,6 +265,8 @@ class FaithfulnessCorrelation(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -282,6 +283,10 @@ class FaithfulnessCorrelation(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -303,11 +308,11 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
             # Randomly mask by subset size.
             a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
-            x_perturbed = self.perturb_func(
+            x_perturbed = perturb_func(
                 arr=x,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
+                **perturb_func_kwargs,
             )
             warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 

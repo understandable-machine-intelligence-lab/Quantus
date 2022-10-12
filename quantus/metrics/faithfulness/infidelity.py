@@ -6,17 +6,18 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
 from ..base import PerturbationMetric
-from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers import utils
+from ...helpers import warn_func
+from ...helpers.loss_func import mse
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_indices
-from ...helpers.loss_func import mse
 
 
 class Infidelity(PerturbationMetric):
@@ -267,9 +268,11 @@ class Infidelity(PerturbationMetric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -286,6 +289,10 @@ class Infidelity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -327,11 +334,11 @@ class Infidelity(PerturbationMetric):
                             coords=[top_left_x, top_left_y],
                         )
 
-                        x_perturbed_pad = self.perturb_func(
+                        x_perturbed_pad = perturb_func(
                             arr=x_perturbed_pad,
                             indices=patch_slice,
                             indexed_axes=self.a_axes,
-                            **self.perturb_func_kwargs,
+                            **perturb_func_kwargs,
                         )
 
                         # Remove padding.
