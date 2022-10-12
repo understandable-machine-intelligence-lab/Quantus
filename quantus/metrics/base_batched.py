@@ -18,7 +18,6 @@ from tqdm.auto import tqdm
 from .base import Metric
 from ..helpers import asserts
 from ..helpers import warn_func
-from ..helpers import warn_func
 from ..helpers.model_interface import ModelInterface
 
 
@@ -82,6 +81,8 @@ class BatchedMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
@@ -268,9 +269,6 @@ class BatchedMetric(Metric):
     def evaluate_instance(self, **kwargs) -> Any:
         raise NotImplementedError('evaluate_instance() not implemented for BatchedMetric')
 
-    def evaluate_instance(self, **kwargs) -> Any:
-        raise NotImplementedError('evaluate_instance() not implemented for BatchedMetric')
-
 
 class BatchedPerturbationMetric(BatchedMetric):
     """
@@ -344,13 +342,6 @@ class BatchedPerturbationMetric(BatchedMetric):
             **kwargs,
         )
 
-        self.perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-
-        self.perturb_func_kwargs = perturb_func_kwargs
-
     def __call__(
         self,
         model,
@@ -385,11 +376,13 @@ class BatchedPerturbationMetric(BatchedMetric):
     @abstractmethod
     def evaluate_batch(
             self,
+            model: ModelInterface,
             x_batch: np.ndarray,
             y_batch: np.ndarray,
             a_batch: np.ndarray,
             s_batch: Optional[np.ndarray] = None,
-            **kwargs,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Dict = None,
     ):
         raise NotImplementedError()
 
