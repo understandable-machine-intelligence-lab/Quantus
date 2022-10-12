@@ -234,41 +234,45 @@ class InputInvariance(BatchedPerturbationMetric):
 
     def evaluate_batch(
         self,
-        i_batch: int,
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch: np.ndarray,
-        perturb_func: Callable,
-        perturb_func_kwargs: Optional[Dict],
+        s_batch: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> bool:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
+        x_batch: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
+        y_batch: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
+        a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
+        s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
            : boolean
             The evaluation results.
+
         """
+        batch_size = x_batch.shape[0]
+
         x_shifted = perturb_batch(
             perturb_func=perturb_func,
-            indices=np.arange(0, x_batch[0].size),
+            indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
             indexed_axes=np.arange(0, x_batch[0].ndim),
             arr=x_batch,
             **perturb_func_kwargs,
@@ -330,9 +334,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
