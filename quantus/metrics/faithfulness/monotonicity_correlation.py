@@ -342,7 +342,7 @@ class MonotonicityCorrelation(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: Optional[np.ndarray] = None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
