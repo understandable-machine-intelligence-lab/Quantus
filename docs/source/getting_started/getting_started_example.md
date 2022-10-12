@@ -1,7 +1,24 @@
-## Getting started
+# Getting started
 
-To use the library, you'll need a couple of ingredients; a model, some input data and labels (to be explained).
-In this example, we use `torch` but we also support evaluation of `tensorflow` models.
+The following will give a short introduction for how to get started with Quantus.
+
+**Note**: This example is based on the `PyTorch` framework, but we also support `Tensorflow`, 
+which would differ only in the {ref}`preliminaries <prelim>` (i.e., the model and data loading), 
+as well as in the available XAI libraries. 
+  
+
+## Preliminaries
+(prelim)=
+Quantus implements methods for the quantitative evaluation of XAI methods.
+Generally, in order to apply these, you will need:
+* A model
+* Input data (and labels)
+* Explanations to evaluate
+
+### Model and Data
+
+Let's first load the model and the data. In this example, a pre-trained LeNet available from Quantus 
+for the purpose of this tutorial is loaded, but generally you might use any Pytorch (or Tensorflow) model instead.
 
 ```python
 import quantus
@@ -25,7 +42,36 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using Quantus library.
+### Explanations
+
+We still need some explanations to evaluate, however. 
+For this, there are two possibilities in Quantus:
+
+#### Using Pre-computed Explanations
+Quantus allows you to evaluate explanations that you have already computed previously, 
+assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
+for [Saliency](https://arxiv.org/abs/1312.6034) and [Integrated Gradients](https://arxiv.org/abs/1703.01365)
+already pre-computed.
+
+In that case, you can simply load these into corresponding variables `a_batch_saliency` 
+and `a_batch_intgrad`:
+
+```python
+a_batch_saliency = load("path/to/precomputed/saliency/explanations")
+a_batch_saliency = load("path/to/precomputed/intgrad/explanations")
+```
+
+#### Using Quantus XAI Wrappers
+The second possibility (if you don't have the explanations you are interested in available already) 
+is to simply obtain them from one of the many XAI frameworks out there, 
+such as [Captum](https://captum.ai/), 
+[Zennit](https://github.com/chr5tphr/zennit), 
+[tf.explain](https://github.com/sicara/tf-explain),
+or [iNNvestigate](https://github.com/albermax/innvestigate).
+
+The following code example shows how to obtain explanations ([Saliency](https://arxiv.org/abs/1312.6034) 
+and [Integrated Gradients](https://arxiv.org/abs/1703.01365), to be specific) 
+using [Captum](https://captum.ai/):
 
 ```python
 import captum
@@ -41,13 +87,72 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 # Quick assert.
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 
-# You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
+# You can use any function (not necessarily captum) to generate your explanations.
 ```
+
+However, this can be tedious if you want to compare multiple explanation methods, 
+or switch hyperparameters, or even the XAI library used to compute explanations.
+For these reasons, the `quantus.explain` function offers wrappers around [Captum](https://captum.ai/), 
+[Zennit](https://github.com/chr5tphr/zennit), and
+[tf.explain](https://github.com/sicara/tf-explain), 
+so that explanations do not need to be computed by hand as shown above, 
+and complex evaluations can be performed using less code. 
+
+The qualitative aspects of explanations 
+may look fairly uninterpretable - since we lack ground truth of what the explanations
+should be looking like, it is hard to draw conclusions about the explainable evidence 
+that we see:
+
 <p align="center">
-    <img src="tutorials/assets/mnist_model_example.png" alt="drawing" width="450"/>
+    <img src="/assets/mnist_model_example.png" alt="drawing" width="450"/>
 </p>
 
-The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
+So, to quantitatively evaluate the explanations, we can apply Quantus. 
+
+### Evaluating Explanations with Quantus
+
+#### Quantus Metrics
+
+Quantus implements XAI evaluation metrics from different categories 
+(faithfulness, localisation, robustness, ...) which all inherit from the base `quantus.Metric` class. 
+
+Metrics are designed as `Callables`. To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)), 
+they first need to be instantiated
+
+```python
+max_sensitivity = quantus.MaxSensitivity()
+```
+
+and then applied to your model, data, and (pre-computed) explanations:
+
+```python
+result = max_sensitivity(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    a_batch=a_batch_salicency,
+    device=device
+)
+```
+
+Alternatively, if you want to employ the `quantus.explain` utility instead of pre-computing explanations,
+you can call the metric like this:
+
+```python
+result = max_sensitivity(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    device=device,
+    explain_func=quantus.explain,
+    explain_func_kwargs={"method": "Saliency"})
+)
+```
+
+#### Customizing Metrics
+
+Different metrics can have different hyperparameters or default values, which are documented in detail 
+{doc}`here </docs_api/modules>`.
 
 1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
 
