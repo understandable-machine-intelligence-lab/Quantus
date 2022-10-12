@@ -300,9 +300,8 @@ class Sufficiency(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch, returning a custom preprocess batch (custom_preprocess_batch).
-
+        dictionary[str, np.ndarray]
+            Output dictionary with 'a_sim_vector_batch' as and attributtion similarity matrix as value.
         """
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)

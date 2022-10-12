@@ -330,9 +330,7 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Infer the size of attributions.
         self.a_size = a_batch[0, :, :].size
@@ -364,7 +362,7 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-            (Dict[int, float]): Returns the post-processed results.
+        None
         """
 
         # Calculate accuracy for every number of most important pixels removed.
