@@ -298,9 +298,8 @@ class Consistency(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dictionary[str, np.ndarray]
+            Output dictionary with 'a_label_batch' as key and discretised attributtion labels as value.
         """
         # Preprocessing.
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)

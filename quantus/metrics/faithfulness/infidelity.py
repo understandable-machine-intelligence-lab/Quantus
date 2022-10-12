@@ -396,10 +396,7 @@ class Infidelity(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Infer number of input channels.
-        # TODO: add this to return dict an pass it directly to evaluate instance this way.
         self.nr_channels = x_batch.shape[1]
