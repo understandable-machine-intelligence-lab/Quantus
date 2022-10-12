@@ -12,21 +12,18 @@
 ![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-<!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
-<!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
-<!--[![License](https://img.shields.io/github/license/understandable-machine-intelligence-lab/Quantus)](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/master/LICENSE)-->
+[![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
+[![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
-[📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
         
 ## News and Highlights! :rocket:
 
-- Please see our latest release [v0.2.1](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.1) which minor version includes heavy changes to the API. Read more [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
+- Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
-- Supports different data types: image and time-series (NLP next up!)
-- Flexible API: evaluate any PyTorch or Tensorflow model with your own customised explanation function(s)
-- Different tutorials covering different datasets, models and explanation functions
+- Supports different data types (image, time-series, NLP next up!) and models (PyTorch and Tensorflow)
 - Latest metrics additions:
     - <b>Infidelity </b><a href="https://arxiv.org/abs/1901.09392">(Chih-Kuan, Yeh, et al., 2019)</a>
     - <b>ROAD </b><a href="https://arxiv.org/abs/2202.00449">(Rong, Leemann, et al., 2022)</a>
@@ -57,7 +54,7 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 }
 ```
 
-When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 
+When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above).
 
 ## Table of contents
 
@@ -67,7 +64,7 @@ When applying individual metrics of Quantus, please make sure to also properly c
 * [Tutorials](#tutorials)
 * [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
-* [Citation](#citation)
+<!--* [Citation](#citation)-->
 
 ## Library overview 
 
@@ -173,7 +170,6 @@ Please read the user guidelines for further guidance on how to best use the libr
 
 ## Installation
 
-
 Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) 
 (this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
 
@@ -225,7 +221,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
-model.load_state_dict(torch.load("tutorials/assets/mnist"))
+model.load_state_dict(torch.load("tests/assets/mnist_model"))
 
 # Load datasets and make loaders.
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -255,7 +251,7 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
 <p align="center">
-    <img src="tutorials/assets/mnist_example.png" alt="drawing" width="450"/>
+    <img src="tutorials/assets/mnist_model_example.png" alt="drawing" width="450"/>
 </p>
 
 The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
@@ -308,18 +304,17 @@ df = pd.DataFrame(results)
 df
 ```
 
-When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_getting_started.ipynb).
+When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb).
 
 ## Tutorials
 
-To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
+To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `lower_bound` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
 
-For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
-
-* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
-* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_sensivitivty_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
-* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
-* [Compare explanation methods using qualitative-, quantitative- and sensitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
+For more use cases, please see notebooks in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/) folder which includes examples such as:
+* [ImageNet Example All Metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb): shows how to instantiate the different metrics for ImageNet
+* [Metric Parameterisation Analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Metric_Parameterisation_Analysis.ipynb): explores how sensitive a metric could be to its hyperparameters
+* [Explanation Sensitivity Evaluation Model Training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Explanation_Sensitivity_Evaluation_Model_Training.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
+* [ImageNet Quantification with Quantus](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Quantification_with_Quantus.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
 
 ... and more.
 
@@ -376,9 +371,6 @@ quantus.AVAILABLE_NORMALISATION_FUNCTIONS
 
 # To get the scores of the last evaluated batch.
 metric_instance_called.last_results
-
-# To get the scores of all the evaluated batches.
-metric_instance_called.all_results
 ````
 With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
         
@@ -392,27 +384,8 @@ If you want to return an aggreagate score for your test samples you can set the 
 
 ```return_aggregate = True```
 
-fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
+for which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
 
 ## Contributing
 
-If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
-
-#### Code Style
-
-Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
-We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
-
-#### Testing
-Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
-
-#### Workflow
-
-Before creating a PR, double-check that the following tasks are completed:
-
-- [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Make `pytests` and add under `tests/` folder (to install mandatory packages for testing run `pip install -r requirements_text.txt`)
-- [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
-- [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
-
+We welcome any sort of contribution to Quantus. For a detailed contribution guide, please refer to [Contributing](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/CONTRIBUTING.md) documentation first.
