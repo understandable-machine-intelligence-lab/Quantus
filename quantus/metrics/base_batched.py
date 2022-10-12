@@ -386,19 +386,3 @@ class BatchedPerturbationMetric(BatchedMetric):
 
     def evaluate_instance(self, **kwargs) -> Any:
         raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')
-
-    @abstractmethod
-    def evaluate_batch(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            a_batch: np.ndarray,
-            s_batch: Optional[np.ndarray] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Dict = None,
-    ):
-        raise NotImplementedError()
-
-    def evaluate_instance(self, **kwargs) -> Any:
-        raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')
