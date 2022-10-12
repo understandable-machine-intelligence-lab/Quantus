@@ -213,26 +213,27 @@ class AUC(Metric):
         s: np.ndarray,
     ) -> float:
         """
-         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
-         Parameters
-         ----------
-         i: integer
-             The evaluation instance.
-         model (ModelInteface): A ModelInteface that is subject to explanation.
-         x: np.ndarray
-              The input to be evaluated on an instance-basis.
-         y: np.ndarray
-              The output to be evaluated on an instance-basis.
-         a: np.ndarray
-              The explanation to be evaluated on an instance-basis.
-         a: np.ndarray
-              The segmentation to be evaluated on an instance-basis.
+        Parameters
+        ----------
+        i: integer
+            The evaluation instance.
+        model: (ModelInteface)
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
 
-         Returns
-         -------
+        Returns
+        -------
         : float
-             The evaluation results.
+         The evaluation results.
         """
         # Return np.nan as result if segmentation map is empty.
         if np.sum(s) == 0:
