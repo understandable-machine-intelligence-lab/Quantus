@@ -252,9 +252,11 @@ class Completeness(PerturbationMetric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> bool:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -273,21 +275,21 @@ class Completeness(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
            : boolean
             The evaluation results.
         """
-        x_baseline = self.perturb_func(
+        x_baseline = perturb_func(
             arr=x,
             indices=np.arange(0, x.size),
             indexed_axes=np.arange(0, x.ndim),
-            **self.perturb_func_kwargs,
+            **perturb_func_kwargs,
         )
 
         # Predict on input.

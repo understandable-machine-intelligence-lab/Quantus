@@ -232,7 +232,7 @@ class Metric:
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
-        self.custom_postprocess({**data})
+        self.custom_postprocess(*data)
 
         if self.return_aggregate:
             if self.aggregate_func:
@@ -259,9 +259,9 @@ class Metric:
         i: int,  # TODO: remove this from the general case and check why we need this workaround.
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -755,7 +755,7 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func_=perturb_func,
+            perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
