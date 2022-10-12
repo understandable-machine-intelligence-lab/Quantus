@@ -15,6 +15,7 @@ from tqdm.auto import tqdm
 
 from .base import Metric
 from ..helpers import asserts
+from ..helpers import warn_func
 
 
 class BatchedMetric(Metric):
@@ -29,7 +30,6 @@ class BatchedMetric(Metric):
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
-        softmax: bool,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -54,7 +54,6 @@ class BatchedMetric(Metric):
         normalise (boolean): Indicates whether normalise operation is applied on the attribution.
         normalise_func (callable): Attribution normalisation function applied in case normalise=True.
         normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
-        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
         default_plot_func (callable): Callable that plots the metrics result.
         disable_warnings (boolean): Indicates whether the warnings are printed.
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
@@ -67,7 +66,6 @@ class BatchedMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            softmax=softmax,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
@@ -88,6 +86,7 @@ class BatchedMetric(Metric):
         softmax: Optional[bool],
         device: Optional[str] = None,
         batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[int, float, list, dict, None]:
         """
@@ -115,6 +114,9 @@ class BatchedMetric(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
         batch_size (int): batch size for evaluation, default = 64.
+        custom_batch: any
+            Any object that can be passed to the evaluation process.
+            Gives flexibility to the user to adapt for implementing their own metric.
 
         Returns
         -------
@@ -151,8 +153,8 @@ class BatchedMetric(Metric):
         #       the calling of self.evaluate_instance().
         #       Check there if the implemented method of the child class
         #       has this keyword specified. If not, raise a warning.
-        #warn_func.deprecation_warnings(kwargs)
-        #asserts.check_kwargs(kwargs)
+        warn_func.deprecation_warnings(kwargs)
+        warn_func.check_kwargs(kwargs)
 
         (
             model,
@@ -168,6 +170,7 @@ class BatchedMetric(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -189,7 +192,7 @@ class BatchedMetric(Metric):
         # We use a tailing underscore to prevent confusion with the passed parameters.
         # TODO: rename kwargs of __call__() method accordingly or else this still will be confusing.
         for x_batch_, y_batch_, a_batch_, s_batch_ in batch_generator:
-            result = self.process_batch(
+            result = self.evaluate_batch(
                 model=model,
                 x_batch=x_batch_,
                 y_batch=y_batch_,
@@ -213,7 +216,7 @@ class BatchedMetric(Metric):
         return self.last_results
 
     @abstractmethod
-    def process_batch(
+    def evaluate_batch(
             self,
             x_batch: np.ndarray,
             y_batch: np.ndarray,
@@ -259,6 +262,9 @@ class BatchedMetric(Metric):
             batch = tuple(iterable[batch_start:batch_end] for iterable in iterables)
             yield batch
 
+    def evaluate_instance(self, **kwargs) -> Any:
+        raise NotImplementedError('evaluate_instance() not implemented for BatchedMetric')
+
 
 class BatchedPerturbationMetric(BatchedMetric):
     """
@@ -278,7 +284,6 @@ class BatchedPerturbationMetric(BatchedMetric):
         perturb_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Optional[Callable],
-        n_steps: int,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -329,7 +334,6 @@ class BatchedPerturbationMetric(BatchedMetric):
             **kwargs,
         )
 
-        self.n_steps = n_steps
         self.perturb_func = perturb_func
 
         if perturb_func_kwargs is None:
@@ -365,6 +369,19 @@ class BatchedPerturbationMetric(BatchedMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
-            n_steps=self.n_steps,
             **kwargs,
         )
+
+    @abstractmethod
+    def evaluate_batch(
+            self,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            a_batch: np.ndarray,
+            s_batch: Optional[np.ndarray] = None,
+            **kwargs,
+    ):
+        raise NotImplementedError()
+
+    def evaluate_instance(self, **kwargs) -> Any:
+        raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')

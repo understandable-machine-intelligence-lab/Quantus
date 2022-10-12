@@ -8,7 +8,7 @@
 
 import re
 from abc import abstractmethod
-from collections import Sequence
+from collections.abc import Sequence
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt

@@ -10,15 +10,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 
-from ..base import PerturbationMetric
+from ..base_batched import BatchedPerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_shift
+from ...helpers.perturb_func import perturb_batch
 
 
-class InputInvariance(PerturbationMetric):
+class InputInvariance(BatchedPerturbationMetric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -135,6 +136,7 @@ class InputInvariance(PerturbationMetric):
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
         **kwargs,
     ) -> List[float]:
         """
@@ -226,17 +228,20 @@ class InputInvariance(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
-        i: int,
+        i_batch: int,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+        perturb_func: Callable,
+        perturb_func_kwargs: Optional[Dict],
     ) -> bool:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -261,28 +266,40 @@ class InputInvariance(PerturbationMetric):
            : boolean
             The evaluation results.
         """
-        x_shifted = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
-            **self.perturb_func_kwargs,
+        x_shifted = perturb_batch(
+            perturb_func=perturb_func,
+            indices=np.arange(0, x_batch[0].size),
+            indexed_axes=np.arange(0, x_batch[0].ndim),
+            arr=x_batch,
+            **perturb_func_kwargs,
         )
-        x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
-        warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
+
+        x_shifted = model.shape_input(
+            x=x_shifted,
+            shape=x_shifted.shape,
+            channel_first=True,
+            batched=True,
+        )
+
+        for x_instance, x_instance_shifted in zip(x_batch, x_shifted):
+            warn_func.warn_perturbation_caused_no_change(
+                x=x_instance,
+                x_perturbed=x_instance_shifted,
+            )
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
             model=model.get_model(),
             inputs=x_shifted,
-            targets=y,
+            targets=y_batch,
             **self.explain_func_kwargs,
         )
 
-        # Check if explanation of shifted input is similar to original.
-        if (a.flatten() != a_shifted.flatten()).all():
-            return True
-        else:
-            return False
+        score = np.all(
+            a_batch == a_shifted,
+            axis=tuple(range(1, a_batch.ndim)),
+        )
+        return score
 
     def custom_preprocess(
         self,
