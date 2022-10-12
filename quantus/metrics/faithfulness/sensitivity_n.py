@@ -158,6 +158,7 @@ class SensitivityN(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
+        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -201,6 +202,9 @@ class SensitivityN(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+        custom_batch: any
+            Any object that can be passed to the evaluation process.
+            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -245,7 +249,7 @@ class SensitivityN(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=None,
+            custom_batch=custom_batch,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -257,6 +261,7 @@ class SensitivityN(PerturbationMetric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray = None,
@@ -264,12 +269,14 @@ class SensitivityN(PerturbationMetric):
         s: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
-    ) -> Dict[str, list[float]]:
+    ) -> Dict[str, List[float]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
+        i: integer
+            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -358,7 +365,9 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-        None
+        tuple
+            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
+            returning a custom preprocess batch (custom_preprocess_batch).
         """
         # Asserts.
         asserts.assert_features_in_step(
@@ -373,28 +382,31 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        *kwargs,
     ) -> None:
         """
         Post-process the evaluation results.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+            model: Union[torch.nn.Module, tf.keras.Model]
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
+            x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
+            y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
+            a_batch: np.ndarray, optional
+        A np.ndarray which contains pre-computed attributions i.e., explanations.
+            s_batch: np.ndarray, optional
+        A np.ndarray which contains segmentation masks that matches the input.
+            custom_batch: any
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns
         -------
-        None
+           : list
+            Returns the post-processed results.
         """
+
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
         )
