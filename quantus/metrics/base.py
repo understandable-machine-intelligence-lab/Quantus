@@ -1,15 +1,15 @@
 """This module implements the base class for creating evaluation metrics."""
-
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import inspect
 import re
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -76,6 +76,16 @@ class Metric:
         kwargs: optional
             Keyword arguments.
         """
+        # Check if the additional kwargs are expected to be used in evaluate_instance().
+        # Pop these out and save them in custom_evaluate_kwargs attribute.
+        # This will be passed to get_instance_iterator() and evaluate_instance().
+        self.custom_evaluate_kwargs = {}
+        if kwargs:
+            evaluate_kwarg_names = inspect.getfullargspec(self.evaluate_instance).args
+            for key, value in list(kwargs.items()):
+                if key in evaluate_kwarg_names or re.sub('_batch', '', key) in evaluate_kwarg_names:
+                    self.custom_evaluate_kwargs[key] = value
+                    del kwargs[key]
 
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
@@ -213,13 +223,16 @@ class Metric:
         )
 
         self.last_results = [None for _ in x_batch]
-        iterator = self.get_instance_iterator(data=data)
+
+        iterator = self.get_instance_iterator(data=data, display_progressbar=self.display_progressbar)
         for id_instance, data_instance in iterator:
-            result = self.evaluate_instance(i=id_instance, **data_instance)
+            result = self.evaluate_instance(
+                i=id_instance, **data_instance, **self.custom_evaluate_kwargs,
+            )
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
-        self.custom_postprocess(**data)
+        self.custom_postprocess({**data})
 
         if self.return_aggregate:
             if self.aggregate_func:
@@ -480,7 +493,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable': np.mean(x_batch)}
             >>>
             >>> def evaluate_instance(
@@ -491,7 +504,7 @@ class Metric:
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.float,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with additional keyword argument that ends with `_batch`
             >>> def custom_preprocess(
@@ -502,7 +515,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
             >>>
             >>> def evaluate_instance(
@@ -513,7 +526,7 @@ class Metric:
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.int,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with transformation of an existing
             # keyword argument from `evaluate_instance()`
@@ -525,7 +538,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
             >>>
             >>> def evaluate_instance(
@@ -535,7 +548,7 @@ class Metric:
             >>>     y: Optional[np.ndarray],
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with None returned in custom_preprocess(),
             # but with inplace-preprocessing and additional assertion.
@@ -547,7 +560,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> None:
+            >>> ) -> None:
             >>>     if np.any(np.all(a_batch < 0, axis=0)):
             >>>         raise ValueError("Attributions must not be all negative")
             >>>
@@ -562,12 +575,16 @@ class Metric:
             >>>     y: Optional[np.ndarray],
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
-            >>> ): -> float
+            >>> ) -> float:
 
         """
         pass
 
-    def get_instance_iterator(self, data: Dict[str, Any]):
+    def get_instance_iterator(
+            self,
+            data: Dict[str, Any],
+            display_progressbar: bool = False,
+    ):  # TODO: add typehint
         n_instances = len(data['x_batch'])
 
         for key, value in data.items():
@@ -588,7 +605,7 @@ class Metric:
         iterator = tqdm(
             enumerate(data_instances),
             total=n_instances,
-            disable=not self.display_progressbar,  # Create progress bar if desired.
+            disable=not display_progressbar,  # Create progress bar if desired.
             desc=f"Evaluating {self.__class__.__name__}",
         )
 
@@ -596,12 +613,12 @@ class Metric:
 
     def custom_postprocess(
         self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        **kwargs,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+            **kwargs: object,
     ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
@@ -722,11 +739,15 @@ class PerturbationMetric(Metric):
         normalise_func_kwargs: Optional[Dict[str, Any]],
         perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
+        return_aggregate: bool,
+        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
         **kwargs,
     ):
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
 
         # Initialize super-class with passed parameters
         super().__init__(
@@ -734,17 +755,15 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func_=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
             **kwargs,
         )
-
-        self.perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        self.perturb_func_kwargs = perturb_func_kwargs
 
     @abstractmethod
     def evaluate_instance(
@@ -755,6 +774,8 @@ class PerturbationMetric(Metric):
         y: Optional[np.ndarray] = None,
         a: Optional[np.ndarray] = None,
         s: Optional[np.ndarray] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -775,9 +796,9 @@ class PerturbationMetric(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
         """
         raise NotImplementedError()
