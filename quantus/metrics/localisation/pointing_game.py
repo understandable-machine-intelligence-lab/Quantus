@@ -116,7 +116,6 @@ class PointingGame(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray],
         s_batch: np.array,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -160,9 +159,6 @@ class PointingGame(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -207,7 +203,7 @@ class PointingGame(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -277,7 +273,7 @@ class PointingGame(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: Optional[np.ndarray] = None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
@@ -294,7 +290,7 @@ class PointingGame(Metric):
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
+        custom_batch: np.ndarray, optional
             Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns

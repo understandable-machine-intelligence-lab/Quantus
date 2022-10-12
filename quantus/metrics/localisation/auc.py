@@ -104,7 +104,6 @@ class AUC(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray],
         s_batch: np.array,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -146,9 +145,6 @@ class AUC(Metric):
                 Indicates whether to use softmax probabilities or logits in model prediction. This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
             device: string
                 Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-            custom_batch: any
-                Any object that can be passed to the evaluation process.
-                Gives flexibility to the user to adapt for implementing their own metric.
             kwargs: optional
                 Keyword arguments.
 
@@ -193,7 +189,7 @@ class AUC(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -256,30 +252,30 @@ class AUC(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: Optional[np.ndarray] = None,
     ) -> None:
         """
-            Implementation of custom_preprocess_batch.
+        Implementation of custom_preprocess_batch.
 
-            Parameters
-            ----------
-                model: (Union[torch.nn.Module, tf.keras.Model])
-                A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-                x_batch: np.ndarray
-                A np.ndarray which contains the input data that are explained.
-                y_batch: np.ndarray
-                A np.ndarray which contains the output labels that are explained.
-                a_batch: np.ndarray
-                A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
-                s_batch: np.ndarray
-                A Union[np.ndarray, None] which contains segmentation masks that matches the input.
-                custom_batch: any
-                Gives flexibility ot the user to use for evaluation, can hold any variable.
+        Parameters
+        ----------
+        model: (Union[torch.nn.Module, tf.keras.Model])
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray
+            A Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray
+            A Union[np.ndarray, None] which contains segmentation masks that matches the input.
+        custom_batch: np.ndarray, optional
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
 
-            Returns
-            -------
-                (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]):
-                     In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
+        Returns
+        -------
+            (Tuple[ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any]):
+                 In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
         returning a custom preprocess batch (custom_preprocess_batch).
 
         """
