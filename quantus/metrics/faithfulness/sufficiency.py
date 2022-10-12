@@ -227,21 +227,20 @@ class Sufficiency(Metric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
+        i: int = None,
         a_sim_vector: np.ndarray = None,
+        y_pred_classes: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -252,8 +251,12 @@ class Sufficiency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        i: int
+            The index of the current instance.
         a_sim_vector: any
             The custom input to be evaluated on an instance-basis.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
 
         Returns
         -------
@@ -262,10 +265,10 @@ class Sufficiency(Metric):
         """
 
         # Metric logic.
-        pred_a = self.y_pred_classes[i]
+        pred_a = y_pred_classes[i]
         low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
         low_dist_a = low_dist_a[low_dist_a != i]
-        pred_low_dist_a = self.y_pred_classes[low_dist_a]
+        pred_low_dist_a = y_pred_classes[low_dist_a]
 
         if len(low_dist_a) == 0:
             return 0
@@ -315,6 +318,9 @@ class Sufficiency(Metric):
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
 
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
-
-        return {'a_sim_vector_batch': a_sim_matrix}
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        return {
+            'i_batch': np.arange(x_batch.shape[0]),
+            'a_sim_vector_batch': a_sim_matrix,
+            'y_pred_classes': y_pred_classes,
+        }

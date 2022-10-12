@@ -231,7 +231,9 @@ class Consistency(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
+        i: int = None,
         a_label: np.ndarray = None,
+        y_pred_classes: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -248,8 +250,12 @@ class Consistency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        i: int
+            The index of the current instance.
         a_label: np.ndarray
             The discretised attribution labels.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
 
         Returns
         -------
@@ -257,10 +263,10 @@ class Consistency(Metric):
             The evaluation results.
         """
         # Metric logic.
-        pred_a = self.y_pred_classes[i]
+        pred_a = y_pred_classes[i]
         same_a = np.argwhere(a == a_label).flatten()
         diff_a = same_a[same_a != i]
-        pred_same_a = self.y_pred_classes[diff_a]
+        pred_same_a = y_pred_classes[diff_a]
 
         if len(same_a) == 0:
             return 0
@@ -305,6 +311,10 @@ class Consistency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        return {'a_label_batch': a_labels}
+        return {
+            'i_batch': np.arange(x_batch.shape[0]),
+            'a_label_batch': a_labels,
+            'y_pred_classes': y_pred_classes,
+        }
