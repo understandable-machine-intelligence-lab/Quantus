@@ -256,7 +256,6 @@ class Metric:
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,  # TODO: remove this from the general case and check why we need this workaround.
         model: ModelInterface,
         x: np.ndarray,
         y: Optional[np.ndarray],
@@ -270,8 +269,6 @@ class Metric:
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance id.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -802,7 +799,6 @@ class PerturbationMetric(Metric):
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: Optional[np.ndarray] = None,
@@ -818,8 +814,6 @@ class PerturbationMetric(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
