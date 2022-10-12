@@ -139,7 +139,7 @@ The following methods are expected to be implemented in the metric class:
 - `evaluate_instance()`: Gets model and data for a single instance as input, returns evaluation result.
 
 The following methods are optimal for implementation:
-- `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional preprocessing steps can be added here. This method must return a dictionary with string keys or None. If a dictionary is returned, additional keyword arguments can be used in `evaluate_instance()`.
+- `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional preprocessing steps can be added here. This method must return a dictionary with string keys or None. If a dictionary is returned, additional keyword arguments can be used in `evaluate_instance()`. Please make sure to read the docstring of `custom_preprocess()` for further instructions on how to appropriately name the variables that are created in the function.
 - `custom_postprocess()`: Additional postprocessing steps can be added here that is added on top of the resuling evaluation scores.
 
 ### Using Helpers
