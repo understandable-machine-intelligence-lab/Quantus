@@ -399,14 +399,7 @@ class Metric:
         }
 
         # Call custom pre-processing from inheriting class.
-        custom_preprocess_dict = self.custom_preprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            custom_batch=custom_batch,
-        )
+        custom_preprocess_dict = self.custom_preprocess(**data)
 
         # Save data coming from custom preprocess to data dict.
         if custom_preprocess_dict:
