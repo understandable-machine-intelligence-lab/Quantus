@@ -587,20 +587,54 @@ class Metric:
         pass
 
     def get_instance_iterator(
-            self,
-            data: Dict[str, Any],
-            display_progressbar: bool = False,
-    ):  # TODO: add typehint
+        self,
+        data: Dict[str, Any],
+        display_progressbar: bool = False,
+    ):
+        """
+        Creates iterator to iterate over all instances in data dictionary.
+        Each iterator output element is a keyword argument dictionary with
+        string keys.
+
+        Each item key in the input data dictionary has to be of type string.
+        - If the item value is not a sequence, the respective item key/value pair
+          will be written to each iterator output dictionary.
+        - If the item value is a sequence and the item key ends with '_batch',
+          a check will be made to make sure length matches number of instances.
+          The value of each instance in the sequence will be added to the respective
+          iterator output dictionary with the '_batch' suffix removed.
+        - If the item value is a sequence but doesn't end with '_batch', it will be treated
+          as a simple value and the respective item key/value pair will be
+          written to each iterator output dictionary.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            The data input dictionary.
+
+        Returns
+        -------
+        iterator
+            Each iterator output element is a keyword argument dictionary (string keys).
+
+        """
         n_instances = len(data['x_batch'])
 
         for key, value in data.items():
-            # If data-value is not a Sequence or a string, create list of value with length of n_instances.
+            # If data-value is not a Sequence or a string, create list of repeated values with length of n_instances.
             if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
                 data[key] = [value for _ in range(n_instances)]
 
-            # Check if sequence has correct length.
-            elif len(value) != n_instances:
-                raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+            # If data-value is a sequence and ends with '_batch', only check for correct length.
+            elif key.endswith('_batch'):
+                if len(value) != n_instances:
+                    # Sequence has to have correct length.
+                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+
+            # If data-value is a sequence and doesn't end with '_batch', create
+            # list of repeated sequences with length of n_instances.
+            else:
+                data[key] = [value for _ in range(n_instances)]
 
         # We create a list of dictionaries where each dictionary holds all data for a single instance
         data_instances = [
