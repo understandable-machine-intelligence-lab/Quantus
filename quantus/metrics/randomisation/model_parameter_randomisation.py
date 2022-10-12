@@ -380,9 +380,7 @@ class ModelParameterRandomisation(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
