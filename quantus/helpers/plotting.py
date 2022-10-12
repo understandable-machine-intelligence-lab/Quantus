@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,7 +15,7 @@ from . import warn_func
 
 def plot_pixel_flipping_experiment(
     y_batch: np.ndarray,
-    scores: List[float],
+    scores: List[Any],
     single_class: Union[int, None] = None,
     *args,
     **kwargs,
@@ -67,7 +67,7 @@ def plot_pixel_flipping_experiment(
 
 
 def plot_selectivity_experiment(
-    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+    results: Dict[str, List[Any]], *args, **kwargs
 ) -> None:
     """
     Plot the selectivity experiment as done in paper:
@@ -115,7 +115,7 @@ def plot_selectivity_experiment(
 
 
 def plot_region_perturbation_experiment(
-    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+    results: Dict[str, List[Any]], *args, **kwargs
 ) -> None:
     """
     Plot the region perturbation experiment as done in paper:
@@ -206,7 +206,7 @@ def plot_sensitivity_n_experiment(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Union[List[float], Dict[str, List[float]]],
+    results: Dict[str, dict],
     methods=None,
     *args,
     **kwargs,

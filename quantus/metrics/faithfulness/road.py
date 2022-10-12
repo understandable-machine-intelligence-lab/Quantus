@@ -50,7 +50,7 @@ class ROAD(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -146,13 +146,13 @@ class ROAD(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = True,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = True,
         device: Optional[str] = None,
+        custom_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -252,11 +252,12 @@ class ROAD(PerturbationMetric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        c: Any,
-        p: Any,
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
+        c: Any = None,
+        p: Any = None,
+        a_perturbed: Optional[np.ndarray] = None,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -370,7 +371,7 @@ class ROAD(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Dict[int, float]:
+    ) -> None:
         """
         Post-process the evaluation results.
 
@@ -391,7 +392,7 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-            (Dict[int, float]): Returns the post-processed results.
+            None
         """
 
         # Calculate accuracy for every number of most important pixels removed.

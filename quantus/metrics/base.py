@@ -8,7 +8,7 @@
 
 import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,10 +30,10 @@ class Metric:
         self,
         abs: bool,
         normalise: bool,
-        normalise_func: Optional[Callable],
+        normalise_func: Callable,
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
-        aggregate_func: Optional[Callable],
+        aggregate_func: Callable,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -93,10 +93,10 @@ class Metric:
         self.disable_warnings = disable_warnings
         self.display_progressbar = display_progressbar
 
-        self.a_axes = None
+        self.a_axes: Sequence[int] = None
 
-        self.last_results = []
-        self.all_results = []
+        self.last_results: Any = []
+        self.all_results: Any = []
 
     def __call__(
         self,
@@ -107,13 +107,13 @@ class Metric:
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
         explain_func: Optional[Callable],
-        explain_func_kwargs: Optional[Dict[str, Any]],
+        explain_func_kwargs: Optional[Dict],
         model_predict_kwargs: Optional[Dict],
         softmax: Optional[bool],
         device: Optional[str] = None,
         custom_batch: Optional[Any] = None,
         **kwargs,
-    ) -> Union[int, float, list, dict, None]:
+    ) -> Union[int, float, list, dict, Collection[Any], None]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -293,8 +293,9 @@ class Metric:
         y: Optional[np.ndarray] = None,
         a: Optional[np.ndarray] = None,
         s: Optional[np.ndarray] = None,
-        c: Optional[np.ndarray] = None,
-        p: Optional[np.ndarray] = None,
+        c: Any = None,
+        p: Any = None,
+        a_perturbed: Optional[np.ndarray] = None,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -330,7 +331,7 @@ class Metric:
         a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray],
         channel_first: Optional[bool],
-        explain_func: Optional[Callable],
+        explain_func: Callable,
         explain_func_kwargs: Optional[Dict[str, Any]],
         model_predict_kwargs: Optional[Dict],
         softmax: bool,
@@ -577,7 +578,7 @@ class Metric:
 
     def plot(
         self,
-        plot_func: Union[Callable, None] = None,
+        plot_func: Callable,
         show: bool = True,
         path_to_save: Union[str, None] = None,
         *args,
@@ -664,12 +665,12 @@ class PerturbationMetric(Metric):
         self,
         abs: bool,
         normalise: bool,
-        normalise_func: Optional[Callable],
+        normalise_func: Callable,
         normalise_func_kwargs: Optional[Dict[str, Any]],
         perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
-        aggregate_func: Optional[Callable],
+        aggregate_func: Callable,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -726,3 +727,4 @@ class PerturbationMetric(Metric):
             perturb_func_kwargs = {}
 
         self.perturb_func_kwargs = perturb_func_kwargs
+

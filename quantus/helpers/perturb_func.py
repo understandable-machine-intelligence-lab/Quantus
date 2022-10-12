@@ -157,7 +157,7 @@ def baseline_replacement_by_blur(
          The array which some of its indices have been perturbed.
     """
 
-    indices = expand_indices(arr, indices, indexed_axes)
+    exp_indices = expand_indices(arr, indices, indexed_axes)
 
     # Expand blur_kernel_size.
     if isinstance(blur_kernel_size, int):
@@ -171,7 +171,7 @@ def baseline_replacement_by_blur(
 
     # Blur the array at indicies 8since otherwise n-d convolution can be quite computationally expensive),
     # else it is equal to arr.
-    arr_perturbed = blur_at_indices(arr, kernel, indices, indexed_axes)
+    arr_perturbed = blur_at_indices(arr, kernel, exp_indices, indexed_axes)
 
     return arr_perturbed
 
@@ -406,7 +406,7 @@ def translation_y_direction(
 
 def noisy_linear_imputation(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Union[Sequence[int], Tuple[np.array]],
     noise: float = 0.01,
     **kwargs,
 ) -> np.array:

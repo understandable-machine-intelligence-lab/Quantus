@@ -142,7 +142,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
 
 def generate_tf_explanation(
-    model: ModelInterface, inputs: np.array, targets: np.array, **kwargs
+    model, inputs: np.array, targets: np.array, **kwargs
 ) -> np.ndarray:
     """
     Generate explanation for a tf model with tf_explain.
@@ -150,7 +150,7 @@ def generate_tf_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -289,7 +289,7 @@ def generate_tf_explanation(
 
 
 def generate_captum_explanation(
-    model: ModelInterface,
+    model,
     inputs: np.ndarray,
     targets: np.ndarray,
     device: Optional[str] = None,
@@ -299,7 +299,7 @@ def generate_captum_explanation(
     Generate explanation for a torch model with captum.
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -476,7 +476,7 @@ def generate_captum_explanation(
 
 
 def generate_zennit_explanation(
-    model: ModelInterface,
+    model,
     inputs: np.ndarray,
     targets: np.ndarray,
     device: Optional[str] = None,
@@ -487,7 +487,7 @@ def generate_zennit_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -545,7 +545,7 @@ def generate_zennit_explanation(
             composite = zcomp.COMPOSITES[composite]
     if not composite == None and not issubclass(composite, zcore.Composite):
         raise ValueError(
-            "The specified composite is not valid. "
+            "The specified composite {} is not valid. "
             "Please provide None, a subclass of zennit.core.Composite, or one of {}".format(
                 composite, zcomp.COMPOSITES.keys()
             )

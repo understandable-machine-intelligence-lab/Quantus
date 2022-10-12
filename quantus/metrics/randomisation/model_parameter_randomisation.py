@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Collection
 import numpy as np
 from tqdm.auto import tqdm
 
@@ -47,7 +47,7 @@ class ModelParameterRandomisation(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = None,
+        aggregate_func: Callable = None,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -140,15 +140,15 @@ class ModelParameterRandomisation(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        custom_batch: Optional[np.ndarray] = None,
         **kwargs,
-    ) -> Union[List[float], float, Dict[str, List[float]]]:
+    ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -284,6 +284,7 @@ class ModelParameterRandomisation(Metric):
             batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
             for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
                 result = self.evaluate_instance(
+                    i=int(instance_id),
                     model=random_layer_model,
                     x=None,
                     y=None,
@@ -322,12 +323,15 @@ class ModelParameterRandomisation(Metric):
 
     def evaluate_instance(
         self,
+        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        a_perturbed: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
+        c: Any = None,
+        p: Any = None,
+        a_perturbed: Optional[np.ndarray] = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -417,7 +421,7 @@ class ModelParameterRandomisation(Metric):
             custom_preprocess_batch,
         )
 
-    def compute_correlation_per_sample(self) -> List[float]:
+    def compute_correlation_per_sample(self) -> List[Any]:
 
         assert isinstance(self.last_results, dict), (
             "To compute the average correlation coefficient per sample for "
@@ -425,7 +429,7 @@ class ModelParameterRandomisation(Metric):
             "must be of type dict."
         )
         layer_length = len(self.last_results[list(self.last_results.keys())[0]])
-        results = {sample: [] for sample in range(layer_length)}
+        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
             for layer in self.last_results:

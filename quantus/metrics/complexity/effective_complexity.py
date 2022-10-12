@@ -37,7 +37,7 @@ class EffectiveComplexity(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -113,13 +113,13 @@ class EffectiveComplexity(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,  # Specify function signature
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func: Optional[Callable] = None,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        custom_batch: Optional[np.ndarray] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -219,11 +219,12 @@ class EffectiveComplexity(Metric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        c: Any,
-        p: Any,
+        y: Optional[np.ndarray] = None,
+        a: Optional[np.ndarray] = None,
+        s: Optional[np.ndarray] = None,
+        c: Any = None,
+        p: Any = None,
+        a_perturbed: Optional[np.ndarray] = None,
     ) -> int:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
