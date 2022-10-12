@@ -232,8 +232,8 @@ class InputInvariance(BatchedPerturbationMetric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
+        y_batch: np.ndarray = None,
+        a_batch: np.ndarray = None,
         s_batch: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
@@ -246,13 +246,13 @@ class InputInvariance(BatchedPerturbationMetric):
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x_batch: np.ndarray
-            The input to be evaluated on an instance-basis.
+            The input to be evaluated on a batch-basis.
         y_batch: np.ndarray
-            The output to be evaluated on an instance-basis.
+            The output to be evaluated on a batch-basis.
         a_batch: np.ndarray
-            The explanation to be evaluated on an instance-basis.
+            The explanation to be evaluated on a batch-basis.
         s_batch: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+            The segmentation to be evaluated on a batch-basis.
         perturb_func: callable
             Input perturbation function.
         perturb_func_kwargs: dict, optional
@@ -295,6 +295,7 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.explain_func_kwargs,
         )
 
+        # Check if explanation of shifted input is similar to original.
         score = np.all(
             a_batch == a_shifted,
             axis=tuple(range(1, a_batch.ndim)),
