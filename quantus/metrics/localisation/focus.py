@@ -334,9 +334,12 @@ class Focus(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dictionary[str, np.ndarray]
+            Output dictionary with two items:
+            1) 'c_batch' as key and custom_batch as value.
+            2) 'custom_batch' as key and None as value.
+            This results in the keyword argument 'c' being passed to `evaluate_instance()`.
+
         """
         # Asserts.
         try:
