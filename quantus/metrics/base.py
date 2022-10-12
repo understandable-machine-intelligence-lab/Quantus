@@ -226,9 +226,7 @@ class Metric:
 
         iterator = self.get_instance_iterator(data=data, display_progressbar=self.display_progressbar)
         for id_instance, data_instance in iterator:
-            result = self.evaluate_instance(
-                i=id_instance, **data_instance, **self.custom_evaluate_kwargs,
-            )
+            result = self.evaluate_instance(**data_instance, **self.custom_evaluate_kwargs)
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
@@ -578,9 +576,9 @@ class Metric:
         pass
 
     def get_instance_iterator(
-            self,
-            data: Dict[str, Any],
-            display_progressbar: bool = False,
+        self,
+        data: Dict[str, Any],
+        display_progressbar: bool = False,
     ):
         """
         Creates iterator to iterate over all instances in data dictionary.
@@ -602,6 +600,8 @@ class Metric:
         ----------
         data: dict[str, any]
             The data input dictionary.
+        display_progressbar: bool
+            Show progressbar if True.
 
         Returns
         -------
@@ -644,12 +644,12 @@ class Metric:
 
     def custom_postprocess(
         self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
-            **kwargs: object,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        **kwargs,
     ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
@@ -786,7 +786,7 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
+            perturb_func_=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
