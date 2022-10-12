@@ -9,6 +9,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+
 from ..base import PerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
@@ -194,7 +195,7 @@ class InputInvariance(PerturbationMetric):
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
             >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
             >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -273,7 +274,7 @@ class InputInvariance(PerturbationMetric):
             **self.perturb_func_kwargs,
         )
         x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
-        asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_shifted)
+        warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(

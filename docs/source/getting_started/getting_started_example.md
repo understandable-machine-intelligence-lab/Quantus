@@ -14,7 +14,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
-model.load_state_dict(torch.load("tutorials/assets/mnist"))
+model.load_state_dict(torch.load("tests/assets/mnist_model"))
 
 # Load datasets and make loaders.
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -44,7 +44,7 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 # You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
 <p align="center">
-    <img src="../../assets&mnist_example.png" alt="drawing" width="450"/>
+    <img src="tutorials/assets/mnist_model_example.png" alt="drawing" width="450"/>
 </p>
 
 The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
@@ -97,19 +97,17 @@ df = pd.DataFrame(results)
 df
 ```
 
-When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_getting_started.ipynb).
+When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb).
 
 ## Tutorials
 
 To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `lower_bound` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
 
-For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
-
-* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
-* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_sensivitivty_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
-* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
-* [Compare explanation methods using qualitative-, quantitative- and sensitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
-
+For more use cases, please see notebooks in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/) folder which includes examples such as:
+* [ImageNet Example All Metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb): shows how to instantiate the different metrics for ImageNet
+* [Metric Parameterisation Analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Metric_Parameterisation_Analysis.ipynb): explores how sensitive a metric could be to its hyperparameters
+* [Explanation Sensitivity Evaluation Model Training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Explanation_Sensitivity_Evaluation_Model_Training.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
+* [ImageNet Quantification with Quantus](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Quantification_with_Quantus.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
 ... and more.
 
 

@@ -99,7 +99,7 @@ AVAILABLE_NORMALISATION_FUNCTIONS = {
 }
 
 
-AVAILABLE_XAI_METHODS = {
+AVAILABLE_XAI_METHODS = [
     "Gradient",
     "Saliency",
     "GradientShap",
@@ -111,7 +111,7 @@ AVAILABLE_XAI_METHODS = {
     "Control Var. Sobel Filter",
     "Control Var. Constant",
     "Control Var. Random Uniform",
-}
+]
 
 
 def available_categories() -> List[str]:
@@ -147,7 +147,7 @@ def available_methods() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_XAI_METHODS.keys()]
+    return [c for c in AVAILABLE_XAI_METHODS]
 
 
 def available_perturbation_functions() -> List[str]:

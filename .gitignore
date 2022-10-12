@@ -14,11 +14,6 @@ __pycache__/
 *.npz
 *.csv
 *.pth
-tutorials/progress/
-tutorials/assets/imagenet_images/
-tutorials/assets/data/
-tutorials/assets/model_objs/
-tests/test_scenarios.md
 
 # dev
 temp/
@@ -39,9 +34,6 @@ dist/
 *.egg-info/
 build/
 
-# progress
-quantus/analysers/*
-tests/analysers/*
-
-# documentation
-html/
+# tutorials
+tutorials/sample_data/
+tutorials/invited_talks/

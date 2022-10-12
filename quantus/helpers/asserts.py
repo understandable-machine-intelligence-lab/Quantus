@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import numpy as np
-from typing import Callable, Tuple, Union, Sequence
+from typing import Callable, Tuple, Sequence
 
 
 def attributes_check(metric):
@@ -140,28 +140,6 @@ def assert_nr_segments(nr_segments: int) -> None:
     assert (
         nr_segments > 1
     ), "The number of segments from the segmentation algorithm must be more than one."
-
-
-def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
-    """
-    Assert that perturbation applied to input caused change so that input and perturbed input is not the same.
-
-    Parameters
-    ----------
-    x: np.ndarray
-         The original input that is considered unperturbed.
-    x_perturbed: np.ndarray
-         The perturbed input.
-
-    Returns
-    -------
-    None
-    """
-    assert (x.flatten() != x_perturbed.flatten()).any(), (
-        "The settings for perturbing input e.g., 'perturb_func' "
-        "didn't cause change in input. "
-        "Reconsider the parameter settings."
-    )
 
 
 def assert_layer_order(layer_order: str) -> None:

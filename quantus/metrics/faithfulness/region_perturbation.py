@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools
 import numpy as np
 
+
 from ..base import PerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
@@ -228,7 +229,7 @@ class RegionPerturbation(PerturbationMetric):
 
             # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
             >> model = LeNet()
-            >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
             # Load MNIST datasets and make loaders.
             >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -399,7 +400,7 @@ class RegionPerturbation(PerturbationMetric):
                 x_perturbed_pad, pad_width, padded_axes=self.a_axes
             )
 
-            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
+            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x and store the difference from predicting on unperturbed input.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)

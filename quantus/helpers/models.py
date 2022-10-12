@@ -124,6 +124,35 @@ if util.find_spec("torch"):
             x = self.fc_3(x)
             return x
 
+    class LeNet3D(torch.nn.Module):
+        """
+        A torch implementation of 3D-LeNet architecture.
+            Adapted from: <https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html#sphx-glr-beginner-blitz-cifar10-tutorial-py>
+        """
+
+        def __init__(self):
+            super(LeNet3D, self).__init__()
+            self.conv_1 = torch.nn.Conv2d(3, 6, 5)
+            self.pool_1 = torch.nn.MaxPool2d(2, 2)
+            self.pool_2 = torch.nn.MaxPool2d(2, 2)
+            self.conv_2 = torch.nn.Conv2d(6, 16, 5)
+            self.fc_1 = torch.nn.Linear(16 * 5 * 5, 120)
+            self.fc_2 = torch.nn.Linear(120, 84)
+            self.fc_3 = torch.nn.Linear(84, 10)
+            self.relu_1 = torch.nn.ReLU()
+            self.relu_2 = torch.nn.ReLU()
+            self.relu_3 = torch.nn.ReLU()
+            self.relu_4 = torch.nn.ReLU()
+
+        def forward(self, x):
+            x = self.pool_1(self.relu_1(self.conv_1(x)))
+            x = self.pool_2(self.relu_2(self.conv_2(x)))
+            x = x.view(-1, 16 * 5 * 5)
+            x = self.relu_3(self.fc_1(x))
+            x = self.relu_4(self.fc_2(x))
+            x = self.fc_3(x)
+            return x
+
 
 if util.find_spec("tensorflow"):
 
