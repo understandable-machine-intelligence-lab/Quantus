@@ -317,10 +317,10 @@ class ModelParameterRandomisation(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        a_perturbed: np.ndarray,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        a_perturbed: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -339,10 +339,8 @@ class ModelParameterRandomisation(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        a_perturbed: np.ndarray
+            The perturbed attributions.
 
         Returns
         -------
