@@ -233,10 +233,10 @@ class Consistency(Metric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        a_label: Any,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        a_label: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -255,10 +255,8 @@ class Consistency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        a_label: np.ndarray
+            The discretised attribution labels.
 
         Returns
         -------
