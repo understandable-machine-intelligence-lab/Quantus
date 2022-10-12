@@ -364,9 +364,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Asserts.
         asserts.assert_features_in_step(
@@ -403,8 +401,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-           : list
-            Returns the post-processed results.
+        None
         """
 
         max_features = int(
