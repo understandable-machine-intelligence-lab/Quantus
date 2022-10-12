@@ -270,9 +270,11 @@ class AvgSensitivity(PerturbationMetric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -291,6 +293,10 @@ class AvgSensitivity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -301,11 +307,11 @@ class AvgSensitivity(PerturbationMetric):
         for i in range(self.nr_samples):
 
             # Perturb input.
-            x_perturbed = self.perturb_func(
+            x_perturbed = perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
                 indexed_axes=np.arange(0, x.ndim),
-                **self.perturb_func_kwargs,
+                **perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
             warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
