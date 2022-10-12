@@ -6,10 +6,11 @@ import torch
 import torchvision
 from torchvision import transforms
 import numpy as np
-from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.datasets import cifar10
-import tensorflow as tf
+
+from ..quantus.helpers.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
 from ..quantus.helpers.pytorch_model import PyTorchModel
 from ..quantus.helpers.tf_model import TensorFlowModel
 
@@ -19,7 +20,7 @@ def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNet()
     model.load_state_dict(
-        torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+        torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
     )
     return model
 
@@ -29,7 +30,7 @@ def load_mnist_model():
 #    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
 #   model = LeNet(nr_channels=3)
 #    model.load_state_dict(
-#        torch.load("tutorials/assets/cifar10", map_location="cpu", pickle_module=pickle)
+#        torch.load("tests/assets/cifar10", map_location="cpu", pickle_module=pickle)
 #    )
 #    return model
 
@@ -38,7 +39,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights("tutorials/assets/mnist_tf_weights/")
+    model.load_weights("tests/assets/mnist_tf_weights/")
     return model
 
 
@@ -49,7 +50,7 @@ def load_1d_1ch_conv_model():
     model.eval()
     # TODO: add trained model weights
     # model.load_state_dict(
-    #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+    #    torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
     # )
     return model
 
@@ -61,7 +62,7 @@ def load_1d_3ch_conv_model():
     model.eval()
     # TODO: add trained model weights
     # model.load_state_dict(
-    #    torch.load("tutorials/assets/mnist", map_location="cpu", pickle_module=pickle)
+    #    torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
     # )
     return model
 
@@ -72,7 +73,7 @@ def load_1d_3ch_conv_model_tf():
     model = ConvNet1DTF(n_channels=3, seq_len=100, n_classes=10)
     # TODO: add trained model weights
     # model = LeNetTF()
-    # model.load_weights("tutorials/assets/mnist_tf_weights/")
+    # model.load_weights("tests/assets/mnist_tf_weights/")
     return model
 
 
@@ -80,11 +81,11 @@ def load_1d_3ch_conv_model_tf():
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
     ).numpy()
     return {"x_batch": x_batch, "y_batch": y_batch}
 
@@ -105,11 +106,11 @@ def load_cifar10_images():
 def load_mnist_images_tf():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_x").reshape(124, 1, 28, 28),
+        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28),
         dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
-        np.loadtxt("tutorials/assets/mnist_y"), dtype=torch.int64
+        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
     ).numpy()
     return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
 

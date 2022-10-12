@@ -1,3 +1,8 @@
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+
 import importlib
 from setuptools import setup, find_packages
 from sys import version_info
@@ -10,6 +15,7 @@ if version_info[1] <= 7:
 
     def version(s: str):
         return pkg_resources.get_distribution(s).version
+
 
 else:
     from importlib.metadata import version
@@ -47,29 +53,29 @@ EXTRAS = {
         "xmltodict",
         "xml",
     ],
-    "zennit": ["torch==1.10.1", "torchvision==0.11.2", "zennit==0.4.5", "captum==0.4.1"],
+    "zennit": [
+        "torch==1.10.1",
+        "torchvision==0.11.2",
+        "zennit==0.4.5",
+        "captum==0.4.1",
+    ],
 }
 
 # Define setup.
 setup(
     name="quantus",
-    version="0.2.1",
+    version="0.2.2",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     install_requires=[
-        "coverage==6.2",
-        "flake8==4.0.1",
         "matplotlib==3.3.4",
-        "numpy==1.19.5",
+        "numpy>=1.19.5",
         "opencv-python==4.5.5.62",
         "protobuf~=3.19.0",
-        "pytest==6.2.5",
-        "pytest-cov==3.0.0",
-        "pytest-lazy-fixture==0.6.3",
         "scikit-image==0.19.1",
         "scikit-learn==0.24.2",
-        "scipy==1.5.4",
+        "scipy==1.7.3",
         "termcolor==1.1.0",
         "tqdm==4.62.3",
     ],
