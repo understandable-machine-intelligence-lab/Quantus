@@ -244,10 +244,12 @@ class PixelFlipping(PerturbationMetric):
         i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> List[float]:
+        y: np.ndarray = None,
+        a: np.ndarray = None,
+        s: np.ndarray = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Dict = None,
+    ) -> bool:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -265,6 +267,10 @@ class PixelFlipping(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -289,11 +295,11 @@ class PixelFlipping(PerturbationMetric):
             a_ix = a_indices[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
-            x_perturbed = self.perturb_func(
+            x_perturbed = perturb_func(
                 arr=x_perturbed,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **self.perturb_func_kwargs,
+                **perturb_func_kwargs,
             )
             warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
