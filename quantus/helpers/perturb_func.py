@@ -9,7 +9,7 @@
 import copy
 import random
 import warnings
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -25,6 +25,32 @@ from .utils import (
     get_leftover_shape,
     offset_coordinates,
 )
+
+
+def perturb_batch(
+        perturb_func: Callable,
+        arr: np.ndarray,
+        indices: np.ndarray = None,
+        inplace: bool = False,
+        **kwargs,
+) -> Union[np.ndarray, None]:
+    """ perturbation of complete batch """
+    if indices is not None:
+        assert arr.shape[0] == len(indices), (
+            "arr and indices need same number of batches"
+        )
+
+    if not inplace:
+        arr = arr.copy()
+
+    for i in range(len(arr)):
+        if indices is not None:
+            arr[i] = perturb_func(arr=arr[i], indices=indices[i][1:], **kwargs)
+        else:
+            arr[i] = perturb_func(arr=arr[i], **kwargs)
+
+    if not inplace:
+        return arr
 
 
 def baseline_replacement_by_indices(
