@@ -267,7 +267,7 @@ class SensitivityN(PerturbationMetric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, list[float]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -382,25 +382,22 @@ class SensitivityN(PerturbationMetric):
 
         Parameters
         ----------
-            model: Union[torch.nn.Module, tf.keras.Model]
+        model: Union[torch.nn.Module, tf.keras.Model]
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x_batch: np.ndarray
+        x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-            y_batch: np.ndarray
+        y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-            a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
-            s_batch: np.ndarray, optional
-        A np.ndarray which contains segmentation masks that matches the input.
-            custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
 
         Returns
         -------
            : list
             Returns the post-processed results.
         """
-
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
         )
