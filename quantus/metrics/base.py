@@ -215,7 +215,7 @@ class Metric:
         self.last_results = [None for _ in x_batch]
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
-            result = self.evaluate_instance(i=id_instance, **data_instance)
+            result = self.evaluate_instance(**data_instance)
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
@@ -243,7 +243,6 @@ class Metric:
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,  # TODO: remove this from the general case and check why we need this workaround.
         model: ModelInterface,
         x: np.ndarray,
         y: Optional[np.ndarray],
@@ -257,8 +256,6 @@ class Metric:
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance id.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -783,7 +780,6 @@ class PerturbationMetric(Metric):
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: Optional[np.ndarray],
@@ -797,8 +793,6 @@ class PerturbationMetric(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
