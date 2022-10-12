@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..helpers import utils
 from ..helpers import asserts
-from ..helpers.model_interface import ModelInterface
+from ..helpers import utils
 from ..helpers import warn_func
+from ..helpers.model_interface import ModelInterface
 
 
 class Metric:
@@ -618,7 +618,7 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        **kwargs,
+        **kwargs: object,
     ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
