@@ -435,12 +435,17 @@ class Metric:
     ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data,
-        model alteration or simply for creating/initialising additional attributes.
+        model alteration or simply for creating/initialising additional
+        attributes or assertions.
 
-        If this function is implemented for your metric, make sure to add in the metric-specific
-        function custom_preprocess():
-
-        >> custom_preprocess_batch = [None for _ in x_batch]
+        If this method returns a dictionary, the keys (string) will be used as
+        additional arguments for evaluate_instance().
+        If the key ends with `_batch`, this suffix will be removed from the
+        respective argument name when passed to evaluate_instance().
+        If they key corresponds to the arguments `x_batch, y_batch, a_batch, s_batch`,
+        these will be overwritten for passing `x, y, a, s` to `evaluate_instance()`.
+        If this method returns None, no additional keyword arguments will be
+        passed to `evaluate_instance()`.
 
         Parameters
         ----------
@@ -455,13 +460,110 @@ class Metric:
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dict, optional
+            A dictionary which holds (optionally additional) preprocessed data to
+           be included when calling `evaluate_instance()`.
+
+
+        Examples
+        --------
+            # Custom Metric definition with additional keyword argument used in evaluate_instance():
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'my_new_variable': np.mean(x_batch)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.float,
+            >>> ): -> float
+
+            # Custom Metric definition with additional keyword argument that ends with `_batch`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.int,
+            >>> ): -> float
+
+            # Custom Metric definition with transformation of an existing
+            # keyword argument from `evaluate_instance()`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ): -> float
+
+            # Custom Metric definition with None returned in custom_preprocess(),
+            # but with inplace-preprocessing and additional assertion.
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> None:
+            >>>     if np.any(np.all(a_batch < 0, axis=0)):
+            >>>         raise ValueError("Attributions must not be all negative")
+            >>>
+            >>>     x_batch -= np.mean(x_batch, axis=0)
+            >>>
+            >>>     return None
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ): -> float
+
         """
         pass
 
