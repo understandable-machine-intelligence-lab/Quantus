@@ -295,6 +295,7 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.explain_func_kwargs,
         )
 
+        # Check if explanation of shifted input is similar to original.
         score = np.all(
             a_batch == a_shifted,
             axis=tuple(range(1, a_batch.ndim)),
