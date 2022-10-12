@@ -6,7 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import inspect
 import math
+import re
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
@@ -16,6 +18,7 @@ from tqdm.auto import tqdm
 from .base import Metric
 from ..helpers import asserts
 from ..helpers import warn_func
+from ..helpers.model_interface import ModelInterface
 
 
 class BatchedMetric(Metric):
@@ -30,6 +33,8 @@ class BatchedMetric(Metric):
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict[str, Any]],
+        return_aggregate: bool,
+        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -59,6 +64,16 @@ class BatchedMetric(Metric):
         display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
 
         """
+        # We need to do this separately here, as super().__init__() overwrites these
+        # and uses wrong base method to inspect (evaluate_instance() instead of evaluate_batch().
+        # We don't pass any kwargs that matched here to super().__init__().
+        custom_evaluate_kwargs = {}
+        if kwargs:
+            evaluate_kwarg_names = inspect.getfullargspec(self.evaluate_batch).args
+            for key, value in list(kwargs.items()):
+                if key in evaluate_kwarg_names or re.sub('_batch', '', key) in evaluate_kwarg_names:
+                    custom_evaluate_kwargs[key] = value
+                    del kwargs[key]
 
         # Initialize super-class with passed parameters
         super().__init__(
@@ -66,11 +81,16 @@ class BatchedMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        # Now set the correct custom_evaluate_kwargs attribute.
+        self.custom_evaluate_kwargs = custom_evaluate_kwargs
 
     def __call__(
         self,
@@ -156,15 +176,7 @@ class BatchedMetric(Metric):
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.general_preprocess(
+        data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -181,36 +193,21 @@ class BatchedMetric(Metric):
 
         # create generator for generating batches
         batch_generator = self.generate_batches(
-            x_batch, y_batch, a_batch, s_batch,
-            batch_size=batch_size,
+            data=data, batch_size=batch_size,
             display_progressbar=self.display_progressbar,
         )
 
-        n_batches = self.get_number_of_batches(arr=x_batch, batch_size=batch_size)
         # TODO: initialize correct length of last results
         self.last_results = []
         # We use a tailing underscore to prevent confusion with the passed parameters.
-        # TODO: rename kwargs of __call__() method accordingly or else this still will be confusing.
-        for x_batch_, y_batch_, a_batch_, s_batch_ in batch_generator:
-            result = self.evaluate_batch(
-                model=model,
-                x_batch=x_batch_,
-                y_batch=y_batch_,
-                a_batch=a_batch_,
-                s_batch=s_batch_,
-                **kwargs,
-            )
-            # TODO: put in correct idx instead of extending
+        # TODO: rename '_batch'-suffix kwargs of __call__() method accordingly or else this will be confusing.
+        for data_batch in batch_generator:
+            result = self.evaluate_batch(**data_batch, **self.custom_evaluate_kwargs)
+            # TODO: put in correct list idx instead of extending
             self.last_results.extend(result)
 
         # Call post-processing
-        self.custom_postprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-        )
+        self.custom_postprocess(**data)
 
         self.all_results.append(self.last_results)
         return self.last_results
@@ -218,37 +215,45 @@ class BatchedMetric(Metric):
     @abstractmethod
     def evaluate_batch(
             self,
+            model: ModelInterface,
             x_batch: np.ndarray,
             y_batch: np.ndarray,
             a_batch: np.ndarray,
             s_batch: Optional[np.ndarray] = None,
-            **kwargs,
     ):
         raise NotImplementedError()
 
     @staticmethod
-    def get_number_of_batches(arr: Sequence, batch_size: int):
-        return math.ceil(len(arr)/batch_size)
+    def get_number_of_batches(n_instances: int, batch_size: int):
+        return math.ceil(n_instances / batch_size)
 
     def generate_batches(
             self,
-            *iterables: np.ndarray, batch_size: int,
+            data: Dict[str, Any],
+            batch_size: int,
             display_progressbar: bool = False,
     ):
-        if iterables[0] is None:
-            raise ValueError("first iterable must not be None!")
+        n_instances = len(data['x_batch'])
 
-        iterables = list(iterables)
-        n_instances = len(iterables[0])
-        n_batches = self.get_number_of_batches(iterables[0], batch_size=batch_size)
+        single_value_kwargs = {}
+        batched_value_kwargs = {}
+        for key, value in list(data.items()):
+            # If data-value is not a Sequence or a string, create list of value with length of n_instances.
+            if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
+                single_value_kwargs[key] = value
 
-        # check if any of the iterables is None and replace with list of None
-        for i in range(len(iterables)):
-            if iterables[i] is None:
-                iterables[i] = [None for _ in range(n_instances)]
+            # Check if sequence has correct length.
+            # TODO: we should also support non-batched sequences as variables and pass them as single_value_kwargs.
+            #       it seems not trivial to do this actually in a general case.
+            #       what to do if non-batched sequence length equals batch size?
+            #       Most easy solution would be to require _batch suffix for batched value kwargs.
+            elif len(value) != n_instances:
+                raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
 
-        if not all(len(iterable) == len(iterables[0]) for iterable in iterables):
-            raise ValueError("number of instances needs to be equal for all iterables")
+            else:
+                batched_value_kwargs[key] = value
+
+        n_batches = self.get_number_of_batches(n_instances=n_instances, batch_size=batch_size)
 
         iterator = tqdm(
             range(0, n_batches),
@@ -259,8 +264,10 @@ class BatchedMetric(Metric):
         for batch_idx in iterator:
             batch_start = batch_size * batch_idx
             batch_end = min(batch_size * (batch_idx + 1), n_instances)
-            batch = tuple(iterable[batch_start:batch_end] for iterable in iterables)
-            yield batch
+            batch = {
+                key: value[batch_start:batch_end] for key, value in batched_value_kwargs.items()
+            }
+            yield {**batch, **single_value_kwargs}
 
     def evaluate_instance(self, **kwargs) -> Any:
         raise NotImplementedError('evaluate_instance() not implemented for BatchedMetric')
@@ -319,6 +326,8 @@ class BatchedPerturbationMetric(BatchedMetric):
         kwargs: optional
             Keyword arguments.
         """
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
 
         # Initialise super-class with passed parameters.
         super().__init__(
@@ -326,6 +335,8 @@ class BatchedPerturbationMetric(BatchedMetric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -333,13 +344,6 @@ class BatchedPerturbationMetric(BatchedMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
-
-        self.perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-
-        self.perturb_func_kwargs = perturb_func_kwargs
 
     def __call__(
         self,
@@ -375,11 +379,13 @@ class BatchedPerturbationMetric(BatchedMetric):
     @abstractmethod
     def evaluate_batch(
             self,
+            model: ModelInterface,
             x_batch: np.ndarray,
             y_batch: np.ndarray,
             a_batch: np.ndarray,
             s_batch: Optional[np.ndarray] = None,
-            **kwargs,
+            perturb_func: Callable = None,
+            perturb_func_kwargs: Dict = None,
     ):
         raise NotImplementedError()
 
