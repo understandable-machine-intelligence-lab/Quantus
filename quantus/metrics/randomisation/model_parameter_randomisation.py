@@ -291,7 +291,6 @@ class ModelParameterRandomisation(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
         )
 
         if self.return_sample_correlation:
@@ -315,7 +314,7 @@ class ModelParameterRandomisation(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        a_perturbed: np.ndarray,
+        a_perturbed: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
