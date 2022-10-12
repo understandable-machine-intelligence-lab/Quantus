@@ -16,21 +16,32 @@ e.g. pixel replacement strategy of a faithfulness test influences the ranking of
 [📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
 
 
-This documentation is complementary to Quantus repository's [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) and provides documentation
-for how to install Quantus (**Installation**), how to contribute to the project (**Developer Documentation**) and on the interface (**API Documentation**).
-For further guidance on what to think about when applying Quantus, please read the user guidelines (**Guidelines**).
+This documentation is complementary to the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) in the Quantus repository and provides documentation
+for how to {doc}`install </getting_started/installation>` Quantus, how to {doc}`contribute </docs_dev/CONTRIBUTING>` to the project, and on the {doc}`interface </docs_api/modules>`.
+For further guidance on what to think about when applying Quantus, please read the {doc}`user guidelines </guidelines/guidelines_and_disclaimers>`.
 
-Do you want to get started? Please have a look at our simple MNIST/torch/Saliency/IntGrad toy example (**Getting started**).
+Do you want to get started? Please have a look at our simple {doc}`toy example </getting_started/getting_started_example>` with PyTorch using MNIST data.
 For more examples, check the [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/)
-(this way assumes that you have either `torch` or `tensorflow` already installed on your machine).
+If you already have `Pytorch` or `Tensorflow` installed on your machine, Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
 
 ```setup
 pip install quantus
 ```
 
-For alternative ways to install Quantus, read more under **Installation**.
+Otherwise, you can simply add the desired framework in brackets, and it will be installed in addition to Quantus:
+
+```setup
+pip install quantus[torch]
+```
+
+OR
+
+```setup
+pip install quantus[tensorflow]
+```
+
+For a more in-depth guide on how to install Quantus, read more {doc}`here </getting_started/installation>`.
 
 ```{toctree}
 :caption: Installation
@@ -72,7 +83,7 @@ guidelines/guidelines_and_disclaimers
 
 If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
-interesting or useful in your research, use following Bibtex annotation to cite us:
+interesting or useful in your research, please use the following Bibtex annotation to cite us:
 
 ```bibtex
 @article{hedstrom2022quantus,
@@ -92,3 +103,4 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 ```
 
 When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors.
+You can find the relevant citations in the documentation of each respective metric {doc}`here </docs_api/modules>`.

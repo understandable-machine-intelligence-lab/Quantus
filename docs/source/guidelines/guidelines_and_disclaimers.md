@@ -1,24 +1,36 @@
 ## User guidelines
 
-Just 'throwing' some metrics at your XAI explanations and consider the job done, is an approach not very productive.
+Just 'throwing' some metrics at your explanations and considering the job done is not a very productive approach.
 Before evaluating your explanations, make sure to:
 
 * Always read the original publication to understand the context that the metric was introduced in - it may differ from your specific task and/ or data domain
-* Spend time on understanding and investigate how the hyperparameters of the metrics influence the evaluation outcome; does changing the perturbation function fundamentally change scores?
-* Establish evidence that your chosen metric is well-behaved in your specific setting e.g., include a random explanation (as a control variant) to verify the metric
-* Reflect on the metric's underlying assumptions e.g., most perturbation-based metrics don't account for nonlinear interactions between features
-* Ensure that your model is well-trained, a poor behaving model e.g., a non-robust model will have useless explanations
+* Spend time on understanding and investigating how the hyperparameters of metrics can influence the evaluation outcome. Some parameters that usually influence results significantly include:
+  * the choice of perturbation function
+  * whether normalisation is applied and the choice of the normalisation function
+  * whether unsigned or signed attributions are considered
+* Establish evidence that your chosen metric is well-behaved in your specific setting, e.g., include a random explanation (as a control variant) to verify the metric
+* Reflect on the metric's underlying assumptions, e.g., most perturbation-based metrics don't account for nonlinear interactions between features
+* Ensure that your model is well-trained, as a poor behaving model, e.g., a non-robust model will have useless explanations
+* Each metric measures different properties of explanations, and especially the various categories (faithfulness, localisation, ...) can be viewed as different facettes of evaluation,
+but a single metric never suffices as a sole criterion for the quality of an explanation method
 
 
 ## Disclaimers
 
 **1. Implementation may differ from the original author(s)**
 
-Note that the implementations of metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) sometimes the mathematical definition of the metric is missing and/ or 3) the description of hyperparameter choice was left out. This leaves room for (subjective) interpretations.
+Note that the implementations of metrics in this library have not been verified by the original authors. 
+Thus any metric implementation in this library may differ from the original authors. 
+It is moreover likely that differences exist since 1) the source code of original publication is most often not made publicly available, 2) 
+sometimes the mathematical definition of the metric is missing and/ or 3) 
+the description of hyperparameter choice was left out. 
+This leaves room for (subjective) interpretations.
 
 **2. Discrepancy in operationalisation is likely**
 
-Metrics for XAI methods are often empirical interpretations (or translations) of qualities that researcher(s) stated were important for explanations to fulfil. Hence it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity.
+Metrics for XAI methods are often empirical interpretations (or translations) of qualities that researcher(s) stated 
+were important for explanations to fulfil. Hence it may be a discrepancy between what the author claims to measure by 
+the proposed metric and what is actually measured, e.g., using entropy as an operationalisation of explanation complexity.
 
 **3. Hyperparameters may (and should) change depending on application/ task and dataset/ domain**
 
