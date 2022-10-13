@@ -140,7 +140,6 @@ class ModelParameterRandomisation(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -184,9 +183,6 @@ class ModelParameterRandomisation(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -230,25 +226,13 @@ class ModelParameterRandomisation(Metric):
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
-        if custom_batch is None:
-            custom_batch = [None for _ in x_batch]
-
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.general_preprocess(
+        data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -256,6 +240,10 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
+        model = data['model']
+        x_batch = data['x_batch']
+        y_batch = data['y_batch']
+        a_batch = data['a_batch']
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.last_results = {}
@@ -303,7 +291,6 @@ class ModelParameterRandomisation(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
         )
 
         if self.return_sample_correlation:
@@ -323,11 +310,11 @@ class ModelParameterRandomisation(Metric):
     def evaluate_instance(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        a_perturbed: np.ndarray,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        a_perturbed: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -346,10 +333,8 @@ class ModelParameterRandomisation(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        a_perturbed: np.ndarray
+            The perturbed attributions.
 
         Returns
         -------
@@ -373,9 +358,7 @@ class ModelParameterRandomisation(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
@@ -396,26 +379,11 @@ class ModelParameterRandomisation(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
 
     def compute_correlation_per_sample(self) -> List[float]:
 
