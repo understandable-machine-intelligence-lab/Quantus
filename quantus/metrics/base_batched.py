@@ -41,9 +41,9 @@ class BatchedMetric(Metric):
         **kwargs,
     ):
         """
-        Initialise the Metric base class.
+        Initialise the BatchedMetric base class.
 
-        Each of the defined metrics in Quantus, inherits from Metric base class.
+        Each of the defined metrics in Quantus, inherits from Metric or BatchedMetric base class.
 
         A child metric can benefit from the following class methods:
         - __call__(): Will call general_preprocess(), apply evaluate_instance() on each
@@ -55,14 +55,26 @@ class BatchedMetric(Metric):
 
         Parameters
         ----------
-        abs (boolean): Indicates whether absolute operation is applied on the attribution.
-        normalise (boolean): Indicates whether normalise operation is applied on the attribution.
-        normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call.
-        default_plot_func (callable): Callable that plots the metrics result.
-        disable_warnings (boolean): Indicates whether the warnings are printed.
-        display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed.
-
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call.
+        return_aggregate: boolean
+            Indicates if an aggregated score should be computed over all instances.
+        aggregate_func: callable
+            Callable that aggregates the scores given an evaluation call.
+        default_plot_func: callable
+            Callable that plots the metrics result.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed.
+        kwargs: optional
+            Keyword arguments.
         """
         # We need to do this separately here, as super().__init__() overwrites these
         # and uses wrong base method to inspect (evaluate_instance() instead of evaluate_batch().
@@ -75,7 +87,7 @@ class BatchedMetric(Metric):
                     custom_evaluate_kwargs[key] = value
                     del kwargs[key]
 
-        # Initialize super-class with passed parameters
+        # Initialise super-class with passed parameters.
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -219,7 +231,21 @@ class BatchedMetric(Metric):
         raise NotImplementedError()
 
     @staticmethod
-    def get_number_of_batches(n_instances: int, batch_size: int):
+    def get_number_of_batches(n_instances: int, batch_size: int) -> int:
+        """
+        Get the number of batches given number of samples/ instances and a batch size.
+
+        Parameters
+        ----------
+        n_instances: int
+            The number of instances.
+        batch_size: int
+            The batch size.
+
+        Returns
+        -------
+        integer
+        """
         return math.ceil(n_instances / batch_size)
 
     def generate_batches(
