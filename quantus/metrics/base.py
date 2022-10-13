@@ -777,6 +777,38 @@ class PerturbationMetric(Metric):
         display_progressbar: bool,
         **kwargs,
     ):
+        """
+        Initialise the PerturbationMetric base class.
+
+        Parameters
+        ----------
+        Parameters
+        ----------
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
+        return_aggregate: boolean
+            Indicates if an aggregated score should be computed over all instances.
+        aggregate_func: callable
+            Callable that aggregates the scores given an evaluation call.
+        default_plot_func: callable
+            Callable that plots the metrics result.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed.
+        kwargs: optional
+            Keyword arguments.
+        """
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
 

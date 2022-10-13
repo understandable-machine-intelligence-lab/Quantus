@@ -9,7 +9,7 @@
 import copy
 import random
 import warnings
-from typing import Any, Callable, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence, Tuple, Union, Optional
 
 import cv2
 import numpy as np
@@ -30,11 +30,29 @@ from .utils import (
 def perturb_batch(
         perturb_func: Callable,
         arr: np.ndarray,
-        indices: np.ndarray = None,
+        indices: Optional[np.ndarray] = None,
         inplace: bool = False,
         **kwargs,
 ) -> Union[np.ndarray, None]:
-    """ perturbation of complete batch """
+    """
+    Use a perturb funciton and make perturbation on the full batch.
+
+    Parameters
+    ----------
+    perturb_func
+     arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    inplace: boolean
+        Indicates if the array should be copied or not.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    None, array
+    """
     if indices is not None:
         assert arr.shape[0] == len(indices), (
             "arr and indices need same number of batches"
@@ -43,6 +61,7 @@ def perturb_batch(
     if not inplace:
         arr = arr.copy()
 
+    # Run perturbation.
     for i in range(len(arr)):
         if indices is not None:
             arr[i] = perturb_func(arr=arr[i], indices=indices[i][1:], **kwargs)
