@@ -227,7 +227,7 @@ class Metric:
         iterator = self.get_instance_iterator(data=data, display_progressbar=self.display_progressbar)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(
-                i=id_instance, **data_instance, **self.custom_evaluate_kwargs,
+                **data_instance, **self.custom_evaluate_kwargs,
             )
             self.last_results[id_instance] = result
 
@@ -256,12 +256,11 @@ class Metric:
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,  # TODO: remove this from the general case and check why we need this workaround.
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -270,8 +269,6 @@ class Metric:
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance id.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -755,7 +752,7 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func_=perturb_func,
+            perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
@@ -768,12 +765,11 @@ class PerturbationMetric(Metric):
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
     ) -> Any:
@@ -784,8 +780,6 @@ class PerturbationMetric(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
