@@ -84,8 +84,6 @@ class BatchedMetric(Metric):
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
             **kwargs,
