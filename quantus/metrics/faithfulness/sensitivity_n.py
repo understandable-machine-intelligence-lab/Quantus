@@ -261,7 +261,6 @@ class SensitivityN(PerturbationMetric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray = None,
@@ -382,23 +381,24 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
+        custom_batch: np.ndarray = None,
     ) -> None:
         """
         Post-process the evaluation results.
 
         Parameters
         ----------
-            model: Union[torch.nn.Module, tf.keras.Model]
+        model: Union[torch.nn.Module, tf.keras.Model]
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x_batch: np.ndarray
+        x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-            y_batch: np.ndarray
+        y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-            a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
-            s_batch: np.ndarray, optional
-        A np.ndarray which contains segmentation masks that matches the input.
-            custom_batch: any
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        custom_batch: any
             Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns
