@@ -12,7 +12,7 @@ import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
-from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 def evaluate(

@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.explanation_func import explain
+from quantus.helpers.functions.discretise_func import floating_points, rank, sign, top_n_sign
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.robustness import *
 from tests.fixtures import *
-from quantus.metrics import *
-from quantus.helpers import *
-from quantus.helpers.explanation_func import explain
-
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(

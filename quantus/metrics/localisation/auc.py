@@ -12,9 +12,9 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 
@@ -86,7 +86,7 @@ class AUC(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch' input as well as if "
@@ -243,7 +243,7 @@ class AUC(Metric):
         """
         # Return np.nan as result if segmentation map is empty.
         if np.sum(s) == 0:
-            warn_func.warn_empty_segmentation()
+            warn.warn_empty_segmentation()
             return np.nan
 
         # Prepare shapes.

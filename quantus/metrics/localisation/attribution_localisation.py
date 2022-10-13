@@ -11,9 +11,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 
@@ -82,7 +82,7 @@ class AttributionLocalisation(Metric):
             normalise_func = normalise_by_max
 
         if not abs:
-            warn_func.warn_absolute_operation()
+            warn.warn_absolute_operation()
 
         super().__init__(
             abs=abs,
@@ -104,7 +104,7 @@ class AttributionLocalisation(Metric):
         # Asserts and warnings.
         self.disable_warnings = disable_warnings
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', if size of the ground truth "
@@ -267,7 +267,7 @@ class AttributionLocalisation(Metric):
         """
 
         if np.sum(s) == 0:
-            warn_func.warn_empty_segmentation()
+            warn.warn_empty_segmentation()
             return np.nan
 
         # Prepare shapes.
@@ -286,7 +286,7 @@ class AttributionLocalisation(Metric):
 
         if ratio <= self.max_size:
             if inside_attribution_ratio > 1.0:
-                warn_func.warn_segmentation(inside_attribution, total_attribution)
+                warn.warn_segmentation(inside_attribution, total_attribution)
                 return np.nan
             if not self.weighted:
                 return inside_attribution_ratio

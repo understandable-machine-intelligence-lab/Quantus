@@ -4,13 +4,9 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.explanation_func import explain
+from quantus.metrics.axiomatic import *
 from tests.fixtures import *
-from quantus.metrics import *
-from quantus.helpers import *
-from quantus.helpers.explanation_func import explain
-from quantus.helpers.pytorch_model import PyTorchModel
-from quantus.helpers.tf_model import TensorFlowModel
-
 
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(

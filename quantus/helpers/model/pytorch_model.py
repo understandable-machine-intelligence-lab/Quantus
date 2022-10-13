@@ -14,7 +14,7 @@ import numpy as np
 import torch
 
 from quantus.helpers import utils
-from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class PyTorchModel(ModelInterface):

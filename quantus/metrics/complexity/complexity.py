@@ -12,9 +12,9 @@ import numpy as np
 import scipy
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 
@@ -75,7 +75,7 @@ class Complexity(Metric):
             Keyword arguments.
         """
         if not abs:
-            warn_func.warn_absolute_operation()
+            warn.warn_absolute_operation()
 
         if normalise_func is None:
             normalise_func = normalise_by_max
@@ -95,7 +95,7 @@ class Complexity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"

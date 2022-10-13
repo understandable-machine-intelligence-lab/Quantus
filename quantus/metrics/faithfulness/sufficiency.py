@@ -12,9 +12,9 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 
@@ -110,7 +110,7 @@ class Sufficiency(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "distance threshold that determines if images share an attribute 'threshold', "

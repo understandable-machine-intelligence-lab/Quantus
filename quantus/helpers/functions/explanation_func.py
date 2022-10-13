@@ -15,7 +15,7 @@ import scipy
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
-from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.utils import get_baseline_value, infer_channel_first, make_channel_last
 
 

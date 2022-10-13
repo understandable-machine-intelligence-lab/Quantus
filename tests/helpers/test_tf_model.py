@@ -1,14 +1,15 @@
-import numpy as np
-import pytest
+
 from functools import reduce
 from operator import and_
 from typing import Union
-from scipy.special import softmax
+
+import numpy as np
+import pytest
 from pytest_lazyfixture import lazy_fixture
+from scipy.special import softmax
 
 from tests.fixtures import *
-from quantus.helpers import *
-from quantus.helpers.tf_model import TensorFlowModel
+from quantus.helpers.model.tf_model import TensorFlowModel
 
 
 @pytest.fixture

@@ -9,10 +9,10 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 
 from typing import List, Dict
 
-from quantus.helpers.loss_func import *
-from quantus.helpers.normalise_func import *
-from quantus.helpers.perturb_func import *
-from quantus.helpers.similarity_func import *
+from quantus.helpers.functions.loss_func import *
+from quantus.helpers.functions.normalise_func import *
+from quantus.helpers.functions.perturb_func import *
+from quantus.helpers.functions.similarity_func import *
 from quantus.metrics import *
 
 

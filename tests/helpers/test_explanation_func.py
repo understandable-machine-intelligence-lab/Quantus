@@ -1,175 +1,163 @@
-import pickle
-from typing import Union
-
-import numpy as np
-import torch
-import torchvision
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from zennit import composites as zcomp
+from zennit import attribution as zattr
+from zennit import torchvision as ztv
+
+from quantus.helpers.functions.explanation_func import *
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from tests.fixtures import *
-from quantus.helpers import *
 
-# This is not nice
-if util.find_spec("zennit"):
-    from zennit import canonizers as zcanon
-    from zennit import composites as zcomp
-    from zennit import attribution as zattr
-    from zennit import core as zcore
-    from zennit import torchvision as ztv
-
-if util.find_spec("zennit"):
-    zennit_tests = [
-        # Zennit
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "canonizer": None,
-                "composite": None,
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (10, 1, 100)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": None,
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (124, 1, 28, 28)},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "canonizer": ztv.SequentialMergeBatchNorm,
-                "composite": zcomp.EpsilonPlus,
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (10, 1, 100)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": ztv.SequentialMergeBatchNorm,
-                "composite": zcomp.EpsilonPlus,
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (124, 1, 28, 28)},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "canonizer": None,
-                "composite": "epsilon_alpha2_beta1_flat",
-                "attributor": zattr.Gradient,
-            },
-            {"shape": (10, 1, 100)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "epsilon_alpha2_beta1_flat",
-                "attributor": zattr.Gradient,
-            },
-            {"shape": (124, 1, 28, 28)},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (10, 1, 100)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-            },
-            {"shape": (124, 1, 28, 28)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-                "reduce_axes": (1,),
-            },
-            {"shape": (124, 1, 28, 28)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-                "reduce_axes": (1, 2),
-            },
-            {"shape": (124, 1, 1, 28)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-                "reduce_axes": (3,),
-            },
-            {"shape": (124, 1, 28, 1)},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-                "reduce_axes": (0, 1),
-            },
-            {"exception": AssertionError},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "canonizer": None,
-                "composite": "guided_backprop",
-                "attributor": zattr.Gradient,
-                "xai_lib": "zennit",
-                "reduce_axes": (1, 2, 3, 4, 5),
-            },
-            {"exception": AssertionError},
-        ),
-    ]
-else:
-    zennit_tests = []
+zennit_tests = [
+    # Zennit
+    (
+        lazy_fixture("load_1d_3ch_conv_model"),
+        lazy_fixture("almost_uniform_1d_no_abatch"),
+        {
+            "canonizer": None,
+            "composite": None,
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (10, 1, 100)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": None,
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (124, 1, 28, 28)},
+    ),
+    (
+        lazy_fixture("load_1d_3ch_conv_model"),
+        lazy_fixture("almost_uniform_1d_no_abatch"),
+        {
+            "canonizer": ztv.SequentialMergeBatchNorm,
+            "composite": zcomp.EpsilonPlus,
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (10, 1, 100)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": ztv.SequentialMergeBatchNorm,
+            "composite": zcomp.EpsilonPlus,
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (124, 1, 28, 28)},
+    ),
+    (
+        lazy_fixture("load_1d_3ch_conv_model"),
+        lazy_fixture("almost_uniform_1d_no_abatch"),
+        {
+            "canonizer": None,
+            "composite": "epsilon_alpha2_beta1_flat",
+            "attributor": zattr.Gradient,
+        },
+        {"shape": (10, 1, 100)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "epsilon_alpha2_beta1_flat",
+            "attributor": zattr.Gradient,
+        },
+        {"shape": (124, 1, 28, 28)},
+    ),
+    (
+        lazy_fixture("load_1d_3ch_conv_model"),
+        lazy_fixture("almost_uniform_1d_no_abatch"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (10, 1, 100)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+        },
+        {"shape": (124, 1, 28, 28)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+            "reduce_axes": (1,),
+        },
+        {"shape": (124, 1, 28, 28)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+            "reduce_axes": (1, 2),
+        },
+        {"shape": (124, 1, 1, 28)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+            "reduce_axes": (3,),
+        },
+        {"shape": (124, 1, 28, 1)},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+            "reduce_axes": (0, 1),
+        },
+        {"exception": AssertionError},
+    ),
+    (
+        lazy_fixture("load_mnist_model"),
+        lazy_fixture("load_mnist_images"),
+        {
+            "canonizer": None,
+            "composite": "guided_backprop",
+            "attributor": zattr.Gradient,
+            "xai_lib": "zennit",
+            "reduce_axes": (1, 2, 3, 4, 5),
+        },
+        {"exception": AssertionError},
+    ),
+]
 
 
 @pytest.mark.explain_func

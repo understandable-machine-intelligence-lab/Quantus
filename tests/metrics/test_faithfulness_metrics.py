@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.explanation_func import explain
+from quantus.helpers.functions.perturb_func import baseline_replacement_by_indices, noisy_linear_imputation
+from quantus.helpers.functions.similarity_func import correlation_spearman, correlation_kendall_tau
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.faithfulness import *
 from tests.fixtures import *
-from quantus.metrics import *
-from quantus.helpers import *
-from quantus.helpers import perturb_func
-from quantus.helpers.explanation_func import explain
-
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -961,7 +961,7 @@ def test_monotonicity_correlation(
                 "init": {
                     "features_in_step": 10,
                     "normalise": False,
-                    "perturb_func": perturb_func.baseline_replacement_by_indices,
+                    "perturb_func": baseline_replacement_by_indices,
                     "perturb_baseline": "mean",
                     "disable_warnings": True,
                 },
@@ -998,7 +998,7 @@ def test_monotonicity_correlation(
                 "init": {
                     "features_in_step": 10,
                     "normalise": False,
-                    "perturb_func": perturb_func.baseline_replacement_by_indices,
+                    "perturb_func": baseline_replacement_by_indices,
                     "perturb_baseline": "mean",
                     "disable_warnings": True,
                 },
@@ -1114,7 +1114,7 @@ def test_pixel_flipping(
                     "normalise": True,
                     "order": "morf",
                     "disable_warnings": True,
-                    "perturb_func": perturb_func.baseline_replacement_by_indices,
+                    "perturb_func": baseline_replacement_by_indices,
                 },
                 "call": {
                     "explain_func": explain,

@@ -10,11 +10,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantus.helpers import warn_func
+from quantus.helpers import warn
 from quantus.helpers import asserts
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import baseline_replacement_by_shift
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.perturb_func import baseline_replacement_by_shift
 from quantus.metrics.base import PerturbationMetric
 
 
@@ -79,10 +79,10 @@ class InputInvariance(PerturbationMetric):
             Keyword arguments.
         """
         if normalise:
-            warn_func.warn_normalise_operation(word="not ")
+            warn.warn_normalise_operation(word="not ")
 
         if abs:
-            warn_func.warn_absolute_operation(word="not ")
+            warn.warn_absolute_operation(word="not ")
 
         if normalise_func is None:
             normalise_func = normalise_by_max
@@ -111,7 +111,7 @@ class InputInvariance(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("input shift 'input_shift'"),
                 citation=(
@@ -273,7 +273,7 @@ class InputInvariance(PerturbationMetric):
             **self.perturb_func_kwargs,
         )
         x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
-        warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
+        warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
