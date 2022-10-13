@@ -810,9 +810,9 @@ class PerturbationMetric(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
     ) -> Any:
