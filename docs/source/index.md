@@ -23,7 +23,7 @@ For further guidance on what to think about when applying Quantus, please read t
 Do you want to get started? Please have a look at our simple {doc}`toy example </getting_started/getting_started_example>` with PyTorch using MNIST data.
 For more examples, check the [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
-If you already have `Pytorch` or `Tensorflow` installed on your machine, Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
+If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
 
 ```setup
 pip install quantus

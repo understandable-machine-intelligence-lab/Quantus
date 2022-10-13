@@ -2,7 +2,8 @@
 
 ### Installing from PyPI
 
-If you already have `Pytorch` or `Tensorflow` installed on your machine, Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
+If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, 
+Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
 
 ```setup
 pip install quantus
@@ -23,7 +24,7 @@ pip install quantus[tensorflow]
 ### Installing from requirements.txt
 
 Alternatively, you can simply install from the requirements.txt found [here](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt),
-however, this only installs with the default setup, requiring either `PyTorch` or `Tensorflow`:
+however, this only installs with the default setup, requiring either PyTorch or Tensorflow:
 
 ```setup
 pip install -r requirements.txt
@@ -37,7 +38,7 @@ The following XAI Libraries are currently supported:
 
 **Captum**
 
-To enable the use of wrappers around [Captum](https://captum.ai/), you need to have `PyTorch` already installed and can then run
+To enable the use of wrappers around [Captum](https://captum.ai/), you need to have PyTorch already installed and can then run
 
 ```setup
 pip install quantus[extras]
@@ -45,7 +46,7 @@ pip install quantus[extras]
 
 **tf-explain**
 
-To enable the use of wrappers around [tf.explain](https://github.com/sicara/tf-explain), you need to have `Tensorflow` already installed and can then run
+To enable the use of wrappers around [tf.explain](https://github.com/sicara/tf-explain), you need to have [Tensorflow already installed and can then run
 
 ```setup
 pip install quantus[extras]
@@ -53,7 +54,7 @@ pip install quantus[extras]
 
 **Zennit**
 
-To use Quantus with support for the [Zennit](https://github.com/chr5tphr/zennit) library you need to have `PyTorch` already installed and can then run
+To use Quantus with support for the [Zennit](https://github.com/chr5tphr/zennit) library you need to have PyTorch already installed and can then run
 
 ```setup
 pip install quantus[zennit]
