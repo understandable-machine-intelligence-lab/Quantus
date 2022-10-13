@@ -10,17 +10,18 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 
-from ..base import PerturbationMetric
+from ..base_batched import BatchedPerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers import norm_func
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import uniform_noise
+from ...helpers.perturb_func import perturb_batch
 from ...helpers.similarity_func import difference
 
 
-class AvgSensitivity(PerturbationMetric):
+class AvgSensitivity(BatchedPerturbationMetric):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 
@@ -110,6 +111,16 @@ class AvgSensitivity(PerturbationMetric):
         perturb_func_kwargs["lower_bound"] = lower_bound
         perturb_func_kwargs["upper_bound"] = upper_bound
 
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = difference
+
+        if norm_numerator is None:
+            norm_numerator = norm_func.fro_norm
+
+        if norm_denominator is None:
+            norm_denominator = norm_func.fro_norm
+
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -117,6 +128,10 @@ class AvgSensitivity(PerturbationMetric):
             normalise_func_kwargs=normalise_func_kwargs,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
+            similarity_func=similarity_func,
+            norm_numerator=norm_numerator,
+            norm_denominator=norm_denominator,
+            nr_samples=nr_samples,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -124,20 +139,6 @@ class AvgSensitivity(PerturbationMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
-
-        # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = difference
-        self.similarity_func = similarity_func
-
-        if norm_numerator is None:
-            norm_numerator = norm_func.fro_norm
-        self.norm_numerator = norm_numerator
-
-        if norm_denominator is None:
-            norm_denominator = norm_func.fro_norm
-        self.norm_denominator = norm_denominator
-        self.nr_samples = nr_samples
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -170,6 +171,7 @@ class AvgSensitivity(PerturbationMetric):
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
         **kwargs,
     ) -> List[float]:
         """
@@ -258,19 +260,24 @@ class AvgSensitivity(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray = None,
+        a_batch: np.ndarray = None,
+        s_batch: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
-    ) -> float:
+        nr_samples: int = None,
+        similarity_func: Callable = None,
+        norm_numerator: Callable = None,
+        norm_denominator: Callable = None,
+    ) -> np.ndarray:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -278,13 +285,13 @@ class AvgSensitivity(PerturbationMetric):
         ----------
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
+        x_batch: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
+        y_batch: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
+        a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
+        s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
         perturb_func: callable
             Input perturbation function.
@@ -296,44 +303,62 @@ class AvgSensitivity(PerturbationMetric):
         float
             The evaluation results.
         """
-        results = []
-        for i in range(self.nr_samples):
+        batch_size = x_batch.shape[0]
+        similarities = np.zeros((batch_size, nr_samples)) * np.nan
+
+        for step_id in range(nr_samples):
 
             # Perturb input.
-            x_perturbed = perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
+            x_perturbed = perturb_batch(
+                perturb_func=perturb_func,
+                indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+                indexed_axes=np.arange(0, x_batch[0].ndim),
+                arr=x_batch,
                 **perturb_func_kwargs,
             )
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            x_input = model.shape_input(
+                x=x_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+
+            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+                warn_func.warn_perturbation_caused_no_change(
+                    x=x_instance,
+                    x_perturbed=x_instance_perturbed,
+                )
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(
                 model=model.get_model(),
                 inputs=x_input,
-                targets=y,
+                targets=y_batch,
                 **self.explain_func_kwargs,
             )
 
             if self.normalise:
                 a_perturbed = self.normalise_func(
-                    a_perturbed, **self.normalise_func_kwargs
+                    a_perturbed,
+                    **self.normalise_func_kwargs,
                 )
 
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            sensitivities = self.similarity_func(a=a.flatten(), b=a_perturbed.flatten())
-            sensitivities_numerator = self.norm_numerator(a=sensitivities)
-            sensitivities_denominator = self.norm_denominator(a=x.flatten())
-            sensitivities_norm = sensitivities_numerator / sensitivities_denominator
+            # Measure similarity for each instance separately.
+            for instance_id in range(batch_size):
+                sensitivities = similarity_func(
+                    a=a_batch[instance_id].flatten(),
+                    b=a_perturbed[instance_id].flatten(),
+                )
+                numerator = norm_numerator(a=sensitivities)
+                denominator = norm_denominator(a=x_batch[instance_id].flatten())
+                sensitivities_norm = numerator / denominator
+                similarities[instance_id, step_id] = sensitivities_norm
 
-            results.append(sensitivities_norm)
+        return np.nanmean(similarities, axis=1)
 
-        # Append average sensitivity score.
-        return float(np.mean(results))
 
     def custom_preprocess(
         self,
