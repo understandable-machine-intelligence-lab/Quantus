@@ -12,11 +12,11 @@ import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import plotting
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import baseline_replacement_by_indices
-from quantus.helpers.similarity_func import correlation_pearson
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.perturb_func import baseline_replacement_by_indices
+from quantus.helpers.functions.similarity_func import correlation_pearson
 from quantus.metrics.base import PerturbationMetric
 
 
@@ -136,7 +136,7 @@ class SensitivityN(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the patch size for masking "
@@ -322,7 +322,7 @@ class SensitivityN(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Sum attributions.
             att_sums.append(float(a[a_ix].sum()))

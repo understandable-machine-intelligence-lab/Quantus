@@ -1,19 +1,15 @@
-from typing import Union
+from typing import Union, Optional, Dict
 
 import numpy as np
-from PIL import Image
-from glob import glob
-from tensorflow.keras.datasets import cifar10
-from torchvision.models.resnet import resnet18
-from torchvision import transforms
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.explanation_func import explain
+from quantus.helpers.functions.mosaic_func import mosaic_creation
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.models import LeNetAdaptivePooling
+from quantus.metrics.localisation import *
 from tests.fixtures import *
-from quantus.metrics import *
-from quantus.helpers import *
-from quantus.helpers.explanation_func import explain
-
 
 @pytest.fixture
 def all_in_gt_1d_3ch():

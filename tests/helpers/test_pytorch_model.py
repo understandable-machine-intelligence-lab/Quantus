@@ -1,18 +1,14 @@
-import torch
+from collections import OrderedDict
+from typing import Union
+
 import numpy as np
 import pytest
-import pickle
-from typing import Union
-from functools import reduce
-from operator import and_
-from collections import OrderedDict
+import torch
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 
+from quantus.helpers.model.pytorch_model import PyTorchModel
 from tests.fixtures import *
-from quantus.helpers import *
-from quantus.helpers.pytorch_model import PyTorchModel
-
 
 @pytest.fixture
 def mock_input_torch_array():

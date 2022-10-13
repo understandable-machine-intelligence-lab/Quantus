@@ -12,10 +12,10 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.similarity_func import correlation_spearman
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
 
 
@@ -121,7 +121,7 @@ class ModelParameterRandomisation(Metric):
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "similarity metric 'similarity_func' and the order of "
@@ -228,8 +228,8 @@ class ModelParameterRandomisation(Metric):
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
         if custom_batch is None:

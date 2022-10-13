@@ -1,13 +1,10 @@
 from typing import Union
 
-import numpy as np
 import pytest
-import torch
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from quantus.helpers import *
-
+from quantus.helpers.functions.normalise_func import *
+from tests.fixtures import *
 
 @pytest.fixture
 def atts_normalise_seq_0():

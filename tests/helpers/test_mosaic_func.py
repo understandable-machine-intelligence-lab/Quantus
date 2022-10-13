@@ -1,15 +1,8 @@
-import pickle
-from typing import Union
-
-import numpy as np
-import torch
-import torchvision
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.mosaic_func import *
 from tests.fixtures import *
-from quantus.helpers import *
-
 
 @pytest.mark.mosaic_func
 @pytest.mark.parametrize(

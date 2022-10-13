@@ -11,11 +11,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import gaussian_noise
-from quantus.helpers.similarity_func import lipschitz_constant, distance_euclidean
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.perturb_func import gaussian_noise
+from quantus.helpers.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base import PerturbationMetric
 
 
@@ -146,7 +146,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_std', the number of samples iterated "
@@ -163,7 +163,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
                     "arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=perturb_std)
+            warn.warn_noise_zero(noise=perturb_std)
 
     def __call__(
         self,
@@ -323,7 +323,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_input)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_input)
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(

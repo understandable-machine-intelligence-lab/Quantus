@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+from quantus.helpers.functions.loss_func import mse
+from quantus.helpers.functions.similarity_func import *
 from tests.fixtures import *
-from quantus.helpers import *
-
 
 @pytest.fixture
 def atts_half():

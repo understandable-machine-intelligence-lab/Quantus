@@ -13,11 +13,11 @@ import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import translation_x_direction
-from quantus.helpers.similarity_func import lipschitz_constant
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.perturb_func import translation_x_direction
+from quantus.helpers.functions.similarity_func import lipschitz_constant
 from quantus.metrics.base import PerturbationMetric
 
 class Continuity(PerturbationMetric):
@@ -137,7 +137,7 @@ class Continuity(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "how many patches to split the input image to 'nr_patches', "

@@ -28,4 +28,4 @@ Submodules
    quantus.helpers.similarity_func
    quantus.helpers.tf_model
    quantus.helpers.utils
-   quantus.helpers.warn_func
+   quantus.helpers.warn

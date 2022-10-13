@@ -11,12 +11,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from quantus.helpers import asserts
-from quantus.helpers import norm_func
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
-from quantus.helpers.perturb_func import uniform_noise
-from quantus.helpers.similarity_func import difference
+from quantus.helpers.functions import norm_func
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.helpers.functions.perturb_func import uniform_noise
+from quantus.helpers.functions.similarity_func import difference
 from quantus.metrics.base import PerturbationMetric
 
 
@@ -141,7 +141,7 @@ class AvgSensitivity(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'lower_bound' and 'upper_bound', the number of samples "
@@ -155,7 +155,7 @@ class AvgSensitivity(PerturbationMetric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=lower_bound)
+            warn.warn_noise_zero(noise=lower_bound)
 
     def __call__(
         self,
@@ -314,7 +314,7 @@ class AvgSensitivity(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(

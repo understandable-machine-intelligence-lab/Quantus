@@ -1,13 +1,9 @@
-from typing import Union
-
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from tests.fixtures import *
-from quantus.helpers import *
 from quantus.helpers import utils
-
+from quantus.helpers.functions.perturb_func import *
+from tests.fixtures import *
 
 @pytest.fixture
 def input_zeros_1d_1ch():

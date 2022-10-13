@@ -6,9 +6,8 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import warnings
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,8 +15,8 @@ from tqdm.auto import tqdm
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
-from quantus.helpers import warn_func
-from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class Metric:
@@ -76,8 +75,8 @@ class Metric:
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         self.abs = abs
         self.normalise = normalise
@@ -192,8 +191,8 @@ class Metric:
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         (
             model,

@@ -15,14 +15,14 @@ import numpy as np
 from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts
-from quantus.helpers.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import ModelInterface
 
 if util.find_spec("torch"):
     import torch
-    from ..helpers.pytorch_model import PyTorchModel
+    from quantus.helpers.model.pytorch_model import PyTorchModel
 if util.find_spec("tensorflow"):
     import tensorflow as tf
-    from ..helpers.tf_model import TensorFlowModel
+    from quantus.helpers.model.tf_model import TensorFlowModel
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:

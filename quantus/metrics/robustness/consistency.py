@@ -11,10 +11,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from quantus.helpers import asserts
-from quantus.helpers import warn_func
-from quantus.helpers.discretise_func import top_n_sign
-from quantus.helpers.model_interface import ModelInterface
-from quantus.helpers.normalise_func import normalise_by_max
+from quantus.helpers import warn
+from quantus.helpers.functions.discretise_func import top_n_sign
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 
@@ -109,7 +109,7 @@ class Consistency(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "Function for discretisation of the explanation space 'discretise_func' (return hash value of"
