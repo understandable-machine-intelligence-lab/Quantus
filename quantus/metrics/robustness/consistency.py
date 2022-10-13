@@ -127,7 +127,6 @@ class Consistency(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -171,9 +170,6 @@ class Consistency(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -218,7 +214,7 @@ class Consistency(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -232,9 +228,9 @@ class Consistency(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
         i: int = None,
         a_label: np.ndarray = None,
         y_pred_classes: np.ndarray = None,
@@ -244,8 +240,6 @@ class Consistency(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -269,10 +263,10 @@ class Consistency(Metric):
             The evaluation results.
         """
         # Metric logic.
-        pred_a = self.y_pred_classes[i]
+        pred_a = y_pred_classes[i]
         same_a = np.argwhere(a == a_label).flatten()
         diff_a = same_a[same_a != i]
-        pred_same_a = self.y_pred_classes[diff_a]
+        pred_same_a = y_pred_classes[diff_a]
 
         if len(same_a) == 0:
             return 0
@@ -307,9 +301,8 @@ class Consistency(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dictionary[str, np.ndarray]
+            Output dictionary with 'a_label_batch' as key and discretised attributtion labels as value.
         """
         # Preprocessing.
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
@@ -318,6 +311,10 @@ class Consistency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        return {'a_label_batch': a_labels}
+        return {
+            'i_batch': np.arange(x_batch.shape[0]),
+            'a_label_batch': a_labels,
+            'y_pred_classes': y_pred_classes,
+        }

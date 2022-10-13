@@ -128,7 +128,6 @@ class Sufficiency(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -172,9 +171,6 @@ class Sufficiency(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -219,7 +215,7 @@ class Sufficiency(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -233,9 +229,9 @@ class Sufficiency(Metric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
         i: int = None,
         a_sim_vector: np.ndarray = None,
         y_pred_classes: np.ndarray = None,
@@ -245,8 +241,6 @@ class Sufficiency(Metric):
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -257,8 +251,12 @@ class Sufficiency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        i: int
+            The index of the current instance.
         a_sim_vector: any
             The custom input to be evaluated on an instance-basis.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
 
         Returns
         -------
@@ -267,10 +265,10 @@ class Sufficiency(Metric):
         """
 
         # Metric logic.
-        pred_a = self.y_pred_classes[i]
+        pred_a = y_pred_classes[i]
         low_dist_a = np.argwhere(a_sim_vector == 1.0).flatten()
         low_dist_a = low_dist_a[low_dist_a != i]
-        pred_low_dist_a = self.y_pred_classes[low_dist_a]
+        pred_low_dist_a = y_pred_classes[low_dist_a]
 
         if len(low_dist_a) == 0:
             return 0
@@ -305,9 +303,8 @@ class Sufficiency(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch, returning a custom preprocess batch (custom_preprocess_batch).
-
+        dictionary[str, np.ndarray]
+            Output dictionary with 'a_sim_vector_batch' as and attributtion similarity matrix as value.
         """
 
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
@@ -321,6 +318,9 @@ class Sufficiency(Metric):
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
 
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
-
-        return {'a_sim_vector_batch': a_sim_matrix}
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        return {
+            'i_batch': np.arange(x_batch.shape[0]),
+            'a_sim_vector_batch': a_sim_matrix,
+            'y_pred_classes': y_pred_classes,
+        }

@@ -129,7 +129,6 @@ class InputInvariance(BatchedPerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -218,7 +217,7 @@ class InputInvariance(BatchedPerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -309,7 +308,7 @@ class InputInvariance(BatchedPerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: Optional[np.ndarray] = None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
@@ -327,13 +326,11 @@ class InputInvariance(BatchedPerturbationMetric):
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
