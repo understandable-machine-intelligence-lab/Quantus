@@ -420,15 +420,6 @@ class Metric:
         if data['custom_batch'] is None:
             del data['custom_batch']
 
-        # Save data coming from custom preprocess to data dict.
-        if custom_preprocess_dict:
-            for key, value in custom_preprocess_dict.items():
-                data[key] = value
-
-        # Remove custom_batch if not used.
-        if data['custom_batch'] is None:
-            del data['custom_batch']
-
         # Normalise with specified keyword arguments if requested.
         if self.normalise:
             data['a_batch'] = self.normalise_func(

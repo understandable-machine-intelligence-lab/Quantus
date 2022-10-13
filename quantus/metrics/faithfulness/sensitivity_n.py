@@ -158,7 +158,6 @@ class SensitivityN(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -202,9 +201,6 @@ class SensitivityN(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -249,7 +245,7 @@ class SensitivityN(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -377,7 +373,7 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: np.ndarray = None,
+        *kwargs,
     ) -> None:
         """
         Post-process the evaluation results.
@@ -394,14 +390,11 @@ class SensitivityN(PerturbationMetric):
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns
         -------
         None
         """
-
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
         )
