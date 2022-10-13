@@ -6,9 +6,10 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import warnings
+import re
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections import Sequence
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,9 +46,10 @@ class Metric:
         Each of the defined metrics in Quantus, inherits from Metric base class.
 
         A child metric can benefit from the following class methods:
-        - __call__(): Will call general_preprocess(), apply () on each
+        - __call__(): Will call general_preprocess(), apply evaluate_instance() on each
                       instance and finally call custom_preprocess().
-                      To use this method the child Metric needs to implement ().
+                      To use this method the child Metric needs to implement
+                      evaluate_instance().
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
@@ -64,7 +66,7 @@ class Metric:
         return_aggregate: boolean
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
-            Callable that aggregates the scores given an evaluation call..
+            Callable that aggregates the scores given an evaluation call.
         default_plot_func: callable
             Callable that plots the metrics result.
         disable_warnings: boolean
@@ -120,7 +122,7 @@ class Metric:
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
+        evaluate_instance() on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
         Parameters
@@ -195,15 +197,7 @@ class Metric:
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
 
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.general_preprocess(
+        data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -218,52 +212,14 @@ class Metric:
             custom_batch=custom_batch,
         )
 
-        # Create progress bar if desired.
-        iterator = tqdm(
-            enumerate(
-                zip(
-                    x_batch,
-                    y_batch,
-                    a_batch,
-                    s_batch,
-                    custom_batch,
-                    custom_preprocess_batch,
-                )
-            ),
-            total=len(x_batch),
-            disable=not self.display_progressbar,
-            desc=f"Evaluating {self.__class__.__name__}",
-        )
         self.last_results = [None for _ in x_batch]
-        for id_instance, (
-            x_instance,
-            y_instance,
-            a_instance,
-            s_instance,
-            c_instance,
-            p_instance,
-        ) in iterator:
-            result = self.evaluate_instance(
-                i=int(id_instance),
-                model=model,
-                x=x_instance,
-                y=y_instance,
-                a=a_instance,
-                s=s_instance,
-                c=c_instance,
-                p=p_instance,
-            )
+        iterator = self.get_instance_iterator(data=data)
+        for id_instance, data_instance in iterator:
+            result = self.evaluate_instance(**data_instance)
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
-        self.custom_postprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            custom_batch=custom_batch,
-        )
+        self.custom_postprocess(**data)
 
         if self.return_aggregate:
             if self.aggregate_func:
@@ -287,14 +243,11 @@ class Metric:
     @abstractmethod
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Optional[np.ndarray] = None,
-        p: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -303,8 +256,6 @@ class Metric:
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -315,10 +266,6 @@ class Metric:
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
         """
         raise NotImplementedError()
 
@@ -336,9 +283,7 @@ class Metric:
         softmax: bool,
         device: Optional[str],
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Prepares all necessary variables for evaluation.
 
@@ -383,8 +328,6 @@ class Metric:
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
         custom_batch: any
             Gives flexibility ot the user to use for evaluation, can hold any variable.
-        kwargs: optional
-            Keyword arguments.
 
         Returns
         -------
@@ -442,51 +385,41 @@ class Metric:
         # Infer attribution axes for perturbation function.
         self.a_axes = utils.infer_attribution_axes(a_batch, x_batch)
 
+        # Initialize data dictionary.
+        data = {
+            'model': model,
+            'x_batch': x_batch,
+            'y_batch': y_batch,
+            'a_batch': a_batch,
+            's_batch': s_batch,
+            'custom_batch': custom_batch,
+        }
+
         # Call custom pre-processing from inheriting class.
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.custom_preprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            custom_batch=custom_batch,
-        )
+        custom_preprocess_dict = self.custom_preprocess(**data)
+
+        # Save data coming from custom preprocess to data dict.
+        if custom_preprocess_dict:
+            for key, value in custom_preprocess_dict.items():
+                data[key] = value
+
+        # Remove custom_batch if not used.
+        if data['custom_batch'] is None:
+            del data['custom_batch']
 
         # Normalise with specified keyword arguments if requested.
         if self.normalise:
-            a_batch = self.normalise_func(
-                a=a_batch,
-                normalized_axes=list(range(np.ndim(a_batch)))[1:],
+            data['a_batch'] = self.normalise_func(
+                a=data['a_batch'],
+                normalized_axes=list(range(np.ndim(data['a_batch'])))[1:],
                 **self.normalise_func_kwargs,
             )
 
         # Take absolute if requested.
         if self.abs:
-            a_batch = np.abs(a_batch)
+            data['a_batch'] = np.abs(data['a_batch'])
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch).
-        if s_batch is None:
-            s_batch = [None for _ in x_batch]
-        if custom_batch is None:
-            custom_batch = [None for _ in x_batch]
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+        return data
 
     def custom_preprocess(
         self,
@@ -496,17 +429,20 @@ class Metric:
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Optional[Dict[str, Any]]:
         """
         Implement this method if you need custom preprocessing of data,
-        model alteration or simply for creating/initialising additional attributes.
+        model alteration or simply for creating/initialising additional
+        attributes or assertions.
 
-        If this function is implemented for your metric, make sure to add in the metric-specific
-        function custom_preprocess():
-
-        >> custom_preprocess_batch = [None for _ in x_batch]
+        If this method returns a dictionary, the keys (string) will be used as
+        additional arguments for evaluate_instance().
+        If the key ends with `_batch`, this suffix will be removed from the
+        respective argument name when passed to evaluate_instance().
+        If they key corresponds to the arguments `x_batch, y_batch, a_batch, s_batch`,
+        these will be overwritten for passing `x, y, a, s` to `evaluate_instance()`.
+        If this method returns None, no additional keyword arguments will be
+        passed to `evaluate_instance()`.
 
         Parameters
         ----------
@@ -521,24 +457,173 @@ class Metric:
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dict, optional
+            A dictionary which holds (optionally additional) preprocessed data to
+           be included when calling `evaluate_instance()`.
+
+
+        Examples
+        --------
+            # Custom Metric definition with additional keyword argument used in evaluate_instance():
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'my_new_variable': np.mean(x_batch)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.float,
+            >>> ): -> float
+
+            # Custom Metric definition with additional keyword argument that ends with `_batch`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.int,
+            >>> ): -> float
+
+            # Custom Metric definition with transformation of an existing
+            # keyword argument from `evaluate_instance()`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> Dict[str, Any]:
+            >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ): -> float
+
+            # Custom Metric definition with None returned in custom_preprocess(),
+            # but with inplace-preprocessing and additional assertion.
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ): -> None:
+            >>>     if np.any(np.all(a_batch < 0, axis=0)):
+            >>>         raise ValueError("Attributions must not be all negative")
+            >>>
+            >>>     x_batch -= np.mean(x_batch, axis=0)
+            >>>
+            >>>     return None
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ): -> float
+
         """
-        custom_preprocess_batch = [None for _ in x_batch]
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
+        pass
+
+    def get_instance_iterator(self, data: Dict[str, Any]):
+        """
+        Creates iterator to iterate over all instances in data dictionary.
+        Each iterator output element is a keyword argument dictionary with
+        string keys.
+
+        Each item key in the input data dictionary has to be of type string.
+        - If the item value is not a sequence, the respective item key/value pair
+          will be written to each iterator output dictionary.
+        - If the item value is a sequence and the item key ends with '_batch',
+          a check will be made to make sure length matches number of instances.
+          The value of each instance in the sequence will be added to the respective
+          iterator output dictionary with the '_batch' suffix removed.
+        - If the item value is a sequence but doesn't end with '_batch', it will be treated
+          as a simple value and the respective item key/value pair will be
+          written to each iterator output dictionary.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            The data input dictionary.
+
+        Returns
+        -------
+        iterator
+            Each iterator output element is a keyword argument dictionary (string keys).
+
+        """
+        n_instances = len(data['x_batch'])
+
+        for key, value in data.items():
+            # If data-value is not a Sequence or a string, create list of repeated values with length of n_instances.
+            if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
+                data[key] = [value for _ in range(n_instances)]
+
+            # If data-value is a sequence and ends with '_batch', only check for correct length.
+            elif key.endswith('_batch'):
+                if len(value) != n_instances:
+                    # Sequence has to have correct length.
+                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+
+            # If data-value is a sequence and doesn't end with '_batch', create
+            # list of repeated sequences with length of n_instances.
+            else:
+                data[key] = [value for _ in range(n_instances)]
+
+        # We create a list of dictionaries where each dictionary holds all data for a single instance
+        data_instances = [
+            {re.sub('_batch', '', key): value[id_instance] for key, value in data.items()}
+            for id_instance in range(n_instances)
+        ]
+
+        iterator = tqdm(
+            enumerate(data_instances),
+            total=n_instances,
+            disable=not self.display_progressbar,  # Create progress bar if desired.
+            desc=f"Evaluating {self.__class__.__name__}",
         )
+
+        return iterator
 
     def custom_postprocess(
         self,
@@ -547,7 +632,7 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
@@ -565,13 +650,13 @@ class Metric:
             A np.ndarray which contains pre-computed attributions i.e., explanations.
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        kwargs: any, optional
+            Additional data which was created in custom_preprocess().
 
         Returns
         -------
         any
-            Can be implemented, optionally by the user.
+            Can be implemented, optionally by the child class.
         """
         pass
 
@@ -668,52 +753,18 @@ class PerturbationMetric(Metric):
         normalise_func_kwargs: Optional[Dict[str, Any]],
         perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: bool,
-        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
         **kwargs,
     ):
-        """
-        Initialise the PerturbationMetric base class.
 
-        Parameters
-        ----------
-        abs: boolean
-            Indicates whether absolute operation is applied on the attribution.
-        normalise: boolean
-            Indicates whether normalise operation is applied on the attribution.
-        normalise_func: callable
-            Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs: dict
-            Keyword arguments to be passed to normalise_func on call.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict
-            Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate: boolean
-            Indicates if an aggregated score should be computed over all instances.
-        aggregate_func: callable
-            Callable that aggregates the scores given an evaluation call..
-        default_plot_func: callable
-            Callable that plots the metrics result.
-        disable_warnings: boolean
-            Indicates whether the warnings are printed.
-        display_progressbar: boolean
-            Indicates whether a tqdm-progress-bar is printed.
-        kwargs: optional
-            Keyword arguments.
-        """
-
-        # Initialise super-class with passed parameters.
+        # Initialize super-class with passed parameters
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
@@ -724,5 +775,37 @@ class PerturbationMetric(Metric):
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
-
         self.perturb_func_kwargs = perturb_func_kwargs
+
+    @abstractmethod
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+    ) -> Any:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        This method needs to be implemented to use __call__().
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+        c: any
+            The custom input to be evaluated on an instance-basis.
+        p: any
+            The custom preprocess input to be evaluated on an instance-basis.
+        """
+        raise NotImplementedError()
