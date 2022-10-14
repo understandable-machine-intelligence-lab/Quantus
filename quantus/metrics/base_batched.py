@@ -48,7 +48,7 @@ class BatchedMetric(Metric):
         A child metric can benefit from the following class methods:
         - __call__(): Will call general_preprocess(), apply evaluate_instance() on each
                       instance and finally call custom_preprocess().
-                      To use this method the child Metric needs to implement
+                      To use this method the child BatchedMetric needs to implement
                       evaluate_instance().
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
@@ -163,7 +163,7 @@ class BatchedMetric(Metric):
         >> a_batch_saliency = a_batch_saliency.cpu().numpy()
 
         # Initialise the metric and evaluate explanations by calling the metric instance.
-        >> metric = Metric(abs=True, normalise=False)
+        >> metric = BatchedMetric(abs=True, normalise=False)
         >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         # Run deprecation warnings.
@@ -188,7 +188,6 @@ class BatchedMetric(Metric):
         # create generator for generating batches
         batch_generator = self.generate_batches(
             data=data, batch_size=batch_size,
-            display_progressbar=self.display_progressbar,
         )
 
         self.last_results = []
