@@ -269,9 +269,9 @@ class MaxSensitivity(BatchedPerturbationMetric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: np.ndarray = None,
-        a_batch: np.ndarray = None,
-        s_batch: np.ndarray = None,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
