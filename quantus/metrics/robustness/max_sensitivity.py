@@ -274,7 +274,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
         s_batch: np.ndarray = None,
     ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
@@ -291,8 +291,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
         batch_size = x_batch.shape[0]
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
