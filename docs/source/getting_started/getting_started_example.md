@@ -1,4 +1,4 @@
-# Getting started
+# Getting Started
 
 The following will give a short introduction for how to get started with Quantus.
 
@@ -45,9 +45,9 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ### Explanations
 
 We still need some explanations to evaluate. 
-For this, there are two possibilities in Quantus. Either you provide:
-1. pre-computed attributions (`np.ndarray`) or
-2. an explanation function (`callable`) e.g., use the built-in method `quantus.explain` or your own customised function
+For this, there are two possibilities in Quantus. You can provide:
+1. Pre-computed attributions (`np.ndarray`)
+2. An explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
 
 We describe the different options in detail below.
 
@@ -91,13 +91,20 @@ assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_salien
 
 #### 2) Using an explanation function
 
-If you don't have a pre-computed set of explanations but rather want to pass an explanation function that you wish to evaluate with Quantus, this option exists. 
+If you don't have a pre-computed set of explanations but rather want to pass an explanation function 
+that you wish to evaluate with Quantus, this option exists. 
 
-For this, you can rely on the built-in `quantus.explain` function, which includes some popular explanation methods (please run `quantus.available_methods()` to see which ones). Note however, that the set of explanation methods offered in `quantus.explain` are limited --- `quantus.explain` is a wrapper around  [Captum](https://captum.ai/), 
+For this, you can rely on the built-in `quantus.explain` function, which includes some popular explanation methods 
+(please run `quantus.available_methods()` to see which ones). Note however, that the set of explanation methods offered 
+in `quantus.explain` are limited --- `quantus.explain` is a wrapper around  [Captum](https://captum.ai/), 
 [Zennit](https://github.com/chr5tphr/zennit), and
-[tf.explain](https://github.com/sicara/tf-explain) but does not support every explanation method offered in the respective libraries. 
+[tf.explain](https://github.com/sicara/tf-explain) but does not support every explanation method offered in the 
+respective libraries. 
 
-If you want to use Quantus to evaluate any other explanation method (e.g., your newly built explanation function) you can simply provide your own function (`callable`). Examples of how to use `quantus.explain` or your own customised explanation function are included in the next section.
+If you want to use Quantus to evaluate any other explanation method (e.g., your newly built explanation function),
+you can simply provide your own function (`callable`, see also {ref}`extending quantus <extend>`). 
+Examples of how to use `quantus.explain` 
+or your own customised explanation function are included in the next section.
 ![drawing](../assets/mnist_example.png)
 
 As seen in the above image, the qualitative aspects of explanations 
@@ -106,12 +113,13 @@ should be looking like, it is hard to draw conclusions about the explainable evi
 
 ## Evaluating explanations with Quantus
 
-To gather quantitative evidence for the quality of the different explantion methods,  we can apply Quantus.
+To gather quantitative evidence for the quality of the different explantion methods, we can apply Quantus.
 
 ### Quantus metrics
 
-Quantus implements XAI evaluation metrics from different categories 
-e.g., Faithfulness, Localisation, Robustness etc which all inherit from the base `quantus.Metric` class. To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)) 
+Quantus implements XAI evaluation metrics from different categories, 
+e.g., Faithfulness, Localisation, Robustness, etc., which all inherit from the base `quantus.Metric` class. 
+To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)) 
 it first needs to be instantiated:
 
 ```python
@@ -125,12 +133,13 @@ scores = metric(
     model=model,
     x_batch=x_batch,
     y_batch=y_batch,
-    a_batch=a_batch_salicency,
+    a_batch=a_batch_saliency,
     device=device
 )
 ```
 
-Alternatively, instead of provided pre-computed explanations, you can employ the `quantus.explain` function. Please make sure to specify the explanation method of choice (`string`):
+Alternatively, instead of provided pre-computed explanations, you can employ the `quantus.explain` function,
+which can be specified through a dictionary passed to `explain_func_kwargs`.
 
 ```python
 scores = metric(
@@ -142,7 +151,8 @@ scores = metric(
     explain_func_kwargs={"method": "Saliency"}
 )
 ```
-You can alternatively use your own customised explanation function (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
+You can alternatively use your own customised explanation function
+(assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
 
 ```python
 def your_own_callable(model, x_batch, y_batch):
@@ -202,7 +212,7 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
     ```
 
 
-### Large-Scale Evaluations
+### Large-scale evaluations
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof.
 
@@ -231,7 +241,7 @@ xai_methods = {
     "IntegratedGradients": saliency_callable
 }
 ```
-  or as a list of `strings` (this input relies on `quantus.explain` so make sure that the XAI methods you include are supported) :
+  or as a list of `string` (this input relies on `quantus.explain` so make sure that the XAI methods you include are supported) :
 ```python
 xai_methods = ["Saliency", "IntegratedGradients"]
 ```
@@ -261,6 +271,7 @@ You can find a dedicated notebook similar to the example in this tutorial here: 
 Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb).
 
 ## Extending Quantus
+(extend)=
 
 With Quantus, one can flexibly extend the library's functionality, e.g., to adopt a customised explainer function
 `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one.
