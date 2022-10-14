@@ -61,7 +61,8 @@ pip install "quantus[zennit]"
 ```
 
 Note that the three options above will also install the respective required frameworks (i.e., PyTorch or Tensorflow),
-if they are not already installed in your environment. Note also, that not all explanation methods offered in `captum` and `tf-explain` respectively are included in `quantus.explain`.
+if they are not already installed in your environment. Note also, that not all explanation methods offered in **Captum** and **tf-explain**
+ are included in `quantus.explain`.
 
 ### Installing tutorial requirements
 
