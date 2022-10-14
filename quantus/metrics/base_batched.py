@@ -292,7 +292,7 @@ class BatchedMetric(Metric):
         iterator = tqdm(
             range(0, n_batches),
             total=n_batches,
-            disable=not display_progressbar,
+            disable=not self.display_progressbar,
         )
 
         for batch_idx in iterator:
@@ -383,37 +383,6 @@ class BatchedPerturbationMetric(BatchedMetric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
         self.perturb_func_kwargs = perturb_func_kwargs
-
-    def __call__(
-        self,
-        model,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: Optional[np.ndarray],
-        channel_first: Optional[bool],
-        explain_func: Optional[Callable],
-        explain_func_kwargs: Optional[Dict[str, Any]],
-        model_predict_kwargs: Optional[Dict],
-        softmax: Optional[bool],
-        device: Optional[str] = None,
-        batch_size: int = 64,
-        **kwargs,
-    ) -> Union[int, float, list, dict, None]:
-        return super().__call__(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            channel_first=channel_first,
-            explain_func=explain_func,
-            explain_func_kwargs=explain_func_kwargs,
-            softmax=softmax,
-            device=device,
-            model_predict_kwargs=model_predict_kwargs,
-            **kwargs,
-        )
 
     @abstractmethod
     def evaluate_batch(
