@@ -177,10 +177,7 @@ class PyTorchModel(ModelInterface):
             yield module[0], random_layer_model
 
     def sample(
-        self,
-        mean: float,
-        std: float,
-        noise_type: str = "multiplicative",
+        self, mean: float, std: float, noise_type: str = "multiplicative",
     ) -> torch.nn:
         """
         Sample a model by means of adding normally distributed noise.

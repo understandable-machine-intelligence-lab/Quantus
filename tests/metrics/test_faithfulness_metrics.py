@@ -4,12 +4,31 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
-from quantus.functions.perturb_func import baseline_replacement_by_indices, noisy_linear_imputation
-from quantus.functions.similarity_func import correlation_spearman, correlation_kendall_tau
+from quantus.functions.perturb_func import (
+    baseline_replacement_by_indices,
+    noisy_linear_imputation,
+)
+from quantus.functions.similarity_func import (
+    correlation_spearman,
+    correlation_kendall_tau,
+)
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.faithfulness import FaithfulnessCorrelation, FaithfulnessEstimate, Infidelity, IROF, Monotonicity, \
-    MonotonicityCorrelation, PixelFlipping, RegionPerturbation, ROAD, Selectivity, SensitivityN, Sufficiency
+from quantus.metrics.faithfulness import (
+    FaithfulnessCorrelation,
+    FaithfulnessEstimate,
+    Infidelity,
+    IROF,
+    Monotonicity,
+    MonotonicityCorrelation,
+    PixelFlipping,
+    RegionPerturbation,
+    ROAD,
+    Selectivity,
+    SensitivityN,
+    Sufficiency,
+)
 from tests.fixtures import *
+
 
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
@@ -30,9 +49,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -52,9 +69,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -74,9 +89,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -95,9 +108,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -117,9 +128,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "IntegratedGradients",
-                    },
+                    "explain_func_kwargs": {"method": "IntegratedGradients",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -138,9 +147,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputXGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputXGradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -159,9 +166,7 @@ from tests.fixtures import *
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"min": -1.0, "max": 1.0},
         ),
@@ -217,19 +222,14 @@ from tests.fixtures import *
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"exception": ValueError},
         ),
     ],
 )
 def test_faithfulness_correlation(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -243,10 +243,7 @@ def test_faithfulness_correlation(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -265,11 +262,7 @@ def test_faithfulness_correlation(
         return
 
     scores = FaithfulnessCorrelation(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )[0]
 
     assert np.all(
@@ -295,9 +288,7 @@ def test_faithfulness_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -316,9 +307,7 @@ def test_faithfulness_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -337,9 +326,7 @@ def test_faithfulness_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -360,9 +347,7 @@ def test_faithfulness_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -381,9 +366,7 @@ def test_faithfulness_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -408,10 +391,7 @@ def test_faithfulness_correlation(
     ],
 )
 def test_faithfulness_estimate(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -425,21 +405,14 @@ def test_faithfulness_estimate(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = FaithfulnessEstimate(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(
@@ -464,9 +437,7 @@ def test_faithfulness_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 80.0},
@@ -486,9 +457,7 @@ def test_faithfulness_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 80.0},
@@ -506,9 +475,7 @@ def test_faithfulness_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 80.0},
@@ -532,10 +499,7 @@ def test_faithfulness_estimate(
     ],
 )
 def test_iterative_removal_of_features(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -549,10 +513,7 @@ def test_iterative_removal_of_features(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -571,11 +532,7 @@ def test_iterative_removal_of_features(
         return
 
     scores = IROF(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(
@@ -601,9 +558,7 @@ def test_iterative_removal_of_features(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"allowed_dtypes": [True, False]},
@@ -622,9 +577,7 @@ def test_iterative_removal_of_features(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"allowed_dtypes": [True, False]},
@@ -644,9 +597,7 @@ def test_iterative_removal_of_features(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"allowed_dtypes": [True, False]},
@@ -665,9 +616,7 @@ def test_iterative_removal_of_features(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"allowed_dtypes": [True, False]},
@@ -692,10 +641,7 @@ def test_iterative_removal_of_features(
     ],
 )
 def test_monotonicity_arya(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -709,21 +655,14 @@ def test_monotonicity_arya(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = Monotonicity(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(s in expected["allowed_dtypes"] for s in scores), "Test failed."
@@ -751,9 +690,7 @@ def test_monotonicity_arya(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -776,9 +713,7 @@ def test_monotonicity_arya(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -806,10 +741,7 @@ def test_monotonicity_arya(
     ],
 )
 def test_monotonicity_correlation(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -823,21 +755,14 @@ def test_monotonicity_correlation(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = MonotonicityCorrelation(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert scores is not None, "Test failed."
@@ -862,9 +787,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -883,9 +806,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -904,9 +825,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -925,9 +844,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -946,9 +863,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -983,9 +898,7 @@ def test_monotonicity_correlation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 14.0},
@@ -1009,10 +922,7 @@ def test_monotonicity_correlation(
     ],
 )
 def test_pixel_flipping(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1026,10 +936,7 @@ def test_pixel_flipping(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -1039,11 +946,7 @@ def test_pixel_flipping(
     metric = PixelFlipping(**init_params)
 
     scores = metric(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(
@@ -1074,9 +977,7 @@ def test_pixel_flipping(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1096,9 +997,7 @@ def test_pixel_flipping(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1118,9 +1017,7 @@ def test_pixel_flipping(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1130,10 +1027,7 @@ def test_pixel_flipping(
             lazy_fixture("almost_uniform_1d"),
             {
                 "a_batch_generate": False,
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
                 "call": {},
             },
             {"min": -1.0, "max": 1.0},
@@ -1152,9 +1046,7 @@ def test_pixel_flipping(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1173,9 +1065,7 @@ def test_pixel_flipping(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1183,10 +1073,7 @@ def test_pixel_flipping(
     ],
 )
 def test_region_perturbation(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1200,10 +1087,7 @@ def test_region_perturbation(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -1213,11 +1097,7 @@ def test_region_perturbation(
     metric = RegionPerturbation(**init_params)
 
     scores = metric(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(
@@ -1247,9 +1127,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"type": np.float64},
@@ -1268,9 +1146,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"type": np.float64},
@@ -1288,9 +1164,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"type": np.float64},
@@ -1309,9 +1183,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"type": np.float64},
@@ -1348,9 +1220,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"type": np.float64},
@@ -1370,9 +1240,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"type": np.float64},
@@ -1380,10 +1248,7 @@ def test_region_perturbation(
     ],
 )
 def test_selectivity(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1397,10 +1262,7 @@ def test_selectivity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -1410,11 +1272,7 @@ def test_selectivity(
     metric = Selectivity(**init_params)
 
     scores = metric(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert type(metric.get_auc_score) == expected["type"], "Test failed."
@@ -1440,9 +1298,7 @@ def test_selectivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1462,9 +1318,7 @@ def test_selectivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1485,9 +1339,7 @@ def test_selectivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1508,9 +1360,7 @@ def test_selectivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1551,9 +1401,7 @@ def test_selectivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1561,10 +1409,7 @@ def test_selectivity(
     ],
 )
 def test_sensitivity_n(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1578,21 +1423,14 @@ def test_sensitivity_n(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = SensitivityN(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert all(
@@ -1619,9 +1457,7 @@ def test_sensitivity_n(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {},
@@ -1642,9 +1478,7 @@ def test_sensitivity_n(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {},
@@ -1675,10 +1509,7 @@ def test_sensitivity_n(
     ],
 )
 def test_infidelity(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1692,10 +1523,7 @@ def test_infidelity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -1703,11 +1531,7 @@ def test_infidelity(
         a_batch = None
 
     scores = Infidelity(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert scores is not None, "Test failed."
@@ -1731,9 +1555,7 @@ def test_infidelity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -1753,9 +1575,7 @@ def test_infidelity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -1763,10 +1583,7 @@ def test_infidelity(
     ],
 )
 def test_ROAD(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -1780,21 +1597,14 @@ def test_ROAD(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = ROAD(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
     print("scores!!!", scores)
 
@@ -1820,9 +1630,7 @@ def test_ROAD(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -1841,9 +1649,7 @@ def test_ROAD(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -1868,10 +1674,7 @@ def test_sufficiency(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -1890,10 +1693,6 @@ def test_sufficiency(
         return
 
     scores = Sufficiency(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."

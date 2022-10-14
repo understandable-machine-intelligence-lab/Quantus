@@ -1,4 +1,3 @@
-
 from functools import reduce
 from operator import and_
 from typing import Union
@@ -23,10 +22,7 @@ def mock_input_tf_array():
     [
         (
             lazy_fixture("mock_input_tf_array"),
-            {
-                "softmax": False,
-                "channel_first": False,
-            },
+            {"softmax": False, "channel_first": False,},
             np.array(
                 [
                     -0.723556,
@@ -44,10 +40,7 @@ def mock_input_tf_array():
         ),
         (
             lazy_fixture("mock_input_tf_array"),
-            {
-                "softmax": True,
-                "channel_first": False,
-            },
+            {"softmax": True, "channel_first": False,},
             softmax(
                 np.array(
                     [

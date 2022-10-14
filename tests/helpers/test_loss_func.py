@@ -6,6 +6,7 @@ from pytest_lazyfixture import lazy_fixture
 from quantus.functions.loss_func import *
 from tests.fixtures import *
 
+
 @pytest.fixture
 def atts_half():
     return {"a": np.array([-1, 1, 1]), "b": np.array([0, 0, 2])}

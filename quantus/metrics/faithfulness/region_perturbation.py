@@ -323,8 +323,7 @@ class RegionPerturbation(PerturbationMetric):
 
             # Create slice for patch.
             patch_slice = utils.create_patch_slice(
-                patch_size=self.patch_size,
-                coords=top_left_coords,
+                patch_size=self.patch_size, coords=top_left_coords,
             )
 
             # Sum attributions for patch.

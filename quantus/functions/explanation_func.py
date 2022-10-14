@@ -16,7 +16,11 @@ import scipy
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.utils import get_baseline_value, infer_channel_first, make_channel_last
+from quantus.helpers.utils import (
+    get_baseline_value,
+    infer_channel_first,
+    make_channel_last,
+)
 
 
 if util.find_spec("torch"):
@@ -40,6 +44,7 @@ if util.find_spec("tensorflow"):
     import tensorflow as tf
 if util.find_spec("tf_explain"):
     import tf_explain
+
 
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
@@ -386,9 +391,7 @@ def generate_captum_explanation(
         explanation = (
             Occlusion(model)
             .attribute(
-                inputs=inputs,
-                target=targets,
-                sliding_window_shapes=window_shape,
+                inputs=inputs, target=targets, sliding_window_shapes=window_shape,
             )
             .sum(**reduce_axes)
         )
@@ -566,18 +569,9 @@ def generate_zennit_explanation(
     else:
         canonizers = []
     if composite is not None:
-        composite = composite(
-            **{
-                **composite_kwargs,
-                "canonizers": canonizers,
-            }
-        )
+        composite = composite(**{**composite_kwargs, "canonizers": canonizers,})
     attributor = attributor(
-        **{
-            **attributor_kwargs,
-            "model": model,
-            "composite": composite,
-        }
+        **{**attributor_kwargs, "model": model, "composite": composite,}
     )
 
     n_outputs = model(inputs).shape[1]

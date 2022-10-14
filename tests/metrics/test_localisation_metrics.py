@@ -7,9 +7,17 @@ from quantus.functions.explanation_func import explain
 from quantus.functions.mosaic_func import mosaic_creation
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.models import LeNetAdaptivePooling
-from quantus.metrics.localisation import AttributionLocalisation, AUC, Focus, PointingGame, RelevanceMassAccuracy, \
-    RelevanceRankAccuracy, TopKIntersection
+from quantus.metrics.localisation import (
+    AttributionLocalisation,
+    AUC,
+    Focus,
+    PointingGame,
+    RelevanceMassAccuracy,
+    RelevanceRankAccuracy,
+    TopKIntersection,
+)
 from tests.fixtures import *
+
 
 @pytest.fixture
 def all_in_gt_1d_3ch():
@@ -354,8 +362,7 @@ def load_mnist_adaptive_lenet_model():
 def load_mnist_mosaics():
     """Load a batch of MNIST digits and build mosaics from them"""
     x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28),
-        dtype=torch.float,
+        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28), dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(
         np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
@@ -392,8 +399,7 @@ def load_cifar10_mosaics():
     """Load a batch of Cifar10 and build mosaics from them"""
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_batch = torch.as_tensor(
-        x_train[:124, ...].reshape(124, 3, 32, 32),
-        dtype=torch.float,
+        x_train[:124, ...].reshape(124, 3, 32, 32), dtype=torch.float,
     ).numpy()
     y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
     mosaics_returns = mosaic_creation(
@@ -420,36 +426,21 @@ def load_cifar10_mosaics():
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             True,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             True,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -457,89 +448,51 @@ def load_cifar10_mosaics():
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             False,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             False,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             True,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             True,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             True,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             True,
         ),
     ],
 )
 def test_pointing_game(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -624,9 +577,7 @@ def test_pointing_game(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -639,9 +590,7 @@ def test_pointing_game(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -794,10 +743,7 @@ def test_pointing_game(
     ],
 )
 def test_top_k_intersection(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -827,36 +773,21 @@ def test_top_k_intersection(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -864,111 +795,63 @@ def test_top_k_intersection(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_seg_bigger_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             {"min": 0.5, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_seg_bigger_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             {"min": 0.5, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_zeros_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.0,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.5,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_zeros_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.5,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_zeros_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_zeros_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
     ],
 )
 def test_relevance_mass_accuracy(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -1002,36 +885,21 @@ def test_relevance_mass_accuracy(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -1039,36 +907,21 @@ def test_relevance_mass_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_seg_bigger_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             {"min": 0.5, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_seg_bigger_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             {"min": 0.5, "max": 1.0},
         ),
         (
@@ -1098,54 +951,31 @@ def test_relevance_mass_accuracy(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("half_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             {"min": 0.5, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("half_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.5,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
     ],
 )
 def test_relevance_rank_accuracy(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -1183,36 +1013,21 @@ def test_relevance_rank_accuracy(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": False, "display_progressbar": False,},},
             1.0,
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_no_abatch_1d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -1220,13 +1035,8 @@ def test_relevance_rank_accuracy(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_no_abatch_2d_1ch"),
             {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                },
+                "init": {"disable_warnings": True, "display_progressbar": False,},
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -1257,54 +1067,31 @@ def test_relevance_rank_accuracy(
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("none_in_gt_fourth_1d"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.0,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("none_in_gt_fourth_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": False,},},
             0.33333333333333337,  # TODO: verify correctness
         ),
         (
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("all_in_gt_2d_3ch"),
-            {
-                "init": {
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-            },
+            {"init": {"disable_warnings": True, "display_progressbar": True,},},
             1.0,
         ),
     ],
 )
 def test_auc(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -1363,9 +1150,7 @@ def test_auc(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -1378,9 +1163,7 @@ def test_auc(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {
-                    "explain_func": explain,
-                },
+                "call": {"explain_func": explain,},
             },
             {"type": list},
         ),
@@ -1485,10 +1268,7 @@ def test_auc(
     ],
 )
 def test_attribution_localisation(
-    model,
-    data: dict,
-    params: dict,
-    expected: Union[bool, dict],
+    model, data: dict, params: dict, expected: Union[bool, dict],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -1520,15 +1300,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1538,15 +1313,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1556,15 +1326,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "GradientShap",
-                    },
+                    "explain_func_kwargs": {"method": "GradientShap",},
                 },
             },
             None,
@@ -1581,9 +1346,7 @@ def test_attribution_localisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "IntegratedGradients",
-                    },
+                    "explain_func_kwargs": {"method": "IntegratedGradients",},
                 },
             },
             None,
@@ -1593,15 +1356,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputXGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputXGradient",},
                 },
             },
             None,
@@ -1611,15 +1369,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1629,15 +1382,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1647,15 +1395,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1665,15 +1408,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1683,15 +1421,10 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             None,
@@ -1701,10 +1434,7 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
@@ -1721,10 +1451,7 @@ def test_attribution_localisation(
             lazy_fixture("load_cifar10_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
@@ -1741,37 +1468,23 @@ def test_attribution_localisation(
             lazy_fixture("load_mnist_mosaics"),
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Control Var. Sobel Filter",
-                    },
+                    "explain_func_kwargs": {"method": "Control Var. Sobel Filter",},
                 },
             },
             None,
         ),
         (
             lazy_fixture("load_mnist_adaptive_lenet_model"),
-            {
-                "x_batch": None,
-                "y_batch": None,
-                "custom_batch": None,
-            },
+            {"x_batch": None, "y_batch": None, "custom_batch": None,},
             None,
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"exception": ValueError},
@@ -1790,10 +1503,7 @@ def test_attribution_localisation(
             },
             lazy_fixture("load_artificial_attribution"),
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {},
             },
             {"value": 1},
@@ -1812,10 +1522,7 @@ def test_attribution_localisation(
             },
             lazy_fixture("load_artificial_attribution"),
             {
-                "init": {
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"disable_warnings": False, "display_progressbar": False,},
                 "call": {},
             },
             {"value": 0},

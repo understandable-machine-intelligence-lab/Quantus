@@ -20,6 +20,7 @@ from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
 from quantus.metrics.base import PerturbationMetric
 
+
 class Continuity(PerturbationMetric):
     """
     Implementation of the Continuity test by Montavon et al., 2018.
@@ -352,8 +353,7 @@ class Continuity(PerturbationMetric):
             ):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size,
-                    coords=top_left_coords,
+                    patch_size=self.patch_size, coords=top_left_coords,
                 )
 
                 a_perturbed_patch = a_perturbed[
@@ -418,9 +418,7 @@ class Continuity(PerturbationMetric):
 
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size,
-            shape=x_batch.shape[2:],
-            overlap=True,
+            patch_size=self.patch_size, shape=x_batch.shape[2:], overlap=True,
         )
 
         self.dx = np.prod(x_batch.shape[2:]) // self.nr_steps

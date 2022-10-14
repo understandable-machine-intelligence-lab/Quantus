@@ -18,7 +18,6 @@ from quantus.functions.perturb_func import noisy_linear_imputation
 from quantus.metrics.base import PerturbationMetric
 
 
-
 class ROAD(PerturbationMetric):
     """
     Implementation of ROAD evaluation strategy by Rong et al., 2022.
@@ -294,9 +293,7 @@ class ROAD(PerturbationMetric):
             top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
 
             x_perturbed = self.perturb_func(
-                arr=x,
-                indices=top_k_indices,
-                **self.perturb_func_kwargs,
+                arr=x, indices=top_k_indices, **self.perturb_func_kwargs,
             )
 
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)

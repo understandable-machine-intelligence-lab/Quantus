@@ -324,9 +324,7 @@ class MonotonicityCorrelation(PerturbationMetric):
                     indexed_axes=self.a_axes,
                     **self.perturb_func_kwargs,
                 )
-                warn.warn_perturbation_caused_no_change(
-                    x=x, x_perturbed=x_perturbed
-                )
+                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -380,8 +378,7 @@ class MonotonicityCorrelation(PerturbationMetric):
 
         # Asserts.
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch.shape[2:],
         )
 
         return (

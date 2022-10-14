@@ -90,23 +90,19 @@ def normalise_by_negative(
 
     # Case a.min() >= 0.0.
     return_array = np.where(
-        a_min >= 0.0,
-        np.divide(a, a_max, where=a_max != 0),
-        return_array,
+        a_min >= 0.0, np.divide(a, a_max, where=a_max != 0), return_array,
     )
 
     # Case a.max() <= 0.0.
     return_array = np.where(
-        a_max <= 0.0,
-        -np.divide(a, a_min, where=a_min != 0),
-        return_array,
+        a_max <= 0.0, -np.divide(a, a_min, where=a_min != 0), return_array,
     )
 
     # Else.
     # TODO: Temporary solution to catch an elusive bug causing a numpy RuntimeWarning below.
     #       Will be removed once bug is fixed.
     with warnings.catch_warnings():
-        warnings.filterwarnings('error')
+        warnings.filterwarnings("error")
         try:
             return_array = np.where(
                 np.logical_and(a_min < 0.0, a_max > 0.0),
@@ -119,27 +115,44 @@ def normalise_by_negative(
                 "Encountered a RuntimeWarning in numpy operation during normalise_by_negative, although both nan and inf values should be impossible here."
                 "If this occurred, please try to use a different normalisation function, e.g., normalising by maximum of unsigned array."
             )
-            print("-----------------------------------------------------DEBUG OUTPUT------------------------------------------------------")
+            print(
+                "-----------------------------------------------------DEBUG OUTPUT------------------------------------------------------"
+            )
             print("a_max: {}".format(a_max))
             print("a_min: {}".format(a_min))
-            print("np.logical_and(a_min < 0.0, a_max > 0.0): {}".format(np.logical_and(a_min < 0.0, a_max > 0.0)))
+            print(
+                "np.logical_and(a_min < 0.0, a_max > 0.0): {}".format(
+                    np.logical_and(a_min < 0.0, a_max > 0.0)
+                )
+            )
             print("(a > 0.0): {}".format((a > 0.0)))
-            print("np.divide(a, a_max, where=a_max != 0): {}".format(np.divide(a, a_max, where=a_max != 0)))
-            print("(a > 0.0) * np.divide(a, a_max, where=a_max != 0): {}".format((a > 0.0) * np.divide(a, a_max, where=a_max != 0)))
+            print(
+                "np.divide(a, a_max, where=a_max != 0): {}".format(
+                    np.divide(a, a_max, where=a_max != 0)
+                )
+            )
+            print(
+                "(a > 0.0) * np.divide(a, a_max, where=a_max != 0): {}".format(
+                    (a > 0.0) * np.divide(a, a_max, where=a_max != 0)
+                )
+            )
             print("(a < 0.0): {}".format((a > 0.0)))
-            print("np.divide(a, a_min, where=a_min != 0): {}".format(np.divide(a, a_min, where=a_min != 0)))
-            print("(a < 0.0) * np.divide(a, a_min, where=a_min != 0): {}".format((a < 0.0) * np.divide(a, a_min, where=a_min != 0)))
+            print(
+                "np.divide(a, a_min, where=a_min != 0): {}".format(
+                    np.divide(a, a_min, where=a_min != 0)
+                )
+            )
+            print(
+                "(a < 0.0) * np.divide(a, a_min, where=a_min != 0): {}".format(
+                    (a < 0.0) * np.divide(a, a_min, where=a_min != 0)
+                )
+            )
             raise
-
 
     return return_array
 
 
-def denormalise(
-    a: np.ndarray,
-    mean: np.ndarray,
-    std: np.ndarray,
-) -> np.ndarray:
+def denormalise(a: np.ndarray, mean: np.ndarray, std: np.ndarray,) -> np.ndarray:
     """
 
     Parameters

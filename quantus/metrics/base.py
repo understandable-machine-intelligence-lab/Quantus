@@ -234,13 +234,9 @@ class Metric:
             desc=f"Evaluating {self.__class__.__name__}",
         )
         self.last_results = [None for _ in x_batch]
-        for id_instance, (
-            x_instance,
-            y_instance,
-            a_instance,
-            s_instance,
-            c_instance,
-            p_instance,
+        for (
+            id_instance,
+            (x_instance, y_instance, a_instance, s_instance, c_instance, p_instance,),
         ) in iterator:
             result = self.evaluate_instance(
                 i=int(id_instance),
