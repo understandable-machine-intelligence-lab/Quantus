@@ -281,7 +281,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         s_batch: np.ndarray = None,
     ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
@@ -298,8 +298,8 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
 
         batch_size = x_batch.shape[0]
