@@ -4,14 +4,14 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-# Enable quantus.evaluate call
+# Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
 
-# Enable quantus.explain call
+# Expose quantus.explain to the user.
 from quantus.helpers.functions.explanation_func import explain
 
-# Enable quantus.<function-class>.<function-name> call
+# Expose quantus.<function-class>.<function-name> to the user.
 from quantus.helpers.functions import *
 
-# Enable quantus.<metric> call
+# Expose quantus.<metric> to the user.
 from quantus.metrics import *
