@@ -1,42 +1,40 @@
-## Quick Installation
+## Quick installation
 
-### Installing from PyPI
+You can install Quantus in various ways. The different options are listed in the following.
+
+### Installing via PyPI
 
 If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, 
-the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows
-(i.e., this means that additional explainability functionality, as well as ML frameworks will not be included):
+the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows (no additional explainability functionality or deep learning framework will be included):
 
 ```setup
 pip install quantus
 ```
-
-Alternatively, you can simply add the desired framework (in brackets), and it will be installed in addition to Quantus:
-For PyTorch:
-
+Alternatively, you can simply add the desired deep learning framework (in brackets) to have the package installed together with Quantus.
+To install Quantus with PyTorch, please run:
 ```setup
 pip install "quantus[torch]"
 ```
 
-For Tensorflow:
+For Tensorflow, please run:
 
 ```setup
 pip install "quantus[tensorflow]"
 ```
 
-### Installing from requirements.txt
+### Installing via requirements.txt
 
-Alternatively, you can simply install from the requirements.txt found [here](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt),
-however, this only installs with the default setup, requiring either PyTorch or Tensorflow:
+Alternatively, you can simply install Quantus from the requirements.txt as found [here](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
+Note that this installation requires that either [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) are already installed on your machine.
 
 ```setup
 pip install -r requirements.txt
 ```
 
-### Installing XAI Library Support (PyPI only)
+### Installing additional XAI Library support (PyPI only)
 
-Most evaluation metrics in Quantus allow for a choice of either providing pre-computed explanations directly as an input,
-or to instead make use of several wrappers implemented in `quantus.explain` around common explainability libraries.
-The following XAI Libraries are currently supported:
+Most evaluation metrics in Quantus allow for a choice of either providing pre-computed explanations directly as an input, or to instead make use of several wrappers implemented in `quantus.explain` around common explainability libraries. The
+following XAI Libraries are currently supported:
 
 **Captum**
 
@@ -63,9 +61,9 @@ pip install "quantus[zennit]"
 ```
 
 Note that the three options above will also install the respective required frameworks (i.e., PyTorch or Tensorflow),
-if they are not already installed in your environment.
+if they are not already installed in your environment. Note also, that not all explanation methods offered in `captum` and `tf-explain` respectively are included in `quantus.explain`.
 
-### Installing Tutorial Requirements
+### Installing tutorial requirements
 
 The Quantus tutorials have more requirements than the base package, which you can install by running
 
@@ -73,7 +71,7 @@ The Quantus tutorials have more requirements than the base package, which you ca
 pip install "quantus[tutorials]"
 ```
 
-### Full Installation
+### Full installation
 
 To simply install all of the above, you can run
 
@@ -88,5 +86,4 @@ The package requirments are as follows:
 python>=3.7.0
 pytorch>=1.10.1
 tensorflow==2.6.2
-tqdm==4.62.3
 ```
