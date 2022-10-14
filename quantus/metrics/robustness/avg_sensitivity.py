@@ -269,11 +269,9 @@ class AvgSensitivity(BatchedPerturbationMetric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: np.ndarray = None,
-        a_batch: np.ndarray = None,
-        s_batch: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -290,10 +288,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -307,11 +301,11 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
             # Perturb input.
             x_perturbed = perturb_batch(
-                perturb_func=perturb_func,
+                perturb_func=self.perturb_func,
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
                 indexed_axes=np.arange(0, x_batch[0].ndim),
                 arr=x_batch,
-                **perturb_func_kwargs,
+                **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(
                 x=x_perturbed,
