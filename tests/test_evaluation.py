@@ -5,15 +5,8 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.evaluation import evaluate
-from quantus.helpers.functions.explanation_func import explain
-from quantus.metrics.complexity import Sparseness
-from quantus.metrics.robustness import MaxSensitivity
-from tests.fixtures import (
-    load_1d_3ch_conv_model,
-    almost_uniform_1d_no_abatch,
-    load_mnist_model,
-    load_mnist_images,
-)
+from quantus.functions.explanation_func import explain
+
 
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(

@@ -15,9 +15,9 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
-from quantus.helpers.functions.perturb_func import translation_x_direction
-from quantus.helpers.functions.similarity_func import lipschitz_constant
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import translation_x_direction
+from quantus.functions.similarity_func import lipschitz_constant
 from quantus.metrics.base import PerturbationMetric
 
 class Continuity(PerturbationMetric):

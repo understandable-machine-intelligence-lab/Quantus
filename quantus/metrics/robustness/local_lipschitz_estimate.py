@@ -13,9 +13,9 @@ import numpy as np
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
-from quantus.helpers.functions.perturb_func import gaussian_noise
-from quantus.helpers.functions.similarity_func import lipschitz_constant, distance_euclidean
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import gaussian_noise
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base import PerturbationMetric
 
 

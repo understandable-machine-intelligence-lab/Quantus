@@ -1,11 +1,10 @@
 from typing import Union
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from quantus.helpers.functions.explanation_func import explain
-from quantus.helpers.functions.similarity_func import correlation_spearman, correlation_pearson
+from quantus.functions.explanation_func import explain
+from quantus.functions.similarity_func import correlation_spearman, correlation_pearson
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
 from tests.fixtures import *

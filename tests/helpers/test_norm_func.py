@@ -3,7 +3,7 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from quantus.helpers.functions.norm_func import *
+from quantus.functions.norm_func import *
 from tests.fixtures import *
 
 @pytest.fixture

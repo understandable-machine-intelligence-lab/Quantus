@@ -8,10 +8,10 @@
 from quantus.evaluation import evaluate
 
 # Expose quantus.explain to the user.
-from quantus.helpers.functions.explanation_func import explain
+from quantus.functions.explanation_func import explain
 
 # Expose quantus.<function-class>.<function-name> to the user.
-from quantus.helpers.functions import *
+from quantus.functions import *
 
 # Expose quantus.<metric> to the user.
 from quantus.metrics import *
