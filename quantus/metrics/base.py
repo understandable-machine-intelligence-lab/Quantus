@@ -610,7 +610,8 @@ class Metric:
             else:
                 data[key] = [value for _ in range(n_instances)]
 
-        # We create a list of dictionaries where each dictionary holds all data for a single instance
+        # We create a list of dictionaries where each dictionary holds all data for a single instance.
+        # We remove the '_batch' suffix if present.
         data_instances = [
             {re.sub('_batch', '', key): value[id_instance] for key, value in data.items()}
             for id_instance in range(n_instances)
