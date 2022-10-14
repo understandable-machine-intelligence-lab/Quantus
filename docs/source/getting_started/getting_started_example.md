@@ -11,9 +11,9 @@ as well as in the available XAI libraries.
 (prelim)=
 Quantus implements methods for the quantitative evaluation of XAI methods.
 Generally, in order to apply these, you will need:
-* A model
-* Input data (and labels)
-* Explanations to evaluate
+* A model (variable `model`)
+* Input data and labels (variables `x_batch` and `y_batch`)
+* Explanations to evaluate (variables `a_batch_*`)
 
 ### Model and Data
 
@@ -44,7 +44,7 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
 ### Explanations
 
-We still need some explanations to evaluate, however. 
+We still need some explanations to evaluate. 
 For this, there are two possibilities in Quantus:
 
 #### Using Pre-computed Explanations
@@ -113,9 +113,8 @@ So, to quantitatively evaluate the explanations, we can apply Quantus.
 
 Quantus implements XAI evaluation metrics from different categories 
 (faithfulness, localisation, robustness, ...) which all inherit from the base `quantus.Metric` class. 
-
 Metrics are designed as `Callables`. To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)), 
-they first need to be instantiated
+they first need to be instantiated:
 
 ```python
 max_sensitivity = quantus.MaxSensitivity()
@@ -147,7 +146,7 @@ result = max_sensitivity(
 )
 ```
 
-### Customizing Metrics
+### Customising Metrics
 
 The metrics for evaluating XAI methods are often quite sensitive to their respective hyperparameters. 
 For instance, how explanations are normalised or whether signed or unsigned explanations are considered can have significant
@@ -172,7 +171,7 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
         similarity_func=quantus.difference
     )
     ```
-* Hyperparameters affecting the inputs (data, model, explanations) to each metric are set in the `__call__` method of each metric
+* Hyperparameters affecting the inputs (data, model, explanations) to each metric are set in the `__call__` method of each metric.
   Extending the above example of MaxSensitivity, various call hyperparameters can be set as follows:
     ```python
     result = max_sensitivity(
