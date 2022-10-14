@@ -18,27 +18,25 @@ e.g. pixel replacement strategy of a faithfulness test influences the ranking of
 
 This documentation is complementary to the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) in the Quantus repository and provides documentation
 for how to {doc}`install </getting_started/installation>` Quantus, how to {doc}`contribute </docs_dev/CONTRIBUTING>` to the project, and on the {doc}`interface </docs_api/modules>`.
-For further guidance on what to think about when applying Quantus, please read the {doc}`user guidelines </guidelines/guidelines_and_disclaimers>`.
-
-Do you want to get started? Please have a look at our simple {doc}`toy example </getting_started/getting_started_example>` with PyTorch using MNIST data.
+For further guidance on what to think about when applying Quantus, please read the {doc}`user guidelines </guidelines/guidelines_and_disclaimers>`. Do you want to get started? Please have a look at our simple {doc}`toy example </getting_started/getting_started_example>` with PyTorch using MNIST data.
 For more examples, check the [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/tree/main/tutorials) folder.
 
-If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
+If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) as follows:
 
 ```setup
 pip install quantus
 ```
 
-Otherwise, you can simply add the desired framework in brackets, and it will be installed in addition to Quantus:
+Alternatively, you can simply add the desired framework (in brackets), and it will be installed in addition to Quantus:
 
 ```setup
-pip install quantus[torch]
+pip install "quantus[torch]"
 ```
 
-OR
+For tensorflow:
 
 ```setup
-pip install quantus[tensorflow]
+pip install "quantus[tensorflow]"
 ```
 
 For a more in-depth guide on how to install Quantus, read more {doc}`here </getting_started/installation>`.
