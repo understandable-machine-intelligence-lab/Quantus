@@ -247,10 +247,10 @@ class ROAD(PerturbationMetric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
-    ) -> np.ndarray:
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -269,7 +269,7 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-           : np.ndarray
+           : list
             The evaluation results.
         """
         # Order indices.

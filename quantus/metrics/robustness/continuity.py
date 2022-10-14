@@ -263,9 +263,9 @@ class Continuity(PerturbationMetric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ) -> Dict:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -396,6 +396,7 @@ class Continuity(PerturbationMetric):
         -------
         None.
         """
+
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
             patch_size=self.patch_size,
