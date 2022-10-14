@@ -250,8 +250,6 @@ class ROAD(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> np.ndarray:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -268,10 +266,6 @@ class ROAD(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -286,10 +280,10 @@ class ROAD(PerturbationMetric):
         for p_ix, p in enumerate(self.percentages):
             top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
 
-            x_perturbed = perturb_func(
+            x_perturbed = self.perturb_func(
                 arr=x,
                 indices=top_k_indices,
-                **perturb_func_kwargs,
+                **self.perturb_func_kwargs,
             )
 
             warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)

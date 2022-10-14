@@ -356,7 +356,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
         return np.nanmean(similarities, axis=1)
 
-
     def custom_preprocess(
         self,
         model: ModelInterface,

@@ -266,8 +266,6 @@ class Continuity(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> Dict:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -284,10 +282,6 @@ class Continuity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -300,12 +294,12 @@ class Continuity(PerturbationMetric):
 
             # Generate explanation based on perturbed input x.
             dx_step = (step + 1) * self.dx
-            x_perturbed = perturb_func(
+            x_perturbed = self.perturb_func(
                 arr=x,
                 indices=np.arange(0, x.size),
                 indexed_axes=np.arange(0, x.ndim),
                 perturb_dx=dx_step,
-                **perturb_func_kwargs,
+                **self.perturb_func_kwargs,
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 

@@ -809,8 +809,6 @@ class PerturbationMetric(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
 
         # Initialize super-class with passed parameters
         super().__init__(
@@ -818,8 +816,6 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            perturb_func=perturb_func,
-            perturb_func_kwargs=perturb_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -827,6 +823,13 @@ class PerturbationMetric(Metric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        # Save perturbation metric attributes.
+        self.perturb_func = perturb_func
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        self.perturb_func_kwargs = perturb_func_kwargs
 
     @abstractmethod
     def evaluate_instance(
@@ -836,8 +839,6 @@ class PerturbationMetric(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -856,10 +857,6 @@ class PerturbationMetric(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
         """
         raise NotImplementedError()
 
