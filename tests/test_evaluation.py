@@ -1,12 +1,14 @@
 from typing import Union
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.evaluation import evaluate
 from quantus.functions.explanation_func import explain
 
+from quantus.metrics.complexity import Sparseness
+from quantus.metrics.robustness import MaxSensitivity
+from tests.fixtures import *
 
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(
