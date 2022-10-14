@@ -221,12 +221,12 @@ class BatchedMetric(Metric):
 
     @abstractmethod
     def evaluate_batch(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            a_batch: np.ndarray,
-            s_batch: Optional[np.ndarray] = None,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
     ):
         raise NotImplementedError()
 
@@ -404,12 +404,12 @@ class BatchedPerturbationMetric(BatchedMetric):
 
     @abstractmethod
     def evaluate_batch(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            a_batch: np.ndarray,
-            s_batch: Optional[np.ndarray] = None,
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
