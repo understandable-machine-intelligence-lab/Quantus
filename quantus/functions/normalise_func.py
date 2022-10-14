@@ -103,7 +103,8 @@ def normalise_by_negative(
     )
 
     # Else.
-    # TODO: TEMPORARY SOLUTION: CHANGE WHEN BUG IS IDENTIFIED.
+    # TODO: Temporary solution to catch an elusive bug causing a numpy RuntimeWarning below.
+    #       Will be removed once bug is fixed.
     with warnings.catch_warnings():
         warnings.filterwarnings('error')
         try:

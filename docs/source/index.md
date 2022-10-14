@@ -27,13 +27,14 @@ If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.
 pip install quantus
 ```
 
-Alternatively, you can simply add the desired framework (in brackets), and it will be installed in addition to Quantus:
+Alternatively, you can simply add the desired framework (in brackets), and it will be installed in addition to Quantus.
+For PyTorch:
 
 ```setup
 pip install "quantus[torch]"
 ```
 
-For tensorflow:
+For Tensorflow:
 
 ```setup
 pip install "quantus[tensorflow]"
