@@ -52,7 +52,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
              The inputs that ought to be explained.
@@ -102,7 +102,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -150,7 +150,7 @@ def generate_tf_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -299,7 +299,7 @@ def generate_captum_explanation(
     Generate explanation for a torch model with captum.
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -487,7 +487,7 @@ def generate_zennit_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.

@@ -10,15 +10,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 
-from ..base import PerturbationMetric
+from ..base_batched import BatchedPerturbationMetric
 from ...helpers import warn_func
 from ...helpers import asserts
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_shift
+from ...helpers.perturb_func import perturb_batch
 
 
-class InputInvariance(PerturbationMetric):
+class InputInvariance(BatchedPerturbationMetric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -134,6 +135,7 @@ class InputInvariance(PerturbationMetric):
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
         **kwargs,
     ) -> List[float]:
         """
@@ -147,7 +149,7 @@ class InputInvariance(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -222,60 +224,80 @@ class InputInvariance(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> bool:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        s_batch: np.ndarray
+            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
-           : boolean
+           : np.ndarray
             The evaluation results.
+
         """
-        x_shifted = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
+        batch_size = x_batch.shape[0]
+
+        # Perturb the batched input.
+        x_shifted = perturb_batch(
+            perturb_func=self.perturb_func,
+            indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+            indexed_axes=np.arange(0, x_batch[0].ndim),
+            arr=x_batch,
             **self.perturb_func_kwargs,
         )
-        x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
-        warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
+
+        # Reshape it.
+        x_shifted = model.shape_input(
+            x=x_shifted,
+            shape=x_shifted.shape,
+            channel_first=True,
+            batched=True,
+        )
+
+        for x_instance, x_instance_shifted in zip(x_batch, x_shifted):
+            warn_func.warn_perturbation_caused_no_change(
+                x=x_instance,
+                x_perturbed=x_instance_shifted,
+            )
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
             model=model.get_model(),
             inputs=x_shifted,
-            targets=y,
+            targets=y_batch,
             **self.explain_func_kwargs,
         )
 
-        # Check if explanation of shifted input is similar to original.
-        if (a.flatten() != a_shifted.flatten()).all():
-            return True
-        else:
-            return False
+        # Compute the evaluation.
+        score = np.all(
+            a_batch == a_shifted,
+            axis=tuple(range(1, a_batch.ndim)),
+        )
+
+        return score
 
     def custom_preprocess(
         self,
@@ -291,7 +313,7 @@ class InputInvariance(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.

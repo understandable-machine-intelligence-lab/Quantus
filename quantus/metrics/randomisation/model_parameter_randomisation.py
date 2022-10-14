@@ -157,9 +157,12 @@ class ModelParameterRandomisation(Metric):
         () on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -240,10 +243,10 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model = data['model']
-        x_batch = data['x_batch']
-        y_batch = data['y_batch']
-        a_batch = data['a_batch']
+        model = data["model"]
+        x_batch = data["x_batch"]
+        y_batch = data["y_batch"]
+        a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.last_results = {}
@@ -364,7 +367,7 @@ class ModelParameterRandomisation(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.

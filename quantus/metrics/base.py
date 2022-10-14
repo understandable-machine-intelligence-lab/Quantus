@@ -1,24 +1,24 @@
 """This module implements the base class for creating evaluation metrics."""
-
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import inspect
 import re
 from abc import abstractmethod
-from collections import Sequence
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Callable, Dict, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..helpers import utils
 from ..helpers import asserts
-from ..helpers.model_interface import ModelInterface
+from ..helpers import utils
 from ..helpers import warn_func
+from ..helpers.model_interface import ModelInterface
 
 
 class Metric:
@@ -53,6 +53,9 @@ class Metric:
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
         abs: boolean
@@ -76,7 +79,6 @@ class Metric:
         kwargs: optional
             Keyword arguments.
         """
-
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
@@ -125,9 +127,12 @@ class Metric:
         evaluate_instance() on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -213,6 +218,7 @@ class Metric:
         )
 
         self.last_results = [None for _ in x_batch]
+
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(**data_instance)
@@ -302,7 +308,7 @@ class Metric:
         Parameters
         ----------
 
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -387,12 +393,12 @@ class Metric:
 
         # Initialize data dictionary.
         data = {
-            'model': model,
-            'x_batch': x_batch,
-            'y_batch': y_batch,
-            'a_batch': a_batch,
-            's_batch': s_batch,
-            'custom_batch': custom_batch,
+            "model": model,
+            "x_batch": x_batch,
+            "y_batch": y_batch,
+            "a_batch": a_batch,
+            "s_batch": s_batch,
+            "custom_batch": custom_batch,
         }
 
         # Call custom pre-processing from inheriting class.
@@ -404,20 +410,20 @@ class Metric:
                 data[key] = value
 
         # Remove custom_batch if not used.
-        if data['custom_batch'] is None:
-            del data['custom_batch']
+        if data["custom_batch"] is None:
+            del data["custom_batch"]
 
         # Normalise with specified keyword arguments if requested.
         if self.normalise:
-            data['a_batch'] = self.normalise_func(
-                a=data['a_batch'],
-                normalized_axes=list(range(np.ndim(data['a_batch'])))[1:],
+            data["a_batch"] = self.normalise_func(
+                a=data["a_batch"],
+                normalized_axes=list(range(np.ndim(data["a_batch"])))[1:],
                 **self.normalise_func_kwargs,
             )
 
         # Take absolute if requested.
         if self.abs:
-            data['a_batch'] = np.abs(data['a_batch'])
+            data["a_batch"] = np.abs(data["a_batch"])
 
         return data
 
@@ -446,7 +452,7 @@ class Metric:
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -477,7 +483,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable': np.mean(x_batch)}
             >>>
             >>> def evaluate_instance(
@@ -488,7 +494,7 @@ class Metric:
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.float,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with additional keyword argument that ends with `_batch`
             >>> def custom_preprocess(
@@ -499,7 +505,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
             >>>
             >>> def evaluate_instance(
@@ -510,7 +516,7 @@ class Metric:
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
             >>>     my_new_variable: np.int,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with transformation of an existing
             # keyword argument from `evaluate_instance()`
@@ -522,7 +528,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> Dict[str, Any]:
+            >>> ) -> Dict[str, Any]:
             >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
             >>>
             >>> def evaluate_instance(
@@ -532,7 +538,7 @@ class Metric:
             >>>     y: Optional[np.ndarray],
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
-            >>> ): -> float
+            >>> ) -> float:
 
             # Custom Metric definition with None returned in custom_preprocess(),
             # but with inplace-preprocessing and additional assertion.
@@ -544,7 +550,7 @@ class Metric:
             >>>     a_batch: Optional[np.ndarray],
             >>>     s_batch: np.ndarray,
             >>>     custom_batch: Optional[np.ndarray],
-            >>> ): -> None:
+            >>> ) -> None:
             >>>     if np.any(np.all(a_batch < 0, axis=0)):
             >>>         raise ValueError("Attributions must not be all negative")
             >>>
@@ -559,7 +565,7 @@ class Metric:
             >>>     y: Optional[np.ndarray],
             >>>     a: Optional[np.ndarray],
             >>>     s: np.ndarray,
-            >>> ): -> float
+            >>> ) -> float:
 
         """
         pass
@@ -592,7 +598,7 @@ class Metric:
             Each iterator output element is a keyword argument dictionary (string keys).
 
         """
-        n_instances = len(data['x_batch'])
+        n_instances = len(data["x_batch"])
 
         for key, value in data.items():
             # If data-value is not a Sequence or a string, create list of repeated values with length of n_instances.
@@ -600,19 +606,25 @@ class Metric:
                 data[key] = [value for _ in range(n_instances)]
 
             # If data-value is a sequence and ends with '_batch', only check for correct length.
-            elif key.endswith('_batch'):
+            elif key.endswith("_batch"):
                 if len(value) != n_instances:
                     # Sequence has to have correct length.
-                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+                    raise ValueError(
+                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
+                    )
 
             # If data-value is a sequence and doesn't end with '_batch', create
             # list of repeated sequences with length of n_instances.
             else:
                 data[key] = [value for _ in range(n_instances)]
 
-        # We create a list of dictionaries where each dictionary holds all data for a single instance
+        # We create a list of dictionaries where each dictionary holds all data for a single instance.
+        # We remove the '_batch' suffix if present.
         data_instances = [
-            {re.sub('_batch', '', key): value[id_instance] for key, value in data.items()}
+            {
+                re.sub("_batch", "", key): value[id_instance]
+                for key, value in data.items()
+            }
             for id_instance in range(n_instances)
         ]
 
@@ -640,7 +652,7 @@ class Metric:
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -753,11 +765,45 @@ class PerturbationMetric(Metric):
         normalise_func_kwargs: Optional[Dict[str, Any]],
         perturb_func: Callable,
         perturb_func_kwargs: Optional[Dict[str, Any]],
+        return_aggregate: bool,
+        aggregate_func: Optional[Callable],
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
         **kwargs,
     ):
+        """
+        Initialise the PerturbationMetric base class.
+
+        Parameters
+        ----------
+        Parameters
+        ----------
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call.
+        perturb_func: callable
+            Input perturbation function.
+        perturb_func_kwargs: dict, optional
+            Keyword arguments to be passed to perturb_func.
+        return_aggregate: boolean
+            Indicates if an aggregated score should be computed over all instances.
+        aggregate_func: callable
+            Callable that aggregates the scores given an evaluation call.
+        default_plot_func: callable
+            Callable that plots the metrics result.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed.
+        kwargs: optional
+            Keyword arguments.
+        """
 
         # Initialize super-class with passed parameters
         super().__init__(
@@ -765,12 +811,15 @@ class PerturbationMetric(Metric):
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
             **kwargs,
         )
 
+        # Save perturbation metric attributes.
         self.perturb_func = perturb_func
 
         if perturb_func_kwargs is None:
@@ -803,9 +852,5 @@ class PerturbationMetric(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
         """
         raise NotImplementedError()
