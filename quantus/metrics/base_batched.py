@@ -347,8 +347,6 @@ class BatchedPerturbationMetric(BatchedMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
 
         # Initialise super-class with passed parameters.
         super().__init__(
@@ -365,6 +363,13 @@ class BatchedPerturbationMetric(BatchedMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        # Save perturbation metric attributes.
+        self.perturb_func = perturb_func
+
+        if perturb_func_kwargs is None:
+            perturb_func_kwargs = {}
+        self.perturb_func_kwargs = perturb_func_kwargs
 
     def __call__(
         self,
@@ -405,24 +410,6 @@ class BatchedPerturbationMetric(BatchedMetric):
             y_batch: np.ndarray,
             a_batch: np.ndarray,
             s_batch: Optional[np.ndarray] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Dict = None,
-    ):
-        raise NotImplementedError()
-
-    def evaluate_instance(self, **kwargs) -> Any:
-        raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')
-
-    @abstractmethod
-    def evaluate_batch(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            a_batch: np.ndarray,
-            s_batch: Optional[np.ndarray] = None,
-            perturb_func: Callable = None,
-            perturb_func_kwargs: Dict = None,
     ):
         raise NotImplementedError()
 

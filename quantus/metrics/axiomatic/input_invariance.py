@@ -235,8 +235,6 @@ class InputInvariance(BatchedPerturbationMetric):
         y_batch: np.ndarray = None,
         a_batch: np.ndarray = None,
         s_batch: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> np.ndarray:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -253,10 +251,6 @@ class InputInvariance(BatchedPerturbationMetric):
             The explanation to be evaluated on a batch-basis.
         s_batch: np.ndarray
             The segmentation to be evaluated on a batch-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -267,11 +261,11 @@ class InputInvariance(BatchedPerturbationMetric):
         batch_size = x_batch.shape[0]
 
         x_shifted = perturb_batch(
-            perturb_func=perturb_func,
+            perturb_func=self.perturb_func,
             indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
             indexed_axes=np.arange(0, x_batch[0].ndim),
             arr=x_batch,
-            **perturb_func_kwargs,
+            **self.perturb_func_kwargs,
         )
 
         x_shifted = model.shape_input(

@@ -254,8 +254,6 @@ class NonSensitivity(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> int:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -272,10 +270,6 @@ class NonSensitivity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -297,11 +291,11 @@ class NonSensitivity(PerturbationMetric):
             for _ in range(self.n_samples):
 
                 # Perturb input by indices of attributions.
-                x_perturbed = perturb_func(
+                x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
                     indexed_axes=self.a_axes,
-                    **perturb_func_kwargs,
+                    **self.perturb_func_kwargs,
                 )
 
                 # Predict on perturbed input x.

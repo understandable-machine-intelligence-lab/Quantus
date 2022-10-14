@@ -260,8 +260,6 @@ class MonotonicityCorrelation(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -278,10 +276,6 @@ class MonotonicityCorrelation(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -316,11 +310,11 @@ class MonotonicityCorrelation(PerturbationMetric):
 
             for s_ix in range(self.nr_samples):
 
-                x_perturbed = perturb_func(
+                x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,
                     indexed_axes=self.a_axes,
-                    **perturb_func_kwargs,
+                    **self.perturb_func_kwargs,
                 )
                 warn_func.warn_perturbation_caused_no_change(
                     x=x, x_perturbed=x_perturbed

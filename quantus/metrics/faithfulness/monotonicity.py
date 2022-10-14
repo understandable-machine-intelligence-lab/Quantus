@@ -245,8 +245,6 @@ class Monotonicity(PerturbationMetric):
         y: np.ndarray = None,
         a: np.ndarray = None,
         s: np.ndarray = None,
-        perturb_func: Callable = None,
-        perturb_func_kwargs: Dict = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -263,10 +261,6 @@ class Monotonicity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
 
         Returns
         -------
@@ -284,7 +278,7 @@ class Monotonicity(PerturbationMetric):
 
         # Copy the input x but fill with baseline values.
         baseline_value = utils.get_baseline_value(
-            value=perturb_func_kwargs["perturb_baseline"],
+            value=self.perturb_func_kwargs["perturb_baseline"],
             arr=x,
             return_shape=x.shape,  # TODO. Double-check this over using = (1,).
         )
@@ -296,11 +290,11 @@ class Monotonicity(PerturbationMetric):
             a_ix = a_indices[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ]
-            x_baseline = perturb_func(
+            x_baseline = self.perturb_func(
                 arr=x_baseline,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
-                **perturb_func_kwargs,
+                **self.perturb_func_kwargs,
             )
 
             # Predict on perturbed input x (that was initially filled with a constant 'perturb_baseline' value).
