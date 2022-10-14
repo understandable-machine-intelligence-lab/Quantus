@@ -402,8 +402,6 @@ class Continuity(PerturbationMetric):
         -------
         None.
         """
-        # TODO: We can add these attributes to the return dict and pass them directly to evaluate_instance().
-
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
             patch_size=self.patch_size,
