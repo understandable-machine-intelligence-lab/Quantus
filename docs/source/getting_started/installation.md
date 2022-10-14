@@ -2,7 +2,9 @@
 
 ### Installing from PyPI
 
-If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) as follows:
+If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, 
+the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows
+(i.e., this means that additional explainability functionality, as well as ML frameworks will not be included):
 
 ```setup
 pip install quantus
@@ -40,7 +42,7 @@ The following XAI Libraries are currently supported:
 To enable the use of wrappers around [Captum](https://captum.ai/), you need to have PyTorch already installed and can then run:
 
 ```setup
-pip install quantus[extras]
+pip install quantus[captum]
 ```
 
 **tf-explain**
@@ -48,7 +50,7 @@ pip install quantus[extras]
 To enable the use of wrappers around [tf.explain](https://github.com/sicara/tf-explain), you need to have [Tensorflow already installed and can then run:
 
 ```setup
-pip install quantus[extras]
+pip install quantus[tf-explain]
 ```
 
 **Zennit**
@@ -57,6 +59,22 @@ To use Quantus with support for the [Zennit](https://github.com/chr5tphr/zennit)
 
 ```setup
 pip install "quantus[zennit]"
+```
+
+### Installing Tutorial Requirements
+
+The Quantus tutorials have more requirements than the base package, which you can install by running
+
+```setup
+pip install quantus[tutorials]
+```
+
+### Full Installation
+
+To simply install all of the above, you can run
+
+```setup
+pip install quantus[full]
 ```
 
 ### Package Requirements
