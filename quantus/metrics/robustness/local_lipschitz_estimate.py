@@ -115,16 +115,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         perturb_func_kwargs["perturb_mean"] = perturb_mean
         perturb_func_kwargs["perturb_std"] = perturb_std
 
-        # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = lipschitz_constant
-
-        if norm_numerator is None:
-            norm_numerator = distance_euclidean
-
-        if norm_denominator is None:
-            norm_denominator = distance_euclidean
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -132,10 +122,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             normalise_func_kwargs=normalise_func_kwargs,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
-            similarity_func=similarity_func,
-            norm_numerator=norm_numerator,
-            norm_denominator=norm_denominator,
-            nr_samples=nr_samples,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
             default_plot_func=default_plot_func,
@@ -143,6 +129,21 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        # Save metric-specific attributes.
+        self.nr_samples = nr_samples
+
+        if similarity_func is None:
+            similarity_func = lipschitz_constant
+        self.similarity_func = similarity_func
+
+        if norm_numerator is None:
+            norm_numerator = distance_euclidean
+        self.norm_numerator = norm_numerator
+
+        if norm_denominator is None:
+            norm_denominator = distance_euclidean
+        self.norm_denominator = norm_denominator
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -280,10 +281,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         s_batch: np.ndarray = None,
         perturb_func: Callable = None,
         perturb_func_kwargs: Dict = None,
-        nr_samples: int = None,
-        similarity_func: Callable = None,
-        norm_numerator: Callable = None,
-        norm_denominator: Callable = None,
     ) -> np.ndarray:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -312,9 +309,9 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         """
 
         batch_size = x_batch.shape[0]
-        similarities = np.zeros((batch_size, nr_samples)) * np.nan
+        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
-        for step_id in range(nr_samples):
+        for step_id in range(self.nr_samples):
 
             # Perturb input.
             x_perturbed = perturb_batch(
@@ -356,13 +353,13 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                similarity = similarity_func(
+                similarity = self.similarity_func(
                     a=a_batch[instance_id].flatten(),
                     b=a_perturbed[instance_id].flatten(),
                     c=x_batch[instance_id].flatten(),
                     d=x_perturbed[instance_id].flatten(),
-                    norm_numerator=norm_numerator,
-                    norm_denominator=norm_denominator,
+                    norm_numerator=self.norm_numerator,
+                    norm_denominator=self.norm_denominator,
                 )
                 similarities[instance_id, step_id] = similarity
 
