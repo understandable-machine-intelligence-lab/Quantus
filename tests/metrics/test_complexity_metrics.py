@@ -1,12 +1,11 @@
 from typing import Union
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.helpers.functions.explanation_func import explain
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.complexity import *
+from quantus.metrics.complexity import Complexity, EffectiveComplexity, Sparseness
 from tests.fixtures import *
 
 @pytest.mark.complexity

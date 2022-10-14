@@ -5,7 +5,7 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.helpers.functions.explanation_func import explain
-from quantus.metrics.axiomatic import *
+from quantus.metrics.axiomatic import Completeness, InputInvariance, NonSensitivity
 from tests.fixtures import *
 
 @pytest.mark.axiomatic

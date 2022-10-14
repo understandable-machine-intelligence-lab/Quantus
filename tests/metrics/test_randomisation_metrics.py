@@ -7,7 +7,7 @@ from pytest_lazyfixture import lazy_fixture
 from quantus.helpers.functions.explanation_func import explain
 from quantus.helpers.functions.similarity_func import correlation_spearman, correlation_pearson
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.randomisation import *
+from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
 from tests.fixtures import *
 
 @pytest.mark.randomisation

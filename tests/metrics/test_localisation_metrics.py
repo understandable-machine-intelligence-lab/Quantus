@@ -1,6 +1,5 @@
 from typing import Union, Optional, Dict
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -8,7 +7,8 @@ from quantus.helpers.functions.explanation_func import explain
 from quantus.helpers.functions.mosaic_func import mosaic_creation
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.models import LeNetAdaptivePooling
-from quantus.metrics.localisation import *
+from quantus.metrics.localisation import AttributionLocalisation, AUC, Focus, PointingGame, RelevanceMassAccuracy, \
+    RelevanceRankAccuracy, TopKIntersection
 from tests.fixtures import *
 
 @pytest.fixture

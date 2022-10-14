@@ -1,6 +1,5 @@
 from typing import Union
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -8,7 +7,8 @@ from quantus.helpers.functions.explanation_func import explain
 from quantus.helpers.functions.perturb_func import baseline_replacement_by_indices, noisy_linear_imputation
 from quantus.helpers.functions.similarity_func import correlation_spearman, correlation_kendall_tau
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.faithfulness import *
+from quantus.metrics.faithfulness import FaithfulnessCorrelation, FaithfulnessEstimate, Infidelity, IROF, Monotonicity, \
+    MonotonicityCorrelation, PixelFlipping, RegionPerturbation, ROAD, Selectivity, SensitivityN, Sufficiency
 from tests.fixtures import *
 
 @pytest.mark.faithfulness
