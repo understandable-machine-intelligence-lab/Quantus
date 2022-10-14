@@ -45,10 +45,15 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ### Explanations
 
 We still need some explanations to evaluate. 
-For this, there are two possibilities in Quantus:
+For this, there are two possibilities in Quantus. Either you provide:
+1. pre-computed attributions (`np.ndarray`) or
+2. an explanation function (`callable`) e.g., use the built-in method `quantus.explain` or your own customised function
 
-#### Using Pre-computed Explanations
-Quantus allows you to evaluate explanations that you have already computed previously, 
+We describe the different options in detail below.
+
+#### 1) Using pre-computed explanations
+
+Quantus allows you to evaluate explanations that you have pre-computed, 
 assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
 for [Saliency](https://arxiv.org/abs/1312.6034) and [Integrated Gradients](https://arxiv.org/abs/1703.01365)
 already pre-computed.
@@ -61,15 +66,11 @@ a_batch_saliency = load("path/to/precomputed/saliency/explanations")
 a_batch_saliency = load("path/to/precomputed/intgrad/explanations")
 ```
 
-#### Using Quantus XAI Wrappers
-The second possibility (if you don't have the explanations you are interested in available already) 
-is to simply obtain them from one of the many XAI frameworks out there, 
+Another option is to simply obtain the attributions using one of many XAI frameworks out there, 
 such as [Captum](https://captum.ai/), 
 [Zennit](https://github.com/chr5tphr/zennit), 
 [tf.explain](https://github.com/sicara/tf-explain),
-or [iNNvestigate](https://github.com/albermax/innvestigate).
-
-The following code example shows how to obtain explanations ([Saliency](https://arxiv.org/abs/1312.6034) 
+or [iNNvestigate](https://github.com/albermax/innvestigate). The following code example shows how to obtain explanations ([Saliency](https://arxiv.org/abs/1312.6034) 
 and [Integrated Gradients](https://arxiv.org/abs/1703.01365), to be specific) 
 using [Captum](https://captum.ai/):
 
@@ -86,44 +87,41 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
 # Quick assert.
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
-
-# You can use any function (not necessarily captum) to generate your explanations.
 ```
 
-However, this can be tedious if you want to compare multiple explanation methods, 
-or switch hyperparameters, or even the XAI library used to compute explanations.
-For these reasons, the `quantus.explain` function offers wrappers around [Captum](https://captum.ai/), 
+#### 2) Using an explanation function
+
+If you don't have a pre-computed set of explanations but rather want to pass an explanation function that you wish to evaluate with Quantus, this option exists. 
+
+For this, you can rely on the built-in `quantus.explain` function, which includes some popular explanation methods (please run `quantus.available_methods()` to see which ones). Note however, that the set of explanation methods offered in `quantus.explain` are limited --- `quantus.explain` is a wrapper around  [Captum](https://captum.ai/), 
 [Zennit](https://github.com/chr5tphr/zennit), and
-[tf.explain](https://github.com/sicara/tf-explain), 
-so that explanations do not need to be computed by hand as shown above, 
-and complex evaluations can be performed using less code. 
+[tf.explain](https://github.com/sicara/tf-explain) but does not support every explanation method offered in the respective libraries. 
 
-The qualitative aspects of explanations 
-may look fairly uninterpretable - since we lack ground truth of what the explanations
-should be looking like, it is hard to draw conclusions about the explainable evidence 
-that we see:
-
+If you want to use Quantus to evaluate any other explanation method (e.g., your newly built explanation function) you can simply provide your own function (`callable`). Examples of how to use `quantus.explain` or your own customised explanation function are included in the next section.
 ![drawing](../assets/mnist_example.png)
 
-So, to quantitatively evaluate the explanations, we can apply Quantus. 
+As seen in the above image, the qualitative aspects of explanations 
+may look fairly uninterpretable --- since we lack ground truth of what the explanations
+should be looking like, it is hard to draw conclusions about the explainable evidence. 
 
-## Evaluating Explanations with Quantus
+## Evaluating explanations with Quantus
 
-### Quantus Metrics
+To gather quantitative evidence for the quality of the different explantion methods,  we can apply Quantus.
+
+### Quantus metrics
 
 Quantus implements XAI evaluation metrics from different categories 
-(faithfulness, localisation, robustness, ...) which all inherit from the base `quantus.Metric` class. 
-Metrics are designed as `Callables`. To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)), 
-they first need to be instantiated:
+e.g., Faithfulness, Localisation, Robustness etc which all inherit from the base `quantus.Metric` class. To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)) 
+it first needs to be instantiated:
 
 ```python
-max_sensitivity = quantus.MaxSensitivity()
+metric = quantus.MaxSensitivity()
 ```
 
 and then applied to your model, data, and (pre-computed) explanations:
 
 ```python
-result = max_sensitivity(
+scores = metric(
     model=model,
     x_batch=x_batch,
     y_batch=y_batch,
@@ -132,21 +130,35 @@ result = max_sensitivity(
 )
 ```
 
-Alternatively, if you want to employ the `quantus.explain` utility instead of pre-computing explanations,
-you can call the metric like this:
+Alternatively, instead of provided pre-computed explanations, you can employ the `quantus.explain` function. Please make sure to specify the explanation method of choice (`string`):
 
 ```python
-result = max_sensitivity(
+scores = metric(
     model=model,
     x_batch=x_batch,
     y_batch=y_batch,
     device=device,
     explain_func=quantus.explain,
-    explain_func_kwargs={"method": "Saliency"})
+    explain_func_kwargs={"method": "Saliency"}
+)
+```
+You can alternatively use your own customised explanation function (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
+
+```python
+def your_own_callable(model, x_batch, y_batch):
+  """Logic goes here to compute the attributions in the same shape as x_batch."""
+  return explanation(model, x_batch, y_batch)
+
+scores = metric(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    device=device,
+    explain_func=your_own_callable
 )
 ```
 
-### Customising Metrics
+### Customising metrics
 
 The metrics for evaluating XAI methods are often quite sensitive to their respective hyperparameters. 
 For instance, how explanations are normalised or whether signed or unsigned explanations are considered can have significant
@@ -156,6 +168,10 @@ Therefore, different metrics can have different hyperparameters or default value
 {doc}`here </docs_api/modules>`. We encourage users to read the respective documentation before applying each metric, 
 to gain an understanding of the implications of altering each hyperparameter.
 
+To get an overview of the hyperparameters for a specific metric, please run:
+```python
+metric.get_params
+```
 Nevertheless, for the purpose of robust evaluation, it makes sense to vary especially those hyperparameters that metrics tend to be
 sensitive to. Generally, hyperparameters for each metric are separated as follows:
 
@@ -190,15 +206,9 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof.
 
-To utilize `quantus.evaluate()`, you simply need to define two dictionaries:
-* The **XAI Methods** you would like to evaluate:
-    ```python
-    xai_methods = {
-        "Saliency": a_batch_saliency,
-        "IntegratedGradients": a_batch_intgrad
-    }
-    ```
-* The **Metrics** you would like to use for evaluation (each `__init__` parameter configuration counts as its own metric):
+To utilise `quantus.evaluate()`, you simply need to define two things:
+
+1. The **Metrics** you would like to use for evaluation (each `__init__` parameter configuration counts as its own metric):
     ```python
     metrics = {
         "max-sensitivity-10": quantus.MaxSensitivity(nr_samples=10),
@@ -206,17 +216,36 @@ To utilize `quantus.evaluate()`, you simply need to define two dictionaries:
         "region-perturbation": quantus.RegionPerturbation(),
     }
     ```
+   
+2. The **XAI methods** you would like to evaluate, as a `dict` with pre-computed attributions:
+    ```python
+    xai_methods = {
+        "Saliency": a_batch_saliency,
+        "IntegratedGradients": a_batch_intgrad
+    }
+    ```
+  or as a `dict` but with explanation functions:
+```python
+xai_methods = {
+    "Saliency": saliency_callable,
+    "IntegratedGradients": saliency_callable
+}
+```
+  or as a list of `strings` (this input relies on `quantus.explain` so make sure that the XAI methods you include are supported) :
+```python
+xai_methods = ["Saliency", "IntegratedGradients"]
+```
 
-After defining how to aggregate the measurements of each metric on each XAI-method, you can then simply run a large-scale evaluation as
+After defining how to aggregate the measurements of each metric on each XAI-method, you can then simply run a large-scale evaluation as follows:
 
 ```python
 import numpy as np
 
 agg_func = np.mean
 metric_call_kwargs = {
-  "model"=model,
-  "x_batch"=x_batch,
-  "y_batch"=y_batch,
+  "model": model,
+  "x_batch": x_batch,
+  "y_batch": y_batch,
   "softmax": False,
 }
 
