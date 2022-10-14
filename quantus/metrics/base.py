@@ -76,17 +76,6 @@ class Metric:
         kwargs: optional
             Keyword arguments.
         """
-        # Check if the additional kwargs are expected to be used in evaluate_instance().
-        # Pop these out and save them in custom_evaluate_kwargs attribute.
-        # This will be passed to get_instance_iterator() and evaluate_instance().
-        self.custom_evaluate_kwargs = {}
-        if kwargs:
-            evaluate_kwarg_names = inspect.getfullargspec(self.evaluate_instance).args
-            for key, value in list(kwargs.items()):
-                if key in evaluate_kwarg_names or re.sub('_batch', '', key) in evaluate_kwarg_names:
-                    self.custom_evaluate_kwargs[key] = value
-                    del kwargs[key]
-
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
         warn_func.check_kwargs(kwargs)
@@ -224,11 +213,9 @@ class Metric:
 
         self.last_results = [None for _ in x_batch]
 
-        iterator = self.get_instance_iterator(data=data, display_progressbar=self.display_progressbar)
+        iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
-            result = self.evaluate_instance(
-                **data_instance, **self.custom_evaluate_kwargs,
-            )
+            result = self.evaluate_instance(**data_instance)
             self.last_results[id_instance] = result
 
         # Call custom post-processing.
@@ -577,11 +564,7 @@ class Metric:
         """
         pass
 
-    def get_instance_iterator(
-        self,
-        data: Dict[str, Any],
-        display_progressbar: bool = False,
-    ):
+    def get_instance_iterator(self, data: Dict[str, Any]):
         """
         Creates iterator to iterate over all instances in data dictionary.
         Each iterator output element is a keyword argument dictionary with
@@ -636,7 +619,7 @@ class Metric:
         iterator = tqdm(
             enumerate(data_instances),
             total=n_instances,
-            disable=not display_progressbar,  # Create progress bar if desired.
+            disable=not self.display_progressbar,  # Create progress bar if desired.
             desc=f"Evaluating {self.__class__.__name__}",
         )
 

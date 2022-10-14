@@ -76,16 +76,6 @@ class BatchedMetric(Metric):
         kwargs: optional
             Keyword arguments.
         """
-        # We need to do this separately here, as super().__init__() overwrites these
-        # and uses wrong base method to inspect (evaluate_instance() instead of evaluate_batch().
-        # We don't pass any kwargs that matched here to super().__init__().
-        custom_evaluate_kwargs = {}
-        if kwargs:
-            evaluate_kwarg_names = inspect.getfullargspec(self.evaluate_batch).args
-            for key, value in list(kwargs.items()):
-                if key in evaluate_kwarg_names or re.sub('_batch', '', key) in evaluate_kwarg_names:
-                    custom_evaluate_kwargs[key] = value
-                    del kwargs[key]
 
         # Initialise super-class with passed parameters.
         super().__init__(
@@ -100,9 +90,6 @@ class BatchedMetric(Metric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
-
-        # Now set the correct custom_evaluate_kwargs attribute.
-        self.custom_evaluate_kwargs = custom_evaluate_kwargs
 
     def __call__(
         self,
@@ -204,13 +191,9 @@ class BatchedMetric(Metric):
             display_progressbar=self.display_progressbar,
         )
 
-        # TODO: initialize correct length of last results
         self.last_results = []
-        # We use a tailing underscore to prevent confusion with the passed parameters.
-        # TODO: rename '_batch'-suffix kwargs of __call__() method accordingly or else this will be confusing.
         for data_batch in batch_generator:
-            result = self.evaluate_batch(**data_batch, **self.custom_evaluate_kwargs)
-            # TODO: put in correct list idx instead of extending
+            result = self.evaluate_batch(**data_batch)
             self.last_results.extend(result)
 
         # Call post-processing
@@ -252,8 +235,36 @@ class BatchedMetric(Metric):
             self,
             data: Dict[str, Any],
             batch_size: int,
-            display_progressbar: bool = False,
     ):
+        """
+        Creates iterator to iterate over all batched instances in data dictionary.
+        Each iterator output element is a keyword argument dictionary with
+        string keys.
+
+        Each item key in the input data dictionary has to be of type string.
+        - If the item value is not a sequence, the respective item key/value pair
+          will be written to each iterator output dictionary.
+        - If the item value is a sequence and the item key ends with '_batch',
+          a check will be made to make sure length matches number of instances.
+          The values of the batch instances in the sequence will be added to the respective
+          iterator output dictionary with the '_batch' suffix removed.
+        - If the item value is a sequence but doesn't end with '_batch', it will be treated
+          as a simple value and the respective item key/value pair will be
+          written to each iterator output dictionary.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            The data input dictionary.
+        batch_size: int
+            The batch size to be used.
+
+        Returns
+        -------
+        iterator
+            Each iterator output element is a keyword argument dictionary (string keys).
+
+        """
         n_instances = len(data['x_batch'])
 
         single_value_kwargs = {}
@@ -263,16 +274,18 @@ class BatchedMetric(Metric):
             if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
                 single_value_kwargs[key] = value
 
-            # Check if sequence has correct length.
-            # TODO: we should also support non-batched sequences as variables and pass them as single_value_kwargs.
-            #       it seems not trivial to do this actually in a general case.
-            #       what to do if non-batched sequence length equals batch size?
-            #       Most easy solution would be to require _batch suffix for batched value kwargs.
-            elif len(value) != n_instances:
-                raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+            # If data-value is a sequence and ends with '_batch', only check for correct length.
+            elif key.endswith('_batch'):
+                if len(value) != n_instances:
+                    # Sequence has to have correct length.
+                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+                else:
+                    batched_value_kwargs[key] = value
 
+            # If data-value is a sequence and doesn't end with '_batch', create
+            # list of repeated sequences with length of n_instances.
             else:
-                batched_value_kwargs[key] = value
+                single_value_kwargs[key] = [value for _ in range(n_instances)]
 
         n_batches = self.get_number_of_batches(n_instances=n_instances, batch_size=batch_size)
 
