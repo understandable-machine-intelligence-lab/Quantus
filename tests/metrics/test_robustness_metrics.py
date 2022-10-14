@@ -7,7 +7,7 @@ from pytest_lazyfixture import lazy_fixture
 from quantus.helpers.functions.explanation_func import explain
 from quantus.helpers.functions.discretise_func import floating_points, rank, sign, top_n_sign
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.robustness import *
+from quantus.metrics.robustness import AvgSensitivity, Consistency, Continuity, LocalLipschitzEstimate, MaxSensitivity
 from tests.fixtures import *
 
 @pytest.mark.robustness
