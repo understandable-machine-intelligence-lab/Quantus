@@ -18,6 +18,7 @@ from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
 from quantus.metrics.base import PerturbationMetric
 
+
 class FaithfulnessCorrelation(PerturbationMetric):
     """
     Implementation of faithfulness correlation by Bhatt et al., 2020.

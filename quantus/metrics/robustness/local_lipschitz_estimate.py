@@ -335,8 +335,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
             if self.normalise:
                 a_perturbed = self.normalise_func(
-                    a_perturbed,
-                    **self.normalise_func_kwargs,
+                    a_perturbed, **self.normalise_func_kwargs,
                 )
 
             if self.abs:

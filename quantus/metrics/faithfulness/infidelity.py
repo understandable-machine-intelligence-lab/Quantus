@@ -337,8 +337,7 @@ class Infidelity(PerturbationMetric):
                             x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
                         )
                         patch_slice = utils.create_patch_slice(
-                            patch_size=patch_size,
-                            coords=[top_left_x, top_left_y],
+                            patch_size=patch_size, coords=[top_left_x, top_left_y],
                         )
 
                         x_perturbed_pad = self.perturb_func(

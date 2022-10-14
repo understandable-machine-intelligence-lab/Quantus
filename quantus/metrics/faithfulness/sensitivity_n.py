@@ -375,8 +375,7 @@ class SensitivityN(PerturbationMetric):
 
         # Asserts.
         asserts.assert_features_in_step(
-            features_in_step=self.features_in_step,
-            input_shape=x_batch.shape[2:],
+            features_in_step=self.features_in_step, input_shape=x_batch.shape[2:],
         )
 
         return (

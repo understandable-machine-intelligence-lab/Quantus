@@ -55,9 +55,7 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
     if segmentation_method == "slic":
         return slic(img, start_label=0)
     elif segmentation_method == "felzenszwalb":
-        return felzenszwalb(
-            img,
-        )
+        return felzenszwalb(img,)
 
 
 def get_baseline_value(

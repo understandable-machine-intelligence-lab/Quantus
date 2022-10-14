@@ -4,12 +4,16 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from quantus.metrics.faithfulness.faithfulness_correlation import FaithfulnessCorrelation
+from quantus.metrics.faithfulness.faithfulness_correlation import (
+    FaithfulnessCorrelation,
+)
 from quantus.metrics.faithfulness.faithfulness_estimate import FaithfulnessEstimate
 from quantus.metrics.faithfulness.infidelity import Infidelity
 from quantus.metrics.faithfulness.irof import IROF
 from quantus.metrics.faithfulness.monotonicity import Monotonicity
-from quantus.metrics.faithfulness.monotonicity_correlation import MonotonicityCorrelation
+from quantus.metrics.faithfulness.monotonicity_correlation import (
+    MonotonicityCorrelation,
+)
 from quantus.metrics.faithfulness.pixel_flipping import PixelFlipping
 from quantus.metrics.faithfulness.region_perturbation import RegionPerturbation
 from quantus.metrics.faithfulness.road import ROAD

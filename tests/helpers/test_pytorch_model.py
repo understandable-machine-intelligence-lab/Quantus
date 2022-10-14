@@ -10,6 +10,7 @@ from scipy.special import softmax
 from quantus.helpers.model.pytorch_model import PyTorchModel
 from tests.fixtures import *
 
+
 @pytest.fixture
 def mock_input_torch_array():
     return {"x": np.zeros((1, 1, 28, 28))}
@@ -21,10 +22,7 @@ def mock_input_torch_array():
     [
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": False,
-                "device": "cpu",
-            },
+            {"softmax": False, "device": "cpu",},
             np.array(
                 [
                     -0.44321266,
@@ -42,10 +40,7 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": True,
-                "device": "cpu",
-            },
+            {"softmax": True, "device": "cpu",},
             softmax(
                 np.array(
                     [
@@ -65,11 +60,7 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": True,
-                "device": "cpu",
-                "training": True,
-            },
+            {"softmax": True, "device": "cpu", "training": True,},
             {"exception": AttributeError},
         ),
     ],
