@@ -28,18 +28,19 @@ from .utils import (
 
 
 def perturb_batch(
-        perturb_func: Callable,
-        arr: np.ndarray,
-        indices: Optional[np.ndarray] = None,
-        inplace: bool = False,
-        **kwargs,
+    perturb_func: Callable,
+    arr: np.ndarray,
+    indices: Optional[np.ndarray] = None,
+    inplace: bool = False,
+    **kwargs,
 ) -> Union[np.ndarray, None]:
     """
     Use a perturb function and make perturbation on the full batch.
 
     Parameters
     ----------
-    perturb_func
+    perturb_func: callable
+        Input perturbation function.
      arr: np.ndarray
          Array to be perturbed.
     indices: int, sequence, tuple
@@ -54,9 +55,9 @@ def perturb_batch(
     None, array
     """
     if indices is not None:
-        assert arr.shape[0] == len(indices), (
-            "arr and indices need same number of batches"
-        )
+        assert arr.shape[0] == len(
+            indices
+        ), "arr and indices need same number of batches"
 
     if not inplace:
         arr = arr.copy()

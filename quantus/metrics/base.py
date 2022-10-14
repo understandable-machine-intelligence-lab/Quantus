@@ -53,6 +53,9 @@ class Metric:
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
         abs: boolean
@@ -124,9 +127,12 @@ class Metric:
         evaluate_instance() on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -302,7 +308,7 @@ class Metric:
         Parameters
         ----------
 
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -387,12 +393,12 @@ class Metric:
 
         # Initialize data dictionary.
         data = {
-            'model': model,
-            'x_batch': x_batch,
-            'y_batch': y_batch,
-            'a_batch': a_batch,
-            's_batch': s_batch,
-            'custom_batch': custom_batch,
+            "model": model,
+            "x_batch": x_batch,
+            "y_batch": y_batch,
+            "a_batch": a_batch,
+            "s_batch": s_batch,
+            "custom_batch": custom_batch,
         }
 
         # Call custom pre-processing from inheriting class.
@@ -404,20 +410,20 @@ class Metric:
                 data[key] = value
 
         # Remove custom_batch if not used.
-        if data['custom_batch'] is None:
-            del data['custom_batch']
+        if data["custom_batch"] is None:
+            del data["custom_batch"]
 
         # Normalise with specified keyword arguments if requested.
         if self.normalise:
-            data['a_batch'] = self.normalise_func(
-                a=data['a_batch'],
-                normalized_axes=list(range(np.ndim(data['a_batch'])))[1:],
+            data["a_batch"] = self.normalise_func(
+                a=data["a_batch"],
+                normalized_axes=list(range(np.ndim(data["a_batch"])))[1:],
                 **self.normalise_func_kwargs,
             )
 
         # Take absolute if requested.
         if self.abs:
-            data['a_batch'] = np.abs(data['a_batch'])
+            data["a_batch"] = np.abs(data["a_batch"])
 
         return data
 
@@ -446,7 +452,7 @@ class Metric:
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -592,7 +598,7 @@ class Metric:
             Each iterator output element is a keyword argument dictionary (string keys).
 
         """
-        n_instances = len(data['x_batch'])
+        n_instances = len(data["x_batch"])
 
         for key, value in data.items():
             # If data-value is not a Sequence or a string, create list of repeated values with length of n_instances.
@@ -600,10 +606,12 @@ class Metric:
                 data[key] = [value for _ in range(n_instances)]
 
             # If data-value is a sequence and ends with '_batch', only check for correct length.
-            elif key.endswith('_batch'):
+            elif key.endswith("_batch"):
                 if len(value) != n_instances:
                     # Sequence has to have correct length.
-                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+                    raise ValueError(
+                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
+                    )
 
             # If data-value is a sequence and doesn't end with '_batch', create
             # list of repeated sequences with length of n_instances.
@@ -613,7 +621,10 @@ class Metric:
         # We create a list of dictionaries where each dictionary holds all data for a single instance.
         # We remove the '_batch' suffix if present.
         data_instances = [
-            {re.sub('_batch', '', key): value[id_instance] for key, value in data.items()}
+            {
+                re.sub("_batch", "", key): value[id_instance]
+                for key, value in data.items()
+            }
             for id_instance in range(n_instances)
         ]
 
@@ -633,7 +644,7 @@ class Metric:
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        **kwargs: object,
+        **kwargs,
     ) -> Optional[Any]:
         """
         Implement this method if you need custom postprocessing of results or
@@ -641,7 +652,7 @@ class Metric:
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -843,4 +854,3 @@ class PerturbationMetric(Metric):
             The segmentation to be evaluated on an instance-basis.
         """
         raise NotImplementedError()
-
