@@ -6,16 +6,16 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools
-from typing import Any, Callable, Dict, List, Optional
-
 import numpy as np
 
+
 from ..base import PerturbationMetric
-from ...helpers import asserts
-from ...helpers import plotting
-from ...helpers import utils
 from ...helpers import warn_func
+from ...helpers import asserts
+from ...helpers import utils
+from ...helpers import plotting
 from ...helpers.model_interface import ModelInterface
 from ...helpers.normalise_func import normalise_by_negative
 from ...helpers.perturb_func import baseline_replacement_by_indices
@@ -252,10 +252,10 @@ class Selectivity(PerturbationMetric):
         self,
         model: ModelInterface,
         x: np.ndarray,
-        y: np.ndarray = None,
-        a: np.ndarray = None,
-        s: np.ndarray = None,
-    ) -> np.ndarray:
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+    ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -274,7 +274,7 @@ class Selectivity(PerturbationMetric):
 
         Returns
         -------
-           : np.ndarray
+           : list
             The evaluation results.
         """
 
