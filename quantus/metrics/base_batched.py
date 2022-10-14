@@ -288,18 +288,26 @@ class BatchedMetric(Metric):
 
         n_batches = self.get_number_of_batches(n_instances=n_instances, batch_size=batch_size)
 
+        # Create iterator for batch index.
         iterator = tqdm(
             range(0, n_batches),
             total=n_batches,
             disable=not self.display_progressbar,
         )
 
+        # Iterate over batch index
         for batch_idx in iterator:
+            # Calculate instance index for start and end of batch.
             batch_start = batch_size * batch_idx
             batch_end = min(batch_size * (batch_idx + 1), n_instances)
+
+            # Create batch dictionary with all specified batch instance values
             batch = {
-                key: value[batch_start:batch_end] for key, value in batched_value_kwargs.items()
+                key: value[batch_start:batch_end]
+                for key, value in batched_value_kwargs.items()
             }
+
+            # Yield batch dictionary including single value keyword arguments.
             yield {**batch, **single_value_kwargs}
 
     def evaluate_instance(self, **kwargs) -> Any:
