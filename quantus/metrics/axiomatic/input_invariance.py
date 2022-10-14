@@ -149,7 +149,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -260,6 +260,7 @@ class InputInvariance(BatchedPerturbationMetric):
         """
         batch_size = x_batch.shape[0]
 
+        # Perturb the batched input.
         x_shifted = perturb_batch(
             perturb_func=self.perturb_func,
             indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
@@ -268,6 +269,7 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.perturb_func_kwargs,
         )
 
+        # Reshape it.
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -289,10 +291,12 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.explain_func_kwargs,
         )
 
+        # Compute the evaluation.
         score = np.all(
             a_batch == a_shifted,
             axis=tuple(range(1, a_batch.ndim)),
         )
+
         return score
 
     def custom_preprocess(
@@ -309,7 +313,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.

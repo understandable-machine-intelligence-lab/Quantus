@@ -147,7 +147,7 @@ class Sufficiency(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -288,7 +288,7 @@ class Sufficiency(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -320,7 +320,7 @@ class Sufficiency(Metric):
 
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
         return {
-            'i_batch': np.arange(x_batch.shape[0]),
-            'a_sim_vector_batch': a_sim_matrix,
-            'y_pred_classes': y_pred_classes,
+            "i_batch": np.arange(x_batch.shape[0]),
+            "a_sim_vector_batch": a_sim_matrix,
+            "y_pred_classes": y_pred_classes,
         }

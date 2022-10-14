@@ -110,61 +110,82 @@ class BatchedMetric(Metric):
     ) -> Union[int, float, list, dict, None]:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
-        It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
+        It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
         evaluate_instance() on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: a torch model e.g., torchvision.models that is subject to explanation
-        x_batch: a np.ndarray which contains the input data that are explained
-        y_batch: a np.ndarray which contains the output labels that are explained
-        a_batch: a Union[np.ndarray, None] which contains pre-computed attributions i.e., explanations
-        s_batch: a Union[np.ndarray, None] which contains segmentation masks that matches the input
-        channel_first (boolean, optional): Indicates of the image dimensions are channel first, or channel last.
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape if None.
-        explain_func (callable): Callable generating attributions.
-        explain_func_kwargs (dict, optional): Keyword arguments to be passed to explain_func on call.
-        device (string): Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        softmax (boolean): Indicates wheter to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-        model_predict_kwargs (dict, optional): Keyword arguments to be passed to the model's predict method.
-        batch_size (int): batch size for evaluation, default = 64.
+        explain_func: callable
+            Callable generating attributions.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+                This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        device: string
+            Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
         custom_batch: any
             Any object that can be passed to the evaluation process.
             Gives flexibility to the user to adapt for implementing their own metric.
+        kwargs: optional
+            Keyword arguments.
 
         Returns
         -------
-        last_results: a list of float(s) with the evaluation outcome of concerned batch
+        last_results: list
+            a list of Any with the evaluation scores of the concerned batch.
 
-        Examples
+        Examples:
         --------
-        # Enable GPU.
-        >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            # Minimal imports.
+            >> import quantus
+            >> from quantus import LeNet
+            >> import torch
 
-        # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-        >> model = LeNet()
-        >> model.load_state_dict(torch.load("tutorials/assets/mnist"))
+            # Enable GPU.
+            >> device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # Load MNIST datasets and make loaders.
-        >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
-        >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+            # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+            >> model = LeNet()
+            >> model.load_state_dict(torch.load("tutorials/assets/pytests/mnist_model"))
 
-        # Load a batch of inputs and outputs to use for XAI evaluation.
-        >> x_batch, y_batch = iter(test_loader).next()
-        >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+            # Load MNIST datasets and make loaders.
+            >> test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+            >> test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
-        # Generate Saliency attributions of the test set batch of the test set.
-        >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
-        >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+            # Load a batch of inputs and outputs to use for XAI evaluation.
+            >> x_batch, y_batch = iter(test_loader).next()
+            >> x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
-        # Initialise the metric and evaluate explanations by calling the metric instance.
-        >> metric = BatchedMetric(abs=True, normalise=False)
-        >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
+            # Generate Saliency attributions of the test set batch of the test set.
+            >> a_batch_saliency = Saliency(model).attribute(inputs=x_batch, target=y_batch, abs=True).sum(axis=1)
+            >> a_batch_saliency = a_batch_saliency.cpu().numpy()
+
+            # Initialise the metric and evaluate explanations by calling the metric instance.
+            >> metric = Metric(abs=True, normalise=False)
+            >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         # Run deprecation warnings.
         warn_func.deprecation_warnings(kwargs)
@@ -185,9 +206,10 @@ class BatchedMetric(Metric):
             device=device,
         )
 
-        # create generator for generating batches
+        # Create generator for generating batches.
         batch_generator = self.generate_batches(
-            data=data, batch_size=batch_size,
+            data=data,
+            batch_size=batch_size,
         )
 
         self.last_results = []
@@ -195,10 +217,12 @@ class BatchedMetric(Metric):
             result = self.evaluate_batch(**data_batch)
             self.last_results.extend(result)
 
-        # Call post-processing
+        # Call post-processing.
         self.custom_postprocess(**data)
 
+        # Append content of last results to all results.
         self.all_results.append(self.last_results)
+
         return self.last_results
 
     @abstractmethod
@@ -231,9 +255,9 @@ class BatchedMetric(Metric):
         return math.ceil(n_instances / batch_size)
 
     def generate_batches(
-            self,
-            data: Dict[str, Any],
-            batch_size: int,
+        self,
+        data: Dict[str, Any],
+        batch_size: int,
     ):
         """
         Creates iterator to iterate over all batched instances in data dictionary.
@@ -264,20 +288,23 @@ class BatchedMetric(Metric):
             Each iterator output element is a keyword argument dictionary (string keys).
 
         """
-        n_instances = len(data['x_batch'])
+        n_instances = len(data["x_batch"])
 
         single_value_kwargs = {}
         batched_value_kwargs = {}
+
         for key, value in list(data.items()):
             # If data-value is not a Sequence or a string, create list of value with length of n_instances.
             if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
                 single_value_kwargs[key] = value
 
             # If data-value is a sequence and ends with '_batch', only check for correct length.
-            elif key.endswith('_batch'):
+            elif key.endswith("_batch"):
                 if len(value) != n_instances:
                     # Sequence has to have correct length.
-                    raise ValueError(f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})")
+                    raise ValueError(
+                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
+                    )
                 else:
                     batched_value_kwargs[key] = value
 
@@ -286,7 +313,9 @@ class BatchedMetric(Metric):
             else:
                 single_value_kwargs[key] = [value for _ in range(n_instances)]
 
-        n_batches = self.get_number_of_batches(n_instances=n_instances, batch_size=batch_size)
+        n_batches = self.get_number_of_batches(
+            n_instances=n_instances, batch_size=batch_size
+        )
 
         # Create iterator for batch index.
         iterator = tqdm(
@@ -316,7 +345,9 @@ class BatchedMetric(Metric):
         to be defined to implement this abstract class.
         However we use evalaute_batch() instead for BatchedMetric.
         """
-        raise NotImplementedError('evaluate_instance() not implemented for BatchedMetric')
+        raise NotImplementedError(
+            "evaluate_instance() not implemented for BatchedMetric"
+        )
 
 
 class BatchedPerturbationMetric(BatchedMetric):
@@ -432,8 +463,14 @@ class BatchedPerturbationMetric(BatchedMetric):
 
     def evaluate_instance(self, **kwargs) -> Any:
         """
-        This method from the parent Metric class needs
-        to be defined to implement this abstract class.
+        This method from the parent Metric class needs to be defined to implement this abstract class.
         However we use evalaute_batch() instead for BatchedMetric.
+
+        Parameters
+        ----------
+        kwargs: optional
+            Keyword arguments.
         """
-        raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')
+        raise NotImplementedError(
+            "evaluate_instance() not implemented for BatchedPerturbationMetric"
+        )
