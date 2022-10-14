@@ -431,4 +431,9 @@ class BatchedPerturbationMetric(BatchedMetric):
         raise NotImplementedError()
 
     def evaluate_instance(self, **kwargs) -> Any:
+        """
+        This method from the parent Metric class needs
+        to be defined to implement this abstract class.
+        However we use evalaute_batch() instead for BatchedMetric.
+        """
         raise NotImplementedError('evaluate_instance() not implemented for BatchedPerturbationMetric')
