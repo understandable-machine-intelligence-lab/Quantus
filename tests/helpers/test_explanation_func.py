@@ -1,12 +1,11 @@
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from zennit import composites as zcomp
 from zennit import attribution as zattr
 from zennit import torchvision as ztv
 
-from quantus.helpers.functions.explanation_func import *
-from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.functions.explanation_func import *
+from quantus.functions.normalise_func import normalise_by_max
 from tests.fixtures import *
 
 zennit_tests = [

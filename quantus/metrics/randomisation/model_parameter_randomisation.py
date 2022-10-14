@@ -14,8 +14,8 @@ from tqdm.auto import tqdm
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
-from quantus.helpers.functions.similarity_func import correlation_spearman
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
 
 

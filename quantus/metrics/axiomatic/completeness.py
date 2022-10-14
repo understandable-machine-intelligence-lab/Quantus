@@ -13,8 +13,8 @@ import numpy as np
 from quantus.helpers import warn
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
-from quantus.helpers.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
 
 

@@ -12,9 +12,9 @@ import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers.functions.discretise_func import top_n_sign
+from quantus.functions.discretise_func import top_n_sign
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
+from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
 
 

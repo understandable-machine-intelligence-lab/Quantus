@@ -11,12 +11,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from quantus.helpers import asserts
-from quantus.helpers.functions import norm_func
+from quantus.functions import norm_func
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.functions.normalise_func import normalise_by_max
-from quantus.helpers.functions.perturb_func import uniform_noise
-from quantus.helpers.functions.similarity_func import difference
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import uniform_noise
+from quantus.functions.similarity_func import difference
 from quantus.metrics.base import PerturbationMetric
 
 
