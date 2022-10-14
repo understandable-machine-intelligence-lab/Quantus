@@ -35,7 +35,7 @@ def perturb_batch(
         **kwargs,
 ) -> Union[np.ndarray, None]:
     """
-    Use a perturb funciton and make perturbation on the full batch.
+    Use a perturb function and make perturbation on the full batch.
 
     Parameters
     ----------
