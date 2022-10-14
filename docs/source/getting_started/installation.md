@@ -3,7 +3,8 @@
 ### Installing from PyPI
 
 If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, 
-the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows:
+the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows
+(i.e., this means that additional explainability functionality, as well as ML frameworks will not be included):
 
 ```setup
 pip install quantus
