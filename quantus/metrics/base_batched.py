@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 
 from .base import Metric
 from ..helpers import asserts
-from ..helpers import warn_func
+from ..helpers import warn
 from ..helpers.model_interface import ModelInterface
 
 
@@ -188,8 +188,8 @@ class BatchedMetric(Metric):
             >> scores = metric(model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch_saliency}
         """
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         data = self.general_preprocess(
             model=model,
