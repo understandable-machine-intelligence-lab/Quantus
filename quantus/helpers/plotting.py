@@ -191,7 +191,9 @@ def plot_sensitivity_n_experiment(
     if isinstance(results, dict):
         for method, scores in results.items():
             plt.plot(
-                np.arange(0, len(scores)), scores, label=f"{str(method.capitalize())}",
+                np.arange(0, len(scores)),
+                scores,
+                label=f"{str(method.capitalize())}",
             )
     else:
         plt.plot(np.linspace(0, 1, len(results)), results)
@@ -205,7 +207,10 @@ def plot_sensitivity_n_experiment(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Union[List[float], Dict[str, List[float]]], methods=None, *args, **kwargs,
+    results: Union[List[float], Dict[str, List[float]]],
+    methods=None,
+    *args,
+    **kwargs,
 ) -> None:
     """
     Plot the model parameter randomisation experiment as done in paper:
@@ -261,7 +266,11 @@ def plot_model_parameter_randomisation_experiment(
     plt.show()
 
 
-def plot_focus(results: Dict[str, List[float]], *args, **kwargs,) -> None:
+def plot_focus(
+    results: Dict[str, List[float]],
+    *args,
+    **kwargs,
+) -> None:
     """
     Plot the Focus experiment as done in the paper:
 

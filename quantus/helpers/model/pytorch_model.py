@@ -33,7 +33,7 @@ class PyTorchModel(ModelInterface):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A model this will be wrapped in the ModelInterface:
         channel_first: boolean, optional
              Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
@@ -177,7 +177,10 @@ class PyTorchModel(ModelInterface):
             yield module[0], random_layer_model
 
     def sample(
-        self, mean: float, std: float, noise_type: str = "multiplicative",
+        self,
+        mean: float,
+        std: float,
+        noise_type: str = "multiplicative",
     ) -> torch.nn:
         """
         Sample a model by means of adding normally distributed noise.

@@ -7,7 +7,6 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
-
 import numpy as np
 
 from quantus.helpers import asserts
@@ -17,10 +16,10 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
-class MaxSensitivity(PerturbationMetric):
+class MaxSensitivity(BatchedPerturbationMetric):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 
@@ -126,6 +125,8 @@ class MaxSensitivity(PerturbationMetric):
         )
 
         # Save metric-specific attributes.
+        self.nr_samples = nr_samples
+
         if similarity_func is None:
             similarity_func = difference
         self.similarity_func = similarity_func
@@ -137,7 +138,6 @@ class MaxSensitivity(PerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-        self.nr_samples = nr_samples
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -164,13 +164,13 @@ class MaxSensitivity(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
         **kwargs,
     ) -> List[float]:
         """
@@ -184,7 +184,7 @@ class MaxSensitivity(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -208,9 +208,6 @@ class MaxSensitivity(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -255,91 +252,102 @@ class MaxSensitivity(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
-        i: int,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-        c: Any,
-        p: Any,
-    ) -> float:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
+        x_batch: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
+        y_batch: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
+        a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
+        s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
-        sensitivities_norm_max = 0.0
-        for _ in range(self.nr_samples):
+        batch_size = x_batch.shape[0]
+        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
+
+        for step_id in range(self.nr_samples):
 
             # Perturb input.
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
+            x_perturbed = perturb_batch(
+                perturb_func=self.perturb_func,
+                indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+                indexed_axes=np.arange(0, x_batch[0].ndim),
+                arr=x_batch,
                 **self.perturb_func_kwargs,
             )
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+            x_input = model.shape_input(
+                x=x_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+
+            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(
+                    x=x_instance,
+                    x_perturbed=x_instance_perturbed,
+                )
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(
                 model=model.get_model(),
                 inputs=x_input,
-                targets=y,
+                targets=y_batch,
                 **self.explain_func_kwargs,
             )
 
             if self.normalise:
-                a_perturbed = self.normalise_func(a_perturbed)
+                a_perturbed = self.normalise_func(
+                    a_perturbed,
+                    **self.normalise_func_kwargs,
+                )
 
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            # Measure sensitivity.
-            sensitivities = self.similarity_func(a=a.flatten(), b=a_perturbed.flatten())
-            numerator = self.norm_numerator(a=sensitivities)
-            denominator = self.norm_denominator(a=x.flatten())
-            sensitivities_norm = numerator / denominator
+            # Measure similarity for each instance separately.
+            for instance_id in range(batch_size):
+                sensitivities = self.similarity_func(
+                    a=a_batch[instance_id].flatten(),
+                    b=a_perturbed[instance_id].flatten(),
+                )
+                numerator = self.norm_numerator(a=sensitivities)
+                denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
+                sensitivities_norm = numerator / denominator
+                similarities[instance_id, step_id] = sensitivities_norm
 
-            if sensitivities_norm > sensitivities_norm_max:
-                sensitivities_norm_max = sensitivities_norm
-
-        return sensitivities_norm_max
+        return np.nanmax(similarities, axis=1)
 
     def custom_preprocess(
         self,
@@ -349,15 +357,13 @@ class MaxSensitivity(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -372,23 +378,8 @@ class MaxSensitivity(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )

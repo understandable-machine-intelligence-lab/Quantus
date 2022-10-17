@@ -13,7 +13,8 @@ import numpy as np
 
 
 def normalise_by_max(
-    a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None,
+    a: np.ndarray,
+    normalise_axes: Optional[Sequence[int]] = None,
 ) -> np.ndarray:
     """
     Normalise attributions by the maximum absolute value of the explanation.
@@ -50,7 +51,8 @@ def normalise_by_max(
 
 
 def normalise_by_negative(
-    a: np.ndarray, normalise_axes: Optional[Sequence[int]] = None,
+    a: np.ndarray,
+    normalise_axes: Optional[Sequence[int]] = None,
 ) -> np.ndarray:
     """
     Normalise attributions between [-1, 1].
@@ -90,12 +92,16 @@ def normalise_by_negative(
 
     # Case a.min() >= 0.0.
     return_array = np.where(
-        a_min >= 0.0, np.divide(a, a_max, where=a_max != 0), return_array,
+        a_min >= 0.0,
+        np.divide(a, a_max, where=a_max != 0),
+        return_array,
     )
 
     # Case a.max() <= 0.0.
     return_array = np.where(
-        a_max <= 0.0, -np.divide(a, a_min, where=a_min != 0), return_array,
+        a_max <= 0.0,
+        -np.divide(a, a_min, where=a_min != 0),
+        return_array,
     )
 
     # Else.
@@ -152,7 +158,11 @@ def normalise_by_negative(
     return return_array
 
 
-def denormalise(a: np.ndarray, mean: np.ndarray, std: np.ndarray,) -> np.ndarray:
+def denormalise(
+    a: np.ndarray,
+    mean: np.ndarray,
+    std: np.ndarray,
+) -> np.ndarray:
     """
 
     Parameters
