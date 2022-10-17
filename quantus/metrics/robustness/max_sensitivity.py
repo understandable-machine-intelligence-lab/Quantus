@@ -14,7 +14,7 @@ from quantus.functions import norm_func
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.functions.perturb_func import uniform_noise
+from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 
