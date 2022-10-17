@@ -53,7 +53,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
              The inputs that ought to be explained.
@@ -103,7 +103,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -151,7 +151,7 @@ def generate_tf_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -300,7 +300,7 @@ def generate_captum_explanation(
     Generate explanation for a torch model with captum.
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -391,7 +391,9 @@ def generate_captum_explanation(
         explanation = (
             Occlusion(model)
             .attribute(
-                inputs=inputs, target=targets, sliding_window_shapes=window_shape,
+                inputs=inputs,
+                target=targets,
+                sliding_window_shapes=window_shape,
             )
             .sum(**reduce_axes)
         )
@@ -486,7 +488,7 @@ def generate_zennit_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -569,9 +571,18 @@ def generate_zennit_explanation(
     else:
         canonizers = []
     if composite is not None:
-        composite = composite(**{**composite_kwargs, "canonizers": canonizers,})
+        composite = composite(
+            **{
+                **composite_kwargs,
+                "canonizers": canonizers,
+            }
+        )
     attributor = attributor(
-        **{**attributor_kwargs, "model": model, "composite": composite,}
+        **{
+            **attributor_kwargs,
+            "model": model,
+            "composite": composite,
+        }
     )
 
     n_outputs = model(inputs).shape[1]

@@ -40,7 +40,7 @@ def evaluate(
         in Quantus. Or as a dictionary with where the keys are the name of the explanation methods and the values
         are the explanations (np.array). Alternatively, pass an explanation function to compute on-the-fly
         instead of passing pre-computed attributions as the dictionary values.
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
     x_batch: np.ndarray
         A np.ndarray which contains the input data that are explained.

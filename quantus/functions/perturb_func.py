@@ -8,14 +8,13 @@
 
 
 import copy
-from typing import Sequence, Tuple, Union
-
-
+import random
+import warnings
+from typing import Any, Callable, Sequence, Tuple, Union, Optional
 import cv2
 import numpy as np
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
-
 
 from quantus.helpers.utils import (
     get_baseline_value,
@@ -24,6 +23,52 @@ from quantus.helpers.utils import (
     get_leftover_shape,
     offset_coordinates,
 )
+
+
+def perturb_batch(
+    perturb_func: Callable,
+    arr: np.ndarray,
+    indices: Optional[np.ndarray] = None,
+    inplace: bool = False,
+    **kwargs,
+) -> Union[np.ndarray, None]:
+    """
+    Use a perturb function and make perturbation on the full batch.
+
+    Parameters
+    ----------
+    perturb_func: callable
+        Input perturbation function.
+     arr: np.ndarray
+         Array to be perturbed.
+    indices: int, sequence, tuple
+        Array-like, with a subset shape of arr.
+    inplace: boolean
+        Indicates if the array should be copied or not.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    None, array
+    """
+    if indices is not None:
+        assert arr.shape[0] == len(
+            indices
+        ), "arr and indices need same number of batches"
+
+    if not inplace:
+        arr = arr.copy()
+
+    # Run perturbation.
+    for i in range(len(arr)):
+        if indices is not None:
+            arr[i] = perturb_func(arr=arr[i], indices=indices[i][1:], **kwargs)
+        else:
+            arr[i] = perturb_func(arr=arr[i], **kwargs)
+
+    if not inplace:
+        return arr
 
 
 def baseline_replacement_by_indices(
@@ -294,10 +339,14 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
         )
 
     matrix = cv2.getRotationMatrix2D(
-        center=(arr.shape[1] / 2, arr.shape[2] / 2), angle=perturb_angle, scale=1,
+        center=(arr.shape[1] / 2, arr.shape[2] / 2),
+        angle=perturb_angle,
+        scale=1,
     )
     arr_perturbed = cv2.warpAffine(
-        np.moveaxis(arr, 0, 2), matrix, (arr.shape[1], arr.shape[2]),
+        np.moveaxis(arr, 0, 2),
+        matrix,
+        (arr.shape[1], arr.shape[2]),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)
     return arr_perturbed
@@ -341,7 +390,10 @@ def translation_x_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
+            value=perturb_baseline,
+            arr=arr,
+            return_shape=(arr.shape[0]),
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, -1, 0)
@@ -386,7 +438,10 @@ def translation_y_direction(
         matrix,
         (arr.shape[1], arr.shape[2]),
         borderValue=get_baseline_value(
-            value=perturb_baseline, arr=arr, return_shape=(arr.shape[0]), **kwargs,
+            value=perturb_baseline,
+            arr=arr,
+            return_shape=(arr.shape[0]),
+            **kwargs,
         ),
     )
     arr_perturbed = np.moveaxis(arr_perturbed, 2, 0)

@@ -8,7 +8,6 @@
 
 import itertools
 from typing import Any, Callable, Dict, List, Optional, Tuple
-
 import numpy as np
 
 from quantus.helpers import asserts
@@ -163,7 +162,6 @@ class Continuity(PerturbationMetric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -183,7 +181,7 @@ class Continuity(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -207,9 +205,6 @@ class Continuity(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -254,7 +249,7 @@ class Continuity(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -266,22 +261,17 @@ class Continuity(PerturbationMetric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
     ) -> Dict:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -292,10 +282,6 @@ class Continuity(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -353,7 +339,8 @@ class Continuity(PerturbationMetric):
             ):
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
-                    patch_size=self.patch_size, coords=top_left_coords,
+                    patch_size=self.patch_size,
+                    coords=top_left_coords,
                 )
 
                 a_perturbed_patch = a_perturbed[
@@ -386,15 +373,13 @@ class Continuity(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -409,16 +394,14 @@ class Continuity(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None.
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
 
         # Get number of patches for input shape (ignore batch and channel dim).
         self.nr_patches = utils.get_nr_patches(
-            patch_size=self.patch_size, shape=x_batch.shape[2:], overlap=True,
+            patch_size=self.patch_size,
+            shape=x_batch.shape[2:],
+            overlap=True,
         )
 
         self.dx = np.prod(x_batch.shape[2:]) // self.nr_steps
@@ -428,16 +411,6 @@ class Continuity(PerturbationMetric):
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
         asserts.assert_patch_size(patch_size=self.patch_size, shape=x_batch.shape[2:])
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
 
     @property
     def aggregated_score(self):

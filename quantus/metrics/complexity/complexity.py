@@ -7,7 +7,6 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional
-
 import numpy as np
 import scipy
 
@@ -114,7 +113,6 @@ class Complexity(Metric):
         y_batch: np.array,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
-        custom_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict[str, Any]] = None,
@@ -134,7 +132,7 @@ class Complexity(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -158,9 +156,6 @@ class Complexity(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -205,7 +200,7 @@ class Complexity(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -217,22 +212,17 @@ class Complexity(Metric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-        c: Any,
-        p: Any,
     ) -> float:
         """ "
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -243,10 +233,6 @@ class Complexity(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -254,8 +240,12 @@ class Complexity(Metric):
             The evaluation results.
         """
 
-        a = np.array(
-            np.reshape(a, (np.prod(x.shape[1:]),)), dtype=np.float64,
-        ) / np.sum(np.abs(a))
+        a = (
+            np.array(
+                np.reshape(a, (np.prod(x.shape[1:]),)),
+                dtype=np.float64,
+            )
+            / np.sum(np.abs(a))
+        )
 
         return scipy.stats.entropy(pk=a)
