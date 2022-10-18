@@ -50,7 +50,7 @@ For this, there are two possibilities in Quantus. You can provide either:
 
 We describe the different options in detail below.
 
-#### 1) Using pre-computed explanations
+#### a) Using pre-computed explanations
 
 Quantus allows you to evaluate explanations that you have pre-computed, 
 assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
@@ -88,7 +88,7 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 ```
 
-#### 2) Passing an explanation function
+#### b) Passing an explanation function
 
 If you don't have a pre-computed set of explanations but rather want to pass an explanation function 
 that you wish to evaluate with Quantus, this option exists. 
