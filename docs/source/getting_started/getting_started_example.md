@@ -3,9 +3,8 @@
 The following will give a short introduction to how to get started with Quantus.
 
 Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
-[Tensorflow](https://www.tensorflow.org), which would differ only in the {ref}`preliminaries <prelim>` 
-(i.e., the model and data loading), 
-as well as in the available XAI libraries.
+[TensorFlow](https://www.TensorFlow.org), which would differ only in the {ref}`preliminaries <prelim>` 
+i.e., the loading of model, data and explanations.
 
 ## Preliminaries
 (prelim)=
@@ -15,10 +14,10 @@ Generally, in order to apply these, you will need:
 * Input data and labels (variables `x_batch` and `y_batch`)
 * Explanations to evaluate (variables `a_batch_*`)
 
-### Model and data
+### Step 1. Load data and model
 
-Let's first load the model and the data. In this example, a pre-trained LeNet available from Quantus 
-for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or Tensorflow) model instead.
+Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
+for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead.
 
 ```python
 import quantus
@@ -42,12 +41,12 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-### Explanations
+### Step 2. Load explanations
 
 We still need some explanations to evaluate. 
-For this, there are two possibilities in Quantus. You can provide:
-1. Pre-computed attributions (`np.ndarray`)
-2. An explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
+For this, there are two possibilities in Quantus. You can provide either:
+1. a set of re-computed attributions (`np.ndarray`)
+2. any arbitrary explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
 
 We describe the different options in detail below.
 
@@ -111,11 +110,11 @@ As seen in the above image, the qualitative aspects of explanations
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
 should be looking like, it is hard to draw conclusions about the explainable evidence. 
 
-## Evaluating explanations with Quantus
+## Step 3. Evaluate explanations with Quantus
 
 To gather quantitative evidence for the quality of the different explanation methods, we can apply Quantus.
 
-### Quantus metrics
+### Initialise metrics
 
 Quantus implements XAI evaluation metrics from different categories, 
 e.g., Faithfulness, Localisation and Robustness etc which all inherit from the base `quantus.Metric` class. 
