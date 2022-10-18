@@ -331,6 +331,9 @@ scores = metric(
     device=device
 )
 ```
+
+#### Use quantus.explain
+
 Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
 which can be specified through a dictionary passed to `explain_func_kwargs`.
 
@@ -344,6 +347,9 @@ scores = metric(
     explain_func_kwargs={"method": "Saliency"}
 )
 ```
+
+#### Customised functions
+
 You can alternatively use your own customised explanation function
 (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
 
@@ -360,6 +366,7 @@ scores = metric(
     explain_func=your_own_callable
 )
 ```
+#### Large-scale evaluation
 
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof. To utilise `quantus.evaluate()`, you simply need to define two things:
