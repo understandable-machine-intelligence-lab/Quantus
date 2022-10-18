@@ -6,21 +6,23 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import re
 import copy
-import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+import re
 from importlib import util
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
+
+import numpy as np
 from skimage.segmentation import slic, felzenszwalb
-from ..helpers.model_interface import ModelInterface
-from ..helpers import asserts
+
+from quantus.helpers import asserts
+from quantus.helpers.model.model_interface import ModelInterface
 
 if util.find_spec("torch"):
     import torch
-    from ..helpers.pytorch_model import PyTorchModel
+    from quantus.helpers.model.pytorch_model import PyTorchModel
 if util.find_spec("tensorflow"):
     import tensorflow as tf
-    from ..helpers.tf_model import TensorFlowModel
+    from quantus.helpers.model.tf_model import TensorFlowModel
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:

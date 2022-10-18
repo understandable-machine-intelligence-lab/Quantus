@@ -7,14 +7,15 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Sufficiency(Metric):
@@ -31,8 +32,8 @@ class Sufficiency(Metric):
         the explanation and the explanations of the data point is under the user-defined threshold.
 
     References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
+         1) Sanjoy Dasgupta et al.: "Framework for Evaluating Faithfulness of Local
+            Explanations." ICML (2022): 4794-4815.
     """
 
     @asserts.attributes_check
@@ -62,7 +63,7 @@ class Sufficiency(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -87,7 +88,7 @@ class Sufficiency(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -109,7 +110,7 @@ class Sufficiency(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "distance threshold that determines if images share an attribute 'threshold', "

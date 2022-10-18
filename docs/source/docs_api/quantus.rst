@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   quantus.functions
    quantus.helpers
    quantus.metrics
 

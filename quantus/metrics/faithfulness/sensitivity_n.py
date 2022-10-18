@@ -7,18 +7,17 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers import plotting
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
-from ...helpers.similarity_func import correlation_pearson
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.similarity_func import correlation_pearson
+from quantus.metrics.base import PerturbationMetric
 
 
 class SensitivityN(PerturbationMetric):
@@ -34,8 +33,8 @@ class SensitivityN(PerturbationMetric):
     of samples is reported. Sampling is performed using a uniform probability distribution over the features.
 
     References:
-        1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
-        methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
+        1) Marco Ancona et al.: "Towards better understanding of gradient-based attribution
+        methods for deep neural networks." ICLR (Poster) (2018).
 
     """
 
@@ -75,7 +74,7 @@ class SensitivityN(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -100,7 +99,7 @@ class SensitivityN(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -137,7 +136,7 @@ class SensitivityN(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the patch size for masking "
@@ -310,7 +309,7 @@ class SensitivityN(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Sum attributions.
             att_sums.append(float(a[a_ix].sum()))

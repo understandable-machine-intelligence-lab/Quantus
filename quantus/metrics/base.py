@@ -10,15 +10,14 @@ import re
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, Callable, Dict, Optional, Union
-
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..helpers import asserts
-from ..helpers import utils
-from ..helpers import warn_func
-from ..helpers.model_interface import ModelInterface
+from quantus.helpers import asserts
+from quantus.helpers import utils
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class Metric:
@@ -80,8 +79,8 @@ class Metric:
             Keyword arguments.
         """
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         self.abs = abs
         self.normalise = normalise
@@ -199,8 +198,8 @@ class Metric:
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         data = self.general_preprocess(
             model=model,
@@ -219,6 +218,7 @@ class Metric:
 
         self.last_results = [None for _ in x_batch]
 
+        # Evaluate with instace given the metric.
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(**data_instance)
@@ -417,7 +417,7 @@ class Metric:
         if self.normalise:
             data["a_batch"] = self.normalise_func(
                 a=data["a_batch"],
-                normalized_axes=list(range(np.ndim(data["a_batch"])))[1:],
+                normalise_axes=list(range(np.ndim(data["a_batch"])))[1:],
                 **self.normalise_func_kwargs,
             )
 

@@ -1,7 +1,7 @@
-quantus.helpers.explanation\_func module
+quantus.functions.normalise\_func module
 ========================================
 
-.. automodule:: quantus.helpers.explanation_func
+.. automodule:: quantus.functions.normalise_func
    :members:
    :undoc-members:
    :show-inheritance:

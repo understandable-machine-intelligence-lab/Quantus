@@ -9,11 +9,11 @@
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class EffectiveComplexity(Metric):
@@ -24,7 +24,7 @@ class EffectiveComplexity(Metric):
     where a value above the specified threshold implies that the features are important and under indicates it is not.
 
     References:
-        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 
@@ -54,7 +54,7 @@ class EffectiveComplexity(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         default_plot_func: callable
@@ -71,10 +71,10 @@ class EffectiveComplexity(Metric):
             Keyword arguments.
         """
         if not abs:
-            warn_func.warn_absolute_operation()
+            warn.warn_absolute_operation()
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -94,7 +94,7 @@ class EffectiveComplexity(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"

@@ -9,16 +9,14 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-
-from ..base_batched import BatchedPerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import norm_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import uniform_noise
-from ...helpers.perturb_func import perturb_batch
-from ...helpers.similarity_func import difference
+from quantus.helpers import asserts
+from quantus.functions import norm_func
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.functions.similarity_func import difference
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
 class AvgSensitivity(BatchedPerturbationMetric):
@@ -29,10 +27,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
     change under slight perturbation - the average sensitivity is captured.
 
     References:
-        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
-        arXiv preprint arXiv:1901.09392 (2019).
-        2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
-        feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
+        1) Chih-Kuan Yeh et al. "On the (in) fidelity and sensitivity for explanations."
+        NeurIPS (2019): 10965-10976.
+        2) Umang Bhatt et al.: "Evaluating and aggregating
+        feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
     @asserts.attributes_check
@@ -75,7 +73,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -101,7 +99,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = uniform_noise
@@ -143,7 +141,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'lower_bound' and 'upper_bound', the number of samples "
@@ -157,7 +155,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=lower_bound)
+            warn.warn_noise_zero(noise=lower_bound)
 
     def __call__(
         self,
@@ -307,6 +305,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+
             x_input = model.shape_input(
                 x=x_perturbed,
                 shape=x_batch.shape,
@@ -315,7 +314,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
             )
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-                warn_func.warn_perturbation_caused_no_change(
+                warn.warn_perturbation_caused_no_change(
                     x=x_instance,
                     x_perturbed=x_instance_perturbed,
                 )
