@@ -1,6 +1,6 @@
 # Getting Started
 
-The following will give a short introduction for how to get started with Quantus.
+The following will give a short introduction to how to get started with Quantus.
 
 **Note**: This example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
 [Tensorflow](https://www.tensorflow.org), which would differ only in the {ref}`preliminaries <prelim>` 
@@ -15,10 +15,10 @@ Generally, in order to apply these, you will need:
 * Input data and labels (variables `x_batch` and `y_batch`)
 * Explanations to evaluate (variables `a_batch_*`)
 
-### Model and Data
+### Model and data
 
 Let's first load the model and the data. In this example, a pre-trained LeNet available from Quantus 
-for the purpose of this tutorial is loaded, but generally you might use any Pytorch (or Tensorflow) model instead.
+for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or Tensorflow) model instead.
 
 ```python
 import quantus
@@ -89,13 +89,13 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 ```
 
-#### 2) Using an explanation function
+#### 2) Passing an explanation function
 
 If you don't have a pre-computed set of explanations but rather want to pass an explanation function 
 that you wish to evaluate with Quantus, this option exists. 
 
 For this, you can rely on the built-in `quantus.explain` function, which includes some popular explanation methods 
-(please run `quantus.available_methods()` to see which ones). Note however, that the set of explanation methods offered 
+(please run `quantus.available_methods()` to see which ones). Note, however, that the set of explanation methods offered 
 in `quantus.explain` are limited --- `quantus.explain` is a wrapper around  [Captum](https://captum.ai/), 
 [Zennit](https://github.com/chr5tphr/zennit), and
 [tf.explain](https://github.com/sicara/tf-explain) but does not support every explanation method offered in the 
@@ -113,7 +113,7 @@ should be looking like, it is hard to draw conclusions about the explainable evi
 
 ## Evaluating explanations with Quantus
 
-To gather quantitative evidence for the quality of the different explantion methods, we can apply Quantus.
+To gather quantitative evidence for the quality of the different explanation methods, we can apply Quantus.
 
 ### Quantus metrics
 
@@ -138,7 +138,7 @@ scores = metric(
 )
 ```
 
-Alternatively, instead of provided pre-computed explanations, you can employ the `quantus.explain` function,
+Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
 which can be specified through a dictionary passed to `explain_func_kwargs`.
 
 ```python
@@ -171,7 +171,7 @@ scores = metric(
 ### Customising metrics
 
 The metrics for evaluating XAI methods are often quite sensitive to their respective hyperparameters. 
-For instance, how explanations are normalised or whether signed or unsigned explanations are considered can have significant
+For instance, how explanations are normalised or whether signed or unsigned explanations are considered can have a significant
 impact on the results of the evaluation. However, some metrics require normalisation or unsigned values, while others are more flexible.
 
 Therefore, different metrics can have different hyperparameters or default values in Quantus, which are documented in detail 
@@ -280,9 +280,9 @@ If you are extending or replacing a function within the Quantus framework, make 
 - has the same **return type**
 - expects the same **arguments**
 
-as the function you’re intending to replace.
+as the function, you’re intending to replace.
 
-Details on what datatypes and arguments that should be used for the different functions can be found in the respective 
+Details on what datatypes and arguments should be used for the different functions can be found in the respective 
 function typing in {doc}`quantus.helpers</docs_api/quantus.helpers>`. 
 For example, if you want to replace `similarity_func` in your evaluation, you can do as follows.
 
@@ -294,7 +294,7 @@ def my_similarity_func(a: np.array, b: np.array, **kwargs) -> float:
     """Calculate the similarity of a and b by subtraction."""
     return a - b
 
-# Simply initalise the metric with your own function.
+# Simply initialise the metric with your own function.
 metric = quantus.LocalLipschitzEstimate(similarity_func=my_similar_func)
 ```
 
@@ -304,7 +304,7 @@ Similarly, if you are replacing or extending metrics, make sure they inherit fro
 
 ## Miscellaneous
 
-There are several miscellaneous helpers built-into Quantus intended for easier usability:
+There are several miscellaneous helpers built into Quantus as follows:
 
 ````python
 # Interpret scores of a given metric.
@@ -344,7 +344,7 @@ in the params of the metric initalisation. Additionally, if you want to track pr
 
 ```display_progressbar = True```
 
-If you want to return an aggreagate score for your test samples you can set the following hyperparameter:
+If you want to return an aggregate score for your test samples you can set the following hyperparameter:
 
 ```return_aggregate = True```
 
