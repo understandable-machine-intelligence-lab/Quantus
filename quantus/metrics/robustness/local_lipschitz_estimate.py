@@ -178,6 +178,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
         batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """

@@ -133,7 +133,8 @@ class Consistency(Metric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
