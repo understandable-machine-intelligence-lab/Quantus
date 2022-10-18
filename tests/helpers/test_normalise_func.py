@@ -1,12 +1,10 @@
 from typing import Union
 
-import numpy as np
 import pytest
-import torch
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers import *
+from quantus.functions.normalise_func import *
+from tests.fixtures import *
 
 
 @pytest.fixture
@@ -32,11 +30,13 @@ def atts_normalise_seq_3():
 @pytest.fixture
 def atts_normalise_seq_with_batch_dim():
     return np.array(
-        [
-            [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
-            [0.0, -1.0, -2.0, -3.0, -4.0, -5.0],
-        ]
+        [[0.0, 1.0, 2.0, 3.0, 4.0, 5.0], [0.0, -1.0, -2.0, -3.0, -4.0, -5.0],]
     )
+
+
+@pytest.fixture
+def atts_normalise_seq_with_batch_dim2():
+    return np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 2.0, 4.0, 6.0, 8.0, 10.0],])
 
 
 @pytest.fixture
@@ -75,37 +75,39 @@ def atts_denormalise_torch():
     [
         (
             lazy_fixture("atts_normalise_seq_0"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_1"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 0.8, 1.0, -0.2]),
         ),
         (
             lazy_fixture("atts_normalise_seq_2"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_3"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, -0.2, -0.4, -0.6, -0.8, -1.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_with_batch_dim"),
-            {"normalized_axes": [1]},
+            {"normalise_axes": [1]},
             np.array(
-                [
-                    [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                    [0.0, -0.2, -0.4, -0.6, -0.8, -1.0],
-                ]
+                [[0.0, 0.2, 0.4, 0.6, 0.8, 1.0], [0.0, -0.2, -0.4, -0.6, -0.8, -1.0],]
             ),
         ),
         (
+            lazy_fixture("atts_normalise_seq_with_batch_dim2"),
+            {"normalise_axes": [0, 1]},
+            np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],]),
+        ),
+        (
             lazy_fixture("atts_normalise_img_with_batch_dim"),
-            {"normalized_axes": [1, 2]},
+            {"normalise_axes": [1, 2]},
             np.array(
                 [
                     [
@@ -125,7 +127,7 @@ def atts_denormalise_torch():
         ),
         (
             lazy_fixture("atts_normalise_seq_1"),
-            {"normalized_axes": None},
+            {"normalise_axes": None},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 0.8, 1.0, -0.2]),
         ),
     ],
@@ -143,37 +145,39 @@ def test_normalise_by_max(
     [
         (
             lazy_fixture("atts_normalise_seq_0"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_1"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 0.8, 1.0, -1.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_2"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_3"),
-            {"normalized_axes": [0]},
+            {"normalise_axes": [0]},
             np.array([0.0, -0.2, -0.4, -0.6, -0.8, -1.0]),
         ),
         (
             lazy_fixture("atts_normalise_seq_with_batch_dim"),
-            {"normalized_axes": [1]},
+            {"normalise_axes": [1]},
             np.array(
-                [
-                    [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                    [0.0, -0.2, -0.4, -0.6, -0.8, -1.0],
-                ]
+                [[0.0, 0.2, 0.4, 0.6, 0.8, 1.0], [0.0, -0.2, -0.4, -0.6, -0.8, -1.0],]
             ),
         ),
         (
+            lazy_fixture("atts_normalise_seq_with_batch_dim2"),
+            {"normalise_axes": [0, 1]},
+            np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],]),
+        ),
+        (
             lazy_fixture("atts_normalise_img_with_batch_dim"),
-            {"normalized_axes": [1, 2]},
+            {"normalise_axes": [1, 2]},
             np.array(
                 [
                     [
@@ -193,7 +197,7 @@ def test_normalise_by_max(
         ),
         (
             lazy_fixture("atts_normalise_seq_2"),
-            {"normalized_axes": None},
+            {"normalise_axes": None},
             np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         ),
     ],
@@ -220,11 +224,7 @@ def test_normalise_by_negative(
                 ]
             ),
         ),
-        (
-            [1, 2],
-            {},
-            [1, 2],
-        ),
+        ([1, 2], {}, [1, 2],),
     ],
 )
 def test_denormalise(

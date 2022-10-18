@@ -8,6 +8,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 
 
@@ -26,7 +27,7 @@ class ModelInterface(ABC):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A model this will be wrapped in the ModelInterface:
         channel_first: boolean, optional
              Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.

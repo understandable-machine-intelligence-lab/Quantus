@@ -1,15 +1,11 @@
 from typing import Union
 
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.metrics import *
-from ...quantus.helpers import *
-from ...quantus.helpers.explanation_func import explain
-from ...quantus.helpers.pytorch_model import PyTorchModel
-from ...quantus.helpers.tf_model import TensorFlowModel
+from quantus.functions.explanation_func import explain
+from quantus.metrics.axiomatic import Completeness, InputInvariance, NonSensitivity
+from tests.fixtures import *
 
 
 @pytest.mark.axiomatic
@@ -41,9 +37,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -60,9 +54,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -79,9 +71,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -98,9 +88,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -117,9 +105,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -136,9 +122,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -155,9 +139,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -174,9 +156,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -184,10 +164,7 @@ from ...quantus.helpers.tf_model import TensorFlowModel
     ],
 )
 def test_completeness(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -201,10 +178,7 @@ def test_completeness(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -212,11 +186,7 @@ def test_completeness(
         a_batch = None
 
     scores = Completeness(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert scores is not None, "Test failed."
@@ -239,9 +209,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -259,9 +227,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -280,9 +246,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -301,9 +265,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -321,9 +283,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -341,9 +301,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -362,9 +320,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -383,9 +339,7 @@ def test_completeness(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             1.0,
@@ -393,10 +347,7 @@ def test_completeness(
     ],
 )
 def test_non_sensitivity(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -410,10 +361,7 @@ def test_non_sensitivity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -421,11 +369,7 @@ def test_non_sensitivity(
         a_batch = None
 
     scores = NonSensitivity(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
     assert scores is not None, "Test failed."
 
@@ -448,9 +392,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -469,9 +411,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -490,9 +430,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputxGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputxGradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -511,9 +449,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"dtypes": [True, False]},
@@ -532,9 +468,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"dtypes": [True, False]},
@@ -553,9 +487,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputXGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputXGradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -574,9 +506,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputxGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputxGradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -595,9 +525,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"dtypes": [True, False]},
@@ -616,9 +544,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
+                    "explain_func_kwargs": {"method": "Saliency",},
                 },
             },
             {"dtypes": [True, False]},
@@ -637,9 +563,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputXGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputXGradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -647,10 +571,7 @@ def test_non_sensitivity(
     ],
 )
 def test_input_invariance(
-    model,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model, data: np.ndarray, params: dict, expected: Union[float, dict, bool],
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -664,10 +585,7 @@ def test_input_invariance(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
+            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -675,11 +593,7 @@ def test_input_invariance(
         a_batch = None
 
     scores = InputInvariance(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
+        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
     )
 
     assert np.all([s in expected["dtypes"] for s in scores]), "Test failed."

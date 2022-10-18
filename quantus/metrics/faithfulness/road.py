@@ -7,16 +7,15 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import noisy_linear_imputation
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import noisy_linear_imputation
+from quantus.metrics.base import PerturbationMetric
 
 
 class ROAD(PerturbationMetric):
@@ -33,7 +32,7 @@ class ROAD(PerturbationMetric):
         to other data domains, adjustments to the current implementation might be necessary.
 
     References:
-        1) Rong, Leemann, et al. "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
+        1) Leemann Rong et al.: "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
         arXiv:2202.00449 (2022).
     """
 
@@ -67,7 +66,7 @@ class ROAD(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -92,7 +91,7 @@ class ROAD(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = noisy_linear_imputation
@@ -124,7 +123,7 @@ class ROAD(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', perturbation function 'perturb_func', "
@@ -166,7 +165,7 @@ class ROAD(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -190,9 +189,6 @@ class ROAD(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -237,7 +233,7 @@ class ROAD(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -249,23 +245,17 @@ class ROAD(PerturbationMetric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -276,10 +266,6 @@ class ROAD(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -300,7 +286,7 @@ class ROAD(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x and store the difference from predicting on unperturbed input.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -320,15 +306,13 @@ class ROAD(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -343,25 +327,10 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Infer the size of attributions.
         self.a_size = a_batch[0, :, :].size
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
 
     def custom_postprocess(
         self,
@@ -370,29 +339,27 @@ class ROAD(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Post-process the evaluation results.
 
         Parameters
         ----------
-            model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x_batch: np.ndarray
+        x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-            y_batch: np.ndarray
+        y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-            a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
-            s_batch: np.ndarray, optional
-        A np.ndarray which contains segmentation masks that matches the input.
-            custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
 
         Returns
         -------
-            None
+        None
         """
 
         # Calculate accuracy for every number of most important pixels removed.

@@ -7,10 +7,11 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import List, Union, Dict, Any
-import numpy as np
-import matplotlib.pyplot as plt
 
-from . import warn_func
+import matplotlib.pyplot as plt
+import numpy as np
+
+from quantus.helpers import warn
 
 
 def plot_pixel_flipping_experiment(
@@ -96,7 +97,7 @@ def plot_selectivity_experiment(
         alllengths = [len(score) for scores in results.values() for score in scores]
         minlength = np.min(alllengths)
         if np.any(np.array(alllengths) > minlength):
-            warn_func.warn_different_array_lengths()
+            warn.warn_different_array_lengths()
         for method, scores in results.items():
             plt.plot(
                 np.arange(0, len(scores[0][:minlength])),
@@ -144,7 +145,7 @@ def plot_region_perturbation_experiment(
         alllengths = [len(score) for scores in results.values() for score in scores]
         minlength = np.min(alllengths)
         if np.any(np.array(alllengths) > minlength):
-            warn_func.warn_different_array_lengths()
+            warn.warn_different_array_lengths()
         for method, scores in results.items():
             plt.plot(
                 np.arange(0, len(scores[0][:minlength])),

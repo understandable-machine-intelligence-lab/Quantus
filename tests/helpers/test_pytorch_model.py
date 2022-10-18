@@ -1,17 +1,14 @@
-import torch
+from collections import OrderedDict
+from typing import Union
+
 import numpy as np
 import pytest
-import pickle
-from typing import Union
-from functools import reduce
-from operator import and_
-from collections import OrderedDict
+import torch
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 
-from ..fixtures import *
-from ...quantus.helpers import *
-from ...quantus.helpers.pytorch_model import PyTorchModel
+from quantus.helpers.model.pytorch_model import PyTorchModel
+from tests.fixtures import *
 
 
 @pytest.fixture
@@ -25,10 +22,7 @@ def mock_input_torch_array():
     [
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": False,
-                "device": "cpu",
-            },
+            {"softmax": False, "device": "cpu",},
             np.array(
                 [
                     -0.44321266,
@@ -46,10 +40,7 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": True,
-                "device": "cpu",
-            },
+            {"softmax": True, "device": "cpu",},
             softmax(
                 np.array(
                     [
@@ -69,11 +60,7 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {
-                "softmax": True,
-                "device": "cpu",
-                "training": True,
-            },
+            {"softmax": True, "device": "cpu", "training": True,},
             {"exception": AttributeError},
         ),
     ],

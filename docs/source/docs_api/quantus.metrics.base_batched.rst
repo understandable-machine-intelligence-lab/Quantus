@@ -1,7 +1,7 @@
-quantus.helpers.perturb\_func module
+quantus.metrics.base\_batched module
 ====================================
 
-.. automodule:: quantus.helpers.perturb_func
+.. automodule:: quantus.metrics.base_batched
    :members:
    :undoc-members:
    :show-inheritance:
