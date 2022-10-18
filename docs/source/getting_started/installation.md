@@ -4,7 +4,7 @@ You can install Quantus in various ways. The different options are listed in the
 
 ### Installing via PyPI
 
-If you already have [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) installed on your machine, 
+If you already have [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.tensorflow.org) installed on your machine, 
 the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows (no additional explainability functionality or deep learning framework will be included):
 
 ```setup
@@ -16,7 +16,7 @@ To install Quantus with PyTorch, please run:
 pip install "quantus[torch]"
 ```
 
-For Tensorflow, please run:
+For TensorFlow, please run:
 
 ```setup
 pip install "quantus[tensorflow]"
@@ -24,8 +24,8 @@ pip install "quantus[tensorflow]"
 
 ### Installing via requirements.txt
 
-Alternatively, you can simply install Quantus from the requirements.txt as found [here](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
-Note that this installation requires that either [PyTorch](https://pytorch.org/) or [Tensorflow](https://www.tensorflow.org) are already installed on your machine.
+Alternatively, you can simply install Quantus from the [requirements.txt](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
+Note that this installation requires that either [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) are already installed on your machine.
 
 ```setup
 pip install -r requirements.txt
@@ -60,7 +60,7 @@ To use Quantus with support for the [Zennit](https://github.com/chr5tphr/zennit)
 pip install "quantus[zennit]"
 ```
 
-Note that the three options above will also install the required frameworks (i.e., PyTorch or Tensorflow) respectively,
+Note that the three options above will also install the required frameworks (i.e., PyTorch or TensorFlow) respectively,
 if they are not already installed in your environment. Note also, that not all explanation methods offered in **Captum** and **tf-explain**
  are included in `quantus.explain`.
 

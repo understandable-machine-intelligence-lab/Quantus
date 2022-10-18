@@ -3,22 +3,20 @@
 The following will give a short introduction to how to get started with Quantus.
 
 Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
-[Tensorflow](https://www.tensorflow.org), which would differ only in the {ref}`preliminaries <prelim>` 
-(i.e., the model and data loading), 
-as well as in the available XAI libraries.
+[TensorFlow](https://www.TensorFlow.org), which would differ only in the {ref}`preliminaries <prelim>` 
+i.e., the loading of model, data and explanations.
 
 ## Preliminaries
 (prelim)=
 Quantus implements methods for the quantitative evaluation of XAI methods.
 Generally, in order to apply these, you will need:
-* A model (variable `model`)
-* Input data and labels (variables `x_batch` and `y_batch`)
-* Explanations to evaluate (variables `a_batch_*`)
+* A model (`model`), inputs (`x_batch`) and labels (`y_batch`)
+* Some explanations you want to evaluate (`a_batch`)
 
-### Model and data
+### Step 1. Load data and model
 
-Let's first load the model and the data. In this example, a pre-trained LeNet available from Quantus 
-for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or Tensorflow) model instead.
+Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
+for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead.
 
 ```python
 import quantus
@@ -42,16 +40,16 @@ x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 
-### Explanations
+### Step 2. Load explanations
 
 We still need some explanations to evaluate. 
-For this, there are two possibilities in Quantus. You can provide:
-1. Pre-computed attributions (`np.ndarray`)
-2. An explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
+For this, there are two possibilities in Quantus. You can provide either:
+1. a set of re-computed attributions (`np.ndarray`)
+2. any arbitrary explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
 
 We describe the different options in detail below.
 
-#### 1) Using pre-computed explanations
+#### a) Using pre-computed explanations
 
 Quantus allows you to evaluate explanations that you have pre-computed, 
 assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
@@ -89,7 +87,7 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 ```
 
-#### 2) Passing an explanation function
+#### b) Passing an explanation function
 
 If you don't have a pre-computed set of explanations but rather want to pass an explanation function 
 that you wish to evaluate with Quantus, this option exists. 
@@ -111,11 +109,11 @@ As seen in the above image, the qualitative aspects of explanations
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
 should be looking like, it is hard to draw conclusions about the explainable evidence. 
 
-## Evaluating explanations with Quantus
+## Step 3. Evaluate explanations with Quantus
 
 To gather quantitative evidence for the quality of the different explanation methods, we can apply Quantus.
 
-### Quantus metrics
+### Initialise metrics
 
 Quantus implements XAI evaluation metrics from different categories, 
 e.g., Faithfulness, Localisation and Robustness etc which all inherit from the base `quantus.Metric` class. 
@@ -210,9 +208,9 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
         softmax=False
     )
     ```
-
-
+  
 ### Large-scale evaluations
+
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof.
 
@@ -246,29 +244,23 @@ xai_methods = {
 xai_methods = ["Saliency", "IntegratedGradients"]
 ```
 
-After defining how to aggregate the measurements of each metric on each XAI-method, you can then simply run a large-scale evaluation as follows:
+You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
 
 ```python
 import numpy as np
-
-agg_func = np.mean
-metric_call_kwargs = {
-  "model": model,
-  "x_batch": x_batch,
-  "y_batch": y_batch,
-  "softmax": False,
-}
-
 results = quantus.evaluate(
       metrics=metrics,
       xai_methods=xai_methods,
       agg_func=np.mean,
-      **metric_call_kwargs
+      model=model,
+      x_batch=x_batch,
+      y_batch=y_batch,
+      **{"softmax": False,}
 )
 ```
 
-You can find a dedicated notebook similar to the example in this tutorial here: [
-Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb).
+Please see [
+Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb) to run code similar to this example.
 
 ## Extending Quantus
 (extend)=
