@@ -63,15 +63,12 @@ When applying the individual metrics of Quantus, please make sure to also proper
 * [Installation](#installation)
 * [Getting started](#getting-started)
 * [Tutorials](#tutorials)
-* [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
 <!--* [Citation](#citation)-->
 
 ## Library overview 
 
-A simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplarily in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
-
-Therefore, we developed Quantus, an easy-to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
+A simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplarily in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data. Therefore, we developed Quantus, an easy-to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
@@ -79,6 +76,8 @@ With Quantus, we can obtain richer insights on how the methods compare e.g., b) 
   <img width="800" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
  
+### Metrics
+
 This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics (note, however, that the categories are oftentimes mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and 'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
 
 <details>
