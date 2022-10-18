@@ -161,7 +161,7 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 </ul>
 </details>
 
-Additional metrics will be included in future releases.
+Additional metrics will be included in future releases. Please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose) if you have a metric you believe should be apart of Quantus.
 
 **Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfil, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. Please read the user guidelines for further guidance on how to best use the library. 
 
@@ -207,11 +207,12 @@ TensorFlow==2.6.2
 
 The following will give a short introduction to how to get started with Quantus. Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
 [TensorFlow](https://www.tensorflow.org), which would differ only in the loading of model, data and explanations. To get started with Quantus, you need:
-* A model (variable `model`)
-* Input data and labels (variables `x_batch` and `y_batch`)
-* Explanations to evaluate (variables `a_batch_*`)
+* A model (`model`), inputs (`x_batch`) and labels (`y_batch`)
+* Some explanations you want to evaluate (`a_batch`)
 
-### Step 1. Load data and model
+
+<details>
+<summary><b><big>Step 1. Load data and model</big></b></summary>
 
 Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead.
@@ -237,8 +238,10 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
+</details>
 
-### Step 2. Load explanations
+<details>
+<summary><b><big>Step 2. Load explanations</big></b></summary>
 
 We still need some explanations to evaluate. 
 For this, there are two possibilities in Quantus. You can provide either:
@@ -299,8 +302,10 @@ or your own customised explanation function are included in the next section.
 As seen in the above image, the qualitative aspects of explanations 
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
 should be looking like, it is hard to draw conclusions about the explainable evidence. To gather quantitative evidence for the quality of the different explanation methods, we can apply Quantus.
+</details>
 
-### Step 3. Evaluate with Quantus
+<details>
+<summary><b><big>Step 3. Evaluate with Quantus</big></b></summary> 
 
 Quantus implements XAI evaluation metrics from different categories, 
 e.g., Faithfulness, Localisation and Robustness etc which all inherit from the base `quantus.Metric` class. 
@@ -398,9 +403,11 @@ results = quantus.evaluate(
       **{"softmax": False,}
 )
 ```
+</details>
 
-To run this code similar to this example, please see the [
-Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb). For more information on how to customise metrics and extend Quantus' functionality, please the [Getting started guide](https://quantus.readthedocs.io/en/latest/getting_started/getting_started_example.html).
+Please see [
+Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb) to run code similar to this example. For more information on how to customise metrics and extend Quantus' functionality, please see [Getting started guide](https://quantus.readthedocs.io/en/latest/getting_started/getting_started_example.html).
+
 
 ## Tutorials
 

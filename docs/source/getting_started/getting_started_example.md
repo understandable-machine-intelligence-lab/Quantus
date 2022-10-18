@@ -10,9 +10,8 @@ i.e., the loading of model, data and explanations.
 (prelim)=
 Quantus implements methods for the quantitative evaluation of XAI methods.
 Generally, in order to apply these, you will need:
-* A model (variable `model`)
-* Input data and labels (variables `x_batch` and `y_batch`)
-* Explanations to evaluate (variables `a_batch_*`)
+* A model (`model`), inputs (`x_batch`) and labels (`y_batch`)
+* Some explanations you want to evaluate (`a_batch`)
 
 ### Step 1. Load data and model
 
@@ -260,8 +259,8 @@ results = quantus.evaluate(
 )
 ```
 
-To run this code similar to this example, please see the [
-Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb). 
+Please see [
+Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb) to run code similar to this example.
 
 ## Extending Quantus
 (extend)=
