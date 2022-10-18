@@ -298,7 +298,7 @@ For this, you can for example rely on the built-in `quantus.explain` function to
 (please run `quantus.available_methods()` to see which ones).  Examples of how to use `quantus.explain` 
 or your own customised explanation function are included in the next section.
 
-<img src="tutorials/assets/mnist_example.png" alt="drawing" width="400"/>
+<img src="tutorials/assets/mnist_example.png" alt="drawing"  class="center" width="700"/>
 
 As seen in the above image, the qualitative aspects of explanations 
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
@@ -381,30 +381,27 @@ e.g., multiple XAI methods, multifaceted evaluation through several metrics, or 
     }
     ```
 
-After defining how to aggregate the measurements of each metric on each XAI-method, you can then simply run a large-scale evaluation as follows:
+You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
 
 ```python
 import numpy as np
 
-agg_func = np.mean
 metric_call_kwargs = {
-  "model": model,
-  "x_batch": x_batch,
-  "y_batch": y_batch,
   "softmax": False,
 }
-
 results = quantus.evaluate(
       metrics=metrics,
       xai_methods=xai_methods,
       agg_func=np.mean,
+      model=model,
+      x_batch=x_batch,
+      y_batch=y_batch,
       **metric_call_kwargs
 )
 ```
 
-You can find a dedicated notebook similar to the example in this tutorial here: [
-Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb). For more information on how to customise metrics or extend Quantus, please read [this](https://quantus.readthedocs.io/en/latest/getting_started/getting_started_example.html)
-guide.
+To run this code similar to this example, please see the [
+Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb). For more information on how to customise metrics and extend Quantus' functionality, please the [Getting started guide](https://quantus.readthedocs.io/en/latest/getting_started/getting_started_example.html).
 
 ## Tutorials
 
