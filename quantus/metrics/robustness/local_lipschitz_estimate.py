@@ -9,15 +9,13 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-
-from ..base_batched import BatchedPerturbationMetric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import gaussian_noise
-from ...helpers.perturb_func import perturb_batch
-from ...helpers.similarity_func import lipschitz_constant, distance_euclidean
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import gaussian_noise, perturb_batch
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric):
@@ -30,11 +28,11 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
     where f(x) is the explanation for input x and x' is the perturbed input.
 
     References:
-        1) Alvarez-Melis, David, and Tommi S. Jaakkola. "On the robustness of interpretability methods."
+        1) David Alvarez-Melis and Tommi S. Jaakkola. "On the robustness of interpretability methods."
         arXiv preprint arXiv:1806.08049 (2018).
 
-        2) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
-        neural networks." arXiv preprint arXiv:1806.07538 (2018).
+        2) David Alvarez-Melis and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
+        neural networks." NeurIPS (2018): 7786-7795.
     """
 
     @asserts.attributes_check
@@ -79,7 +77,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -105,7 +103,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = gaussian_noise
@@ -147,7 +145,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_std', the number of samples iterated "
@@ -164,7 +162,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                     "arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=perturb_std)
+            warn.warn_noise_zero(noise=perturb_std)
 
     def __call__(
         self,
@@ -315,6 +313,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+
             x_input = model.shape_input(
                 x=x_perturbed,
                 shape=x_batch.shape,
@@ -323,7 +322,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             )
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-                warn_func.warn_perturbation_caused_no_change(
+                warn.warn_perturbation_caused_no_change(
                     x=x_instance,
                     x_perturbed=x_instance_perturbed,
                 )

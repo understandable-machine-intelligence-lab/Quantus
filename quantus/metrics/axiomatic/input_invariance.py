@@ -9,14 +9,12 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-
-from ..base_batched import BatchedPerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_shift
-from ...helpers.perturb_func import perturb_batch
+from quantus.helpers import warn
+from quantus.helpers import asserts
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
 class InputInvariance(BatchedPerturbationMetric):
@@ -27,8 +25,7 @@ class InputInvariance(BatchedPerturbationMetric):
     on the attributions, the expectation is that if the model show no response, then the explanations should not.
 
     References:
-        Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., Dähne Sven,
-        Erhan Dumitru and Kim Been. "THE (UN)RELIABILITY OF SALIENCY METHODS" Article (2017).
+        Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
     """
 
     @asserts.attributes_check
@@ -57,7 +54,7 @@ class InputInvariance(BatchedPerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=False.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         input_shift: integer
@@ -81,13 +78,13 @@ class InputInvariance(BatchedPerturbationMetric):
             Keyword arguments.
         """
         if normalise:
-            warn_func.warn_normalise_operation(word="not ")
+            warn.warn_normalise_operation(word="not ")
 
         if abs:
-            warn_func.warn_absolute_operation(word="not ")
+            warn.warn_absolute_operation(word="not ")
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_shift
@@ -113,7 +110,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("input shift 'input_shift'"),
                 citation=(
@@ -269,7 +266,6 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.perturb_func_kwargs,
         )
 
-        # Reshape it.
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -278,7 +274,7 @@ class InputInvariance(BatchedPerturbationMetric):
         )
 
         for x_instance, x_instance_shifted in zip(x_batch, x_shifted):
-            warn_func.warn_perturbation_caused_no_change(
+            warn.warn_perturbation_caused_no_change(
                 x=x_instance,
                 x_perturbed=x_instance_shifted,
             )

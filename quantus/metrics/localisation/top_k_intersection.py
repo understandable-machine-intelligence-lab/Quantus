@@ -9,11 +9,11 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class TopKIntersection(Metric):
@@ -25,7 +25,7 @@ class TopKIntersection(Metric):
     overlap between the ground truth object mask and the attribution mask should be maximal.
 
     References:
-        1) Theiner, Jonas, Müller-Budack Eric, and Ewerth, Ralph. "Interpretable Semantic Photo
+        1) Jonas Theiner et al.: "Interpretable Semantic Photo
         Geolocalization." arXiv preprint arXiv:2104.14995 (2021).
     """
 
@@ -58,7 +58,7 @@ class TopKIntersection(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -75,7 +75,7 @@ class TopKIntersection(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -96,7 +96,7 @@ class TopKIntersection(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', the number of features to "
@@ -246,7 +246,7 @@ class TopKIntersection(Metric):
         """
 
         if np.sum(s) == 0:
-            warn_func.warn_empty_segmentation()
+            warn.warn_empty_segmentation()
             return np.nan
 
         # Prepare shapes.

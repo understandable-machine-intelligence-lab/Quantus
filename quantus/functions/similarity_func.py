@@ -8,10 +8,10 @@
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
 from typing import Union
-import scipy
-from sklearn import metrics
-import skimage
+
 import numpy as np
+import scipy
+import skimage
 
 
 def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:

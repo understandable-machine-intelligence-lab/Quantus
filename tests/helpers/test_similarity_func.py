@@ -1,11 +1,9 @@
-from typing import Union
-
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers import *
+from quantus.functions.loss_func import mse
+from quantus.functions.similarity_func import *
+from tests.fixtures import *
 
 
 @pytest.fixture

@@ -9,12 +9,12 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import plotting
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Focus(Metric):
@@ -29,8 +29,8 @@ class Focus(Metric):
     of positive relevance lying on those images.
 
     References:
-        1) Anna Arias-Duart, Ferran Parés, Dario Garcia-Gasulla, Victor Gimenez-Abalos. "Focus! Rating XAI Methods
-        and Finding Biases" arXiv preprint arXiv:2109.15035 (2022).
+        1) Anna Arias-Duart et al.: "Focus! Rating XAI Methods
+        and Finding Biases" FUZZ-IEEE (2022): 1-8.
     """
 
     @asserts.attributes_check
@@ -57,7 +57,7 @@ class Focus(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -74,7 +74,7 @@ class Focus(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         # Save metric-specific attributes.
         self.mosaic_shape = mosaic_shape
@@ -94,7 +94,7 @@ class Focus(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "no parameter. No parameters means nothing to be sensitive on. "

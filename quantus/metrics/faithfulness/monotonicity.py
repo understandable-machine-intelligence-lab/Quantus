@@ -7,15 +7,16 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
+from quantus.helpers import asserts
+from quantus.helpers import utils
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.metrics.base import PerturbationMetric
 
 
 class Monotonicity(PerturbationMetric):
@@ -31,9 +32,9 @@ class Monotonicity(PerturbationMetric):
     and thus result in monotonically increasing model performance.
 
     References:
-        1) Arya, Vijay, et al. "One explanation does not fit all: A toolkit and taxonomy of ai explainability
+        1) Vijay Arya et al.: "One explanation does not fit all: A toolkit and taxonomy of ai explainability
         techniques." arXiv preprint arXiv:1909.03012 (2019).
-        2) Luss, Ronny, et al. "Generating contrastive explanations with monotonic attribute functions."
+        2) Ronny Luss et al.: "Generating contrastive explanations with monotonic attribute functions."
         arXiv preprint arXiv:1905.12698 (2019).
     """
 
@@ -66,7 +67,7 @@ class Monotonicity(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -91,7 +92,7 @@ class Monotonicity(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -121,7 +122,7 @@ class Monotonicity(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', also, the monotonicity "

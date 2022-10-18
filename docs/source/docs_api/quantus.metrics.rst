@@ -26,3 +26,4 @@ Submodules
    :maxdepth: 4
 
    quantus.metrics.base
+   quantus.metrics.base_batched

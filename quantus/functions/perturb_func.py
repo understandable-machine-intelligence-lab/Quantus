@@ -6,19 +6,17 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+
 import copy
 import random
 import warnings
 from typing import Any, Callable, Sequence, Tuple, Union, Optional
-
 import cv2
 import numpy as np
-import scipy
-
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
-from .utils import (
+from quantus.helpers.utils import (
     get_baseline_value,
     blur_at_indices,
     expand_indices,

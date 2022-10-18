@@ -9,11 +9,11 @@
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Sparseness(Metric):
@@ -29,7 +29,7 @@ class Sparseness(Metric):
         <https://github.com/jfc43/advex/blob/master/DNN-Experiments/Fashion-MNIST/utils.py>.
 
     References:
-        1) Chalasani, Prasad, et al. "Concise explanations of neural networks using adversarial training."
+        1) Prasad Chalasani et al.: "Concise explanations of neural networks using adversarial training."
         International Conference on Machine Learning. PMLR, 2020.
     """
 
@@ -56,7 +56,7 @@ class Sparseness(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         default_plot_func: callable
@@ -75,10 +75,10 @@ class Sparseness(Metric):
             Keyword arguments.
         """
         if not abs:
-            warn_func.warn_absolute_operation()
+            warn.warn_absolute_operation()
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -95,7 +95,7 @@ class Sparseness(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "normalising 'normalise' (and 'normalise_func') and if taking absolute"

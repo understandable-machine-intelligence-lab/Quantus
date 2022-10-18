@@ -6,15 +6,15 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
-from ..base import Metric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.similarity_func import ssim
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.similarity_func import ssim
+from quantus.metrics.base import Metric
 
 
 class RandomLogit(Metric):
@@ -25,8 +25,8 @@ class RandomLogit(Metric):
     a randomly chosen non-target class.
 
     References:
-        1) Sixt, Leon, Granz, Maximilian, and Landgraf, Tim. "When Explanations Lie: Why Many Modified BP
-        Attributions Fail."arXiv preprint, arXiv:1912.09818v6 (2020)
+        1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
+        Attributions Fail." ICML (2020): 9046-9057.
     """
 
     @asserts.attributes_check
@@ -62,7 +62,7 @@ class RandomLogit(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -79,7 +79,7 @@ class RandomLogit(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -103,7 +103,7 @@ class RandomLogit(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("similarity metric 'similarity_func'"),
                 citation=(

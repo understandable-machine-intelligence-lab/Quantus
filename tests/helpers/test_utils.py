@@ -1,13 +1,8 @@
-import pickle
-from typing import Any, Union
-
-import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers.models import LeNet
-from ...quantus.helpers.utils import *
+from quantus.helpers.utils import *
+from tests.fixtures import *
 
 
 @pytest.fixture
@@ -413,17 +408,11 @@ def test_make_channel_last(
             {"channel_first": True, "softmax": False},
             {"type": PyTorchModel},
         ),
-        (
-            None,
-            {"channel_first": True, "softmax": True},
-            {"exception": ValueError},
-        ),
+        (None, {"channel_first": True, "softmax": True}, {"exception": ValueError},),
     ],
 )
 def test_get_wrapped_model(
-    model: ModelInterface,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model: ModelInterface, params: dict, expected: Union[float, dict, bool],
 ):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
@@ -477,8 +466,7 @@ def test_get_wrapped_model(
     ],
 )
 def test_blur_at_indices(
-    params: dict,
-    expected: Union[float, dict, bool],
+    params: dict, expected: Union[float, dict, bool],
 ):
     input = random_array(params["arr_shape"])
     kernel = random_array(params["kernel_shape"])
@@ -506,83 +494,32 @@ def test_blur_at_indices(
 @pytest.mark.parametrize(
     "params,expected",
     [
+        ({"patch_size": 4, "coords": 0,}, {"value": (slice(0, 4),)},),
+        ({"patch_size": 4, "coords": (0,),}, {"value": (slice(0, 4),)},),
+        ({"patch_size": 4, "coords": (0, 0),}, {"value": (slice(0, 4), slice(0, 4))},),
         (
-            {
-                "patch_size": 4,
-                "coords": 0,
-            },
-            {"value": (slice(0, 4),)},
-        ),
-        (
-            {
-                "patch_size": 4,
-                "coords": (0,),
-            },
-            {"value": (slice(0, 4),)},
-        ),
-        (
-            {
-                "patch_size": 4,
-                "coords": (0, 0),
-            },
+            {"patch_size": (4, 4), "coords": (0, 0),},
             {"value": (slice(0, 4), slice(0, 4))},
         ),
         (
-            {
-                "patch_size": (4, 4),
-                "coords": (0, 0),
-            },
-            {"value": (slice(0, 4), slice(0, 4))},
-        ),
-        (
-            {
-                "patch_size": (4, 6),
-                "coords": (0, 0),
-            },
+            {"patch_size": (4, 6), "coords": (0, 0),},
             {"value": (slice(0, 4), slice(0, 6))},
         ),
         (
-            {
-                "patch_size": 10,
-                "coords": (1, 2),
-            },
+            {"patch_size": 10, "coords": (1, 2),},
             {"value": (slice(1, 11), slice(2, 12))},
         ),
         (
-            {
-                "patch_size": (10, 5),
-                "coords": (1, 2),
-            },
+            {"patch_size": (10, 5), "coords": (1, 2),},
             {"value": (slice(1, 11), slice(2, 7))},
         ),
         (
-            {
-                "patch_size": 4,
-                "coords": (0, 0, 0),
-            },
+            {"patch_size": 4, "coords": (0, 0, 0),},
             {"value": (slice(0, 4), slice(0, 4), slice(0, 4))},
         ),
-        (
-            {
-                "patch_size": (4, 4, 4),
-                "coords": (0, 0),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            {
-                "patch_size": (4, 4),
-                "coords": (0, 0, 0),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            {
-                "patch_size": (4, 4),
-                "coords": (0,),
-            },
-            {"exception": ValueError},
-        ),
+        ({"patch_size": (4, 4, 4), "coords": (0, 0),}, {"exception": ValueError},),
+        ({"patch_size": (4, 4), "coords": (0, 0, 0),}, {"exception": ValueError},),
+        ({"patch_size": (4, 4), "coords": (0,),}, {"exception": ValueError},),
     ],
 )
 def test_create_patch_slice(params: dict, expected: Any):
@@ -604,10 +541,7 @@ def test_create_patch_slice(params: dict, expected: Any):
     "params,expected",
     [
         (
-            {
-                "a_batch": np.ones((64, 128)),
-                "x_batch": np.ones((64, 3, 128)),
-            },
+            {"a_batch": np.ones((64, 128)), "x_batch": np.ones((64, 3, 128)),},
             {"value": np.ones((64, 1, 128))},
         ),
         (
@@ -639,24 +573,15 @@ def test_create_patch_slice(params: dict, expected: Any):
             {"value": np.ones((64, 1, 1, 128))},
         ),
         (
-            {
-                "a_batch": np.ones((64, 3, 128)),
-                "x_batch": np.ones((64, 3, 128, 128)),
-            },
+            {"a_batch": np.ones((64, 3, 128)), "x_batch": np.ones((64, 3, 128, 128)),},
             {"value": np.ones((64, 3, 128, 1))},
         ),
         (
-            {
-                "a_batch": np.ones((64, 3)),
-                "x_batch": np.ones((64, 3, 128, 128)),
-            },
+            {"a_batch": np.ones((64, 3)), "x_batch": np.ones((64, 3, 128, 128)),},
             {"value": np.ones((64, 3, 1, 1))},
         ),
         (
-            {
-                "a_batch": np.ones((64, 200)),
-                "x_batch": np.ones((64, 3, 128, 200)),
-            },
+            {"a_batch": np.ones((64, 200)), "x_batch": np.ones((64, 3, 128, 200)),},
             {"value": np.ones((64, 1, 1, 200))},
         ),
         (
@@ -667,17 +592,11 @@ def test_create_patch_slice(params: dict, expected: Any):
             {"exception": ValueError},
         ),
         (
-            {
-                "a_batch": np.ones((64, 3, 128, 128)),
-                "x_batch": np.ones((64, 3, 128)),
-            },
+            {"a_batch": np.ones((64, 3, 128, 128)), "x_batch": np.ones((64, 3, 128)),},
             {"exception": ValueError},
         ),
         (
-            {
-                "a_batch": np.ones((64, 128)),
-                "x_batch": np.ones((64, 3, 128, 128)),
-            },
+            {"a_batch": np.ones((64, 128)), "x_batch": np.ones((64, 3, 128, 128)),},
             {"exception": ValueError},
         ),
     ],
@@ -697,69 +616,15 @@ def test_expand_attribution_channel(params: dict, expected: Any):
 @pytest.mark.parametrize(
     "params,expected",
     [
-        (
-            {
-                "patch_size": 4,
-                "shape": (16,),
-            },
-            {"value": 4},
-        ),
-        (
-            {
-                "patch_size": (4,),
-                "shape": (16,),
-            },
-            {"value": 4},
-        ),
-        (
-            {
-                "patch_size": (4, 4),
-                "shape": (16,),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            {
-                "patch_size": 4,
-                "shape": (16, 16),
-            },
-            {"value": 16},
-        ),
-        (
-            {
-                "patch_size": (4, 4),
-                "shape": (16, 16),
-            },
-            {"value": 16},
-        ),
-        (
-            {
-                "patch_size": (4, 2),
-                "shape": (16, 16),
-            },
-            {"value": 32},
-        ),
-        (
-            {
-                "patch_size": (4, 4, 4),
-                "shape": (16, 16),
-            },
-            {"exception": ValueError},
-        ),
-        (
-            {
-                "patch_size": (4,),
-                "shape": (16, 16, 16),
-            },
-            {"value": 64},
-        ),
-        (
-            {
-                "patch_size": (4, 4),
-                "shape": (16, 16, 16),
-            },
-            {"exception": ValueError},
-        ),
+        ({"patch_size": 4, "shape": (16,),}, {"value": 4},),
+        ({"patch_size": (4,), "shape": (16,),}, {"value": 4},),
+        ({"patch_size": (4, 4), "shape": (16,),}, {"exception": ValueError},),
+        ({"patch_size": 4, "shape": (16, 16),}, {"value": 16},),
+        ({"patch_size": (4, 4), "shape": (16, 16),}, {"value": 16},),
+        ({"patch_size": (4, 2), "shape": (16, 16),}, {"value": 32},),
+        ({"patch_size": (4, 4, 4), "shape": (16, 16),}, {"exception": ValueError},),
+        ({"patch_size": (4,), "shape": (16, 16, 16),}, {"value": 64},),
+        ({"patch_size": (4, 4), "shape": (16, 16, 16),}, {"exception": ValueError},),
     ],
 )
 def test_get_nr_patches(params: dict, expected: Any):
@@ -806,10 +671,7 @@ def test_get_nr_patches(params: dict, expected: Any):
             {"value": [0, 1, 2]},
         ),
         (
-            {
-                "x_batch": np.ones((30, 2, 3, 4, 5, 6)),
-                "a_batch": np.ones((30,)),
-            },
+            {"x_batch": np.ones((30, 2, 3, 4, 5, 6)), "a_batch": np.ones((30,)),},
             {"value": []},
         ),
         (
@@ -841,17 +703,11 @@ def test_get_nr_patches(params: dict, expected: Any):
             {"exception": ValueError},
         ),
         (
-            {
-                "x_batch": np.ones((30, 2, 2, 2, 2, 2)),
-                "a_batch": np.ones((30, 2)),
-            },
+            {"x_batch": np.ones((30, 2, 2, 2, 2, 2)), "a_batch": np.ones((30, 2)),},
             {"exception": ValueError},
         ),
         (
-            {
-                "x_batch": np.ones((30, 2, 2)),
-                "a_batch": np.ones((30, 2, 2, 2)),
-            },
+            {"x_batch": np.ones((30, 2, 2)), "a_batch": np.ones((30, 2, 2, 2)),},
             {"exception": ValueError},
         ),
         (
@@ -1006,11 +862,7 @@ def test_infer_attribution_axes(params: dict, expected: Any):
             },
         ),
         (
-            {
-                "arr": np.ones((2,)),
-                "indices": [1],
-                "indexed_axes": [0, 1, 2, 3],
-            },
+            {"arr": np.ones((2,)), "indices": [1], "indexed_axes": [0, 1, 2, 3],},
             {"exception": AssertionError},
         ),
         (
@@ -1022,19 +874,11 @@ def test_infer_attribution_axes(params: dict, expected: Any):
             {"exception": ValueError},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "indices": [1],
-                "indexed_axes": [0, 2],
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "indices": [1], "indexed_axes": [0, 2],},
             {"exception": AssertionError},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "indices": [1],
-                "indexed_axes": [2, 3],
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "indices": [1], "indexed_axes": [2, 3],},
             {"exception": AssertionError},
         ),
     ],
@@ -1058,46 +902,25 @@ def test_expand_indices(params: dict, expected: Any):
 @pytest.mark.parametrize(
     "params,expected",
     [
+        ({"arr": np.ones((2, 3, 4, 5, 6)), "axes": [0, 1, 2, 3, 4],}, {"value": ()},),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": [0, 1, 2, 3, 4],
-            },
-            {"value": ()},
-        ),
-        (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": np.array([0, 1]),
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "axes": np.array([0, 1]),},
             {"value": (4, 5, 6)},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": np.array([1, 2, 3, 4]),
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "axes": np.array([1, 2, 3, 4]),},
             {"value": (2,)},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": np.array([0, 2]),
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "axes": np.array([0, 2]),},
             {"exception": AssertionError},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": np.array([1, 2]),
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "axes": np.array([1, 2]),},
             {"exception": AssertionError},
         ),
         (
-            {
-                "arr": np.ones((2, 3, 4, 5, 6)),
-                "axes": np.array([0, 1, 2, 3, 4, 5]),
-            },
+            {"arr": np.ones((2, 3, 4, 5, 6)), "axes": np.array([0, 1, 2, 3, 4, 5]),},
             {"exception": AssertionError},
         ),
     ],

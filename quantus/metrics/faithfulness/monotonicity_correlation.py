@@ -7,17 +7,16 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
-from ...helpers.similarity_func import correlation_spearman
+from quantus.helpers import warn
+from quantus.helpers import asserts
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.similarity_func import correlation_spearman
+from quantus.metrics.base import PerturbationMetric
 
 
 class MonotonicityCorrelation(PerturbationMetric):
@@ -29,7 +28,7 @@ class MonotonicityCorrelation(PerturbationMetric):
     then they are not providing the correct importance of the feature.
 
     References:
-        1) Nguyen, An-phi, and María Rodríguez Martínez. "On quantitative aspects of model
+        1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
     """
 
@@ -72,7 +71,7 @@ class MonotonicityCorrelation(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -97,7 +96,7 @@ class MonotonicityCorrelation(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -133,7 +132,7 @@ class MonotonicityCorrelation(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', threshold value 'eps' and number "
@@ -316,9 +315,7 @@ class MonotonicityCorrelation(PerturbationMetric):
                     indexed_axes=self.a_axes,
                     **self.perturb_func_kwargs,
                 )
-                warn_func.warn_perturbation_caused_no_change(
-                    x=x, x_perturbed=x_perturbed
-                )
+                warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
                 # Predict on perturbed input x.
                 x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)

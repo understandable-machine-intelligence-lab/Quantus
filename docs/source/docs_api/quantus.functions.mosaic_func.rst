@@ -1,7 +1,7 @@
-quantus.helpers.pytorch\_model module
+quantus.functions.mosaic\_func module
 =====================================
 
-.. automodule:: quantus.helpers.pytorch_model
+.. automodule:: quantus.functions.mosaic_func
    :members:
    :undoc-members:
    :show-inheritance:
