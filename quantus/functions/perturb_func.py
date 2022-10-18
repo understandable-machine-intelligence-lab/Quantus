@@ -70,6 +70,7 @@ def perturb_batch(
     if not inplace:
         return arr
 
+    return None
 
 def baseline_replacement_by_indices(
     arr: np.array,

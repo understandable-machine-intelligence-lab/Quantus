@@ -9,7 +9,7 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -659,6 +659,7 @@ def _unpad_array(
                 )
             )
         else:
+            assert isinstance(pad_width, Sequence)
             unpad_slice.append(
                 slice(
                     pad_width[[p for p in padded_axes].index(ax)][0],

@@ -163,7 +163,8 @@ class SensitivityN(PerturbationMetric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -367,7 +368,7 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        *kwargs,
+        **kwargs,
     ) -> None:
         """
         Post-process the evaluation results.

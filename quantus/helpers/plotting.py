@@ -239,7 +239,7 @@ def plot_model_parameter_randomisation_experiment(
         for method in methods:
             for _ in results[method]:
                 layers = list(results[method].keys())
-                scores = {k: [] for k in layers}
+                scores: Dict[Any, Any] = {k: [] for k in layers}
                 # samples = len(results[method])
                 # for s in range(samples):
                 for layer in layers:

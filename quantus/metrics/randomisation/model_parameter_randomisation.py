@@ -146,7 +146,8 @@ class ModelParameterRandomisation(Metric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -320,7 +321,7 @@ class ModelParameterRandomisation(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        a_perturbed: np.ndarray = None,
+        a_perturbed: Optional[np.ndarray] = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.

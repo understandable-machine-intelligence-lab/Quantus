@@ -114,6 +114,7 @@ class Metric:
         model_predict_kwargs: Optional[Dict],
         softmax: Optional[bool],
         device: Optional[str] = None,
+        batch_size: int = 64,
         custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[int, float, list, dict, Collection[Any], None]:
