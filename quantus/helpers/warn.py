@@ -10,7 +10,8 @@ import time
 import warnings
 
 import numpy as np
-from .utils import get_name
+
+from quantus.helpers.utils import get_name
 
 
 def check_kwargs(kwargs):

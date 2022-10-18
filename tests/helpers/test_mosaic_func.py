@@ -1,37 +1,21 @@
-import pickle
-from typing import Union
-
-import numpy as np
-import torch
-import torchvision
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from ..fixtures import *
-from ...quantus.helpers import *
+from quantus.functions.mosaic_func import *
+from tests.fixtures import *
 
 
 @pytest.mark.mosaic_func
 @pytest.mark.parametrize(
     "data,params",
     [
-        (
-            lazy_fixture("load_mnist_images"),
-            {"mosaics_per_class": 4, "seed": 777},
-        ),
-        (
-            lazy_fixture("load_cifar10_images"),
-            {"mosaics_per_class": 4, "seed": 777},
-        ),
-        (
-            lazy_fixture("load_mnist_images"),
-            {"mosaics_per_class": 10, "seed": 777},
-        ),
+        (lazy_fixture("load_mnist_images"), {"mosaics_per_class": 4, "seed": 777},),
+        (lazy_fixture("load_cifar10_images"), {"mosaics_per_class": 4, "seed": 777},),
+        (lazy_fixture("load_mnist_images"), {"mosaics_per_class": 10, "seed": 777},),
     ],
 )
 def test_mosaic_func(
-    data: np.ndarray,
-    params: dict,
+    data: np.ndarray, params: dict,
 ):
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
     return_params = mosaic_creation(

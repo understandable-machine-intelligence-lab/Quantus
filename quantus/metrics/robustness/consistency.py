@@ -9,12 +9,12 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.discretise_func import top_n_sign
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.functions.discretise_func import top_n_sign
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Consistency(Metric):
@@ -30,8 +30,8 @@ class Consistency(Metric):
         - A used-defined discreization function is used to discretize continuous explanation spaces.
 
     References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
+         1) Sanjoy Dasgupta et al.: "Framework for Evaluating Faithfulness of Local
+            Explanations." ICML (2022): 4794-4815.
     """
 
     @asserts.attributes_check
@@ -59,7 +59,7 @@ class Consistency(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -85,7 +85,7 @@ class Consistency(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -108,7 +108,7 @@ class Consistency(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "Function for discretisation of the explanation space 'discretise_func' (return hash value of"
@@ -147,7 +147,7 @@ class Consistency(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -171,9 +171,6 @@ class Consistency(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -218,7 +215,7 @@ class Consistency(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -230,23 +227,20 @@ class Consistency(Metric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+        i: int = None,
+        a_label: np.ndarray = None,
+        y_pred_classes: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -257,24 +251,23 @@ class Consistency(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        i: int
+            The index of the current instance.
+        a_label: np.ndarray
+            The discretised attribution labels.
+        y_pred_classes: np,ndarray
+            The class predictions of the complete input dataset.
 
         Returns
         -------
         float
             The evaluation results.
         """
-        # Unpack custom preprocess.
-        a_label = c
-
         # Metric logic.
-        pred_a = self.y_pred_classes[i]
+        pred_a = y_pred_classes[i]
         same_a = np.argwhere(a == a_label).flatten()
         diff_a = same_a[same_a != i]
-        pred_same_a = self.y_pred_classes[diff_a]
+        pred_same_a = y_pred_classes[diff_a]
 
         if len(same_a) == 0:
             return 0
@@ -288,15 +281,13 @@ class Consistency(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -311,13 +302,9 @@ class Consistency(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dictionary[str, np.ndarray]
+            Output dictionary with 'a_label_batch' as key and discretised attributtion labels as value.
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Preprocessing.
         a_batch_flat = a_batch.reshape(a_batch.shape[0], -1)
         a_labels = np.array(list(map(self.discretise_func, a_batch_flat)))
@@ -325,16 +312,10 @@ class Consistency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-        self.y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+        y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
-        custom_preprocess_batch = a_labels
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+        return {
+            "i_batch": np.arange(x_batch.shape[0]),
+            "a_label_batch": a_labels,
+            "y_pred_classes": y_pred_classes,
+        }
