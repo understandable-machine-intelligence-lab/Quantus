@@ -163,11 +163,7 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 
 Additional metrics will be included in future releases.
 
-**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfil, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. 
-
-The first iteration has been developed primarily for image classification tasks, with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable. Similarly, there is a couple of metrics that are popular but are considered out of scope for the first iteration of the library e.g., metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021).
-
-Please read the user guidelines for further guidance on how to best use the library. 
+**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfil, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. Please read the user guidelines for further guidance on how to best use the library. 
 
 ## Installation
 
@@ -298,7 +294,7 @@ For this, you can for example rely on the built-in `quantus.explain` function to
 (please run `quantus.available_methods()` to see which ones).  Examples of how to use `quantus.explain` 
 or your own customised explanation function are included in the next section.
 
-<img class="center" width="500" alt="drawing"  src="tutorials/assets/mnist_example.png" />
+<img class="center" width="500" alt="drawing"  src="tutorials/assets/mnist_example.png"/>
 
 As seen in the above image, the qualitative aspects of explanations 
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
@@ -348,7 +344,7 @@ scores = metric(
 )
 ```
 
-#### Customised functions
+#### Employ customised functions
 
 You can alternatively use your own customised explanation function
 (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
@@ -366,7 +362,7 @@ scores = metric(
     explain_func=your_own_callable
 )
 ```
-#### Large-scale evaluation
+#### Run large-scale evaluation
 
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof. To utilise `quantus.evaluate()`, you simply need to define two things:
