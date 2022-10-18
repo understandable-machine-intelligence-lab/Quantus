@@ -15,10 +15,10 @@ from typing import Any, Callable, Dict, Optional, Sequence, Union
 import numpy as np
 from tqdm.auto import tqdm
 
-from .base import Metric
-from ..helpers import asserts
-from ..helpers import warn
-from ..helpers.model_interface import ModelInterface
+from quantus.metrics.base import Metric
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class BatchedMetric(Metric):
