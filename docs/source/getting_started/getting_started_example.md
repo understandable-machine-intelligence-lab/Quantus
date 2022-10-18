@@ -209,9 +209,9 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
         softmax=False
     )
     ```
-
-
+  
 ### Large-scale evaluations
+
 Quantus also provides high-level functionality to support large-scale evaluations,
 e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof.
 
