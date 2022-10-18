@@ -25,12 +25,12 @@ Quantus can be installed from PyPI (this way assumes that you have either [PyTor
 pip install quantus
 ```
 
-For a more in-depth guide on how to install Quantus, read more {doc}`here </getting_started/installation>`. This includes instructions for how to install a desired deep learning framework such as PyTorch or tensorflow together with Quantus.
+For a more in-depth guide on how to install Quantus, read more [here](https://quantus.readthedocs.io/en/latest/getting_started/installation.html). This includes instructions for how to install a desired deep learning framework such as PyTorch or tensorflow together with Quantus.
 
 # Contents
 
 ```{toctree}
-:caption: # Installation
+:caption: Installation
 :maxdepth: 1
 
 getting_started/installation
@@ -47,7 +47,6 @@ getting_started/getting_started_example
 :caption: API Reference
 :maxdepth: 1
 
-docs_api/modules
 docs_api/quantus
 ```
 
