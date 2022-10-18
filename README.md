@@ -36,7 +36,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
-interesting or useful in your research, use following Bibtex annotation to cite us:
+interesting or useful in your research, use the following Bibtex annotation to cite us:
 
 ```bibtex
 @article{hedstrom2022quantus,
@@ -69,9 +69,9 @@ When applying the individual metrics of Quantus, please make sure to also proper
 
 ## Library overview 
 
-Simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
+A simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplarily in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
 
-Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
+Therefore, we developed Quantus, an easy-to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
 With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
 
 </p>
@@ -116,7 +116,7 @@ measures to what extent explanations are stable when subject to slight perturbat
 
 <details>
 <summary><b>Localisation</b></summary>
-tests if the explainable evidence is centered around a region of interest (RoI) which may be defined around an object by a bounding box, a segmentation mask or, a cell within a grid
+tests if the explainable evidence is centred around a region of interest (RoI) which may be defined around an object by a bounding box, a segmentation mask or, a cell within a grid
      <br><br>
 <ul>
     <li><b>Pointing Game </b><a href="https://arxiv.org/abs/1608.00507">(Zhang et al., 2018)</a>: checks whether attribution with the highest score is located within the targeted object
@@ -152,7 +152,7 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 
 <details>
 <summary><b>Axiomatic</b></summary>
-  assesses if explanations fulfill certain axiomatic properties
+  assesses if explanations fulfil certain axiomatic properties
      <br><br>
 <ul>
     <li><b>Completeness </b><a href="https://arxiv.org/abs/1703.01365">(Sundararajan et al., 2017)</a>: evaluates whether the sum of attributions is equal to the difference between the function values at the input x and baseline x'.
@@ -163,7 +163,7 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 
 Additional metrics will be included in future releases.
 
-**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. 
+**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfil, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. 
 
 The first iteration has been developed primarily for image classification tasks, with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable. Similarly, there is a couple of metrics that are popular but are considered out of scope for the first iteration of the library e.g., metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021).
 
@@ -202,7 +202,7 @@ For a more in-depth guide on how to install Quantus, please read more [here](htt
 
 ### Package requirements
 
-The package requirments are as follows:
+The package requirements are as follows:
 ```
 python>=3.7.0
 pytorch>=1.10.1
