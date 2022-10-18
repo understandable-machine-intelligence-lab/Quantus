@@ -171,8 +171,6 @@ Please read the user guidelines for further guidance on how to best use the libr
 
 ## Installation
 
-### Installing from PyPI
-
 If you already have [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) installed on your machine, 
 the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows (no additional explainability functionality or deep learning framework will be included):
 
@@ -191,7 +189,7 @@ For TensorFlow, please run:
 pip install "quantus[tensorflow]"
 ```
 
-Alternatively, you can simply install Quantus from the requirements.txt as found [here](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
+Alternatively, you can simply install Quantus with [requirements.txt](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
 Note that this installation requires that either [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) are already installed on your machine.
 
 ```setup
@@ -253,7 +251,7 @@ For this, there are two possibilities in Quantus. You can provide either:
 
 We show the different options below.
 
-#### 1) Using pre-computed explanations
+#### Using pre-computed explanations
 
 Quantus allows you to evaluate explanations that you have pre-computed, 
 assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
@@ -291,7 +289,7 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
 ```
 
-#### 2) Passing an explanation function
+#### Passing an explanation function
 
 If you don't have a pre-computed set of explanations but rather want to pass an arbitrary explanation function 
 that you wish to evaluate with Quantus, this option exists. 
@@ -300,7 +298,7 @@ For this, you can for example rely on the built-in `quantus.explain` function to
 (please run `quantus.available_methods()` to see which ones).  Examples of how to use `quantus.explain` 
 or your own customised explanation function are included in the next section.
 
-![drawing](tutorials/assets/mnist_example.png)
+<img src="tutorials/assets/mnist_example.png" alt="drawing" width="400"/>
 
 As seen in the above image, the qualitative aspects of explanations 
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
