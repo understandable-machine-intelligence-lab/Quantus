@@ -33,7 +33,7 @@ pip install -r requirements.txt
 
 ### Installing additional XAI Library support (PyPI only)
 
-Most evaluation metrics in Quantus allow for a choice of either providing pre-computed explanations directly as an input, or to instead make use of several wrappers implemented in `quantus.explain` around common explainability libraries. The
+Most evaluation metrics in Quantus allow for a choice of either providing pre-computed explanations directly as an input, or instead making use of several wrappers implemented in `quantus.explain` around common explainability libraries. The
 following XAI Libraries are currently supported:
 
 **Captum**
@@ -60,7 +60,7 @@ To use Quantus with support for the [Zennit](https://github.com/chr5tphr/zennit)
 pip install "quantus[zennit]"
 ```
 
-Note that the three options above will also install the respective required frameworks (i.e., PyTorch or Tensorflow),
+Note that the three options above will also install the required frameworks (i.e., PyTorch or Tensorflow) respectively,
 if they are not already installed in your environment. Note also, that not all explanation methods offered in **Captum** and **tf-explain**
  are included in `quantus.explain`.
 
@@ -80,9 +80,9 @@ To simply install all of the above, you can run
 pip install "quantus[full]"
 ```
 
-### Package Requirements
+### Package requirements
 
-The package requirments are as follows:
+The package requirements are as follows:
 ```
 python>=3.7.0
 pytorch>=1.10.1

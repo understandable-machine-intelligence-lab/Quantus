@@ -3,17 +3,15 @@
 **Quantus is an eXplainable AI toolkit for responsible evaluation of neural network explanations.**
 
 <p align="center">
-  <img width="525" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
+  <img width=“400” src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
 <p><small>
 Figure: a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which
 gradient-based method — Saliency, Integrated Gradients, GradientShap or FusionGrad
 is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic
 quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter
-e.g. pixel replacement strategy of a faithfulness test influences the ranking of XAI methods.
+e.g. pixel replacement strategy of a faithfulness test influences the ranking of XAI methods. <a href="https://arxiv.org/abs/2202.06861">📑 Shortcut to paper!</a>
 </small></p>
-
-[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
 
 
 This documentation is complementary to the [README.md](https://github.com/understandable-machine-intelligence-lab/Quantus) in the Quantus repository and provides documentation
@@ -27,23 +25,12 @@ Quantus can be installed from PyPI (this way assumes that you have either [PyTor
 pip install quantus
 ```
 
-Alternatively, you can simply add the desired deep learning framework (in brackets) to have the package installed together with Quantus.
-To install Quantus with PyTorch, please run:
+For a more in-depth guide on how to install Quantus, read more {doc}`here </getting_started/installation>`. This includes instructions for how to install a desired deep learning framework such as PyTorch or tensorflow together with Quantus.
 
-```setup
-pip install "quantus[torch]"
-```
-
-For Tensorflow, please run:
-
-```setup
-pip install "quantus[tensorflow]"
-```
-
-For a more in-depth guide on how to install Quantus, read more {doc}`here </getting_started/installation>`.
+# Contents
 
 ```{toctree}
-:caption: Installation
+:caption: # Installation
 :maxdepth: 1
 
 getting_started/installation
@@ -57,10 +44,11 @@ getting_started/getting_started_example
 ```
 
 ```{toctree}
-:caption: API Documentation
+:caption: API Reference
 :maxdepth: 1
 
 docs_api/modules
+docs_api/quantus
 ```
 
 ```{toctree}
@@ -78,7 +66,8 @@ guidelines/guidelines_and_disclaimers
 ```
 
 
-### Citation
+## Citation
+
 
 If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
