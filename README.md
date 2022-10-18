@@ -298,7 +298,7 @@ For this, you can for example rely on the built-in `quantus.explain` function to
 (please run `quantus.available_methods()` to see which ones).  Examples of how to use `quantus.explain` 
 or your own customised explanation function are included in the next section.
 
-<img src="tutorials/assets/mnist_example.png" alt="drawing"  class="center" width="600"/>
+<img class="center" width="500" alt="drawing"  src="tutorials/assets/mnist_example.png" />
 
 As seen in the above image, the qualitative aspects of explanations 
 may look fairly uninterpretable --- since we lack ground truth of what the explanations
