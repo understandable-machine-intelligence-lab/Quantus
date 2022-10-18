@@ -385,10 +385,6 @@ You can then simply run a large-scale evaluation as follows (this aggregates the
 
 ```python
 import numpy as np
-
-metric_call_kwargs = {
-  "softmax": False,
-}
 results = quantus.evaluate(
       metrics=metrics,
       xai_methods=xai_methods,
@@ -396,7 +392,7 @@ results = quantus.evaluate(
       model=model,
       x_batch=x_batch,
       y_batch=y_batch,
-      **metric_call_kwargs
+      **{"softmax": False,}
 )
 ```
 
