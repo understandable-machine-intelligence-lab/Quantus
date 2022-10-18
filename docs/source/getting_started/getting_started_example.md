@@ -2,7 +2,7 @@
 
 The following will give a short introduction to how to get started with Quantus.
 
-**Note**: This example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
+Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
 [Tensorflow](https://www.tensorflow.org), which would differ only in the {ref}`preliminaries <prelim>` 
 (i.e., the model and data loading), 
 as well as in the available XAI libraries.
@@ -101,8 +101,8 @@ in `quantus.explain` are limited --- `quantus.explain` is a wrapper around  [Cap
 [tf.explain](https://github.com/sicara/tf-explain) but does not support every explanation method offered in the 
 respective libraries. 
 
-If you want to use Quantus to evaluate any other explanation method (e.g., your newly built explanation function),
-you can simply provide your own function (`callable`, see also {ref}`extending quantus <extend>`). 
+If you want to use Quantus to evaluate any arbitrary explanation method (e.g., your newly built explanation function),
+you can simply provide your own function (`callable`, see also {ref}`Extending quantus <extend>`). 
 Examples of how to use `quantus.explain` 
 or your own customised explanation function are included in the next section.
 ![drawing](../assets/mnist_example.png)
@@ -118,7 +118,7 @@ To gather quantitative evidence for the quality of the different explanation met
 ### Quantus metrics
 
 Quantus implements XAI evaluation metrics from different categories, 
-e.g., Faithfulness, Localisation, Robustness, etc., which all inherit from the base `quantus.Metric` class. 
+e.g., Faithfulness, Localisation and Robustness etc which all inherit from the base `quantus.Metric` class. 
 To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)) 
 it first needs to be instantiated:
 
