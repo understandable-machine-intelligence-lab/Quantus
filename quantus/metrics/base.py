@@ -255,6 +255,7 @@ class Metric:
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
+        *args,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -273,6 +274,8 @@ class Metric:
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        args: optional
+            Arguments.
         """
         raise NotImplementedError()
 
@@ -835,6 +838,7 @@ class PerturbationMetric(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
+        *args,
     ) -> Any:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -853,5 +857,7 @@ class PerturbationMetric(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        args: optional
+            Arguments.
         """
         raise NotImplementedError()

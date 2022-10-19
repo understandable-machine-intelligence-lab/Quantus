@@ -33,11 +33,11 @@ def plot_pixel_flipping_experiment(
     y_batch: np.ndarray
          The list of true labels.
     scores: list
-            The list of evalution scores.
+        The list of evalution scores.
     single_class: integer, optional
-            An integer to specify the label to plot.
+        An integer to specify the label to plot.
     args: optional
-            Arguments.
+        Arguments.
     kwargs: optional
         Keyword arguments.
 
@@ -81,7 +81,7 @@ def plot_selectivity_experiment(
     Parameters
     ----------
     results: list, dict
-            The results fromm the Selectivity experiment(s).
+        The results fromm the Selectivity experiment(s).
     args: optional
         Arguments.
     kwargs: optional
@@ -129,7 +129,7 @@ def plot_region_perturbation_experiment(
     Parameters
     ----------
     results: list, dict
-            The results fromm the Selectivity experiment(s).
+        The results fromm the Selectivity experiment(s).
     args: optional
         Arguments.
     kwargs: optional
