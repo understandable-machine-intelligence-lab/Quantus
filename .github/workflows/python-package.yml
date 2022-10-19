@@ -48,6 +48,7 @@ jobs:
           mypy: true
           #mypy_auto_fix: false
           mypy_dir: ./quantus
+          mypy_args: "--config-file mypy.ini"
     - name: Test with pytest
       run: |
         pytest
