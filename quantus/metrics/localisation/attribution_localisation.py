@@ -9,11 +9,11 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class AttributionLocalisation(Metric):
@@ -25,9 +25,9 @@ class AttributionLocalisation(Metric):
     targeted object class.
 
     References:
-        1) Kohlbrenner M., Bauer A., Nakajima S., Binder A., Wojciech S., Lapuschkin S.
+        1) Max Kohlbrenner et al.:
            "Towards Best Practice in Explaining Neural Network Decisions with LRP."
-           arXiv preprint arXiv:1910.09840v2 (2020).
+           IJCNN (2020): 1-7.
 
     """
 
@@ -61,7 +61,7 @@ class AttributionLocalisation(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -78,10 +78,10 @@ class AttributionLocalisation(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if not abs:
-            warn_func.warn_absolute_operation()
+            warn.warn_absolute_operation()
 
         super().__init__(
             abs=abs,
@@ -103,7 +103,7 @@ class AttributionLocalisation(Metric):
         # Asserts and warnings.
         self.disable_warnings = disable_warnings
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "ground truth mask i.e., the 's_batch', if size of the ground truth "
@@ -131,7 +131,8 @@ class AttributionLocalisation(Metric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -145,7 +146,7 @@ class AttributionLocalisation(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -169,9 +170,6 @@ class AttributionLocalisation(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -216,7 +214,7 @@ class AttributionLocalisation(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -228,23 +226,17 @@ class AttributionLocalisation(Metric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -255,10 +247,6 @@ class AttributionLocalisation(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -267,7 +255,7 @@ class AttributionLocalisation(Metric):
         """
 
         if np.sum(s) == 0:
-            warn_func.warn_empty_segmentation()
+            warn.warn_empty_segmentation()
             return np.nan
 
         # Prepare shapes.
@@ -286,7 +274,7 @@ class AttributionLocalisation(Metric):
 
         if ratio <= self.max_size:
             if inside_attribution_ratio > 1.0:
-                warn_func.warn_segmentation(inside_attribution, total_attribution)
+                warn.warn_segmentation(inside_attribution, total_attribution)
                 return np.nan
             if not self.weighted:
                 return inside_attribution_ratio
@@ -301,16 +289,14 @@ class AttributionLocalisation(Metric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+        custom_batch: Optional[np.ndarray] = None,
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -325,22 +311,7 @@ class AttributionLocalisation(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         asserts.assert_segmentations(x_batch=x_batch, s_batch=s_batch)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )

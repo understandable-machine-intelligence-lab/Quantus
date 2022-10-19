@@ -7,17 +7,16 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
-from ...helpers.similarity_func import correlation_pearson
+from quantus.helpers import warn
+from quantus.helpers import asserts
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.similarity_func import correlation_pearson
+from quantus.metrics.base import PerturbationMetric
 
 
 class FaithfulnessCorrelation(PerturbationMetric):
@@ -38,8 +37,8 @@ class FaithfulnessCorrelation(PerturbationMetric):
     average over multiple runs and several test samples.
 
     References:
-        1) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating feature-based model
-        explanations." arXiv preprint arXiv:2005.00631 (2020).
+        1) Umang Bhatt et al.: "Evaluating and aggregating feature-based model
+        explanations." IJCAI (2020): 3016-3022.
 
     """
 
@@ -79,7 +78,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -104,7 +103,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -138,7 +137,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', size of subset |S| 'subset_size'"
@@ -164,7 +163,8 @@ class FaithfulnessCorrelation(PerturbationMetric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -178,7 +178,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -261,23 +261,17 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -288,10 +282,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -319,7 +309,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -341,15 +331,13 @@ class FaithfulnessCorrelation(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -368,20 +356,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
             In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
             returning a custom preprocess batch (custom_preprocess_batch).
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         asserts.assert_value_smaller_than_input_size(
             x=x_batch, value=self.subset_size, value_name="subset_size"
-        )
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
         )

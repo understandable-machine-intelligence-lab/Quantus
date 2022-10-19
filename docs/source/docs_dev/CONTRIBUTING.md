@@ -8,8 +8,6 @@ In this guide, you will get an overview of the workflow and best practices for c
 **Questions.** If you have any developer-related questions, please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose)
 or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de).
 
-<!-- omit in toc -->
-
 ## Table of Contents
 
 - [Reporting Bugs](#reporting-bugs)

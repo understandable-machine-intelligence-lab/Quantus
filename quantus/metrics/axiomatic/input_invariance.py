@@ -9,16 +9,15 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+from quantus.helpers import warn
+from quantus.helpers import asserts
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_shift
 
-
-class InputInvariance(PerturbationMetric):
+class InputInvariance(BatchedPerturbationMetric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
@@ -26,8 +25,7 @@ class InputInvariance(PerturbationMetric):
     on the attributions, the expectation is that if the model show no response, then the explanations should not.
 
     References:
-        Kindermans Pieter-Jan, Hooker Sarah, Adebayo Julius, Alber Maximilian, Schütt Kristof T., Dähne Sven,
-        Erhan Dumitru and Kim Been. "THE (UN)RELIABILITY OF SALIENCY METHODS" Article (2017).
+        Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
     """
 
     @asserts.attributes_check
@@ -56,7 +54,7 @@ class InputInvariance(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=False.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         input_shift: integer
@@ -80,13 +78,13 @@ class InputInvariance(PerturbationMetric):
             Keyword arguments.
         """
         if normalise:
-            warn_func.warn_normalise_operation(word="not ")
+            warn.warn_normalise_operation(word="not ")
 
         if abs:
-            warn_func.warn_absolute_operation(word="not ")
+            warn.warn_absolute_operation(word="not ")
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_shift
@@ -112,7 +110,7 @@ class InputInvariance(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=("input shift 'input_shift'"),
                 citation=(
@@ -124,17 +122,18 @@ class InputInvariance(PerturbationMetric):
     def __call__(
         self,
         model,
-        x_batch: np.array,
-        y_batch: np.array,
-        a_batch: Optional[np.ndarray] = None,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict] = None,
+        explain_func_kwargs: Optional[Dict[str, Any]] = None,
         model_predict_kwargs: Optional[Dict] = None,
-        softmax: Optional[bool] = False,
+        softmax: Optional[bool] = None,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -148,7 +147,7 @@ class InputInvariance(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -172,9 +171,6 @@ class InputInvariance(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -219,77 +215,86 @@ class InputInvariance(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
-        i: int,
         model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> bool:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        s_batch: np.ndarray
+            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
-           : boolean
+           : np.ndarray
             The evaluation results.
+
         """
-        x_shifted = self.perturb_func(
-            arr=x,
-            indices=np.arange(0, x.size),
-            indexed_axes=np.arange(0, x.ndim),
+        batch_size = x_batch.shape[0]
+
+        # Perturb the batched input.
+        x_shifted = perturb_batch(
+            perturb_func=self.perturb_func,
+            indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+            indexed_axes=np.arange(0, x_batch[0].ndim),
+            arr=x_batch,
             **self.perturb_func_kwargs,
         )
-        x_shifted = model.shape_input(x_shifted, x.shape, channel_first=True)
-        warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_shifted)
+
+        x_shifted = model.shape_input(
+            x=x_shifted,
+            shape=x_shifted.shape,
+            channel_first=True,
+            batched=True,
+        )
+
+        for x_instance, x_instance_shifted in zip(x_batch, x_shifted):
+            warn.warn_perturbation_caused_no_change(
+                x=x_instance,
+                x_perturbed=x_instance_shifted,
+            )
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
             model=model.get_model(),
             inputs=x_shifted,
-            targets=y,
+            targets=y_batch,
             **self.explain_func_kwargs,
         )
 
-        # Check if explanation of shifted input is similar to original.
-        if (a.flatten() != a_shifted.flatten()).all():
-            return True
-        else:
-            return False
+        # Compute the evaluation.
+        score = np.all(
+            a_batch == a_shifted,
+            axis=tuple(range(1, a_batch.ndim)),
+        )
+
+        return score
 
     def custom_preprocess(
         self,
@@ -298,16 +303,14 @@ class InputInvariance(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+        custom_batch: Optional[np.ndarray] = None,
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -318,27 +321,12 @@ class InputInvariance(PerturbationMetric):
         s_batch: np.ndarray, optional
             A np.ndarray which contains segmentation masks that matches the input.
         custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in range(len(x_batch))]
-
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )

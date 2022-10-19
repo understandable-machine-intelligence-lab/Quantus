@@ -9,18 +9,17 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+from quantus.helpers import asserts
+from quantus.functions import norm_func
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.functions.similarity_func import difference
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import norm_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import uniform_noise
-from ...helpers.similarity_func import difference
 
-
-class AvgSensitivity(PerturbationMetric):
+class AvgSensitivity(BatchedPerturbationMetric):
     """
     Implementation of Avg-Sensitivity by Yeh at el., 2019.
 
@@ -28,10 +27,10 @@ class AvgSensitivity(PerturbationMetric):
     change under slight perturbation - the average sensitivity is captured.
 
     References:
-        1) Yeh, Chih-Kuan, et al. "On the (in) fidelity and sensitivity for explanations."
-        arXiv preprint arXiv:1901.09392 (2019).
-        2) Bhatt, Umang, Adrian Weller, and José MF Moura. "Evaluating and aggregating
-        feature-based model explanations." arXiv preprint arXiv:2005.00631 (2020).
+        1) Chih-Kuan Yeh et al. "On the (in) fidelity and sensitivity for explanations."
+        NeurIPS (2019): 10965-10976.
+        2) Umang Bhatt et al.: "Evaluating and aggregating
+        feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
     @asserts.attributes_check
@@ -74,7 +73,7 @@ class AvgSensitivity(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -100,7 +99,7 @@ class AvgSensitivity(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = uniform_noise
@@ -126,6 +125,8 @@ class AvgSensitivity(PerturbationMetric):
         )
 
         # Save metric-specific attributes.
+        self.nr_samples = nr_samples
+
         if similarity_func is None:
             similarity_func = difference
         self.similarity_func = similarity_func
@@ -137,11 +138,10 @@ class AvgSensitivity(PerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-        self.nr_samples = nr_samples
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'lower_bound' and 'upper_bound', the number of samples "
@@ -155,7 +155,7 @@ class AvgSensitivity(PerturbationMetric):
                     ".' arXiv preprint arXiv:1901.09392 (2019)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=lower_bound)
+            warn.warn_noise_zero(noise=lower_bound)
 
     def __call__(
         self,
@@ -170,7 +170,8 @@ class AvgSensitivity(PerturbationMetric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -184,7 +185,7 @@ class AvgSensitivity(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -208,9 +209,6 @@ class AvgSensitivity(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -255,93 +253,102 @@ class AvgSensitivity(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
-        i: int,
         model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
+        x_batch: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
+        y_batch: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
+        a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
+        s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
-        results = []
-        for i in range(self.nr_samples):
+        batch_size = x_batch.shape[0]
+        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
+
+        for step_id in range(self.nr_samples):
 
             # Perturb input.
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
+            x_perturbed = perturb_batch(
+                perturb_func=self.perturb_func,
+                indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+                indexed_axes=np.arange(0, x_batch[0].ndim),
+                arr=x_batch,
                 **self.perturb_func_kwargs,
             )
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+
+            x_input = model.shape_input(
+                x=x_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+
+            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(
+                    x=x_instance,
+                    x_perturbed=x_instance_perturbed,
+                )
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(
                 model=model.get_model(),
                 inputs=x_input,
-                targets=y,
+                targets=y_batch,
                 **self.explain_func_kwargs,
             )
 
             if self.normalise:
                 a_perturbed = self.normalise_func(
-                    a_perturbed, **self.normalise_func_kwargs
+                    a_perturbed,
+                    **self.normalise_func_kwargs,
                 )
 
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            sensitivities = self.similarity_func(a=a.flatten(), b=a_perturbed.flatten())
-            sensitivities_numerator = self.norm_numerator(a=sensitivities)
-            sensitivities_denominator = self.norm_denominator(a=x.flatten())
-            sensitivities_norm = sensitivities_numerator / sensitivities_denominator
+            # Measure similarity for each instance separately.
+            for instance_id in range(batch_size):
+                sensitivities = self.similarity_func(
+                    a=a_batch[instance_id].flatten(),
+                    b=a_perturbed[instance_id].flatten(),
+                )
+                numerator = self.norm_numerator(a=sensitivities)
+                denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
+                sensitivities_norm = numerator / denominator
+                similarities[instance_id, step_id] = sensitivities_norm
 
-            results.append(sensitivities_norm)
-
-        # Append average sensitivity score.
-        return float(np.mean(results))
+        return np.nanmean(similarities, axis=1)
 
     def custom_preprocess(
         self,
@@ -351,15 +358,13 @@ class AvgSensitivity(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -374,23 +379,8 @@ class AvgSensitivity(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )

@@ -10,12 +10,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Collection
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.similarity_func import correlation_spearman
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.similarity_func import correlation_spearman
+from quantus.metrics.base import Metric
 
 
 class ModelParameterRandomisation(Metric):
@@ -31,8 +31,8 @@ class ModelParameterRandomisation(Metric):
         HOG and SSIM. We have set Spearman as the default value.
 
     References:
-        1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
-        arXiv preprint, arXiv:1810.073292v3 (2018)
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
+        NeurIPS (2018): 9525-9536.
     """
 
     @asserts.attributes_check
@@ -74,7 +74,7 @@ class ModelParameterRandomisation(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -91,7 +91,7 @@ class ModelParameterRandomisation(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -120,7 +120,7 @@ class ModelParameterRandomisation(Metric):
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "similarity metric 'similarity_func' and the order of "
@@ -146,7 +146,8 @@ class ModelParameterRandomisation(Metric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -158,9 +159,12 @@ class ModelParameterRandomisation(Metric):
         () on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -184,9 +188,6 @@ class ModelParameterRandomisation(Metric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -227,28 +228,16 @@ class ModelParameterRandomisation(Metric):
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
-        # This is needed for iterator (zipped over x_batch, y_batch, a_batch, s_batch, custom_batch)
-        if custom_batch is None:
-            custom_batch = [None for _ in x_batch]
-
-        (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        ) = self.general_preprocess(
+        data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -256,6 +245,10 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
+        model = data["model"]
+        x_batch = data["x_batch"]
+        y_batch = data["y_batch"]
+        a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.last_results = {}
@@ -304,7 +297,6 @@ class ModelParameterRandomisation(Metric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
         )
 
         if self.return_sample_correlation:
@@ -325,12 +317,10 @@ class ModelParameterRandomisation(Metric):
         self,
         i: int,
         model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
         a_perturbed: Optional[np.ndarray] = None,
     ) -> float:
         """
@@ -350,10 +340,8 @@ class ModelParameterRandomisation(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
+        a_perturbed: np.ndarray
+            The perturbed attributions.
 
         Returns
         -------
@@ -377,15 +365,13 @@ class ModelParameterRandomisation(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -400,28 +386,13 @@ class ModelParameterRandomisation(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
-
-    def compute_correlation_per_sample(self) -> List[Any]:
+    def compute_correlation_per_sample(self) -> List[float]:
 
         assert isinstance(self.last_results, dict), (
             "To compute the average correlation coefficient per sample for "

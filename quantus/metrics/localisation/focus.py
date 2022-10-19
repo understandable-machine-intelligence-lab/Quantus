@@ -9,12 +9,12 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import plotting
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Focus(Metric):
@@ -29,8 +29,8 @@ class Focus(Metric):
     of positive relevance lying on those images.
 
     References:
-        1) Anna Arias-Duart, Ferran Parés, Dario Garcia-Gasulla, Victor Gimenez-Abalos. "Focus! Rating XAI Methods
-        and Finding Biases" arXiv preprint arXiv:2109.15035 (2022).
+        1) Anna Arias-Duart et al.: "Focus! Rating XAI Methods
+        and Finding Biases" FUZZ-IEEE (2022): 1-8.
     """
 
     @asserts.attributes_check
@@ -57,7 +57,7 @@ class Focus(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -74,7 +74,7 @@ class Focus(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         # Save metric-specific attributes.
         self.mosaic_shape = mosaic_shape
@@ -94,7 +94,7 @@ class Focus(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "no parameter. No parameters means nothing to be sensitive on. "
@@ -121,7 +121,8 @@ class Focus(Metric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -162,7 +163,7 @@ class Focus(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -246,23 +247,18 @@ class Focus(Metric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
+        c: np.ndarray = None,
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -275,8 +271,6 @@ class Focus(Metric):
             The segmentation to be evaluated on an instance-basis.
         c: any
             The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -317,15 +311,13 @@ class Focus(Metric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> Dict[str, Any]:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -340,13 +332,13 @@ class Focus(Metric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        dictionary[str, np.ndarray]
+            Output dictionary with two items:
+            1) 'c_batch' as key and custom_batch as value.
+            2) 'custom_batch' as key and None as value.
+            This results in the keyword argument 'c' being passed to `evaluate_instance()`.
+
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         try:
             assert model is not None
@@ -357,15 +349,9 @@ class Focus(Metric):
                 "Focus requires either a_batch (explanation maps) or "
                 "the necessary arguments to compute it for you (model, x_batch & y_batch)."
             )
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
-        )
+
+        # Overwrite custom_batch to have only 'c' as instance input.
+        return {"c_batch": custom_batch, "custom_batch": None}
 
     def quadrant_top_left(self, a: np.ndarray) -> np.ndarray:
         quandrant_a = a[
