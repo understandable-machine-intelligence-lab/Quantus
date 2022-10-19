@@ -10,12 +10,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 from tqdm.auto import tqdm
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.similarity_func import correlation_spearman
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.similarity_func import correlation_spearman
+from quantus.metrics.base import Metric
 
 
 class ModelParameterRandomisation(Metric):
@@ -31,8 +31,8 @@ class ModelParameterRandomisation(Metric):
         HOG and SSIM. We have set Spearman as the default value.
 
     References:
-        1) Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "Sanity Checks for Saliency Maps."
-        arXiv preprint, arXiv:1810.073292v3 (2018)
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
+        NeurIPS (2018): 9525-9536.
     """
 
     @asserts.attributes_check
@@ -74,7 +74,7 @@ class ModelParameterRandomisation(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         return_aggregate: boolean
@@ -91,7 +91,7 @@ class ModelParameterRandomisation(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -120,7 +120,7 @@ class ModelParameterRandomisation(Metric):
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "similarity metric 'similarity_func' and the order of "
@@ -157,9 +157,12 @@ class ModelParameterRandomisation(Metric):
         () on each instance, and saves results to last_results.
         Calls custom_postprocess() afterwards. Finally returns last_results.
 
+        The content of last_results will be appended to all_results (list) at the end of
+        the evaluation call.
+
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -223,8 +226,8 @@ class ModelParameterRandomisation(Metric):
         """
 
         # Run deprecation warnings.
-        warn_func.deprecation_warnings(kwargs)
-        warn_func.check_kwargs(kwargs)
+        warn.deprecation_warnings(kwargs)
+        warn.check_kwargs(kwargs)
 
         data = self.general_preprocess(
             model=model,
@@ -240,10 +243,10 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model = data['model']
-        x_batch = data['x_batch']
-        y_batch = data['y_batch']
-        a_batch = data['a_batch']
+        model = data["model"]
+        x_batch = data["x_batch"]
+        y_batch = data["y_batch"]
+        a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.last_results = {}
@@ -364,7 +367,7 @@ class ModelParameterRandomisation(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.

@@ -9,17 +9,16 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import gaussian_noise, perturb_batch
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
-from ..base import PerturbationMetric
-from ...helpers import asserts
-from ...helpers import warn_func
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import gaussian_noise
-from ...helpers.similarity_func import lipschitz_constant, distance_euclidean
 
-
-class LocalLipschitzEstimate(PerturbationMetric):
+class LocalLipschitzEstimate(BatchedPerturbationMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -29,11 +28,11 @@ class LocalLipschitzEstimate(PerturbationMetric):
     where f(x) is the explanation for input x and x' is the perturbed input.
 
     References:
-        1) Alvarez-Melis, David, and Tommi S. Jaakkola. "On the robustness of interpretability methods."
+        1) David Alvarez-Melis and Tommi S. Jaakkola. "On the robustness of interpretability methods."
         arXiv preprint arXiv:1806.08049 (2018).
 
-        2) Alvarez-Melis, David, and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
-        neural networks." arXiv preprint arXiv:1806.07538 (2018).
+        2) David Alvarez-Melis and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
+        neural networks." NeurIPS (2018): 7786-7795.
     """
 
     @asserts.attributes_check
@@ -78,7 +77,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -104,7 +103,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = gaussian_noise
@@ -130,6 +129,8 @@ class LocalLipschitzEstimate(PerturbationMetric):
         )
 
         # Save metric-specific attributes.
+        self.nr_samples = nr_samples
+
         if similarity_func is None:
             similarity_func = lipschitz_constant
         self.similarity_func = similarity_func
@@ -142,11 +143,9 @@ class LocalLipschitzEstimate(PerturbationMetric):
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
 
-        self.nr_samples = nr_samples
-
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "amount of noise added 'perturb_std', the number of samples iterated "
@@ -163,7 +162,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
                     "arXiv:1806.07538 (2018)"
                 ),
             )
-            warn_func.warn_noise_zero(noise=perturb_std)
+            warn.warn_noise_zero(noise=perturb_std)
 
     def __call__(
         self,
@@ -178,6 +177,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
         softmax: bool = True,
         device: Optional[str] = None,
+        batch_size: int = 64,
         **kwargs,
     ) -> List[float]:
         """
@@ -191,7 +191,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -266,57 +266,72 @@ class LocalLipschitzEstimate(PerturbationMetric):
             softmax=softmax,
             device=device,
             model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        s_batch: np.ndarray
+            The segmentation to be evaluated on a batch-basis.
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
 
-        similarity_max = 0.0
-        for i in range(self.nr_samples):
+        batch_size = x_batch.shape[0]
+        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
+
+        for step_id in range(self.nr_samples):
 
             # Perturb input.
-            x_perturbed = self.perturb_func(
-                arr=x,
-                indices=np.arange(0, x.size),
-                indexed_axes=np.arange(0, x.ndim),
+            x_perturbed = perturb_batch(
+                perturb_func=self.perturb_func,
+                indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
+                indexed_axes=np.arange(0, x_batch[0].ndim),
+                arr=x_batch,
                 **self.perturb_func_kwargs,
             )
-            x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_input)
+
+            x_input = model.shape_input(
+                x=x_perturbed,
+                shape=x_batch.shape,
+                channel_first=True,
+                batched=True,
+            )
+
+            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(
+                    x=x_instance,
+                    x_perturbed=x_instance_perturbed,
+                )
 
             # Generate explanation based on perturbed input x.
             a_perturbed = self.explain_func(
                 model=model.get_model(),
                 inputs=x_input,
-                targets=y,
+                targets=y_batch,
                 **self.explain_func_kwargs,
             )
 
@@ -329,16 +344,19 @@ class LocalLipschitzEstimate(PerturbationMetric):
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            # Measure similarity.
-            similarity = self.similarity_func(
-                a=a.flatten(),
-                b=a_perturbed.flatten(),
-                c=x.flatten(),
-                d=x_perturbed.flatten(),
-            )
-            similarity_max = max(similarity, similarity_max)
+            # Measure similarity for each instance separately.
+            for instance_id in range(batch_size):
+                similarity = self.similarity_func(
+                    a=a_batch[instance_id].flatten(),
+                    b=a_perturbed[instance_id].flatten(),
+                    c=x_batch[instance_id].flatten(),
+                    d=x_perturbed[instance_id].flatten(),
+                    norm_numerator=self.norm_numerator,
+                    norm_denominator=self.norm_denominator,
+                )
+                similarities[instance_id, step_id] = similarity
 
-        return similarity_max
+        return np.nanmax(similarities, axis=1)
 
     def custom_preprocess(
         self,
@@ -354,7 +372,7 @@ class LocalLipschitzEstimate(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.

@@ -8,14 +8,14 @@
 
 from typing import Any, Dict, Optional, Tuple
 
-from tensorflow.keras.layers import Dense
+import numpy as np
 from tensorflow.keras import activations
 from tensorflow.keras import Model
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import clone_model
-import numpy as np
 
-from ..helpers.model_interface import ModelInterface
-from ..helpers import utils
+from quantus.helpers import utils
+from quantus.helpers.model.model_interface import ModelInterface
 
 
 class TensorFlowModel(ModelInterface):
@@ -33,7 +33,7 @@ class TensorFlowModel(ModelInterface):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A model this will be wrapped in the ModelInterface:
         channel_first: boolean, optional
              Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.

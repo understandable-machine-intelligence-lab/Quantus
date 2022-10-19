@@ -9,12 +9,12 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
-from ..base import Metric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.discretise_func import top_n_sign
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.functions.discretise_func import top_n_sign
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.metrics.base import Metric
 
 
 class Consistency(Metric):
@@ -30,8 +30,8 @@ class Consistency(Metric):
         - A used-defined discreization function is used to discretize continuous explanation spaces.
 
     References:
-         1) Sanjoy Dasgupta, Nave Frost, and Michal Moshkovitz. "Framework for Evaluating Faithfulness of Local
-            Explanations." arXiv preprint arXiv:2202.00734 (2022).
+         1) Sanjoy Dasgupta et al.: "Framework for Evaluating Faithfulness of Local
+            Explanations." ICML (2022): 4794-4815.
     """
 
     @asserts.attributes_check
@@ -59,7 +59,7 @@ class Consistency(Metric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -85,7 +85,7 @@ class Consistency(Metric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -108,7 +108,7 @@ class Consistency(Metric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "Function for discretisation of the explanation space 'discretise_func' (return hash value of"
@@ -146,7 +146,7 @@ class Consistency(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -286,7 +286,7 @@ class Consistency(Metric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -314,7 +314,7 @@ class Consistency(Metric):
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
 
         return {
-            'i_batch': np.arange(x_batch.shape[0]),
-            'a_label_batch': a_labels,
-            'y_pred_classes': y_pred_classes,
+            "i_batch": np.arange(x_batch.shape[0]),
+            "a_label_batch": a_labels,
+            "y_pred_classes": y_pred_classes,
         }

@@ -6,8 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import numpy as np
 from typing import Callable, Tuple, Sequence
+
+import numpy as np
 
 
 def attributes_check(metric):

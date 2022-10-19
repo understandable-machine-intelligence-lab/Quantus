@@ -6,19 +6,19 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
 import itertools
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers import plotting
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import utils
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.metrics.base import PerturbationMetric
 
 
 class Selectivity(PerturbationMetric):
@@ -36,7 +36,7 @@ class Selectivity(PerturbationMetric):
         to other data domains, adjustments to the current implementation might be necessary.
 
     References:
-        1) Montavon, Grégoire, Wojciech Samek, and Klaus-Robert Müller.
+        1) Grégoire Montavon et al.:
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
     """
@@ -70,7 +70,7 @@ class Selectivity(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -95,7 +95,7 @@ class Selectivity(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -128,7 +128,7 @@ class Selectivity(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline' and the patch size for masking"
@@ -170,7 +170,7 @@ class Selectivity(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -347,7 +347,7 @@ class Selectivity(PerturbationMetric):
                 x_perturbed_pad, pad_width, padded_axes=self.a_axes
             )
 
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x and store the difference from predicting on unperturbed input.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)

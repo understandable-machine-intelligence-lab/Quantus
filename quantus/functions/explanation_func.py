@@ -6,16 +6,22 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Dict, Optional, Union
+import warnings
+from importlib import util
+from typing import Optional, Union
+
 import numpy as np
 import scipy
-from importlib import util
-import cv2
-import warnings
-from .normalise_func import normalise_by_negative
-from ..helpers import __EXTRAS__
-from ..helpers import constants
-from ..helpers import warn_func
+
+from quantus.helpers import constants
+from quantus.helpers import __EXTRAS__
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.utils import (
+    get_baseline_value,
+    infer_channel_first,
+    make_channel_last,
+)
+
 
 if util.find_spec("torch"):
     import torch
@@ -39,11 +45,6 @@ if util.find_spec("tensorflow"):
 if util.find_spec("tf_explain"):
     import tf_explain
 
-from ..helpers import __EXTRAS__
-from .model_interface import ModelInterface
-from .normalise_func import normalise_by_negative
-from .utils import get_baseline_value, infer_channel_first, make_channel_last
-
 
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
@@ -52,7 +53,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
              The inputs that ought to be explained.
@@ -102,7 +103,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -150,7 +151,7 @@ def generate_tf_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
             A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -299,7 +300,7 @@ def generate_captum_explanation(
     Generate explanation for a torch model with captum.
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
@@ -487,7 +488,7 @@ def generate_zennit_explanation(
 
     Parameters
     ----------
-    model: Union[torch.nn.Module, tf.keras.Model]
+    model: torch.nn.Module, tf.keras.Model
         A model that is used for explanation.
     inputs: np.ndarray
          The inputs that ought to be explained.
