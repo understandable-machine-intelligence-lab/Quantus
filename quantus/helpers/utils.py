@@ -233,7 +233,8 @@ def infer_channel_first(x: np.array) -> bool:
         For 2d input:
             nr_channels < img_width and nr_channels < img_height
 
-    For higher dimensional input an error is raised.
+    For higher dimensional input an error is raised. For input in n_features x n_batches format True is returned (no
+    channel).
 
     Parameters
     ----------
@@ -253,6 +254,9 @@ def infer_channel_first(x: np.array) -> bool:
         An error is raised if the three last dimensions are equal.
     """
     err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order."
+
+    if len(np.shape(x)) == 2:
+        return True
 
     if len(np.shape(x)) == 3:
         if np.shape(x)[-2] < np.shape(x)[-1]:
