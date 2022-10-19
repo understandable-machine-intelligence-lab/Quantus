@@ -23,7 +23,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
 
 - Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
-- Supports different data types (image, time-series, NLP next up!) and models (PyTorch and TensorFlow)
+- Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
 - Latest metrics additions:
     - <b>Infidelity </b><a href="https://arxiv.org/abs/1901.09392">(Chih-Kuan, Yeh, et al., 2019)</a>
     - <b>ROAD </b><a href="https://arxiv.org/abs/2202.00449">(Rong, Leemann, et al., 2022)</a>
