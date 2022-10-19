@@ -28,7 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest mypy 
-        python -m pip install typing-extensions --upgrade
+        python -m pip install --upgrade typing-extensions
         python -m pip black
         if [ -f requirements_test.txt ]; then pip install -r requirements_test.txt; fi
     - name: Lint with flake8
