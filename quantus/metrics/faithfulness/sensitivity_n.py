@@ -7,18 +7,17 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 
-
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers import utils
-from ...helpers import plotting
-from ...helpers.model_interface import ModelInterface
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import baseline_replacement_by_indices
-from ...helpers.similarity_func import correlation_pearson
+from quantus.helpers import asserts
+from quantus.helpers import plotting
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.normalise_func import normalise_by_max
+from quantus.functions.perturb_func import baseline_replacement_by_indices
+from quantus.functions.similarity_func import correlation_pearson
+from quantus.metrics.base import PerturbationMetric
 
 
 class SensitivityN(PerturbationMetric):
@@ -34,8 +33,8 @@ class SensitivityN(PerturbationMetric):
     of samples is reported. Sampling is performed using a uniform probability distribution over the features.
 
     References:
-        1) Ancona, Marco, et al. "Towards better understanding of gradient-based attribution
-        methods for deep neural networks." arXiv preprint arXiv:1711.06104 (2017).
+        1) Marco Ancona et al.: "Towards better understanding of gradient-based attribution
+        methods for deep neural networks." ICLR (Poster) (2018).
 
     """
 
@@ -75,7 +74,7 @@ class SensitivityN(PerturbationMetric):
             Indicates whether normalise operation is applied on the attribution, default=True.
         normalise_func: callable
             Attribution normalisation function applied in case normalise=True.
-            If normalise_func=None, the default value is used, default=normalise_by_negative.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
         perturb_func: callable
@@ -100,7 +99,7 @@ class SensitivityN(PerturbationMetric):
             Keyword arguments.
         """
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_max
 
         if perturb_func is None:
             perturb_func = baseline_replacement_by_indices
@@ -137,7 +136,7 @@ class SensitivityN(PerturbationMetric):
 
         # Asserts and warnings.
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn.warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "baseline value 'perturb_baseline', the patch size for masking "
@@ -164,7 +163,8 @@ class SensitivityN(PerturbationMetric):
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = True,
         device: Optional[str] = None,
-        custom_batch: Optional[np.ndarray] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -178,7 +178,7 @@ class SensitivityN(PerturbationMetric):
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -202,9 +202,6 @@ class SensitivityN(PerturbationMetric):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        custom_batch: any
-            Any object that can be passed to the evaluation process.
-            Gives flexibility to the user to adapt for implementing their own metric.
         kwargs: optional
             Keyword arguments.
 
@@ -249,7 +246,7 @@ class SensitivityN(PerturbationMetric):
             y_batch=y_batch,
             a_batch=a_batch,
             s_batch=s_batch,
-            custom_batch=custom_batch,
+            custom_batch=None,
             channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
@@ -261,23 +258,17 @@ class SensitivityN(PerturbationMetric):
 
     def evaluate_instance(
         self,
-        i: int,
         model: ModelInterface,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        a: Optional[np.ndarray] = None,
-        s: Optional[np.ndarray] = None,
-        c: Any = None,
-        p: Any = None,
-        a_perturbed: Optional[np.ndarray] = None,
+        y: np.ndarray,
+        a: np.ndarray,
+        s: np.ndarray,
     ) -> Dict[str, List[float]]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
         Parameters
         ----------
-        i: integer
-            The evaluation instance.
         model: ModelInterface
             A ModelInteface that is subject to explanation.
         x: np.ndarray
@@ -288,10 +279,6 @@ class SensitivityN(PerturbationMetric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
-        c: any
-            The custom input to be evaluated on an instance-basis.
-        p: any
-            The custom preprocess input to be evaluated on an instance-basis.
 
         Returns
         -------
@@ -324,7 +311,7 @@ class SensitivityN(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn_func.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Sum attributions.
             att_sums.append(float(a[a_ix].sum()))
@@ -345,15 +332,13 @@ class SensitivityN(PerturbationMetric):
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
         custom_batch: Optional[np.ndarray],
-    ) -> Tuple[
-        ModelInterface, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Any, Any
-    ]:
+    ) -> None:
         """
         Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
@@ -368,27 +353,12 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-        tuple
-            In addition to the x_batch, y_batch, a_batch, s_batch and custom_batch,
-            returning a custom preprocess batch (custom_preprocess_batch).
+        None
         """
-
-        custom_preprocess_batch = [None for _ in x_batch]
-
         # Asserts.
         asserts.assert_features_in_step(
             features_in_step=self.features_in_step,
             input_shape=x_batch.shape[2:],
-        )
-
-        return (
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            custom_batch,
-            custom_preprocess_batch,
         )
 
     def custom_postprocess(
@@ -398,31 +368,28 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        **kwargs,
     ) -> None:
         """
         Post-process the evaluation results.
 
         Parameters
         ----------
-            model: Union[torch.nn.Module, tf.keras.Model]
+        model: torch.nn.Module, tf.keras.Model
             A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-            x_batch: np.ndarray
+        x_batch: np.ndarray
             A np.ndarray which contains the input data that are explained.
-            y_batch: np.ndarray
+        y_batch: np.ndarray
             A np.ndarray which contains the output labels that are explained.
-            a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
-            s_batch: np.ndarray, optional
-        A np.ndarray which contains segmentation masks that matches the input.
-            custom_batch: any
-            Gives flexibility ot the user to use for evaluation, can hold any variable.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
 
         Returns
         -------
-           None
+        None
         """
-
         max_features = int(
             self.n_max_percentage * np.prod(x_batch.shape[2:]) // self.features_in_step
         )

@@ -1,7 +1,7 @@
-quantus.helpers.mosaic\_func module
+quantus.helpers.model.models module
 ===================================
 
-.. automodule:: quantus.helpers.mosaic_func
+.. automodule:: quantus.helpers.model.models
    :members:
    :undoc-members:
    :show-inheritance:
