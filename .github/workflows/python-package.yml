@@ -38,7 +38,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Lint Action
-      working-directory: ./quantus
       uses: wearerequired/lint-action@v2.1.0
       with:
           #auto_fix: true
@@ -48,6 +47,7 @@ jobs:
           #flake8_auto_fix: false
           mypy: true
           #mypy_auto_fix: false
+          mypy_dir: ./quantus
     - name: Test with pytest
       run: |
         pytest
