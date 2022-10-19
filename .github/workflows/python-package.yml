@@ -27,7 +27,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install flake8 pytest mypy 
+        python -m pip typing-extensions --upgrade
+        python -m pip black
         if [ -f requirements_test.txt ]; then pip install -r requirements_test.txt; fi
     - name: Lint with flake8
       run: |
@@ -35,6 +37,16 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Lint Action
+      uses: wearerequired/lint-action@v2.1.0
+      with:
+          #auto_fix: true
+          black: true
+          #black_auto_fix: true
+          flake8: true
+          #flake8_auto_fix: false
+          mypy: true
+          #mypy_auto_fix: false
     - name: Test with pytest
       run: |
         pytest
