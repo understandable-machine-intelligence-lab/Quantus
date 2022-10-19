@@ -272,15 +272,15 @@ class AttributionLocalisation(Metric):
         total_attribution = np.sum(a)
         inside_attribution_ratio = float(inside_attribution / total_attribution)
 
-        if ratio <= self.max_size:
-            if inside_attribution_ratio > 1.0:
-                warn.warn_segmentation(inside_attribution, total_attribution)
-                return np.nan
-            if not self.weighted:
-                return inside_attribution_ratio
-            else:
-                return float(inside_attribution_ratio * ratio)
-        # TODO: else return what?
+        if not ratio <= self.max_size:
+            warn.warn_max_size()
+        if inside_attribution_ratio > 1.0:
+            warn.warn_segmentation(inside_attribution, total_attribution)
+            return np.nan
+        if not self.weighted:
+            return inside_attribution_ratio
+        else:
+            return float(inside_attribution_ratio * ratio)
 
     def custom_preprocess(
         self,
