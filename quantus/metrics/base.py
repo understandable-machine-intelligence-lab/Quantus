@@ -272,6 +272,10 @@ class Metric:
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        Any
         """
         raise NotImplementedError()
 
@@ -852,5 +856,9 @@ class PerturbationMetric(Metric):
             The explanation to be evaluated on an instance-basis.
         s: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+
+        Returns
+        -------
+        Any
         """
         raise NotImplementedError()
