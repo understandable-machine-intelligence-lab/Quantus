@@ -234,6 +234,29 @@ class BatchedMetric(Metric):
         a_batch: np.ndarray,
         s_batch: np.ndarray,
     ):
+        """
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
+
+        This method needs to be implemented to use __call__().
+
+        Parameters
+        ----------
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x_batch: np.ndarray
+            The input to be evaluated on a batch-basis.
+        y_batch: np.ndarray
+            The output to be evaluated on a batch-basis.
+        a_batch: np.ndarray
+            The explanation to be evaluated on a batch-basis.
+        s_batch: np.ndarray
+            The segmentation to be evaluated on a batch-basis.
+
+        Returns
+        -------
+        np.ndarray
+            The batched evaluation results.
+        """
         raise NotImplementedError()
 
     @staticmethod
@@ -349,9 +372,12 @@ class BatchedMetric(Metric):
         **kwargs
     ) -> Any:
         """
-        This method from the parent Metric class needs
-        to be defined to implement this abstract class.
+        This method from the parent Metric class needs to be defined to implement this abstract class.
         However we use evalaute_batch() instead for BatchedMetric.
+
+        Returns
+        -------
+        Any
         """
         raise NotImplementedError(
             "evaluate_instance() not implemented for BatchedMetric"
@@ -462,7 +488,7 @@ class BatchedPerturbationMetric(BatchedMetric):
 
         Returns
         -------
-           : np.ndarray
+        np.ndarray
             The batched evaluation results.
         """
         raise NotImplementedError()

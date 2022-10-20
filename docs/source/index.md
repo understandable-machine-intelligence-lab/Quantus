@@ -9,8 +9,8 @@
 Figure: a) Simple qualitative comparison of XAI methods is often not sufficient to distinguish which
 gradient-based method — Saliency, Integrated Gradients, GradientShap or FusionGrad
 is preferred. With Quantus, we can obtain richer insights on how the methods compare b) by holistic
-quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter
-e.g. pixel replacement strategy of a faithfulness test influences the ranking of XAI methods. <a href="https://arxiv.org/abs/2202.06861">📑 Shortcut to paper!</a>
+quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter,
+e.g., pixel replacement strategy of a faithfulness test influences the ranking of XAI methods. <a href="https://arxiv.org/abs/2202.06861">📑 Shortcut to paper!</a>
 </small></p>
 
 
