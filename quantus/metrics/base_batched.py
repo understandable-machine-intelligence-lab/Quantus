@@ -369,7 +369,7 @@ class BatchedMetric(Metric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         This method from the parent Metric class needs to be defined to implement this abstract class.
@@ -500,7 +500,7 @@ class BatchedPerturbationMetric(BatchedMetric):
         y: Optional[np.ndarray],
         a: Optional[np.ndarray],
         s: Optional[np.ndarray],
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         This method from the parent Metric class needs to be defined to implement this abstract class.

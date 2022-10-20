@@ -67,9 +67,7 @@ def plot_pixel_flipping_experiment(
     plt.show()
 
 
-def plot_selectivity_experiment(
-    results: Dict[str, List[Any]], *args, **kwargs
-) -> None:
+def plot_selectivity_experiment(results: Dict[str, List[Any]], *args, **kwargs) -> None:
     """
     Plot the selectivity experiment as done in paper:
 

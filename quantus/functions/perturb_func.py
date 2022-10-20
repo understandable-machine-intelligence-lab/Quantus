@@ -72,9 +72,10 @@ def perturb_batch(
 
     return None
 
+
 def baseline_replacement_by_indices(
     arr: np.array,
-    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
@@ -119,7 +120,7 @@ def baseline_replacement_by_indices(
 
 def baseline_replacement_by_shift(
     arr: np.array,
-    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     input_shift: Union[float, int, str, np.array],
     **kwargs,
@@ -223,7 +224,7 @@ def baseline_replacement_by_blur(
 
 def gaussian_noise(
     arr: np.array,
-    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
@@ -265,7 +266,7 @@ def gaussian_noise(
 
 def uniform_noise(
     arr: np.array,
-    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     lower_bound: float = 0.02,
     upper_bound: Union[None, float] = None,
