@@ -9,7 +9,7 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -384,7 +384,7 @@ def get_wrapped_model(
 def blur_at_indices(
     arr: np.array,
     kernel: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]],
     indexed_axes: Sequence[int],
 ) -> np.array:
     """
@@ -423,7 +423,7 @@ def blur_at_indices(
     # Handle indices
     indices = expand_indices(arr, indices, indexed_axes)
     none_slices = []
-    array_indices = []
+    array_indices: Union[list, np.ndarray] = []
     for i, idx in enumerate(indices):
         if isinstance(idx, slice) and idx == slice(None):
             none_slices.append(idx)
@@ -468,7 +468,7 @@ def blur_at_indices(
 
 def create_patch_slice(
     patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[slice]:
+) -> Tuple[slice, ...]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -493,6 +493,7 @@ def create_patch_slice(
     patch_size = np.array(patch_size)
     coords = tuple(coords)
 
+    assert isinstance(patch_size, np.ndarray)
     if len(patch_size) == 1 and len(coords) != 1:
         patch_size = tuple(patch_size for _ in coords)
     elif patch_size.ndim != 1:
@@ -537,6 +538,7 @@ def get_nr_patches(
         patch_size = (patch_size,)
     patch_size = np.array(patch_size)
 
+    assert isinstance(patch_size, np.ndarray)
     if len(patch_size) == 1 and len(shape) != 1:
         patch_size = tuple(patch_size for _ in shape)
     elif patch_size.ndim != 1:
@@ -553,7 +555,7 @@ def get_nr_patches(
 
 def _pad_array(
     arr: np.array,
-    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
+    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]], List[Tuple[int, int]]],
     mode: str,
     padded_axes: Sequence[int],
 ) -> np.array:
@@ -586,10 +588,10 @@ def _pad_array(
             padded_axes
         ), "pad_width and padded_axes have different lengths"
         for p in pad_width:
-            if isinstance(p, Tuple):
+            if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
-    pad_width_list = []
+    pad_width_list : List[Union[Tuple[int], Tuple[int, int]]]= []
 
     for ax in range(arr.ndim):
         if ax not in padded_axes:
@@ -613,7 +615,7 @@ def _pad_array(
 
 def _unpad_array(
     arr: np.array,
-    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]]],
+    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]], List[Tuple[int, int]]],
     padded_axes: Sequence[int],
 ):
     """
@@ -630,7 +632,7 @@ def _unpad_array(
 
     Returns
     -------
-        np.ndarray:
+    np.ndarray
         The unpadded array.
 
     """
@@ -644,7 +646,7 @@ def _unpad_array(
             padded_axes
         ), "pad_width and padded_axes have different lengths"
         for p in pad_width:
-            if isinstance(p, Tuple):
+            if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
     unpad_slice = []
@@ -661,13 +663,16 @@ def _unpad_array(
                 )
             )
         else:
+            assert isinstance(pad_width, Sequence)
             unpad_slice.append(
                 slice(
                     pad_width[[p for p in padded_axes].index(ax)][0],
                     arr.shape[ax] - pad_width[[p for p in padded_axes].index(ax)][1],
                 )
             )
-    return arr[tuple(unpad_slice)]
+
+    unpadded_arr = arr[tuple(unpad_slice)]
+    return unpadded_arr
 
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
@@ -810,7 +815,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
 def expand_indices(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice]],
+    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]], # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
     indexed_axes: Sequence[int],
 ) -> Tuple:
     """
@@ -842,7 +847,7 @@ def expand_indices(
 
     # Handle indices.
     if isinstance(indices, int):
-        expanded_indices = [indices]
+        expanded_indices: Union[np.ndarray, tuple, list] = [indices]
     else:
         expanded_indices = []
         for i, idx in enumerate(indices):
@@ -886,11 +891,13 @@ def expand_indices(
     # Cast to list so item assignment works.
     expanded_indices = list(expanded_indices)
 
+    assert isinstance(indexed_axes, np.ndarray)
     if indexed_axes.size != len(expanded_indices):
         raise ValueError("indices dimension doesn't match indexed_axes")
 
     # Ensure array dimensions are kept when indexing.
     # Expands dimensions of each element in expanded_indices depending on the number of elements.
+    #assert isinstance(expanded_indices, np.ndarray)
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(
@@ -930,7 +937,7 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     return leftover_shape
 
 
-def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
+def offset_coordinates(indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple):
     """
     Checks if offset coordinates are within the image frame.
         Adapted from: https://github.com/tleemann/road_evaluation.
@@ -958,7 +965,7 @@ def offset_coordinates(indices: list, offset: tuple, img_shape: tuple):
     return off_coords[valid], valid
 
 
-def calculate_auc(values: np.array, dx: int = 1.0):
+def calculate_auc(values: np.array, dx: int = 1):
     """
     Calculate area under the curve using the composite trapezoidal rule.
 

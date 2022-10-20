@@ -37,7 +37,7 @@ class EffectiveComplexity(Metric):
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -114,11 +114,13 @@ class EffectiveComplexity(Metric):
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,  # Specify function signature
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func: Optional[Callable] = None,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """

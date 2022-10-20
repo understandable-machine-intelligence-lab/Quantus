@@ -41,7 +41,7 @@ class AttributionLocalisation(Metric):
         normalise_func: Optional[Callable] = None,
         normalise_func_kwargs: Optional[Dict] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         display_progressbar: bool = False,
         disable_warnings: bool = False,
@@ -123,14 +123,16 @@ class AttributionLocalisation(Metric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[np.ndarray],
-        s_batch: np.array,
+        a_batch: Optional[np.ndarray] = None,
+        s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -270,14 +272,15 @@ class AttributionLocalisation(Metric):
         total_attribution = np.sum(a)
         inside_attribution_ratio = float(inside_attribution / total_attribution)
 
-        if ratio <= self.max_size:
-            if inside_attribution_ratio > 1.0:
-                warn.warn_segmentation(inside_attribution, total_attribution)
-                return np.nan
-            if not self.weighted:
-                return inside_attribution_ratio
-            else:
-                return float(inside_attribution_ratio * ratio)
+        if not ratio <= self.max_size:
+            warn.warn_max_size()
+        if inside_attribution_ratio > 1.0:
+            warn.warn_segmentation(inside_attribution, total_attribution)
+            return np.nan
+        if not self.weighted:
+            return inside_attribution_ratio
+        else:
+            return float(inside_attribution_ratio * ratio)
 
     def custom_preprocess(
         self,

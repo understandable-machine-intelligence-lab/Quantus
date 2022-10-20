@@ -19,6 +19,11 @@ or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de)
   - [Before You Create a Pull Request](#before-you-create-a-pull-request)
   - [Pull Requests](#pull-requests)
 - [Contributing a New Metric](#contributing-a-new-metric)
+  - [Theoretical Foundations](#theoretical-foundations)
+  - [Metric Class](#metric-class)
+  - [Using Helpers](#using-helpers)
+  - [Warnings](#warnings)
+  - [Documenting a Metric](#documenting-a-metric)
 - [License](#license)
 
 ## Reporting Bugs
@@ -124,6 +129,7 @@ Currently, we support six subgroups of evaluation metrics:
 See a more detailed description of those in [README](https://github.com/understandable-machine-intelligence-lab/Quantus#library-overview).
 Identify which category your metric belongs to and create a Python file for your metric class in the respective folder in `quantus/metrics`.
 
+Add the metric to the `__init__.py` file in the respective folder.
 ### Metric Class
 Every metric class inherits from the base `Metric` class: `quantus/metrics/base.py`. Importantly, Faithfulness and Robustness inherit not from the `Metric` class directly, but rather from its child `PerturbationMetric`.
 
@@ -137,8 +143,10 @@ The following methods are expected to be implemented in the metric class:
 - `evaluate_instance()`: Gets model and data for a single instance as input, returns evaluation result.
 
 The following methods are optimal for implementation:
-- `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional preprocessing steps can be added here.
+- `custom_preprocess()`: In case `general_preprocess()` from base class is not sufficient, additional preprocessing steps can be added here. This method must return a dictionary with string keys or None. If a dictionary is returned, additional keyword arguments can be used in `evaluate_instance()`. Please make sure to read the docstring of `custom_preprocess()` for further instructions on how to appropriately name the variables that are created in the function.
 - `custom_postprocess()`: Additional postprocessing steps can be added here that is added on top of the resuling evaluation scores.
+
+For computational efficiency gains, it might be wise to consider using the `BatchedMetric` or `BatchedPerturbationMetric` when implementing your new metric. Details on the specific implementation requirements can be found in the respective class method, please see: [quantus.readthedocs.io](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.html).
 
 ### Using Helpers
 

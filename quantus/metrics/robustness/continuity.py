@@ -53,7 +53,7 @@ class Continuity(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -132,7 +132,7 @@ class Continuity(PerturbationMetric):
         self.similarity_func = similarity_func
         self.patch_size = patch_size
         self.nr_steps = nr_steps
-        self.nr_patches = None
+        self.nr_patches: Optional[int] = None
         self.dx = None
 
         # Asserts and warnings.
@@ -164,10 +164,12 @@ class Continuity(PerturbationMetric):
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -288,7 +290,7 @@ class Continuity(PerturbationMetric):
         dict
             The evaluation results.
         """
-        results = {k: [] for k in range(self.nr_patches + 1)}
+        results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
 
         for step in range(self.nr_steps):
 

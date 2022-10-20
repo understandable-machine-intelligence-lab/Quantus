@@ -70,10 +70,11 @@ def perturb_batch(
     if not inplace:
         return arr
 
+    return None
 
 def baseline_replacement_by_indices(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_baseline: Union[float, int, str, np.array],
     **kwargs,
@@ -118,7 +119,7 @@ def baseline_replacement_by_indices(
 
 def baseline_replacement_by_shift(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     input_shift: Union[float, int, str, np.array],
     **kwargs,
@@ -201,7 +202,7 @@ def baseline_replacement_by_blur(
          The array which some of its indices have been perturbed.
     """
 
-    indices = expand_indices(arr, indices, indexed_axes)
+    exp_indices = expand_indices(arr, indices, indexed_axes)
 
     # Expand blur_kernel_size.
     if isinstance(blur_kernel_size, int):
@@ -215,14 +216,14 @@ def baseline_replacement_by_blur(
 
     # Blur the array at indicies 8since otherwise n-d convolution can be quite computationally expensive),
     # else it is equal to arr.
-    arr_perturbed = blur_at_indices(arr, kernel, indices, indexed_axes)
+    arr_perturbed = blur_at_indices(arr, kernel, exp_indices, indexed_axes)
 
     return arr_perturbed
 
 
 def gaussian_noise(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
@@ -264,7 +265,7 @@ def gaussian_noise(
 
 def uniform_noise(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...], # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     lower_bound: float = 0.02,
     upper_bound: Union[None, float] = None,
@@ -450,7 +451,7 @@ def translation_y_direction(
 
 def noisy_linear_imputation(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Union[Sequence[int], Tuple[np.array]],
     noise: float = 0.01,
     **kwargs,
 ) -> np.array:
