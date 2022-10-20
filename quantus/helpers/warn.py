@@ -264,3 +264,12 @@ def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -
             "didn't cause change in input. "
             "Reconsider the parameter settings."
         )
+
+def warn_max_size() -> None:
+    """
+    Warns if the ratio is smaller than the maximum size, for attribution_localisaiton metric.
+    Returns
+    -------
+    None
+    """
+    warnings.warn("Ratio is smaller than max size.")

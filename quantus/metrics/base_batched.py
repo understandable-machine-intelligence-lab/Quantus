@@ -313,8 +313,8 @@ class BatchedMetric(Metric):
         """
         n_instances = len(data["x_batch"])
 
-        single_value_kwargs = {}
-        batched_value_kwargs = {}
+        single_value_kwargs: Dict[str, Any] = {}
+        batched_value_kwargs: Dict[str, Any] = {}
 
         for key, value in list(data.items()):
             # If data-value is not a Sequence or a string, create list of value with length of n_instances.
@@ -362,7 +362,15 @@ class BatchedMetric(Metric):
             # Yield batch dictionary including single value keyword arguments.
             yield {**batch, **single_value_kwargs}
 
-    def evaluate_instance(self, **kwargs) -> Any:
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        **kwargs
+    ) -> Any:
         """
         This method from the parent Metric class needs to be defined to implement this abstract class.
         However we use evalaute_batch() instead for BatchedMetric.
@@ -485,7 +493,15 @@ class BatchedPerturbationMetric(BatchedMetric):
         """
         raise NotImplementedError()
 
-    def evaluate_instance(self, **kwargs) -> Any:
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: np.ndarray,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        **kwargs
+    ) -> Any:
         """
         This method from the parent Metric class needs to be defined to implement this abstract class.
         However we use evalaute_batch() instead for BatchedMetric.

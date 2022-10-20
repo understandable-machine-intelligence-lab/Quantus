@@ -52,7 +52,7 @@ class SensitivityN(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = True,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -159,10 +159,12 @@ class SensitivityN(PerturbationMetric):
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = True,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = True,
         device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -280,7 +282,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-            (Dict[str, float]): The evaluation results.
+            (Dict[str, List[float]]): The evaluation results.
         """
 
         # Reshape the attributions.
@@ -366,7 +368,7 @@ class SensitivityN(PerturbationMetric):
         y_batch: Optional[np.ndarray],
         a_batch: Optional[np.ndarray],
         s_batch: np.ndarray,
-        *kwargs,
+        **kwargs,
     ) -> None:
         """
         Post-process the evaluation results.
@@ -393,12 +395,12 @@ class SensitivityN(PerturbationMetric):
         )
 
         # Get pred_deltas and att_sums from result list.
-        sub_results_pred_deltas = [r["pred_deltas"] for r in self.last_results]
-        sub_results_att_sums = [r["att_sums"] for r in self.last_results]
+        sub_results_pred_deltas: List[Any] = [r["pred_deltas"] for r in self.last_results]
+        sub_results_att_sums: List[Any] = [r["att_sums"] for r in self.last_results]
 
         # Re-arrange sub-lists so that they are sorted by n.
-        sub_results_pred_deltas_l = {k: [] for k in range(max_features)}
-        sub_results_att_sums_l = {k: [] for k in range(max_features)}
+        sub_results_pred_deltas_l: Dict[int, Any] = {k: [] for k in range(max_features)}
+        sub_results_att_sums_l: Dict[int, Any] = {k: [] for k in range(max_features)}
 
         for k in range(max_features):
             for pred_deltas_instance in sub_results_pred_deltas:

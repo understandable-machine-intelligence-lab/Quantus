@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +16,7 @@ from quantus.helpers import warn
 
 def plot_pixel_flipping_experiment(
     y_batch: np.ndarray,
-    scores: List[float],
+    scores: List[Any],
     single_class: Union[int, None] = None,
     *args,
     **kwargs,
@@ -33,11 +33,11 @@ def plot_pixel_flipping_experiment(
     y_batch: np.ndarray
          The list of true labels.
     scores: list
-            The list of evalution scores.
+        The list of evalution scores.
     single_class: integer, optional
-            An integer to specify the label to plot.
+        An integer to specify the label to plot.
     args: optional
-            Arguments.
+        Arguments.
     kwargs: optional
         Keyword arguments.
 
@@ -68,7 +68,7 @@ def plot_pixel_flipping_experiment(
 
 
 def plot_selectivity_experiment(
-    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+    results: Dict[str, List[Any]], *args, **kwargs
 ) -> None:
     """
     Plot the selectivity experiment as done in paper:
@@ -81,7 +81,7 @@ def plot_selectivity_experiment(
     Parameters
     ----------
     results: list, dict
-            The results fromm the Selectivity experiment(s).
+        The results fromm the Selectivity experiment(s).
     args: optional
         Arguments.
     kwargs: optional
@@ -116,7 +116,7 @@ def plot_selectivity_experiment(
 
 
 def plot_region_perturbation_experiment(
-    results: Union[List[float], Dict[str, List[float]]], *args, **kwargs
+    results: Dict[str, List[Any]], *args, **kwargs
 ) -> None:
     """
     Plot the region perturbation experiment as done in paper:
@@ -129,7 +129,7 @@ def plot_region_perturbation_experiment(
     Parameters
     ----------
     results: list, dict
-            The results fromm the Selectivity experiment(s).
+        The results fromm the Selectivity experiment(s).
     args: optional
         Arguments.
     kwargs: optional
@@ -207,7 +207,7 @@ def plot_sensitivity_n_experiment(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Union[List[float], Dict[str, List[float]]],
+    results: Dict[str, dict],
     methods=None,
     *args,
     **kwargs,
@@ -239,7 +239,7 @@ def plot_model_parameter_randomisation_experiment(
         for method in methods:
             for _ in results[method]:
                 layers = list(results[method].keys())
-                scores = {k: [] for k in layers}
+                scores: Dict[Any, Any] = {k: [] for k in layers}
                 # samples = len(results[method])
                 # for s in range(samples):
                 for layer in layers:
