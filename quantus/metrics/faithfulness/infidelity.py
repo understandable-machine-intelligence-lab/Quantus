@@ -6,8 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
+from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 from quantus.helpers import asserts
@@ -45,7 +44,7 @@ class Infidelity(PerturbationMetric):
     @asserts.attributes_check
     def __init__(
         self,
-        loss_func: str = "mse",
+        loss_func: Union[str, Callable] = "mse",
         perturb_patch_sizes: List[int] = None,
         n_perturb_samples: int = 10,
         abs: bool = False,
@@ -56,7 +55,7 @@ class Infidelity(PerturbationMetric):
         perturb_baseline: str = "black",
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
+        aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -169,10 +168,12 @@ class Infidelity(PerturbationMetric):
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, Any]] = None,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        softmax: bool = False,
+        explain_func_kwargs: Optional[Dict] = None,
+        model_predict_kwargs: Optional[Dict] = None,
+        softmax: Optional[bool] = False,
         device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
         **kwargs,
     ) -> List[float]:
         """
@@ -357,6 +358,7 @@ class Infidelity(PerturbationMetric):
                         pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
                         a_sums[i_x][i_y] = np.sum(a_diff)
 
+                assert callable(self.loss_func)
                 sub_results.append(
                     self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
                 )

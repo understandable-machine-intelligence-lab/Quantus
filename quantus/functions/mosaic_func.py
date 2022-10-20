@@ -8,7 +8,7 @@
 
 import math
 import random
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, Any
 
 import numpy as np
 
@@ -38,13 +38,7 @@ def mosaic_creation(
     labels: np.ndarray,
     mosaics_per_class: int,
     seed: Optional[int] = None,
-) -> Tuple[
-    np.ndarray,
-    List[Tuple[int, int, int, int]],
-    List[Tuple[Union[int, str], ...]],
-    List[Tuple[int, int, int, int]],
-    List[Union[int, str]],
-]:
+) -> Tuple[Any, List[Tuple[Any, ...]], List[Tuple[Any, ...]], List[Tuple[int, ...]], List[Any]]:
     """
     Build a mosaic dataset from an image dataset (images). Each mosaic corresponds to a 2x2 grid. Each one
     is composed by four images: two belonging to the target class and the other two are chosen randomly from
