@@ -395,7 +395,9 @@ class SensitivityN(PerturbationMetric):
         )
 
         # Get pred_deltas and att_sums from result list.
-        sub_results_pred_deltas: List[Any] = [r["pred_deltas"] for r in self.last_results]
+        sub_results_pred_deltas: List[Any] = [
+            r["pred_deltas"] for r in self.last_results
+        ]
         sub_results_att_sums: List[Any] = [r["att_sums"] for r in self.last_results]
 
         # Re-arrange sub-lists so that they are sorted by n.

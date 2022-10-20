@@ -591,7 +591,7 @@ def _pad_array(
             if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
-    pad_width_list : List[Union[Tuple[int], Tuple[int, int]]]= []
+    pad_width_list: List[Union[Tuple[int], Tuple[int, int]]] = []
 
     for ax in range(arr.ndim):
         if ax not in padded_axes:
@@ -815,7 +815,9 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
 def expand_indices(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]], # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
+    indices: Union[
+        int, Sequence[int], Tuple[np.array], Tuple[slice, ...]
+    ],  # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
     indexed_axes: Sequence[int],
 ) -> Tuple:
     """
@@ -897,7 +899,7 @@ def expand_indices(
 
     # Ensure array dimensions are kept when indexing.
     # Expands dimensions of each element in expanded_indices depending on the number of elements.
-    #assert isinstance(expanded_indices, np.ndarray)
+    # assert isinstance(expanded_indices, np.ndarray)
     for i in range(len(expanded_indices)):
         if expanded_indices[i].ndim != len(expanded_indices):
             expanded_indices[i] = np.expand_dims(
@@ -937,7 +939,9 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
     return leftover_shape
 
 
-def offset_coordinates(indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple):
+def offset_coordinates(
+    indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple
+):
     """
     Checks if offset coordinates are within the image frame.
         Adapted from: https://github.com/tleemann/road_evaluation.

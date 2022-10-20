@@ -6,7 +6,17 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, Collection, Iterable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    Collection,
+    Iterable,
+)
 import numpy as np
 from tqdm.auto import tqdm
 
@@ -390,7 +400,9 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def compute_correlation_per_sample(self) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+    def compute_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
         assert isinstance(self.last_results, dict), (
             "To compute the average correlation coefficient per sample for "

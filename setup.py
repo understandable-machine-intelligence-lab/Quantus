@@ -20,47 +20,51 @@ if version_info[1] <= 7:
 else:
     from importlib.metadata import version
 
-# Define basic package imports.
-# with open("requirements.txt", "r") as f:
-#    REQUIRES = f.read()
-
 # Define extras.
 EXTRAS = {}
-EXTRAS["torch"] = \
-    ["torch==1.10.1", "torchvision==0.11.2"] if not (util.find_spec("torch") and version("torch") >= "1.2") else []
-EXTRAS["tensorflow"] = \
-    ["tensorflow==2.6.2"] if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0") else []
-EXTRAS["captum"] = \
+EXTRAS["torch"] = (
+    ["torch==1.10.1", "torchvision==0.11.2"]
+    if not (util.find_spec("torch") and version("torch") >= "1.2")
+    else []
+)
+EXTRAS["tensorflow"] = (
+    ["tensorflow==2.6.2"]
+    if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0")
+    else []
+)
+EXTRAS["captum"] = (
     (EXTRAS["torch"] + ["captum==0.4.1"]) if not util.find_spec("captum") else []
-EXTRAS["tf-explain"] = \
-    (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"]) if not util.find_spec("tf-explain") else []
-EXTRAS["zennit"] = \
+)
+EXTRAS["tf-explain"] = (
+    (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"])
+    if not util.find_spec("tf-explain")
+    else []
+)
+EXTRAS["zennit"] = (
     (EXTRAS["torch"] + ["zennit==0.4.5"]) if not util.find_spec("zennit") else []
-# TODO: add iNNvestigate
-EXTRAS["tutorials"] = \
+)
+EXTRAS["tutorials"] = (
     EXTRAS["torch"] + EXTRAS["captum"] + ["pandas", "xmltodict", "tensorflow-datasets"]
-EXTRAS["tests"] = \
-    EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
-EXTRAS["full"] = \
-    EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+)
+EXTRAS["tests"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
 setup(
     name="quantus",
-    version="0.2.2",
+    version="0.2.3",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     install_requires=[
-        "matplotlib==3.3.4",
+        "matplotlib>=3.3.4",
         "numpy>=1.19.5",
-        "opencv-python==4.5.5.62",
+        "opencv-python>=4.5.5.62",
         "protobuf~=3.19.0",
-        "scikit-image==0.19.1",
-        "scikit-learn==0.24.2",
-        "scipy==1.7.3",
-        "termcolor==1.1.0",
-        "tqdm==4.62.3",
+        "scikit-image>=0.19.1",
+        "scikit-learn>=0.24.2",
+        "scipy>=1.7.3",
+        "tqdm>=4.62.3",
     ],
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
