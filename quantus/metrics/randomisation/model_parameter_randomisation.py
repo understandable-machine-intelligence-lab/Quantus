@@ -390,7 +390,7 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def compute_correlation_per_sample(self) -> Iterable[float]:
+    def compute_correlation_per_sample(self) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
         assert isinstance(self.last_results, dict), (
             "To compute the average correlation coefficient per sample for "
@@ -405,4 +405,6 @@ class ModelParameterRandomisation(Metric):
                 results[sample].append(float(self.last_results[layer][sample]))
             results[sample] = np.mean(results[sample])
 
-        return list(results.values())
+        corr_coeffs = list(results.values())
+
+        return corr_coeffs
