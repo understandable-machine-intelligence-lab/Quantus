@@ -25,7 +25,7 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Optional = None,
+    explain_func_kwargs: Optional[dict] = None,
     **call_kwargs,
 ) -> Optional[dict]:
     """
@@ -75,7 +75,7 @@ def evaluate(
         )
         return None
 
-    results = {}
+    results: Dict[str, dict] = {}
 
     if isinstance(xai_methods, list):
 

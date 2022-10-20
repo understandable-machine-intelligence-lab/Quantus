@@ -127,7 +127,7 @@ def available_categories() -> List[str]:
     return [c for c in AVAILABLE_METRICS.keys()]
 
 
-def available_metrics() -> Dict[str, str]:
+def available_metrics() -> Dict[str, List[str]]:
     """
     Retrieve the available metrics in Quantus.
 
