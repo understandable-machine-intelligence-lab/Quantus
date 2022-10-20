@@ -591,7 +591,7 @@ def _pad_array(
             if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
-    pad_width_list: List[tuple] = []
+    pad_width_list : List[Union[Tuple[int], Tuple[int, int]]]= []
 
     for ax in range(arr.ndim):
         if ax not in padded_axes:

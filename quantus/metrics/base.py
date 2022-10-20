@@ -729,7 +729,7 @@ class Metric:
         """
         Get an interpretation of the scores.
         """
-        print(self.__doc__.split(".")[1].split("References")[0])
+        print(self.__init__.__doc__.split(".")[1].split("References")[0])
 
     @property
     def get_params(self) -> dict:
