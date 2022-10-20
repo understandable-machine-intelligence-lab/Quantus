@@ -20,46 +20,29 @@ if version_info[1] <= 7:
 else:
     from importlib.metadata import version
 
-# Define library import by choice of ML framework (if neither torch or tensorflow is installed return an empty list).
-if (
-    util.find_spec("torch")
-    and version("torch") >= "1.2"
-    and util.find_spec("tensorflow")
-    and version("tensorflow") >= "2.0"
-):
-    extras = ["captum==0.4.1", "tf-explain==0.3.1"]
-elif util.find_spec("torch") and version("torch") >= "1.2":
-    extras = ["captum==0.4.1"]
-elif util.find_spec("tensorflow") and version("tensorflow") >= "2.0":
-    extras = ["tf-explain==0.3.1"]
-else:
-    extras = []
-
 # Define basic package imports.
 # with open("requirements.txt", "r") as f:
 #    REQUIRES = f.read()
 
 # Define extras.
-EXTRAS = {
-    "torch": ["torch==1.10.1", "torchvision==0.11.2"],
-    "tensorflow": ["tensorflow==2.6.2"],
-    "extras": extras,
-    "tutorials": [
-        "torch==1.10.1",
-        "torchvision==0.11.2",
-        "captum==0.4.1",
-        "collections",
-        "pandas",
-        "xmltodict",
-        "xml",
-    ],
-    "zennit": [
-        "torch==1.10.1",
-        "torchvision==0.11.2",
-        "zennit==0.4.5",
-        "captum==0.4.1",
-    ],
-}
+EXTRAS = {}
+EXTRAS["torch"] = \
+    ["torch==1.10.1", "torchvision==0.11.2"] if not (util.find_spec("torch") and version("torch") >= "1.2") else []
+EXTRAS["tensorflow"] = \
+    ["tensorflow==2.6.2"] if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0") else []
+EXTRAS["captum"] = \
+    (EXTRAS["torch"] + ["captum==0.4.1"]) if not util.find_spec("captum") else []
+EXTRAS["tf-explain"] = \
+    (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"]) if not util.find_spec("tf-explain") else []
+EXTRAS["zennit"] = \
+    (EXTRAS["torch"] + ["zennit==0.4.5"]) if not util.find_spec("zennit") else []
+# TODO: add iNNvestigate
+EXTRAS["tutorials"] = \
+    EXTRAS["torch"] + EXTRAS["captum"] + ["pandas", "xmltodict", "tensorflow-datasets"]
+EXTRAS["tests"] = \
+    EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+EXTRAS["full"] = \
+    EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
 setup(
