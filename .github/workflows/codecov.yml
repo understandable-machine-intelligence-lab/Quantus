@@ -15,5 +15,6 @@ jobs:
         with:
           #files: ./lib.c.gcov
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml, .coverage.xml
           
           
