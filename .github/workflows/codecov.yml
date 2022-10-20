@@ -11,9 +11,8 @@ jobs:
           pip install -r requirements_test.txt
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
       - name: Upload
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3 #codecov/codecov-action@v1
         with:
-          #files: ./lib.c.gcov
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml, .coverage.xml
           
