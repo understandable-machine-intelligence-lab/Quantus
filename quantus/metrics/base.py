@@ -729,7 +729,7 @@ class Metric:
         """
         Get an interpretation of the scores.
         """
-        print(self.__init__.__doc__.split(".")[1].split("References")[0])
+        print(self.__doc__.split(".")[1].split("References")[0])
 
     @property
     def get_params(self) -> dict:
@@ -747,8 +747,6 @@ class Metric:
             "all_results",
             "last_results",
             "default_plot_func",
-            "disable_warnings",
-            "display_progressbar",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 

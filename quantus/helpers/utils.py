@@ -384,7 +384,7 @@ def get_wrapped_model(
 def blur_at_indices(
     arr: np.array,
     kernel: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array]],
+    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]],
     indexed_axes: Sequence[int],
 ) -> np.array:
     """
@@ -468,7 +468,7 @@ def blur_at_indices(
 
 def create_patch_slice(
     patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[slice]:
+) -> Tuple[slice, ...]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -632,7 +632,7 @@ def _unpad_array(
 
     Returns
     -------
-        np.ndarray:
+    np.ndarray
         The unpadded array.
 
     """
@@ -670,7 +670,9 @@ def _unpad_array(
                     arr.shape[ax] - pad_width[[p for p in padded_axes].index(ax)][1],
                 )
             )
-    return arr[tuple(unpad_slice)]
+
+    unpadded_arr = arr[tuple(unpad_slice)]
+    return unpadded_arr
 
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
@@ -813,7 +815,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
 def expand_indices(
     arr: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice]],
+    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]], # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
     indexed_axes: Sequence[int],
 ) -> Tuple:
     """
