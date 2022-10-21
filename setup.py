@@ -15,8 +15,6 @@ if version_info[1] <= 7:
 
     def version(s: str):
         return pkg_resources.get_distribution(s).version
-
-
 else:
     from importlib.metadata import version
 
@@ -52,7 +50,7 @@ EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 # Define setup.
 setup(
     name="quantus",
-    version="0.2.3",
+    version="0.3.0",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
