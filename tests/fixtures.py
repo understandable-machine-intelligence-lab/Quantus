@@ -4,7 +4,13 @@ import torch
 import numpy as np
 import tensorflow as tf
 
-from quantus.helpers.model.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF, CNN_2D_TF
+from quantus.helpers.model.models import (
+    LeNet,
+    LeNetTF,
+    ConvNet1D,
+    ConvNet1DTF,
+    CNN_2D_TF,
+)
 
 
 CIFAR_IMAGE_SIZE = 32
@@ -79,9 +85,12 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
-    x_batch = x_train[:BATCH_SIZE].reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE)).astype(float)
-    y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)
+    x_batch = (
+        np.loadtxt("tests/assets/mnist_x")
+        .astype(float)
+        .reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE))
+    )
+    y_batch = np.loadtxt("tests/assets/mnist_y").astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
@@ -89,18 +98,23 @@ def load_mnist_images():
 def load_cifar10_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = tf.keras.datasets.cifar10.load_data()
-    x_batch = x_train[:BATCH_SIZE].reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE)).astype(float)
+    x_batch = (
+        x_train[:BATCH_SIZE]
+        .reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE))
+        .astype(float)
+    )
     y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_mnist_images_tf():
+def load_mnist_images_tf(load_mnist_images):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
-    x_batch = x_train[:BATCH_SIZE, ...].reshape((BATCH_SIZE, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE, 1)).astype(float)
-    y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+
+    return {
+        "x_batch": np.moveaxis(load_mnist_images["x_batch"], 1, -1),
+        "y_batch": load_mnist_images["y_batch"],
+    }
 
 
 @pytest.fixture
@@ -186,44 +200,45 @@ def load_cnn_2d_cifar():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_mnist_images_tf_mini_batch():
+def load_mnist_images_tf_mini_batch(load_mnist_images_tf):
     """
     Load mini batch of MNIST digits: inputs and outputs to use for testing
     """
-    (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
-    x_batch = x_train[:MINI_BATCH_SIZE, ...].reshape((MINI_BATCH_SIZE, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE, 1)).astype(float)
-    y_batch = y_train[:MINI_BATCH_SIZE].reshape(-1).astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+    return {
+        "x_batch": load_mnist_images_tf["x_batch"][:MINI_BATCH_SIZE],
+        "y_batch": load_mnist_images_tf["y_batch"][:MINI_BATCH_SIZE],
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_mnist_images_mini_batch():
+def load_mnist_images_mini_batch(load_mnist_images):
     """
     Load mini batch of MNIST digits: inputs and outputs to use for testing
     """
-    (x_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data()
-    x_batch = x_train[:MINI_BATCH_SIZE, ...].reshape((MINI_BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE)).astype(float)
-    y_batch = y_train[:MINI_BATCH_SIZE].reshape(-1).astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+
+    return {
+        "x_batch": load_mnist_images["x_batch"][:MINI_BATCH_SIZE],
+        "y_batch": load_mnist_images["y_batch"][:MINI_BATCH_SIZE],
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_cifar10_images_tf_mini_batch():
+def load_cifar10_images_tf_mini_batch(load_cifar10_images):
     """
     Load mini batch of Cifar10 digits: inputs and outputs to use for testing
     """
-    (x_train, y_train), (_, _) = tf.keras.datasets.cifar10.load_data()
-    x_batch = x_train[:MINI_BATCH_SIZE].reshape((MINI_BATCH_SIZE, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE, 3)).astype(float)
-    y_batch = y_train[:MINI_BATCH_SIZE].reshape(-1).astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+    return {
+        "x_batch": np.moveaxis(load_cifar10_images["x_batch"][:MINI_BATCH_SIZE], 1, -1),
+        "y_batch": load_cifar10_images["y_batch"][:MINI_BATCH_SIZE],
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_cifar10_images_mini_batch():
+def load_cifar10_images_mini_batch(load_cifar10_images):
     """
     Load mini batch of Cifar10 digits: inputs and outputs to use for testing
     """
-    (x_train, y_train), (_, _) = tf.keras.datasets.cifar10.load_data()
-    x_batch = x_train[:MINI_BATCH_SIZE, ...].reshape((MINI_BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE)).astype(float)
-    y_batch = y_train[:MINI_BATCH_SIZE].reshape(-1).astype(int)
-    return {"x_batch": x_batch, "y_batch": y_batch}
+    return {
+        "x_batch": load_cifar10_images["x_batch"][:MINI_BATCH_SIZE],
+        "y_batch": load_cifar10_images["y_batch"][:MINI_BATCH_SIZE],
+    }
