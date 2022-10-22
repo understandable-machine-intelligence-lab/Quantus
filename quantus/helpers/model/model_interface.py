@@ -16,11 +16,11 @@ class ModelInterface(ABC):
     """Base ModelInterface for torch and tensorflow models."""
 
     def __init__(
-            self,
-            model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        model_predict_kwargs: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialisation of ModelInterface class.
@@ -62,11 +62,11 @@ class ModelInterface(ABC):
 
     @abstractmethod
     def shape_input(
-            self,
-            x: np.array,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batched: bool = False,
+        self,
+        x: np.array,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
     ):
         """
         Reshape input into model expected input.

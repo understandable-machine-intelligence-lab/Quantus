@@ -2,7 +2,7 @@ import pytest
 import pickle
 import torch
 import numpy as np
-import tensorflow as tf
+from tensorflow.keras.datasets import cifar10 # noqa
 
 from quantus.helpers.model.models import (
     LeNet,
@@ -97,7 +97,7 @@ def load_mnist_images():
 @pytest.fixture(scope="session", autouse=True)
 def load_cifar10_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (_, _) = tf.keras.datasets.cifar10.load_data()
+    (x_train, y_train), (_, _) = cifar10.load_data()
     x_batch = (
         x_train[:BATCH_SIZE]
         .reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE))

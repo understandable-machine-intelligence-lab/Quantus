@@ -68,6 +68,13 @@ To perform the tests, execute the following (make sure pytest is installed):
 ```bash
 pytest
 ```
+
+
+... optionally, you could split test execution between multiple CPU cores using [pytest-xdist](https://github.com/pytest-dev/pytest-xdist)
+```bash
+pytest tests -n auto
+```
+
 ... alternatively, to get additionaly coverage details, run:
 ```bash
 pytest --cov=. --cov-report term-missing
@@ -77,12 +84,6 @@ It is possible to limit the scope of testing to specific sections of the codebas
 ```bash
 pytest -m faithfulness -s
 ```
-
-Optionally, you could split test execution between multiple CPU cores using [pytest-xdist](https://github.com/pytest-dev/pytest-xdist)
-```bash
-pytest tests -n auto
-```
-
 For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
 
 ### Documentation
@@ -102,6 +103,10 @@ black quantus/INSERT_YOUR_FILE_NAME.py
 - Run `flake8` for quick style checks, e.g.:
 ```bash
 flake8 quantus/INSERT_YOUR_FILE_NAME.py
+```
+- Run `mypy` to detect possible issues with typing, e.g.:
+```bash
+mypy quantus/INSERT_YOUR_FILE_NAME.py
 ```
 - Create `pytests` for new functionality (if needed) and add under `tests/` folder
 - If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
