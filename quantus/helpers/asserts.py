@@ -1,55 +1,65 @@
+"""This module holds a collection of asserts functionality that is used across the Quantus library to avoid undefined behaviour."""
+
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
+from typing import Callable, Tuple, Sequence, Union
+
 import numpy as np
-from typing import Callable, Tuple, Union, Sequence
 
 
 def attributes_check(metric):
-    # https://towardsdatascience.com/5-ways-to-control-attributes-in-python-an-example-led-guide-2f5c9b8b1fb0
+    """
+    Basic check of all the metrics, passed as a decorator.
+
+    Parameters
+    ----------
+    metric: base.Metric class
+        The metric class.
+
+    Returns
+    -------
+    base.Metric class
+        The metric class.
+
+    """
     attr = metric.__dict__
-    if "perturb_func" in attr:
-        if not callable(attr["perturb_func"]):
-            raise TypeError("The 'perturb_func' must be a callable.")
-    if "similarity_func" in attr:
-        assert callable(
-            attr["similarity_func"]
-        ), "The 'similarity_func' must be a callable."
-    if "explain_func" in attr:
-        assert callable(attr["explain_func"]), "The 'explain_func' must be a callable."
-    if "normalize_func" in attr:
-        assert callable(
-            attr["normalize_func"]
-        ), "The 'normalize_func' must be a callable."
-    if "text_warning" in attr:
-        assert isinstance(
-            attr["text_warning"], str
-        ), "The 'text_warning' function must be a string."
+    if "abs" in attr:
+        if not bool(attr["abs"]):
+            raise TypeError("The 'abs' must be a bool.")
+    if "normalise" in attr:
+        assert bool(attr["normalise"]), "The 'normalise' must be a bool."
+    if "return_aggregate" in attr:
+        assert bool(attr["return_aggregate"]), "The 'return_aggregate' must be a bool."
+    if "disable_warnings" in attr:
+        assert bool(attr["disable_warnings"]), "The 'disable_warnings' must be a bool."
+    if "display_progressbar" in attr:
+        assert bool(
+            attr["display_progressbar"]
+        ), "The 'display_progressbar' must be a bool."
     return metric
-
-
-def assert_model_predictions_deviations(
-    y_pred: float, y_pred_perturb: float, threshold: float = 0.01
-):
-    """Check that model predictions does not deviate more than a given threshold."""
-    if abs(y_pred - y_pred_perturb) > threshold:
-        return True
-    else:
-        return False
-
-
-def assert_model_predictions_correct(
-    y_pred: float,
-    y_pred_perturb: float,
-):
-    """Assert that model predictions are the same."""
-    if y_pred == y_pred_perturb:
-        return True
-    else:
-        return False
 
 
 def assert_features_in_step(
     features_in_step: int, input_shape: Tuple[int, ...]
 ) -> None:
-    """Assert that features in step is compatible with the image size."""
+    """
+        Assert that features in step is compatible with the image size.
+
+        Parameters
+        ----------
+        features_in_step: integer
+            The number of features e.g., pixels included in each iteration.
+        input_shape: Tuple[int...]
+            The shape of the input.
+
+        Returns
+        -------
+    None
+    """
     assert np.prod(input_shape) % features_in_step == 0, (
         "Set 'features_in_step' so that the modulo remainder "
         "returns zero given the product of the input shape."
@@ -57,12 +67,27 @@ def assert_features_in_step(
     )
 
 
-def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
-    """Assert that patch size is compatible with given shape."""
+def assert_patch_size(patch_size: Union[int, tuple], shape: Tuple[int, ...]) -> None:
+    """
+    Assert that patch size is compatible with given image shape.
+
+    Parameters
+    ----------
+    patch_size: integer
+        The size of the patch_size, assumed to tbe squared.
+    input_shape: Tuple[int...]
+        the shape of the input.
+
+    Returns
+    -------
+    None
+    """
+
     if isinstance(patch_size, int):
         patch_size = (patch_size,)
     patch_size = np.array(patch_size)
 
+    assert isinstance(patch_size, np.ndarray)
     if len(patch_size) == 1 and len(shape) != 1:
         patch_size = tuple(patch_size for _ in shape)
     elif patch_size.ndim != 1:
@@ -82,7 +107,18 @@ def assert_patch_size(patch_size: int, shape: Tuple[int, ...]) -> None:
 
 
 def assert_attributions_order(order: str) -> None:
-    """Assert that order is in pre-defined list."""
+    """
+    Assert that order is in pre-defined list.
+
+    Parameters
+    ----------
+    order: string
+        The different orders that attributions could be ranked in.
+
+    Returns
+    -------
+    None
+    """
     assert order in [
         "random",
         "morf",
@@ -91,40 +127,54 @@ def assert_attributions_order(order: str) -> None:
 
 
 def assert_nr_segments(nr_segments: int) -> None:
-    """Assert that the number of segments given the segmentation algorithm is more than one."""
+    """
+    Assert that the number of segments given the segmentation algorithm is more than one.
+
+    Parameters
+    ----------
+    nr_segments: integer
+        The number of segments that the segmentaito algorithm produced.
+
+    Returns
+    -------
+    None
+    """
     assert (
         nr_segments > 1
     ), "The number of segments from the segmentation algorithm must be more than one."
 
 
-def assert_perturbation_caused_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
-    """Assert that perturbation applied to input caused change so that input and perturbed input is not the same."""
-    assert (x.flatten() != x_perturbed.flatten()).any(), (
-        "The settings for perturbing input e.g., 'perturb_func' "
-        "didn't cause change in input. "
-        "Reconsider the parameter settings."
-    )
-
-
 def assert_layer_order(layer_order: str) -> None:
-    """Assert that layer order is in pre-defined list."""
+    """
+    Assert that layer order is in pre-defined list.
+
+    Parameters
+    ----------
+    layer_order: string
+        The various ways that a model's weights of a layer can be randomised.
+
+    Returns
+    -------
+    None
+    """
     assert layer_order in ["top_down", "bottom_up", "independent"]
 
 
-def assert_targets(
-    x_batch: np.array,
-    y_batch: np.array,
-) -> None:
-    if not isinstance(y_batch, int):
-        assert np.shape(x_batch)[0] == np.shape(y_batch)[0], (
-            "The 'y_batch' should by an integer or a list with "
-            "the same number of samples as the 'x_batch' input"
-            "{} != {}".format(np.shape(x_batch)[0], np.shape(y_batch)[0])
-        )
-
-
 def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
-    """Asserts on attributions. Assumes channel first layout."""
+    """
+    Asserts on attributions, assumes channel first layout.
+
+    Parameters
+    ----------
+    x_batch: np.ndarray
+         The batch of input to compare the shape of the attributions with.
+    a_batch: np.ndarray
+         The batch of attributions.
+
+    Returns
+    -------
+    None
+    """
     assert (
         type(a_batch) == np.ndarray
     ), "Attributions 'a_batch' should be of type np.ndarray."
@@ -179,7 +229,20 @@ def assert_attributions(x_batch: np.array, a_batch: np.array) -> None:
 
 
 def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
-    """Asserts on segmentations."""
+    """
+    Asserts on segmentations, assumes channel first layout.
+
+    Parameters
+    ----------
+    x_batch: np.ndarray
+         The batch of input to compare the shape of the attributions with.
+    s_batch: np.ndarray
+         The batch of segmentations.
+
+    Returns
+    -------
+    None
+    """
     assert (
         type(s_batch) == np.ndarray
     ), "Segmentations 's_batch' should be of type np.ndarray."
@@ -201,26 +264,59 @@ def assert_segmentations(x_batch: np.array, s_batch: np.array) -> None:
     ), "The segmentation 's_batch' should contain only [1, 0] or [True, False]."
 
 
-def assert_max_size(max_size: float) -> None:
-    assert (max_size > 0.0) and (
-        max_size <= 1.0
-    ), "Set 'max_size' must be between 0. and 1."
-
-
 def assert_plot_func(plot_func: Callable) -> None:
+    """
+    Assert that the plot function is a callable.
+
+    Parameters
+    ----------
+    plot_func: callable
+        An plot function input, asusmed to be a Callable.
+
+    Returns
+    -------
+    None
+    """
     assert callable(plot_func), "Make sure that 'plot_func' is a callable."
 
 
 def assert_explain_func(explain_func: Callable) -> None:
+    """
+    Asser thta the explanation function is a callable.
+
+    Parameters
+    ----------
+    explain_func: callable
+        An plot function input, asusmed to be a Callable.
+
+    Returns
+    -------
+    None
+    """
     assert callable(explain_func), (
         "Make sure 'explain_func' is a Callable that takes model, x_batch, "
         "y_batch and **kwargs as arguments."
     )
 
 
-def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: str):
-    """Checks if value is smaller than input size.
-    Assumes batch and channel first dimension
+def assert_value_smaller_than_input_size(
+    x: np.ndarray, value: int, value_name: str
+) -> None:
+    """
+    Checks if value is smaller than input size, assumes batch and channel first dimension.
+
+    Parameters
+    ----------
+    x: np.ndarray
+         The input to check the value against.
+    value: integer
+        The value that must be smaller than input size.
+    value_name: string
+        The hyperparameter to check, e.g., "k" for TopKIntersection.
+
+    Returns
+    -------
+    None
     """
     if value >= np.prod(x.shape[2:]):
         raise ValueError(
@@ -229,11 +325,22 @@ def assert_value_smaller_than_input_size(x: np.ndarray, value: int, value_name: 
         )
 
 
-# TODO: Change for batching update, since currently single images are expected.
-def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]):
+def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]) -> None:
     """
-    Checks that indexed_axes fits arr
+    Checks that indexed_axes fits the given array.
+
+    Parameters
+    ----------
+    arr: np.ndarray
+         A given array that we want to check indexed_axes against.
+    indexed_axes: sequence
+            The sequence with indices, with axes.
+
+    Returns
+    -------
+    None
     """
+    # TODO: Change for batching update, since currently single images are expected.
     assert len(indexed_axes) <= arr.ndim
     assert len(indexed_axes) == len(np.arange(indexed_axes[0], indexed_axes[-1] + 1))
     assert all(

@@ -4,41 +4,39 @@
 <!--<h1 align="center"><b>Quantus</b></h1>-->
 <h3 align="center"><b>A toolkit to evaluate neural network explanations</b></h3>
 <p align="center">
-  PyTorch and Tensorflow
+  PyTorch and TensorFlow
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb)
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 [![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
 ![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-<!--[![Documentation Status](https://readthedocs.org/projects/alibi/badge/?version=latest)](https://docs.seldon.io/projects/qyabtys/en/latest/?badge=latest)-->
-<!--[![Slack channel](https://img.qauntus.io/badge/chat-on%20slack-e51670.svg)](https://join.slack.com/t/seldondev/shared_invite/zt-vejg6ttd-ksZiQs3O_HOtPQsen_labg)-->
-<!--[![License](https://img.shields.io/github/license/understandable-machine-intelligence-lab/Quantus)](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/master/LICENSE)-->
+[![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
+[![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
-[📑 Shortcut to the paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
         
 ## News and Highlights! :rocket:
 
-- Please see our latest release [v0.2.1](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.1) which minor version includes heavy changes to the API. Read more [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
+- Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
-- Supports different data types: image and time-series (NLP next up!)
-- Flexible API: evaluate any PyTorch or Tensorflow model with your own customised explanation function(s)
-- Different tutorials covering different datasets, models and explanation functions
+- Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
 - Latest metrics additions:
     - <b>Infidelity </b><a href="https://arxiv.org/abs/1901.09392">(Chih-Kuan, Yeh, et al., 2019)</a>
     - <b>ROAD </b><a href="https://arxiv.org/abs/2202.00449">(Rong, Leemann, et al., 2022)</a>
     - <b>Focus </b><a href="https://arxiv.org/abs/2109.15035">(Arias et al., 2022)</a>
     - <b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
     - <b>Sufficiency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
+- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
 
 ## Citation
 
 If you find this toolkit or its companion paper
 [**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
-interesting or useful in your research, use following Bibtex annotation to cite us:
+interesting or useful in your research, use the following Bibtex annotation to cite us:
 
 ```bibtex
 @article{hedstrom2022quantus,
@@ -57,7 +55,7 @@ interesting or useful in your research, use following Bibtex annotation to cite 
 }
 ```
 
-When applying individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above). 
+When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above).
 
 ## Table of contents
 
@@ -65,23 +63,23 @@ When applying individual metrics of Quantus, please make sure to also properly c
 * [Installation](#installation)
 * [Getting started](#getting-started)
 * [Tutorials](#tutorials)
-* [Misc functionality](#miscellaneous-functionality)
 * [Contributing](#contributing)
-* [Citation](#citation)
+<!--* [Citation](#citation)-->
 
 ## Library overview 
 
-Simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplary in Figure a) for four gradient-based methods — Saliency (Mørch et al., 1995; Baehrens et al., 2010), Integrated Gradients (Sundararajan et al., 2017), GradientShap (Lundberg and Lee, 2017) or FusionGrad (Bykov et al., 2021), yet it is a common practice for evaluation XAI methods in absence of ground truth data.
-
-Therefore, we developed Quantus, an easy to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
-With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
+A simple visual comparison of eXplainable Artificial Intelligence (XAI) methods is often not sufficient to decide which explanation method works best as shown exemplarily in Figure a) for four gradient-based methods — Saliency ([Mørch et al., 1995](https://ieeexplore.ieee.org/document/488997); [Baehrens et al., 2010](https://www.jmlr.org/papers/volume11/baehrens10a/baehrens10a.pdf)), Integrated Gradients ([Sundararajan et al., 2017](http://proceedings.mlr.press/v70/sundararajan17a/sundararajan17a.pdf)), GradientShap ([Lundberg and Lee, 2017](https://arxiv.org/abs/1705.07874)) or FusionGrad ([Bykov et al., 2021](https://arxiv.org/abs/2106.10185)), yet it is a common practice for evaluation XAI methods in absence of ground truth data. Therefore, we developed Quantus, an easy-to-use yet comprehensive toolbox for quantitative evaluation of explanations — including 30+ different metrics. 
 
 </p>
 <p align="center">
   <img width="800" src="https://raw.githubusercontent.com/understandable-machine-intelligence-lab/Quantus/main/viz.png">
 </p>
+
+With Quantus, we can obtain richer insights on how the methods compare e.g., b) by holistic quantification on several evaluation criteria and c) by providing sensitivity analysis of how a single parameter e.g. the pixel replacement strategy of a faithfulness test influences the ranking of the XAI methods.
  
-This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics (note, however, that the categories are oftentimes mentioned under different naming conventions e.g., 'robustness' is often replaced for 'stability' or 'sensitivity' and 'faithfulness' is commonly interchanged for 'fidelity'). The library contains implementations of the following evaluation metrics:
+### Metrics
+
+This project started with the goal of collecting existing evaluation metrics that have been introduced in the context of XAI research — to help automate the task of _XAI quantification_. Along the way of implementation, it became clear that XAI metrics most often belong to one out of six categories i.e., 1) faithfulness, 2) robustness, 3) localisation 4) complexity 5) randomisation or 6) axiomatic metrics. The library contains implementations of the following evaluation metrics:
 
 <details>
   <summary><b>Faithfulness</b></summary>
@@ -112,16 +110,16 @@ measures to what extent explanations are stable when subject to slight perturbat
     <li><b>Max-Sensitivity </b><a href="https://arxiv.org/pdf/1901.09392.pdf">(Yeh et al., 2019)</a>: measures the maximum sensitivity of an explanation using a Monte Carlo sampling-based approximation
     <li><b>Avg-Sensitivity </b><a href="https://arxiv.org/pdf/1901.09392.pdf">(Yeh et al., 2019)</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
     <li><b>Continuity </b><a href="https://arxiv.org/pdf/1706.07979.pdf">(Montavon et al., 2018)</a>: captures the strongest variation in explanation of an input and its perturbed version
+    <li><b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>: measures the probability that the inputs with the same explanation have the same prediction label
     <li><b>Relative Input Stability (RIS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between the two inputs x and x'
     <li><b>Relative Representation Stability (RRS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between internal models representations L_x and L_x' for x and x' respectively
     <li><b>Relative Output Stability (ROS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between output logits h(x) and h(x') for x and x' respectively
-    <li><b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>: measures the probability that the inputs with the same explanation have the same prediction label
 </ul>
 </details>
 
 <details>
 <summary><b>Localisation</b></summary>
-tests if the explainable evidence is centered around a region of interest (RoI) which may be defined around an object by a bounding box, a segmentation mask or, a cell within a grid
+tests if the explainable evidence is centred around a region of interest (RoI) which may be defined around an object by a bounding box, a segmentation mask or, a cell within a grid
      <br><br>
 <ul>
     <li><b>Pointing Game </b><a href="https://arxiv.org/abs/1608.00507">(Zhang et al., 2018)</a>: checks whether attribution with the highest score is located within the targeted object
@@ -157,7 +155,7 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 
 <details>
 <summary><b>Axiomatic</b></summary>
-  assesses if explanations fulfill certain axiomatic properties
+  assesses if explanations fulfil certain axiomatic properties
      <br><br>
 <ul>
     <li><b>Completeness </b><a href="https://arxiv.org/abs/1703.01365">(Sundararajan et al., 2017)</a>: evaluates whether the sum of attributions is equal to the difference between the function values at the input x and baseline x'.
@@ -166,56 +164,61 @@ tests to what extent explanations deteriorate as inputs to the evaluation proble
 </ul>
 </details>
 
-Additional metrics will be included in future releases.
+Additional metrics will be included in future releases. Please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose) if you have a metric you believe should be apart of Quantus.
 
-**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfill, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. 
-
-The first iteration has been developed primarily for image classification tasks, with attribution-based explanations in mind (which is a category of explanation methods that aim to assign an importance value to the model features and arguably, is the most studied kind of explanation). As a result, there will be both applications and explanation methods e.g., example-based methods where this library won't be applicable. Similarly, there is a couple of metrics that are popular but are considered out of scope for the first iteration of the library e.g., metrics that require re-training of the network e.g., RoAR (Hooker et al., 2018) and Label Randomisation Test (Adebayo et al.,  2018) or rely on specifically designed datasets/ dataset modification e.g., Model Contrast Scores and Input Dependence Rate (Yang et al., 2019) and Attribution Percentage (Attr%) (Zhou et al., 2021).
-
-Please read the user guidelines for further guidance on how to best use the library. 
+**Disclaimers.** It is worth noting that the implementations of the metrics in this library have not been verified by the original authors. Thus any metric implementation in this library may differ from the original authors. Further, bear in mind that evaluation metrics for XAI methods are often empirical interpretations (or translations) of qualities that some researcher(s) claimed were important for explanations to fulfil, so it may be a discrepancy between what the author claims to measure by the proposed metric and what is actually measured e.g., using entropy as an operationalisation of explanation complexity. Please read the [user guidelines](https://quantus.readthedocs.io/en/latest/guidelines/guidelines_and_disclaimers.html) for further guidance on how to best use the library. 
 
 ## Installation
 
-
-Quantus can be installed from [PyPI](https://pypi.org/project/quantus/) 
-(this way assumes that you have either `torch` or `tensorflow` already installed on your machine).  
+If you already have [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) installed on your machine, 
+the most light-weight version of Quantus can be obtained from [PyPI](https://pypi.org/project/quantus/) as follows (no additional explainability functionality or deep learning framework will be included):
 
 ```setup
 pip install quantus
 ```
-
-If you don't have `torch` or `tensorflow` installed, you can simply add the package you want and install it simultaneously.
-
+Alternatively, you can simply add the desired deep learning framework (in brackets) to have the package installed together with Quantus.
+To install Quantus with PyTorch, please run:
 ```setup
 pip install "quantus[torch]"
 ```
-Or, alternatively for `tensorflow` you run:
+
+For TensorFlow, please run:
 
 ```setup
 pip install "quantus[tensorflow]"
 ```
 
-Additionally, if you want to use the basic explainability functionality such as `quantus.explain` in your evaluations, you can run `pip install "quantus[extras]"` (this step requires that either `torch` or `tensorflow` is installed). 
-To use Quantus with `zennit` support, install in the following way: `pip install "quantus[zennit]"`.  
-
-Alternatively, simply install requirements.txt (again, this requires that either `torch` or `tensorflow` is installed and won't include the explainability functionality to the installation):
+Alternatively, you can simply install Quantus with [requirements.txt](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
+Note that this installation requires that either [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) are already installed on your machine.
 
 ```setup
 pip install -r requirements.txt
 ```
 
+For a more in-depth guide on how to install Quantus, please read more [here](http://localhost:63342/Projects/quantus/docs/build/html/getting_started/getting_started_example.html). This includes instructions for how to install a desired deep learning framework such as PyTorch or TensorFlow together with Quantus.
+
 ### Package requirements
 
+The package requirements are as follows:
 ```
 python>=3.7.0
 pytorch>=1.10.1
-tensorflow==2.6.2
-tqdm==4.62.3
+TensorFlow==2.6.2
 ```
 
 ## Getting started
 
-To use the library, you'll need a couple of ingredients; a model, some input data and labels (to be explained). In this example, we use `torch` but we also support evaluation of `tensorflow` models.
+The following will give a short introduction to how to get started with Quantus. Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
+[TensorFlow](https://www.tensorflow.org), which would differ only in the loading of model, data and explanations. To get started with Quantus, you need:
+* A model (`model`), inputs (`x_batch`) and labels (`y_batch`)
+* Some explanations you want to evaluate (`a_batch`)
+
+
+<details>
+<summary><b><big>Step 1. Load data and model</big></b></summary>
+
+Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
+for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead.
 
 ```python
 import quantus
@@ -228,7 +231,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
-model.load_state_dict(torch.load("tutorials/assets/mnist"))
+model.load_state_dict(torch.load("tests/assets/mnist_model"))
 
 # Load datasets and make loaders.
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
@@ -238,8 +241,40 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 x_batch, y_batch = iter(test_loader).next()
 x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
+</details>
 
-Next, we generate some explanations for some test set samples that we wish to evaluate using Quantus library.
+<details>
+<summary><b><big>Step 2. Load explanations</big></b></summary>
+
+We still need some explanations to evaluate. 
+For this, there are two possibilities in Quantus. You can provide either:
+1. a set of re-computed attributions (`np.ndarray`)
+2. any arbitrary explanation function (`callable`), e.g., the built-in method `quantus.explain` or your own customised function
+
+We show the different options below.
+
+#### Using pre-computed explanations
+
+Quantus allows you to evaluate explanations that you have pre-computed, 
+assuming that they match the data you provide in `x_batch`. Let's say you have explanations 
+for [Saliency](https://arxiv.org/abs/1312.6034) and [Integrated Gradients](https://arxiv.org/abs/1703.01365)
+already pre-computed.
+
+In that case, you can simply load these into corresponding variables `a_batch_saliency` 
+and `a_batch_intgrad`:
+
+```python
+a_batch_saliency = load("path/to/precomputed/saliency/explanations")
+a_batch_saliency = load("path/to/precomputed/intgrad/explanations")
+```
+
+Another option is to simply obtain the attributions using one of many XAI frameworks out there, 
+such as [Captum](https://captum.ai/), 
+[Zennit](https://github.com/chr5tphr/zennit), 
+[tf.explain](https://github.com/sicara/tf-explain),
+or [iNNvestigate](https://github.com/albermax/innvestigate). The following code example shows how to obtain explanations ([Saliency](https://arxiv.org/abs/1312.6034) 
+and [Integrated Gradients](https://arxiv.org/abs/1703.01365), to be specific) 
+using [Captum](https://captum.ai/):
 
 ```python
 import captum
@@ -254,170 +289,142 @@ x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 
 # Quick assert.
 assert [isinstance(obj, np.ndarray) for obj in [x_batch, y_batch, a_batch_saliency, a_batch_intgrad]]
-
-# You can use any function e.g., quantus.explain (not necessarily captum) to generate your explanations.
 ```
-<p align="center">
-    <img src="tutorials/assets/mnist_example.png" alt="drawing" width="450"/>
-</p>
 
-The qualitative aspects of the Saliency and Integrated Gradients explanations may look fairly uninterpretable - since we lack ground truth of what the explanations should be looking like, it is hard to draw conclusions about the explainable evidence that we see. So, to quantitatively evaluate the explanation we can apply Quantus. For this purpose, we may be interested in measuring how sensitive the explanations are to very slight perturbations. To this end, we can e.g., apply max-sensitivity by Yeh et al., 2019 to evaluate our explanations. With Quantus, we created two options for evaluation.
+#### Passing an explanation function
 
-1) Either evaluate the explanations in a one-liner - by calling the instance of the metric class.
+If you don't have a pre-computed set of explanations but rather want to pass an arbitrary explanation function 
+that you wish to evaluate with Quantus, this option exists. 
+
+For this, you can for example rely on the built-in `quantus.explain` function to get started, which includes some popular explanation methods 
+(please run `quantus.available_methods()` to see which ones).  Examples of how to use `quantus.explain` 
+or your own customised explanation function are included in the next section.
+
+<img class="center" width="500" alt="drawing"  src="tutorials/assets/mnist_example.png"/>
+
+As seen in the above image, the qualitative aspects of explanations 
+may look fairly uninterpretable --- since we lack ground truth of what the explanations
+should be looking like, it is hard to draw conclusions about the explainable evidence. To gather quantitative evidence for the quality of the different explanation methods, we can apply Quantus.
+</details>
+
+<details>
+<summary><b><big>Step 3. Evaluate with Quantus</big></b></summary> 
+
+Quantus implements XAI evaluation metrics from different categories, 
+e.g., Faithfulness, Localisation and Robustness etc which all inherit from the base `quantus.Metric` class. 
+To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs/1901.09392)) 
+it first needs to be instantiated:
 
 ```python
-# Return max sensitivity scores in an one-liner - by calling the metric instance.
-quantus.MaxSensitivity(
-    nr_samples=10,
-    lower_bound=0.2,
-    norm_numerator=quantus.fro_norm,
-    norm_denominator=quantus.fro_norm,
-    perturb_func=quantus.uniform_noise,
-    similarity_func=quantus.difference,
-)(model=model, 
-   x_batch=x_batch,
-   y_batch=y_batch,
-   a_batch=None,
-   device=device,
-   explain_func=quantus.explain, 
-   explain_func_kwargs={"method": "Saliency"})
-
+metric = quantus.MaxSensitivity(nr_samples=10,
+                                lower_bound=0.2,
+                                norm_numerator=quantus.fro_norm,
+                                norm_denominator=quantus.fro_norm,
+                                perturb_func=quantus.uniform_noise,
+                                similarity_func=quantus.difference)
 ```
 
-2) Or use `quantus.evaluate()` which is a high-level function that allow you to evaluate multiple XAI methods on several metrics at once.
+and then applied to your model, data, and (pre-computed) explanations:
+
+```python
+scores = metric(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    a_batch=a_batch_saliency,
+    device=device
+)
+```
+
+#### Use quantus.explain
+
+Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
+which can be specified through a dictionary passed to `explain_func_kwargs`.
+
+```python
+scores = metric(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    device=device,
+    explain_func=quantus.explain,
+    explain_func_kwargs={"method": "Saliency"}
+)
+```
+
+#### Employ customised functions
+
+You can alternatively use your own customised explanation function
+(assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
+
+```python
+def your_own_callable(model, x_batch, y_batch):
+  """Logic goes here to compute the attributions in the same shape as x_batch."""
+  return explanation(model, x_batch, y_batch)
+
+scores = metric(
+    model=model,
+    x_batch=x_batch,
+    y_batch=y_batch,
+    device=device,
+    explain_func=your_own_callable
+)
+```
+#### Run large-scale evaluation
+
+Quantus also provides high-level functionality to support large-scale evaluations,
+e.g., multiple XAI methods, multifaceted evaluation through several metrics, or a combination thereof. To utilise `quantus.evaluate()`, you simply need to define two things:
+
+1. The **Metrics** you would like to use for evaluation (each `__init__` parameter configuration counts as its own metric):
+    ```python
+    metrics = {
+        "max-sensitivity-10": quantus.MaxSensitivity(nr_samples=10),
+        "max-sensitivity-20": quantus.MaxSensitivity(nr_samples=20),
+        "region-perturbation": quantus.RegionPerturbation(),
+    }
+    ```
+   
+2. The **XAI methods** you would like to evaluate, e.g., a `dict` with pre-computed attributions:
+    ```python
+    xai_methods = {
+        "Saliency": a_batch_saliency,
+        "IntegratedGradients": a_batch_intgrad
+    }
+    ```
+
+You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
 
 ```python
 import numpy as np
-
-metrics = {"max-Sensitivity": quantus.MaxSensitivity(**params_eval),
-           }
-
-xai_methods = {"Saliency": a_batch_saliency,
-               "IntegratedGradients": a_batch_intgrad}
-
-results = evaluate(
-        metrics=metrics,
-        xai_methods=xai_methods,
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=None,
-        agg_func=np.mean,
-        explain_func_kwargs={},
-    )
-
-# Summarise results in a dataframe.
-df = pd.DataFrame(results)
-df
+results = quantus.evaluate(
+      metrics=metrics,
+      xai_methods=xai_methods,
+      agg_func=np.mean,
+      model=model,
+      x_batch=x_batch,
+      y_batch=y_batch,
+      **{"softmax": False,}
+)
 ```
+</details>
 
-When comparing the max-Sensitivity scores for the Saliency and Integrated Gradients explanations, we can conclude that in this experimental setting, Saliency can be considered less robust (scores 0.41 +-0.15std) compared to Integrated Gradients (scores 0.17 +-0.05std). To replicate this simple example please find a dedicated notebook: [Getting started](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/tutorial_getting_started.ipynb).
+Please see [
+Getting started tutorial](https://github.com/understandable-machine-intelligence-lab/quantus/blob/main/tutorials/Tutorial_Getting_Started.ipynb) to run code similar to this example. For more information on how to customise metrics and extend Quantus' functionality, please see [Getting started guide](https://quantus.readthedocs.io/en/latest/getting_started/getting_started_example.html).
+
 
 ## Tutorials
 
-To get a more comprehensive view of the previous example, there is many types of analysis that can be done using Quantus. For example, we could use Quantus to verify to what extent the results - that Integrated Gradients "wins" over Saliency - are reproducible over different parameterisations of the metric e.g., by changing the amount of noise `perturb_radius` or the number of samples to iterate over `nr_samples`. With Quantus, we could further analyse if Integrated Gradients offers an improvement over Saliency also in other evaluation criteria such as faithfulness, randomisation and localisation.
-
-For more use cases, please see notebooks in `/tutorials` folder which includes examples such as
-
-* [Basic example all metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_basic_example_all_metrics.ipynb): shows how to instantiate the different metrics for ImageNet
-* [Metrics' parameterisation sensitivity](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_sensivitivty_parameterisation.ipynb): explores how sensitive a metric could be to its hyperparameters
-* [Understand how explanations robustness develops during model training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_model_training_explanation_robustness.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
-* [Compare explanation methods using qualitative-, quantitative- and sensitivity analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/tutorial_qualitative_quantitative_sensitivity_analysis.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
-
+Further tutorials are available that showcase the many types of analysis that can be done using Quantus.
+For this purpose, please see notebooks in [tutorials](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/) folder which includes examples such as:
+* [ImageNet Example All Metrics](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb): shows how to instantiate the different metrics for ImageNet
+* [Metric Parameterisation Analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Metric_Parameterisation_Analysis.ipynb): explores how sensitive a metric could be to its hyperparameters
+* [XAI Sensitivity Model Training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_XAI_Sensitivity_Model_Training.ipynb): looks into how robustness of gradient-based explanations change as model gets increasingly accurate in its predictions
+* [ImageNet Quantification with Quantus](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Quantification_with_Quantus.ipynb): benchmarks explanation methods under different types of analysis: qualitative, quantitative and sensitivity
 ... and more.
-
-
-## Miscellaneous functionality
-
-With Quantus, one can flexibly extend the library's functionality e.g., to adopt a customised explainer function `explain_func` or to replace a function that perturbs the input `perturb_func` with a user-defined one. 
-If you are replacing a function within the Quantus framework, make sure that your new function:
-- returns the same datatype (e.g., np.ndarray or float) and,
-- employs the same arguments (e.g., img=x, a=a)
-as the function you’re intending to replace.
-
-Details on what datatypes and arguments that should be used for the different functions can be found in the respective function typing in`quantus/helpers`. For example, if you want to replace `similar_func` in your evaluation, you can do as follows.
-
-````python
-import scipy
-import numpy as np
-
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
-    """Calculate Spearman rank of two images (or explanations)."""
-    return scipy.stats.spearmanr(a, b)[0]
-
-def my_similar_func(a: np.array, b: np.array, **kwargs) -> float:
-    """Calculate the similarity of a and b by subtraction."""
-    return a - b
-
-# Simply initalise the metric with your own function.
-metric = LocalLipschitzEstimate(similar_func=my_similar_func)
-````
-
-To evaluate multiple explanation methods over several metrics at once we user can leverage the `evaluate` method in Quantus. There are also other miscellaneous functionality built-into Quantus that might be helpful:
-
-````python
-# Interpret scores of a given metric.
-metric_instance.interpret_scores
-
-# Understand what hyperparameters of a metric to tune.
-sensitivity_scorer.get_params
-
-# To list available metrics (and their corresponding categories).
-quantus.AVAILABLE_METRICS
-
-# To list available explainable methods.
-quantus.AVAILABLE_XAI_METHODS
-
-# To list available perturbation functions.
-quantus.AVAILABLE_SIMILARITY_FUNCTIONS
-
-# To list available similarity functions.
-quantus.AVAILABLE_PERTURBATION_FUNCTIONS
-
-# To list available normalisation function.
-quantus.AVAILABLE_NORMALISATION_FUNCTIONS
-
-# To get the scores of the last evaluated batch.
-metric_instance_called.last_results
-
-# To get the scores of all the evaluated batches.
-metric_instance_called.all_results
-````
-With each metric intialisation, warnings are printed to shell in order to make the user attentive to the hyperparameters of the metric which may have great influence on the evaluation outcome. If you are running evaluation iteratively you might want to disable warnings, then set: 
-        
-```disable_warnings = True```
-
-in the params of the metric initalisation. Additionally, if you want to track progress while evaluating your explanations set:
-
-```display_progressbar = True```
-
-If you want to return an aggreagate score for your test samples you can set the following hyperparameter:
-
-```return_aggregate = True```
-
-fow which you can specify an `aggregate_func` e.g., `np.mean` to use while aggregating the score for a given metric.
 
 ## Contributing
 
-If you would like to contribute to this project or add your metric to evaluate explanations please open an issue or submit a pull request.
+We welcome any sort of contribution to Quantus! For a detailed contribution guide, please refer to [Contributing](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/CONTRIBUTING.md) documentation first. 
 
-#### Code Style
-
-Code is written to follow [PEP-8](https://www.python.org/dev/peps/pep-0008/) and for docstrings we use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html).
-We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [black](https://github.com/psf/black) for code formatting with a line-width of 88 characters per line.
-
-#### Testing
-Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
-
-#### Workflow
-
-Before creating a PR, double-check that the following tasks are completed:
-
-- [x] Run `black` to format source code e.g., `black quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Run `flake8` for quick style checks e.g., `flake8 quantus/helpers/INSERT_YOUR_FILE_NAME.py`
-- [x] Generally, each change in the codebase should be covered by an appropriate test case
-- [x] Run `pytests tests` (to install mandatory packages for testing run `pip install -r requirements_test.txt`)
-  - Optionally, you could run `pytest tests -n auto` to split test execution between multiple CPU cores
-- [x] If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
-- [x] Run `pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus` to inspect that code coverage is maintained (we aim at ~100% code coverage for Quantus)
-
+If you have any developer-related questions, please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose)
+or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de).

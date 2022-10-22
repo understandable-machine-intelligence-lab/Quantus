@@ -14,11 +14,6 @@ __pycache__/
 *.npz
 *.csv
 *.pth
-tutorials/progress/
-tutorials/assets/imagenet_images/
-tutorials/assets/data/
-tutorials/assets/model_objs/
-tests/test_scenarios.md
 
 # dev
 temp/
@@ -39,19 +34,12 @@ dist/
 *.egg-info/
 build/
 
-# progress
-quantus/analysers/*
-tests/analysers/*
+# tutorials
+tutorials/sample_data/
+tutorials/invited_talks/
 
 # documentation
 html/
 
 # pycharm project files
 .idea
-
-# ImageNet downnload
-tutorials/class_names.txt
-tutorials/imagenette2-320
-tutorials/imagenette2-320.tgz
-tutorials/bboxes_annotations.tar.gz
-tutorials/bboxes_annotations

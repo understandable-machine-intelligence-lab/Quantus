@@ -215,7 +215,7 @@ class RelativeRepresentationStability(PerturbationMetric):
         _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
                                           indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
 
-        _get_hidden_representations = functools.partial(model.get_hidden_layers_representations, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
+        _get_hidden_representations = functools.partial(model.get_hidden_representations, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
 
         if a is None:
             a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))
