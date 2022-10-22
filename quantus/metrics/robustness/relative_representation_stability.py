@@ -2,34 +2,35 @@ from __future__ import annotations
 
 from typing import Optional, Callable, Dict, List, Union, TYPE_CHECKING, Tuple
 import numpy as np
-import functools
+from functools import partial
+import warnings
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
     from quantus import ModelInterface
 
-from ..base import PerturbationMetric
-from ...helpers import warn_func
-from ...helpers import asserts
-from ...helpers.normalise_func import normalise_by_negative
-from ...helpers.perturb_func import random_noise
-from ...helpers.utils import expand_attribution_channel
+from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.warn import warn_parameterisation
+from quantus.helpers.asserts import attributes_check
+from quantus.functions.normalise_func import normalise_by_negative
+from quantus.functions.perturb_func import random_noise
 
 
-class RelativeRepresentationStability(PerturbationMetric):
+class RelativeRepresentationStability(BatchedPerturbationMetric):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits
 
     :math:`RRS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{L_x - L_{x'}}{L_x}||_p, \epsilon_{min})},`
+
     where `L(·)` denotes the internal model representation, e.g., output embeddings of hidden layers.
 
     References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    @asserts.attributes_check
+    @attributes_check
     def __init__(
         self,
         nr_samples: int = 200,
@@ -45,33 +46,43 @@ class RelativeRepresentationStability(PerturbationMetric):
         display_progressbar=False,
         eps_min=1e-6,
         default_plot_func: Optional[Callable] = None,
-        layer_names: Optional[Tuple[str]] = None,
-        layer_indices: Optional[Tuple[int]] = None,
+        layer_names: Optional[Tuple] = None,
+        layer_indices: Optional[Tuple] = None,
         **kwargs: Dict[str, ...],
     ):
         """
-        Parameters:
-            nr_samples (integer): The number of samples iterated, default=200.
-            abs (boolean): Indicates whether absolute operation is applied on the attribution.
-
-            normalise (boolean): a flag stating if the attributions should be normalised
-            normalise_func (callable): Attribution normalisation function applied in case normalise=True.
-            normalise_func_kwargs (dict): Keyword arguments to be passed to normalise_func on call, default={}.
-
-            perturb_func (callable): Input perturbation function. If None, the default value is used,
-            default=gaussian_noise.
-            perturb_func_kwargs (dict): Keyword arguments to be passed to perturb_func, default={}.
-
-            return_aggregate (boolean): Indicates if an aggregated score should be computed over all instances.
-            aggregate_func (callable): Callable that aggregates the scores given an evaluation call.
-
-            disable_warnings (boolean): Indicates whether the warnings are printed, default=False.
-            display_progressbar (boolean): Indicates whether a tqdm-progress-bar is printed, default=False.
-            default_plot_func (callable): Callable that plots the metrics result.
-            eps_min (float): a small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
-
-            layer_names: tuple with names of layers, representations of which should be used for RRS computation, default = all
-            layer_indices: tuple with indices of layers, representations of which should be used for RRS computation, default = all
+        Parameters
+        ----------
+        nr_samples: int
+            The number of samples iterated, default=200.
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution.
+        normalise: boolean
+            Flag stating if the attributions should be normalised
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func: callable
+            Input perturbation function. If None, the default value is used, default=gaussian_noise.
+        perturb_func_kwargs: dict
+            Keyword arguments to be passed to perturb_func, default={}.
+        return_aggregate: boolean
+            Indicates if an aggregated score should be computed over all instances.
+        aggregate_func: callable
+            Callable that aggregates the scores given an evaluation call.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed, default=False.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed, default=False.
+        default_plot_func: callable
+            Callable that plots the metrics result.
+        eps_min: float
+            Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
+        layer_names: tuple, optional
+            Names of layers, representations of which should be used for RRS computation, default = all.
+        layer_indices: tuple, optional
+            Indices of layers, representations of which should be used for RRS computation, default = all.
         """
 
         if normalise_func is None:
@@ -99,11 +110,16 @@ class RelativeRepresentationStability(PerturbationMetric):
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
+        if layer_names is not None and layer_indices is not None:
+            raise ValueError(
+                "Must provide either layer_names OR layer_indices, not both."
+            )
+
         self._layer_names = layer_names
         self._layer_indices = layer_indices
 
         if not self.disable_warnings:
-            warn_func.warn_parameterisation(
+            warn_parameterisation(
                 metric_name=self.__class__.__name__,
                 sensitive_params=(
                     "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
@@ -128,29 +144,46 @@ class RelativeRepresentationStability(PerturbationMetric):
         **kwargs: Dict[str, ...],
     ) -> Union[List[float], float]:
         """
-        Args:
-            model: instance of tf.keras.Model or torch.nn.Module
-            x_batch: a 4D tensor representing batch of input images
-            y_batch: a 1D tensor, representing predicted labels for x_batch
-            a_batch: a 4D tensor with pre-computed explanations for the x_batch
-            explain_func: a function used to generate explanations
-            device: a device on which torch should perform computations
-            softmax: Indicates whether to use softmax probabilities or logits in model prediction. This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-            kwargs: not used, deprecated
+        Parameters
+        ----------
+        model: tf.keras.Model, torch.nn.Module
+            A torch or tensorflow model that is subject to explanation.
+        x_batch: np.ndarray
+            4D tensor representing batch of input images
+        y_batch: np.ndarray
+            1D tensor, representing predicted labels for the x_batch.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        explain_func: callable, optional
+            Function used to generate explanations.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        a_batch: np.ndarray, optional
+            4D tensor with pre-computed explanations for the x_batch.
+        device: str, optional
+            Device on which torch should perform computations.
+        softmax: boolean, optional
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        kwargs:
+            not used, deprecated
+        Returns
+        -------
+        relative representation stability: float, np.ndarray
+            float in case `return_aggregate=True`, otherwise np.ndarray of floats
 
-        Returns:
-            relative representation stability: float in case `return_aggregate=True`, otherwise np.ndarray of floats
 
         For each image `x`:
          - generate `num_perturbations` perturbed `xs` in the neighborhood of `x`
          - find `xs` which results in the same label
-         - (or use pre-computed)
-         - Compute (or use pre-computed) explanations `e_x` and `e_xs`
-         - Compute relative input stability objective, find max value with regard to `xs`
+         - Compute explanations `e_x` and `e_xs`
+         - Compute relative representation stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
-
         """
-        return super(PerturbationMetric, self).__call__(
+        return super(BatchedPerturbationMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -175,13 +208,21 @@ class RelativeRepresentationStability(PerturbationMetric):
         Computes relative representation stabilities maximization objective
         as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors.
 
-        Parameters:
-            l_x:  internal representations for x
-            l_xs: internal representations for xs
-            e_x:  explanation for x
-            e_xs: explanation for xs
-        Returns:
-            rrs_obj: np.ndarray of float
+        Parameters
+        ----------
+        l_x: np.ndarray
+            Internal representation for x_batch.
+        l_xs: np.ndarray
+            Internal representation for xs_batch.
+        e_x: np.ndarray
+            Explanations for x.
+        e_xs: np.ndarray
+            Explanations for xs.
+
+        Returns
+        -------
+        rrs_obj: np.ndarray
+            RRS maximization objective.
         """
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
@@ -195,70 +236,79 @@ class RelativeRepresentationStability(PerturbationMetric):
 
         return nominator / denominator
 
-    # fmt: off
-    def evaluate_instance(self, model: ModelInterface, x: np.ndarray, y: int, a: Optional[np.ndarray] = None, **kwargs) -> float:  # noqa
-        # fmt: on
+    def evaluate_batch(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: Optional[np.ndarray],
+        *args,
+        **kwargs,
+    ) -> np.ndarray:
         """
-        Args:
-            model: model use to generate predictions, explanations
-            x: a 3D tensor representing single image
-            y: a label for x
-            a: pre-computed explanation for x and y
-            **kwargs: not used, deprecated
+        Parameters
+        ----------
+        model: tf.keras.Model, torch.nn.Module
+            A torch or tensorflow model that is subject to explanation.
+        x_batch: np.ndarray
+            4D tensor representing batch of input images.
+        y_batch: np.ndarray
+             1D tensor, representing predicted labels for the x_batch.
+        a_batch: np.ndarray, optional
+            4D tensor with pre-computed explanations for the x_batch.
+        args:
+            Unused.
+        kwargs:
+            Unused.
 
-        Returns:
-            relative output stability: float
+        Returns
+        -------
+        ris: np.ndarray
+            The batched evaluation results.
+
         """
-        # fmt: off
-        _explain_func = functools.partial(self.explain_func, model=model.get_model(), **self.explain_func_kwargs)
-        # fmt: on
-        _perturb_func = functools.partial(self.perturb_func, indices=np.arange(0, x.size),
-                                          indexed_axes=np.arange(0, x.ndim), **self.perturb_func_kwargs)
+        _explain_func = partial(
+            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
+        )
+        _perturb_func = partial(self.perturb_func, **self.perturb_func_kwargs)
+        if a_batch is None:
+            a_batch = self.generate_normalized_explanations_batch(
+                x_batch, y_batch, _explain_func
+            )
 
-        _get_hidden_representations = functools.partial(model.get_hidden_representations, layer_names=self._layer_names, layer_indices=self._layer_indices, **kwargs)
-
-        if a is None:
-            a = _explain_func(inputs=np.expand_dims(x, 0), targets=np.expand_dims(y, 0))
-
-        x_perturbed_batch = []
-
+        ris = []
         for _ in range(self._nr_samples):
             # Perturb input.
-            x_perturbed = _perturb_func(x)
-            asserts.assert_perturbation_caused_change(x=x, x_perturbed=x_perturbed)
-            x_perturbed_batch.append(x_perturbed)
+            x_perturbed = _perturb_func(x_batch)
+            labels = model.predict(x_perturbed).argmax(axis=1)
+            same_labels_indexes = np.argwhere(y_batch == labels).reshape(-1)
+            if len(same_labels_indexes) == 0:
+                warnings.warn("Perturbation changed all labels in a batch")
+                continue
 
-        x_perturbed_batch = np.asarray(x_perturbed_batch)
-        y_perturbed_batch = model.predict(x_perturbed_batch)
+            _same_labels = np.take(y_batch, same_labels_indexes, axis=0)
+            _x_perturbed_batch = np.take(x_perturbed, same_labels_indexes, axis=0)
+            _x_batch = np.take(x_batch, same_labels_indexes, axis=0)
+            _a_batch = np.take(a_batch, same_labels_indexes, axis=0)
+            _a_perturbed_batch = self.generate_normalized_explanations_batch(
+                _x_perturbed_batch, _same_labels, _explain_func
+            )
+            l_x = model.get_hidden_representations(
+                _x_batch, self._layer_names, self._layer_indices
+            )
+            l_x_perturbed = model.get_hidden_representations(
+                _x_perturbed_batch, self._layer_names, self._layer_indices
+            )
+            ris.append(
+                self.relative_representation_stability_objective(
+                    l_x=l_x,
+                    l_xs=l_x_perturbed,
+                    e_x=_a_batch,
+                    e_xs=_a_perturbed_batch,
+                )
+            )
 
-        perturbed_labels = np.argmax(y_perturbed_batch, axis=1)
-        same_label_indexes = np.argwhere(perturbed_labels == y).reshape(-1)
-
-        if len(same_label_indexes) == 0:
-            raise ValueError("No perturbations resolved in the same labels")
-
-        # only use the perturbations which resolve in the same labels
-        x_perturbed_batch = np.take(x_perturbed_batch, same_label_indexes, axis=0)
-
-        # Generate explanation based on perturbed input x.
-        a_perturbed_batch = _explain_func(
-            inputs=x_perturbed_batch,
-            targets=np.full(shape=same_label_indexes.shape, fill_value=y),
-        )
-
-        a_perturbed_batch = expand_attribution_channel(a_perturbed_batch, x_perturbed_batch)
-
-        if self.normalise:
-            # fmt: off
-            a_perturbed_batch = self.normalise_func(a_perturbed_batch, **self.normalise_func_kwargs)
-            # fmt: on
-
-        if self.abs:
-            a_perturbed_batch = np.abs(a_perturbed_batch)
-
-
-        l_x = _get_hidden_representations(x=np.expand_dims(x, 0))[0]
-        l_xs_batch = _get_hidden_representations(x=x_perturbed_batch)
-
-        rrs_objective_batch = self.relative_representation_stability_objective(l_x=l_x, l_xs=l_xs_batch, e_x=a, e_xs=a_perturbed_batch)
-        return float(np.max(rrs_objective_batch))
+        result = np.max(ris, axis=0)
+        if self.return_aggregate:
+            result = [self.aggregate_func(result)]
+        return result

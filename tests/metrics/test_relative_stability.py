@@ -1,19 +1,23 @@
 from __future__ import annotations
 
-from pytest_lazyfixture import lazy_fixture  # noqa
+from pytest_lazyfixture import lazy_fixture
 from typing import Dict
 import functools
 
 from tests.fixtures import *
 from quantus.functions.perturb_func import *
 from quantus.functions.explanation_func import explain
-from quantus.metrics.robustness import RelativeInputStability, RelativeOutputStability
+from quantus.metrics.robustness import (
+    RelativeInputStability,
+    RelativeOutputStability,
+    RelativeRepresentationStability,
+)
 
 
 # fmt: off
 RIS_CONSTRUCTOR = functools.partial(RelativeInputStability,          nr_samples=5, disable_warnings=True)
 ROS_CONSTRUCTOR = functools.partial(RelativeOutputStability,         nr_samples=5, disable_warnings=True)
-#RRS_CONSTRUCTOR = functools.partial(RelativeRepresentationStability, nr_samples=5, disable_warnings=True)
+RRS_CONSTRUCTOR = functools.partial(RelativeRepresentationStability, nr_samples=5, disable_warnings=True)
 # fmt: on
 
 
@@ -83,7 +87,9 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
+def test_relative_input_stability(
+    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs
+):
 
     ris = RIS_CONSTRUCTOR(**init_kwargs)
     x_batch = data["x_batch"]
@@ -163,7 +169,9 @@ def test_relative_input_stability(model: tf.keras.Model, data: Dict[str, np.ndar
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
+def test_relative_output_stability(
+    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs
+):
 
     ris = ROS_CONSTRUCTOR(**init_kwargs)
 
@@ -198,18 +206,6 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
             {},
         ),
         (
-            lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini_batch"),
-            {
-                "perturb_func": gaussian_noise,
-                "perturb_func_kwargs": {
-                    "perturb_std": 0.05,
-                    "perturb_mean": 0.03,
-                },
-            },
-            {},
-        ),
-        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images_mini_batch"),
             {
@@ -232,18 +228,6 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
             {},
         ),
         (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
-            {
-                "perturb_func": gaussian_noise,
-                "perturb_func_kwargs": {
-                    "perturb_std": 0.05,
-                    "perturb_mean": 0.03,
-                },
-            },
-            {},
-        ),
-        (
             lazy_fixture("load_cnn_2d_cifar"),
             lazy_fixture("load_cifar10_images_tf_mini_batch"),
             {
@@ -261,16 +245,16 @@ def test_relative_output_stability(model: tf.keras.Model, data: Dict[str, np.nda
     ],
     ids=[
         "tf + mnist + default perturb_func",
-        "tf + mnist + perturb_func = gaussian_noise +  kwargs",
         "torch + mnist + normalise = True +  return_aggregate = True",
         "torch + mnist + method = IntegratedGradients",
         "torch + cifar10 + default perturb_func",
-        "torch + cifar10 + perturb_func = gaussian_noise + kwargs",
         "tf + cifar10 + normalise = True + return_aggregate = True",
         "tf + cifar10 + method = GradCam",
     ],
 )
-def test_relative_representation_stability(model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs):
+def test_relative_representation_stability(
+    model: tf.keras.Model, data: Dict[str, np.ndarray], init_kwargs, call_kwargs
+):
 
     ris = RRS_CONSTRUCTOR(**init_kwargs)
 

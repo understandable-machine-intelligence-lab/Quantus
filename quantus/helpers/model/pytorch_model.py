@@ -235,7 +235,7 @@ class PyTorchModel(ModelInterface):
             layer_names = ()
 
         def is_layer_of_interest(index, name):
-            if layer_names == [] and layer_indices == []:
+            if layer_names == () and layer_indices == ():
                 return True
             return index in layer_indices or name in layer_names
 

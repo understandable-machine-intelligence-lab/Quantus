@@ -16,12 +16,11 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from ..base_batched import BatchedPerturbationMetric
-from ...helpers.warn import warn_parameterisation
-from ...helpers.asserts import attributes_check
-from ...functions.normalise_func import normalise_by_negative
-from ...functions.perturb_func import random_noise
-from ...helpers.utils import expand_attribution_channel
+from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.warn import warn_parameterisation
+from quantus.helpers.asserts import attributes_check
+from quantus.functions.normalise_func import normalise_by_negative
+from quantus.functions.perturb_func import random_noise
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
@@ -141,7 +140,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray
             4D tensor representing batch of input images
         y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
+            1D tensor, representing predicted labels for the x_batch.
         model_predict_kwargs: dict, optional
             Keyword arguments to be passed to the model's predict method.
         explain_func: callable, optional
@@ -170,7 +169,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
          - generate `num_perturbations` perturbed `xs` in the neighborhood of `x`
          - find `xs` which results in the same label
          - Compute explanations `e_x` and `e_xs`
-         - Compute relative input stability objective, find max value with respcet to `xs`
+         - Compute relative input stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
         return super(BatchedPerturbationMetric, self).__call__(
@@ -210,10 +209,9 @@ class RelativeInputStability(BatchedPerturbationMetric):
         ris_obj: np.ndarray
             RIS maximization objective.
         """
-
-        nominator = (e_x - e_xs) / (
-            e_x + (e_x == 0) * self._eps_min
-        )  # prevent division by 0
+        # fmt: off
+        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        # fmt: on
         nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)
 
         denominator = x - xs
@@ -263,7 +261,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         )
         _perturb_func = partial(self.perturb_func, **self.perturb_func_kwargs)
         if a_batch is None:
-            a_batch = self.generate_normalized_explanations(
+            a_batch = self.generate_normalized_explanations_batch(
                 x_batch, y_batch, _explain_func
             )
 
@@ -281,7 +279,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             _x_perturbed_batch = np.take(x_perturbed, same_labels_indexes, axis=0)
             _x_batch = np.take(x_batch, same_labels_indexes, axis=0)
             _a_batch = np.take(a_batch, same_labels_indexes, axis=0)
-            _a_perturbed_batch = self.generate_normalized_explanations(
+            _a_perturbed_batch = self.generate_normalized_explanations_batch(
                 _x_perturbed_batch, _same_labels, _explain_func
             )
             ris.append(
@@ -297,30 +295,3 @@ class RelativeInputStability(BatchedPerturbationMetric):
         if self.return_aggregate:
             result = [self.aggregate_func(result)]
         return result
-
-    def generate_normalized_explanations(
-        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
-    ) -> np.ndarray:
-        """
-        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
-
-        Parameters
-        ----------
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
-        explain_func: callable
-            Function to generate explanations, takes only inputs,targets kwargs.
-
-        Returns
-        -------
-        a_batch: np.ndarray
-            A batch of explanations.
-        """
-        a_batch = explain_func(inputs=x_batch, targets=y_batch)
-        if self.normalise:
-            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
-        if self.abs:
-            a_batch = np.abs(a_batch)
-        return expand_attribution_channel(a_batch, x_batch)

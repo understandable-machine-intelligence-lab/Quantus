@@ -39,7 +39,7 @@ AVAILABLE_METRICS = {
         "Consistency": Consistency,
         "Relative Input Stability": RelativeInputStability,
         "Relative Output Stability": RelativeOutputStability,
-        #"Relative Representation Stability": RelativeRepresentationStability,
+        "Relative Representation Stability": RelativeRepresentationStability,
 
     },
     "Localisation": {
