@@ -221,18 +221,18 @@ class PyTorchModel(ModelInterface):
         return model_copy
 
     def get_hidden_representations(
-            self,
-            x: np.ndarray,
-            layer_names: Optional[Tuple[str]] = None,
-            layer_indices: Optional[Tuple[int]] = None
+        self,
+        x: np.ndarray,
+        layer_names: Optional[Tuple] = None,
+        layer_indices: Optional[Tuple] = None,
     ) -> np.ndarray:
 
         device = self.device if self.device is not None else "cpu"
 
         if layer_indices is None:
-            layer_indices = []
+            layer_indices = ()
         if layer_names is None:
-            layer_names = []
+            layer_names = ()
 
         def is_layer_of_interest(index, name):
             if layer_names == [] and layer_indices == []:

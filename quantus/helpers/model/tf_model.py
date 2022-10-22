@@ -37,11 +37,11 @@ class TensorFlowModel(ModelInterface):
     ]
 
     def __init__(
-            self,
-            model: tf.keras.Model,
-            channel_first: bool = True,
-            softmax: bool = False,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        self,
+        model: tf.keras.Model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
         if model_predict_kwargs is None:
             # Disable progress bar while running inference on tf.keras.Model
@@ -51,7 +51,7 @@ class TensorFlowModel(ModelInterface):
             model=model,
             channel_first=channel_first,
             softmax=softmax,
-            model_predict_kwargs=model_predict_kwargs
+            model_predict_kwargs=model_predict_kwargs,
         )
         self.cache = LRUCache(100)
 
@@ -99,18 +99,18 @@ class TensorFlowModel(ModelInterface):
         return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(
-            self,
-            x: np.ndarray,
-            shape: Tuple[int, ...],
-            channel_first: Optional[bool] = None,
-            batched: bool = False,
+        self,
+        x: np.ndarray,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
     ):
         """
         Reshape input into model-expected input.
         channel_first: Explicitly state if x is formatted channel first (optional).
         """
         if channel_first is None:
-            channel_first = utils.infer_channel_first
+            channel_first = utils.infer_channel_first(x)
         # Expand first dimension if this is just a single instance.
         if not batched:
             x = x.reshape(1, *shape)
@@ -160,7 +160,7 @@ class TensorFlowModel(ModelInterface):
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
-            self, layer_names: Tuple[str], layer_indices: Tuple[int]
+        self, layer_names: Tuple[str], layer_indices: Tuple[int]
     ) -> tf.keras.Model:
         # Instead of rebuilding model on each image, which is evaluated by metric, we cache it
         if layer_names == () and layer_indices == ():
@@ -186,11 +186,11 @@ class TensorFlowModel(ModelInterface):
         return hidden_representation_model
 
     def get_hidden_representations(
-            self,
-            x: np.ndarray | tf.Tensor | List,
-            layer_names: Optional[Tuple[str]] = None,
-            layer_indices: Optional[Tuple[int]] = None,
-            **kwargs,
+        self,
+        x: np.ndarray | tf.Tensor,
+        layer_names: Optional[Tuple] = None,
+        layer_indices: Optional[Tuple] = None,
+        **kwargs,
     ) -> np.ndarray:
         # List is not hashable, so we pass names + indices as tuples
 

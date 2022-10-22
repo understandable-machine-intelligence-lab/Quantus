@@ -565,14 +565,23 @@ def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
     arr: np.ndarray
          3D tensor representing image
     upper_bound: float
-                 an upper bound for noise generated, default 1e-6
-    kwargs: optional
+                 Upper bound for noise generated, default 1e-6
+    kwargs:
         Keyword arguments, unused
+
     Returns
     -------
     arr: np.ndarray
-         the same shape as input
+         Array of the same shape as input
     """
-    noise = np.random.random(arr.shape)
+    arr_shape = arr.shape
+    if len(arr_shape) == 4:
+        noise_shape = arr.shape[1:]
+    elif len(arr_shape) == 3:
+        noise_shape = arr_shape
+    else:
+        raise ValueError('random_noise supports only 3D and 4D')
+
+    noise = np.random.random(noise_shape)
     noise *= upper_bound
     return arr + noise

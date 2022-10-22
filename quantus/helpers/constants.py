@@ -38,8 +38,8 @@ AVAILABLE_METRICS = {
         "Avg-Sensitivity": AvgSensitivity,
         "Consistency": Consistency,
         "Relative Input Stability": RelativeInputStability,
-        "Relative Output Stability": RelativeOutputStability,
-        "Relative Representation Stability": RelativeRepresentationStability,
+        #"Relative Output Stability": RelativeOutputStability,
+        #"Relative Representation Stability": RelativeRepresentationStability,
 
     },
     "Localisation": {

@@ -38,7 +38,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights("tests/assets/mnist_tf_weights/")
+    model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
 
@@ -171,7 +171,7 @@ def load_cnn_2d_mnist():
     Load 2D CNN pre-trained on MNIST
     """
     model = CNN_2D_TF(MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE, 10, num_channels=1)
-    model.load_weights("tests/weights/cnn_2d_mnist_weights.keras")
+    model.load_weights("tests/assets/cnn_2d_mnist_weights.keras")
     return model
 
 
@@ -181,7 +181,7 @@ def load_cnn_2d_cifar():
     Load 2D CNN pre-trained on Cifar10
     """
     model = CNN_2D_TF(CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE, 10, num_channels=3)
-    model.load_weights("tests/weights/cnn_2d_cifar_weights.keras")
+    model.load_weights("tests/assets/cnn_2d_cifar_weights.keras")
     return model
 
 
