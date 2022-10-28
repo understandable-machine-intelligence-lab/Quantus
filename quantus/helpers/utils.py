@@ -18,7 +18,6 @@ from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.constants import PREDICTION_CHANGE_HANDLING_STRATEGIES
 
 if util.find_spec("torch"):
     import torch
@@ -995,4 +994,5 @@ def calculate_auc(values: np.array, dx: int = 1):
 def map_strategy_to_function(strategy: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]) -> Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]:
     if isinstance(strategy, Callable):
         return strategy
+    from quantus.helpers.constants import PREDICTION_CHANGE_HANDLING_STRATEGIES
     return PREDICTION_CHANGE_HANDLING_STRATEGIES[strategy]
