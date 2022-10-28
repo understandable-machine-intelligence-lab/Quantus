@@ -46,7 +46,7 @@ if util.find_spec("tf_explain"):
     import tf_explain
 
 
-def explain(model, inputs, targets, **kwargs) -> np.ndarray:
+def explain(model, inputs, targets, **kwargs) -> Union[np.ndarray, torch.Tensor]:
     """
     Explain inputs given a model, targets and an explanation method.
     Expecting inputs to be shaped such as (batch_size, nr_channels, ...) or (batch_size, ..., nr_channels).
@@ -166,6 +166,11 @@ def generate_tf_explanation(
          Returns np.ndarray of same shape as inputs.
 
     """
+
+    return_numpy_arr = kwargs.get("return_numpy_arr", True)
+    if not return_numpy_arr:
+        raise NotImplementedError()
+
     method = kwargs.get("method", "Gradient").lower()
     inputs = inputs.reshape(-1, *model.input_shape[1:])
     if not isinstance(targets, np.ndarray):
@@ -295,7 +300,7 @@ def generate_captum_explanation(
     targets: np.ndarray,
     device: Optional[str] = None,
     **kwargs,
-) -> np.ndarray:
+) -> Union[np.ndarray, torch.Tensor]:
     """
     Generate explanation for a torch model with captum.
     Parameters
@@ -317,6 +322,7 @@ def generate_captum_explanation(
          Returns np.ndarray of same shape as inputs.
     """
 
+    return_numpy_arr = kwargs.get("return_numpy_arr", True)
     method = kwargs.get("method", "Gradient").lower()
 
     # Set model in evaluate mode.
@@ -469,9 +475,12 @@ def generate_captum_explanation(
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
-            explanation = explanation.cpu().detach().numpy()
+            explanation = explanation.cpu().detach()
         else:
-            explanation = explanation.cpu().numpy()
+            explanation = explanation.cpu()
+
+    if return_numpy_arr:
+        explanation = explanation.numpy()
 
     return explanation
 
@@ -482,7 +491,7 @@ def generate_zennit_explanation(
     targets: np.ndarray,
     device: Optional[str] = None,
     **kwargs,
-) -> np.ndarray:
+) -> Union[np.ndarray, torch.Tensor]:
     """
     Generate explanation for a torch model with zennit.
 
@@ -505,7 +514,7 @@ def generate_zennit_explanation(
          Returns np.ndarray of same shape as inputs.
 
     """
-
+    return_numpy_arr = kwargs.get("return_numpy_arr", True)
     assert 0 not in kwargs.get(
         "reduce_axes", [1]
     ), "Reduction over batch_axis is not available, please do not include axis 0 in 'reduce_axes' kwarg."
@@ -514,7 +523,7 @@ def generate_zennit_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
+    reduce_axes = {"dim": tuple(kwargs.get("reduce_axes", [1])), "keepdim": True}
 
     # Get zennit composite, canonizer, attributor and handle canonizer kwargs.
     canonizer = kwargs.get("canonizer", None)
@@ -599,11 +608,14 @@ def generate_zennit_explanation(
 
     if isinstance(explanation, torch.Tensor):
         if explanation.requires_grad:
-            explanation = explanation.cpu().detach().numpy()
+            explanation = explanation.cpu().detach()
         else:
-            explanation = explanation.cpu().numpy()
+            explanation = explanation.cpu()
 
     # Sum over the axes.
-    explanation = np.sum(explanation, **reduce_axes)
+    explanation = torch.sum(explanation, **reduce_axes)
+
+    if return_numpy_arr:
+        explanation = explanation.numpy()
 
     return explanation
