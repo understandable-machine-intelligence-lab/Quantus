@@ -1,4 +1,5 @@
 """This module contains the implementation of the Local Lipschitz Estimate metric."""
+from __future__ import annotations
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -6,7 +7,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -16,6 +17,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.utils import map_strategy_to_function
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric):
@@ -55,6 +57,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
+        prediction_change_handling: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray] = "Ignore",
         **kwargs,
     ):
         """
@@ -99,6 +102,9 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             Indicates whether the warnings are printed, default=False.
         display_progressbar: boolean
             Indicates whether a tqdm-progress-bar is printed, default=False.
+        prediction_change_handling: quantus.types.PredictionChangeHandlingStrategy or PredictionChangeHandler, optional.
+            Typically, during robustness evaluation one would want predictions to stay the same. This argument specifies what
+            should be done, if this is not the case. Default is noop.
         kwargs: optional
             Keyword arguments.
         """
@@ -142,6 +148,9 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
+
+
+        self.prediction_change_handler = map_strategy_to_function(prediction_change_handling)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -314,6 +323,8 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+
+            x_perturbed = self.prediction_change_handler(model, x_batch, x_perturbed)
 
             x_input = model.shape_input(
                 x=x_perturbed,

@@ -6,16 +6,19 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
+
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Callable
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.constants import PREDICTION_CHANGE_HANDLING_STRATEGIES
 
 if util.find_spec("torch"):
     import torch
@@ -986,3 +989,10 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+
+def map_strategy_to_function(strategy: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]) -> Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]:
+    if isinstance(strategy, Callable):
+        return strategy
+    return PREDICTION_CHANGE_HANDLING_STRATEGIES[strategy]

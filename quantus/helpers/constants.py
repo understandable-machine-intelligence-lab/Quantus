@@ -14,6 +14,12 @@ from quantus.functions.normalise_func import *
 from quantus.functions.perturb_func import *
 from quantus.functions.similarity_func import *
 from quantus.metrics import *
+from quantus.functions.handle_prediction_change_func import (
+    warn_on_prediction_change,
+    ignore_change_in_predictions,
+    raise_exception_on_prediction_change,
+    return_nan_on_prediction_change
+)
 
 
 AVAILABLE_METRICS = {
@@ -113,6 +119,15 @@ AVAILABLE_XAI_METHODS = [
     "Control Var. Constant",
     "Control Var. Random Uniform",
 ]
+
+
+PREDICTION_CHANGE_HANDLING_STRATEGIES = {
+    "ReturnNan": return_nan_on_prediction_change,
+    "Ignore": ignore_change_in_predictions,
+    "RaiseException": raise_exception_on_prediction_change,
+    "Warn": warn_on_prediction_change
+}
+
 
 
 def available_categories() -> List[str]:

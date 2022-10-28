@@ -47,7 +47,7 @@ class ModelInterface(ABC):
             self.model_predict_kwargs = model_predict_kwargs
 
     @abstractmethod
-    def predict(self, x: np.array, **kwargs):
+    def predict(self, x: np.array, **kwargs) -> np.ndarray:
         """
         Predict on the given input.
 

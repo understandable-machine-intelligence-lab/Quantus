@@ -6,6 +6,8 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
+
 import itertools
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
@@ -18,6 +20,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.utils import map_strategy_to_function
 
 
 class Continuity(PerturbationMetric):
@@ -57,6 +60,7 @@ class Continuity(PerturbationMetric):
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
+        prediction_change_handling: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray] = "Ignore",
         **kwargs,
     ):
         """
@@ -98,6 +102,9 @@ class Continuity(PerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
+        prediction_change_handling: quantus.types.PredictionChangeHandlingStrategy or PredictionChangeHandler, optional.
+            Typically, during robustness evaluation one would want predictions to stay the same. This argument specifies what
+            should be done, if this is not the case. Default is noop.
         kwargs: optional
             Keyword arguments.
         """
@@ -134,6 +141,9 @@ class Continuity(PerturbationMetric):
         self.nr_steps = nr_steps
         self.nr_patches: Optional[int] = None
         self.dx = None
+
+
+        self.prediction_change_handler = map_strategy_to_function(prediction_change_handling)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -303,6 +313,7 @@ class Continuity(PerturbationMetric):
                 perturb_dx=dx_step,
                 **self.perturb_func_kwargs,
             )
+            x_perturbed = self.prediction_change_handler(model, x, x_perturbed)
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
             # Generate explanations on perturbed input.
