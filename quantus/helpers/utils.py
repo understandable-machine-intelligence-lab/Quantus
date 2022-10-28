@@ -990,9 +990,27 @@ def calculate_auc(values: np.array, dx: int = 1):
     return np.trapz(np.array(values), dx=dx)
 
 
+def map_strategy_to_function(
+    strategy: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]
+) -> Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]:
+    """
+    Lookup handler function by string, or use user provided one.
 
-def map_strategy_to_function(strategy: str | Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]) -> Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]:
+    Parameters
+    ----------
+    strategy: str or Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]
+        Name of strategy as defined in quantus.helpers.constants.PREDICTION_CHANGE_HANDLING_STRATEGIES or a Callable matching provided signature.
+
+    Returns
+    -------
+    function: Callable[[ModelInterface, np.ndarray, np.ndarray], np.ndarray]
+        Function used to handle changes in predictions.
+
+    """
     if isinstance(strategy, Callable):
         return strategy
+
+    # Importing this at top level leads to circular imports.
     from quantus.helpers.constants import PREDICTION_CHANGE_HANDLING_STRATEGIES
+
     return PREDICTION_CHANGE_HANDLING_STRATEGIES[strategy]

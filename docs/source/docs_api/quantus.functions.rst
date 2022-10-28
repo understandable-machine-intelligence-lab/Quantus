@@ -14,6 +14,7 @@ Submodules
 
    quantus.functions.discretise_func
    quantus.functions.explanation_func
+   quantus.functions.handle_prediction_change_func
    quantus.functions.loss_func
    quantus.functions.mosaic_func
    quantus.functions.norm_func

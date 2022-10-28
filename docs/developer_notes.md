@@ -3,6 +3,7 @@ Read more here: https://www.sphinx-doc.org/en/master/man/sphinx-apidoc.html and 
 ```bash
 $ cd docs
 $ make clean
+$ pip install -r requirements_sphinx.txt
 $ sphinx-apidoc -o source/docs_api ../quantus --module-first -f --separate
 $ make html
 ```
