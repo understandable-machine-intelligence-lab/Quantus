@@ -274,7 +274,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             if len(same_labels_indexes) == 0:
                 warnings.warn("Perturbation changed all labels in a batch")
                 continue
-
+            # TODO ???
             _same_labels = np.take(y_batch, same_labels_indexes, axis=0)
             _x_perturbed_batch = np.take(x_perturbed, same_labels_indexes, axis=0)
             _x_batch = np.take(x_batch, same_labels_indexes, axis=0)
