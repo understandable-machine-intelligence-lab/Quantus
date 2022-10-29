@@ -720,7 +720,7 @@ def test_continuity(
                     "upper_bound": 255.0,
                     "nr_samples": 10,
                     "disable_warnings": True,
-                    "validate_predictions_not_changed": True,
+                    "return_nan_when_prediction_changes": True,
                 },
                 "call": {
                     "explain_func": explain,
