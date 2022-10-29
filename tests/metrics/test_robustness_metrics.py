@@ -1,8 +1,4 @@
 from typing import Union, Dict
-
-import numpy as np
-import pytest
-
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
@@ -128,27 +124,6 @@ from tests.fixtures import *
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
-            {
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "abs": True,
-                    "normalise": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
                     },
                 },
             },
