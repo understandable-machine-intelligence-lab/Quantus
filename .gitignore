@@ -37,3 +37,6 @@ build/
 # tutorials
 tutorials/sample_data/
 tutorials/invited_talks/
+
+# PyCharm project files
+.idea
