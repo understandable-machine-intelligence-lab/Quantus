@@ -312,9 +312,14 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indexes = np.argwhere(
-                model.predict(x_batch).argmax(axis=-1) != model.predict(x_perturbed).argmax(axis=-1)
-            ).reshape(-1)
+            changed_prediction_indexes = (
+                np.argwhere(
+                    model.predict(x_batch).argmax(axis=-1)
+                    != model.predict(x_perturbed).argmax(axis=-1)
+                ).reshape(-1)
+                if self.return_nan_when_prediction_changes
+                else []
+            )
 
             x_input = model.shape_input(
                 x=x_perturbed,
@@ -349,7 +354,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
 
-                if self.return_nan_when_prediction_changes and instance_id in changed_prediction_indexes:
+                if (
+                    self.return_nan_when_prediction_changes
+                    and instance_id in changed_prediction_indexes
+                ):
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -361,8 +369,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
-
-        return np.mean(similarities, axis=1)
+        mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
+        return mean_func(similarities, axis=1)
 
     def custom_preprocess(
         self,

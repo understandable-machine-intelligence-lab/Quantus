@@ -1,9 +1,9 @@
-from typing import Union
+from typing import Union, Dict
 
 import numpy as np
 import pytest
+
 from pytest_lazyfixture import lazy_fixture
-from typing import Callable
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.discretise_func import floating_points, rank, sign, top_n_sign
@@ -175,6 +175,27 @@ from tests.fixtures import *
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "validate_predictions_not_changed": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
     ],
 )
 def test_max_sensitivity(
@@ -211,9 +232,11 @@ def test_max_sensitivity(
         a_batch=a_batch,
         **call_params,
     )
-
     if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+        if np.isnan(expected):
+            assert np.isnan(scores).all(), "Test failed."
+        else:
+            assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
@@ -341,6 +364,28 @@ def test_max_sensitivity(
             },
             {"min": 0.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 255,
+                    "perturb_mean": 255,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
     ],
 )
 def test_local_lipschitz_estimate(
@@ -377,7 +422,11 @@ def test_local_lipschitz_estimate(
         a_batch=a_batch,
         **call_params,
     )
-    assert scores is not None, "Test failed."
+    if isinstance(expected, float):
+        if np.isnan(expected):
+            assert np.isnan(scores).all(), "Test Failed."
+    else:
+        assert scores is not None, "Test failed."
 
 
 @pytest.mark.robustness
@@ -493,7 +542,7 @@ def test_local_lipschitz_estimate(
                     "nr_steps": 10,
                     "patch_size": 7,
                     "disable_warnings": True,
-                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
                 },
                 "call": {
                     "explain_func": explain,
@@ -502,7 +551,7 @@ def test_local_lipschitz_estimate(
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            np.nan,
         ),
     ],
 )
@@ -534,16 +583,17 @@ def test_continuity(
     else:
         a_batch = None
 
-    if "exception" in expected:
-        with pytest.raises(expected["exception"]):
-            scores = Continuity(**init_params)(
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                **call_params,
-            )
-        return
+    if isinstance(expected, Dict):
+        if "exception" in expected:
+            with pytest.raises(expected["exception"]):
+                Continuity(**init_params)(
+                    model=model,
+                    x_batch=x_batch,
+                    y_batch=y_batch,
+                    a_batch=a_batch,
+                    **call_params,
+                )
+            return
 
     scores = Continuity(**init_params)(
         model=model,
@@ -552,7 +602,16 @@ def test_continuity(
         a_batch=a_batch,
         **call_params,
     )
-    assert scores is not None, "Test failed."
+    if isinstance(expected, float):
+        if np.isnan(expected):
+            returned_nans = False
+            for score in scores:
+                for k in score:
+                    returned_nans = returned_nans or np.isnan(score[k]).all()
+
+            assert returned_nans, "Expected to see nan's in result."
+    else:
+        assert scores is not None, "Test failed."
 
 
 @pytest.mark.robustness
@@ -733,10 +792,11 @@ def test_avg_sensitivity(
         a_batch=a_batch,
         **call_params,
     )
-    if np.isnan(expected):
-        assert np.isnan(scores).all(), "Test failed."
-    elif isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+    if isinstance(expected, float):
+        if np.isnan(expected):
+            assert np.isnan(scores).all(), "Test failed."
+        else:
+            assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
