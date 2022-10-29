@@ -53,6 +53,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
+        return_nan_when_prediction_changes: bool = False,
         **kwargs,
     ):
         """
@@ -95,6 +96,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
             Indicates whether the warnings are printed, default=False.
         display_progressbar: boolean
             Indicates whether a tqdm-progress-bar is printed, default=False.
+        return_nan_when_prediction_changes: boolean
+            When set to true, metric will be evaluated to NaN in case prediction changes after perturbation applied.
         kwargs: optional
             Keyword arguments.
         """
@@ -138,6 +141,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
+
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -307,6 +312,15 @@ class MaxSensitivity(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
+            changed_prediction_indexes = (
+                np.argwhere(
+                    model.predict(x_batch).argmax(axis=-1)
+                    != model.predict(x_perturbed).argmax(axis=-1)
+                ).reshape(-1)
+                if self.return_nan_when_prediction_changes
+                else []
+            )
+
             x_input = model.shape_input(
                 x=x_perturbed,
                 shape=x_batch.shape,
@@ -339,6 +353,13 @@ class MaxSensitivity(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
+                if (
+                    self.return_nan_when_prediction_changes
+                    and instance_id in changed_prediction_indexes
+                ):
+                    similarities[instance_id, step_id] = np.nan
+                    continue
+
                 sensitivities = self.similarity_func(
                     a=a_batch[instance_id].flatten(),
                     b=a_perturbed[instance_id].flatten(),
@@ -348,7 +369,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
 
-        return np.nanmax(similarities, axis=1)
+        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
+        return max_func(similarities, axis=1)
 
     def custom_preprocess(
         self,
