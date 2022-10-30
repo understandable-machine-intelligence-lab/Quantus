@@ -209,7 +209,7 @@ def test_max_sensitivity(
     )
     if isinstance(expected, float):
         if np.isnan(expected):
-            assert np.isnan(scores).all(), "Test failed."
+            assert np.isnan(scores).any(), "Test failed."
         else:
             assert all(s == expected for s in scores), "Test failed."
     else:
@@ -399,7 +399,7 @@ def test_local_lipschitz_estimate(
     )
     if isinstance(expected, float):
         if np.isnan(expected):
-            assert np.isnan(scores).all(), "Test Failed."
+            assert np.isnan(scores).any(), "Test Failed."
     else:
         assert scores is not None, "Test failed."
 
@@ -582,7 +582,7 @@ def test_continuity(
             returned_nans = False
             for score in scores:
                 for k in score:
-                    returned_nans = returned_nans or np.isnan(score[k]).all()
+                    returned_nans = returned_nans or np.isnan(score[k]).any()
 
             assert returned_nans, "Expected to see nan's in result."
     else:
@@ -769,7 +769,7 @@ def test_avg_sensitivity(
     )
     if isinstance(expected, float):
         if np.isnan(expected):
-            assert np.isnan(scores).all(), "Test failed."
+            assert np.isnan(scores).any(), "Test failed."
         else:
             assert all(s == expected for s in scores), "Test failed."
     else:
