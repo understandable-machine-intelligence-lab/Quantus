@@ -74,6 +74,8 @@ def evaluate(
             "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
         )
         return None
+    if explain_func_kwargs is None:
+        explain_func_kwargs = {}
 
     results: Dict[str, dict] = {}
 
