@@ -25,7 +25,7 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Optional[dict] = {},
+    explain_func_kwargs: Optional[dict] = None,
     **call_kwargs,
 ) -> Optional[dict]:
     """
@@ -74,6 +74,8 @@ def evaluate(
             "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
         )
         return None
+    if explain_func_kwargs is None:
+        explain_func_kwargs = dict()
 
     results: Dict[str, dict] = {}
 
