@@ -62,10 +62,6 @@ class Consistency(Metric):
             If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_std: float
-            The amount of noise added, default=0.1.
-        perturb_mean: float
-            The mean of noise added, default=0.0.
         return_aggregate: boolean
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
