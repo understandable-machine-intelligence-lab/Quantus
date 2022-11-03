@@ -75,7 +75,7 @@ def evaluate(
         )
         return None
     if explain_func_kwargs is None:
-        explain_func_kwargs = dict()
+        explain_func_kwargs = {}
 
     results: Dict[str, dict] = {}
 
