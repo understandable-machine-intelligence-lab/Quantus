@@ -171,6 +171,27 @@ from tests.fixtures import *
             },
             np.nan,
         ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
     ],
 )
 def test_max_sensitivity(
@@ -342,6 +363,28 @@ def test_max_sensitivity(
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 255,
+                    "perturb_mean": 255,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "a_batch_generate": False,
                 "init": {
@@ -713,6 +756,27 @@ def test_continuity(
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "a_batch_generate": False,
                 "init": {
