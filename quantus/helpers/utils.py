@@ -253,7 +253,7 @@ def infer_channel_first(x: np.array) -> bool:
         False if input shape is (nr_batch, img_width, img_height, nr_channels).
         An error is raised if the three last dimensions are equal.
     """
-    err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order."
+    err_msg = "Ambiguous input shape. Cannot infer channel-first/channel-last order. Try setting the `channel_first` argument"
 
     if len(np.shape(x)) == 2:
         return True
