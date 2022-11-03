@@ -137,7 +137,6 @@ class Continuity(PerturbationMetric):
         self.nr_steps = nr_steps
         self.nr_patches: Optional[int] = None
         self.dx = None
-
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.

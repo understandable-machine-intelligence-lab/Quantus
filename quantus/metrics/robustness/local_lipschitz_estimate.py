@@ -145,7 +145,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
-
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.

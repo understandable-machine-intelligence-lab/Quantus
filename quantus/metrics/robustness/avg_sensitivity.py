@@ -141,7 +141,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
-
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.
