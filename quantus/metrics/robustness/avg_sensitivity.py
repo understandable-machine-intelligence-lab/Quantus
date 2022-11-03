@@ -312,7 +312,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indexes = (
+            changed_prediction_indices = (
                 np.argwhere(
                     model.predict(x_batch).argmax(axis=-1)
                     != model.predict(x_perturbed).argmax(axis=-1)
@@ -356,7 +356,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
                 if (
                     self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indexes
+                    and instance_id in changed_prediction_indices
                 ):
                     similarities[instance_id, step_id] = np.nan
                     continue
