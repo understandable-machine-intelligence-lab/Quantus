@@ -100,7 +100,7 @@ class Continuity(PerturbationMetric):
         default_plot_func: callable
             Callable that plots the metrics result.
         return_nan_when_prediction_changes: boolean
-            When set to true, metric will be evaluated to NaN in case prediction changes after perturbation applied.
+            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied.
         kwargs: optional
             Keyword arguments.
         """

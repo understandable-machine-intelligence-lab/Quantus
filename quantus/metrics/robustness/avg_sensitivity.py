@@ -97,7 +97,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
         display_progressbar: boolean
             Indicates whether a tqdm-progress-bar is printed, default=False.
         return_nan_when_prediction_changes: boolean
-            When set to true, metric will be evaluated to NaN in case prediction changes after perturbation applied.
+            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied.
         kwargs: optional
             Keyword arguments.
         """
