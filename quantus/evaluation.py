@@ -25,7 +25,7 @@ def evaluate(
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Optional[dict] = None,
+    explain_func_kwargs: Optional[dict] = {},
     **call_kwargs,
 ) -> Optional[dict]:
     """
