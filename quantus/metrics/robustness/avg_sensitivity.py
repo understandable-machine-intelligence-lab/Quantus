@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -53,6 +53,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
+        return_nan_when_prediction_changes: bool = False,
         **kwargs,
     ):
         """
@@ -95,6 +96,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
             Indicates whether the warnings are printed, default=False.
         display_progressbar: boolean
             Indicates whether a tqdm-progress-bar is printed, default=False.
+        return_nan_when_prediction_changes: boolean
+            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied.
         kwargs: optional
             Keyword arguments.
         """
@@ -138,6 +141,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -307,6 +311,15 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
+            changed_prediction_indices = (
+                np.argwhere(
+                    model.predict(x_batch).argmax(axis=-1)
+                    != model.predict(x_perturbed).argmax(axis=-1)
+                ).reshape(-1)
+                if self.return_nan_when_prediction_changes
+                else []
+            )
+
             x_input = model.shape_input(
                 x=x_perturbed,
                 shape=x_batch.shape,
@@ -339,6 +352,14 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
+
+                if (
+                    self.return_nan_when_prediction_changes
+                    and instance_id in changed_prediction_indices
+                ):
+                    similarities[instance_id, step_id] = np.nan
+                    continue
+
                 sensitivities = self.similarity_func(
                     a=a_batch[instance_id].flatten(),
                     b=a_perturbed[instance_id].flatten(),
@@ -347,8 +368,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
-
-        return np.nanmean(similarities, axis=1)
+        mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
+        return mean_func(similarities, axis=1)
 
     def custom_preprocess(
         self,
