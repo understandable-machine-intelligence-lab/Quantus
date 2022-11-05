@@ -20,7 +20,7 @@ from ..base_batched import BatchedPerturbationMetric
 from ...helpers.warn import warn_parameterisation
 from ...helpers.asserts import attributes_check
 from ...functions.normalise_func import normalise_by_negative
-from ...functions.perturb_func import random_noise
+from ...functions.perturb_func import random_uniform_noise
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -93,7 +93,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             normalise_func = normalise_by_negative
 
         if perturb_func is None:
-            perturb_func = random_noise
+            perturb_func = random_uniform_noise
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}

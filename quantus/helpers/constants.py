@@ -79,7 +79,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     "translation_y_direction": translation_y_direction,
     "no_perturbation": no_perturbation,
     "noisy_linear_imputation": noisy_linear_imputation,
-    "random_noise": random_noise,
+    "random_noise": random_uniform_noise,
 }
 
 

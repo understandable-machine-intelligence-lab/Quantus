@@ -450,6 +450,6 @@ def test_no_perturbation(
 )
 def test_random_noise(data):
     X = data["x_batch"]
-    out = random_noise(X)
+    out = random_uniform_noise(X)
     assert not (X == out).all(), "Perturbation must cause changes"
     assert X.shape == out.shape, "Perturbations must not change the shape of tensor"

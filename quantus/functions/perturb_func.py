@@ -558,13 +558,13 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
     return arr
 
 
-def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
+def random_uniform_noise(arr: np.ndarray, amplitude=1e-6, **kwargs) -> np.ndarray:
     """
     Parameters
     ----------
     arr: np.ndarray
          3D tensor representing image
-    upper_bound: float
+    amplitude: float
                  Upper bound for noise generated, default 1e-6
     kwargs:
         Keyword arguments, unused
@@ -582,6 +582,5 @@ def random_noise(arr: np.ndarray, upper_bound=1e-6, **kwargs) -> np.ndarray:
     else:
         raise ValueError('random_noise supports only 3D and 4D')
 
-    noise = np.random.random(noise_shape)
-    noise *= upper_bound
+    noise = np.random.uniform(size=noise_shape, low=-1*amplitude, high=amplitude)
     return arr + noise
