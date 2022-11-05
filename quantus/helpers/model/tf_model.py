@@ -19,13 +19,14 @@ from warnings import warn
 from cachetools import cachedmethod, LRUCache
 import operator
 
-from .model_interface import ModelInterface
-from .. import utils
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers import utils
 
 
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
+    # All kwargs supported by Keras API
     _available_predict_kwargs = [
         "batch_size",
         "verbose",
@@ -44,9 +45,25 @@ class TensorFlowModel(ModelInterface):
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
         if model_predict_kwargs is None:
-            # Disable progress bar while running inference on tf.keras.Model
-            model_predict_kwargs = {"verbose": 0}
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model
+        model_predict_kwargs["verbose"] = 0
 
+        """
+        Initialisation of ModelInterface class.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A model this will be wrapped in the ModelInterface:
+        channel_first: boolean, optional
+             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        """
         super().__init__(
             model=model,
             channel_first=channel_first,
@@ -66,8 +83,8 @@ class TensorFlowModel(ModelInterface):
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_model_with_linear_top(self) -> tf.keras.Model:
-        # In this case model has a softmax on top, and we want linear
-        # We have to rebuild the model and replace top with linear activation
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
         config = self.model.layers[-1].get_config()
         config["activation"] = activations.linear
         weights = self.model.layers[-1].get_weights()
@@ -159,9 +176,7 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_hidden_representation_model(
-        self, layer_names: Tuple[str], layer_indices: Tuple[int]
-    ) -> tf.keras.Model:
+    def _build_hidden_representation_model(self, layer_names: Tuple, layer_indices: Tuple) -> tf.keras.Model:
         # Instead of rebuilding model on each image, which is evaluated by metric, we cache it
         if layer_names == () and layer_indices == ():
             warn(
@@ -194,13 +209,18 @@ class TensorFlowModel(ModelInterface):
     ) -> np.ndarray:
         # List is not hashable, so we pass names + indices as tuples
 
+        num_layers = len(self.model.layers)
+
         if layer_indices is None:
             layer_indices = ()
+
+        # Convert negative indices to positive
+        positive_layer_indices = tuple(i if i >= 0 else num_layers + i for i in layer_indices)
         if layer_names is None:
             layer_names = ()
 
         hidden_representation_model = self._build_hidden_representation_model(
-            layer_names, layer_indices
+            layer_names, positive_layer_indices
         )
         predict_kwargs = self._get_predict_kwargs(**kwargs)
         internal_representation = hidden_representation_model.predict(

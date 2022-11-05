@@ -228,26 +228,29 @@ class PyTorchModel(ModelInterface):
     ) -> np.ndarray:
 
         device = self.device if self.device is not None else "cpu"
+        all_layers = [*self.model.named_modules()]
+        num_layers = len(all_layers)
 
         if layer_indices is None:
             layer_indices = ()
+
+        # Convert negative indices to positive
+        positive_layer_indices = tuple(i if i >= 0 else num_layers + i for i in layer_indices)
         if layer_names is None:
             layer_names = ()
 
         def is_layer_of_interest(index, name):
-            if layer_names == () and layer_indices == ():
+            if layer_names == () and positive_layer_indices == ():
                 return True
-            return index in layer_indices or name in layer_names
+            return index in positive_layer_indices or name in layer_names
 
-        # skip last layer
-        hidden_layers = [layer for layer in self.model.named_modules()][:-1]
         # skip modules defined by subclassing API
         hidden_layers = list(
             filter(
                 lambda l: not isinstance(
                     l[1], (self.model.__class__, torch.nn.Sequential)
                 ),
-                hidden_layers,
+                all_layers,
             )
         )
 
