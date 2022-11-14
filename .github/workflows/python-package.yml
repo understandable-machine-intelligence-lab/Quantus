@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest mypy
+        python -m pip install flake8 pytest mypy==0.982
         python -m pip install --upgrade typing-extensions
         python -m pip install black
         if [ -f requirements_test.txt ]; then pip install -r requirements_test.txt; fi
