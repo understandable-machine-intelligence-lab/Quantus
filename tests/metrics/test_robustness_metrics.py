@@ -1,6 +1,4 @@
-from typing import Union
-
-import pytest
+from typing import Union, Dict
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
@@ -31,7 +29,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -48,7 +48,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -64,7 +66,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -81,7 +85,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -97,7 +103,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -114,7 +122,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -133,10 +143,54 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
         ),
     ],
 )
@@ -158,18 +212,27 @@ def test_max_sensitivity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = MaxSensitivity(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
-
     if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+        if np.isnan(expected):
+            assert np.isnan(scores).any(), "Test failed."
+        else:
+            assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
@@ -192,7 +255,9 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -210,7 +275,9 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -227,7 +294,9 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -245,7 +314,9 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -262,7 +333,9 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -280,10 +353,56 @@ def test_max_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 255,
+                    "perturb_mean": 255,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 255,
+                    "perturb_mean": 255,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
         ),
     ],
 )
@@ -305,16 +424,27 @@ def test_local_lipschitz_estimate(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = LocalLipschitzEstimate(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
-    assert scores is not None, "Test failed."
+    if isinstance(expected, float):
+        if np.isnan(expected):
+            assert np.isnan(scores).any(), "Test Failed."
+    else:
+        assert scores is not None, "Test failed."
 
 
 @pytest.mark.robustness
@@ -334,7 +464,9 @@ def test_local_lipschitz_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"exception": ValueError},
@@ -352,7 +484,9 @@ def test_local_lipschitz_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -370,7 +504,9 @@ def test_local_lipschitz_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"exception": ValueError},
@@ -388,7 +524,9 @@ def test_local_lipschitz_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -406,7 +544,9 @@ def test_local_lipschitz_estimate(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"exception": ValueError},
@@ -420,14 +560,16 @@ def test_local_lipschitz_estimate(
                     "nr_steps": 10,
                     "patch_size": 7,
                     "disable_warnings": True,
-                    "display_progressbar": True,
+                    "return_nan_when_prediction_changes": True,
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            np.nan,
         ),
     ],
 )
@@ -449,28 +591,45 @@ def test_continuity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
 
-    if "exception" in expected:
-        with pytest.raises(expected["exception"]):
-            scores = Continuity(**init_params)(
-                model=model,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                a_batch=a_batch,
-                **call_params,
-            )
-        return
+    if isinstance(expected, Dict):
+        if "exception" in expected:
+            with pytest.raises(expected["exception"]):
+                Continuity(**init_params)(
+                    model=model,
+                    x_batch=x_batch,
+                    y_batch=y_batch,
+                    a_batch=a_batch,
+                    **call_params,
+                )
+            return
 
     scores = Continuity(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
-    assert scores is not None, "Test failed."
+    if isinstance(expected, float):
+        if np.isnan(expected):
+            returned_nans = False
+            for score in scores:
+                for k in score:
+                    returned_nans = returned_nans or np.isnan(score[k]).any()
+
+            assert returned_nans, "Expected to see nan's in result."
+    else:
+        assert scores is not None, "Test failed."
 
 
 @pytest.mark.robustness
@@ -489,7 +648,9 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -507,7 +668,9 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -524,7 +687,9 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -542,7 +707,9 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -559,7 +726,9 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -577,10 +746,54 @@ def test_continuity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 1.0,
+                    "upper_bound": 255.0,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "return_nan_when_prediction_changes": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            np.nan,
         ),
     ],
 )
@@ -602,17 +815,27 @@ def test_avg_sensitivity(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = AvgSensitivity(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
     if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+        if np.isnan(expected):
+            assert np.isnan(scores).any(), "Test failed."
+        else:
+            assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
@@ -634,7 +857,9 @@ def test_avg_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
                 "a_batch_generate": False,
             },
@@ -651,7 +876,9 @@ def test_avg_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
                 "a_batch_generate": False,
             },
@@ -668,7 +895,9 @@ def test_avg_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
                 "a_batch_generate": False,
             },
@@ -685,7 +914,9 @@ def test_avg_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
                 "a_batch_generate": False,
             },
@@ -709,7 +940,12 @@ def test_consistency(
 
     if params.get("a_batch_generate", True):
         explain = params["explain_func"]
-        a_batch = explain(model=model, inputs=x_batch, targets=y_batch, **call_params,)
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **call_params,
+        )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
@@ -727,6 +963,10 @@ def test_consistency(
         return
 
     scores = Consistency(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."

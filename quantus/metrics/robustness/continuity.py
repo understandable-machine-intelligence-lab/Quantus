@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import itertools
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -57,6 +57,7 @@ class Continuity(PerturbationMetric):
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
+        return_nan_when_prediction_changes: bool = False,
         **kwargs,
     ):
         """
@@ -98,6 +99,8 @@ class Continuity(PerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
+        return_nan_when_prediction_changes: boolean
+            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied.
         kwargs: optional
             Keyword arguments.
         """
@@ -134,6 +137,7 @@ class Continuity(PerturbationMetric):
         self.nr_steps = nr_steps
         self.nr_patches: Optional[int] = None
         self.dx = None
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -305,6 +309,13 @@ class Continuity(PerturbationMetric):
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
+            prediction_changed = (
+                model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
+                != model.predict(x_input).argmax(axis=-1)[0]
+                if self.return_nan_when_prediction_changes
+                else False
+            )
+
             # Generate explanations on perturbed input.
             a_perturbed = self.explain_func(
                 model=model.get_model(),
@@ -339,6 +350,10 @@ class Continuity(PerturbationMetric):
             for ix_patch, top_left_coords in enumerate(
                 itertools.product(*axis_iterators)
             ):
+                if prediction_changed:
+                    results[ix_patch].append(np.nan)
+                    continue
+
                 # Create slice for patch.
                 patch_slice = utils.create_patch_slice(
                     patch_size=self.patch_size,

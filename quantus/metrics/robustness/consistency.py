@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -62,15 +62,6 @@ class Consistency(Metric):
             If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func: callable
-            Input perturbation function. If None, the default value is used,
-            default=gaussian_noise.
-        perturb_std: float
-            The amount of noise added, default=0.1.
-        perturb_mean: float
-            The mean of noise added, default=0.0.
-        perturb_func_kwargs: dict
-            Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
