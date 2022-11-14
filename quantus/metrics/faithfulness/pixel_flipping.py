@@ -47,6 +47,7 @@ class PixelFlipping(PerturbationMetric):
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
+        return_auc_per_sample: bool = False,
         default_plot_func: Optional[Callable] = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -78,6 +79,8 @@ class PixelFlipping(PerturbationMetric):
             Indicates if an aggregated score should be computed over all instances.
         aggregate_func: callable
             Callable that aggregates the scores given an evaluation call.
+        return_auc_per_sample: boolean
+            Indicates if an AUC score should be computed over the curve and returned.
         default_plot_func: callable
             Callable that plots the metrics result.
         disable_warnings: boolean
@@ -118,6 +121,7 @@ class PixelFlipping(PerturbationMetric):
 
         # Save metric-specific attributes.
         self.features_in_step = features_in_step
+        self.return_auc_per_sample = return_auc_per_sample
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -263,7 +267,7 @@ class PixelFlipping(PerturbationMetric):
 
         Returns
         -------
-           : list
+        list
             The evaluation results.
         """
 
@@ -296,6 +300,9 @@ class PixelFlipping(PerturbationMetric):
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
             y_pred_perturb = float(model.predict(x_input)[:, y])
             preds[i_ix] = y_pred_perturb
+
+        if self.return_auc_per_sample:
+            return utils.calculate_auc(preds)
 
         return preds
 
