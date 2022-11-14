@@ -417,7 +417,7 @@ For this purpose, please see notebooks in the [tutorials](https://github.com/und
 * [Metric Parameterisation Analysis](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Metric_Parameterisation_Analysis.ipynb): explores how sensitive a metric could be to its hyperparameters
 * [Robustness Analysis Model Training](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_XAI_Sensitivity_Model_Training.ipynb): measures robustness of explanations as model accuracy increases 
 * [Full Quantification with Quantus](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Quantification_with_Quantus.ipynb): example of benchmarking explanation methods
-* [Tabluar Data Example](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Getting_Started_with_Tabular_Data.ipynb): example of how to use Quantus with tabular data
+* [Tabular Data Example](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Getting_Started_with_Tabular_Data.ipynb): example of how to use Quantus with tabular data
 * [Quantus and TensorFlow Data Example](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_Getting_Started_with_Tensorflow.ipynb): showcases how to use Quantus with TensorFlow
 
 ... and more.
