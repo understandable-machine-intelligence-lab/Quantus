@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pytest_lazyfixture import lazy_fixture
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 import functools
 
 from tests.fixtures import *
@@ -13,6 +13,8 @@ from quantus.metrics.robustness import (
     RelativeRepresentationStability,
 )
 
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 # fmt: off
 RIS_CONSTRUCTOR = functools.partial(RelativeInputStability,          nr_samples=5, disable_warnings=True)

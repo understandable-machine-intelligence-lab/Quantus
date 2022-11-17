@@ -98,7 +98,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
 
-        super(BatchedPerturbationMetric, self).__init__(
+        super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
@@ -180,7 +180,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
          - Compute relative input output objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result = super(BatchedPerturbationMetric, self).__call__(
+        result = super().__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
