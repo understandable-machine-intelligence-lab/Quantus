@@ -50,11 +50,7 @@ EXPECTED_LOGITS = np.array(
     ],
 )
 def test_predict(
-        data: np.ndarray,
-        params: dict,
-        expected: np.ndarray,
-        load_mnist_model_tf,
-        mocker
+    data: np.ndarray, params: dict, expected: np.ndarray, load_mnist_model_tf, mocker
 ):
     mocker.patch(
         "tensorflow.keras.Model.predict", lambda x, *args, **kwargs: EXPECTED_LOGITS
@@ -128,11 +124,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
 @pytest.mark.tf_model
 @pytest.mark.parametrize(
     "params",
-    [
-        {},
-        {"layer_names": ["test_conv"]},
-        {"layer_indices": [7, 8]}
-    ],
+    [{}, {"layer_names": ["test_conv"]}, {"layer_indices": [7, 8]}],
     ids=["all layers", "2nd conv", "last 2 layers"],
 )
 def test_get_hidden_layer_output_sequential(load_cnn_2d_mnist, params):

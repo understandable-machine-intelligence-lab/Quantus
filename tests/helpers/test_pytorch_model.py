@@ -22,7 +22,10 @@ def mock_input_torch_array():
     [
         (
             lazy_fixture("mock_input_torch_array"),
-            {"softmax": False, "device": "cpu",},
+            {
+                "softmax": False,
+                "device": "cpu",
+            },
             np.array(
                 [
                     -0.44321266,
@@ -40,7 +43,10 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {"softmax": True, "device": "cpu",},
+            {
+                "softmax": True,
+                "device": "cpu",
+            },
             softmax(
                 np.array(
                     [
@@ -60,7 +66,11 @@ def mock_input_torch_array():
         ),
         (
             lazy_fixture("mock_input_torch_array"),
-            {"softmax": True, "device": "cpu", "training": True,},
+            {
+                "softmax": True,
+                "device": "cpu",
+                "training": True,
+            },
             {"exception": AttributeError},
         ),
     ],
@@ -150,11 +160,7 @@ def test_get_random_layer_generator(load_mnist_model):
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
     "params",
-    [
-        {},
-        {"layer_names": ["conv_2"]},
-        {"layer_indices": [0, 1]}
-    ],
+    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}],
     ids=["all layers", "2nd conv", "1st 2 layers"],
 )
 def test_get_hidden_layers_output(load_mnist_model, params):
