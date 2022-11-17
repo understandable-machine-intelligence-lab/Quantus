@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchedMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_negative
@@ -193,7 +193,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
          - Compute relative representation stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        return super(BatchedPerturbationMetric, self).__call__(
+        result =  super(BatchedMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -206,6 +206,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
         )
+        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
 
     def relative_representation_stability_objective(
         self,

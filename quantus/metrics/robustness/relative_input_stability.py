@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 import numpy as np
 from functools import partial
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchedMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_negative
@@ -176,7 +176,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
          - Compute relative input stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        return super(BatchedPerturbationMetric, self).__call__(
+        result = super(BatchedMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -189,6 +189,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
         )
+        return list(result) if isinstance(result, Iterable) else float(result) # noqa
 
     def relative_input_stability_objective(
         self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray

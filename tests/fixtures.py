@@ -2,7 +2,7 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from tensorflow.keras.datasets import cifar10 # noqa
+from keras.datasets import cifar10
 
 from quantus.helpers.model.models import (
     LeNet,

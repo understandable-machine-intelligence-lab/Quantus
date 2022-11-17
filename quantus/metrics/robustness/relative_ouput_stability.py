@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 import numpy as np
 from functools import partial
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from ..base_batched import BatchedPerturbationMetric
+from ..base_batched import BatchedPerturbationMetric, BatchedMetric
 from ...helpers.warn import warn_parameterisation
 from ...helpers.asserts import attributes_check
 from ...functions.normalise_func import normalise_by_negative
@@ -98,7 +98,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
 
-        super(BatchedPerturbationMetric, self).__init__(
+        super(BatchedMetric, self).__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
@@ -180,7 +180,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
          - Compute relative input output objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        return super(BatchedPerturbationMetric, self).__call__(
+        result = super(BatchedPerturbationMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -193,6 +193,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
         )
+        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
 
     def relative_output_stability_objective(
         self,
