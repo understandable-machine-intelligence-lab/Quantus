@@ -103,7 +103,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
 
-        super().__init__(
+        super(BatchedPerturbationMetric, self).__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
