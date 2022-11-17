@@ -39,7 +39,7 @@ class TensorFlowModel(ModelInterface):
 
     def __init__(
         self,
-        model: tf.keras.Model,
+        model: Model,
         channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
@@ -202,7 +202,7 @@ class TensorFlowModel(ModelInterface):
 
     def get_hidden_representations(
         self,
-        x: np.ndarray | tf.Tensor,
+        x: np.ndarray,
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
         **kwargs,

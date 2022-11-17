@@ -157,10 +157,11 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
 
     import tensorflow as tf
+    from keras import Model
     from keras.models import Sequential
     from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, MaxPooling2D
 
-    def LeNetTF() -> tf.keras.Model:
+    def LeNetTF() -> Model:
         """
         A Tensorflow implementation of LeNet5 architecture.
         """
@@ -213,7 +214,7 @@ if util.find_spec("tensorflow"):
 
     def CNN_2D_TF(
         img_height: int, img_width: int, num_classes: int, num_channels: int
-    ) -> tf.keras.Model:
+    ) -> Model:
         """
         A simple 2D CNN architecture adapted from https://www.tensorflow.org/tutorials/images/classification
         """
