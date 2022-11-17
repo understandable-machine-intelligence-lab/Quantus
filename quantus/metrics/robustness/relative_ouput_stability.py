@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from ..base_batched import BatchedPerturbationMetric, BatchedMetric
+from ..base_batched import BatchedPerturbationMetric
 from ...helpers.warn import warn_parameterisation
 from ...helpers.asserts import attributes_check
 from ...functions.normalise_func import normalise_by_negative
@@ -98,7 +98,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
 
-        super(BatchedMetric, self).__init__(
+        super(BatchedPerturbationMetric, self).__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
@@ -126,7 +126,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
                 citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         model: tf.keras.Model | torch.nn.Module,
         x_batch: np.ndarray,
@@ -223,10 +223,11 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             ROS maximization objective.
         """
 
-        nominator = (e_x - e_xs) / (
-            e_x + (e_x == 0) * self._eps_min
-        )  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)
+        # fmt: off
+        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)  # noqa
+        # fmt: on
+
         denominator = h_x - h_xs
         denominator = np.linalg.norm(denominator, axis=-1)
         denominator += (denominator == 0) * self._eps_min  # prevent division by 0

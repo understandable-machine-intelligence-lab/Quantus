@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 import numpy as np
 from functools import partial
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchedMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_negative
@@ -139,7 +139,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
                 citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         model: tf.keras.Model | torch.nn.Module,
         x_batch: np.ndarray,
@@ -193,7 +193,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
          - Compute relative representation stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result =  super(BatchedMetric, self).__call__(
+        result = super(BatchedPerturbationMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -236,10 +236,10 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             RRS maximization objective.
         """
 
-        nominator = (e_x - e_xs) / (
-            e_x + (e_x == 0) * self._eps_min
-        )  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)
+        # fmt: off
+        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)  # noqa
+        # fmt: on
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
         denominator = np.linalg.norm(denominator, axis=-1)

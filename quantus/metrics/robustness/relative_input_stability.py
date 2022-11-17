@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchedMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_negative
@@ -122,7 +122,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         model: tf.keras.Model | torch.nn.Module,
         x_batch: np.ndarray,
@@ -176,7 +176,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
          - Compute relative input stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result = super(BatchedMetric, self).__call__(
+        result = super(BatchedPerturbationMetric, self).__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -189,7 +189,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
         )
-        return list(result) if isinstance(result, Iterable) else float(result) # noqa
+        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
 
     def relative_input_stability_objective(
         self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray
@@ -214,16 +214,16 @@ class RelativeInputStability(BatchedPerturbationMetric):
         ris_obj: np.ndarray
             RIS maximization objective.
         """
+        # fmt: off
+        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
+        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)  # noqa
+        # fmt: on
 
-        nominator = (e_x - e_xs) / (
-            e_x + (e_x == 0) * self._eps_min
-        )  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)
         denominator = x - xs
         denominator /= x + (x == 0) * self._eps_min
-        denominator = np.linalg.norm(
-            np.linalg.norm(denominator, axis=(-1, -2)), axis=-1
-        )
+        # fmt: off
+        denominator = np.linalg.norm(np.linalg.norm(denominator, axis=(-1, -2)), axis=-1) # noqa
+        # fmt: on
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator
 

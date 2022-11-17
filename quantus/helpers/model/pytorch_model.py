@@ -235,7 +235,9 @@ class PyTorchModel(ModelInterface):
             layer_indices = ()
 
         # Convert negative indices to positive
-        positive_layer_indices = tuple(i if i >= 0 else num_layers + i for i in layer_indices)
+        positive_layer_indices = tuple(
+            i if i >= 0 else num_layers + i for i in layer_indices
+        )
         if layer_names is None:
             layer_names = ()
 
@@ -245,7 +247,7 @@ class PyTorchModel(ModelInterface):
             return index in positive_layer_indices or name in layer_names
 
         # skip modules defined by subclassing API
-        hidden_layers = list(
+        hidden_layers = list(  # type: ignore
             filter(
                 lambda l: not isinstance(
                     l[1], (self.model.__class__, torch.nn.Sequential)
