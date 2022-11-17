@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 
 import numpy as np
 
@@ -108,10 +108,10 @@ class ModelInterface(ABC):
 
     @abstractmethod
     def get_hidden_representations(
-            self,
-            x: np.ndarray,
-            layer_names: Optional[Tuple[str]] = None,
-            layer_indices: Optional[Tuple[int]] = None
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
         """
         Computes models internal representation of input x.
@@ -134,7 +134,7 @@ class ModelInterface(ABC):
 
         Returns
         -------
-        L(*): np.ndarray
+        L: np.ndarray
               2D tensor with shape (batch_size, None)
         """
-        pass
+        raise NotImplementedError()

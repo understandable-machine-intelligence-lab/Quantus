@@ -8,8 +8,7 @@
 
 
 import copy
-from typing import Callable, Optional
-from typing import Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
@@ -580,7 +579,7 @@ def random_uniform_noise(arr: np.ndarray, amplitude=1e-6, **kwargs) -> np.ndarra
     elif len(arr_shape) == 3:
         noise_shape = arr_shape
     else:
-        raise ValueError('random_noise supports only 3D and 4D')
+        raise ValueError("random_noise supports only 3D and 4D")
 
-    noise = np.random.uniform(size=noise_shape, low=-1*amplitude, high=amplitude)
+    noise = np.random.uniform(size=noise_shape, low=-1 * amplitude, high=amplitude)
     return arr + noise

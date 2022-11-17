@@ -157,35 +157,32 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
 
     import tensorflow as tf
-
-    from tensorflow.keras.models import Sequential  # noqa
+    from keras.models import Sequential
+    from keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, MaxPooling2D
 
     def LeNetTF() -> tf.keras.Model:
         """
         A Tensorflow implementation of LeNet5 architecture.
         """
 
-        model = tf.keras.Sequential(
+        return Sequential(
             [
-                tf.keras.layers.Conv2D(
+                Conv2D(
                     filters=6,
                     kernel_size=(3, 3),
                     activation="relu",
                     input_shape=(28, 28, 1),
                 ),
-                tf.keras.layers.AveragePooling2D(),
-                tf.keras.layers.Conv2D(
-                    filters=16, kernel_size=(3, 3), activation="relu"
-                ),
-                tf.keras.layers.AveragePooling2D(),
-                tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(units=120, activation="relu"),
-                tf.keras.layers.Dense(units=84, activation="relu"),
-                tf.keras.layers.Dense(units=10),
+                AveragePooling2D(),
+                Conv2D(filters=16, kernel_size=(3, 3), activation="relu"),
+                AveragePooling2D(),
+                Flatten(),
+                Dense(units=120, activation="relu"),
+                Dense(units=84, activation="relu"),
+                Dense(units=10),
             ],
             name="LeNetTF",
         )
-        return model
 
     class ConvNet1DTF(Sequential):
         """
@@ -220,26 +217,23 @@ if util.find_spec("tensorflow"):
         """
         A simple 2D CNN architecture adapted from https://www.tensorflow.org/tutorials/images/classification
         """
-        model = tf.keras.Sequential(
+        return Sequential(
             [
-                tf.keras.layers.Conv2D(
+                Conv2D(
                     16,
                     3,
                     padding="same",
                     activation="relu",
                     input_shape=(img_height, img_width, num_channels),
                 ),
-                tf.keras.layers.MaxPooling2D(),
-                tf.keras.layers.Conv2D(32, 3, padding="same", activation="relu"),
-                tf.keras.layers.MaxPooling2D(),
-                tf.keras.layers.Conv2D(
-                    64, 3, padding="same", activation="relu", name="test_conv"
-                ),
-                tf.keras.layers.MaxPooling2D(),
-                tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(128, activation="relu"),
-                tf.keras.layers.Dense(num_classes),
+                MaxPooling2D(),
+                Conv2D(32, 3, padding="same", activation="relu"),
+                MaxPooling2D(),
+                Conv2D(64, 3, padding="same", activation="relu", name="test_conv"),
+                MaxPooling2D(),
+                Flatten(),
+                Dense(128, activation="relu"),
+                Dense(num_classes),
             ],
             name="CNN_2D_TF",
         )
-        return model

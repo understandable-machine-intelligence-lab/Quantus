@@ -8,7 +8,7 @@
 
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 
 import numpy as np
 import torch
@@ -181,7 +181,7 @@ class PyTorchModel(ModelInterface):
         mean: float,
         std: float,
         noise_type: str = "multiplicative",
-    ) -> torch.nn:
+    ) -> torch.nn.Module:
         """
         Sample a model by means of adding normally distributed noise.
 
@@ -223,8 +223,8 @@ class PyTorchModel(ModelInterface):
     def get_hidden_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[Tuple] = None,
-        layer_indices: Optional[Tuple] = None,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
 
         device = self.device if self.device is not None else "cpu"
@@ -232,17 +232,18 @@ class PyTorchModel(ModelInterface):
         num_layers = len(all_layers)
 
         if layer_indices is None:
-            layer_indices = ()
+            layer_indices = []
 
         # Convert negative indices to positive
-        positive_layer_indices = tuple(
+        positive_layer_indices = [
             i if i >= 0 else num_layers + i for i in layer_indices
-        )
+        ]
+
         if layer_names is None:
-            layer_names = ()
+            layer_names = []
 
         def is_layer_of_interest(index, name):
-            if layer_names == () and positive_layer_indices == ():
+            if layer_names == [] and positive_layer_indices == []:
                 return True
             return index in positive_layer_indices or name in layer_names
 

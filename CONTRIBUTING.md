@@ -100,13 +100,13 @@ Before creating a PR, double-check that the following tasks are completed:
 ```bash
 black quantus/INSERT_YOUR_FILE_NAME.py
 ```
-- Run `flake8` for quick style checks, e.g.:
+- Run `flake8` for quick style checks:
 ```bash
 flake8 quantus/INSERT_YOUR_FILE_NAME.py
 ```
-- Run `mypy` to detect possible issues with typing, e.g.:
+- Run `mypy` to detect possible issues with typing:
 ```bash
-mypy quantus/INSERT_YOUR_FILE_NAME.py
+mypy quantus
 ```
 - Create `pytests` for new functionality (if needed) and add under `tests/` folder
 - If the `pytests` include a new category of `@pytest.mark` then add that category with description to `pytest.ini`

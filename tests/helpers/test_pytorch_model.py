@@ -152,8 +152,8 @@ def test_get_random_layer_generator(load_mnist_model):
     "params",
     [
         {},
-        {"layer_names": ("conv_2")}, # noqa
-        {"layer_indices": (0, 1)}
+        {"layer_names": ["conv_2"]},
+        {"layer_indices": [0, 1]}
     ],
     ids=["all layers", "2nd conv", "1st 2 layers"],
 )

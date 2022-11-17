@@ -9,10 +9,10 @@
 from __future__ import annotations
 
 from typing import Dict, Optional, Tuple, List
-from tensorflow.keras.layers import Dense  # noqa
-from tensorflow.keras import activations  # noqa
-from tensorflow.keras import Model  # noqa
-from tensorflow.keras.models import clone_model  # noqa
+from keras.layers import Dense
+from keras import activations
+from keras import Model
+from keras.models import clone_model
 import numpy as np
 import tensorflow as tf
 from warnings import warn
@@ -82,7 +82,7 @@ class TensorFlowModel(ModelInterface):
         return predict_kwargs
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_model_with_linear_top(self) -> tf.keras.Model:
+    def _build_model_with_linear_top(self) -> Model:
         # In this case model has a softmax on top, and we want linear.
         # We have to rebuild the model and replace top with linear activation.
         config = self.model.layers[-1].get_config()
@@ -94,7 +94,7 @@ class TensorFlowModel(ModelInterface):
         new_model.layers[-1].set_weights(weights)
         return new_model
 
-    def predict(self, x: np.ndarray | tf.Tensor | List, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """Predict on the given input."""
         # Generally, one should always prefer keras predict to __call__
         # https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
@@ -176,7 +176,9 @@ class TensorFlowModel(ModelInterface):
             yield layer.name, random_layer_model
 
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_hidden_representation_model(self, layer_names: Tuple, layer_indices: Tuple) -> tf.keras.Model:
+    def _build_hidden_representation_model(
+        self, layer_names: Tuple, layer_indices: Tuple
+    ) -> Model:
         # Instead of rebuilding model on each image, which is evaluated by metric, we cache it
         if layer_names == () and layer_indices == ():
             warn(
@@ -195,16 +197,14 @@ class TensorFlowModel(ModelInterface):
             if is_layer_of_interest(i, layer.name):
                 outputs_of_interest.append(layer.output)
 
-        hidden_representation_model = tf.keras.Model(
-            self.model.input, outputs_of_interest
-        )
+        hidden_representation_model = Model(self.model.input, outputs_of_interest)
         return hidden_representation_model
 
     def get_hidden_representations(
         self,
         x: np.ndarray | tf.Tensor,
-        layer_names: Optional[Tuple] = None,
-        layer_indices: Optional[Tuple] = None,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
         # List is not hashable, so we pass names + indices as tuples
@@ -212,15 +212,17 @@ class TensorFlowModel(ModelInterface):
         num_layers = len(self.model.layers)
 
         if layer_indices is None:
-            layer_indices = ()
+            layer_indices = []
 
         # Convert negative indices to positive
-        positive_layer_indices = tuple(i if i >= 0 else num_layers + i for i in layer_indices)
+        positive_layer_indices = [
+            i if i >= 0 else num_layers + i for i in layer_indices
+        ]
         if layer_names is None:
-            layer_names = ()
+            layer_names = []
 
         hidden_representation_model = self._build_hidden_representation_model(
-            layer_names, positive_layer_indices
+            tuple(layer_names), tuple(positive_layer_indices)
         )
         predict_kwargs = self._get_predict_kwargs(**kwargs)
         internal_representation = hidden_representation_model.predict(
