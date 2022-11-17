@@ -52,8 +52,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         display_progressbar: bool = False,
         eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
-        layer_names: Optional[Tuple] = None,
-        layer_indices: Optional[Tuple] = None,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
         return_nan_when_prediction_changes: bool = True,
         **kwargs: Dict[str, ...],
     ):
@@ -86,9 +86,9 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             Callable that plots the metrics result.
         eps_min: float
             Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
-        layer_names: tuple, optional
+        layer_names: List[str], optional
             Names of layers, representations of which should be used for RRS computation, default = all.
-        layer_indices: tuple, optional
+        layer_indices: List[int], optional
             Indices of layers, representations of which should be used for RRS computation, default = all.
         return_nan_when_prediction_changes: boolean
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.

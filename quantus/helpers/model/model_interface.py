@@ -126,10 +126,10 @@ class ModelInterface(ABC):
         ----------
         x: np.ndarray
            4D tensor, a batch of input datapoints
-        layer_names: tuple
-                     names of layers, from which output should be captured.
-        layer_indices: tuple
-                       indices of layers, from which output should be captured.
+        layer_names: List[str]
+                     List with names of layers, from which output should be captured.
+        layer_indices: List[int]
+                       List with indices of layers, from which output should be captured.
                        Intended to use in case, when layer names are not unique, or unknown.
 
         Returns
