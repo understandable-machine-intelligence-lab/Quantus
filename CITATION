@@ -1,14 +1,17 @@
-@article{hedstrom2022quantus,
-      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
-      author={Anna Hedström and
-              Leander Weber and
-              Dilyara Bareeva and
-              Franz Motzkus and
-              Wojciech Samek and
-              Sebastian Lapuschkin and
-              Marina M.-C. Höhne},
-      year={2022},
-      eprint={2202.06861},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@misc{hedstrom2022quantus,
+  doi = {10.48550/ARXIV.2202.06861},
+  
+  url = {https://arxiv.org/abs/2202.06861},
+  
+  author = {Hedström, Anna and Weber, Leander and Bareeva, Dilyara and Motzkus, Franz and Samek, Wojciech and Lapuschkin, Sebastian and Höhne, Marina M. -C.},
+  
+  keywords = {Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  
+  title = {Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations},
+  
+  publisher = {arXiv},
+  
+  year = {2022},
+  
+  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
 }
