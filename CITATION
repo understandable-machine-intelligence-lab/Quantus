@@ -1,17 +1,41 @@
-@misc{hedstrom2022quantus,
-  doi = {10.48550/ARXIV.2202.06861},
-  
-  url = {https://arxiv.org/abs/2202.06861},
-  
-  author = {Hedström, Anna and Weber, Leander and Bareeva, Dilyara and Motzkus, Franz and Samek, Wojciech and Lapuschkin, Sebastian and Höhne, Marina M. -C.},
-  
-  keywords = {Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  
-  title = {Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations},
-  
-  publisher = {arXiv},
-  
-  year = {2022},
-  
-  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
-}
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Anna"
+  given-names: "Hedström"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Leander"
+  given-names: "Weber"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Dilyara"
+  given-names: "Bareeva"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Franz"
+  given-names: "Motzkus"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Wojciech"
+  given-names: "Samek"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Sebastian"
+  given-names: "Lapuschkin"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Marina M.-C."
+  given-names: "Höhne"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations"
+version: 3.0.0
+doi: 10.48550/ARXIV.2202.06861
+date-released: 2017-12-18
+url: "https://github.com/understandable-machine-intelligence-lab/Quantus"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Lisa"
+    given-names: "Mona"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Bot"
+    given-names: "Hew"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  doi: "10.48550/ARXIV.2202.06861"
+  title: "Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations"
+  year: 2022
