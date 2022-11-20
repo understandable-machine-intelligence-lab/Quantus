@@ -31,8 +31,8 @@ preferred-citation:
   type: article
   authors:
   - family-names: "Anna"
-  given-names: "Hedström"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
+    given-names: "Hedström"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
   - family-names: "Leander"
     given-names: "Weber"
     orcid: "https://orcid.org/0000-0000-0000-0000"
