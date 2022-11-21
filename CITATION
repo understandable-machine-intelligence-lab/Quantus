@@ -1,14 +1,56 @@
-@article{hedstrom2022quantus,
-      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
-      author={Anna Hedström and
-              Leander Weber and
-              Dilyara Bareeva and
-              Franz Motzkus and
-              Wojciech Samek and
-              Sebastian Lapuschkin and
-              Marina M.-C. Höhne},
-      year={2022},
-      eprint={2202.06861},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Anna"
+  given-names: "Hedström"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Leander"
+  given-names: "Weber"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Dilyara"
+  given-names: "Bareeva"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Franz"
+  given-names: "Motzkus"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Wojciech"
+  given-names: "Samek"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Sebastian"
+  given-names: "Lapuschkin"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: "Marina M.-C."
+  given-names: "Höhne"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations"
+version: 3.0.0
+doi: 10.48550/ARXIV.2202.06861
+date-released: 2022-10-21
+url: "https://github.com/understandable-machine-intelligence-lab/Quantus"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Anna"
+    given-names: "Hedström"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Leander"
+    given-names: "Weber"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Dilyara"
+    given-names: "Bareeva"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Franz"
+    given-names: "Motzkus"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Wojciech"
+    given-names: "Samek"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Sebastian"
+    given-names: "Lapuschkin"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Marina M.-C."
+    given-names: "Höhne"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  doi: "10.48550/ARXIV.2202.06861"
+  title: "Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations"
+  year: 2022
