@@ -224,6 +224,7 @@ from quantus.helpers.model.models import LeNet
 import torch
 import torchvision
 from torchvision import transforms
+  
 # Enable GPU.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
