@@ -207,7 +207,7 @@ TensorFlow==2.6.2
 ## Getting started
 
 The following will give a short introduction to how to get started with Quantus. Note that this example is based on the [PyTorch](https://pytorch.org/) framework, but we also support 
-[TensorFlow](https://www.tensorflow.org), which would differ only in the loading of model, data and explanations. To get started with Quantus, you need:
+[TensorFlow](https://www.tensorflow.org), which would differ only in the loading of the model, data and explanations. To get started with Quantus, you need:
 * A model (`model`), inputs (`x_batch`) and labels (`y_batch`)
 * Some explanations you want to evaluate (`a_batch`)
 
