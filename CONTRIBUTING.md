@@ -100,7 +100,7 @@ Before creating a PR, double-check that the following tasks are completed:
 ```bash
 black quantus/INSERT_YOUR_FILE_NAME.py
 ```
-- Run `flake8` for quick style checks:
+- Run `flake8` for quick style checks, e.g.:
 ```bash
 flake8 quantus/INSERT_YOUR_FILE_NAME.py
 ```

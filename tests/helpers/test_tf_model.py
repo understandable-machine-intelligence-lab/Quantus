@@ -124,8 +124,8 @@ def test_get_random_layer_generator(load_mnist_model_tf):
 @pytest.mark.tf_model
 @pytest.mark.parametrize(
     "params",
-    [{}, {"layer_names": ["test_conv"]}, {"layer_indices": [7, 8]}],
-    ids=["all layers", "2nd conv", "last 2 layers"],
+    [{}, {"layer_names": ["test_conv"]}, {"layer_indices": [0, 1]}, {"layer_indices": [-1, -2]}],
+    ids=["all layers", "2nd conv", "first 2 layers", "last 2 layers"],
 )
 def test_get_hidden_layer_output_sequential(load_cnn_2d_mnist, params):
     model = TensorFlowModel(model=load_cnn_2d_mnist, channel_first=False)

@@ -562,16 +562,16 @@ def random_uniform_noise(arr: np.ndarray, amplitude=1e-6, **kwargs) -> np.ndarra
     Parameters
     ----------
     arr: np.ndarray
-         3D tensor representing image
+         3D tensor representing image.
     amplitude: float
-                 Upper bound for noise generated, default 1e-6
+        Upper bound for noise generated, default 1e-6.
     kwargs:
-        Keyword arguments, unused
+        Keyword arguments, unused.
 
     Returns
     -------
     arr: np.ndarray
-         Array of the same shape as input
+         Array of the same shape as input.
     """
     arr_shape = arr.shape
     if len(arr_shape) == 4:
@@ -579,7 +579,7 @@ def random_uniform_noise(arr: np.ndarray, amplitude=1e-6, **kwargs) -> np.ndarra
     elif len(arr_shape) == 3:
         noise_shape = arr_shape
     else:
-        raise ValueError("random_noise supports only 3D and 4D")
+        raise ValueError("random_noise supports only 3D and 4D.")
 
-    noise = np.random.uniform(size=noise_shape, low=-1 * amplitude, high=amplitude)
+    noise = np.random.uniform(size=noise_shape, low=-amplitude, high=amplitude)
     return arr + noise

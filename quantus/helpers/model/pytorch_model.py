@@ -36,7 +36,7 @@ class PyTorchModel(ModelInterface):
         model: torch.nn.Module, tf.keras.Model
             A model this will be wrapped in the ModelInterface:
         channel_first: boolean, optional
-             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
+            Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
         softmax: boolean
             Indicates whether to use softmax probabilities or logits in model prediction.
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
@@ -101,7 +101,7 @@ class PyTorchModel(ModelInterface):
         Parameters
         ----------
         x: np.ndarray
-             A given input that is shaped.
+            A given input that is shaped.
         shape: Tuple[int...]
             The shape of the input.
         channel_first: boolean, optional
@@ -234,7 +234,9 @@ class PyTorchModel(ModelInterface):
         if layer_indices is None:
             layer_indices = []
 
-        # Convert negative indices to positive
+        # Here we convert negative indexes to positive, so later on we could compare them with simple ==.
+        # E.g., user can provide index -1, in order to get only representations of the last layer.
+        # E.g., for 7 layers in total, this would correspond to positive index 6.
         positive_layer_indices = [
             i if i >= 0 else num_layers + i for i in layer_indices
         ]
@@ -242,12 +244,12 @@ class PyTorchModel(ModelInterface):
         if layer_names is None:
             layer_names = []
 
-        def is_layer_of_interest(index, name):
+        def is_layer_of_interest(layer_index: int, layer_name: str):
             if layer_names == [] and positive_layer_indices == []:
                 return True
-            return index in positive_layer_indices or name in layer_names
+            return layer_index in positive_layer_indices or layer_name in layer_names
 
-        # skip modules defined by subclassing API
+        # skip modules defined by subclassing API.
         hidden_layers = list(  # type: ignore
             filter(
                 lambda l: not isinstance(
@@ -260,26 +262,24 @@ class PyTorchModel(ModelInterface):
         batch_size = x.shape[0]
         hidden_outputs = []
 
-        # We register forward hook on layers of interest,
-        # which just saves the flattened layers' outputs to list,
-        # Then we execute forward pass, and stack them in 2D tensor
-
+        # We register forward hook on layers of interest, which just saves the flattened layers' outputs to list.
+        # Then we execute forward pass and stack them in 2D tensor.
         def hook(module, module_in, module_out):
             arr = module_out.cpu().numpy()
             arr = arr.reshape((batch_size, -1))
             hidden_outputs.append(arr)
 
         new_hooks = []
-        # Save handles of registered hooks, so we can clean them up later
+        # Save handles of registered hooks, so we can clean them up later.
         for index, (name, layer) in enumerate(hidden_layers):
             if is_layer_of_interest(index, name):
                 handle = layer.register_forward_hook(hook)
                 new_hooks.append(handle)
 
-        # Execute forward pass
+        # Execute forward pass.
         with torch.no_grad():
             self.model(torch.Tensor(x).to(device))
 
-        # Cleanup
+        # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)

@@ -160,8 +160,8 @@ def test_get_random_layer_generator(load_mnist_model):
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
     "params",
-    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}],
-    ids=["all layers", "2nd conv", "1st 2 layers"],
+    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}, {"layer_indices": [-1, -2]}],
+    ids=["all layers", "2nd conv", "1st 2 layers", "last 2 layers"],
 )
 def test_get_hidden_layers_output(load_mnist_model, params):
     model = PyTorchModel(load_mnist_model, channel_first=True)
