@@ -6,9 +6,10 @@
 <p align="center">
   PyTorch and TensorFlow
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb)
+[![Getting started!](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/understandable-machine-intelligence-lab/Quantus/blob/main/tutorials/Tutorial_ImageNet_Example_All_Metrics.ipynb)
+[![Launch Tutorials](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/understandable-machine-intelligence-lab/Quantus/HEAD?labpath=tutorials)
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
-[![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
+<!--[![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)-->
 ![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -195,7 +196,7 @@ Note that this installation requires that either [PyTorch](https://pytorch.org/)
 pip install -r requirements.txt
 ```
 
-For a more in-depth guide on how to install Quantus, please read more [here](http://localhost:63342/Projects/quantus/docs/build/html/getting_started/getting_started_example.html). This includes instructions for how to install a desired deep learning framework such as PyTorch or TensorFlow together with Quantus.
+For a more in-depth guide on how to install Quantus, please read more [here](https://quantus.readthedocs.io/en/latest/getting_started/installation.html). This includes instructions for how to install a desired deep learning framework such as PyTorch or TensorFlow together with Quantus.
 
 ### Package requirements
 
@@ -218,23 +219,27 @@ The following will give a short introduction to how to get started with Quantus.
 <summary><b><big>Step 1. Load data and model</big></b></summary>
 
 Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
-for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead.
+for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
 
 ```python
 import quantus
-from quantus import LeNet
+from quantus.helpers.model.models import LeNet
 import torch
 import torchvision
-
+from torchvision import transforms
+  
 # Enable GPU.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
 model = LeNet()
-model.load_state_dict(torch.load("tests/assets/mnist_model"))
+if device.type == "cpu":
+    model.load_state_dict(torch.load("tests/assets/mnist", map_location=torch.device('cpu')))
+else: 
+    model.load_state_dict(torch.load("tests/assets/mnist"))
 
 # Load datasets and make loaders.
-test_set = torchvision.datasets.MNIST(root='./sample_data', download=True)
+test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for XAI evaluation.
