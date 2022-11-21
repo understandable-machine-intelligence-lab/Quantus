@@ -338,7 +338,8 @@ def generate_captum_explanation(
     )
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
-
+    
+    # For data with no channel dimensions, like tabular data, we want to prevent attribution summation.
     if len(tuple(kwargs.get("reduce_axes", [1]))) == 0:
         def f_reduce_axes(a): return a
     else:
