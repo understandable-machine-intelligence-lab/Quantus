@@ -270,7 +270,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         _perturb_func = partial(self.perturb_func, **self.perturb_func_kwargs)
 
         if a_batch is None:
-            a_batch = self.generate_normalized_explanations_batch(
+            a_batch = self.generate_normalised_explanations_batch(
                 x_batch, y_batch, _explain_func
             )
         logits = model.predict(x_batch)
@@ -278,7 +278,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
 
         for index in range(self._nr_samples):
             x_perturbed = _perturb_func(x_batch)
-            a_batch_perturbed = self.generate_normalized_explanations_batch(
+            a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
             logits_perturbed = model.predict(x_perturbed)

@@ -384,7 +384,7 @@ class BatchedMetric(Metric):
             "evaluate_instance() not implemented for BatchedMetric"
         )
 
-    def generate_normalized_explanations_batch(
+    def generate_normalised_explanations_batch(
         self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
     ) -> np.ndarray:
         """
