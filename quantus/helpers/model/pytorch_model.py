@@ -234,7 +234,6 @@ class PyTorchModel(ModelInterface):
         if layer_indices is None:
             layer_indices = []
 
-        # Here we convert negative indexes to positive, so later on we could compare them with simple ==.
         # E.g., user can provide index -1, in order to get only representations of the last layer.
         # E.g., for 7 layers in total, this would correspond to positive index 6.
         positive_layer_indices = [

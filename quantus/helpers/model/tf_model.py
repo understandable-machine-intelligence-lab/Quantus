@@ -26,7 +26,7 @@ from quantus.helpers import utils
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
-    # All kwargs supported by Keras API
+    # All kwargs supported by Keras API.
     _available_predict_kwargs = [
         "batch_size",
         "verbose",
@@ -46,7 +46,7 @@ class TensorFlowModel(ModelInterface):
     ):
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model
+        # Disable progress bar while running inference on tf.keras.Model.
         model_predict_kwargs["verbose"] = 0
 
         """
@@ -70,12 +70,17 @@ class TensorFlowModel(ModelInterface):
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
+        # get_hidden_representations needs to rebuild and re-trace the model.
+        # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
+        # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
         self.cache = LRUCache(100)
 
     def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
-        # Use kwargs of predict call if specified, but don't overwrite object attribute
+        """
+        Use kwargs of predict call if specified, but don't overwrite object attribute.
+        Filter only ones which are supported by Keras.
+        """
         all_kwargs = {**self.model_predict_kwargs, **kwargs}
-        # Filter only ones which are supported by Keras
         predict_kwargs = {
             k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
         }
@@ -83,8 +88,12 @@ class TensorFlowModel(ModelInterface):
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_model_with_linear_top(self) -> Model:
-        # In this case model has a softmax on top, and we want linear.
-        # We have to rebuild the model and replace top with linear activation.
+        """
+        In a case model has a softmax on top, and we want linear,
+        we have to rebuild the model and replace top with linear activation.
+        Cache the rebuilt model and reuse in during consecutive predict calls.
+        """
+
         config = self.model.layers[-1].get_config()
         config["activation"] = activations.linear
         weights = self.model.layers[-1].get_weights()
@@ -207,20 +216,21 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
-        # List is not hashable, so we pass names + indices as tuples
 
         num_layers = len(self.model.layers)
 
         if layer_indices is None:
             layer_indices = []
 
-        # Convert negative indices to positive
+        # E.g., user can provide index -1, in order to get only representations of the last layer.
+        # E.g., for 7 layers in total, this would correspond to positive index 6.
         positive_layer_indices = [
             i if i >= 0 else num_layers + i for i in layer_indices
         ]
         if layer_names is None:
             layer_names = []
 
+        # List is not hashable, so we pass names + indices as tuples.
         hidden_representation_model = self._build_hidden_representation_model(
             tuple(layer_names), tuple(positive_layer_indices)
         )
@@ -230,11 +240,11 @@ class TensorFlowModel(ModelInterface):
         )
         input_batch_size = x.shape[0]
 
+        # If we requested outputs only of 1 layer, keras will already return np.ndarray.
+        # Otherwise, keras returns a List of np.ndarray's.
         if isinstance(internal_representation, np.ndarray):
-            # If we requested outputs only of 1 layer, keras will already return np.ndarray
             return internal_representation.reshape((input_batch_size, -1))
 
-        # otherwise, keras returns List of np.ndarray
         internal_representation = [
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
