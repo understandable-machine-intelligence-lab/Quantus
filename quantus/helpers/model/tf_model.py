@@ -188,7 +188,11 @@ class TensorFlowModel(ModelInterface):
     def _build_hidden_representation_model(
         self, layer_names: Tuple, layer_indices: Tuple
     ) -> Model:
-        # Instead of rebuilding model on each image, which is evaluated by metric, we cache it
+        """
+        Build a keras model, which outputs the internal representation of layers,
+        specified in layer_names or layer_indices, default all.
+        This requires re-tracing the model, so we cache it to improve metric evaluation time.
+        """
         if layer_names == () and layer_indices == ():
             warn(
                 "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
