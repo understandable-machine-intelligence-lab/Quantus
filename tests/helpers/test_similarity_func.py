@@ -3,7 +3,6 @@ from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.loss_func import mse
 from quantus.functions.similarity_func import *
-from tests.fixtures import *
 
 
 @pytest.fixture
