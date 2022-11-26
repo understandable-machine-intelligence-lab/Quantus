@@ -3,7 +3,6 @@ from pytest_lazyfixture import lazy_fixture
 
 from quantus.helpers import utils
 from quantus.functions.perturb_func import *
-from tests.fixtures import *
 
 
 @pytest.fixture
@@ -82,22 +81,38 @@ def input_uniform_mnist():
     [
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [1, 2], "perturb_baseline": 1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [1, 2],
+                "perturb_baseline": 1.0,
+            },
             1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [0], "perturb_baseline": 1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0],
+                "perturb_baseline": 1.0,
+            },
             1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [0, 1, 2], "perturb_baseline": 1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0, 1, 2],
+                "perturb_baseline": 1.0,
+            },
             1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch_flattened"),
-            {"indices": [0, 2], "indexed_axes": [0], "perturb_baseline": 1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0],
+                "perturb_baseline": 1.0,
+            },
             1,
         ),
         (
@@ -167,22 +182,38 @@ def test_baseline_replacement_by_indices(
     [
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [1, 2], "input_shift": -1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [1, 2],
+                "input_shift": -1.0,
+            },
             -1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [0], "input_shift": -1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0],
+                "input_shift": -1.0,
+            },
             -1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch"),
-            {"indices": [0, 2], "indexed_axes": [0, 1, 2], "input_shift": -1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0, 1, 2],
+                "input_shift": -1.0,
+            },
             -1,
         ),
         (
             lazy_fixture("input_zeros_2d_3ch_flattened"),
-            {"indices": [0, 2], "indexed_axes": [0], "input_shift": -1.0,},
+            {
+                "indices": [0, 2],
+                "indexed_axes": [0],
+                "input_shift": -1.0,
+            },
             -1,
         ),
         (
@@ -332,17 +363,26 @@ def test_baseline_replacement_by_blur(
     [
         (
             lazy_fixture("input_uniform_1d_3ch"),
-            {"indices": [0], "indexed_axes": [0, 1],},
+            {
+                "indices": [0],
+                "indexed_axes": [0, 1],
+            },
             True,
         ),
         (
             lazy_fixture("input_uniform_2d_3ch"),
-            {"indices": [0], "indexed_axes": [0, 1, 2],},
+            {
+                "indices": [0],
+                "indexed_axes": [0, 1, 2],
+            },
             True,
         ),
         (
             lazy_fixture("input_uniform_2d_3ch_flattened"),
-            {"indices": [0], "indexed_axes": [0],},
+            {
+                "indices": [0],
+                "indexed_axes": [0],
+            },
             True,
         ),
     ],
@@ -361,17 +401,29 @@ def test_gaussian_noise(
     [
         (
             lazy_fixture("input_uniform_1d_3ch"),
-            {"perturb_radius": 0.02, "indices": [0], "indexed_axes": [0, 1],},
+            {
+                "perturb_radius": 0.02,
+                "indices": [0],
+                "indexed_axes": [0, 1],
+            },
             True,
         ),
         (
             lazy_fixture("input_uniform_2d_3ch"),
-            {"perturb_radius": 0.02, "indices": [0], "indexed_axes": [0, 1],},
+            {
+                "perturb_radius": 0.02,
+                "indices": [0],
+                "indexed_axes": [0, 1],
+            },
             True,
         ),
         (
             lazy_fixture("input_uniform_2d_3ch_flattened"),
-            {"perturb_radius": 0.02, "indices": [0], "indexed_axes": [0],},
+            {
+                "perturb_radius": 0.02,
+                "indices": [0],
+                "indexed_axes": [0],
+            },
             True,
         ),
     ],
@@ -387,7 +439,13 @@ def test_uniform_noise(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("input_uniform_2d_3ch"), {"perturb_angle": 30}, True,),],
+    [
+        (
+            lazy_fixture("input_uniform_2d_3ch"),
+            {"perturb_angle": 30},
+            True,
+        ),
+    ],
 )
 def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
     out = rotation(arr=data, **params)
@@ -433,7 +491,13 @@ def test_translation_y_direction(
 @pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
-    [(lazy_fixture("input_uniform_2d_3ch"), {"perturb_dx": 20}, True,),],
+    [
+        (
+            lazy_fixture("input_uniform_2d_3ch"),
+            {"perturb_dx": 20},
+            True,
+        ),
+    ],
 )
 def test_no_perturbation(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]

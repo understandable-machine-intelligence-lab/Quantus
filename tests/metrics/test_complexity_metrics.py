@@ -7,7 +7,6 @@ from quantus.functions.explanation_func import explain
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.complexity import Complexity, EffectiveComplexity, Sparseness
 
-from tests.fixtures import *
 
 @pytest.mark.complexity
 @pytest.mark.parametrize(
@@ -70,7 +69,9 @@ from tests.fixtures import *
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -83,7 +84,9 @@ from tests.fixtures import *
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -140,7 +143,10 @@ from tests.fixtures import *
     ],
 )
 def test_sparseness(
-    model: ModelInterface, data: dict, params: dict, expected: Union[float, dict, bool],
+    model: ModelInterface,
+    data: dict,
+    params: dict,
+    expected: Union[float, dict, bool],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -247,7 +253,9 @@ def test_sparseness(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -260,7 +268,9 @@ def test_sparseness(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -291,7 +301,10 @@ def test_sparseness(
     ],
 )
 def test_complexity(
-    model: ModelInterface, data: dict, params: dict, expected: Union[float, dict, bool],
+    model: ModelInterface,
+    data: dict,
+    params: dict,
+    expected: Union[float, dict, bool],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})
@@ -393,7 +406,9 @@ def test_complexity(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -406,7 +421,9 @@ def test_complexity(
                     "disable_warnings": True,
                     "display_progressbar": False,
                 },
-                "call": {"explain_func": explain,},
+                "call": {
+                    "explain_func": explain,
+                },
             },
             {"max": 1.0, "min": 0.0},
         ),
@@ -437,7 +454,10 @@ def test_complexity(
     ],
 )
 def test_effective_complexity(
-    model: ModelInterface, data: dict, params: dict, expected: Union[float, dict, bool],
+    model: ModelInterface,
+    data: dict,
+    params: dict,
+    expected: Union[float, dict, bool],
 ):
     init_params = params.get("init", {})
     call_params = params.get("call", {})

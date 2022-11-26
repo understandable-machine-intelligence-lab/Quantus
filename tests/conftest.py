@@ -2,9 +2,19 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from tensorflow.keras.datasets import cifar10
+from keras.datasets import cifar10
 
 from quantus.helpers.model.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+
+CIFAR_IMAGE_SIZE = 32
+MNIST_IMAGE_SIZE = 28
+BATCH_SIZE = 124
+MINI_BATCH_SIZE = 8
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mini_batch_size():
+    return MINI_BATCH_SIZE
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -72,36 +82,36 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
+    x_batch = (
+        np.loadtxt("tests/assets/mnist_x")
+        .astype(float)
+        .reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE))
+    )[:MINI_BATCH_SIZE]
+    y_batch = np.loadtxt("tests/assets/mnist_y").astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_cifar10_images():
-    """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_batch = torch.as_tensor(
-        x_train[:124, ...].reshape(124, 3, 32, 32), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
+    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    (x_train, y_train), (_, _) = cifar10.load_data()
+    x_batch = (
+        x_train[:BATCH_SIZE]
+        .reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE))
+        .astype(float)
+    )[:MINI_BATCH_SIZE]
+    y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_mnist_images_tf():
+def load_mnist_images_tf(load_mnist_images):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
-    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
+
+    return {
+        "x_batch": np.moveaxis(load_mnist_images["x_batch"], 1, -1),
+        "y_batch": load_mnist_images["y_batch"],
+    }
 
 
 @pytest.fixture
