@@ -26,7 +26,7 @@ from quantus.helpers import utils
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
-    # All kwargs supported by Keras API.
+    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
     _available_predict_kwargs = [
         "batch_size",
         "verbose",
@@ -105,8 +105,8 @@ class TensorFlowModel(ModelInterface):
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """Predict on the given input."""
-        # Generally, one should always prefer keras predict to __call__
-        # https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
+        # Generally, one should always prefer keras predict to __call__.
+        # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
         predict_kwargs = self._get_predict_kwargs(**kwargs)
 
         output_activation = self.model.layers[-1].activation
@@ -119,8 +119,8 @@ class TensorFlowModel(ModelInterface):
             logits = self.model.predict(x, **predict_kwargs)
             return tf.nn.softmax(logits)
 
-        # In this case model has a softmax on top, and we want linear
-        # We have to rebuild the model and replace top with linear activation
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
         predict_model = self._build_model_with_linear_top()
         return predict_model.predict(x, **predict_kwargs)
 
@@ -133,7 +133,23 @@ class TensorFlowModel(ModelInterface):
     ):
         """
         Reshape input into model-expected input.
-        channel_first: Explicitly state if x is formatted channel first (optional).
+
+        Parameters
+        ----------
+        x: np.ndarray
+            A given input that is shaped.
+        shape: Tuple[int...]
+            The shape of the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        batched: boolean
+            Indicates if the first dimension should be expanded or not, if it is just a single instance.
+
+        Returns
+        -------
+        np.ndarray
+            A reshaped input.
         """
         if channel_first is None:
             channel_first = utils.infer_channel_first(x)
