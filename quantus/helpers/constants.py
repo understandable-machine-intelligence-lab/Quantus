@@ -40,7 +40,6 @@ AVAILABLE_METRICS = {
         "Relative Input Stability": RelativeInputStability,
         "Relative Output Stability": RelativeOutputStability,
         "Relative Representation Stability": RelativeRepresentationStability,
-
     },
     "Localisation": {
         "Pointing Game": PointingGame,
