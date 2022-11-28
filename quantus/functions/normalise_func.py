@@ -182,3 +182,48 @@ def denormalise(
         A denormalised array.
     """
     return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
+
+
+
+def normalise_by_average_second_moment_estimate(
+    a: np.ndarray,
+    normalise_axes: Optional[Sequence[int]] = None,
+) -> np.ndarray:
+    """
+    Normalise attributions by dividing the attribution map by the square-root
+    of its average second moment estimate (that is, similar to the standard
+    deviation, but centered around zero instead of the data mean).
+
+    References:
+        1) Binder et al., (2022): "Shortcomings of Top-Down Randomization-Based Sanity Checks
+        for Evaluations of Deep Neural Network Explanations." arXiv: https://arxiv.org/abs/2211.12486.
+
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+        the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    a: np.ndarray
+         a normalised array.
+    """
+
+    # No normalisation if a is only zeros.
+    if np.all(a == 0.0):
+        return a
+
+    # Default normalise_axes.
+    if normalise_axes is None:
+        normalise_axes = list(range(np.ndim(a)))
+
+    # Cast Sequence to tuple so numpy accepts it.
+    normalise_axes = tuple(normalise_axes)
+
+    a = a / np.sqrt(np.sum(a**2)/a.size)
+
+    return a
