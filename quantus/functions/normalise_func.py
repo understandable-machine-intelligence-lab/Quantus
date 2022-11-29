@@ -224,13 +224,21 @@ def normalise_by_average_second_moment_estimate(
     normalise_axes = tuple(normalise_axes)
 
     # Check that square root of the second momment estimatte is nonzero.
-    second_moment_sqrt = np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
+    second_moment_sqrt = np.sqrt(
+        np.sum(a ** 2, axis=normalise_axes, keepdims=True)
+        / np.prod([a.shape[n] for n in normalise_axes])
+    )
 
     if all(second_moment_sqrt != 0):
-        a /= np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
+        a /= np.sqrt(
+            np.sum(a ** 2, axis=normalise_axes, keepdims=True)
+            / np.prod([a.shape[n] for n in normalise_axes])
+        )
     else:
-        warnings.warn("Encountered second moment of parameter 'a' equal to zero "
-                      "in normalise_by_average_second_moment_estimate. As a result, no normalisation is performed. "
-                      "Be aware that this may cause inconsistencies in your results.")
+        warnings.warn(
+            "Encountered second moment of parameter 'a' equal to zero "
+            "in normalise_by_average_second_moment_estimate. As a result, no normalisation is performed. "
+            "Be aware that this may cause inconsistencies in your results."
+        )
 
     return a
