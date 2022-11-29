@@ -195,7 +195,7 @@ def normalise_by_average_second_moment_estimate(
 
     This normalisation function does not normalise the attributions into a fixed range.
     Instead, it ensures that each score in the attribution map has an average squared
-    distance to zero which is one. This is not meant for visualisation purposes,
+    distance to zero that is equal to one. This is not meant for visualisation purposes,
     rather it is meant to preserve a quantity that is useful for the comparison of distances
     between different attribution methods.
 
