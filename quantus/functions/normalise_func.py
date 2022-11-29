@@ -224,6 +224,14 @@ def normalise_by_average_second_moment_estimate(
     # Cast Sequence to tuple so numpy accepts it.
     normalise_axes = tuple(normalise_axes)
 
-    a = a / np.sqrt(np.sum(a**2)/a.size)
+    # Check that Sqrt of Second Moment Estimate is nonzero
+    second_moment_sqrt = np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
+
+    if all(second_moment_sqrt != 0):
+        a /= np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
+    else:
+        warnings.warn("Encountered Second Moment of Parameter 'a' equal to zero "
+                      "in normalise_by_average_second_moment_estimate. No normalisation is performed. "
+                      "Be aware that this may cause inconsistencies in your results.")
 
     return a

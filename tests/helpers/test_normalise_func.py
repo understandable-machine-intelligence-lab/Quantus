@@ -38,6 +38,32 @@ def atts_normalise_seq_with_batch_dim():
 def atts_normalise_seq_with_batch_dim2():
     return np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 2.0, 4.0, 6.0, 8.0, 10.0],])
 
+@pytest.fixture
+def atts_normalise_secmom_seq_1():
+    return np.array([-1.0, 1.0])
+
+@pytest.fixture
+def atts_normalise_secmom_seq_with_batch_dim():
+    return np.array([[0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0], [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0]])
+
+@pytest.fixture
+def atts_normalise_secmom_img_with_batch_dim():
+    return np.array(
+        [
+            [
+                [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0]
+            ],
+            [
+                [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0]
+            ],
+        ]
+    )
 
 @pytest.fixture
 def atts_normalise_img_with_batch_dim():
@@ -239,3 +265,63 @@ def test_denormalise(
     assert np.all(
         o == e for o, e in zip(np.array(out).flatten(), np.array(expected).flatten())
     ), "Test failed."
+
+@pytest.mark.normalise_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("atts_normalise_seq_0"),
+            {"normalise_axes": [0]},
+            np.array([0.0, 0.0]),
+        ),
+        (
+            lazy_fixture("atts_normalise_seq_1"),
+            {"normalise_axes": [0]},
+            np.array([0.0, 1.0/3.0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 4.0/3.0, 5.0/3.0, -1.0/3.0]),
+        ),
+        (
+            lazy_fixture("atts_normalise_secmom_seq_1"),
+            {"normalise_axes": [0]},
+            np.array([-1.0, 1.0]),
+        ),
+        (
+            lazy_fixture("atts_normalise_secmom_seq_with_batch_dim"),
+            {"normalise_axes": [1]},
+            np.array(
+                [[0.0, 1.0/3.0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 4.0/3.0, 5.0/3.0, -1.0/3.0],
+                 [0.0, 1.0/3.0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 4.0/3.0, 5.0/3.0, -1.0/3.0],]
+            ),
+        ),
+        (
+            lazy_fixture("atts_normalise_secmom_img_with_batch_dim"),
+            {"normalise_axes": [1, 2]},
+            np.array(
+                [
+                    [
+                        [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                        [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                        [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0],
+                        [0.0, 1.0, 2.0, 3.0, 4.0, 4.0, 5.0, -1.0]
+                    ],
+                    [
+                        [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                        [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                        [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0],
+                        [0.0, -1.0, -2.0, -3.0, -4.0, -4.0, -5.0, 1.0]
+                    ],
+                ]
+            )/3.0,
+        ),
+        (
+            lazy_fixture("atts_normalise_seq_1"),
+            {"normalise_axes": None},
+            np.array([0.0, 1.0/3.0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 4.0/3.0, 5.0/3.0, -1.0/3.0]),
+        ),
+    ],
+)
+def test_normalise_by_average_second_moment_estimate(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+):
+    out = normalise_by_average_second_moment_estimate(a=data, **params)
+    assert np.all(out == expected), f"Test failed. (expected: {expected}, is: {out})"
