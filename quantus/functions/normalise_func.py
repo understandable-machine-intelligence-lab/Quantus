@@ -229,8 +229,8 @@ def normalise_by_average_second_moment_estimate(
     if all(second_moment_sqrt != 0):
         a /= np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
     else:
-        warnings.warn("Encountered Second Moment of Parameter 'a' equal to zero "
-                      "in normalise_by_average_second_moment_estimate. No normalisation is performed. "
+        warnings.warn("Encountered second moment of parameter 'a' equal to zero "
+                      "in normalise_by_average_second_moment_estimate. As a result, no normalisation is performed. "
                       "Be aware that this may cause inconsistencies in your results.")
 
     return a
