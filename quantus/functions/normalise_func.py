@@ -192,6 +192,9 @@ def normalise_by_average_second_moment_estimate(
     Normalise attributions by dividing the attribution map by the square-root
     of its average second moment estimate (that is, similar to the standard
     deviation, but centered around zero instead of the data mean).
+    It does not normalise attribution maps into a fixed range, but instead ensures that the average squared distance to 0 of
+    each score in the attribution map is one. It does not aim at yielding a good visualisation of attributions,
+    but instead preserving a quantity useful for the comparison of distances between different attributions.
 
     References:
         1) Binder et al., (2022): "Shortcomings of Top-Down Randomization-Based Sanity Checks
