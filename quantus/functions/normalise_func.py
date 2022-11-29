@@ -182,3 +182,69 @@ def denormalise(
         A denormalised array.
     """
     return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
+
+
+def normalise_by_average_second_moment_estimate(
+    a: np.ndarray,
+    normalise_axes: Optional[Sequence[int]] = None,
+) -> np.ndarray:
+    """
+    Normalise attributions by dividing the attribution map by the square-root
+    of its average second moment estimate (that is, similar to the standard
+    deviation, but centered around zero instead of the data mean).
+
+    This normalisation function does not normalise the attributions into a fixed range.
+    Instead, it ensures that each score in the attribution map has an average squared
+    distance to zero that is equal to one. This is not meant for visualisation purposes,
+    rather it is meant to preserve a quantity that is useful for the comparison of distances
+    between different attribution methods.
+
+    References:
+        1) Binder et al., (2022): "Shortcomings of Top-Down Randomization-Based Sanity Checks
+        for Evaluations of Deep Neural Network Explanations." arXiv: https://arxiv.org/abs/2211.12486.
+
+    Parameters
+    ----------
+    a: np.ndarray
+         the array to normalise, e.g., an image or an explanation.
+    normalise_axes: optional, sequence
+        the axes to normalise over.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    a: np.ndarray
+         a normalised array.
+    """
+
+    # No normalisation if a is only zeros.
+    if np.all(a == 0.0):
+        return a
+
+    # Default normalise_axes.
+    if normalise_axes is None:
+        normalise_axes = list(range(np.ndim(a)))
+
+    # Cast Sequence to tuple so numpy accepts it.
+    normalise_axes = tuple(normalise_axes)
+
+    # Check that square root of the second momment estimatte is nonzero.
+    second_moment_sqrt = np.sqrt(
+        np.sum(a ** 2, axis=normalise_axes, keepdims=True)
+        / np.prod([a.shape[n] for n in normalise_axes])
+    )
+
+    if all(second_moment_sqrt != 0):
+        a /= np.sqrt(
+            np.sum(a ** 2, axis=normalise_axes, keepdims=True)
+            / np.prod([a.shape[n] for n in normalise_axes])
+        )
+    else:
+        warnings.warn(
+            "Encountered second moment of parameter 'a' equal to zero "
+            "in normalise_by_average_second_moment_estimate. As a result, no normalisation is performed. "
+            "Be aware that this may cause inconsistencies in your results."
+        )
+
+    return a
