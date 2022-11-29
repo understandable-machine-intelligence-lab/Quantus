@@ -184,7 +184,6 @@ def denormalise(
     return (np.array(a) * std.reshape(-1, 1, 1)) + mean.reshape(-1, 1, 1)
 
 
-
 def normalise_by_average_second_moment_estimate(
     a: np.ndarray,
     normalise_axes: Optional[Sequence[int]] = None,
@@ -224,7 +223,7 @@ def normalise_by_average_second_moment_estimate(
     # Cast Sequence to tuple so numpy accepts it.
     normalise_axes = tuple(normalise_axes)
 
-    # Check that Sqrt of Second Moment Estimate is nonzero
+    # Check that square root of the second momment estimatte is nonzero.
     second_moment_sqrt = np.sqrt(np.sum(a**2, axis=normalise_axes, keepdims=True)/np.prod([a.shape[n] for n in normalise_axes]))
 
     if all(second_moment_sqrt != 0):
