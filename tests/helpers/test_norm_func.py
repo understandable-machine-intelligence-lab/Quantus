@@ -8,7 +8,7 @@ from quantus.functions.norm_func import *
 
 @pytest.fixture
 def atts_norm_ones():
-    return np.ones(shape=10)
+    return np.ones((10))
 
 
 @pytest.fixture
