@@ -35,7 +35,7 @@ dist/
 build/
 
 # tutorials
-tutorials/sample_data/
+*sample_data/
 tutorials/invited_talks/
 
 # PyCharm project files

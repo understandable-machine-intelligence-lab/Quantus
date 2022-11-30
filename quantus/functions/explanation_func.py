@@ -339,70 +339,67 @@ def generate_captum_explanation(
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
+    # For data with no channel dimensions, like tabular data, we want to prevent attribution summation.
+    if len(tuple(kwargs.get("reduce_axes", [1]))) == 0:
+
+        def f_reduce_axes(a):
+            return a
+
+    else:
+
+        def f_reduce_axes(a):
+            return a.sum(**reduce_axes)
+
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
     if method == "GradientShap".lower():
-        explanation = (
-            GradientShap(model)
-            .attribute(
+        explanation = f_reduce_axes(
+            GradientShap(model).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
-            .sum(**reduce_axes)
         )
 
     elif method == "IntegratedGradients".lower():
-        explanation = (
-            IntegratedGradients(model)
-            .attribute(
+        explanation = f_reduce_axes(
+            IntegratedGradients(model).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
                 n_steps=10,
                 method="riemann_trapezoid",
             )
-            .sum(**reduce_axes)
         )
 
     elif method == "InputXGradient".lower():
-        explanation = (
-            InputXGradient(model)
-            .attribute(inputs=inputs, target=targets)
-            .sum(**reduce_axes)
+        explanation = f_reduce_axes(
+            InputXGradient(model).attribute(inputs=inputs, target=targets)
         )
 
     elif method == "Saliency".lower():
-        explanation = (
-            Saliency(model)
-            .attribute(inputs=inputs, target=targets, abs=True)
-            .sum(**reduce_axes)
+        explanation = f_reduce_axes(
+            Saliency(model).attribute(inputs=inputs, target=targets, abs=True)
         )
 
     elif method == "Gradient".lower():
-        explanation = (
-            Saliency(model)
-            .attribute(inputs=inputs, target=targets, abs=False)
-            .sum(**reduce_axes)
+        explanation = f_reduce_axes(
+            Saliency(model).attribute(inputs=inputs, target=targets, abs=False)
         )
 
     elif method == "Occlusion".lower():
         window_shape = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))
-        explanation = (
-            Occlusion(model)
-            .attribute(
+        explanation = f_reduce_axes(
+            Occlusion(model).attribute(
                 inputs=inputs,
                 target=targets,
                 sliding_window_shapes=window_shape,
             )
-            .sum(**reduce_axes)
         )
 
     elif method == "FeatureAblation".lower():
-        explanation = (
-            FeatureAblation(model)
-            .attribute(inputs=inputs, target=targets)
-            .sum(**reduce_axes)
+        explanation = f_reduce_axes(
+            FeatureAblation(model).attribute(inputs=inputs, target=targets)
         )
 
     elif method == "GradCam".lower():
@@ -414,10 +411,10 @@ def generate_captum_explanation(
         if isinstance(kwargs["gc_layer"], str):
             kwargs["gc_layer"] = eval(kwargs["gc_layer"])
 
-        explanation = (
-            LayerGradCam(model, layer=kwargs["gc_layer"])
-            .attribute(inputs=inputs, target=targets)
-            .sum(**reduce_axes)
+        explanation = f_reduce_axes(
+            LayerGradCam(model, layer=kwargs["gc_layer"]).attribute(
+                inputs=inputs, target=targets
+            )
         )
         if "interpolate" in kwargs:
             if isinstance(kwargs["interpolate"], tuple):
