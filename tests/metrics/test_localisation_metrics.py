@@ -3,6 +3,8 @@ from typing import Union, Optional, Dict
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
+import torch
+import pickle
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.mosaic_func import mosaic_creation
@@ -359,25 +361,13 @@ def load_mnist_adaptive_lenet_model():
 
 
 @pytest.fixture
-def load_mnist_mosaics():
+def load_mnist_mosaics(load_mnist_images):
     """Load a batch of MNIST digits and build mosaics from them"""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28),
-        dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
-    mosaics_returns = mosaic_creation(
+    x_batch, y_batch = load_mnist_images["x_batch"], load_mnist_images["y_batch"]
+    all_mosaics, _, _, p_batch_list, target_list = mosaic_creation(
         images=x_batch, labels=y_batch, mosaics_per_class=10, seed=777
     )
-    (
-        all_mosaics,
-        mosaic_indices_list,
-        mosaic_labels_list,
-        p_batch_list,
-        target_list,
-    ) = mosaics_returns
+
     return {
         "x_batch": all_mosaics,
         "y_batch": target_list,
@@ -396,24 +386,12 @@ def load_cifar10_adaptive_lenet_model():
 
 
 @pytest.fixture
-def load_cifar10_mosaics():
+def load_cifar10_mosaics(load_cifar10_images):
     """Load a batch of Cifar10 and build mosaics from them"""
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_batch = torch.as_tensor(
-        x_train[:124, ...].reshape(124, 3, 32, 32),
-        dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
-    mosaics_returns = mosaic_creation(
+    x_batch, y_batch = load_cifar10_images["x_batch"], load_cifar10_images["y_batch"]
+    all_mosaics, _, _, p_batch_list, target_list = mosaic_creation(
         images=x_batch, labels=y_batch, mosaics_per_class=10, seed=777
     )
-    (
-        all_mosaics,
-        mosaic_indices_list,
-        mosaic_labels_list,
-        p_batch_list,
-        target_list,
-    ) = mosaics_returns
     return {
         "x_batch": all_mosaics,
         "y_batch": target_list,
