@@ -30,26 +30,6 @@ def baseline_black_3d():
 
 
 @pytest.fixture
-def baseline_uniform_1d():
-    return {"value": "uniform", "arr": np.random.uniform(0, 1, size=(128,))}
-
-
-@pytest.fixture
-def baseline_uniform_3d():
-    return {"value": "uniform", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
-
-
-@pytest.fixture
-def baseline_random_1d():
-    return {"value": "random", "arr": np.random.uniform(0, 1, size=(128,))}
-
-
-@pytest.fixture
-def baseline_random_3d():
-    return {"value": "random", "arr": np.random.uniform(0, 1, size=(128, 64, 32))}
-
-
-@pytest.fixture
 def baseline_white_1d():
     return {"value": "white", "arr": np.random.uniform(0, 1, size=(128,))}
 

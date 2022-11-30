@@ -44,16 +44,6 @@ def atts_lip_same():
 
 
 @pytest.fixture
-def atts_lip_diff():
-    return {
-        "a": np.array([-1, 1, 1]),
-        "b": np.array([0, 0, 2]),
-        "c": np.array([-1, 1, 1]),
-        "d": np.array([0, 0, 2]),
-    }
-
-
-@pytest.fixture
 def atts_ssim_same():
     a = np.random.uniform(0, 0.1, size=(10))
     return {"a": a, "b": a}

@@ -68,6 +68,13 @@ To perform the tests, execute the following (make sure pytest is installed):
 ```bash
 pytest
 ```
+
+
+... optionally, you could split test execution between multiple CPU cores using [pytest-xdist](https://github.com/pytest-dev/pytest-xdist)
+```bash
+pytest tests -n auto
+```
+
 ... alternatively, to get additionaly coverage details, run:
 ```bash
 pytest --cov=. --cov-report term-missing
