@@ -91,7 +91,7 @@ class TensorFlowModel(ModelInterface):
         """
         In a case model has a softmax on top, and we want linear,
         we have to rebuild the model and replace top with linear activation.
-        Cache the rebuilt model and reuse in during consecutive predict calls.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
         """
 
         config = self.model.layers[-1].get_config()
@@ -104,7 +104,21 @@ class TensorFlowModel(ModelInterface):
         return new_model
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
-        """Predict on the given input."""
+        """
+        Predict on the given input.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            A given input that the wrapped model predicts on.
+        kwargs: optional
+            Keyword arguments passed to tf.keras.Model.predict.
+
+        Returns
+        -------
+        logits: np.ndarray
+            Output logits.
+        """
         # Generally, one should always prefer keras predict to __call__.
         # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
         predict_kwargs = self._get_predict_kwargs(**kwargs)
