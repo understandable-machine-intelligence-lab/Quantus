@@ -7,162 +7,158 @@ from zennit import torchvision as ztv
 from quantus.functions.explanation_func import *
 from quantus.functions.normalise_func import normalise_by_max
 
-zennit_tests = [
-    # Zennit
-    (
-        lazy_fixture("load_1d_3ch_conv_model"),
-        lazy_fixture("almost_uniform_1d_no_abatch"),
-        {
-            "canonizer": None,
-            "composite": None,
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (10, 1, 100)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": None,
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (124, 1, 28, 28)},
-    ),
-    (
-        lazy_fixture("load_1d_3ch_conv_model"),
-        lazy_fixture("almost_uniform_1d_no_abatch"),
-        {
-            "canonizer": ztv.SequentialMergeBatchNorm,
-            "composite": zcomp.EpsilonPlus,
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (10, 1, 100)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": ztv.SequentialMergeBatchNorm,
-            "composite": zcomp.EpsilonPlus,
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (124, 1, 28, 28)},
-    ),
-    (
-        lazy_fixture("load_1d_3ch_conv_model"),
-        lazy_fixture("almost_uniform_1d_no_abatch"),
-        {
-            "canonizer": None,
-            "composite": "epsilon_alpha2_beta1_flat",
-            "attributor": zattr.Gradient,
-        },
-        {"shape": (10, 1, 100)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "epsilon_alpha2_beta1_flat",
-            "attributor": zattr.Gradient,
-        },
-        {"shape": (124, 1, 28, 28)},
-    ),
-    (
-        lazy_fixture("load_1d_3ch_conv_model"),
-        lazy_fixture("almost_uniform_1d_no_abatch"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (10, 1, 100)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-        },
-        {"shape": (124, 1, 28, 28)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-            "reduce_axes": (1,),
-        },
-        {"shape": (124, 1, 28, 28)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-            "reduce_axes": (1, 2),
-        },
-        {"shape": (124, 1, 1, 28)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-            "reduce_axes": (3,),
-        },
-        {"shape": (124, 1, 28, 1)},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-            "reduce_axes": (0, 1),
-        },
-        {"exception": AssertionError},
-    ),
-    (
-        lazy_fixture("load_mnist_model"),
-        lazy_fixture("load_mnist_images"),
-        {
-            "canonizer": None,
-            "composite": "guided_backprop",
-            "attributor": zattr.Gradient,
-            "xai_lib": "zennit",
-            "reduce_axes": (1, 2, 3, 4, 5),
-        },
-        {"exception": AssertionError},
-    ),
-]
-
 
 @pytest.mark.explain_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
-    zennit_tests
-    + [
+    [
+        # Zennit
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "canonizer": None,
+                "composite": None,
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": None,
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "canonizer": ztv.SequentialMergeBatchNorm,
+                "composite": zcomp.EpsilonPlus,
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": ztv.SequentialMergeBatchNorm,
+                "composite": zcomp.EpsilonPlus,
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "canonizer": None,
+                "composite": "epsilon_alpha2_beta1_flat",
+                "attributor": zattr.Gradient,
+            },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "epsilon_alpha2_beta1_flat",
+                "attributor": zattr.Gradient,
+            },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+            },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+                "reduce_axes": (1,),
+            },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+                "reduce_axes": (1, 2),
+            },
+            {"shape": (8, 1, 1, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+                "reduce_axes": (3,),
+            },
+            {"shape": (8, 1, 28, 1)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+                "reduce_axes": (0, 1),
+            },
+            {"exception": AssertionError},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "canonizer": None,
+                "composite": "guided_backprop",
+                "attributor": zattr.Gradient,
+                "xai_lib": "zennit",
+                "reduce_axes": (1, 2, 3, 4, 5),
+            },
+            {"exception": AssertionError},
+        ),
         # Captum
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -178,7 +174,7 @@ zennit_tests = [
             {
                 "method": "Saliency",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -194,7 +190,7 @@ zennit_tests = [
             {
                 "method": "GradientShap",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -210,7 +206,7 @@ zennit_tests = [
             {
                 "method": "IntegratedGradients",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -226,7 +222,7 @@ zennit_tests = [
             {
                 "method": "InputXGradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -242,7 +238,7 @@ zennit_tests = [
             {
                 "method": "Occlusion",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -258,7 +254,7 @@ zennit_tests = [
             {
                 "method": "FeatureAblation",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -267,7 +263,7 @@ zennit_tests = [
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 44)},
+            {"shape": (10, 1, 44)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -276,7 +272,7 @@ zennit_tests = [
                 "method": "GradCam",
                 "gc_layer": "model._modules.get('conv_2')",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 8, 8)},
+            {"shape": (8, 1, 8, 8)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -292,7 +288,7 @@ zennit_tests = [
             {
                 "method": "Control Var. Sobel Filter",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -308,7 +304,7 @@ zennit_tests = [
             {
                 "method": "Gradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -351,7 +347,7 @@ zennit_tests = [
                 "method": "Gradient",
                 "reduce_axes": (1,),
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -363,7 +359,7 @@ zennit_tests = [
                 "normalise_func": normalise_by_max,
                 "reduce_axes": (1, 2),
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 1, 28)},
+            {"shape": (8, 1, 1, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -372,7 +368,7 @@ zennit_tests = [
                 "method": "Gradient",
                 "reduce_axes": (3,),
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 1)},
+            {"shape": (8, 1, 28, 1)},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -399,7 +395,7 @@ zennit_tests = [
             {
                 "method": "Gradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -407,7 +403,7 @@ zennit_tests = [
             {
                 "method": "Occlusion",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28, 3)},
+            {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -415,7 +411,7 @@ zennit_tests = [
             {
                 "method": "IntegratedGradients",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -423,7 +419,7 @@ zennit_tests = [
             {
                 "method": "InputXGradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -502,7 +498,7 @@ def test_explain_func(
             {
                 "method": "Saliency",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -596,7 +592,7 @@ def test_generate_captum_explanation(
             {
                 "method": "Gradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -612,7 +608,7 @@ def test_generate_captum_explanation(
             {
                 "method": "Occlusion",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28, 3)},
+            {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -628,7 +624,7 @@ def test_generate_captum_explanation(
             {
                 "method": "InputXGradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -644,7 +640,7 @@ def test_generate_captum_explanation(
             {
                 "method": "IntegratedGradients",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -730,7 +726,7 @@ def test_generate_tf_explanation(
             {
                 "method": "Gradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -746,7 +742,7 @@ def test_generate_tf_explanation(
             {
                 "method": "Gradient",
             },
-            {"shape": (lazy_fixture("mini_batch_size"), 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),

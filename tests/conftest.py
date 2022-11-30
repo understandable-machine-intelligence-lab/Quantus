@@ -13,11 +13,6 @@ MINI_BATCH_SIZE = 8
 
 
 @pytest.fixture(scope="session", autouse=True)
-def mini_batch_size():
-    return MINI_BATCH_SIZE
-
-
-@pytest.fixture(scope="session", autouse=True)
 def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNet()
@@ -114,8 +109,8 @@ def load_mnist_images_tf(load_mnist_images):
     }
 
 
-@pytest.fixture
-def almost_uniform_1d(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -123,16 +118,16 @@ def almost_uniform_1d(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_1d_no_abatch_channel_last(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch_channel_last():
     return {
         "x_batch": np.random.randn(10, 100, 3),
         "y_batch": np.random.randint(0, 10, size=10),
     }
 
 
-@pytest.fixture
-def almost_uniform_1d_no_abatch(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -140,8 +135,8 @@ def almost_uniform_1d_no_abatch(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_2d(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d():
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -149,8 +144,8 @@ def almost_uniform_2d(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_2d_no_abatch(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -158,8 +153,8 @@ def almost_uniform_2d_no_abatch(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def flat_image_array(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def flat_image_array():
     return {
         "x": np.zeros((1, 3 * 28 * 28)),
         "shape": (3, 28, 28),
@@ -167,8 +162,8 @@ def flat_image_array(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def flat_sequence_array(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def flat_sequence_array():
     return {
         "x": np.zeros((1, 3 * 28)),
         "shape": (3, 28),
