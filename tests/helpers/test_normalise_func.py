@@ -71,11 +71,6 @@ def atts_denormalise():
     return np.zeros((3, 2, 2))
 
 
-@pytest.fixture
-def atts_denormalise_torch():
-    return torch.tensor(np.zeros((3, 2, 2)))
-
-
 @pytest.mark.normalise_func
 @pytest.mark.parametrize(
     "data,params,expected",

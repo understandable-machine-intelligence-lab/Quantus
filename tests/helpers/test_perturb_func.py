@@ -36,21 +36,6 @@ def input_uniform_2d_3ch_flattened():
 
 
 @pytest.fixture
-def input_ones_mnist():
-    return np.ones(shape=(1, 28, 28))
-
-
-@pytest.fixture
-def input_ones_mnist_flattened():
-    return np.ones(shape=(1, 28, 28)).flatten()
-
-
-@pytest.fixture
-def input_zeros_mnist_flattened():
-    return np.zeros(shape=(1, 28, 28)).flatten()
-
-
-@pytest.fixture
 def input_uniform_1d_3ch():
     return np.random.uniform(0, 0.1, size=(3, 224))
 
