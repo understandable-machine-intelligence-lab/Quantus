@@ -299,36 +299,6 @@ def half_in_gt_2d_3ch():
     }
 
 
-# TODO: unused fixture
-@pytest.fixture
-def half_in_gt_zeros_bigger_1d_3ch():
-    s_batch = np.zeros((10, 1, 224))
-    a_batch = np.zeros((10, 1, 224))
-    s_batch[:, :, 0:100] = 1.0
-    a_batch[:, :, 0:100] = 1.0
-    return {
-        "x_batch": np.random.randn(10, 3, 224),
-        "y_batch": np.random.randint(0, 10, size=10),
-        "a_batch": a_batch,
-        "s_batch": s_batch,
-    }
-
-
-# TODO: unused fixture
-@pytest.fixture
-def half_in_gt_zeros_bigger_2d_3ch():
-    s_batch = np.zeros((10, 1, 224, 224))
-    a_batch = np.zeros((10, 1, 224, 224))
-    s_batch[:, :, 0:100, 0:100] = 1.0
-    a_batch[:, :, 0:100, 75:100] = 1.0
-    return {
-        "x_batch": np.random.randn(10, 3, 224, 224),
-        "y_batch": np.random.randint(0, 10, size=10),
-        "a_batch": a_batch,
-        "s_batch": s_batch,
-    }
-
-
 @pytest.fixture
 def load_artificial_attribution():
     """Build an artificial attribution map"""
