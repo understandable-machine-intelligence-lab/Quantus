@@ -124,7 +124,7 @@ class ModelInterface(ABC):
         Parameters
         ----------
         x: np.ndarray
-           4D tensor, a batch of input datapoints
+            4D tensor, a batch of input datapoints
         layer_names: List[str]
             List with names of layers, from which output should be captured.
         layer_indices: List[int]
@@ -134,6 +134,6 @@ class ModelInterface(ABC):
         Returns
         -------
         L: np.ndarray
-              2D tensor with shape (batch_size, None)
+            2D tensor with shape (batch_size, None)
         """
         raise NotImplementedError()

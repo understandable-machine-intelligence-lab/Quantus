@@ -237,6 +237,30 @@ class TensorFlowModel(ModelInterface):
         **kwargs,
     ) -> np.ndarray:
 
+        """
+        Compute the model's internal representation of input x.
+        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
+        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
+        we make the implementation flexible.
+        It is up to the user whether all layers are used, or specific ones should be selected.
+        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            4D tensor, a batch of input datapoints
+        layer_names: List[str]
+            List with names of layers, from which output should be captured.
+        layer_indices: List[int]
+            List with indices of layers, from which output should be captured.
+            Intended to use in case, when layer names are not unique, or unknown.
+
+        Returns
+        -------
+        L: np.ndarray
+            2D tensor with shape (batch_size, None)
+        """
+
         num_layers = len(self.model.layers)
 
         if layer_indices is None:
