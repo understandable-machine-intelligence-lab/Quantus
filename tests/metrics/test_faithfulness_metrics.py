@@ -147,7 +147,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "InputXGradient",},
+                    "explain_func_kwargs": {"method": "GradientsInput",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1164,7 +1164,7 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"type": np.float64},

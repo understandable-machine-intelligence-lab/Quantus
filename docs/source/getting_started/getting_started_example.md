@@ -308,8 +308,11 @@ sensitivity_scorer.get_params
 # To list available metrics (and their corresponding categories).
 quantus.AVAILABLE_METRICS
 
-# To list available explainable methods.
-quantus.AVAILABLE_XAI_METHODS
+# To list available explainable methods with tf-explain.
+quantus.AVAILABLE_XAI_METHODS_TF
+
+# To list available explainable methods with captum.
+quantus.AVAILABLE_XAI_METHODS_CAPTUM
 
 # To list available perturbation functions.
 quantus.AVAILABLE_SIMILARITY_FUNCTIONS
