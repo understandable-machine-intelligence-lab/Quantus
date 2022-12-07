@@ -144,7 +144,7 @@ from tests.fixtures import *
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "Gradient",
+                        "method": "VanillaGradients",
                     },
                 },
             },

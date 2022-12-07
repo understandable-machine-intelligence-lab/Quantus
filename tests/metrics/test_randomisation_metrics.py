@@ -99,7 +99,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -118,7 +118,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"exception": ValueError},
@@ -137,7 +137,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"min": -1.0, "max": 1.0},

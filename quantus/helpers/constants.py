@@ -100,18 +100,40 @@ AVAILABLE_NORMALISATION_FUNCTIONS = {
 }
 
 
-AVAILABLE_XAI_METHODS = [
-    "Gradient",
-    "Saliency",
+AVAILABLE_XAI_METHODS_CAPTUM = [
     "GradientShap",
     "IntegratedGradients",
+    "DeepLift",
+    "DeepLiftShap",
     "InputXGradient",
-    "Occlusion",
+    "Saliency",
     "FeatureAblation",
-    "GradCam",
+    "Deconvolution",
+    "FeaturePermutation",
+    "Lime",
+    "KernelShap",
+    "LRP",
+    "Gradient",
+    "Occlusion",
+    "LayerGradCam",
+    "GuidedGradCam",
+    "LayerConductance",
+    "LayerActivation",
+    "InternalInfluence",
+    "LayerGradientXActivation",
     "Control Var. Sobel Filter",
     "Control Var. Constant",
     "Control Var. Random Uniform",
+]
+
+
+AVAILABLE_XAI_METHODS_TF = [
+    "VanillaGradients",
+    "IntegratedGradients",
+    "GradientsInput",
+    "OcclusionSensitivity",
+    "GradCAM",
+    "SmoothGrad",
 ]
 
 
@@ -139,7 +161,7 @@ def available_metrics() -> Dict[str, List[str]]:
     return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
 
 
-def available_methods() -> List[str]:
+def available_methods_tf_explain() -> List[str]:
     """
     Retrieve the available explanation methods in Quantus.
 
@@ -148,7 +170,19 @@ def available_methods() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_XAI_METHODS]
+    return [c for c in AVAILABLE_XAI_METHODS_TF]
+
+
+def available_methods_captum() -> List[str]:
+    """
+    Retrieve the available explanation methods in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available explanation methods in Quantus.
+    """
+    return [c for c in AVAILABLE_XAI_METHODS_CAPTUM]
 
 
 def available_perturbation_functions() -> List[str]:
