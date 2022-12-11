@@ -7,7 +7,7 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 
-from tests.fixtures import *
+
 from quantus.helpers.model.tf_model import TensorFlowModel
 
 
@@ -22,7 +22,10 @@ def mock_input_tf_array():
     [
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax": False, "channel_first": False,},
+            {
+                "softmax": False,
+                "channel_first": False,
+            },
             np.array(
                 [
                     -0.723556,
@@ -40,7 +43,10 @@ def mock_input_tf_array():
         ),
         (
             lazy_fixture("mock_input_tf_array"),
-            {"softmax": True, "channel_first": False,},
+            {
+                "softmax": True,
+                "channel_first": False,
+            },
             softmax(
                 np.array(
                     [
