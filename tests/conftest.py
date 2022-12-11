@@ -2,9 +2,14 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from tensorflow.keras.datasets import cifar10
+from keras.datasets import cifar10
 
 from quantus.helpers.model.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+
+CIFAR_IMAGE_SIZE = 32
+MNIST_IMAGE_SIZE = 28
+BATCH_SIZE = 124
+MINI_BATCH_SIZE = 8
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -15,16 +20,6 @@ def load_mnist_model():
         torch.load("tests/assets/mnist", map_location="cpu", pickle_module=pickle)
     )
     return model
-
-
-# @pytest.fixture(scope="session", autouse=True)
-# def load_cifar10_model():
-#    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
-#   model = LeNet(nr_channels=3)
-#    model.load_state_dict(
-#        torch.load("tests/assets/cifar10", map_location="cpu", pickle_module=pickle)
-#    )
-#    return model
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -72,40 +67,40 @@ def load_1d_3ch_conv_model_tf():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
+    x_batch = (
+        np.loadtxt("tests/assets/mnist_x")
+        .astype(float)
+        .reshape((BATCH_SIZE, 1, MNIST_IMAGE_SIZE, MNIST_IMAGE_SIZE))
+    )[:MINI_BATCH_SIZE]
+    y_batch = np.loadtxt("tests/assets/mnist_y").astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_cifar10_images():
-    """Load a batch of Cifar10 digits: inputs and outputs to use for testing."""
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_batch = torch.as_tensor(
-        x_train[:124, ...].reshape(124, 3, 32, 32), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(y_train[:124].reshape(124), dtype=torch.int64).numpy()
+    """Load a batch of MNIST digits: inputs and outputs to use for testing."""
+    (x_train, y_train), (_, _) = cifar10.load_data()
+    x_batch = (
+        x_train[:BATCH_SIZE]
+        .reshape((BATCH_SIZE, 3, CIFAR_IMAGE_SIZE, CIFAR_IMAGE_SIZE))
+        .astype(float)
+    )[:MINI_BATCH_SIZE]
+    y_batch = y_train[:BATCH_SIZE].reshape(-1).astype(int)[:MINI_BATCH_SIZE]
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 @pytest.fixture(scope="session", autouse=True)
-def load_mnist_images_tf():
+def load_mnist_images_tf(load_mnist_images):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
-    x_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_x").reshape(124, 1, 28, 28), dtype=torch.float,
-    ).numpy()
-    y_batch = torch.as_tensor(
-        np.loadtxt("tests/assets/mnist_y"), dtype=torch.int64
-    ).numpy()
-    return {"x_batch": np.moveaxis(x_batch, 1, -1), "y_batch": y_batch}
+
+    return {
+        "x_batch": np.moveaxis(load_mnist_images["x_batch"], 1, -1),
+        "y_batch": load_mnist_images["y_batch"],
+    }
 
 
-@pytest.fixture
-def almost_uniform_1d(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -113,16 +108,16 @@ def almost_uniform_1d(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_1d_no_abatch_channel_last(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch_channel_last():
     return {
         "x_batch": np.random.randn(10, 100, 3),
         "y_batch": np.random.randint(0, 10, size=10),
     }
 
 
-@pytest.fixture
-def almost_uniform_1d_no_abatch(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -130,8 +125,8 @@ def almost_uniform_1d_no_abatch(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_2d(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d():
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -139,8 +134,8 @@ def almost_uniform_2d(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def almost_uniform_2d_no_abatch(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -148,8 +143,8 @@ def almost_uniform_2d_no_abatch(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def flat_image_array(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def flat_image_array():
     return {
         "x": np.zeros((1, 3 * 28 * 28)),
         "shape": (3, 28, 28),
@@ -157,8 +152,8 @@ def flat_image_array(scope="session", autouse=True):
     }
 
 
-@pytest.fixture
-def flat_sequence_array(scope="session", autouse=True):
+@pytest.fixture(scope="session", autouse=True)
+def flat_sequence_array():
     return {
         "x": np.zeros((1, 3 * 28)),
         "shape": (3, 28),
