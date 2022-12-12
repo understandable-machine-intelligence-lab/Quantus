@@ -15,7 +15,6 @@ from keras import Model
 from keras.models import clone_model
 import numpy as np
 import tensorflow as tf
-from warnings import warn
 from cachetools import cachedmethod, LRUCache
 import operator
 
@@ -213,32 +212,3 @@ class TensorFlowModel(ModelInterface):
             np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def _build_hidden_representation_model(
-        self, layer_names: Tuple, layer_indices: Tuple
-    ) -> Model:
-        """
-        Build a keras model, which outputs the internal representation of layers,
-        specified in layer_names or layer_indices, default all.
-        This requires re-tracing the model, so we cache it to improve metric evaluation time.
-        """
-        if layer_names == () and layer_indices == ():
-            warn(
-                "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
-                "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
-                " from original model. This can be very computationally expensive."
-            )
-
-        def is_layer_of_interest(index: int, name: str) -> bool:
-            if layer_names == () and layer_indices == ():
-                return True
-            return index in layer_indices or name in layer_names
-
-        outputs_of_interest = []
-        for i, layer in enumerate(self.model.layers):
-            if is_layer_of_interest(i, layer.name):
-                outputs_of_interest.append(layer.output)
-
-        hidden_representation_model = Model(self.model.input, outputs_of_interest)
-        return hidden_representation_model
