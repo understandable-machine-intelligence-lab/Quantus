@@ -10,10 +10,20 @@ from scipy.special import softmax
 
 from quantus.helpers.model.tf_model import TensorFlowModel
 
-
-@pytest.fixture
-def mock_input_tf_array():
-    return {"x": np.zeros((1, 28, 28, 1))}
+EXPECTED_LOGITS = np.array(
+    [
+        -0.723556,
+        0.06658217,
+        0.13982001,
+        -0.57502496,
+        0.19477458,
+        0.22203586,
+        -0.26914597,
+        0.23699084,
+        -0.41618308,
+        -0.5679564,
+    ]
+)
 
 
 @pytest.mark.tf_model
@@ -21,59 +31,31 @@ def mock_input_tf_array():
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
+            np.zeros((1, 28, 28, 1)),
             {
                 "softmax": False,
                 "channel_first": False,
             },
-            np.array(
-                [
-                    -0.723556,
-                    0.06658217,
-                    0.13982001,
-                    -0.57502496,
-                    0.19477458,
-                    0.22203586,
-                    -0.26914597,
-                    0.23699084,
-                    -0.41618308,
-                    -0.5679564,
-                ]
-            ),
+            EXPECTED_LOGITS,
         ),
         (
-            lazy_fixture("mock_input_tf_array"),
+            np.zeros((1, 28, 28, 1)),
             {
                 "softmax": True,
                 "channel_first": False,
             },
-            softmax(
-                np.array(
-                    [
-                        -0.723556,
-                        0.06658217,
-                        0.13982001,
-                        -0.57502496,
-                        0.19477458,
-                        0.22203586,
-                        -0.26914597,
-                        0.23699084,
-                        -0.41618308,
-                        -0.5679564,
-                    ]
-                ),
-            ),
+            softmax(EXPECTED_LOGITS),
         ),
     ],
 )
 def test_predict(
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
-    load_mnist_model_tf,
+    data: np.ndarray, params: dict, expected: np.ndarray, load_mnist_model_tf, mocker
 ):
+    mocker.patch(
+        "tensorflow.keras.Model.predict", lambda x, *args, **kwargs: EXPECTED_LOGITS
+    )
     model = TensorFlowModel(model=load_mnist_model_tf, **params)
-    out = model.predict(x=data["x"])
+    out = model.predict(x=data)
     assert np.allclose(out, expected), "Test failed."
 
 
