@@ -15,6 +15,7 @@ if version_info[1] <= 7:
 
     def version(s: str):
         return pkg_resources.get_distribution(s).version
+
 else:
     from importlib.metadata import version
 
