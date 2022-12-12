@@ -115,9 +115,9 @@ class TensorFlowModel(ModelInterface):
             Keyword arguments passed to tf.keras.Model.predict.
 
         Returns
-        -------
-        logits: np.ndarray
-            Output logits.
+        --------
+        np.ndarray
+            predictions of the same dimension and shape as the input, values in the range [0, 1].
         """
         # Generally, one should always prefer keras predict to __call__.
         # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
@@ -177,11 +177,15 @@ class TensorFlowModel(ModelInterface):
         return utils.make_channel_last(x, channel_first)
 
     def get_model(self):
-        """Get the original torch/tf model."""
+        """
+        Get the original tf model.
+        """
         return self.model
 
     def state_dict(self):
-        """Get a dictionary of the model's learnable parameters."""
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
         return self.model.get_weights()
 
     def load_state_dict(self, original_parameters):
@@ -191,8 +195,20 @@ class TensorFlowModel(ModelInterface):
     def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        Set order to top_down for cascading randomization.
-        Set order to independent for independent randomization.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
+
+        Returns
+        -------
+        layer.name, random_layer_model: string, torch.nn
+            The layer name and the model.
         """
         original_parameters = self.state_dict()
         random_layer_model = clone_model(self.model)
@@ -242,71 +258,3 @@ class TensorFlowModel(ModelInterface):
 
         hidden_representation_model = Model(self.model.input, outputs_of_interest)
         return hidden_representation_model
-
-
-
-    def get_hidden_representations(
-        self,
-        x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
-    ) -> np.ndarray:
-
-        """
-        Compute the model's internal representation of input x.
-        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
-        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
-        we make the implementation flexible.
-        It is up to the user whether all layers are used, or specific ones should be selected.
-        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            4D tensor, a batch of input datapoints
-        layer_names: List[str]
-            List with names of layers, from which output should be captured.
-        layer_indices: List[int]
-            List with indices of layers, from which output should be captured.
-            Intended to use in case, when layer names are not unique, or unknown.
-
-        Returns
-        -------
-        L: np.ndarray
-            2D tensor with shape (batch_size, None)
-        """
-
-        num_layers = len(self.model.layers)
-
-        if layer_indices is None:
-            layer_indices = []
-
-        # E.g., user can provide index -1, in order to get only representations of the last layer.
-        # E.g., for 7 layers in total, this would correspond to positive index 6.
-        positive_layer_indices = [
-            i if i >= 0 else num_layers + i for i in layer_indices
-        ]
-        if layer_names is None:
-            layer_names = []
-
-        # List is not hashable, so we pass names + indices as tuples.
-        hidden_representation_model = self._build_hidden_representation_model(
-            tuple(layer_names), tuple(positive_layer_indices)
-        )
-        predict_kwargs = self._get_predict_kwargs(**kwargs)
-        internal_representation = hidden_representation_model.predict(
-            x, **predict_kwargs
-        )
-        input_batch_size = x.shape[0]
-
-        # If we requested outputs only of 1 layer, keras will already return np.ndarray.
-        # Otherwise, keras returns a List of np.ndarray's.
-        if isinstance(internal_representation, np.ndarray):
-            return internal_representation.reshape((input_batch_size, -1))
-
-        internal_representation = [
-            i.reshape((input_batch_size, -1)) for i in internal_representation
-        ]
-        return np.hstack(internal_representation)
-
