@@ -41,7 +41,7 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {},
-            {},
+            {"explain_func_kwargs": {"method": "GradientShap"}},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -57,7 +57,7 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {},
-            {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
+            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
     ],
 )
@@ -92,23 +92,23 @@ def test_relative_input_stability(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {},
+            {"explain_func_kwargs": {"method": "GradientShap"}},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "abs": True,
                 "normalise": True,
                 "return_aggregate": True,
             },
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {},
-            {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
+            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
     ],
 )
@@ -144,7 +144,7 @@ def test_relative_output_stability(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {},
-            {},
+            {"explain_func_kwargs": {"method": "GradientShap"}},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -160,7 +160,7 @@ def test_relative_output_stability(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {},
-            {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
+            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
     ],
 )
@@ -197,7 +197,7 @@ def test_return_nan(metric, load_mnist_model_tf, load_mnist_images_tf):
     x_batch = load_mnist_images_tf["x_batch"]
     y_batch = predict(load_mnist_model_tf, x_batch)
 
-    rs = metric(perturb_func_kwargs=dict(amplitude=100))
+    rs = metric(perturb_func_kwargs={"upper_bound": 255, "lower_bound": -255})
     result = rs(
         model=load_mnist_model_tf,
         x_batch=x_batch,

@@ -16,11 +16,11 @@ if TYPE_CHECKING:
     import torch
     from quantus import ModelInterface
 
-from ..base_batched import BatchedPerturbationMetric
-from ...helpers.warn import warn_parameterisation
-from ...helpers.asserts import attributes_check
-from ...functions.normalise_func import normalise_by_negative
-from ...functions.perturb_func import uniform_noise, perturb_batch
+from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.warn import warn_parameterisation
+from quantus.helpers.asserts import attributes_check
+from quantus.functions.normalise_func import normalise_by_negative
+from quantus.functions.perturb_func import uniform_noise, perturb_batch
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -252,7 +252,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray
             4D tensor representing batch of input images.
         y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
+            1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
         args:
@@ -297,9 +297,11 @@ class RelativeOutputStability(BatchedPerturbationMetric):
 
             if not self._return_nan_when_prediction_changes:
                 continue
+
+            predicted_y = model.predict(x_batch).argmax(axis=-1)
+            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
             changed_prediction_indices = np.argwhere(
-                model.predict(x_batch).argmax(axis=-1)
-                != model.predict(x_perturbed).argmax(axis=-1)
+                predicted_y != predicted_y_perturbed
             ).reshape(-1)
 
             if len(changed_prediction_indices) == 0:

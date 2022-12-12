@@ -172,7 +172,7 @@ if util.find_spec("tensorflow"):
                 ),
                 tf.keras.layers.AveragePooling2D(),
                 tf.keras.layers.Conv2D(
-                    filters=16, kernel_size=(3, 3), activation="relu", name="test_conv"
+                    filters=16, kernel_size=(3, 3), activation="relu"
                 ),
                 tf.keras.layers.AveragePooling2D(),
                 tf.keras.layers.Flatten(),
