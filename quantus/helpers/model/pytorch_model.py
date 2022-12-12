@@ -300,6 +300,9 @@ class PyTorchModel(ModelInterface):
                 handle = layer.register_forward_hook(hook)
                 new_hooks.append(handle)
 
+        if len(new_hooks) == 0:
+            raise ValueError("No hidden representations were selected.")
+
         # Execute forward pass.
         with torch.no_grad():
             self.model(torch.Tensor(x).to(device))

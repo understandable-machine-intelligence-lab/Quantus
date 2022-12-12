@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import pytest
+import torch
 from pytest_lazyfixture import lazy_fixture
 from typing import Dict, TYPE_CHECKING
 import functools
 
-from tests.fixtures import *
 from quantus.functions.perturb_func import *
 from quantus.functions.explanation_func import explain
 from quantus.metrics.robustness import (
@@ -37,14 +38,8 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
     [
         # MNIST
         (
-            lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini_batch"),
-            {},
-            {},
-        ),
-        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -53,40 +48,16 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
-            {},
-            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
-        ),
-        # Cifar10
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {},
             {},
         ),
         (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
-            {
-                "normalise": True,
-                "return_aggregate": True,
-            },
-            {},
-        ),
-        (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),
-    ],
-    ids=[
-        "tf + mnist + default perturb_func",
-        "torch + mnist + normalise = True +  return_aggregate = True",
-        "torch + mnist + method = IntegratedGradients",
-        "torch + cifar10 + default perturb_func",
-        "tf + cifar10 + normalise = True + return_aggregate = True",
-        "tf + cifar10 + method = GradCam",
     ],
 )
 def test_relative_input_stability(
@@ -117,14 +88,8 @@ def test_relative_input_stability(
     [
         # MNIST
         (
-            lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini_batch"),
-            {},
-            {},
-        ),
-        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -133,40 +98,16 @@ def test_relative_input_stability(
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
-            {},
-            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
-        ),
-        # Cifar10
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {},
             {},
         ),
         (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
-            {
-                "normalise": True,
-                "return_aggregate": True,
-            },
-            {},
-        ),
-        (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),
-    ],
-    ids=[
-        "tf + mnist + default perturb_func",
-        "torch + mnist + normalise = True +  return_aggregate = True",
-        "torch + mnist + method = IntegratedGradients",
-        "torch + cifar10 + default perturb_func",
-        "tf + cifar10 + normalise = True + return_aggregate = True",
-        "tf + cifar10 + method = GradCam",
     ],
 )
 def test_relative_output_stability(
@@ -198,14 +139,8 @@ def test_relative_output_stability(
     [
         # MNIST
         (
-            lazy_fixture("load_cnn_2d_mnist"),
-            lazy_fixture("load_mnist_images_tf_mini_batch"),
-            {},
-            {},
-        ),
-        (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {
                 "normalise": True,
                 "return_aggregate": True,
@@ -214,40 +149,16 @@ def test_relative_output_stability(
         ),
         (
             lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
-            {},
-            {"explain_func_kwargs": {"method": "IntegratedGradients"}},
-        ),
-        # Cifar10
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images_mini_batch"),
+            lazy_fixture("load_mnist_images"),
             {},
             {},
         ),
         (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
-            {
-                "normalise": True,
-                "return_aggregate": True,
-            },
-            {},
-        ),
-        (
-            lazy_fixture("load_cnn_2d_cifar"),
-            lazy_fixture("load_cifar10_images_tf_mini_batch"),
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
             {},
             {"explain_func_kwargs": {"method": "GradCam", "gc_layer": "test_conv"}},
         ),
-    ],
-    ids=[
-        "tf + mnist + default perturb_func",
-        "torch + mnist + normalise = True +  return_aggregate = True",
-        "torch + mnist + method = IntegratedGradients",
-        "torch + cifar10 + default perturb_func",
-        "tf + cifar10 + normalise = True + return_aggregate = True",
-        "tf + cifar10 + method = GradCam",
     ],
 )
 def test_relative_representation_stability(
@@ -279,13 +190,13 @@ def test_relative_representation_stability(
     [RIS_CONSTRUCTOR, ROS_CONSTRUCTOR, RRS_CONSTRUCTOR],
     ids=["RIS", "ROS", "RRS"],
 )
-def test_return_nan(metric, load_cnn_2d_mnist, load_mnist_images_tf_mini_batch):
-    x_batch = load_mnist_images_tf_mini_batch["x_batch"]
-    y_batch = predict(load_cnn_2d_mnist, x_batch)
+def test_return_nan(metric, load_mnist_model_tf, load_mnist_images_tf):
+    x_batch = load_mnist_images_tf["x_batch"]
+    y_batch = predict(load_mnist_model_tf, x_batch)
 
     rs = metric(perturb_func_kwargs=dict(amplitude=100))
     result = rs(
-        model=load_cnn_2d_mnist,
+        model=load_mnist_model_tf,
         x_batch=x_batch,
         y_batch=y_batch,
         explain_func=explain,
