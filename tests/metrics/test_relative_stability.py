@@ -40,16 +40,17 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "normalise": True,
-                "return_aggregate": True,
-            },
+            {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {},
+            {
+                "abs": True,
+                "normalise": True,
+                "return_aggregate": True,
+            },
             {},
         ),
         (
@@ -90,11 +91,12 @@ def test_relative_input_stability(
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
+            {},
             {
+                "abs": True,
                 "normalise": True,
                 "return_aggregate": True,
             },
-            {},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -141,16 +143,17 @@ def test_relative_output_stability(
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "normalise": True,
-                "return_aggregate": True,
-            },
+            {},
             {},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {},
+            {
+                "abs": True,
+                "normalise": True,
+                "return_aggregate": True,
+            },
             {},
         ),
         (

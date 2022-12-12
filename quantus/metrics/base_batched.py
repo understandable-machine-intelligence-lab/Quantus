@@ -6,9 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
 import math
-import re
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
@@ -19,6 +17,7 @@ from quantus.metrics.base import Metric
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.utils import expand_attribution_channel
 
 
 class BatchedMetric(Metric):
