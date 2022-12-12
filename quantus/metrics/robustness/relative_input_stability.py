@@ -58,7 +58,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         nr_samples: int
             The number of samples iterated, default=200.
         abs: boolean
-             Indicates whether absolute operation is applied on the attribution.
+            Indicates whether absolute operation is applied on the attribution.
         normalise: boolean
             Flag stating if the attributions should be normalised
         normalise_func: callable
@@ -246,7 +246,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray
             4D tensor representing batch of input images.
         y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
+            1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
         args:
@@ -291,10 +291,13 @@ class RelativeInputStability(BatchedPerturbationMetric):
 
             if not self._return_nan_when_prediction_changes:
                 continue
+
+            predicted_y = model.predict(x_batch).argmax(axis=-1)
+            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
             changed_prediction_indices = np.argwhere(
-                model.predict(x_batch).argmax(axis=-1)
-                != model.predict(x_perturbed).argmax(axis=-1)
+                predicted_y != predicted_y_perturbed
             ).reshape(-1)
+
             if len(changed_prediction_indices) == 0:
                 continue
             ris_batch[index, changed_prediction_indices] = np.nan

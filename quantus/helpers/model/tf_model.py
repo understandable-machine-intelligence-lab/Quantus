@@ -230,6 +230,7 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
+
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
         self, layer_names: Tuple, layer_indices: Tuple
