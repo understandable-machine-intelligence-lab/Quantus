@@ -26,7 +26,7 @@ def load_mnist_model():
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
-    model.load_weights("tests/assets/mnist_tf_weights/")
+    model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
 

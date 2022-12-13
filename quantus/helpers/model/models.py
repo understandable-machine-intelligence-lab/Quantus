@@ -155,53 +155,52 @@ if util.find_spec("torch"):
 
 
 if util.find_spec("tensorflow"):
-
     import tensorflow as tf
-    from tensorflow.keras.models import Sequential
 
-    class LeNetTF(Sequential):
+    def LeNetTF() -> tf.keras.Model:
         """
-        A Tensorflow implementation of LeNet architecture.
-            Adapted from: https://www.tensorflow.org/datasets/keras_example.
+        A Tensorflow implementation of LeNet5 architecture.
         """
 
-        def __init__(self):
-            super().__init__(
-                [
-                    tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
-                    tf.keras.layers.Dense(128, activation="relu"),
-                    tf.keras.layers.Dense(10),
-                ]
-            )
-            self.compile(
-                optimizer=tf.keras.optimizers.Adam(0.001),
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-            )
+        return tf.keras.Sequential(
+            [
+                tf.keras.layers.Conv2D(
+                    filters=6,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    input_shape=(28, 28, 1),
+                ),
+                tf.keras.layers.AveragePooling2D(),
+                tf.keras.layers.Conv2D(
+                    filters=16, kernel_size=(3, 3), activation="relu"
+                ),
+                tf.keras.layers.AveragePooling2D(),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(units=120, activation="relu"),
+                tf.keras.layers.Dense(units=84, activation="relu"),
+                tf.keras.layers.Dense(units=10),
+            ],
+            name="LeNetTF",
+        )
 
-    class ConvNet1DTF(Sequential):
+    def ConvNet1DTF(n_channels: int, seq_len: int, n_classes: int) -> tf.keras.Model:
+
         """
         A Tensorflow implementation of 1D-convolutional architecture.
         """
 
-        def __init__(self, n_channels, seq_len, n_classes):
-            super().__init__(
-                [
-                    tf.keras.layers.Input(shape=(seq_len, n_channels)),
-                    tf.keras.layers.Conv1D(filters=6, kernel_size=5, strides=1),
-                    tf.keras.layers.Activation("relu"),
-                    tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
-                    tf.keras.layers.Conv1D(filters=16, kernel_size=5, strides=1),
-                    tf.keras.layers.Activation("relu"),
-                    tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
-                    tf.keras.layers.Flatten(),
-                    tf.keras.layers.Dense(128, activation="relu"),
-                    tf.keras.layers.Dense(84, activation="relu"),
-                    tf.keras.layers.Dense(n_classes),
-                ]
-            )
-            self.compile(
-                optimizer=tf.keras.optimizers.Adam(0.001),
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-            )
+        return tf.keras.Sequential(
+            [
+                tf.keras.layers.Input(shape=(seq_len, n_channels)),
+                tf.keras.layers.Conv1D(filters=6, kernel_size=5, strides=1),
+                tf.keras.layers.Activation("relu"),
+                tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
+                tf.keras.layers.Conv1D(filters=16, kernel_size=5, strides=1),
+                tf.keras.layers.Activation("relu"),
+                tf.keras.layers.AveragePooling1D(pool_size=2, strides=2),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(128, activation="relu"),
+                tf.keras.layers.Dense(84, activation="relu"),
+                tf.keras.layers.Dense(n_classes),
+            ]
+        )

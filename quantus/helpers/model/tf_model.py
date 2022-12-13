@@ -6,28 +6,48 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Dict, Optional, Tuple
+from __future__ import annotations
 
+from typing import Dict, Optional, Tuple
+from keras.layers import Dense
+from keras import activations
+from keras import Model
+from keras.models import clone_model
 import numpy as np
-from tensorflow.keras import activations
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import clone_model
+import tensorflow as tf
+from cachetools import cachedmethod, LRUCache
+import operator
 
-from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers import utils
 
 
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
+    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
+    _available_predict_kwargs = [
+        "batch_size",
+        "verbose",
+        "steps",
+        "callbacks",
+        "max_queue_size",
+        "workers",
+        "use_multiprocessing",
+    ]
+
     def __init__(
         self,
-        model,
+        model: Model,
         channel_first: bool = True,
         softmax: bool = False,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
+
         """
         Initialisation of ModelInterface class.
 
@@ -49,8 +69,40 @@ class TensorFlowModel(ModelInterface):
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
+        # get_hidden_representations needs to rebuild and re-trace the model.
+        # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
+        # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
+        self.cache = LRUCache(100)
 
-    def predict(self, x, **kwargs):
+    def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
+        """
+        Use kwargs of predict call if specified, but don't overwrite object attribute.
+        Filter out those, which are supported by Keras API.
+        """
+        all_kwargs = {**self.model_predict_kwargs, **kwargs}
+        predict_kwargs = {
+            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
+        }
+        return predict_kwargs
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _build_model_with_linear_top(self) -> Model:
+        """
+        In a case model has a softmax on top, and we want linear,
+        we have to rebuild the model and replace top with linear activation.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
+        """
+
+        config = self.model.layers[-1].get_config()
+        config["activation"] = activations.linear
+        weights = self.model.layers[-1].get_weights()
+
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+        new_model.layers[-1].set_weights(weights)
+        return new_model
+
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Predict on the given input.
 
@@ -59,33 +111,31 @@ class TensorFlowModel(ModelInterface):
         x: np.ndarray
             A given input that the wrapped model predicts on.
         kwargs: optional
-            Keyword arguments.
+            Keyword arguments passed to tf.keras.Model.predict.
 
         Returns
         --------
         np.ndarray
             predictions of the same dimension and shape as the input, values in the range [0, 1].
         """
+        # Generally, one should always prefer keras predict to __call__.
+        # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
 
-        # Use kwargs of predict call if specified, but don't overwrite object attribute
-        model_predict_kwargs = {**self.model_predict_kwargs, **kwargs}
+        output_activation = self.model.layers[-1].activation
+        target_activation = activations.softmax if self.softmax else activations.linear
 
-        output_act = self.model.layers[-1].activation
-        target_act = activations.softmax if self.softmax else activations.linear
+        if output_activation == target_activation:
+            return self.model.predict(x, **predict_kwargs)
 
-        if output_act == target_act:
-            return self.model(x, training=False, **model_predict_kwargs).numpy()
+        if self.softmax and output_activation == activations.linear:
+            logits = self.model.predict(x, **predict_kwargs)
+            return tf.nn.softmax(logits)
 
-        config = self.model.layers[-1].get_config()
-        config["activation"] = target_act
-
-        weights = self.model.layers[-1].get_weights()
-
-        output_layer = Dense(**config)(self.model.layers[-2].output)
-        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-        new_model.layers[-1].set_weights(weights)
-
-        return new_model(x, training=False, **model_predict_kwargs).numpy()
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
+        predict_model = self._build_model_with_linear_top()
+        return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(
         self,
@@ -95,12 +145,12 @@ class TensorFlowModel(ModelInterface):
         batched: bool = False,
     ):
         """
-        Reshape input into model expected input.
+        Reshape input into model-expected input.
 
         Parameters
         ----------
         x: np.ndarray
-             A given input that is shaped.
+            A given input that is shaped.
         shape: Tuple[int...]
             The shape of the input.
         channel_first: boolean, optional
@@ -162,7 +212,11 @@ class TensorFlowModel(ModelInterface):
         original_parameters = self.state_dict()
         random_layer_model = clone_model(self.model)
 
-        layers = [l for l in random_layer_model.layers if len(l.get_weights()) > 0]
+        layers = [
+            _layer
+            for _layer in random_layer_model.layers
+            if len(_layer.get_weights()) > 0
+        ]
 
         if order == "top_down":
             layers = layers[::-1]
