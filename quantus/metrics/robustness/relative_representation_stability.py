@@ -290,9 +290,15 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             a_batch = self.generate_normalised_explanations_batch(
                 x_batch, y_batch, _explain_func
             )
-
+        # Retrieve internal representation for provided inputs.
+        internal_representations = model.get_hidden_representations(
+            x_batch, self._layer_names, self._layer_indices
+        )
+        # Prepare output array.
         rrs_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
+
         for index in range(self._nr_samples):
+            # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
@@ -300,27 +306,27 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+            # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
-            internal_representations = model.get_hidden_representations(
-                x_batch, self._layer_names, self._layer_indices
-            )
+            # Retrieve internal representation for perturbed inputs.
             internal_representations_perturbed = model.get_hidden_representations(
                 x_perturbed, self._layer_names, self._layer_indices
             )
+            # Compute maximization's objective.
             rrs = self.relative_representation_stability_objective(
                 internal_representations,
                 internal_representations_perturbed,
                 a_batch,
                 a_batch_perturbed,
             )
-
             rrs_batch[index] = rrs
-
+            # We're done with this sample if `return_nan_when_prediction_changes`==False.
             if not self._return_nan_when_prediction_changes:
                 continue
 
+            # If perturbed input caused change in prediction, then it's RRS=nan.
             predicted_y = model.predict(x_batch).argmax(axis=-1)
             predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
             changed_prediction_indices = np.argwhere(
@@ -331,6 +337,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
                 continue
             rrs_batch[index, changed_prediction_indices] = np.nan
 
+        # Compute RRS.
         result = np.max(rrs_batch, axis=0)
         if self.return_aggregate:
             result = [self.aggregate_func(result)]

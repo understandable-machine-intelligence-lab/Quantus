@@ -238,7 +238,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Parameters
@@ -270,10 +270,10 @@ class RelativeInputStability(BatchedPerturbationMetric):
             a_batch = self.generate_normalised_explanations_batch(
                 x_batch, y_batch, _explain_func
             )
+        # Prepare output array.
         ris_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
-
         for index in range(self._nr_samples):
-
+            # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
@@ -281,17 +281,20 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+            # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
+            # Compute maximization's objective.
             ris = self.relative_input_stability_objective(
                 x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
             ris_batch[index] = ris
-
+            # We're done with this sample if `return_nan_when_prediction_changes`==False.
             if not self._return_nan_when_prediction_changes:
                 continue
 
+            # If perturbed input caused change in prediction, then it's RIS=nan.
             predicted_y = model.predict(x_batch).argmax(axis=-1)
             predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
             changed_prediction_indices = np.argwhere(
@@ -302,8 +305,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 continue
             ris_batch[index, changed_prediction_indices] = np.nan
 
+        # Compute RIS.
         result = np.max(ris_batch, axis=0)
-
         if self.return_aggregate:
             result = [self.aggregate_func(result)]
         return result
