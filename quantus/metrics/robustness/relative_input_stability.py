@@ -6,16 +6,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
 from functools import partial
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable, Dict, List
     import tensorflow as tf
     import torch
-    from quantus import ModelInterface
 
+
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
@@ -50,7 +50,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
         return_nan_when_prediction_changes: bool = True,
-        **kwargs: Dict[str, ...],
+        **kwargs,
     ):
         """
         Parameters
@@ -136,7 +136,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         channel_first: bool = True,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[float] | float:
+    ) -> List[float]:
         """
         Parameters
         ----------
@@ -177,7 +177,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
          - Compute relative input stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result = super().__call__(
+        return super().__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -191,10 +191,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        if isinstance(result, Iterable):
-            return list(result)
-        else:
-            return float(result)
 
     def relative_input_stability_objective(
         self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray
@@ -237,7 +233,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
-        a_batch: Optional[np.ndarray],
+        a_batch: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -266,10 +262,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             self.explain_func, model=model.get_model(), **self.explain_func_kwargs
         )
 
-        if a_batch is None:
-            a_batch = self.generate_normalised_explanations_batch(
-                x_batch, y_batch, _explain_func
-            )
         # Prepare output array.
         ris_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
         for index in range(self._nr_samples):

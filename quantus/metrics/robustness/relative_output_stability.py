@@ -6,16 +6,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
 from functools import partial
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable, Dict, List
     import tensorflow as tf
     import torch
-    from quantus import ModelInterface
 
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
@@ -54,7 +53,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
         return_nan_when_prediction_changes: bool = True,
-        **kwargs: Dict[str, ...],
+        **kwargs,
     ):
         """
         Parameters
@@ -140,7 +139,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         channel_first: bool = True,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[float] | float:
+    ) -> List[float]:
         """
         Parameters
         ----------
@@ -181,7 +180,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
          - Compute relative input output objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result = super().__call__(
+        return super().__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -195,10 +194,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        if isinstance(result, Iterable):
-            return list(result)
-        else:
-            return float(result)
 
     def relative_output_stability_objective(
         self,
@@ -243,7 +238,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         model: ModelInterface,
         x_batch: np.ndarray,
         y_batch: np.ndarray,
-        a_batch: Optional[np.ndarray],
+        a_batch: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -257,8 +252,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
         kwargs:
             Unused.
 
@@ -272,11 +265,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         _explain_func = partial(
             self.explain_func, model=model.get_model(), **self.explain_func_kwargs
         )
-
-        if a_batch is None:
-            a_batch = self.generate_normalised_explanations_batch(
-                x_batch, y_batch, _explain_func
-            )
         # Execute forward pass on provided inputs.
         logits = model.predict(x_batch)
         # Prepare output array.
