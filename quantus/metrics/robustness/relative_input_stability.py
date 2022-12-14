@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
-from quantus.functions.normalise_func import normalise_by_negative
+from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 
 
@@ -86,7 +86,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         """
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_average_second_moment_estimate
 
         if perturb_func is None:
             perturb_func = uniform_noise
@@ -235,8 +235,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
-        *args,
-        **kwargs,
+        **kwargs
     ) -> np.ndarray:
         """
         Parameters
@@ -249,8 +248,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
         kwargs:
             Unused.
 
