@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
-from quantus.functions.normalise_func import normalise_by_negative
+from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 
 
@@ -95,7 +95,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         """
 
         if normalise_func is None:
-            normalise_func = normalise_by_negative
+            normalise_func = normalise_by_average_second_moment_estimate
 
         if perturb_func is None:
             perturb_func = uniform_noise
@@ -254,7 +254,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: Optional[np.ndarray],
-        *args,
         **kwargs,
     ) -> np.ndarray:
         """
