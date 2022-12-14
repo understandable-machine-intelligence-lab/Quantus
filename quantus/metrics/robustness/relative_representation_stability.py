@@ -6,16 +6,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List
 import numpy as np
 from functools import partial
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable, Dict, List
     import tensorflow as tf
     import torch
-    from quantus import ModelInterface
 
+
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
@@ -152,8 +152,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         softmax: bool = False,
         channel_first: bool = True,
         batch_size: int = 64,
-        **kwargs: Dict[str, ...],
-    ) -> List[float] | float:
+        **kwargs,
+    ) -> List[float]:
         """
         Parameters
         ----------
@@ -194,7 +194,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
          - Compute relative representation stability objective, find max value with respect to `xs`
          - In practise we just use `max` over a finite `xs_batch`
         """
-        result = super().__call__(
+        return super().__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -208,10 +208,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        if isinstance(result, Iterable):
-            return list(result)
-        else:
-            return float(result)
 
     def relative_representation_stability_objective(
         self,
@@ -270,8 +266,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
         kwargs:
             Unused.
 
@@ -285,11 +279,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         _explain_func = partial(
             self.explain_func, model=model.get_model(), **self.explain_func_kwargs
         )
-
-        if a_batch is None:
-            a_batch = self.generate_normalised_explanations_batch(
-                x_batch, y_batch, _explain_func
-            )
         # Retrieve internal representation for provided inputs.
         internal_representations = model.get_hidden_representations(
             x_batch, self._layer_names, self._layer_indices
