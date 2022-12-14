@@ -138,6 +138,12 @@ class RelativeInputStability(BatchedPerturbationMetric):
         **kwargs,
     ) -> List[float]:
         """
+        For each image `x`:
+         - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
+         - Compute explanations `e_x` and `e_xs`.
+         - Compute relative input stability objective, find max value with respect to `xs`.
+         - In practise we just use `max` over a finite `xs_batch`.
+
         Parameters
         ----------
         model: tf.keras.Model, torch.nn.Module
@@ -168,14 +174,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
         -------
         relative input stability: float, np.ndarray
             float in case `return_aggregate=True`, otherwise np.ndarray of floats
-
-
-        For each image `x`:
-         - generate `num_perturbations` perturbed `xs` in the neighborhood of `x`
-         - find `xs` which results in the same label
-         - Compute explanations `e_x` and `e_xs`
-         - Compute relative input stability objective, find max value with respect to `xs`
-         - In practise we just use `max` over a finite `xs_batch`
         """
         return super().__call__(
             model=model,
