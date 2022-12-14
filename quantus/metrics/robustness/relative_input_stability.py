@@ -191,7 +191,10 @@ class RelativeInputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
+        if isinstance(result, Iterable):
+            return list(result)
+        else:
+            return float(result)
 
     def relative_input_stability_objective(
         self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray

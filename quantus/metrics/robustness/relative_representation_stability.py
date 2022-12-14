@@ -208,7 +208,10 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
+        if isinstance(result, Iterable):
+            return list(result)
+        else:
+            return float(result)
 
     def relative_representation_stability_objective(
         self,

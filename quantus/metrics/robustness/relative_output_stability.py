@@ -195,7 +195,10 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-        return list(result) if isinstance(result, Iterable) else float(result)  # noqa
+        if isinstance(result, Iterable):
+            return list(result)
+        else:
+            return float(result)
 
     def relative_output_stability_objective(
         self,
