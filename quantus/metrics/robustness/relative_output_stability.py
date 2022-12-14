@@ -277,10 +277,13 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             a_batch = self.generate_normalised_explanations_batch(
                 x_batch, y_batch, _explain_func
             )
+        # Execute forward pass on provided inputs.
         logits = model.predict(x_batch)
+        # Prepare output array.
         ros_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
 
         for index in range(self._nr_samples):
+            # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
                 indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
@@ -288,18 +291,22 @@ class RelativeOutputStability(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+            # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
+            # Execute forward pass on perturbed inputs.
             logits_perturbed = model.predict(x_perturbed)
+            # Compute maximization's objective.
             ros = self.relative_output_stability_objective(
                 logits, logits_perturbed, a_batch, a_batch_perturbed
             )
             ros_batch[index] = ros
-
+            # We're done with this sample if `return_nan_when_prediction_changes`==False.
             if not self._return_nan_when_prediction_changes:
                 continue
 
+            # If perturbed input caused change in prediction, then it's ROS=nan.
             predicted_y = model.predict(x_batch).argmax(axis=-1)
             predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
             changed_prediction_indices = np.argwhere(
@@ -310,6 +317,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
                 continue
             ros_batch[index, changed_prediction_indices] = np.nan
 
+        # Compute ROS.
         result = np.max(ros_batch, axis=0)
         if self.return_aggregate:
             result = [self.aggregate_func(result)]
