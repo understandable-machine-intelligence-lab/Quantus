@@ -36,7 +36,6 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
 @pytest.mark.parametrize(
     "model,data,init_kwargs,call_kwargs",
     [
-        # MNIST
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
@@ -88,7 +87,6 @@ def test_relative_input_stability(
 @pytest.mark.parametrize(
     "model,data,init_kwargs,call_kwargs",
     [
-        # MNIST
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
@@ -141,7 +139,6 @@ def test_relative_output_stability(
 @pytest.mark.parametrize(
     "model,data,init_kwargs,call_kwargs",
     [
-        # MNIST
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
