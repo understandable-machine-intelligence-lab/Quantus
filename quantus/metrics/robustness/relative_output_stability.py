@@ -171,6 +171,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         channel_first: boolean, optional
             Indicates of the image dimensions are channel first, or channel last.
             Inferred from the input shape if None.
+        batch_size: int
+            The batch size to be used.
         kwargs:
             not used, deprecated
         Returns
