@@ -20,6 +20,7 @@ from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.helpers.utils import expand_attribution_channel
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -228,13 +229,17 @@ class RelativeOutputStability(BatchedPerturbationMetric):
 
         num_dim = e_x.ndim
         if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)  # noqa
+            norm_function = lambda arr: np.linalg.norm(
+                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
+            )  # noqa
         elif num_dim == 3:
             norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
         elif num_dim == 2:
             norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
         else:
-            raise ValueError("Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive).")
+            raise ValueError(
+                "Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
+            )
 
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
@@ -245,6 +250,33 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         denominator = np.linalg.norm(denominator, axis=-1)
         denominator += (denominator == 0) * self._eps_min  # prevent division by 0
         return nominator / denominator
+
+    def generate_normalised_explanations_batch(
+        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
+    ) -> np.ndarray:
+        """
+        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
+
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            4D tensor representing batch of input images.
+        y_batch: np.ndarray
+             1D tensor, representing predicted labels for the x_batch.
+        explain_func: callable
+            Function to generate explanations, takes only inputs,targets kwargs.
+
+        Returns
+        -------
+        a_batch: np.ndarray
+            A batch of explanations.
+        """
+        a_batch = explain_func(inputs=x_batch, targets=y_batch)
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+        return expand_attribution_channel(a_batch, x_batch)
 
     def evaluate_batch(
         self,
