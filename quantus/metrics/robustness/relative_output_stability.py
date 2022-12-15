@@ -226,9 +226,19 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             ROS maximization objective.
         """
 
+        num_dim = e_x.ndim
+        if num_dim == 4:
+            norm_function = lambda arr: np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)  # noqa
+        elif num_dim == 3:
+            norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
+        elif num_dim == 2:
+            norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
+        else:
+            raise ValueError("Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive).")
+
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = np.linalg.norm(np.linalg.norm(nominator, axis=(-1, -2)), axis=-1)  # noqa
+        nominator = norm_function(nominator)
         # fmt: on
 
         denominator = h_x - h_xs
