@@ -153,9 +153,11 @@ You can alternatively use your own customised explanation function
 (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
 
 ```python
-def your_own_callable(model, x_batch, y_batch):
-  """Logic goes here to compute the attributions in the same shape as x_batch."""
-  return explanation(model, x_batch, y_batch)
+def your_own_callable(model, inputs, targets, **kwargs) -> np.ndarray:
+  """Logic goes here to compute the attributions and return an 
+  explanation  in the same shape as x_batch (np.array), 
+  (flatten channels if necessary)."""
+  return explanation(model, inputs, targets)
 
 scores = metric(
     model=model,
