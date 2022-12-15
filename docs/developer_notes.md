@@ -8,6 +8,6 @@ $ make html
 ```
 
 #### Step 2. View edits and make changes accordingly.
-http://localhost:63342/Projects/quantus/docs/build/html/index.html#
+http://localhost:63342/Projects/quantus/docs/build/html/index.html
 
 A copy is made of CONTRIBUTING.md to docs_dev/CONTRIBUTING.md. To avoid any inconsistencies, edit in CONTRIBUTING.md and overwrite in docs_dev/CONTRIBUTING.md.
