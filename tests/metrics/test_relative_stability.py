@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 RIS_CONSTRUCTOR = functools.partial(RelativeInputStability, nr_samples=5, disable_warnings=True)
 ROS_CONSTRUCTOR = functools.partial(RelativeOutputStability, nr_samples=5, disable_warnings=True)
 RRS_CONSTRUCTOR = functools.partial(RelativeRepresentationStability, nr_samples=5, disable_warnings=True)
+
+
 # fmt: on
 
 
@@ -58,6 +60,18 @@ def predict(model: tf.keras.Model | torch.nn.Module, x_batch: np.ndarray) -> np.
             lazy_fixture("load_mnist_images_tf"),
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {},
+            {},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
+            {},
+            {},
         ),
     ],
 )
@@ -110,6 +124,18 @@ def test_relative_input_stability(
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
         ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {},
+            {},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
+            {},
+            {},
+        ),
     ],
 )
 def test_relative_output_stability(
@@ -161,6 +187,18 @@ def test_relative_output_stability(
             lazy_fixture("load_mnist_images_tf"),
             {},
             {"explain_func_kwargs": {"method": "IntegratedGradients"}},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d"),
+            {},
+            {},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
+            {},
+            {},
         ),
     ],
 )
