@@ -178,7 +178,7 @@ def evaluate(
             elif isinstance(value, np.ndarray):
                 explain_funcs[
                     method
-                ] = explain  # TODO: we need to know explain func even if array is passed
+                ] = explain
                 a_batch = value
 
             else:
