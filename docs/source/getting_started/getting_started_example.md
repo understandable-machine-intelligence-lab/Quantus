@@ -257,7 +257,7 @@ results = quantus.evaluate(
       model=model,
       x_batch=x_batch,
       y_batch=y_batch,
-      **{"softmax": False,}
+      call_kwargs={"0": {"softmax": False,},}
 )
 ```
 
