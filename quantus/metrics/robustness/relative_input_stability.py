@@ -276,6 +276,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
+        *args,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -289,6 +290,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
+        args:
+            Unused.
         kwargs:
             Unused.
 
