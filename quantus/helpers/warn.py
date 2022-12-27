@@ -37,6 +37,7 @@ def check_kwargs(kwargs):
             "Passing unexpected keyword arguments is now discouraged. Please adjust "
             "your code to pass your kwargs in dictionaries to the arguments named "
             "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
+            "For evaluate function pass explain_func_kwargs and call_krawgs."
             "And also, always make sure to check for typos. "
             "If these API changes are not suitable for your project's needs, "
             "please install quantus using 'pip install quantus==0.1.6' "

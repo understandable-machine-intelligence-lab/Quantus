@@ -12,13 +12,14 @@ import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
+from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.explanation_func import explain
 
 
 def evaluate(
     metrics: Dict,
-    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], List[str]],
+    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray], List[str]],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
@@ -28,6 +29,7 @@ def evaluate(
     progress: bool = False,
     explain_func_kwargs: Optional[dict] = None,
     call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    **kwargs,
 ) -> Optional[dict]:
     """
     A method to evaluate some explanation methods given some metrics.
@@ -61,12 +63,15 @@ def evaluate(
         Keyword arguments to be passed to explain_func on call.
     call_kwargs: Dict[str, Dict]
         Keyword arguments for the call of the metrics, keys are names for arg set and values are argument dictionaries.
-
+    kwargs: optional
+        Deprecated keyword arguments for the call of the metrics.
     Returns
     -------
     results: dict
         A dictionary with the results.
     """
+
+    warn.check_kwargs(kwargs)
 
     if xai_methods is None:
         print("Define the explanation methods that you want to evaluate.")
@@ -126,6 +131,7 @@ def evaluate(
                                 **{"method": method},
                             },
                             **call_kwarg,
+                            **kwargs,
                         )
                     )
 
@@ -212,6 +218,7 @@ def evaluate(
                                 **{"method": method},
                             },
                             **call_kwarg,
+                            **kwargs,
                         )
                     )
 
