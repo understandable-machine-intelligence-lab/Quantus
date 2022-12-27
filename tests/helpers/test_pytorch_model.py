@@ -154,3 +154,18 @@ def test_get_random_layer_generator(load_mnist_model):
         new_layer = getattr(random_layer_model, layer_name).parameters()
 
         assert layer != new_layer, "Test failed."
+
+
+@pytest.mark.pytorch_model
+@pytest.mark.parametrize(
+    "params",
+    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}, {"layer_indices": [-1, -2]}],
+    ids=["all layers", "2nd conv", "1st 2 layers", "last 2 layers"],
+)
+def test_get_hidden_layers_output(load_mnist_model, params):
+    model = PyTorchModel(load_mnist_model, channel_first=True)
+    X = np.random.random((32, 1, 28, 28))
+    result = model.get_hidden_representations(X, **params)
+    assert isinstance(result, np.ndarray), "Must be a np.ndarray"
+    assert len(result.shape) == 2, "Must be a batch of 1D tensors"
+    assert result.shape[0] == X.shape[0], "Must have same batch size as input"
