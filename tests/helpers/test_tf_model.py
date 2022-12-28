@@ -7,13 +7,23 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 from scipy.special import softmax
 
-from tests.fixtures import *
+
 from quantus.helpers.model.tf_model import TensorFlowModel
 
-
-@pytest.fixture
-def mock_input_tf_array():
-    return {"x": np.zeros((1, 28, 28, 1))}
+EXPECTED_LOGITS = np.array(
+    [
+        -0.723556,
+        0.06658217,
+        0.13982001,
+        -0.57502496,
+        0.19477458,
+        0.22203586,
+        -0.26914597,
+        0.23699084,
+        -0.41618308,
+        -0.5679564,
+    ]
+)
 
 
 @pytest.mark.tf_model
@@ -21,53 +31,31 @@ def mock_input_tf_array():
     "data,params,expected",
     [
         (
-            lazy_fixture("mock_input_tf_array"),
-            {"softmax": False, "channel_first": False,},
-            np.array(
-                [
-                    -0.723556,
-                    0.06658217,
-                    0.13982001,
-                    -0.57502496,
-                    0.19477458,
-                    0.22203586,
-                    -0.26914597,
-                    0.23699084,
-                    -0.41618308,
-                    -0.5679564,
-                ]
-            ),
+            np.zeros((1, 28, 28, 1)),
+            {
+                "softmax": False,
+                "channel_first": False,
+            },
+            EXPECTED_LOGITS,
         ),
         (
-            lazy_fixture("mock_input_tf_array"),
-            {"softmax": True, "channel_first": False,},
-            softmax(
-                np.array(
-                    [
-                        -0.723556,
-                        0.06658217,
-                        0.13982001,
-                        -0.57502496,
-                        0.19477458,
-                        0.22203586,
-                        -0.26914597,
-                        0.23699084,
-                        -0.41618308,
-                        -0.5679564,
-                    ]
-                ),
-            ),
+            np.zeros((1, 28, 28, 1)),
+            {
+                "softmax": True,
+                "channel_first": False,
+            },
+            softmax(EXPECTED_LOGITS),
         ),
     ],
 )
 def test_predict(
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
-    load_mnist_model_tf,
+    data: np.ndarray, params: dict, expected: np.ndarray, load_mnist_model_tf, mocker
 ):
+    mocker.patch(
+        "tensorflow.keras.Model.predict", lambda x, *args, **kwargs: EXPECTED_LOGITS
+    )
     model = TensorFlowModel(model=load_mnist_model_tf, **params)
-    out = model.predict(x=data["x"])
+    out = model.predict(x=data)
     assert np.allclose(out, expected), "Test failed."
 
 
@@ -130,3 +118,24 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     assert reduce(
         and_, [np.allclose(x, y) for x, y in zip(before, after)]
     ), "Test failed."
+
+
+
+@pytest.mark.tf_model
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"layer_names": ["test_conv"]},
+        {"layer_indices": [0, 1]},
+        {"layer_indices": [-1, -2]},
+    ],
+    ids=["all layers", "2nd conv", "first 2 layers", "last 2 layers"],
+)
+def test_get_hidden_layer_output_sequential(load_mnist_model_tf, params):
+    model = TensorFlowModel(model=load_mnist_model_tf, channel_first=False)
+    X = np.random.random((32, 28, 28, 1))
+    result = model.get_hidden_representations(X, **params)
+    assert isinstance(result, np.ndarray), "Must be a np.ndarray"
+    assert len(result.shape) == 2, "Must be a batch of 1D tensors"
+    assert result.shape[0] == X.shape[0], "Must have same batch size as input"
