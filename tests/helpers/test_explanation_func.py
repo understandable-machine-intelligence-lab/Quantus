@@ -266,7 +266,13 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "LayerGradCam", "gc_layer": "model._modules.get('conv_2')",},
-            {"shape": (124, 1, 8, 8)},
+            {"shape": (8, 1, 8, 8)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')", },
+            {"shape": (8, 1, 8, 8)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -386,7 +392,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "DeepLift"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -398,7 +404,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "DeepLiftShap"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -410,7 +416,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "GuidedGradCam", "gc_layer": "model._modules.get('conv_2')",},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -422,7 +428,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "Deconvolution", },
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -434,7 +440,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "FeaturePermutation", },
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -446,7 +452,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "Lime", },
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -458,7 +464,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "KernelShap", },
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -470,14 +476,14 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "LRP", },
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "LayerConductance", "gc_layer": "model._modules.get('conv_2')",
              "interpolate": (28, 28), "interpolate_mode": "nearest"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -491,7 +497,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_images"),
             {"method": "LayerActivation", "gc_layer": "model._modules.get('conv_2')",
              "interpolate": (28, 28), "interpolate_mode": "nearest"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -505,7 +511,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_images"),
             {"method": "InternalInfluence", "gc_layer": "model._modules.get('conv_2')",
              "interpolate": (28, 28), "interpolate_mode": "nearest"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -517,9 +523,9 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {"method": "LayerGradientXActivation", "gc_layer": "model._modules.get('conv_2')",
+            {"method": "LayerGradientXActivation", "method_kwargs": {"layer": "model._modules.get('conv_2')"},
              "interpolate": (28, 28), "interpolate_mode": "nearest"},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -527,13 +533,26 @@ from quantus.functions.normalise_func import normalise_by_max
             {"method": "LayerGradientXActivation", "gc_layer": "model._modules.get('conv_2')",
              "interpolate": (100,), "interpolate_mode": "nearest"},
             {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "LayerGradientXActivation", "method_kwargs": {},
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"exception": ValueError},
         ),
         # tf-explain
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "VanillaGradients",},
-            {"shape": (124, 28, 28)},
+            {"shape": (8, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "Gradient", },
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -559,7 +578,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "SmoothGrad", },
-            {"shape": (124, 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -724,7 +743,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "VanillaGradients",},
-            {"shape": (124, 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -736,7 +755,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "OcclusionSensitivity",},
-            {"shape": (124, 28, 28, 3)},
+            {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -748,7 +767,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "GradientsInput",},
-            {"shape": (124, 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -776,7 +795,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "GradCAM",},
-            {"exception": ValueError},
+            {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -838,7 +857,7 @@ def test_generate_tf_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "VanillaGradients",},
-            {"shape": (124, 28, 28)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
