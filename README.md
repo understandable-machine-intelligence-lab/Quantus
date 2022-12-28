@@ -26,11 +26,11 @@ _Quantus is currently under active development so carefully note the Quantus rel
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
 - Latest metrics additions:
-    - <b>Infidelity </b><a href="https://arxiv.org/abs/1901.09392">(Chih-Kuan, Yeh, et al., 2019)</a>
-    - <b>ROAD </b><a href="https://arxiv.org/abs/2202.00449">(Rong, Leemann, et al., 2022)</a>
-    - <b>Focus </b><a href="https://arxiv.org/abs/2109.15035">(Arias et al., 2022)</a>
     - <b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
     - <b>Sufficiency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
+    - <b>Relative Input Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
+    - <b>Relative Output Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
+    - <b>Relative Representation Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
 - New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
 
 ## Citation
@@ -112,6 +112,9 @@ measures to what extent explanations are stable when subject to slight perturbat
     <li><b>Avg-Sensitivity </b><a href="https://arxiv.org/pdf/1901.09392.pdf">(Yeh et al., 2019)</a>: measures the average sensitivity of an explanation using a Monte Carlo sampling-based approximation
     <li><b>Continuity </b><a href="https://arxiv.org/pdf/1706.07979.pdf">(Montavon et al., 2018)</a>: captures the strongest variation in explanation of an input and its perturbed version
     <li><b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>: measures the probability that the inputs with the same explanation have the same prediction label
+    <li><b>Relative Input Stability (RIS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between the two inputs x and x'
+    <li><b>Relative Representation Stability (RRS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between internal models representations L_x and L_x' for x and x' respectively
+    <li><b>Relative Output Stability (ROS)</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>: measures the relative distance between explanations e_x and e_x' with respect to the distance between output logits h(x) and h(x') for x and x' respectively
 </ul>
 </details>
 
@@ -360,8 +363,10 @@ You can alternatively use your own customised explanation function
 (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
 
 ```python
-def your_own_callable(model, x_batch, y_batch):
-  """Logic goes here to compute the attributions in the same shape as x_batch."""
+def your_own_callable(model, models, targets, **kwargs) -> np.ndarray
+  """Logic goes here to compute the attributions and return an 
+  explanation  in the same shape as x_batch (np.array), 
+  (flatten channels if necessary)."""
   return explanation(model, x_batch, y_batch)
 
 scores = metric(

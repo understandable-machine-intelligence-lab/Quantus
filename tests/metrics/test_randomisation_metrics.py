@@ -2,12 +2,12 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+import numpy as np
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.similarity_func import correlation_spearman, correlation_pearson
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
-from tests.fixtures import *
 
 
 @pytest.mark.randomisation
@@ -27,7 +27,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -45,7 +47,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -63,7 +67,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -81,7 +87,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -137,7 +145,7 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -155,7 +163,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -173,7 +183,9 @@ from tests.fixtures import *
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -198,7 +210,10 @@ def test_model_parameter_randomisation(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
@@ -217,7 +232,11 @@ def test_model_parameter_randomisation(
         return
 
     scores_layers = ModelParameterRandomisation(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(
@@ -247,7 +266,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -264,7 +285,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -282,7 +305,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -300,7 +325,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -317,7 +344,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -334,7 +363,9 @@ def test_model_parameter_randomisation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Saliency",},
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
                 },
             },
             {"min": 0.0, "max": 1.0},
@@ -359,14 +390,21 @@ def test_random_logit(
         explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
-            model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs,
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
         )
     elif "a_batch" in data:
         a_batch = data["a_batch"]
     else:
         a_batch = None
     scores = RandomLogit(**init_params)(
-        model=model, x_batch=x_batch, y_batch=y_batch, a_batch=a_batch, **call_params,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        **call_params,
     )
 
     if isinstance(expected, float):
