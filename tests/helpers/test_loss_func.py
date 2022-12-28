@@ -4,7 +4,6 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.loss_func import *
-from tests.fixtures import *
 
 
 @pytest.fixture

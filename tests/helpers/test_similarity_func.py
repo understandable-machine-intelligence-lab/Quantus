@@ -3,7 +3,6 @@ from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.loss_func import mse
 from quantus.functions.similarity_func import *
-from tests.fixtures import *
 
 
 @pytest.fixture
@@ -36,16 +35,6 @@ def atts_inverse():
 
 @pytest.fixture
 def atts_lip_same():
-    return {
-        "a": np.array([-1, 1, 1]),
-        "b": np.array([0, 0, 2]),
-        "c": np.array([-1, 1, 1]),
-        "d": np.array([0, 0, 2]),
-    }
-
-
-@pytest.fixture
-def atts_lip_diff():
     return {
         "a": np.array([-1, 1, 1]),
         "b": np.array([0, 0, 2]),
