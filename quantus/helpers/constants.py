@@ -130,6 +130,11 @@ AVAILABLE_XAI_METHODS_CAPTUM = [
 ]
 
 
+DEPRECATED_XAI_METHODS_CAPTUM = {
+    "GradCam": "LayerGradCam"
+}
+
+
 AVAILABLE_XAI_METHODS_TF = [
     "VanillaGradients",
     "IntegratedGradients",
@@ -138,6 +143,14 @@ AVAILABLE_XAI_METHODS_TF = [
     "GradCAM",
     "SmoothGrad",
 ]
+
+
+DEPRECATED_XAI_METHODS_TF = {
+    "Gradient": "VanillaGradients",
+    "InputXGradient": "GradientsInput",
+    "Occlusion": "OcclusionSensitivity",
+    "GradCam": "GradCAM"
+}
 
 
 def available_categories() -> List[str]:

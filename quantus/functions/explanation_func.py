@@ -39,7 +39,6 @@ if util.find_spec("captum"):
         GuidedGradCam,
         Deconvolution,
         FeaturePermutation,
-        ShapleyValueSampling,
         Lime,
         KernelShap,
         LRP,
@@ -179,7 +178,8 @@ def generate_tf_explanation(
          Returns np.ndarray of same shape as inputs.
 
     """
-    method = kwargs.get("method", "VanillaGradients").lower()
+    method = kwargs.get("method", "VanillaGradients")
+    method_kwargs = kwargs.get("method_kwargs", {})
     inputs = inputs.reshape(-1, *model.input_shape[1:])
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
@@ -189,13 +189,21 @@ def generate_tf_explanation(
 
     explanation: np.ndarray = np.zeros_like(inputs)
 
-    if method == "VanillaGradients".lower():
+    if method in constants.DEPRECATED_XAI_METHODS_TF:
+        warnings.warn(
+            f"Explanaiton method string {method} is deprecated. Use "
+            f"{constants.DEPRECATED_XAI_METHODS_TF[method]} instead.\n",
+            category=UserWarning,
+        )
+        method = constants.DEPRECATED_XAI_METHODS_TF[method]
+
+    if method == "VanillaGradients":
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y),
+                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
                         inputs,
                         targets,
                     )
@@ -205,7 +213,7 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "IntegratedGradients".lower():
+    elif method == "IntegratedGradients":
         n_steps = kwargs.get("n_steps", 10)
         explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
         explanation = (
@@ -213,7 +221,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, n_steps=n_steps
+                            ([x], None), model, y, n_steps=n_steps, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -224,13 +232,13 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "GradientsInput".lower():
+    elif method == "GradientsInput":
         explainer = tf_explain.core.gradients_inputs.GradientsInputs()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y),
+                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
                         inputs,
                         targets,
                     )
@@ -240,7 +248,7 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "OcclusionSensitivity".lower():
+    elif method == "OcclusionSensitivity":
         patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
         explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
         explanation = (
@@ -248,7 +256,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, patch_size=patch_size
+                            ([x], None), model, y, patch_size=patch_size, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -259,11 +267,9 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "GradCAM".lower():
-        if "gc_layer" not in kwargs:
-            raise ValueError(
-                "Specify a convolutional layer name as 'gc_layer' to run GradCam."
-            )
+    elif method == "GradCAM":
+        if "gc_layer" in kwargs:
+            method_kwargs["layer_name"] = kwargs["gc_layer"]
 
         explainer = tf_explain.core.grad_cam.GradCAM()
         explanation = (
@@ -271,7 +277,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, layer_name=kwargs["gc_layer"]
+                            ([x], None), model, y, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -282,7 +288,7 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "SmoothGrad".lower():
+    elif method == "SmoothGrad":
 
         num_samples = kwargs.get("num_samples", 5)
         noise = kwargs.get("noise", 0.1)
@@ -292,7 +298,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, num_samples=num_samples, noise=noise
+                            ([x], None), model, y, num_samples=num_samples, noise=noise, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -344,7 +350,7 @@ def generate_captum_explanation(
     device: string
         Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. May include method_kwargs dictionary which includes keyword arguments for a method call.
 
     Returns
     -------
@@ -353,6 +359,7 @@ def generate_captum_explanation(
     """
 
     method = kwargs.get("method", "Gradient")
+    method_kwargs = kwargs.get("method_kwargs", {})
 
     # Set model in evaluate mode.
     model.to(device)
@@ -387,10 +394,18 @@ def generate_captum_explanation(
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
+    if method in constants.DEPRECATED_XAI_METHODS_CAPTUM:
+        warnings.warn(
+            f"Explanaiton method string {method} is deprecated. Use "
+            f"{constants.DEPRECATED_XAI_METHODS_CAPTUM[method]} instead.\n",
+            category=UserWarning,
+        )
+        method = constants.DEPRECATED_XAI_METHODS_CAPTUM[method]
+
     if method in ["GradientShap", "IntegratedGradients", "DeepLift", "DeepLiftShap"]:
         attr_func = eval(method)
         explanation = f_reduce_axes(
-            attr_func(model).attribute(
+            attr_func(model, **method_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
@@ -409,12 +424,12 @@ def generate_captum_explanation(
     ]:
         attr_func = eval(method)
         explanation = f_reduce_axes(
-            attr_func(model).attribute(inputs=inputs, target=targets)
+            attr_func(model, **method_kwargs).attribute(inputs=inputs, target=targets)
         )
 
     elif method == "Gradient":
         explanation = f_reduce_axes(
-            Saliency(model).attribute(inputs=inputs, target=targets, abs=False)
+            Saliency(model, **method_kwargs).attribute(inputs=inputs, target=targets, abs=False)
         )
 
     elif method == "Occlusion":
@@ -435,22 +450,25 @@ def generate_captum_explanation(
         "InternalInfluence",
         "LayerGradientXActivation",
     ]:
-        if "gc_layer" not in kwargs:
+        if "gc_layer" in kwargs:
+            method_kwargs["layer"] = kwargs["gc_layer"]
+
+        if "layer" not in method_kwargs:
             raise ValueError(
-                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[-4][1] to run GradCam."
+                "Specify a convolutional layer name as 'gc_layer' to run GradCam."
             )
 
-        if isinstance(kwargs["gc_layer"], str):
-            kwargs["gc_layer"] = eval(kwargs["gc_layer"])
+        if isinstance(method_kwargs["layer"], str):
+            method_kwargs["layer"] = eval(method_kwargs["layer"])
 
         attr_func = eval(method)
 
         if method != "LayerActivation":
-            explanation = attr_func(model, layer=kwargs["gc_layer"]).attribute(
+            explanation = attr_func(model, **method_kwargs).attribute(
                 inputs=inputs, target=targets
             )
         else:
-            explanation = attr_func(model, layer=kwargs["gc_layer"]).attribute(
+            explanation = attr_func(model, **method_kwargs).attribute(
                 inputs=inputs
             )
 
