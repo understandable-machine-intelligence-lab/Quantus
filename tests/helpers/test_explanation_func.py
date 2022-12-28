@@ -266,13 +266,13 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')", "interpolate": (28, 28)},
-            {"shape": (124, 1, 28, 28)},
+            {"shape": (8, 1, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')"},
-            {"shape": (124, 1, 8, 8)},
+            {"shape": (8, 1, 8, 8)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
