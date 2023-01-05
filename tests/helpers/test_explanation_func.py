@@ -259,19 +259,19 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-            },
-            {"shape": (10, 1, 44)},
+            {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')", "interpolate": (100,), "interpolate_method": "nearest"},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-            },
+            {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')", "interpolate": (28, 28)},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')"},
             {"shape": (8, 1, 8, 8)},
         ),
         (
