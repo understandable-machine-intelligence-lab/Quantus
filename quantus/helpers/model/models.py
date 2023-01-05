@@ -155,7 +155,7 @@ if util.find_spec("torch"):
             return x
 
     def TitanicSimpleTorchModel() -> torch.nn.Module:
-        return torch.nn.Sequential(
+        return nn.Sequential(
             nn.Linear(12, 12),
             nn.Sigmoid(),
             nn.Linear(12, 8),
