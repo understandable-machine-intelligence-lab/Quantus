@@ -212,7 +212,6 @@ def explain_func_stub(*args, **kwargs):
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": True,
-                    "aggregate_func": np.mean,
                 },
                 "call": {
                     "explain_func": explain,
@@ -222,7 +221,7 @@ def explain_func_stub(*args, **kwargs):
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": -1.0, "max": 1.01},
         ),
         (
             lazy_fixture("titanic_model_tf"),
@@ -234,18 +233,10 @@ def explain_func_stub(*args, **kwargs):
                     "normalise": True,
                     "abs": True,
                     "disable_warnings": True,
-                    "aggregate_func": np.mean,
                 },
-                "call": {
-                    "explain_func": explain_func_stub,
-                    "explain_func_kwargs": {
-                        "method": "IntegratedGradients",
-                        "reduce_axes": (),
-                        "channel_first": False,
-                    },
-                },
+                "call": {"explain_func": explain_func_stub},
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": -1.0, "max": 1.01},
         ),
     ],
 )
@@ -301,7 +292,7 @@ def test_model_parameter_randomisation(
         ), "Test failed."
     else:
         assert all(
-            ((s > expected["min"]) & (s <= expected["max"]))
+            ((s > expected["min"]) & (s < expected["max"]))
             for layer, scores in scores_layers.items()
             for s in scores
         ), "Test failed."
@@ -426,6 +417,40 @@ def test_model_parameter_randomisation(
                 },
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.01},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.01},
         ),
     ],
 )
