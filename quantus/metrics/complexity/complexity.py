@@ -242,12 +242,10 @@ class Complexity(Metric):
             The evaluation results.
         """
 
-        a = (
-            np.array(
-                np.reshape(a, (np.prod(x.shape[1:]),)),
-                dtype=np.float64,
-            )
-            / np.sum(np.abs(a))
-        )
+        if len(x.shape) == 1:
+            newshape = np.prod(x.shape)
+        else:
+            newshape = np.prod(x.shape[1:])
 
+        a = np.array(np.reshape(a, newshape), dtype=np.float64) / np.sum(np.abs(a))
         return scipy.stats.entropy(pk=a)
