@@ -339,8 +339,8 @@ def generate_captum_explanation(
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
-    # For data with no channel dimensions, like tabular data, we want to prevent attribution summation.
-    if len(tuple(kwargs.get("reduce_axes", [1]))) == 0:
+    # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
+    if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
 
         def f_reduce_axes(a):
             return a
@@ -411,11 +411,9 @@ def generate_captum_explanation(
         if isinstance(kwargs["gc_layer"], str):
             kwargs["gc_layer"] = eval(kwargs["gc_layer"])
 
-        explanation = f_reduce_axes(
-            LayerGradCam(model, layer=kwargs["gc_layer"]).attribute(
-                inputs=inputs, target=targets
-            )
-        )
+        explanation = LayerGradCam(model, layer=kwargs["gc_layer"]).attribute(
+                inputs=inputs, target=targets)
+
         if "interpolate" in kwargs:
             if isinstance(kwargs["interpolate"], tuple):
                 if "interpolate_mode" in kwargs:
@@ -428,6 +426,18 @@ def generate_captum_explanation(
                     explanation = LayerGradCam.interpolate(
                         explanation, kwargs["interpolate"]
                     )
+        else:
+            if explanation.shape[-1] != inputs.shape[-1]:
+                warnings.warn(
+                    "Quantus requires GradCam attribution and input to correspond in "
+                    "last dimensions, but got shapes {} and {}\n "
+                    "Pass 'interpolate' argument to explanation function get matching dimensions.".format(
+                        explanation.shape, inputs.shape
+                    ),
+                    category=UserWarning,
+                )
+
+        explanation = f_reduce_axes(explanation)
 
     elif method == "Control Var. Sobel Filter".lower():
         explanation = torch.zeros(size=inputs.shape)
