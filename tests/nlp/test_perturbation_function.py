@@ -1,7 +1,7 @@
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from quantus.nlp.perturbation_function import spelling_replacement, synonym_replacement
+from nlp.functions.perturbation_function import spelling_replacement, synonym_replacement
 
 
 @pytest.mark.nlp
@@ -15,6 +15,6 @@ from quantus.nlp.perturbation_function import spelling_replacement, synonym_repl
     ],
 )
 def test_perturbation_function(text, method):
-    result = method(text, k=1)
+    result = method(text, k=1) # noqa
     for i, j in zip(result, text):
         assert i != j

@@ -1,12 +1,12 @@
 import pytest
-from transformers import TFDistilBertForSequenceClassification
+from transformers import TFDistilBertForSequenceClassification, DistilBertTokenizerFast
 from datasets import load_dataset
 from keras_nlp.tokenizers import WordPieceTokenizer
 from ml_collections import ConfigDict
 import tensorflow as tf
 
 from .models import FNetClassifier
-from quantus.nlp.text_classifier import HuggingFaceTextClassifier
+from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import HuggingFaceTextClassifierTF
 
 BATCH_SIZE = 8
 
@@ -25,11 +25,11 @@ def ag_news_dataset():
 
 @pytest.fixture(scope="session")
 def distilbert_sst2_model():
-    def getter(hm: TFDistilBertForSequenceClassification):
+    def getter(hm: TFDistilBertForSequenceClassification) -> tf.Tensor:
         return tf.convert_to_tensor(hm.distilbert.embeddings.weight, dtype=tf.float32)
 
-    model = HuggingFaceTextClassifier(
-        "distilbert-base-uncased-finetuned-sst-2-english", embeddings_getter=getter
+    model = HuggingFaceTextClassifierTF(
+        "distilbert-base-uncased-finetuned-sst-2-english", embeddings_getter=getter # noqa
     )
     return model
 
@@ -46,13 +46,18 @@ def fnet_config() -> ConfigDict:
 
 
 @pytest.fixture(scope="session")
-def fnet_ag_news_model(fnet_config):
+def fnet_ag_news_model_tokenizer(fnet_config):
     with open(fnet_config.vocab_path, "r") as file:
         vocab = file.read().split("\n")
 
-    tokenizer = WordPieceTokenizer(
+    return WordPieceTokenizer(
         vocabulary=vocab,
         lowercase=False,
         sequence_length=fnet_config.max_sequence_length,
     )
+
+
+@pytest.fixture(scope="session")
+def fnet_ag_news_model(fnet_config):
     model = FNetClassifier(fnet_config, 4)
+    return model
