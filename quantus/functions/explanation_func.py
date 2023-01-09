@@ -381,8 +381,8 @@ def generate_captum_explanation(
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
-    # For data with no channel dimensions, like tabular data, we want to prevent attribution summation.
-    if len(tuple(kwargs.get("reduce_axes", [1]))) == 0:
+    # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
+    if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
 
         def f_reduce_axes(a):
             return a
@@ -409,6 +409,8 @@ def generate_captum_explanation(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
+                n_steps=10,
+                method="riemann_trapezoid",
             )
         )
 
@@ -484,6 +486,18 @@ def generate_captum_explanation(
                     explanation = LayerGradCam.interpolate(
                         explanation, kwargs["interpolate"]
                     )
+        else:
+            if explanation.shape[-1] != inputs.shape[-1]:
+                warnings.warn(
+                    "Quantus requires GradCam attribution and input to correspond in "
+                    "last dimensions, but got shapes {} and {}\n "
+                    "Pass 'interpolate' argument to explanation function get matching dimensions.".format(
+                        explanation.shape, inputs.shape
+                    ),
+                    category=UserWarning,
+                )
+
+        explanation = f_reduce_axes(explanation)
 
         explanation = f_reduce_axes(explanation)
 
