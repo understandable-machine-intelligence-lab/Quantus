@@ -1664,7 +1664,7 @@ def test_attribution_localisation(
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "GradCam",
+                        "method": "LayerGradCam",
                         "gc_layer": "model._modules.get('conv_2')",
                         "interpolate": (56, 56),
                     },
@@ -1684,7 +1684,7 @@ def test_attribution_localisation(
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "GradCam",
+                        "method": "LayerGradCam",
                         "gc_layer": "model._modules.get('conv_2')",
                         "interpolate": (64, 64),
                     },
