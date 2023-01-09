@@ -402,7 +402,17 @@ def generate_captum_explanation(
         )
         method = constants.DEPRECATED_XAI_METHODS_CAPTUM[method]
 
-    if method in ["GradientShap", "IntegratedGradients", "DeepLift", "DeepLiftShap"]:
+    if method in ["GradientShap", "DeepLift", "DeepLiftShap"]:
+        attr_func = eval(method)
+        explanation = f_reduce_axes(
+            attr_func(model, **method_kwargs).attribute(
+                inputs=inputs,
+                target=targets,
+                baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
+            )
+        )
+
+    elif method == "IntegratedGradients":
         attr_func = eval(method)
         explanation = f_reduce_axes(
             attr_func(model, **method_kwargs).attribute(
@@ -496,8 +506,6 @@ def generate_captum_explanation(
                     ),
                     category=UserWarning,
                 )
-
-        explanation = f_reduce_axes(explanation)
 
         explanation = f_reduce_axes(explanation)
 
