@@ -241,6 +241,7 @@ class Complexity(Metric):
         float
             The evaluation results.
         """
+
         if len(x.shape) == 1:
             newshape = np.prod(x.shape)
         else:
