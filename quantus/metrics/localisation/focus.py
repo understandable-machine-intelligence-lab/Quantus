@@ -151,12 +151,12 @@ class Focus(Metric):
                            custom_batch=p_mosaic_batch,
                            **{"explain_func": explain,
                               "explain_func_kwargs": {
-                              "method": "GradCAM",
+                              "method": "LayerGradCAM",
                               "gc_layer": "model._modules.get('conv_2')",
                               "pos_only": True,
                               "interpolate": (2*28, 2*28),
                               "interpolate_mode": "bilinear",}
-                              "device": device}) for method in ["GradCAM", "IntegratedGradients"]}
+                              "device": device}) for method in ["LayerGradCAM", "IntegratedGradients"]}
 
             # Plot example!
             >> metric.plot(results=scores)

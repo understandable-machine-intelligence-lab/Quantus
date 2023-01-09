@@ -487,8 +487,7 @@ def test_non_sensitivity(
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "InputxGradient",
-                    },
+                        "method": "InputXGradient",},
                 },
             },
             {"dtypes": [True, False]},
@@ -570,9 +569,7 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "InputxGradient",
-                    },
+                    "explain_func_kwargs": {"method": "InputXGradient",},
                 },
             },
             {"dtypes": [True, False]},
