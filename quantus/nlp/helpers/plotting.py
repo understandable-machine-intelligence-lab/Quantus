@@ -43,7 +43,7 @@ def create_div(explanation: Explanation, label: str):
 
 
 def visualise_explanations_as_html(
-    explanations: List[Explanation], labels: Optional[List[str]]
+    explanations: List[Explanation], labels: Optional[List[str]] = None
 ) -> str:
     # Define top-level styles
     heatmap_template = """
@@ -91,7 +91,7 @@ def visualise_explanations_as_html(
     spans = ""
     # For each token, create a separate div holding whole input sequence on 1 line.
     for i, explanation in enumerate(explanations):
-        label = labels[i] if labels is not None else None
+        label = labels[i] if labels is not None else f"{i}. sample"
         div = create_div(explanation, label)
         spans += div
     return heatmap_template.replace("{{body}}", spans)

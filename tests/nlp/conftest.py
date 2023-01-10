@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from transformers import TFDistilBertForSequenceClassification, DistilBertTokenizerFast
 from datasets import load_dataset
@@ -6,7 +7,10 @@ from ml_collections import ConfigDict
 import tensorflow as tf
 
 from .models import FNetClassifier
-from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import HuggingFaceTextClassifierTF
+from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import (
+    HuggingFaceTextClassifierTF,
+    HuggingFaceTokenizer,
+)
 
 BATCH_SIZE = 8
 
@@ -25,13 +29,34 @@ def ag_news_dataset():
 
 @pytest.fixture(scope="session")
 def distilbert_sst2_model():
-    def getter(hm: TFDistilBertForSequenceClassification) -> tf.Tensor:
-        return tf.convert_to_tensor(hm.distilbert.embeddings.weight, dtype=tf.float32)
-
-    model = HuggingFaceTextClassifierTF(
-        "distilbert-base-uncased-finetuned-sst-2-english", embeddings_getter=getter # noqa
+    return HuggingFaceTextClassifierTF.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
     )
-    return model
+
+
+@pytest.fixture(scope="session")
+def a_tuple_text():
+    a_tuple = np.load("tests/assets/nlp/a_tuple_text.npy")
+    return (
+        (list(a_tuple[0][0]), a_tuple[0][1].astype(float)),
+        (list(a_tuple[1][0]), a_tuple[1][1].astype(float)),
+    )
+
+
+@pytest.fixture(scope="session")
+def a_tuple_text_ragged_1(a_tuple_text):
+    return (
+        (list(a_tuple_text[0][0])[:37], a_tuple_text[0][1][:37]),
+        (list(a_tuple_text[1][0]), a_tuple_text[1][1]),
+    )
+
+
+@pytest.fixture(scope="session")
+def a_tuple_text_ragged_2(a_tuple_text):
+    return (
+        (list(a_tuple_text[0][0]), a_tuple_text[0][1]),
+        (list(a_tuple_text[1][0])[:37], a_tuple_text[1][1][:37]),
+    )
 
 
 @pytest.fixture(scope="session")

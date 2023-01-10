@@ -9,7 +9,7 @@ class TextClassifier(ABC):
     tokenizer: Tokenizer
 
     @abstractmethod
-    def word_embedding_lookup(self, input_ids):
+    def embedding_lookup(self, input_ids) -> np.ndarray:
         pass
 
     @abstractmethod

@@ -12,6 +12,7 @@ from nlp.functions.tf_explanation_function import (
     tf_explain_noise_grad_plus_plus,
     tf_explain_gradient_norm_over_embeddings,
     tf_explain_integrated_gradients_over_embeddings,
+    tf_explain_attention,
 )
 from nlp.functions.explanation_function import explain
 
@@ -190,3 +191,44 @@ def test_wrapper(x_batch, model, explain_fn_kwargs, capsys):
         a_batch = explain(x_batch, y_batch, model, explain_fn_kwargs)  # noqa
         print(f"{a_batch = }")
         assert len(a_batch) == len(y_batch)
+
+
+@pytest.mark.nlp
+@pytest.mark.parametrize(
+    "x_batch, model, kwargs",
+    [
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {},
+        ),
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {"attention_layer_index": "mean"},
+        ),
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {"attention_head_index": "mean"},
+        ),
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {"attention_from_token_index": "mean"},
+        ),
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {"attention_from_token_index": None, "attention_to_token_index": "mean"},
+        ),
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("distilbert_sst2_model"),
+            {"attention_from_token_index": None, "attention_to_token_index": -1},
+        ),
+    ],
+)
+def test_attention_explanation(x_batch, model, kwargs):
+    a_batch = tf_explain_attention(x_batch, None, model, **kwargs)  # noqa
+    assert len(a_batch) == len(x_batch)

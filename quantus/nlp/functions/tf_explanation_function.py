@@ -37,7 +37,7 @@ def tf_explain_gradient_norm(
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = _unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.word_embedding_lookup(input_ids)
+    embeddings = model.embedding_lookup(input_ids)
     scores = tf_explain_gradient_norm_over_embeddings(
         embeddings, attention_mask, y_batch, model
     )
@@ -72,7 +72,7 @@ def tf_explain_input_x_gradient(
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = _unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.word_embedding_lookup(input_ids)
+    embeddings = model.embedding_lookup(input_ids)
 
     scores = tf_explain_input_x_gradient_over_embeddings(
         embeddings, attention_mask, y_batch, model
@@ -158,7 +158,7 @@ def tf_explain_integrated_gradients(
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = _unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.word_embedding_lookup(input_ids)
+    embeddings = model.embedding_lookup(input_ids)
 
     scores = tf_explain_integrated_gradients_over_embeddings(
         embeddings,
@@ -217,7 +217,7 @@ def tf_explain_noise_grad_plus_plus(
     explain_fn: Callable[
         [tf.Tensor, Optional[tf.Tensor], np.ndarray | tf.Tensor, TextClassifier],
         np.ndarray,
-    ] = tf_explain_gradient_norm_over_embeddings,
+    ] = tf_explain_gradient_norm,
     noise_type: str = "multiplicative",
     seed: int = 42,
 ) -> List[Explanation]:
@@ -230,7 +230,7 @@ def tf_explain_noise_grad_plus_plus(
     weights = model.get_weights()
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = _unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.word_embedding_lookup(input_ids)
+    embeddings = model.embedding_lookup(input_ids)
     batch_size = embeddings.shape[0]
     num_tokens = embeddings.shape[1]
     explanations = np.zeros(shape=(n, m, batch_size, num_tokens))
@@ -302,6 +302,7 @@ def _tf_explain_lime(
     alpha: float,
     solver: str,
 ) -> Explanation:
+    # FIXME different sequence length
     tokens = model.tokenizer.split_into_tokens(x)
 
     masks = sample_masks(num_samples + 1, len(tokens), seed=seed)
@@ -406,6 +407,89 @@ def _tf_explain_shap_huggingface(
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
 
 
+def _assert_is_int_or_mean(val: int | str, name: str):
+    if isinstance(val, str) and val != "mean":
+        raise ValueError(
+            f"Only supported values for {name} are int and mean, found {val}"
+        )
+
+
+def tf_explain_attention(
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    model: TextClassifier,
+    attention_layer_index: int | str = "mean",
+    attention_head_index: int | str = "mean",
+    attention_from_token_index: Optional[int | str] = "mean",
+    attention_to_token_index: Optional[int | str] = None,
+) -> List[Explanation]:
+    if attention_from_token_index is not None and attention_to_token_index is not None:
+        raise ValueError(
+            f"Must provide either attention_from_token_index or attention_to_token_index"
+        )
+    if attention_from_token_index is None and attention_to_token_index is None:
+        raise ValueError(
+            f"Must provide either attention_from_token_index or attention_to_token_index"
+        )
+    _assert_is_int_or_mean(attention_layer_index, "attention_layer_index")
+    _assert_is_int_or_mean(attention_head_index, "attention_head_index")
+    _assert_is_int_or_mean(attention_from_token_index, "attention_from_token_index")
+    _assert_is_int_or_mean(attention_to_token_index, "attention_to_token_index")
+
+    if isinstance(model, HuggingFaceTextClassifierTF):
+        return tf_explain_attention_huggingface(
+            x_batch,
+            y_batch,
+            model,
+            attention_layer_index,
+            attention_head_index,
+            attention_from_token_index,
+            attention_to_token_index,
+        )
+    raise NotImplementedError()
+
+
+def _mean_or_index(val: tf.Tensor, index: int | str) -> tf.Tensor:
+    if index == "mean":
+        return tf.reduce_mean(val, axis=1)
+    else:
+        return val[:, index]
+
+
+def tf_explain_attention_huggingface(
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    model: HuggingFaceTextClassifierTF,
+    attention_layer_index: int | str,
+    attention_head_index: int | str,
+    attention_from_token_index: Optional[int | str],
+    attention_to_token_index: Optional[int | str],
+) -> List[Explanation]:
+    tokens = [
+        model.tokenizer.convert_ids_to_tokens(i)
+        for i in model.tokenizer.tokenize(x_batch)["input_ids"]
+    ]
+
+    a_batch = tf.stack(model.get_attention_scores(x_batch))
+    a_batch = tf.transpose(a_batch, [1, 0, 2, 3, 4])
+    # 1st axis -> batch
+    # 2nd axis -> attention layer
+    # 3rd axis -> attention head
+    # 4th axis -> from token
+    # 5th axis -> to token
+    a_batch = _mean_or_index(a_batch, attention_layer_index)
+    a_batch = _mean_or_index(a_batch, attention_head_index)
+    if attention_from_token_index is not None:
+        a_batch = _mean_or_index(a_batch, attention_from_token_index)
+        return list(zip(tokens, a_batch.numpy()))
+
+    if attention_to_token_index == "mean":
+        a_batch = tf.reduce_mean(a_batch, axis=-1)
+    else:
+        a_batch = a_batch[:, :, attention_to_token_index]
+    return list(zip(tokens, a_batch.numpy()))
+
+
 _method_mapping = {
     "GradNorm": tf_explain_gradient_norm,
     "InputXGrad": tf_explain_input_x_gradient,
@@ -413,6 +497,7 @@ _method_mapping = {
     "LIME": tf_explain_lime,
     "SHAP": tf_explain_shap,
     "NoiseGrad++": tf_explain_noise_grad_plus_plus,
+    "Attention": tf_explain_attention,
 }
 
 
@@ -420,11 +505,12 @@ def tf_explain(
     x_batch: List[str],
     y_batch: np.ndarray,
     model: TextClassifier,
+    *,
     method: str,
     **kwargs,
 ) -> List[Explanation]:
     if method is None:
-        raise ValueError(f"Please provide explanation method name in `name` kwarg")
+        raise ValueError(f"Please provide explanation method name in `method` kwarg")
     explain_fn = _method_mapping.get(method)
     if explain_fn is None:
         raise ValueError(

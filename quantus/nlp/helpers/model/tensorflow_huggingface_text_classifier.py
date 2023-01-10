@@ -1,7 +1,17 @@
+from __future__ import annotations
+
 import numpy as np
 import tensorflow as tf
 from typing import List, Dict, Callable, Optional
-from transformers import TFPreTrainedModel, PreTrainedTokenizerBase
+from transformers import (
+    TFPreTrainedModel,
+    PreTrainedTokenizerBase,
+    TFAutoModelForSequenceClassification,
+    AutoTokenizer,
+    TFDistilBertForSequenceClassification,
+    TFBertForSequenceClassification,
+)
+from transformers.tf_utils import shape_list
 from .text_classifier import TextClassifier, Tokenizer
 
 
@@ -22,26 +32,77 @@ class HuggingFaceTokenizer(Tokenizer):
         return self.tokenizer.tokenize(text)
 
 
+def _hf_bert_embeddings_lookup(
+    model: TFBertForSequenceClassification, input_ids: tf.Tensor | np.ndarray
+) -> tf.Tensor:
+    word_embeds = tf.nn.embedding_lookup(
+        tf.convert_to_tensor(model.bert.embeddings.weight, dtype=tf.float32), input_ids
+    )
+    input_shape = shape_list(word_embeds)[:-1]
+    position_ids = tf.expand_dims(tf.range(start=0, limit=input_shape[-1]), axis=0)
+    positional_embeds = tf.nn.embedding_lookup(
+        tf.convert_to_tensor(
+            model.bert.embeddings.position_embeddings, dtype=tf.float32
+        ),
+        position_ids,
+    )
+    return word_embeds + positional_embeds
+
+
+def _hf_distilbert_embeddings_lookup(
+    model: TFDistilBertForSequenceClassification, input_ids: tf.Tensor | np.ndarray
+) -> tf.Tensor:
+    word_embeds = tf.nn.embedding_lookup(
+        tf.convert_to_tensor(model.distilbert.embeddings.weight, dtype=tf.float32),
+        input_ids,
+    )
+    input_shape = shape_list(word_embeds)[:-1]
+    position_ids = tf.expand_dims(tf.range(start=0, limit=input_shape[-1]), axis=0)
+    positional_embeds = tf.nn.embedding_lookup(
+        tf.convert_to_tensor(
+            model.distilbert.embeddings.position_embeddings, dtype=tf.float32
+        ),
+        position_ids,
+    )
+    return word_embeds + positional_embeds
+
+
 class HuggingFaceTextClassifierTF(TextClassifier):
 
     model: TFPreTrainedModel
-    tokenizer: Tokenizer
+    tokenizer: HuggingFaceTokenizer
+
+    @staticmethod
+    def from_pretrained(handle: str) -> HuggingFaceTextClassifierTF:
+        if "distilbert" in handle:
+            lookup_fn = _hf_distilbert_embeddings_lookup
+        elif "bert" in handle:
+            lookup_fn = _hf_bert_embeddings_lookup
+        else:
+            raise ValueError(f"Please provide embeddings_lookup_fn")
+
+        return HuggingFaceTextClassifierTF(
+            model=TFAutoModelForSequenceClassification.from_pretrained(handle),
+            tokenizer=AutoTokenizer.from_pretrained(handle),
+            embedding_lookup_fn=lookup_fn,
+        )
 
     def __init__(
         self,
         model: TFPreTrainedModel,
         tokenizer: PreTrainedTokenizerBase,
-        embeddings_getter: Optional[Callable[[TFPreTrainedModel], tf.Tensor]] = None,
+        embedding_lookup_fn: Callable[
+            [TFPreTrainedModel, tf.Tensor | np.ndarray], tf.Tensor
+        ],
     ):
-        self._embeddings_getter = embeddings_getter
+        self._embedding_lookup_fn = embedding_lookup_fn
         self.model = model
         self.tokenizer = HuggingFaceTokenizer(tokenizer)
 
-    def word_embedding_lookup(self, input_ids: tf.Tensor) -> tf.Tensor:
-        if self._embeddings_getter is None:
-            raise ValueError("Please provider embeddings_getter argument to __init__")
-        word_embeddings = self._embeddings_getter(self.model)
-        return tf.nn.embedding_lookup(word_embeddings, input_ids)
+    def embedding_lookup(self, input_ids: tf.Tensor) -> tf.Tensor:
+        if self._embedding_lookup_fn is None:
+            raise ValueError("Please provider embedding_lookup_fn argument to __init__")
+        return self._embedding_lookup_fn(self.model, input_ids)
 
     def forward(
         self, inputs_embeds: tf.Tensor, attention_mask: Optional[tf.Tensor]
@@ -62,3 +123,7 @@ class HuggingFaceTextClassifierTF(TextClassifier):
 
     def get_weights(self) -> List[np.ndarray]:
         return self.model.get_weights()
+
+    def get_attention_scores(self, text: List[str]) -> List[tf.Tensor]:
+        tokens = self.tokenizer.tokenize(text)
+        return self.model(tokens, output_attentions=True).attentions
