@@ -295,6 +295,7 @@ class IROF(PerturbationMetric):
         s_indices = np.argsort(-att_segs)
 
         preds = []
+        x_prev_perturbed = x
 
         for i_ix, s_ix in enumerate(s_indices):
 
@@ -302,12 +303,12 @@ class IROF(PerturbationMetric):
             a_ix = np.nonzero((segments == s_ix).flatten())[0]
 
             x_perturbed = self.perturb_func(
-                arr=x,
+                arr=x_prev_perturbed,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(x=x_prev_perturbed, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
@@ -315,6 +316,7 @@ class IROF(PerturbationMetric):
 
             # Normalise the scores to be within range [0, 1].
             preds.append(float(y_pred_perturb / y_pred))
+            x_prev_perturbed = x_perturbed
 
         # Calculate the area over the curve (AOC) score.
         aoc = len(preds) - utils.calculate_auc(np.array(preds))
