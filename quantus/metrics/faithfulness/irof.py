@@ -283,7 +283,7 @@ class IROF(PerturbationMetric):
             img=np.moveaxis(x, 0, -1).astype("double"),
             segmentation_method=self.segmentation_method,
         )
-        nr_segments = segments.max()
+        nr_segments = len(np.unique(segments))
         asserts.assert_nr_segments(nr_segments=nr_segments)
 
         # Calculate average attribution of each segment.
