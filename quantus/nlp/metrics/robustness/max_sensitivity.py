@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-import numpy as np
-from quantus.nlp.metrics.robustness.sensitivity import Sensitivity
+from quantus.nlp.metrics.text_classification_metric import (
+    BatchedTextClassificationMetric,
+)
 
 
-class MaxSensitivity(Sensitivity):
-    def aggregate_steps(self, arr: np.ndarray) -> float | np.ndarray:
-        agg_fn = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        return agg_fn(arr, axis=1)
+class MaxSensitivity(BatchedTextClassificationMetric):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+    def evaluate_batch(*args, **kwargs):
+        pass

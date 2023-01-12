@@ -1,90 +1,140 @@
 from __future__ import annotations
 
-import numpy as np
 import sys
+import numpy as np
+from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
 
-import tensorflow.python.framework.ops
+if TYPE_CHECKING:
+    import torch
 
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import (
-    HuggingFaceTextClassifierTF,
+
+from quantus.nlp.helpers.types import (
+    Explanation,
+    NormaliseFn,
+    NoiseType,
 )
-from transformers import TFPreTrainedModel
-from typing import List, Tuple, Dict, Callable, Any, TypeVar
-
 
 T = TypeVar("T")
+R = TypeVar("R")
 
 
-def exponential_kernel(distance: float, kernel_width: float = 25) -> np.ndarray:
-    """The exponential kernel."""
-    return np.sqrt(np.exp(-(distance**2) / kernel_width**2))
-
-
-def normalize_scores(scores: np.ndarray, make_positive: bool = False) -> np.ndarray:
-    """Makes the absolute values sum to 1, optionally making them all positive."""
-    if len(scores.shape) == 2:
-        return np.asarray([normalize_scores(i) for i in scores])
-    if len(scores) < 1:
-        return scores
-    scores = scores + np.finfo(np.float32).eps
-    if make_positive:
-        scores = np.abs(scores)
-    return scores / np.abs(scores).sum(-1)
-
-
-def wrap_model(model, tokenizer, model_init_kwargs: Dict) -> TextClassifier:
-    if isinstance(model, TextClassifier):
-        return model
-    if isinstance(model, TFPreTrainedModel):
-        return HuggingFaceTextClassifierTF(model, tokenizer, **model_init_kwargs)
-    if isinstance(model, str):
-        return HuggingFaceTextClassifierTF.from_pretrained(model)
-    raise NotImplementedError()
-
-
-def value_or_default(value: T, default: Callable[[], T] | T) -> T:
+def value_or_default(value: T, default_factory: Callable[[], T]) -> T:
+    """Return value from default_factory() if value is None, otherwise value itself."""
     if value is not None:
         return value
-    if isinstance(default, Callable):
-        return default()
-    return default
-
-
-def pad_ragged_vectors(
-    a: List[np.ndarray],
-    b: List[np.ndarray],
-) -> Tuple[List[np.ndarray], List[np.ndarray]]:
-    max_len = 0
-    for a_i, b_i in zip(a, b):
-        max_len = max([max_len, len(a_i), len(b_i)])
-
-    a_padded = []
-    b_padded = []
-    for a_i, b_i in zip(a, b):
-        a_padded.append(_pad_array(a_i, max_len))
-        b_padded.append(_pad_array(b_i, max_len))
-
-    return a_padded, b_padded
+    return default_factory()
 
 
 def pad_ragged_vector(
-    a: np.ndarray,
-    b: np.ndarray,
+    a: np.ndarray, b: np.ndarray, *, pad_value: float = 0
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Pad a or b, such that both are of the same length."""
     max_len = max([len(a), len(b)])
-    return _pad_array(a, max_len), _pad_array(b, max_len)
+    return _pad_array_right(a, max_len, pad_value), _pad_array_right(
+        b, max_len, pad_value
+    )
 
 
-def _pad_array(a: np.ndarray, target_length: int) -> np.ndarray:
+def _pad_array_right(a: np.ndarray, target_length: int, pad_value: float) -> np.ndarray:
     if len(a) == target_length:
         return a
     pad_len = target_length - len(a)
-    padding = np.zeros(pad_len)
-    return np.concatenate([a, padding])
+    return np.pad(a, (0, pad_len), constant_values=pad_value)
 
 
-def safe_isinstance(obj, class_path_str):
+def batch_list(
+    flat_list: List[T], batch_size: int, drop_remainder: bool = False
+) -> List[List[T]]:
+    """
+    Convert list to list where each entry is a list of length batch_size.
+
+    Parameters
+    ----------
+    flat_list:
+        Original list.
+    batch_size:
+        Length of sublist.
+    drop_remainder:
+        If true, and list is not divisible into n part of batch_size size, drops the last entry, which has different length.
+
+    Returns
+    -------
+
+    l2:
+        List of lists.
+
+    """
+    batches = flat_list[: len(flat_list) // batch_size * batch_size]
+    batches = np.asarray(batches).reshape((-1, batch_size)).tolist()
+    if drop_remainder:
+        return batches
+
+    batches.append(flat_list[len(flat_list) // batch_size * batch_size :])
+    return batches
+
+
+def abs_attributions(a_batch: List[Explanation]) -> List[Explanation]:
+    """Take absolute value of numerical component of explanations."""
+    return [(tokens, np.abs(scores)) for tokens, scores in a_batch]
+
+
+def normalise_attributions(
+    a_batch: List[Explanation], normalise_fn: NormaliseFn
+) -> List[Explanation]:
+    """Apply normalise_fn to numerical component of explanations."""
+    return [(tokens, normalise_fn(scores)) for tokens, scores in a_batch]
+
+
+def unpack_token_ids_and_attention_mask(
+    tokens: Dict[str, np.ndarray] | np.ndarray
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """
+    Typically, tokenizers from huggingface hub will return Dict with "input_ids" and "attention_mask".
+    Both values must be passed into model for correct inference.
+    However, e.g., keras_nlp tokenizers don't return explicit attention mask.
+    This function's purpose is to avoid handling both (and potentially more) cases in each metric, explanation function, etc.
+    """
+    if isinstance(tokens, Dict):
+        return tokens["input_ids"], tokens["attention_mask"]
+    else:
+        return tokens, None
+
+
+def get_interpolated_inputs(
+    baseline: np.ndarray, target: np.ndarray, num_steps: int
+) -> np.ndarray:
+    """Gets num_step linearly interpolated inputs from baseline to target."""
+    if num_steps <= 0:
+        return np.array([])
+    if num_steps == 1:
+        return np.array([baseline, target])
+
+    delta = target - baseline
+    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
+        :, np.newaxis, np.newaxis
+    ]
+    shape = (num_steps + 1,) + delta.shape
+    deltas = scales * np.broadcast_to(delta, shape)
+    interpolated_inputs = baseline + deltas
+    return interpolated_inputs
+
+
+def map_optional(value: Optional[T], func: Callable[[T], R]) -> Optional[R]:
+    """Apply func to value, if value is not None"""
+    if value is None:
+        return None
+    return func(value)
+
+
+def apply_noise(arr: T, noise: T, noise_type: NoiseType) -> T:
+    if noise_type == NoiseType.additive:
+        return arr + noise
+    if noise_type == NoiseType.multiplicative:
+        return arr * noise
+    raise ValueError()
+
+
+def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:
     """
     Acts as a safe version of isinstance without having to explicitly
     import packages which may not exist in the users environment.
@@ -141,12 +191,36 @@ def safe_isinstance(obj, class_path_str):
     return False
 
 
-def to_numpy(a):
-    if isinstance(a, np.ndarray):
-        return a
-    if safe_isinstance(a, "tensorflow.Tensor"):
-        return a.numpy()
-    if safe_isinstance(a, "tensorflow.python.framework.ops.EagerTensor"):
-        return a.numpy()
-    if safe_isinstance(a, "torch.Tensor"):
-        return a.cpu().numpy()
+def choose_torch_device() -> torch.device:
+    """Choose torch hardware acceleration if available."""
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda:0")
+    if hasattr(torch.backends, "mps"):
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+    return torch.device("cpu")
+
+
+def explanation_similarity(
+    a: Explanation,
+    b: Explanation,
+    similarity_fn: Callable[[np.ndarray, np.ndarray], T],
+    padded: bool = True,
+    numerical_only: bool = True,
+) -> T:
+    """Compute similarity between batches of explanations using provided similarity_fn."""
+    if not padded:
+        raise NotImplementedError()
+    a_padded, b_padded = pad_ragged_vector(a[1], b[1])
+    if not numerical_only:
+        raise NotImplementedError()
+    return similarity_fn(a_padded, b_padded)
+
+
+def safe_asarray(arr: T) -> np.ndarray:
+    """Convert Tensorflow or Torch tensors to numpy arrays."""
+    if safe_isinstance(arr, "torch.Tensor"):
+        return arr.detach().cpu().numpy()
+    return np.asarray(arr)

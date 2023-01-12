@@ -24,3 +24,5 @@ datasets==2.8.0
 nlpaug==1.1.11
 nltk==3.8.1
 shap==0.41.0
+keras_nlp==0.4.0
+lime==0.2.0.1
