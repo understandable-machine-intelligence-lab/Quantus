@@ -113,9 +113,7 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -134,9 +132,7 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"exception": ValueError},
@@ -155,9 +151,7 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
