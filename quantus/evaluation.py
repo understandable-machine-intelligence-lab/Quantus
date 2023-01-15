@@ -19,7 +19,7 @@ from quantus.functions.explanation_func import explain
 
 def evaluate(
     metrics: Dict,
-    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray], List[str]],
+    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
@@ -40,7 +40,7 @@ def evaluate(
         A dictionary with intialised metrics.
     xai_methods: dict, list
         Pass the different explanation methods as:
-        1) List[str] of built-in Quantus explanation methods, or
+        1) Dict[str, np.ndarray] where values are pre-calculcated attributions, or
         2) Dict[str, Dict] where the keys are the name of the Quantus build-in explanation methods,
         and the values are the explain function keyword arguments as a dictionary, or
         3) Dict[str, Callable] where the keys are the name of explanation methods,
@@ -60,7 +60,7 @@ def evaluate(
     progress: boolean
         Indicates if progress should be printed to std, or not.
     explain_func_kwargs: dict, optional
-        Keyword arguments to be passed to explain_func on call.
+        Keyword arguments to be passed to explain_func on call. Pass None if using Dict[str, Dict] type for xai_methods.
     call_kwargs: Dict[str, Dict]
         Keyword arguments for the call of the metrics, keys are names for arg set and values are argument dictionaries.
     kwargs: optional
@@ -171,6 +171,7 @@ def evaluate(
                         explain_func=explain_funcs[method],
                         explain_func_kwargs={
                             **explain_func_kwargs,
+                            **{"method": method},
                         },
                         **call_kwarg,
                         **kwargs,
