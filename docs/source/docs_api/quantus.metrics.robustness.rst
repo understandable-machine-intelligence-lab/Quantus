@@ -17,3 +17,6 @@ Submodules
    quantus.metrics.robustness.continuity
    quantus.metrics.robustness.local_lipschitz_estimate
    quantus.metrics.robustness.max_sensitivity
+   quantus.metrics.robustness.relative_input_stability
+   quantus.metrics.robustness.relative_output_stability
+   quantus.metrics.robustness.relative_representation_stability

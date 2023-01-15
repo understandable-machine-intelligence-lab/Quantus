@@ -118,3 +118,24 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     assert reduce(
         and_, [np.allclose(x, y) for x, y in zip(before, after)]
     ), "Test failed."
+
+
+
+@pytest.mark.tf_model
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"layer_names": ["test_conv"]},
+        {"layer_indices": [0, 1]},
+        {"layer_indices": [-1, -2]},
+    ],
+    ids=["all layers", "2nd conv", "first 2 layers", "last 2 layers"],
+)
+def test_get_hidden_layer_output_sequential(load_mnist_model_tf, params):
+    model = TensorFlowModel(model=load_mnist_model_tf, channel_first=False)
+    X = np.random.random((32, 28, 28, 1))
+    result = model.get_hidden_representations(X, **params)
+    assert isinstance(result, np.ndarray), "Must be a np.ndarray"
+    assert len(result.shape) == 2, "Must be a batch of 1D tensors"
+    assert result.shape[0] == X.shape[0], "Must have same batch size as input"

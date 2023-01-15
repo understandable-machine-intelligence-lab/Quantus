@@ -145,7 +145,7 @@ from quantus.metrics.robustness import (
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "Gradient",
+                        "method": "VanillaGradients",
                     },
                 },
             },

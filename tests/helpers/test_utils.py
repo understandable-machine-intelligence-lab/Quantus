@@ -419,7 +419,7 @@ def test_get_wrapped_model(
                 "indices": [15, 22, 30],
                 "indexed_axes": [2, 3],
             },
-            {"shape": (10, 20, 30, 40)},
+            {"shape": (10, 20, 30, 40), "blurchange": True},
         ),
         (
             {
@@ -428,7 +428,7 @@ def test_get_wrapped_model(
                 "indices": [15, 22, 30],
                 "indexed_axes": [0, 1, 2],
             },
-            {"shape": (10, 20, 30, 40)},
+            {"shape": (10, 20, 30, 40), "blurchange": True},
         ),
         (
             {
@@ -437,7 +437,7 @@ def test_get_wrapped_model(
                 "indices": [15, 22, 30],
                 "indexed_axes": [1, 2, 3],
             },
-            {"shape": (10, 20, 30, 40)},
+            {"shape": (10, 20, 30, 40), "blurchange": True},
         ),
         (
             {
@@ -474,6 +474,17 @@ def test_blur_at_indices(
     )
     if "shape" in expected:
         assert expected["shape"] == out.shape, "Test failed."
+
+    if "blurchange" in expected:
+        indices = expand_indices(input, params["indices"], params["indexed_axes"])
+
+        # print(indices)
+        # print(out[indices])
+        # print(input[indices])
+
+        assert (out[indices] != input[indices]).all() == expected[
+            "blurchange"
+        ], "Test failed."
 
 
 @pytest.mark.utils
