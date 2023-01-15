@@ -441,9 +441,11 @@ def blur_at_indices(
 
     # Iterate over indices, applying expanded kernel
     x_blur = copy.copy(x)
-    for i in range(array_indices.shape[-1]):
-        idx = list(array_indices[..., [i]])
+    arr_indices_flattened = np.array([a.flatten() for a in array_indices])
+    for i in range(arr_indices_flattened.shape[-1]):
+        idx = list(arr_indices_flattened[..., [i]])
         expanded_idx = copy.copy(idx)
+
         for ax, idx_ax in enumerate(expanded_idx):
             s = kernel.shape[ax]
             idx_ax = np.squeeze(idx_ax)
@@ -451,14 +453,18 @@ def blur_at_indices(
                 idx_ax - (s // 2), idx_ax + s // 2 + 1 - (s % 2 == 0)
             )
 
+        for dim in range(array_indices.ndim - 2):
+            idx = [np.expand_dims(index, axis=index.ndim) for index in idx]
+
         if 0 not in indexed_axes:
             expanded_idx = none_slices + expanded_idx
             idx = none_slices + idx
+
         expanded_idx = tuple(expanded_idx)
         idx = tuple(idx)
 
         x_blur[idx] = np.sum(
-            np.multiply(x[expanded_idx], expanded_kernel),
+            np.multiply(np.array(x)[expanded_idx], np.array(expanded_kernel)),
             axis=tuple(indexed_axes),
             keepdims=True,
         )

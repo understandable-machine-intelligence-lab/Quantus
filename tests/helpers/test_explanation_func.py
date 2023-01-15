@@ -259,19 +259,19 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-            },
-            {"shape": (10, 1, 44)},
+            {"method": "LayerGradCam", "gc_layer": "model._modules.get('conv_2')", "interpolate": (100,), "interpolate_method": "nearest"},
+            {"shape": (10, 1, 100)},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "method": "GradCam",
-                "gc_layer": "model._modules.get('conv_2')",
-            },
+            {"method": "LayerGradCam", "gc_layer": "model._modules.get('conv_2')", "interpolate": (28, 28)},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GradCam", "gc_layer": "model._modules.get('conv_2')"},
             {"shape": (8, 1, 8, 8)},
         ),
         (
@@ -388,21 +388,176 @@ from quantus.functions.normalise_func import normalise_by_max
             },
             {"exception": AssertionError},
         ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "DeepLift"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "DeepLift"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "DeepLiftShap"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "DeepLiftShap"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "GuidedGradCam", "gc_layer": "model._modules.get('conv_2')",},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "GuidedGradCam", "gc_layer": "model._modules.get('conv_2')",},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Deconvolution", },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "Deconvolution", },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "FeaturePermutation", },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "FeaturePermutation", },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "Lime", },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "Lime", },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "KernelShap", },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "KernelShap", },
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "LRP", },
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "LayerConductance", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (28, 28), "interpolate_mode": "nearest"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "LayerConductance", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "LayerActivation", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (28, 28), "interpolate_mode": "nearest"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "LayerActivation", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "InternalInfluence", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (28, 28), "interpolate_mode": "nearest"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "InternalInfluence", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {"method": "LayerGradientXActivation", "method_kwargs": {"layer": "model._modules.get('conv_2')"},
+             "interpolate": (28, 28), "interpolate_mode": "nearest"},
+            {"shape": (8, 1, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "LayerGradientXActivation", "gc_layer": "model._modules.get('conv_2')",
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"shape": (10, 1, 100)},
+        ),
+        (
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {"method": "LayerGradientXActivation", "method_kwargs": {},
+             "interpolate": (100,), "interpolate_mode": "nearest"},
+            {"exception": ValueError},
+        ),
         # tf-explain
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Gradient",
-            },
+            {"method": "VanillaGradients",},
             {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Occlusion",
-            },
+            {"method": "Gradient", },
+            {"shape": (8, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "OcclusionSensitivity",},
             {"shape": (8, 28, 28, 3)},
         ),
         (
@@ -416,9 +571,13 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "InputXGradient",
-            },
+            {"method": "GradientsInput",},
+            {"shape": (8, 28, 28)},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "SmoothGrad", },
             {"shape": (8, 28, 28)},
         ),
         (
@@ -436,7 +595,7 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "InputXGradient", "reduce_axes": (0, 1, 2)},
+            {"method": "GradientsInput", "reduce_axes": (0, 1, 2)},
             {"exception": KeyError},
         ),
     ],
@@ -521,17 +680,13 @@ def test_explain_func(
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "method": "GradCam",
-            },
+            {"method": "LayerGradCam",},
             {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "method": "GradCam",
-            },
+            {"method": "LayerGradCam",},
             {"exception": ValueError},
         ),
     ],
@@ -581,49 +736,37 @@ def test_generate_captum_explanation(
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "Gradient",
-            },
+            {"method": "VanillaGradients",},
             {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Gradient",
-            },
+            {"method": "VanillaGradients",},
             {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "Occlusion",
-            },
+            {"method": "OcclusionSensitivity",},
             {"exception": IndexError},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Occlusion",
-            },
+            {"method": "OcclusionSensitivity",},
             {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "InputXGradient",
-            },
+            {"method": "GradientsInput",},
             {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "InputXGradient",
-            },
+            {"method": "GradientsInput",},
             {"shape": (8, 28, 28)},
         ),
         (
@@ -645,35 +788,25 @@ def test_generate_captum_explanation(
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "GradCam",
-            },
+            {"method": "GradCAM",},
             {"exception": ValueError},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "GradCam",
-            },
-            {"exception": ValueError},
+            {"method": "GradCAM",},
+            {"shape": (8, 28, 28, 3)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "GradCam",
-                "gc_layer": "dense_1",
-            },
+            {"method": "GradCAM", "gc_layer": "dense_1",},
             {"exception": Exception},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "GradCam",
-                "gc_layer": "dense_1",
-            },
+            {"method": "GradCAM", "gc_layer": "dense_1",},
             {"exception": ValueError},
         ),
     ],
@@ -723,17 +856,13 @@ def test_generate_tf_explanation(
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {
-                "method": "Gradient",
-            },
+            {"method": "VanillaGradients",},
             {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
             lazy_fixture("almost_uniform_1d_no_abatch_channel_last"),
-            {
-                "method": "Gradient",
-            },
+            {"method": "VanillaGradients",},
             {"exception": ValueError},
         ),
         (

@@ -34,6 +34,18 @@ if util.find_spec("captum"):
         Occlusion,
         FeatureAblation,
         LayerGradCam,
+        DeepLift,
+        DeepLiftShap,
+        GuidedGradCam,
+        Deconvolution,
+        FeaturePermutation,
+        Lime,
+        KernelShap,
+        LRP,
+        LayerConductance,
+        LayerActivation,
+        InternalInfluence,
+        LayerGradientXActivation,
     )
 if util.find_spec("zennit"):
     from zennit import canonizers as zcanon
@@ -166,7 +178,8 @@ def generate_tf_explanation(
          Returns np.ndarray of same shape as inputs.
 
     """
-    method = kwargs.get("method", "Gradient").lower()
+    method = kwargs.get("method", "VanillaGradients")
+    method_kwargs = kwargs.get("method_kwargs", {})
     inputs = inputs.reshape(-1, *model.input_shape[1:])
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
@@ -176,13 +189,21 @@ def generate_tf_explanation(
 
     explanation: np.ndarray = np.zeros_like(inputs)
 
-    if method == "Gradient".lower():
+    if method in constants.DEPRECATED_XAI_METHODS_TF:
+        warnings.warn(
+            f"Explanaiton method string {method} is deprecated. Use "
+            f"{constants.DEPRECATED_XAI_METHODS_TF[method]} instead.\n",
+            category=UserWarning,
+        )
+        method = constants.DEPRECATED_XAI_METHODS_TF[method]
+
+    if method == "VanillaGradients":
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y),
+                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
                         inputs,
                         targets,
                     )
@@ -192,14 +213,15 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "IntegratedGradients".lower():
+    elif method == "IntegratedGradients":
+        n_steps = kwargs.get("n_steps", 10)
         explainer = tf_explain.core.integrated_gradients.IntegratedGradients()
         explanation = (
             np.array(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, n_steps=10
+                            ([x], None), model, y, n_steps=n_steps, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -210,13 +232,13 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "InputXGradient".lower():
+    elif method == "GradientsInput":
         explainer = tf_explain.core.gradients_inputs.GradientsInputs()
         explanation = (
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y),
+                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
                         inputs,
                         targets,
                     )
@@ -226,7 +248,7 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "Occlusion".lower():
+    elif method == "OcclusionSensitivity":
         patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
         explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
         explanation = (
@@ -234,7 +256,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, patch_size=patch_size
+                            ([x], None), model, y, patch_size=patch_size, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -245,11 +267,9 @@ def generate_tf_explanation(
             / 255
         )
 
-    elif method == "GradCam".lower():
-        if "gc_layer" not in kwargs:
-            raise ValueError(
-                "Specify a convolutional layer name as 'gc_layer' to run GradCam."
-            )
+    elif method == "GradCAM":
+        if "gc_layer" in kwargs:
+            method_kwargs["layer_name"] = kwargs["gc_layer"]
 
         explainer = tf_explain.core.grad_cam.GradCAM()
         explanation = (
@@ -257,7 +277,28 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, layer_name=kwargs["gc_layer"]
+                            ([x], None), model, y, **method_kwargs
+                        ),
+                        inputs,
+                        targets,
+                    )
+                ),
+                dtype=float,
+            )
+            / 255
+        )
+
+    elif method == "SmoothGrad":
+
+        num_samples = kwargs.get("num_samples", 5)
+        noise = kwargs.get("noise", 0.1)
+        explainer = tf_explain.core.smoothgrad.SmoothGrad()
+        explanation = (
+            np.array(
+                list(
+                    map(
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, num_samples=num_samples, noise=noise, **method_kwargs
                         ),
                         inputs,
                         targets,
@@ -270,7 +311,7 @@ def generate_tf_explanation(
 
     else:
         raise KeyError(
-            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS}."
+            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
         )
 
     if (
@@ -309,7 +350,7 @@ def generate_captum_explanation(
     device: string
         Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. May include method_kwargs dictionary which includes keyword arguments for a method call.
 
     Returns
     -------
@@ -317,7 +358,8 @@ def generate_captum_explanation(
          Returns np.ndarray of same shape as inputs.
     """
 
-    method = kwargs.get("method", "Gradient").lower()
+    method = kwargs.get("method", "Gradient")
+    method_kwargs = kwargs.get("method_kwargs", {})
 
     # Set model in evaluate mode.
     model.to(device)
@@ -339,8 +381,8 @@ def generate_captum_explanation(
 
     reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
 
-    # For data with no channel dimensions, like tabular data, we want to prevent attribution summation.
-    if len(tuple(kwargs.get("reduce_axes", [1]))) == 0:
+    # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
+    if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
 
         def f_reduce_axes(a):
             return a
@@ -352,18 +394,28 @@ def generate_captum_explanation(
 
     explanation: torch.Tensor = torch.zeros_like(inputs)
 
-    if method == "GradientShap".lower():
+    if method in constants.DEPRECATED_XAI_METHODS_CAPTUM:
+        warnings.warn(
+            f"Explanaiton method string {method} is deprecated. Use "
+            f"{constants.DEPRECATED_XAI_METHODS_CAPTUM[method]} instead.\n",
+            category=UserWarning,
+        )
+        method = constants.DEPRECATED_XAI_METHODS_CAPTUM[method]
+
+    if method in ["GradientShap", "DeepLift", "DeepLiftShap"]:
+        attr_func = eval(method)
         explanation = f_reduce_axes(
-            GradientShap(model).attribute(
+            attr_func(model, **method_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
             )
         )
 
-    elif method == "IntegratedGradients".lower():
+    elif method == "IntegratedGradients":
+        attr_func = eval(method)
         explanation = f_reduce_axes(
-            IntegratedGradients(model).attribute(
+            attr_func(model, **method_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
@@ -372,22 +424,27 @@ def generate_captum_explanation(
             )
         )
 
-    elif method == "InputXGradient".lower():
+    elif method in [
+        "InputXGradient",
+        "Saliency",
+        "FeatureAblation",
+        "Deconvolution",
+        "FeaturePermutation",
+        "Lime",
+        "KernelShap",
+        "LRP",
+    ]:
+        attr_func = eval(method)
         explanation = f_reduce_axes(
-            InputXGradient(model).attribute(inputs=inputs, target=targets)
+            attr_func(model, **method_kwargs).attribute(inputs=inputs, target=targets)
         )
 
-    elif method == "Saliency".lower():
+    elif method == "Gradient":
         explanation = f_reduce_axes(
-            Saliency(model).attribute(inputs=inputs, target=targets, abs=True)
+            Saliency(model, **method_kwargs).attribute(inputs=inputs, target=targets, abs=False)
         )
 
-    elif method == "Gradient".lower():
-        explanation = f_reduce_axes(
-            Saliency(model).attribute(inputs=inputs, target=targets, abs=False)
-        )
-
-    elif method == "Occlusion".lower():
+    elif method == "Occlusion":
         window_shape = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))
         explanation = f_reduce_axes(
             Occlusion(model).attribute(
@@ -397,25 +454,36 @@ def generate_captum_explanation(
             )
         )
 
-    elif method == "FeatureAblation".lower():
-        explanation = f_reduce_axes(
-            FeatureAblation(model).attribute(inputs=inputs, target=targets)
-        )
+    elif method in [
+        "LayerGradCam",
+        "GuidedGradCam",
+        "LayerConductance",
+        "LayerActivation",
+        "InternalInfluence",
+        "LayerGradientXActivation",
+    ]:
+        if "gc_layer" in kwargs:
+            method_kwargs["layer"] = kwargs["gc_layer"]
 
-    elif method == "GradCam".lower():
-        if "gc_layer" not in kwargs:
+        if "layer" not in method_kwargs:
             raise ValueError(
-                "Provide kwargs, 'gc_layer' e.g., list(model.named_modules())[-4][1] to run GradCam."
+                "Specify a convolutional layer name as 'gc_layer' to run GradCam."
             )
 
-        if isinstance(kwargs["gc_layer"], str):
-            kwargs["gc_layer"] = eval(kwargs["gc_layer"])
+        if isinstance(method_kwargs["layer"], str):
+            method_kwargs["layer"] = eval(method_kwargs["layer"])
 
-        explanation = f_reduce_axes(
-            LayerGradCam(model, layer=kwargs["gc_layer"]).attribute(
+        attr_func = eval(method)
+
+        if method != "LayerActivation":
+            explanation = attr_func(model, **method_kwargs).attribute(
                 inputs=inputs, target=targets
             )
-        )
+        else:
+            explanation = attr_func(model, **method_kwargs).attribute(
+                inputs=inputs
+            )
+
         if "interpolate" in kwargs:
             if isinstance(kwargs["interpolate"], tuple):
                 if "interpolate_mode" in kwargs:
@@ -428,8 +496,20 @@ def generate_captum_explanation(
                     explanation = LayerGradCam.interpolate(
                         explanation, kwargs["interpolate"]
                     )
+        else:
+            if explanation.shape[-1] != inputs.shape[-1]:
+                warnings.warn(
+                    "Quantus requires GradCam attribution and input to correspond in "
+                    "last dimensions, but got shapes {} and {}\n "
+                    "Pass 'interpolate' argument to explanation function get matching dimensions.".format(
+                        explanation.shape, inputs.shape
+                    ),
+                    category=UserWarning,
+                )
 
-    elif method == "Control Var. Sobel Filter".lower():
+        explanation = f_reduce_axes(explanation)
+
+    elif method == "Control Var. Sobel Filter":
         explanation = torch.zeros(size=inputs.shape)
 
         for i in range(len(explanation)):
@@ -438,10 +518,10 @@ def generate_captum_explanation(
             )
         explanation = explanation.mean(**reduce_axes)
 
-    elif method == "Control Var. Random Uniform".lower():
+    elif method == "Control Var. Random Uniform":
         explanation = torch.rand(size=(inputs.shape[0], *inputs.shape[2:]))
 
-    elif method == "Control Var. Constant".lower():
+    elif method == "Control Var. Constant":
         assert (
             "constant_value" in kwargs
         ), "Specify a 'constant_value' e.g., 0.0 or 'black' for pixel replacement."
@@ -461,7 +541,7 @@ def generate_captum_explanation(
 
     else:
         raise KeyError(
-            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS}."
+            f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_CAPTUM}."
         )
 
     if isinstance(explanation, torch.Tensor):
