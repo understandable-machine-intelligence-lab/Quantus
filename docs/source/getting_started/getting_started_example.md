@@ -241,9 +241,12 @@ xai_methods = {
     "IntegratedGradients": saliency_callable
 }
 ```
-  or as a list of `string` (this input relies on `quantus.explain` so make sure that the XAI methods you include are supported) :
+  or as a `dict` but with explanation arguments :
 ```python
-xai_methods = ["Saliency", "IntegratedGradients"]
+xai_methods = {
+    "Saliency": {},
+    "IntegratedGradients": {}
+}
 ```
 
 You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):

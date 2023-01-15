@@ -78,20 +78,6 @@ from quantus.metrics.robustness import MaxSensitivity
                     "method": "IntegratedGradients",
                 },
                 "explain_func": explain,
-                "eval_metrics": "{'max-Sensitivity': Sparseness(**{'disable_warnings': True,'normalise': False,})}",
-                "eval_xai_methods": "[params['explain_func_kwargs']['method']]",
-                "call_kwargs": "{'0': {}}",
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "explain_func_kwargs": {
-                    "method": "IntegratedGradients",
-                },
-                "explain_func": explain,
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func']}",
                 "call_kwargs": "{'0': {}}",
