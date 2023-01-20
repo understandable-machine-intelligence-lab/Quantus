@@ -23,7 +23,6 @@ def evaluate(
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    a_batch: Union[np.ndarray, None] = None,
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
@@ -51,8 +50,6 @@ def evaluate(
         A np.ndarray which contains the input data that are explained.
     y_batch: np.ndarray
         A np.ndarray which contains the output labels that are explained.
-    a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
     s_batch: np.ndarray, optional
         A np.ndarray which contains segmentation masks that matches the input.
     agg_func: callable
