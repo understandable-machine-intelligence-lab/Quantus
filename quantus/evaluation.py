@@ -147,6 +147,9 @@ def evaluate(
                 "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
             )
 
+        if explain_func_kwargs is None:
+            explain_func_kwargs = {}
+
         for (metric, metric_func) in metrics.items():
 
             results[method][metric] = {}
