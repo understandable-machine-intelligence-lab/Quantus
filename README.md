@@ -22,7 +22,7 @@ _Quantus is currently under active development so carefully note the Quantus rel
         
 ## News and Highlights! :rocket:
 
-- Accepted to Journal of Machine Learning Research and MLOSS! Read more here [here](https://jmlr.org/papers/v24/22-0142.html).
+- Accepted to Journal of Machine Learning Research (MLOSS)! Read more [here](https://jmlr.org/papers/v24/22-0142.html).
 - Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
