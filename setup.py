@@ -51,7 +51,7 @@ EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 # Define setup.
 setup(
     name="quantus",
-    version="0.3.0",
+    version="0.3.2",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
