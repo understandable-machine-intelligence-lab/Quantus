@@ -18,10 +18,11 @@
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
-[📑 Shortcut to paper!](https://arxiv.org/abs/2202.06861)
+[📑 Shortcut to paper!](https://jmlr.org/papers/volume24/22-0142/22-0142.pdf)
         
 ## News and Highlights! :rocket:
 
+- Accepted to Journal of Machine Learning Research and MLOSS! Read more here [here](https://jmlr.org/papers/v24/22-0142.html).
 - Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation 
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
@@ -37,24 +38,22 @@ _Quantus is currently under active development so carefully note the Quantus rel
 ## Citation
 
 If you find this toolkit or its companion paper
-[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations**](https://arxiv.org/abs/2202.06861)
+[**Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations and Beyond**](https://jmlr.org/papers/v24/22-0142.html)
 interesting or useful in your research, use the following Bibtex annotation to cite us:
 
 ```bibtex
-@article{hedstrom2022quantus,
-      title={Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations}, 
-      author={Anna Hedström and
-              Leander Weber and
-              Dilyara Bareeva and
-              Franz Motzkus and
-              Wojciech Samek and
-              Sebastian Lapuschkin and
-              Marina M.-C. Höhne},
-      year={2022},
-      eprint={2202.06861},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@article{hedstrom2023quantus,
+  author  = {Anna Hedstr{\"{o}}m and Leander Weber and Daniel Krakowczyk and Dilyara Bareeva and Franz Motzkus and Wojciech Samek and Sebastian Lapuschkin and Marina Marina M.{-}C. H{\"{o}}hne},
+  title   = {Quantus: An Explainable AI Toolkit for Responsible Evaluation of Neural Network Explanations and Beyond},
+  journal = {Journal of Machine Learning Research},
+  year    = {2023},
+  volume  = {24},
+  number  = {34},
+  pages   = {1--11},
+  url     = {http://jmlr.org/papers/v24/22-0142.html}
 }
+
+
 ```
 
 When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above).
