@@ -6,9 +6,8 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
+
 import math
-import re
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
@@ -19,6 +18,7 @@ from quantus.metrics.base import Metric
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.utils import expand_attribution_channel
 
 
 class BatchedMetric(Metric):
@@ -514,3 +514,40 @@ class BatchedPerturbationMetric(BatchedMetric):
         raise NotImplementedError(
             "evaluate_instance() not implemented for BatchedPerturbationMetric"
         )
+
+
+class BatchExplainable:
+
+    """Common functionality for metrics, which need to generate new explanations during evaluation."""
+
+    normalise: bool
+    abs: bool
+    normalise_func: Callable
+    normalise_func_kwargs: Dict
+
+    def generate_normalised_explanations_batch(
+        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
+    ) -> np.ndarray:
+        """
+        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
+
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            4D tensor representing batch of input images.
+        y_batch: np.ndarray
+             1D tensor, representing predicted labels for the x_batch.
+        explain_func: callable
+            Function to generate explanations, takes only inputs,targets kwargs.
+
+        Returns
+        -------
+        a_batch: np.ndarray
+            A batch of explanations.
+        """
+        a_batch = explain_func(inputs=x_batch, targets=y_batch)
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+        return expand_attribution_channel(a_batch, x_batch)

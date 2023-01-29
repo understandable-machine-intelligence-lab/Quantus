@@ -17,9 +17,10 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.robustness.robustness_metric import BatchedRobustnessMetric
 
 
-class MaxSensitivity(BatchedPerturbationMetric):
+class MaxSensitivity(BatchedPerturbationMetric, BatchedRobustnessMetric):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 
@@ -311,13 +312,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
             )
 
             x_input = model.shape_input(
@@ -352,10 +348,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 

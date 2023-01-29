@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from quantus.helpers import asserts
@@ -16,9 +16,10 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.robustness.robustness_metric import BatchedRobustnessMetric
 
 
-class LocalLipschitzEstimate(BatchedPerturbationMetric):
+class LocalLipschitzEstimate(BatchedPerturbationMetric, BatchedRobustnessMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -319,13 +320,8 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
             )
 
             x_input = model.shape_input(
@@ -360,10 +356,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
