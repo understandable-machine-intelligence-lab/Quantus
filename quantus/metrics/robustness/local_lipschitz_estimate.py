@@ -16,7 +16,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.metrics.robustness.robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric, BatchedRobustnessMetric):

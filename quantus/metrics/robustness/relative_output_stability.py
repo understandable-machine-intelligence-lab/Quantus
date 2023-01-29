@@ -20,7 +20,7 @@ from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.metrics.robustness.robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
 
 
 class RelativeOutputStability(
