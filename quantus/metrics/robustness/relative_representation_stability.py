@@ -129,7 +129,7 @@ class RelativeRepresentationStability(
 
         self._layer_names = layer_names
         self._layer_indices = layer_indices
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -332,7 +332,7 @@ class RelativeRepresentationStability(
             )
             rrs_batch[index] = rrs
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self._return_nan_when_prediction_changes:
+            if not self.return_nan_when_prediction_changes:
                 continue
 
             # If perturbed input caused change in prediction, then it's RRS=nan.
