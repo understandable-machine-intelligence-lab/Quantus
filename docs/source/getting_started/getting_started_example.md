@@ -241,7 +241,7 @@ xai_methods = {
     "IntegratedGradients": saliency_callable
 }
 ```
-  or as a `dict` but with explanation arguments :
+  or as a `dict` with keys with the name of the Quantus built-in explanation methods (see `quantus.explain`), and the values are associated hyperparameters (as a `dict`):
 ```python
 xai_methods = {
     "Saliency": {},
