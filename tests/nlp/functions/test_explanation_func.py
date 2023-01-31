@@ -3,7 +3,7 @@ import tensorflow as tf
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from typing import List
-from quantus.nlp.functions.explanation_func import explain
+from quantus.nlp import explain, NoiseType
 
 
 @pytest.mark.nlp
@@ -107,13 +107,13 @@ def test_explain_integrated_gradients(x_batch, model, kwargs):
         (
             lazy_fixture("ag_news_dataset"),
             lazy_fixture("fnet_ag_news_model"),
-            {"noise_type": "additive"},
+            {"noise_type": NoiseType.additive},
         ),
         # not implemented now
         # (
         #    lazy_fixture("sst2_dataset"),
         #    lazy_fixture("torch_distilbert_sst2_model"),
-        #    {"explain_fn": "GradXInput"},
+        #    {"explain_fn": "GradNorm"},
         # ),
     ],
 )

@@ -30,8 +30,9 @@ def pad_ragged_vector(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Pad a or b, such that both are of the same length."""
     max_len = max([len(a), len(b)])
-    return _pad_array_right(a, max_len, pad_value), _pad_array_right(
-        b, max_len, pad_value
+    return (
+        _pad_array_right(a, max_len, pad_value),
+        _pad_array_right(b, max_len, pad_value)
     )
 
 
@@ -64,6 +65,9 @@ def batch_list(
         List of lists.
 
     """
+    if len(flat_list) % batch_size == 0:
+        return np.asarray(flat_list).reshape((-1, batch_size)).tolist()
+
     batches = flat_list[: len(flat_list) // batch_size * batch_size]
     batches = np.asarray(batches).reshape((-1, batch_size)).tolist()
     if drop_remainder:
@@ -127,11 +131,12 @@ def map_optional(value: Optional[T], func: Callable[[T], R]) -> Optional[R]:
 
 
 def apply_noise(arr: T, noise: T, noise_type: NoiseType) -> T:
+    if not isinstance(noise_type, NoiseType):
+        raise ValueError("Only instances of NoiseType enum are supported for noise_type kwarg.")
     if noise_type == NoiseType.additive:
         return arr + noise
     if noise_type == NoiseType.multiplicative:
         return arr * noise
-    raise ValueError()
 
 
 def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:

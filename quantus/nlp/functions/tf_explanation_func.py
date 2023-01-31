@@ -275,7 +275,7 @@ def tf_explain_integrated_gradients_numerical(
 
 _numerical_method_mapping: Dict[str, NumericalExplainFn] = {
     "GradNorm": tf_explain_gradient_norm_numerical,
-    "InputXGrad": tf_explain_gradient_x_input_numerical,
+    "GradXInput": tf_explain_gradient_x_input_numerical,
     "IntGrad": tf_explain_integrated_gradients_numerical,
     "NoiseGrad++": tf_explain_integrated_gradients_numerical,
 }

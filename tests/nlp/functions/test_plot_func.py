@@ -1,5 +1,5 @@
 import pytest
-from nlp.functions.plot_func import (
+from quantus.nlp.functions.plot_func import (
     visualise_explanations_as_html,
     visualise_explanations_as_pyplot,
 )
