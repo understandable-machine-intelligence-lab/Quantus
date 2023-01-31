@@ -27,7 +27,7 @@ class BatchedRobustnessMetric:
     def indexes_of_changed_predictions_latent(
         self,
         model: TextClassifier,
-        x_batch: np.ndarray,
+        x_batch_embeddings: np.ndarray,
         x_batch_perturbed: np.ndarray,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray | List:
@@ -36,6 +36,6 @@ class BatchedRobustnessMetric:
         if not self.return_nan_when_prediction_changes:
             return []
 
-        labels_before = model(x_batch, attention_mask).argmax(axis=-1)
+        labels_before = model(x_batch_embeddings, attention_mask).argmax(axis=-1)
         labels_after = model(x_batch_perturbed, attention_mask).argmax(axis=-1)
         return np.argwhere(labels_before != labels_after).reshape(-1)

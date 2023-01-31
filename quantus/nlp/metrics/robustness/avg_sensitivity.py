@@ -167,7 +167,7 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
-        a_batch: List[Explanation],
+        a_batch: List[Explanation] | np.ndarray,
         **kwargs,
     ) -> np.ndarray | float:
 
@@ -278,7 +278,7 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         self,
         model: TextClassifier,
         y_batch: np.ndarray,
-        a_batch: List[Explanation],
+        a_batch: np.ndarray,
         x_batch_embeddings: np.ndarray,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray:
@@ -297,8 +297,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         )
 
         explain_fn = functools.partial(self.explain_func, **self.explain_func_kwargs)
-
-        a_batch_numerical = np.asarray([i[1] for i in a_batch])
 
         # Generate explanation based on perturbed input x.
         a_perturbed = explain_fn(
@@ -329,7 +327,7 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
                 continue
 
             sensitivities = similarity_fn(
-                a_batch_numerical[instance_id], a_perturbed[instance_id]
+                a_batch[instance_id], a_perturbed[instance_id]
             )
 
             numerator = self.norm_numerator(sensitivities)

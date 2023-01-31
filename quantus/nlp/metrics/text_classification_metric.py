@@ -21,6 +21,7 @@ from quantus.nlp.helpers.utils import (
     batch_list,
     normalise_attributions,
     abs_attributions,
+    unpack_token_ids_and_attention_mask,
 )
 from quantus.helpers.warn import check_kwargs
 from quantus.nlp.functions.explanation_func import explain
@@ -99,7 +100,7 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         if not isinstance(perturbation_type, PerturbationType):
             raise ValueError("Only enum values of type PerturbationType are allowed")
 
-        self.noise_type = perturbation_type
+        self.perturbation_type = perturbation_type
         self.persist_func = persist_func
 
     def __call__(
@@ -236,13 +237,19 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         if a_batch is None:
             a_batch = self._generate_a_batch(model, x_batch, y_batch, batch_size)
 
-        if self.normalise:
-            a_batch = normalise_attributions(
-                a_batch,
-                functools.partial(self.normalise_func, **self.normalise_func_kwargs),
-            )
-        if self.abs:
-            a_batch = abs_attributions(a_batch)
+        if self.perturbation_type == PerturbationType.plain_text:
+            if self.normalise:
+                normalise_fn = functools.partial(
+                    self.normalise_func, **self.normalise_func_kwargs
+                )
+                a_batch = normalise_attributions(a_batch, normalise_fn)
+            if self.abs:
+                a_batch = abs_attributions(a_batch)
+        else:
+            if self.normalise:
+                a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+            if self.abs:
+                a_batch = np.abs(a_batch)
 
         # Initialize data dictionary.
         data = {
@@ -271,21 +278,42 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         x_batch: List[str],
         y_batch: np.ndarray,
         batch_size: int,
-    ) -> List[Explanation]:
+    ) -> List[Explanation] | np.ndarray:
 
         explain_fn = functools.partial(self.explain_func, **self.explain_func_kwargs)
 
+        if self.perturbation_type == PerturbationType.plain_text:
+
+            if len(x_batch) <= batch_size:
+                return explain_fn(model, x_batch, y_batch)
+
+            batched_x = batch_list(x_batch, batch_size)
+            batched_y = batch_list(y_batch.tolist(), batch_size)  # noqa
+
+            a_batch = []
+            for x, y in zip(batched_x, batched_y):
+                a_batch.extend(explain_fn(model, x, np.asarray(y)))
+
+            return a_batch
+
         if len(x_batch) <= batch_size:
-            return explain_fn(model, x_batch, y_batch)
+            tokens = model.tokenizer.tokenize(x_batch)
+            token_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
+            embeddings = model.embedding_lookup(token_ids)
+
+            return explain_fn(model, embeddings, y_batch, attention_mask)
 
         batched_x = batch_list(x_batch, batch_size)
         batched_y = batch_list(y_batch.tolist(), batch_size)  # noqa
 
         a_batch = []
         for x, y in zip(batched_x, batched_y):
-            a_batch.extend(explain_fn(model, x, np.asarray(y)))
+            tokens = model.tokenizer.tokenize(x)
+            token_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
+            embeddings = model.embedding_lookup(token_ids)
+            a_batch.extend(explain_fn(model, embeddings, np.asarray(y), attention_mask))
 
-        return a_batch
+            return np.asarray(a_batch)
 
     @abstractmethod
     def evaluate_batch(
