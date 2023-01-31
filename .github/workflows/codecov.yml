@@ -9,6 +9,7 @@ jobs:
       - name: Test
         run: |
           pip install -r requirements_test.txt
+          pip install -r requirements_nlp.txt
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
       - name: Upload
         uses:  codecov/codecov-action@v3
