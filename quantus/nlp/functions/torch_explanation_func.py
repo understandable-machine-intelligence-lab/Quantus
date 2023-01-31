@@ -12,8 +12,6 @@ from quantus.nlp.helpers.utils import (
     unpack_token_ids_and_attention_mask,
     get_interpolated_inputs,
     value_or_default,
-    map_optional,
-    apply_noise,
 )
 
 if TYPE_CHECKING:
@@ -23,10 +21,33 @@ if TYPE_CHECKING:
 
 
 def torch_explain_gradient_norm(
+    model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
-    model: TextClassifier,
 ) -> List[Explanation]:
+    """
+    A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
+        - Convert inputs to models latent representations.
+        - Execute forwards pass
+        - Retrieve logits for y_batch.
+        - Compute gradient of logits with respect to input embeddings.
+        - Compute L2 norm of gradients.
+
+    Parameters
+    ----------
+    model:
+        A model, which is subject to explanation.
+    x_batch:
+        A batch of plain text inputs, which are subjects to explanation.
+    y_batch:
+        A batch of labels, which are subjects to explanation.
+
+    Returns
+    -------
+    a_batch:
+        List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
+
+    """
 
     device = model.device  # noqa
 
@@ -34,23 +55,24 @@ def torch_explain_gradient_norm(
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
     attention_mask = torch.tensor(attention_mask).to(device)
     input_embeds = model.embedding_lookup(input_ids)
-    scores = _torch_explain_gradient_norm(
-        input_embeds,
-        attention_mask,
-        y_batch,
+    scores = torch_explain_gradient_norm_numerical(
         model,
+        input_embeds,
+        y_batch,
+        attention_mask,
     )
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
     ]
 
 
-def _torch_explain_gradient_norm(
-    input_embeddings: TensorLike,
-    attention_mask: Optional[TensorLike],
-    y_batch: np.ndarray,
+def torch_explain_gradient_norm_numerical(
     model: TextClassifier,
+    input_embeddings: TensorLike,
+    y_batch: np.ndarray,
+    attention_mask: Optional[TensorLike],
 ) -> np.ndarray:
+    """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device  # noqa
 
@@ -62,21 +84,45 @@ def _torch_explain_gradient_norm(
     return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
 
 
-def torch_explain_input_x_gradient(
+def torch_explain_gradient_x_input(
+    model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
-    model: TextClassifier,
 ) -> List[Explanation]:
+    """
+    A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
+        - Convert inputs to models latent representations.
+        - Execute forwards pass
+        - Retrieve logits for y_batch.
+        - Compute gradient of logits with respect to input embeddings.
+        - Compute vector dot product between input embeddings and gradients.
+
+
+    Parameters
+    ----------
+    model:
+        A model, which is subject to explanation.
+    x_batch:
+        A batch of plain text inputs, which are subjects to explanation.
+    y_batch:
+        A batch of labels, which are subjects to explanation.
+
+    Returns
+    -------
+    a_batch:
+        List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
+
+    """
     device = model.device  # noqa
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
     attention_mask = torch.tensor(attention_mask).to(device)
     input_embeds = model.embedding_lookup(input_ids)
-    scores = _torch_explain_input_x_gradient(
-        input_embeds,
-        attention_mask,
-        y_batch,
+    scores = torch_explain_gradient_x_input_numerical(
         model,
+        input_embeds,
+        y_batch,
+        attention_mask,
     )
 
     return [
@@ -84,12 +130,13 @@ def torch_explain_input_x_gradient(
     ]
 
 
-def _torch_explain_input_x_gradient(
-    input_embeddings: TensorLike,
-    attention_mask: Optional[TensorLike],
-    y_batch: np.ndarray,
+def torch_explain_gradient_x_input_numerical(
     model: TextClassifier,
+    input_embeddings: TensorLike,
+    y_batch: np.ndarray,
+    attention_mask: Optional[TensorLike],
 ) -> np.ndarray:
+    """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device  # noqa
 
@@ -102,13 +149,58 @@ def _torch_explain_input_x_gradient(
 
 
 def torch_explain_integrated_gradients(
+    model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
-    model: TextClassifier,
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
 ) -> List[Explanation]:
+    """
+    A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
+        - Convert inputs to models latent representations.
+        - For each x, y in x_batch, y_batch
+        - Generate num_steps samples interpolated from baseline to x.
+        - Execute forwards pass.
+        - Retrieve logits for y.
+        - Compute gradient of logits with respect to interpolated samples.
+        - Estimate integral over interpolated samples using trapezoid rule.
+    In practise, we combine all interpolated samples in one batch, to avoid executing forward and backward passes
+    in for-loop. This means potentially, that batch size selected for this XAI method should be smaller than usual.
+
+    References:
+    ----------
+    - Sundararajan et al., 2017, Axiomatic Attribution for Deep Networks, https://arxiv.org/pdf/1703.01365.pdf
+
+    Parameters
+    ----------
+    model:
+        A model, which is subject to explanation.
+    x_batch:
+        A batch of plain text inputs, which are subjects to explanation.
+    y_batch:
+        A batch of labels, which are subjects to explanation.
+    num_steps:
+        Number of interpolated samples, which should be generated, default=10.
+    baseline_fn:
+        Function used to created baseline values, by default will create zeros tensor. Alternatively, e.g.,
+        embedding for [UNK] token could be used.
+
+    Returns
+    -------
+    a_batch:
+        List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
+
+    Examples
+    -------
+    Specifying [UNK] token as baseline:
+
+    >>> def unknown_token_baseline_function(x):
+        ... return torch.tensor(np.load(...), dtype=torch.float32).to(device)
+
+    >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
+
+    """
 
     device = model.device  # noqa
 
@@ -117,11 +209,11 @@ def torch_explain_integrated_gradients(
 
     input_embeds = model.embedding_lookup(input_ids)
 
-    scores = _torch_explain_integrated_gradients(
-        input_embeds,
-        attention_mask,
-        y_batch,
+    scores = torch_explain_integrated_gradients_numerical(
         model,
+        input_embeds,
+        y_batch,
+        attention_mask,
         num_steps=num_steps,
         baseline_fn=baseline_fn,
     )
@@ -131,15 +223,16 @@ def torch_explain_integrated_gradients(
     ]
 
 
-def _torch_explain_integrated_gradients(
-    input_embeddings: TensorLike,
-    attention_mask: Optional[TensorLike],
-    y_batch: np.ndarray,
+def torch_explain_integrated_gradients_numerical(
     model: TextClassifier,
+    input_embeddings: TensorLike,
+    y_batch: np.ndarray,
+    attention_mask: Optional[TensorLike],
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
 ) -> np.ndarray:
+    """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
     device = model.device  # noqa
 
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
@@ -190,34 +283,66 @@ def _torch_explain_integrated_gradients(
     return scores.detach().cpu()
 
 
-_noise_grad_explain_fn_map = {
-    "GradNorm": _torch_explain_gradient_norm,
-    "InputXGrad": _torch_explain_input_x_gradient,
-    "IntGrad": _torch_explain_integrated_gradients,
-}
+def torch_explain_noise_grad_plus_plus_numerical(
+    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
+) -> np.ndarray:
+    # TODO:
+    #  - Make a PR to https://github.com/understandable-machine-intelligence-lab/NoiseGrad.
+    #  - Make it installable and support not only images.
+    #  - Generate explantions using noisegrad package.
+    raise NotImplementedError
 
 
 def torch_explain_noise_grad_plus_plus(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, *args, **kwargs
+    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
-    pass
+    tokens = model.tokenizer.tokenize(x_batch)
+    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
+    embeddings = model.embedding_lookup(input_ids)
+
+    scores = torch_explain_noise_grad_plus_plus_numerical(
+        model, embeddings, y_batch, **kwargs
+    )
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
 
 
-_plain_text_method_mapping: Dict[str, ExplainFn] = {
+_method_mapping: Dict[str, ExplainFn] = {
     "GradNorm": torch_explain_gradient_norm,
-    "InputXGrad": torch_explain_input_x_gradient,
+    "GradXInput": torch_explain_gradient_x_input,
     "IntGrad": torch_explain_integrated_gradients,
     "NoiseGrad++": torch_explain_noise_grad_plus_plus,
 }
 
-_numerical_method_mapping: Dict[str, NumericalExplainFn] = {}
+_numerical_method_mapping: Dict[str, NumericalExplainFn] = {
+    "GradNorm": torch_explain_gradient_norm_numerical,
+    "GradXInput": torch_explain_gradient_x_input_numerical,
+    "IntGrad": torch_explain_integrated_gradients_numerical,
+    "NoiseGrad++": torch_explain_noise_grad_plus_plus_numerical,
+}
 
 
 def torch_explain(
-    x_batch: List[str],
-    y_batch: np.ndarray,
     model: TextClassifier,
+    x_batch: List[str] | np.ndarray,
+    y_batch: np.ndarray,
     method: str,
+    *args,
     **kwargs,
-) -> List[Explanation]:
-    pass
+) -> List[Explanation] | np.ndarray:
+    """Execute plain text or numerical gradient based explanation methods based on type of inputs provided."""
+    if isinstance(x_batch[0], str):
+        if method not in _method_mapping:
+            raise ValueError(
+                f"Unsupported explanation method: {method}, supported are: {list(_method_mapping.keys())}"
+            )
+        explain_fn = _method_mapping[method]
+        return explain_fn(model, x_batch, y_batch, **kwargs)  # noqa
+
+    if method not in _numerical_method_mapping:
+        raise ValueError(
+            f"Unsupported explanation method: {method}, supported are: {list(_numerical_method_mapping.keys())}"
+        )
+    explain_fn = _numerical_method_mapping[method]
+    return explain_fn(model, x_batch, y_batch, *args, **kwargs)

@@ -7,9 +7,12 @@ import pytest
 @pytest.mark.parametrize(
     "x_batch, model",
     [
-        (lazy_fixture("sst2_dataset_full"), lazy_fixture("tf_distilbert_sst2_model")),
         (
-            lazy_fixture("sst2_dataset_full"),
+            lazy_fixture("sst2_dataset_huge_batch"),
+            lazy_fixture("tf_distilbert_sst2_model"),
+        ),
+        (
+            lazy_fixture("sst2_dataset_huge_batch"),
             lazy_fixture("torch_distilbert_sst2_model"),
         ),
     ],

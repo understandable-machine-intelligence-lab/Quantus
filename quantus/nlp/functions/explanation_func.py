@@ -48,8 +48,8 @@ def explain_lime(
     explanations = []
     for x, y in zip(x_batch, y_batch):
         ex = explainer.explain_instance(
-            x, predict_fn, top_labels=y, **call_kwargs
-        ).as_list()
+            x, predict_fn, top_labels=1, **call_kwargs
+        ).as_list(label=y)
         explanations.append(([i[0] for i in ex], np.asarray([i[1] for i in ex])))
 
     return explanations
@@ -103,7 +103,7 @@ def explain_shap(
 
 def explain(
     model: TextClassifier,
-    x_batch: List[str],
+    x_batch: List[str] | np.ndarray,
     y_batch: np.ndarray,
     *args,
     method: Optional[str] = None,
@@ -134,7 +134,7 @@ def explain(
     if safe_isinstance(model, Torch_HuggingfaceModelClass):
         from .torch_explanation_func import torch_explain
 
-        return torch_explain(x_batch, y_batch, model, method=method, **kwargs)
+        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
 
     internal_model = None
     for i in ("model", "_model"):
@@ -150,7 +150,7 @@ def explain(
     if safe_isinstance(internal_model, "torch.nn.Module"):
         from .torch_explanation_func import torch_explain
 
-        return torch_explain(x_batch, y_batch, model, method=method, **kwargs)
+        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
 
     if framework is None:
         raise ValueError(
@@ -164,6 +164,6 @@ def explain(
     if framework in ("torch", "pytorch", "pt"):
         from .torch_explanation_func import torch_explain
 
-        return torch_explain(x_batch, y_batch, model, method=method, **kwargs)
+        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
 
     raise ValueError(f"Unknown DNN framework {framework}")

@@ -4,6 +4,14 @@ from typing import List, Optional, Tuple
 import numpy as np
 
 from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.helpers.utils import value_or_default
+
+
+DEFAULT_SPECIAL_TOKENS = [
+    "[CLS]",
+    "[SEP]",
+    "[PAD]",
+]
 
 
 class ColorMapper:
@@ -35,7 +43,12 @@ class ColorMapper:
         return red, green, blue
 
 
-def _create_div(explanation: Explanation, label: str):
+def _create_div(
+    explanation: Explanation,
+    label: str,
+    ignore_special_tokens: bool,
+    special_tokens: List[str],
+):
     # Create a container, which inherits root styles.
     div_template = """
         <div class="container">
@@ -58,6 +71,8 @@ def _create_div(explanation: Explanation, label: str):
     color_mapper = ColorMapper(np.max(scores), np.min(scores))
 
     for token, score in zip(tokens, scores):
+        if ignore_special_tokens and token in special_tokens:
+            continue
         red, green, blue = color_mapper.to_rgb(score)
         token_span = token_span_template.replace(
             "{{color}}", f"rgb({red},{green},{blue})"
@@ -69,7 +84,11 @@ def _create_div(explanation: Explanation, label: str):
 
 
 def visualise_explanations_as_html(
-    explanations: List[Explanation], *, labels: Optional[List[str]] = None
+    explanations: List[Explanation],
+    *,
+    labels: Optional[List[str]] = None,
+    ignore_special_tokens: bool = False,
+    special_tokens: List[str] = None,
 ) -> str:
     """
     Creates a heatmap visualisation from list of explanations.
@@ -80,6 +99,10 @@ def visualise_explanations_as_html(
         List of tuples (tokens, salience) containing batch of explanations.
     labels:
         Optional, list of labels to display on top of each explanation.
+    ignore_special_tokens:
+        If True, special tokens will not be rendered in heatmap.
+    special_tokens:
+        List of special tokens to ignore during heatmap creation, default= ["[CLS]", "[END]", "[PAD]"].
 
     Returns
     -------
@@ -97,6 +120,8 @@ def visualise_explanations_as_html(
     >>> HTML(raw_html)
 
     """
+
+    special_tokens = value_or_default(special_tokens, lambda: DEFAULT_SPECIAL_TOKENS)
     # Define top-level styles
     heatmap_template = """
         <style>
@@ -144,7 +169,7 @@ def visualise_explanations_as_html(
     # For each token, create a separate div holding whole input sequence on 1 line.
     for i, explanation in enumerate(explanations):
         label = labels[i] if labels is not None else ""
-        div = _create_div(explanation, label)
+        div = _create_div(explanation, label, ignore_special_tokens, special_tokens)
         spans += div
     return heatmap_template.replace("{{body}}", spans)
 

@@ -55,3 +55,6 @@ from quantus.nlp.helpers.types import (
     PerturbationType,
     NoiseType,
 )
+
+from quantus.nlp.functions.normalise_func import normalize_sum_to_1
+from quantus.nlp.helpers.utils import normalise_attributions, abs_attributions

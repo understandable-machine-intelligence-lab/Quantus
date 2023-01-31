@@ -8,39 +8,38 @@ from quantus.nlp import TFHuggingFaceTextClassifier, TorchHuggingFaceTextClassif
 BATCH_SIZE = 8
 
 
-@pytest.fixture(scope="session", autouse=True)
-def sst2_dataset_full():
+@pytest.fixture(scope="session")
+def sst2_dataset_huge_batch():
     ds = load_dataset("sst2")["test"]["sentence"]
-    return ds
+    return ds[:1024]
 
 
-@pytest.fixture(scope="session", autouse=True)
-def sst2_dataset():
-    ds = load_dataset("sst2")["test"]["sentence"]
-    return ds[:BATCH_SIZE]
+@pytest.fixture(scope="session")
+def sst2_dataset(sst2_dataset_huge_batch):
+    return sst2_dataset_huge_batch[:BATCH_SIZE]
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def ag_news_dataset():
     ds = load_dataset("ag_news")["test"]["text"]
     return ds[:BATCH_SIZE]
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def tf_distilbert_sst2_model():
     return TFHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def torch_distilbert_sst2_model():
     return TorchHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def a_tuple_text():
     a_tuple = np.load("tests/assets/nlp/a_tuple_text.npy")
     return (
@@ -49,7 +48,7 @@ def a_tuple_text():
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def a_batch_text():
     a_batch = np.load("tests/assets/nlp/a_batch_text.npy")
 
@@ -59,7 +58,7 @@ def a_batch_text():
     return list(map(map_fn, a_batch))
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def a_tuple_text_ragged_1(a_tuple_text):
     return (
         (list(a_tuple_text[0][0])[:37], a_tuple_text[0][1][:37]),
@@ -67,7 +66,7 @@ def a_tuple_text_ragged_1(a_tuple_text):
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def a_tuple_text_ragged_2(a_tuple_text):
     return (
         (list(a_tuple_text[0][0]), a_tuple_text[0][1]),
@@ -75,6 +74,6 @@ def a_tuple_text_ragged_2(a_tuple_text):
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def fnet_ag_news_model():
     return fnet_text_classifier()

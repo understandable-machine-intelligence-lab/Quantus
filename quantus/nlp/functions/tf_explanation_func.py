@@ -205,7 +205,7 @@ def tf_explain_integrated_gradients(
     -------
     Specifying [UNK] token as baseline:
 
-    >>> def unknown_token_baseline_function(x: tf.Tensor) -> np.ndarray:
+    >>> def unknown_token_baseline_function(x):
         ... return tf.convert_to_tensor(np.load(...), dtype=tf.float32)
 
     >>> tf_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
@@ -349,8 +349,8 @@ def tf_explain_noise_grad_plus_plus(
 
     References
     -------
-    -
-
+    - https://github.com/understandable-machine-intelligence-lab/NoiseGrad/blob/master/src/noisegrad.py#L80.
+    - Kirill Bykov and Anna Hedström and Shinichi Nakajima and Marina M. -C. Höhne, 2021, NoiseGrad: enhancing explanations by introducing stochasticity to model weights, https://arxiv.org/abs/2106.10185
 
     """
 

@@ -15,6 +15,7 @@ Subpackages
    quantus.functions
    quantus.helpers
    quantus.metrics
+   quantus.nlp
 
 Submodules
 ----------
