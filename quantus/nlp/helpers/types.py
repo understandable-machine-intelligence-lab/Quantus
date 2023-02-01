@@ -20,7 +20,6 @@ ExplainFn = Callable[[TextClassifier, List[str], np.ndarray], List[Explanation]]
 NumericalExplainFn = Callable[
     [TextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray
 ]
-PersistFn = Callable[[Union[np.ndarray, float]], None]
 NormaliseFn = Callable[[np.ndarray], np.ndarray]
 SimilarityFn = Callable[[np.ndarray, np.ndarray], Union[np.ndarray, float]]
 

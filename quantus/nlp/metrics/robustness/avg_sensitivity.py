@@ -12,7 +12,6 @@ from quantus.nlp.helpers.types import (
     PlainTextPerturbFn,
     Explanation,
     SimilarityFn,
-    PersistFn,
     NumericalPerturbFn,
     NormaliseFn,
     TextClassifier,
@@ -75,7 +74,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         return_nan_when_prediction_changes: bool = False,
-        persist_func: Optional[PersistFn] = None,
         default_plot_func: Optional[Callable] = None,
         **kwargs,
     ):
@@ -119,9 +117,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             Indicates whether a tqdm-progress-bar is printed, default=False.
         return_nan_when_prediction_changes: bool
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied.
-        persist_func: Optional[Callable[[List[np.ndarray | float]], None]].
-            If provided, this function will be called after each batch of data was evaluated.
-            This can be used to save intermediate results, default=None.
         default_plot_func: callable
             Callable that plots the metrics result.
         kwargs:
@@ -147,7 +142,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
-            persist_func=persist_func,
             **kwargs,
         )
 

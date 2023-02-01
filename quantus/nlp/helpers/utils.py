@@ -43,9 +43,7 @@ def _pad_array_right(a: np.ndarray, target_length: int, pad_value: float) -> np.
     return np.pad(a, (0, pad_len), constant_values=pad_value)
 
 
-def batch_list(
-    flat_list: List[T], batch_size: int, drop_remainder: bool = False
-) -> List[List[T]]:
+def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
     """
     Convert list to list where each entry is a list of length batch_size.
 
@@ -55,8 +53,6 @@ def batch_list(
         Original list.
     batch_size:
         Length of sublist.
-    drop_remainder:
-        If true, and list is not divisible into n part of batch_size size, drops the last entry, which has different length.
 
     Returns
     -------
@@ -70,8 +66,6 @@ def batch_list(
 
     batches = flat_list[: len(flat_list) // batch_size * batch_size]
     batches = np.asarray(batches).reshape((-1, batch_size)).tolist()
-    if drop_remainder:
-        return batches
 
     batches.append(flat_list[len(flat_list) // batch_size * batch_size :])
     return batches
@@ -121,13 +115,6 @@ def get_interpolated_inputs(
     deltas = scales * np.broadcast_to(delta, shape)
     interpolated_inputs = baseline + deltas
     return interpolated_inputs
-
-
-def map_optional(value: Optional[T], func: Callable[[T], R]) -> Optional[R]:
-    """Apply func to value, if value is not None"""
-    if value is None:
-        return None
-    return func(value)
 
 
 def apply_noise(arr: T, noise: T, noise_type: NoiseType) -> T:

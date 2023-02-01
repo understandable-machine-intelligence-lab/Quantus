@@ -27,20 +27,27 @@ AVAILABLE_METRICS = {
     },
 }
 
-
-AVAILABLE_PERTURBATION_FUNCTIONS = {
+AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS = {
     "spelling_replacement": spelling_replacement,
     "synonym_replacement": synonym_replacement,
     "typo_replacement": typo_replacement,
+}
+
+AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS = {
     "uniform_noise": uniform_noise,
     "gaussian_noise": gaussian_noise,
+}
+
+AVAILABLE_PERTURBATION_FUNCTIONS = {
+    **AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS,
+    **AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS,
 }
 
 
 AVAILABLE_NORMALISATION_FUNCTIONS = {"normalize_sum_to_1": normalize_sum_to_1}
 
 
-AVAILABLE_XAI_METHODS = [
+AVAILABLE_PLAIN_TEXT_XAI_METHODS = [
     "GradNorm",
     "GradXInput",
     "IntGrad",
@@ -48,6 +55,17 @@ AVAILABLE_XAI_METHODS = [
     "LIME",
     "SHAP",
 ]
+
+AVAILABLE_NUMERICAL_XAI_METHODS = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad++",
+]
+
+AVAILABLE_XAI_METHODS = (
+    AVAILABLE_PLAIN_TEXT_XAI_METHODS + AVAILABLE_NUMERICAL_XAI_METHODS
+)
 
 
 def available_categories() -> List[str]:
@@ -86,6 +104,30 @@ def available_xai_methods() -> List[str]:
     return [c for c in AVAILABLE_XAI_METHODS]
 
 
+def available_plain_text_xai_methods() -> List[str]:
+    """
+    Retrieve the available explanation methods, which can be applied to plain text inputs.
+
+    Returns
+    -------
+    List[str]
+        With the available explanation methods in Quantus.
+    """
+    return [c for c in AVAILABLE_PLAIN_TEXT_XAI_METHODS]
+
+
+def available_numerical_xai_methods() -> List[str]:
+    """
+    Retrieve the available explanation methods, which can be applied to numerical representations of inputs.
+
+    Returns
+    -------
+    List[str]
+        With the available explanation methods in Quantus.
+    """
+    return [c for c in AVAILABLE_NUMERICAL_XAI_METHODS]
+
+
 def available_perturbation_functions() -> List[str]:
     """
     Retrieve the available perturbation functions in Quantus.
@@ -98,6 +140,30 @@ def available_perturbation_functions() -> List[str]:
     return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
 
 
+def available_plain_text_perturbation_functions() -> List[str]:
+    """
+    Retrieve the available plain-text perturbation functions in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available perturbation functions in Quantus.
+    """
+    return [c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()]
+
+
+def available_latent_space_perturbation_functions() -> List[str]:
+    """
+    Retrieve the available perturbation functions in Quantus.
+
+    Returns
+    -------
+    List[str]
+        With the available perturbation functions in Quantus.
+    """
+    return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]
+
+
 def available_normalisation_functions() -> List[str]:
     """
     Retrieve the available normalisation functions in Quantus.
@@ -108,15 +174,3 @@ def available_normalisation_functions() -> List[str]:
         With the available normalisation functions in Quantus.
     """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]
-
-
-def available_numerical_xai_methods() -> List[str]:
-    """
-    Retrieve the available explanation methods,
-     which can be used together with latent space perturbations in Quantus.
-
-    Returns
-    -------
-    List[str]
-        With the available explanation methods in Quantus.
-    """

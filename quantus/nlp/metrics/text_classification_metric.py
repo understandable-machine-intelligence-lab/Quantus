@@ -10,7 +10,6 @@ from quantus.nlp.helpers.types import (
     ExplainFn,
     Explanation,
     PlainTextPerturbFn,
-    PersistFn,
     NormaliseFn,
     NumericalPerturbFn,
     PerturbationType,
@@ -42,7 +41,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
-        persist_func: Optional[PersistFn],
         **kwargs,
     ):
         """
@@ -77,10 +75,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         perturbation_type:
             PerturbationType.plainText means perturb_func will be applied to plain text inputs.
             PerturbationType.latent_space means the perturb_func will be applied to sum of word and positional embeddings.
-        persist_func: callable
-            persist_func: Optional[Callable[[List[np.ndarray | float]], None]].
-            If provided, this function will be called after each batch of data was evaluated.
-            This can be used to save intermediate results, default=None.
         """
         super().__init__(
             abs=abs,
@@ -101,7 +95,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
             raise ValueError("Only enum values of type PerturbationType are allowed")
 
         self.perturbation_type = perturbation_type
-        self.persist_func = persist_func
 
     def __call__(
         self,
@@ -166,8 +159,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         self.last_results = []
         for data_batch in batch_generator:
             result = self.evaluate_batch(**data_batch)
-            if self.persist_func is not None:
-                self.persist_func(result)
             self.last_results.extend(result)
 
         # Call post-processing.
@@ -234,8 +225,9 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
             y_batch, lambda: model.predict(x_batch).argmax(axis=-1)
         )
 
-        if a_batch is None:
-            a_batch = self._generate_a_batch(model, x_batch, y_batch, batch_size)
+        a_batch = value_or_default(
+            a_batch, lambda: self._generate_a_batch(model, x_batch, y_batch, batch_size)
+        )
 
         if self.perturbation_type == PerturbationType.plain_text:
             if self.normalise:

@@ -6,7 +6,10 @@ from quantus.nlp.helpers.constants import (
     available_metrics,
     available_normalisation_functions,
     available_perturbation_functions,
+    available_plain_text_perturbation_functions,
+    available_latent_space_perturbation_functions,
     available_xai_methods,
+    available_plain_text_xai_methods,
     available_numerical_xai_methods,
 )
 from quantus.nlp.functions.explanation_func import explain
@@ -49,7 +52,6 @@ from quantus.nlp.helpers.types import (
     ExplainFn,
     PlainTextPerturbFn,
     NumericalPerturbFn,
-    PersistFn,
     NormaliseFn,
     SimilarityFn,
     PerturbationType,
