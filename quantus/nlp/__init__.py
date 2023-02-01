@@ -11,6 +11,7 @@ from quantus.nlp.helpers.constants import (
     available_xai_methods,
     available_plain_text_xai_methods,
     available_numerical_xai_methods,
+    AVAILABLE_PERTURBATION_FUNCTIONS
 )
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.perturb_func import (
