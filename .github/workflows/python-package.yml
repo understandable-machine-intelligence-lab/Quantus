@@ -4,8 +4,6 @@
 name: Python package
 
 on:
-  #push:
-    #branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -26,12 +24,11 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest mypy==0.982
-        python -m pip install --upgrade typing-extensions
-        python -m pip install black
-        if [ -f requirements_test.txt ]; then pip install -r requirements_test.txt; fi
-        pip install -r requirements_nlp.txt
+        pip install \
+            -r requirements.txt \
+            -r requirements_test.txt \
+            -r requirements_nlp.txt \
+            mypy==0.982 black --upgrade typing-extensions
     - name: Lint
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -40,7 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         # run mypy
         mypy quantus
-        # run balck
+        # run black
         black quantus
     - name: Test with pytest
       run: |
