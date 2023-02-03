@@ -9,11 +9,7 @@ from transformers import (
     AutoTokenizer,
 )
 import torch
-from quantus.nlp.helpers.utils import (
-    unpack_token_ids_and_attention_mask,
-    batch_list,
-    choose_torch_device,
-)
+from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask, batch_list, value_or_default
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
@@ -29,10 +25,10 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         model: PreTrainedModel,
         device: Optional[str | torch.device],
     ):
+
+        device = value_or_default(device, lambda: "cpu")
         if isinstance(device, str):
             device = torch.device(device)
-        if device is None:
-            device = choose_torch_device()
 
         self.device = device
         self.model = model.to(device)

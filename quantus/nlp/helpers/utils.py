@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import sys
 import numpy as np
-from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import torch
+from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any
 
 
 from quantus.nlp.helpers.types import (
@@ -183,18 +180,6 @@ def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:
             return True
 
     return False
-
-
-def choose_torch_device() -> torch.device:
-    """Choose torch hardware acceleration if available."""
-    import torch
-
-    if torch.cuda.is_available():
-        return torch.device("cuda:0")
-    if hasattr(torch.backends, "mps"):
-        if torch.backends.mps.is_available():
-            return torch.device("mps")
-    return torch.device("cpu")
 
 
 def explanation_similarity(
