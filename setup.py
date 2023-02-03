@@ -43,7 +43,8 @@ EXTRAS["tutorials"] = (
     + ["pandas", "xmltodict", "tensorflow-datasets", "jupyter"]
 )
 EXTRAS["tests"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
-EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+EXTRAS["nlp"] = ["nlpaug>=1.1.11", "nltk>=3.8.1", "transformers>=4.26.0"]
+EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"] + EXTRAS["nlp"]
 
 # Define setup.
 setup(
