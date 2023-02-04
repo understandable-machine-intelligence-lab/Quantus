@@ -152,11 +152,11 @@ class FNetTextClassifierAdapter(TextClassifier):
         return self.model.predict(tokens, verbose=0, batch_size=batch_size)
 
     @property
-    def weights(self):
+    def weights(self) -> List[np.ndarray]:
         return self.model.get_weights()
 
     @weights.setter
-    def weights(self, weights):
+    def weights(self, weights: List[np.ndarray]):
         self.model.set_weights(weights)
 
     @property
