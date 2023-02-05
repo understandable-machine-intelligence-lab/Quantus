@@ -126,7 +126,7 @@ class ModelInterface(ABC):
 
         Returns
         -------
-        random_layer_model: torch.nn
+        new_model: torch.nn
             The resulting model with a shifted first layer.
         """
         raise NotImplementedError
