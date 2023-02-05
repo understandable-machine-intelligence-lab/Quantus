@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Union
 from keras.layers import Dense
 from keras import activations
 from keras import Model
@@ -262,6 +262,56 @@ class TensorFlowModel(ModelInterface):
 
         hidden_representation_model = Model(self.model.input, outputs_of_interest)
         return hidden_representation_model
+
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def add_mean_shift_to_first_layer(
+            self,
+            input_shift: Union[int, float],
+            shape: tuple,
+    ):
+        """
+        Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
+        the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
+        for Input Invariance metric.
+
+
+        Parameters
+        ----------
+        input_shift: Union[int, float]
+            Shift to be applied.
+        shape: tuple
+            Model input shape, ndim = 4.
+
+        Returns
+        -------
+        random_layer_model: Model
+            The resulting model with a shifted first layer.
+        """
+        original_parameters = self.state_dict()
+        new_model = clone_model(self.model)
+        new_model.set_weights(original_parameters)
+
+        modules = [
+            _layer
+            for _layer in new_model.layers
+            if len(_layer.get_weights()) > 0
+        ]
+
+        module = modules[0]
+        tmp_model = Model(inputs=[new_model.input], outputs=[new_model.layers[0].output])
+        tmp_model.layers[-1].set_weights(module.get_weights())
+        delta = np.zeros(shape=shape)
+        delta.fill(input_shift)
+        fw = tmp_model(delta)[0]
+
+        weights = module.get_weights()
+        bias = weights[1]
+        for i in range(len(bias)):
+            weights[1][i] = 2 * bias[i] - np.unique(fw[:, :, i])[0]
+
+        module.set_weights(weights)
+        return new_model
 
 
     def get_hidden_representations(
