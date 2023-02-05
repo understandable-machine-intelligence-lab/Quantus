@@ -108,9 +108,9 @@ class ModelInterface(ABC):
 
     @abstractmethod
     def add_mean_shift_to_first_layer(
-            self,
-            input_shift: Union[int, float],
-            shape: tuple,
+        self,
+        input_shift: Union[int, float],
+        shape: tuple,
     ):
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update

@@ -274,7 +274,9 @@ class InputInvariance(BatchedPerturbationMetric):
             batched=True,
         )
 
-        shifted_model = model.add_mean_shift_to_first_layer(input_shift, x_shifted[:1].shape)
+        shifted_model = model.add_mean_shift_to_first_layer(
+            input_shift, x_shifted[:1].shape
+        )
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
