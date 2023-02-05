@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple, List, Union
 
 import numpy as np
 
@@ -106,6 +106,30 @@ class ModelInterface(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def add_mean_shift_to_first_layer(
+            self,
+            input_shift: Union[int, float],
+            shape: tuple,
+    ):
+        """
+        Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
+        the bias b1 to b2:= b1 - w^T * m. The operation is necessary for Input Invariance metric.
+
+
+        Parameters
+        ----------
+        input_shift: Union[int, float]
+            Shift to be applied.
+        shape: tuple
+            Model input shape.
+
+        Returns
+        -------
+        random_layer_model: torch.nn
+            The resulting model with a shifted first layer.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def get_hidden_representations(
