@@ -220,11 +220,10 @@ class PyTorchModel(ModelInterface):
                         )
         return model_copy
 
-
     def add_mean_shift_to_first_layer(
-            self,
-            input_shift: Union[int, float],
-            shape: tuple,
+        self,
+        input_shift: Union[int, float],
+        shape: tuple,
     ):
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
@@ -255,11 +254,12 @@ class PyTorchModel(ModelInterface):
             fw = module[1].forward(delta)[0]
 
             for i in range(module[1].out_channels):
-                module[1].bias[i] = torch.nn.Parameter(2 * module[1].bias[i] - torch.unique(fw[i])[0])
+                module[1].bias[i] = torch.nn.Parameter(
+                    2 * module[1].bias[i] - torch.unique(fw[i])[0]
+                )
 
         return new_model
 
-    
     def get_hidden_representations(
         self,
         x: np.ndarray,
@@ -349,4 +349,3 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
-

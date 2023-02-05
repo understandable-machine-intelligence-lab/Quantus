@@ -230,7 +230,6 @@ class TensorFlowModel(ModelInterface):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model
 
-
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
         self, layer_names: Tuple, layer_indices: Tuple
@@ -263,12 +262,11 @@ class TensorFlowModel(ModelInterface):
         hidden_representation_model = Model(self.model.input, outputs_of_interest)
         return hidden_representation_model
 
-
     @cachedmethod(operator.attrgetter("cache"))
     def add_mean_shift_to_first_layer(
-            self,
-            input_shift: Union[int, float],
-            shape: tuple,
+        self,
+        input_shift: Union[int, float],
+        shape: tuple,
     ):
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
@@ -292,15 +290,11 @@ class TensorFlowModel(ModelInterface):
         new_model = clone_model(self.model)
         new_model.set_weights(original_parameters)
 
-        modules = [
-            _layer
-            for _layer in new_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
+        module = new_model.layers[0]
+        tmp_model = Model(
+            inputs=[new_model.input], outputs=[new_model.layers[0].output]
+        )
 
-        module = modules[0]
-        tmp_model = Model(inputs=[new_model.input], outputs=[new_model.layers[0].output])
-        tmp_model.layers[-1].set_weights(module.get_weights())
         delta = np.zeros(shape=shape)
         delta.fill(input_shift)
         fw = tmp_model(delta)[0]
@@ -312,7 +306,6 @@ class TensorFlowModel(ModelInterface):
 
         module.set_weights(weights)
         return new_model
-
 
     def get_hidden_representations(
         self,
@@ -378,4 +371,3 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
-
