@@ -139,3 +139,15 @@ def test_get_hidden_layer_output_sequential(load_mnist_model_tf, params):
     assert isinstance(result, np.ndarray), "Must be a np.ndarray"
     assert len(result.shape) == 2, "Must be a batch of 1D tensors"
     assert result.shape[0] == X.shape[0], "Must have same batch size as input"
+
+
+@pytest.mark.tf_model
+def test_add_mean_shift_to_first_layer(load_mnist_model_tf):
+    model = TensorFlowModel(model=load_mnist_model_tf, channel_first=False)
+    shift = 0.2
+    X = np.random.random((32, 28, 28, 1))
+    X_shift = X + shift
+    new_model = model.add_mean_shift_to_first_layer(shift, X[:1].shape)
+    a1 = model.model(X)
+    a2 = new_model(X_shift)
+    assert np.all(np.isclose(a1, a2, atol=1e-04))
