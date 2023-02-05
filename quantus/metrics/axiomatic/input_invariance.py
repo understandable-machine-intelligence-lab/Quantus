@@ -22,9 +22,9 @@ class InputInvariance(BatchedPerturbationMetric):
     Implementation of Completeness test by Kindermans et al., 2017.
 
     To test for input invariance, we add a constant shift to the input data and a mean shift to the model bias,
-    so that the output of the original model on the original data is equal to the output of the changed model.
-    The metric returns True if batch attributions stayed unchanged too. Currently only supporting constant values
-    for the shift.
+    so that the output of the original model on the original data is equal to the output of the changed model
+    on the shifted data. The metric returns True if batch attributions stayed unchanged too. Currently only
+    supporting constant values for the shift.
 
     References:
         Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
