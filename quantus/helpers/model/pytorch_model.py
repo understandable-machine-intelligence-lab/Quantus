@@ -254,9 +254,14 @@ class PyTorchModel(ModelInterface):
             fw = module[1].forward(delta)[0]
 
             for i in range(module[1].out_channels):
-                module[1].bias[i] = torch.nn.Parameter(
-                    2 * module[1].bias[i] - torch.unique(fw[i])[0]
-                )
+                if self.channel_first:
+                    module[1].bias[i] = torch.nn.Parameter(
+                        2 * module[1].bias[i] - torch.unique(fw[i])[0]
+                    )
+                else:
+                    module[1].bias[i] = torch.nn.Parameter(
+                        2 * module[1].bias[i] - torch.unique(fw[:, :, i])[0]
+                    )
 
         return new_model
 
