@@ -260,7 +260,7 @@ class PyTorchModel(ModelInterface):
                     )
                 else:
                     module[1].bias[i] = torch.nn.Parameter(
-                        2 * module[1].bias[i] - torch.unique(fw[:, :, i])[0]
+                        2 * module[1].bias[i] - torch.unique(fw[..., i])[0]
                     )
 
         return new_model
