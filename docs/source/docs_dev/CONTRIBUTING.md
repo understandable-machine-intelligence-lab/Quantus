@@ -6,7 +6,7 @@ We encourage you to contribute new features/metrics, optimisations, refactorings
 In this guide, you will get an overview of the workflow and best practices for contributing to Quantus.
 
 **Questions.** If you have any developer-related questions, please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose)
-or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de).
+or write us at [hedstroem.anna@gmail.com](mailto:hedstroem.anna@gmail.com).
 
 ## Table of Contents
 
@@ -174,4 +174,4 @@ Please note that by contributing to the project you agree that it will be licens
 ## Questions
 
 If you have any developer-related questions, please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose)
-or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de).
+or write us at [hedstroem.anna@gmail.com](mailto:hedstroem.anna@gmail.com).
