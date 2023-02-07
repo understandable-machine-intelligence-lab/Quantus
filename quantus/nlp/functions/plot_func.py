@@ -175,7 +175,6 @@ def visualise_explanations_as_html(
 
 
 def visualise_explanations_as_pyplot(explanations: List[Explanation]):
-
     """
     Plots attributions over a batch of text sequence explanations.
 

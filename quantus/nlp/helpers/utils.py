@@ -203,3 +203,9 @@ def safe_asarray(arr: T) -> np.ndarray:
     if safe_isinstance(arr, "torch.Tensor"):
         return arr.detach().cpu().numpy()
     return np.asarray(arr)
+
+
+def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
+    if val is None:
+        return None
+    return func(val)

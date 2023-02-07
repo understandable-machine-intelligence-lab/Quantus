@@ -109,18 +109,36 @@ def test_explain_integrated_gradients(x_batch, model, kwargs):
             lazy_fixture("fnet_ag_news_model"),
             {"noise_type": NoiseType.additive},
         ),
-        # not implemented now
-        # (
-        #    lazy_fixture("sst2_dataset"),
-        #    lazy_fixture("torch_distilbert_sst2_model"),
-        #    {"explain_fn": "GradNorm"},
-        # ),
     ],
 )
 def test_explain_noise_grad(x_batch, model, kwargs):
     y_batch = model.predict(x_batch).argmax(axis=-1)  # noqa
     a_batch = explain(
         model, x_batch, y_batch, method="NoiseGrad++", n=2, m=2, **kwargs  # noqa
+    )
+    assert len(a_batch) == len(y_batch)
+
+
+@pytest.mark.nlp
+@pytest.mark.parametrize(
+    "x_batch, model, kwargs",
+    [
+        (
+            lazy_fixture("sst2_dataset"),
+            lazy_fixture("torch_distilbert_sst2_model"),
+            {"explain_fn": "GradNorm"},
+        ),
+    ],
+)
+def test_explain_noise_grad_torch(x_batch, model, kwargs):
+    y_batch = model.predict(x_batch).argmax(axis=-1)  # noqa
+    a_batch = explain(
+        model,
+        x_batch,
+        y_batch,
+        method="NoiseGrad++",
+        init_kwargs={"n": 2, "m": 2},
+        **kwargs  # noqa
     )
     assert len(a_batch) == len(y_batch)
 

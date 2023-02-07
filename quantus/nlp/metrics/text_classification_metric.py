@@ -108,7 +108,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         batch_size: int = 64,
         **kwargs,
     ) -> List[np.ndarray | float]:
-
         """
         Parameters
         ----------
@@ -181,7 +180,6 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         batch_size: int,
         **kwargs,
     ) -> Dict[str, ...]:
-
         """
         Prepares all necessary variables for evaluation.
 
@@ -271,11 +269,9 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         batch_size: int,
     ) -> List[Explanation] | np.ndarray:
-
         explain_fn = functools.partial(self.explain_func, **self.explain_func_kwargs)
 
         if self.perturbation_type == PerturbationType.plain_text:
-
             if len(x_batch) <= batch_size:
                 return explain_fn(model, x_batch, y_batch)
 

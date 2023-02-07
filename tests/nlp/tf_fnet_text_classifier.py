@@ -26,7 +26,6 @@ NumClasses = 4
 
 
 def fnet_text_classifier() -> TextClassifier:
-
     with open(VocabPath, "r") as file:
         vocab = file.read().split("\n")
 
@@ -97,7 +96,6 @@ class FNetClassifier(tf.keras.Model):
 
 
 class FNetTokenizerAdapter(Tokenizer):
-
     tokenizer: WordPieceTokenizer
 
     def __init__(self, tokenizer: WordPieceTokenizer):
@@ -127,7 +125,6 @@ class FNetTokenizerAdapter(Tokenizer):
 
 
 class FNetTextClassifierAdapter(TextClassifier):
-
     tokenizer: FNetTokenizerAdapter
     model: FNetClassifier
 

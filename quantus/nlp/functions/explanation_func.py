@@ -27,7 +27,6 @@ def explain_lime(
     init_kwargs: Dict = None,
     call_kwargs: Dict = None,
 ) -> List[Explanation]:
-
     """
     Generate explanations using LIME method. This method depends on lime pip package.
 
@@ -81,7 +80,6 @@ def explain_shap(
     predict_fn = partial(model.predict, batch_size=batch_size)
 
     if safe_isinstance(model, [TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass]):
-
         predict_fn = pipeline(
             "text-classification",
             model=model.model,  # noqa
@@ -110,7 +108,6 @@ def explain(
     framework: Optional[str] = None,
     **kwargs,
 ) -> List[Explanation]:
-
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:

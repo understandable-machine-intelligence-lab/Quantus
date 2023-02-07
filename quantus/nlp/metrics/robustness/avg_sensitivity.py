@@ -164,7 +164,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         a_batch: List[Explanation] | np.ndarray,
         **kwargs,
     ) -> np.ndarray | float:
-
         """
         Parameters
         ----------
@@ -215,7 +214,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         a_batch: List[Explanation],
         x_batch_embeddings: np.ndarray,
     ) -> np.ndarray | float:
-
         batch_size = len(x_batch)
         # Perturb input.
         x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)
@@ -245,7 +243,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
-
             if (
                 self.return_nan_when_prediction_changes
                 and instance_id in changed_prediction_indices
@@ -276,7 +273,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         x_batch_embeddings: np.ndarray,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray:
-
         batch_size = len(x_batch_embeddings)
         # Perturb input.
         x_batch_embeddings_perturbed = self.perturb_func(
@@ -312,7 +308,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
-
             if (
                 self.return_nan_when_prediction_changes
                 and instance_id in changed_prediction_indices

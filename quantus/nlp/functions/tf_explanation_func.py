@@ -395,7 +395,6 @@ def tf_explain_noise_grad_plus_plus_numerical(
     noise_type: NoiseType = NoiseType.multiplicative,
     seed: int = 42,
 ) -> np.ndarray:
-
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
     if isinstance(explain_fn, str):

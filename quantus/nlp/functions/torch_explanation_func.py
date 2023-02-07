@@ -1,6 +1,8 @@
 """Explanation functions for Torch models."""
 
 from __future__ import annotations
+
+import functools
 from typing import List, Callable, Optional, Dict, TYPE_CHECKING
 
 import numpy as np
@@ -12,6 +14,7 @@ from quantus.nlp.helpers.utils import (
     unpack_token_ids_and_attention_mask,
     get_interpolated_inputs,
     value_or_default,
+    map_optional,
 )
 
 if TYPE_CHECKING:
@@ -248,7 +251,6 @@ def torch_explain_integrated_gradients_numerical(
             )
         )
         if attention_mask is not None:
-
             interpolated_attention_mask.append(
                 np.broadcast_to(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
@@ -284,24 +286,102 @@ def torch_explain_integrated_gradients_numerical(
 
 
 def torch_explain_noise_grad_plus_plus_numerical(
-    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
+    model: TextClassifier,
+    input_embeddings: TensorLike,
+    y_batch: np.ndarray,
+    attention_mask: Optional[TensorLike],
+    explain_fn: NumericalExplainFn,
+    init_kwargs: Optional[Dict],
 ) -> np.ndarray:
-    # TODO:
-    #  - Make a PR to https://github.com/understandable-machine-intelligence-lab/NoiseGrad.
-    #  - Make it installable and support not only images.
-    #  - Generate explantions using noisegrad package.
-    raise NotImplementedError
+    from noisegrad import NoiseGradPlusPlus
+
+    device = model.device  # noqa
+    attention_mask = map_optional(
+        attention_mask, functools.partial(torch.tensor, device=device)
+    )
+    input_embeddings = torch.tensor(input_embeddings, device=device)
+    y_batch = torch.tensor(y_batch, device=device)
+
+    init_kwargs = value_or_default(init_kwargs, lambda: {})
+
+    original_base_model = model.model  # noqa
+
+    def explanation_fn(
+        base_model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        model.model = base_model
+        np_scores = explain_fn(
+            model, inputs, targets, attention_mask=attention_mask
+        )  # noqa
+        return torch.tensor(np_scores, device=device)
+
+    ng_pp = NoiseGradPlusPlus(**init_kwargs)
+    scores = (
+        ng_pp.enhance_explanation(
+            model.model,  # noqa
+            input_embeddings,
+            y_batch,
+            explanation_fn=explanation_fn,
+        )
+        .detach()
+        .cpu()
+        .numpy()
+    )
+
+    model.model = original_base_model
+    return scores
 
 
 def torch_explain_noise_grad_plus_plus(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+    model: TextClassifier,
+    x_batch: List[str],
+    y_batch: TensorLike,
+    *,
+    explain_fn: NumericalExplainFn | str = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
 ) -> List[Explanation]:
+    """
+    NoiseGrad++ is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
+    by adding stochasticity to model's weights and model's inputs. This method requires noisegrad package,
+    install it with: `pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git@allow-non-images'`.
+
+    Parameters
+    ----------
+    model:
+        A model, which is subject to explanation.
+    x_batch:
+        A batch of plain text inputs, which are subjects to explanation.
+    y_batch:
+        A batch of labels, which are subjects to explanation.
+    explain_fn:
+        Baseline explanation function. If string provided must be one of GradNorm, GradXInput, IntGrad.
+        Otherwise, must have `Callable[[TextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
+        Passing additional kwargs is not supported, please use partial application from functools package instead.
+        Default IntGrad.
+    init_kwargs:
+        Kwargs passed to __init__ method of NoiseGrad class.
+
+    Returns
+    -------
+
+    a_batch:
+        List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
+
+    """
+
+    if isinstance(explain_fn, str):
+        if explain_fn == "NoiseGrad++":
+            raise ValueError(
+                "Can't use NoiseGrad++ as baseline function for NoiseGrad++."
+            )
+        explain_fn = _numerical_method_mapping[explain_fn]
+
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
     embeddings = model.embedding_lookup(input_ids)
 
     scores = torch_explain_noise_grad_plus_plus_numerical(
-        model, embeddings, y_batch, **kwargs
+        model, embeddings, y_batch, attention_mask, explain_fn, init_kwargs
     )
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)

@@ -15,7 +15,6 @@ class BatchedRobustnessMetric:
     def indexes_of_changed_predictions_plain_text(
         self, model: TextClassifier, x_batch: List[str], x_batch_perturbed: List[str]
     ) -> np.ndarray | List:
-
         """Check if applying perturbation caused models predictions to change using plain text."""
         if not self.return_nan_when_prediction_changes:
             return []
@@ -31,7 +30,6 @@ class BatchedRobustnessMetric:
         x_batch_perturbed: np.ndarray,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray | List:
-
         """Check if applying perturbation caused models predictions to change using latent representations."""
         if not self.return_nan_when_prediction_changes:
             return []
