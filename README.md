@@ -437,4 +437,4 @@ For this purpose, please see notebooks in the [tutorials](https://github.com/und
 We welcome any sort of contribution to Quantus! For a detailed contribution guide, please refer to [Contributing](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/CONTRIBUTING.md) documentation first. 
 
 If you have any developer-related questions, please [open an issue](https://github.com/understandable-machine-intelligence-lab/Quantus/issues/new/choose)
-or write us at [anna.hedstroem@tu-berlin.de](mailto:anna.hedstroem@tu-berlin.de).
+or write us at [hedstroem.anna@gmail.com](mailto:hedstroem.anna@gmail.com).
