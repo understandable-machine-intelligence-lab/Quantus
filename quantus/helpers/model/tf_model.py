@@ -301,11 +301,12 @@ class TensorFlowModel(ModelInterface):
 
         weights = module.get_weights()
         bias = weights[1]
+
         for i in range(len(bias)):
             if self.channel_first:
                 weights[1][i] = 2 * bias[i] - np.unique(fw[i])[0]
             else:
-                weights[1][i] = 2 * bias[i] - np.unique(fw[:, :, i])[0]
+                weights[1][i] = 2 * bias[i] - np.unique(fw[..., i])[0]
 
         module.set_weights(weights)
         return new_model
