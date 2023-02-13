@@ -5,28 +5,30 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+import warnings
 from typing import Union, Callable, Dict, Optional, List
 
 import numpy as np
 
 from quantus.helpers import asserts
 from quantus.helpers import utils
+from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions.explanation_func import explain
 
 
 def evaluate(
     metrics: Dict,
-    xai_methods: Union[Dict[str, Callable], Dict[str, np.ndarray], List[str]],
+    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    a_batch: Union[np.ndarray, None] = None,
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
     explain_func_kwargs: Optional[dict] = None,
-    **call_kwargs,
+    call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    **kwargs,
 ) -> Optional[dict]:
     """
     A method to evaluate some explanation methods given some metrics.
@@ -36,18 +38,18 @@ def evaluate(
     metrics: dict
         A dictionary with intialised metrics.
     xai_methods: dict, list
-        Pass the different explanation methods, either: as a List[str] using the included explanation methods
-        in Quantus. Or as a dictionary with where the keys are the name of the explanation methods and the values
-        are the explanations (np.array). Alternatively, pass an explanation function to compute on-the-fly
-        instead of passing pre-computed attributions as the dictionary values.
+        Pass the different explanation methods as:
+        1) Dict[str, np.ndarray] where values are pre-calculcated attributions, or
+        2) Dict[str, Dict] where the keys are the name of the Quantus build-in explanation methods,
+        and the values are the explain function keyword arguments as a dictionary, or
+        3) Dict[str, Callable] where the keys are the name of explanation methods,
+        and the values a callable explanation function.
     model: torch.nn.Module, tf.keras.Model
         A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
     x_batch: np.ndarray
         A np.ndarray which contains the input data that are explained.
     y_batch: np.ndarray
         A np.ndarray which contains the output labels that are explained.
-    a_batch: np.ndarray, optional
-        A np.ndarray which contains pre-computed attributions i.e., explanations.
     s_batch: np.ndarray, optional
         A np.ndarray which contains segmentation masks that matches the input.
     agg_func: callable
@@ -55,15 +57,18 @@ def evaluate(
     progress: boolean
         Indicates if progress should be printed to std, or not.
     explain_func_kwargs: dict, optional
-        Keyword arguments to be passed to explain_func on call.
-    call_kwargs: optional
-        Keyword arguments for the call of the metrics.
-
+        Keyword arguments to be passed to explain_func on call. Pass None if using Dict[str, Dict] type for xai_methods.
+    call_kwargs: Dict[str, Dict]
+        Keyword arguments for the call of the metrics, keys are names for arg set and values are argument dictionaries.
+    kwargs: optional
+        Deprecated keyword arguments for the call of the metrics.
     Returns
     -------
     results: dict
         A dictionary with the results.
     """
+
+    warn.check_kwargs(kwargs)
 
     if xai_methods is None:
         print("Define the explanation methods that you want to evaluate.")
@@ -74,94 +79,102 @@ def evaluate(
             "Define the Quantus evaluation metrics that you want to evaluate the explanations against."
         )
         return None
-    if explain_func_kwargs is None:
-        explain_func_kwargs = {}
+
+    if call_kwargs is None:
+        call_kwargs = {}
+    elif not isinstance(call_kwargs, Dict):
+        raise TypeError("xai_methods type is not Dict[str, Dict].")
 
     results: Dict[str, dict] = {}
+    explain_funcs: Dict[str, Callable] = {}
 
-    if isinstance(xai_methods, list):
+    if not isinstance(xai_methods, dict):
+        "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
 
-        assert a_batch is not None, (
-            "If 'explanation_methods' is a list of methods as strings, "
-            "then a_batch arguments should provide the necessary attributions corresponding "
-            "to each input."
-        )
+    for method, value in xai_methods.items():
 
-        for method in xai_methods:
+        results[method] = {}
 
-            results[method] = {}
+        if callable(value):
 
-            for metric, metric_func in metrics.items():
+            explain_funcs[method] = value
+            explain_func = value
+
+            # Asserts.
+            asserts.assert_explain_func(explain_func=explain_func)
+
+            # Generate explanations.
+            a_batch = explain_func(
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **{**explain_func_kwargs, **{"method": method}},
+            )
+            a_batch = utils.expand_attribution_channel(a_batch, x_batch)
+
+            # Asserts.
+            asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
+
+        elif isinstance(value, Dict):
+
+            if explain_func_kwargs is not None:
+                warnings.warn(
+                    "Passed explain_func_kwargs will be ignored when passing type Dict[str, Dict] as xai_methods."
+                    "Pass explanation arguments as dictionary values."
+                )
+
+            explain_func_kwargs = value
+            explain_funcs[method] = explain
+
+            # Generate explanations.
+            a_batch = explain(
+                model=model, inputs=x_batch, targets=y_batch, **explain_func_kwargs
+            )
+            a_batch = utils.expand_attribution_channel(a_batch, x_batch)
+
+            # Asserts.
+            asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
+
+        elif isinstance(value, np.ndarray):
+            explain_funcs[
+                method
+            ] = explain
+            a_batch = value
+
+        else:
+
+            raise TypeError(
+                "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
+            )
+
+        if explain_func_kwargs is None:
+            explain_func_kwargs = {}
+
+        for (metric, metric_func) in metrics.items():
+
+            results[method][metric] = {}
+
+            for (call_kwarg_str, call_kwarg) in call_kwargs.items():
 
                 if progress:
-                    print(f"Evaluating {method} explanations on {metric} metric...")
+                    print(
+                        f"Evaluating {method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
+                    )
 
-                results[method][metric] = agg_func(
+                results[method][metric][call_kwarg_str] = agg_func(
                     metric_func(
                         model=model,
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
+                        explain_func=explain_funcs[method],
                         explain_func_kwargs={
                             **explain_func_kwargs,
                             **{"method": method},
                         },
-                        **call_kwargs,
-                    )
-                )
-
-    elif isinstance(xai_methods, dict):
-
-        for method, method_func in xai_methods.items():
-
-            results[method] = {}
-
-            if callable(method_func):
-
-                # Asserts.
-                asserts.assert_explain_func(explain_func=method_func)
-
-                # Generate explanations.
-                a_batch = method_func(
-                    model=model,
-                    inputs=x_batch,
-                    targets=y_batch,
-                    **{**explain_func_kwargs, **{"method": method}},
-                )
-                a_batch = utils.expand_attribution_channel(a_batch, x_batch)
-
-                # Asserts.
-                asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
-
-            elif isinstance(method_func, np.ndarray):
-
-                a_batch = method_func
-
-            else:
-
-                if not isinstance(method_func, np.ndarray):
-                    raise TypeError(
-                        "Explanations must be of type np.ndarray or a Callable function that outputs np.nparray."
-                    )
-
-            for metric, metric_func in metrics.items():
-
-                if progress:
-                    print(f"Evaluating {method} explanations on {metric} metric...")
-
-                results[method][metric] = agg_func(
-                    metric_func(
-                        model=model,
-                        x_batch=x_batch,
-                        y_batch=y_batch,
-                        a_batch=a_batch,
-                        s_batch=s_batch,
-                        explain_func_kwargs={
-                            **explain_func_kwargs,
-                            **{"method": method},
-                        },
-                        **call_kwargs,
+                        **call_kwarg,
+                        **kwargs,
                     )
                 )
 
