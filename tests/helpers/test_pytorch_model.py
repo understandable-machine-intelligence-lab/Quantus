@@ -9,7 +9,6 @@ from scipy.special import softmax
 
 from quantus.helpers.model.pytorch_model import PyTorchModel
 
-
 @pytest.fixture
 def mock_input_torch_array():
     return {"x": np.zeros((1, 1, 28, 28))}
@@ -169,3 +168,17 @@ def test_get_hidden_layers_output(load_mnist_model, params):
     assert isinstance(result, np.ndarray), "Must be a np.ndarray"
     assert len(result.shape) == 2, "Must be a batch of 1D tensors"
     assert result.shape[0] == X.shape[0], "Must have same batch size as input"
+
+
+@pytest.mark.pytorch_model
+def test_add_mean_shift_to_first_layer(load_mnist_model):
+    model = PyTorchModel(load_mnist_model, channel_first=True)
+    shift = -1
+    arr = np.random.random((32, 1, 28, 28))
+    X = torch.Tensor(arr).to(model.device)
+
+    X_shift = torch.Tensor(arr + shift).to(model.device)
+    new_model = model.add_mean_shift_to_first_layer(shift, X.size())
+    a1 = model.model(X)
+    a2 = new_model(X_shift)
+    assert torch.all(torch.isclose(a1, a2, atol=1e-04))

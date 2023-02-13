@@ -294,8 +294,8 @@ def assert_explain_func(explain_func: Callable) -> None:
     None
     """
     assert callable(explain_func), (
-        "Make sure 'explain_func' is a Callable that takes model, x_batch, "
-        "y_batch and **kwargs as arguments."
+        "Make sure 'explain_func' is a Callable that takes model, inputs, "
+        "targets and **kwargs as arguments."
     )
 
 
