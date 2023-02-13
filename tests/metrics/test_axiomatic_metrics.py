@@ -431,6 +431,27 @@ def test_non_sensitivity(
     "model,data,params,expected",
     [
         (
+                lazy_fixture("load_mnist_model_tf"),
+                lazy_fixture("load_mnist_images_tf"),
+                {
+                    "a_batch_generate": True,
+                    "init": {
+                        "abs": False,
+                        "normalise": False,
+                        "input_shift": 0.2,
+                        "disable_warnings": True,
+                        "display_progressbar": False,
+                    },
+                    "call": {
+                        "explain_func": explain,
+                        "explain_func_kwargs": {
+                            "method": "VanillaGradients",
+                        },
+                    },
+                },
+                {"dtypes": [True, False]},
+        ),
+        (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d"),
             {
@@ -459,7 +480,7 @@ def test_non_sensitivity(
                 "init": {
                     "abs": False,
                     "normalise": False,
-                    "input_shift": -1,
+                    "input_shift": -0.9,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },

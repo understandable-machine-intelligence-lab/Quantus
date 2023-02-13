@@ -308,7 +308,9 @@ class IROF(PerturbationMetric):
                 indexed_axes=self.a_axes,
                 **self.perturb_func_kwargs,
             )
-            warn.warn_perturbation_caused_no_change(x=x_prev_perturbed, x_perturbed=x_perturbed)
+            warn.warn_perturbation_caused_no_change(
+                x=x_prev_perturbed, x_perturbed=x_perturbed
+            )
 
             # Predict on perturbed input x.
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
