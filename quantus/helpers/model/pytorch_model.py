@@ -8,7 +8,7 @@
 
 from contextlib import suppress
 from copy import deepcopy
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, Tuple, List, Union
 
 import numpy as np
 import torch
@@ -34,7 +34,7 @@ class PyTorchModel(ModelInterface):
         Parameters
         ----------
         model: torch.nn.Module, tf.keras.Model
-            A model this will be wrapped in the ModelInterface:
+            A model to be wrapped in the ModelInterface.
         channel_first: boolean, optional
              Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
         softmax: boolean
@@ -220,6 +220,50 @@ class PyTorchModel(ModelInterface):
                         )
         return model_copy
 
+    def add_mean_shift_to_first_layer(
+        self,
+        input_shift: Union[int, float],
+        shape: tuple,
+    ):
+        """
+        Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
+        the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
+        for Input Invariance metric.
+
+
+        Parameters
+        ----------
+        input_shift: Union[int, float]
+            Shift to be applied.
+        shape: tuple
+            Model input shape, ndim = 4.
+
+        Returns
+        -------
+        random_layer_model: torch.nn
+            The resulting model with a shifted first layer.
+        """
+        with torch.no_grad():
+
+            new_model = deepcopy(self.model)
+
+            modules = [l for l in new_model.named_modules()]
+            module = modules[1]
+
+            delta = torch.zeros(size=shape).fill_(input_shift)
+            fw = module[1].forward(delta)[0]
+
+            for i in range(module[1].out_channels):
+                if self.channel_first:
+                    module[1].bias[i] = torch.nn.Parameter(
+                        2 * module[1].bias[i] - torch.unique(fw[i])[0]
+                    )
+                else:
+                    module[1].bias[i] = torch.nn.Parameter(
+                        2 * module[1].bias[i] - torch.unique(fw[..., i])[0]
+                    )
+
+        return new_model
 
     def get_hidden_representations(
         self,
@@ -310,4 +354,3 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
-
