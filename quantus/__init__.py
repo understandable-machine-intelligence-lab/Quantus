@@ -15,3 +15,6 @@ from quantus.functions import *
 
 # Expose quantus.<metric> to the user.
 from quantus.metrics import *
+
+# Expose quantus.helpers.constants to the user.
+from quantus.helpers.constants import *
