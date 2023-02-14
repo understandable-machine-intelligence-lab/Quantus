@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 from quantus.helpers import warn
@@ -21,8 +21,10 @@ class InputInvariance(BatchedPerturbationMetric):
     """
     Implementation of Completeness test by Kindermans et al., 2017.
 
-    To test for input invariance, we add a constant shift to the input data and then measure the effect
-    on the attributions, the expectation is that if the model show no response, then the explanations should not.
+    To test for input invariance, we add a constant shift to the input data and a mean shift to the model bias,
+    so that the output of the original model on the original data is equal to the output of the changed model
+    on the shifted data. The metric returns True if batch attributions stayed unchanged too. Currently only
+    supporting constant values for the shift.
 
     References:
         Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
@@ -35,8 +37,7 @@ class InputInvariance(BatchedPerturbationMetric):
         normalise: bool = False,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
-        input_shift: int = -1,
-        perturb_func: Callable = None,
+        input_shift: Union[int, float] = -1,
         perturb_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -57,11 +58,8 @@ class InputInvariance(BatchedPerturbationMetric):
             If normalise_func=None, the default value is used, default=normalise_by_max.
         normalise_func_kwargs: dict
             Keyword arguments to be passed to normalise_func on call, default={}.
-        input_shift: integer
-            Shift to the input data, default=-1.
-        perturb_func: callable
-            Input perturbation function. If None, the default value is used,
-            default=baseline_replacement_by_indices.
+        input_shift: float, int
+            The value used to shift the input and the model bias as per the paper, default=-1.
         perturb_func_kwargs: dict
             Keyword arguments to be passed to perturb_func, default={}.
         return_aggregate: boolean
@@ -86,8 +84,7 @@ class InputInvariance(BatchedPerturbationMetric):
         if normalise_func is None:
             normalise_func = normalise_by_max
 
-        if perturb_func is None:
-            perturb_func = baseline_replacement_by_shift
+        perturb_func = baseline_replacement_by_shift
 
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
@@ -267,6 +264,9 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.perturb_func_kwargs,
         )
 
+        # Get input shift
+        input_shift = self.perturb_func_kwargs["input_shift"]
+
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -274,15 +274,13 @@ class InputInvariance(BatchedPerturbationMetric):
             batched=True,
         )
 
-        for x_instance, x_instance_shifted in zip(x_batch, x_shifted):
-            warn.warn_perturbation_caused_no_change(
-                x=x_instance,
-                x_perturbed=x_instance_shifted,
-            )
+        shifted_model = model.add_mean_shift_to_first_layer(
+            input_shift, x_shifted[:1].shape
+        )
 
         # Generate explanation based on shifted input x.
         a_shifted = self.explain_func(
-            model=model.get_model(),
+            model=shifted_model,
             inputs=x_shifted,
             targets=y_batch,
             **self.explain_func_kwargs,
@@ -290,7 +288,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         # Compute the evaluation.
         score = np.all(
-            a_batch == a_shifted,
+            np.isclose(a_batch, a_shifted),
             axis=tuple(range(1, a_batch.ndim)),
         )
 
