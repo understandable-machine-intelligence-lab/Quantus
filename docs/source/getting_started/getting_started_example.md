@@ -241,9 +241,12 @@ xai_methods = {
     "IntegratedGradients": saliency_callable
 }
 ```
-  or as a list of `string` (this input relies on `quantus.explain` so make sure that the XAI methods you include are supported) :
+  or as a `dict` with keys with the name of the Quantus built-in explanation methods (see `quantus.explain`), and the values are associated hyperparameters (as a `dict`):
 ```python
-xai_methods = ["Saliency", "IntegratedGradients"]
+xai_methods = {
+    "Saliency": {},
+    "IntegratedGradients": {}
+}
 ```
 
 You can then simply run a large-scale evaluation as follows (this aggregates the result by `np.mean` averaging):
@@ -257,7 +260,7 @@ results = quantus.evaluate(
       model=model,
       x_batch=x_batch,
       y_batch=y_batch,
-      **{"softmax": False,}
+      call_kwargs={"0": {"softmax": False,},}
 )
 ```
 
