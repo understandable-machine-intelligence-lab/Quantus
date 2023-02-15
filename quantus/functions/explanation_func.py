@@ -203,7 +203,9 @@ def generate_tf_explanation(
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, **method_kwargs
+                        ),
                         inputs,
                         targets,
                     )
@@ -238,7 +240,9 @@ def generate_tf_explanation(
             np.array(
                 list(
                     map(
-                        lambda x, y: explainer.explain(([x], None), model, y, **method_kwargs),
+                        lambda x, y: explainer.explain(
+                            ([x], None), model, y, **method_kwargs
+                        ),
                         inputs,
                         targets,
                     )
@@ -256,7 +260,11 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, patch_size=patch_size, **method_kwargs
+                            ([x], None),
+                            model,
+                            y,
+                            patch_size=patch_size,
+                            **method_kwargs,
                         ),
                         inputs,
                         targets,
@@ -298,7 +306,12 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, num_samples=num_samples, noise=noise, **method_kwargs
+                            ([x], None),
+                            model,
+                            y,
+                            num_samples=num_samples,
+                            noise=noise,
+                            **method_kwargs,
                         ),
                         inputs,
                         targets,
@@ -441,7 +454,9 @@ def generate_captum_explanation(
 
     elif method == "Gradient":
         explanation = f_reduce_axes(
-            Saliency(model, **method_kwargs).attribute(inputs=inputs, target=targets, abs=False)
+            Saliency(model, **method_kwargs).attribute(
+                inputs=inputs, target=targets, abs=False
+            )
         )
 
     elif method == "Occlusion":
@@ -480,9 +495,7 @@ def generate_captum_explanation(
                 inputs=inputs, target=targets
             )
         else:
-            explanation = attr_func(model, **method_kwargs).attribute(
-                inputs=inputs
-            )
+            explanation = attr_func(model, **method_kwargs).attribute(inputs=inputs)
 
         if "interpolate" in kwargs:
             if isinstance(kwargs["interpolate"], tuple):

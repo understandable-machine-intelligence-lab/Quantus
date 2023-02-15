@@ -130,9 +130,7 @@ AVAILABLE_XAI_METHODS_CAPTUM = [
 ]
 
 
-DEPRECATED_XAI_METHODS_CAPTUM = {
-    "GradCam": "LayerGradCam"
-}
+DEPRECATED_XAI_METHODS_CAPTUM = {"GradCam": "LayerGradCam"}
 
 
 AVAILABLE_XAI_METHODS_TF = [
@@ -149,7 +147,7 @@ DEPRECATED_XAI_METHODS_TF = {
     "Gradient": "VanillaGradients",
     "InputXGradient": "GradientsInput",
     "Occlusion": "OcclusionSensitivity",
-    "GradCam": "GradCAM"
+    "GradCam": "GradCAM",
 }
 
 
