@@ -14,6 +14,7 @@ from typing import Tuple
 if util.find_spec("torch"):
 
     import torch
+    import torch.nn as nn
 
     class LeNet(torch.nn.Module):
         """
@@ -153,6 +154,16 @@ if util.find_spec("torch"):
             x = self.fc_3(x)
             return x
 
+    def TitanicSimpleTorchModel() -> torch.nn.Module:
+        return nn.Sequential(
+            nn.Linear(12, 12),
+            nn.Sigmoid(),
+            nn.Linear(12, 8),
+            nn.Sigmoid(),
+            nn.Linear(8, 2),
+            nn.Softmax(dim=1),
+        )
+
 
 if util.find_spec("tensorflow"):
     import tensorflow as tf
@@ -184,7 +195,6 @@ if util.find_spec("tensorflow"):
         )
 
     def ConvNet1DTF(n_channels: int, seq_len: int, n_classes: int) -> tf.keras.Model:
-
         """
         A Tensorflow implementation of 1D-convolutional architecture.
         """
@@ -202,5 +212,15 @@ if util.find_spec("tensorflow"):
                 tf.keras.layers.Dense(128, activation="relu"),
                 tf.keras.layers.Dense(84, activation="relu"),
                 tf.keras.layers.Dense(n_classes),
+            ]
+        )
+
+    def TitanicSimpleTFModel() -> tf.keras.Model:
+        return tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(12, activation="sigmoid"),
+                tf.keras.layers.Dense(12, activation="sigmoid"),
+                tf.keras.layers.Dense(8),
+                tf.keras.layers.Dense(2, activation="softmax"),
             ]
         )

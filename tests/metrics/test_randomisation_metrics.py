@@ -10,6 +10,12 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
 
 
+def explain_func_stub(*args, **kwargs):
+    # tf-explain does not support 2D inputs
+    input_shape = kwargs.get("inputs").shape
+    return np.random.uniform(low=0, high=0.5, size=input_shape)
+
+
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -190,6 +196,42 @@ from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLog
             },
             {"min": -1.0, "max": 1.0},
         ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.01},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.01},
+        ),
     ],
 )
 def test_model_parameter_randomisation(
@@ -369,6 +411,40 @@ def test_model_parameter_randomisation(
                 },
             },
             {"min": 0.0, "max": 1.0},
+        ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"min": -1.0, "max": 1.01},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"min": -1.0, "max": 1.01},
         ),
     ],
 )
