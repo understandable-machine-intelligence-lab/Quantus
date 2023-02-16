@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from datasets import load_dataset
 
-from .tf_fnet_text_classifier import fnet_text_classifier
 from quantus.nlp import TFHuggingFaceTextClassifier, TorchHuggingFaceTextClassifier
 
 BATCH_SIZE = 8
@@ -76,4 +75,6 @@ def a_tuple_text_ragged_2(a_tuple_text):
 
 @pytest.fixture(scope="session")
 def fnet_ag_news_model():
+    from .tf_fnet_text_classifier import fnet_text_classifier
+
     return fnet_text_classifier()

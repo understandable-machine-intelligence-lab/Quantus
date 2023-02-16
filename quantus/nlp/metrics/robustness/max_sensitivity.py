@@ -197,8 +197,9 @@ class MaxSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
             if self.noise_type == PerturbationType.latent_space:
+                a_batch_numerical = np.asarray([i[1] for i in a_batch])
                 similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
-                    model, y_batch, a_batch, x_batch_embeddings, attention_mask
+                    model, y_batch, a_batch_numerical, x_batch_embeddings, attention_mask
                 )
 
         agg_fn = np.max if self.return_nan_when_prediction_changes else np.nanmax
@@ -222,7 +223,7 @@ class MaxSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             model, x_batch, x_perturbed
         )
         # Generate explanation based on perturbed input x.
-        a_perturbed = self.generate_a_batch(model, x_perturbed, y_batch)
+        a_perturbed = self.explain_func(model, x_perturbed, y_batch, **self.explain_func_kwargs)
         a_perturbed = self.normalise_a_batch(a_perturbed)
 
         similarities = np.zeros(batch_size)
@@ -276,8 +277,8 @@ class MaxSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         )
 
         # Generate explanation based on perturbed input x.
-        a_perturbed = self.generate_a_batch(
-            model, x_batch_embeddings_perturbed, y_batch
+        a_perturbed = self.explain_func(
+            model, x_batch_embeddings_perturbed, y_batch, attention_mask, **self.explain_func_kwargs
         )
         a_perturbed = self.normalise_a_batch(a_perturbed)
 

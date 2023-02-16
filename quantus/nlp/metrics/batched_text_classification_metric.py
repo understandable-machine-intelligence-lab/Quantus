@@ -20,7 +20,6 @@ from quantus.nlp.helpers.utils import (
     batch_list,
     normalise_attributions,
     abs_attributions,
-    unpack_token_ids_and_attention_mask,
 )
 from quantus.helpers.warn import check_kwargs
 from quantus.nlp.functions.explanation_func import explain
@@ -279,36 +278,23 @@ class BatchedTextClassificationMetric(BatchedPerturbationMetric):
         batch_size: Optional[int],
     ) -> List[Explanation] | np.ndarray:
         if len(x_batch) <= batch_size:
-            return self.generate_a_batch(model, x_batch, y_batch)
+            return self.explain_func(
+                model, x_batch, y_batch, **self.explain_func_kwargs
+            )  # noqa
 
         batched_x = batch_list(x_batch, batch_size)
         batched_y = batch_list(y_batch.tolist(), batch_size)  # noqa
 
         a_batches = []
         for x, y in zip(batched_x, batched_y):
-            a_batches.extend(self.generate_a_batch(model, x, y))
+            a_batches.extend(
+                self.explain_func(model, x, y, **self.explain_func_kwargs)
+            )  # noqa
 
         if self.perturbation_type == PerturbationType.plain_text:
             return a_batches
         else:
             return np.asarray(a_batches)
-
-    def generate_a_batch(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-    ) -> List[Explanation] | np.ndarray:
-        explain_fn = partial(self.explain_func, **self.explain_func_kwargs)
-
-        if self.perturbation_type == PerturbationType.plain_text:
-            return explain_fn(model, x_batch, y_batch)
-
-        tokens = model.tokenizer.tokenize(x_batch)
-        token_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-        embeddings = model.embedding_lookup(token_ids)
-
-        return explain_fn(model, embeddings, y_batch, attention_mask)
 
     @abstractmethod
     def evaluate_batch(

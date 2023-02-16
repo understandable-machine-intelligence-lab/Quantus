@@ -196,8 +196,13 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
             if self.noise_type == PerturbationType.latent_space:
+                a_batch_numerical = np.asarray([i[1] for i in a_batch])
                 similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
-                    model, y_batch, a_batch, x_batch_embeddings, attention_mask
+                    model,
+                    y_batch,
+                    a_batch_numerical,
+                    x_batch_embeddings,
+                    attention_mask,
                 )
 
         agg_fn = np.mean if self.return_nan_when_prediction_changes else np.nanmean
@@ -221,7 +226,9 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             model, x_batch, x_perturbed
         )
 
-        a_perturbed = self.generate_a_batch(model, x_perturbed, y_batch)
+        a_perturbed = self.explain_func(
+            model, x_perturbed, y_batch, **self.explain_func_kwargs
+        )  # noqa
         a_perturbed = self.normalise_a_batch(a_perturbed)
 
         similarities = np.zeros(batch_size)
@@ -274,8 +281,12 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
         )
 
-        a_perturbed = self.generate_a_batch(
-            model, x_batch_embeddings_perturbed, y_batch
+        a_perturbed = self.explain_func(
+            model,
+            x_batch_embeddings_perturbed,
+            y_batch,
+            attention_mask,  # noqa
+            **self.explain_func_kwargs,  # noqa
         )
 
         similarities = np.zeros(batch_size)
@@ -285,10 +296,7 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
-            if (
-                self.return_nan_when_prediction_changes
-                and instance_id in changed_prediction_indices
-            ):
+            if instance_id in changed_prediction_indices:
                 similarities[instance_id] = np.nan
                 continue
 

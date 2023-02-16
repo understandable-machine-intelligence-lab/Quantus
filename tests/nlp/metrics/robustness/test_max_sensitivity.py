@@ -5,6 +5,7 @@ from quantus.nlp import (
     MaxSensitivity,
     PerturbationType,
 )
+from tests.nlp.util import skip_on_apple_silicon
 
 
 @pytest.mark.nlp
@@ -35,6 +36,7 @@ def test_max_sensitivity_huggingface_model_tf(model, x_batch, init_kwargs, call_
 
 
 @pytest.mark.nlp
+@skip_on_apple_silicon
 @pytest.mark.parametrize(
     "model, x_batch, init_kwargs, call_kwargs",
     [

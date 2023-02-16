@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
@@ -5,6 +7,7 @@ from quantus.nlp import (
     AvgSensitivity,
     PerturbationType,
 )
+from tests.nlp.util import skip_on_apple_silicon
 
 
 @pytest.mark.nlp
@@ -37,6 +40,7 @@ def test_average_sensitivity_huggingface_model_tf(
 
 
 @pytest.mark.nlp
+@skip_on_apple_silicon
 @pytest.mark.parametrize(
     "model, x_batch, init_kwargs, call_kwargs",
     [
