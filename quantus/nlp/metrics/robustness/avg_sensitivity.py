@@ -17,7 +17,7 @@ from quantus.nlp.helpers.types import (
     TextClassifier,
     PerturbationType,
 )
-from quantus.nlp.metrics.text_classification_metric import (
+from quantus.nlp.metrics.batched_text_classification_metric import (
     BatchedTextClassificationMetric,
 )
 from quantus.nlp.metrics.robustness.batched_robustness_metric import (
@@ -25,8 +25,6 @@ from quantus.nlp.metrics.robustness.batched_robustness_metric import (
 )
 from quantus.nlp.helpers.utils import (
     value_or_default,
-    abs_attributions,
-    normalise_attributions,
     explanation_similarity,
     unpack_token_ids_and_attention_mask,
     safe_asarray,
@@ -223,18 +221,8 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             model, x_batch, x_perturbed
         )
 
-        explain_fn = functools.partial(self.explain_func, **self.explain_func_kwargs)
-
-        # Generate explanation based on perturbed input x.
-        a_perturbed = explain_fn(model, x_perturbed, y_batch)
-        if self.normalise:
-            normalise_fn = functools.partial(
-                self.normalise_func, **self.normalise_func_kwargs
-            )
-            a_perturbed = normalise_attributions(a_perturbed, normalise_fn)
-
-        if self.abs:
-            a_perturbed = abs_attributions(a_perturbed)
+        a_perturbed = self.generate_a_batch(model, x_perturbed, y_batch)
+        a_perturbed = self.normalise_a_batch(a_perturbed)
 
         similarities = np.zeros(batch_size)
         similarity_fn = functools.partial(
@@ -286,20 +274,9 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
         )
 
-        explain_fn = functools.partial(self.explain_func, **self.explain_func_kwargs)
-
-        # Generate explanation based on perturbed input x.
-        a_perturbed = explain_fn(
-            model, x_batch_embeddings_perturbed, y_batch, attention_mask
+        a_perturbed = self.generate_a_batch(
+            model, x_batch_embeddings_perturbed, y_batch
         )
-        if self.normalise:
-            normalise_fn = functools.partial(
-                self.normalise_func, **self.normalise_func_kwargs
-            )
-            a_perturbed = normalise_fn(a_perturbed)
-
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
 
         similarities = np.zeros(batch_size)
         similarity_fn = functools.partial(

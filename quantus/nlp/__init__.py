@@ -28,7 +28,7 @@ from quantus.nlp.functions.plot_func import (
 )
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier, Tokenizer
-from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
 from importlib import util
 
 if util.find_spec("tensorflow"):

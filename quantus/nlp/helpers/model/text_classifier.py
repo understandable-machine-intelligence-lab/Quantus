@@ -9,6 +9,7 @@ T = TypeVar("T")
 
 
 class TextClassifier(ABC):
+    tokenizer: Tokenizer
 
     """An interface for model, trained for text-classification task (aka sentiment analysis)."""
 
@@ -44,10 +45,4 @@ class TextClassifier(ABC):
     @abstractmethod
     def weights(self, weights):
         """Set model's (learnable) parameters."""
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def tokenizer(self) -> Tokenizer:
-        """Get tokenizer used by model to convert plain text inputs to vocabulary ids."""
         raise NotImplementedError

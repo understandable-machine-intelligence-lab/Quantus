@@ -15,7 +15,7 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-def value_or_default(value: T, default_factory: Callable[[], T]) -> T:
+def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
     if value is not None:
         return value

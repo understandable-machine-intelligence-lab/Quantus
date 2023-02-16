@@ -27,15 +27,11 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         self,
         tokenizer: PreTrainedTokenizerBase,
         model: PreTrainedModel,
-        device: Optional[str | torch.device],
+        device: Optional[torch.device],
     ):
-        device = value_or_default(device, lambda: "cpu")
-        if isinstance(device, str):
-            device = torch.device(device)
-
-        self.device = device
+        self.device = value_or_default(device, lambda: torch.device("cpu"))
         self.model = model.to(device)
-        self._tokenizer = HuggingFaceTokenizer(tokenizer)
+        self.tokenizer = HuggingFaceTokenizer(tokenizer)
 
     @staticmethod
     def from_pretrained(
@@ -83,7 +79,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
 
     def _predict_on_batch(self, text: List[str]) -> np.ndarray:
         input_ids, attention_mask = unpack_token_ids_and_attention_mask(
-            self._tokenizer.tokenize(text)
+            self.tokenizer.tokenize(text)
         )
         input_ids = torch.tensor(input_ids).to(self.device)
         attention_mask = torch.tensor(attention_mask).to(self.device)
@@ -97,7 +93,3 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
     @weights.setter
     def weights(self, weights: Dict[str, torch.Tensor]):
         self.model.load_state_dict(weights)
-
-    @property
-    def tokenizer(self) -> HuggingFaceTokenizer:
-        return self._tokenizer
