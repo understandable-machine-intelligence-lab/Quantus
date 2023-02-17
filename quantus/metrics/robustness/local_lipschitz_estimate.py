@@ -15,11 +15,10 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
 
 
-class LocalLipschitzEstimate(BatchedPerturbationMetric, BatchedRobustnessMetric):
+class LocalLipschitzEstimate(BatchedRobustnessMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 

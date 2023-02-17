@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from abc import ABC
+
 import numpy as np
 from typing import List
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
-class BatchedRobustnessMetric:
+class BatchedRobustnessMetric(BatchedPerturbationMetric, ABC):
 
     """Common functionality for batched robustness metrics."""
 

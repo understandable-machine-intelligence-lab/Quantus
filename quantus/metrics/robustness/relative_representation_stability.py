@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchExplainable
+from quantus.metrics.base_batched import BatchExplainable
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
@@ -24,9 +24,7 @@ from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
 
 
-class RelativeRepresentationStability(
-    BatchedPerturbationMetric, BatchedRobustnessMetric, BatchExplainable
-):
+class RelativeRepresentationStability(BatchedRobustnessMetric):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits
@@ -130,6 +128,7 @@ class RelativeRepresentationStability(
         self._layer_names = layer_names
         self._layer_indices = layer_indices
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.explaner = BatchExplainable(self.normalise, self.abs, self.normalise_func, self.normalise_func_kwargs)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -316,7 +315,7 @@ class RelativeRepresentationStability(
                 **self.perturb_func_kwargs,
             )
             # Generate explanations for perturbed input.
-            a_batch_perturbed = self.generate_normalised_explanations_batch(
+            a_batch_perturbed = self.explaner.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
             # Retrieve internal representation for perturbed inputs.

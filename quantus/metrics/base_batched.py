@@ -520,10 +520,11 @@ class BatchExplainable:
 
     """Common functionality for metrics, which need to generate new explanations during evaluation."""
 
-    normalise: bool
-    abs: bool
-    normalise_func: Callable
-    normalise_func_kwargs: Dict
+    def __init__(self, normalise: bool, abs: bool, normalise_func: Callable, normalise_func_kwargs: Dict):
+        self.normalise = normalise
+        self.abs = abs
+        self.normalise_func = normalise_func
+        self.normalise_func_kwargs = normalise_func_kwargs
 
     def generate_normalised_explanations_batch(
         self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable

@@ -16,11 +16,10 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
 
 
-class MaxSensitivity(BatchedPerturbationMetric, BatchedRobustnessMetric):
+class MaxSensitivity(BatchedRobustnessMetric):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 
