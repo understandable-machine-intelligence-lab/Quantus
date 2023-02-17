@@ -995,3 +995,18 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+def changed_prediction_indices(
+    return_nan_when_prediction_changes: bool,
+    model: ModelInterface,
+    x_batch: np.ndarray,
+    x_perturbed: np.ndarray
+) -> np.ndarray | List:
+    """Check if applying perturbation caused models predictions to change."""
+    if not return_nan_when_prediction_changes:
+        return []
+
+    labels_before = model.predict(x_batch).argmax(axis=-1)
+    labels_after = model.predict(x_perturbed).argmax(axis=-1)
+    return np.argwhere(labels_before != labels_after).reshape(-1)

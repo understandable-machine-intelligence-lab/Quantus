@@ -6,8 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
+from functools import partial
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
@@ -15,10 +16,11 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.utils import changed_prediction_indices as changed_prediction_indices_fn
 
 
-class LocalLipschitzEstimate(BatchedRobustnessMetric):
+class LocalLipschitzEstimate(BatchedPerturbationMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -146,6 +148,10 @@ class LocalLipschitzEstimate(BatchedRobustnessMetric):
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.changed_prediction_indices_func = partial(
+            changed_prediction_indices_fn,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -319,7 +325,7 @@ class LocalLipschitzEstimate(BatchedRobustnessMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 

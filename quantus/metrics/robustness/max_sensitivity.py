@@ -8,6 +8,7 @@
 
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
+from functools import partial
 
 from quantus.helpers import asserts
 from quantus.functions import norm_func
@@ -16,10 +17,10 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.utils import changed_prediction_indices as changed_prediction_indices_fn
 
-
-class MaxSensitivity(BatchedRobustnessMetric):
+class MaxSensitivity(BatchedPerturbationMetric):
     """
     Implementation of Max-Sensitivity by Yeh at el., 2019.
 
@@ -142,6 +143,10 @@ class MaxSensitivity(BatchedRobustnessMetric):
             norm_denominator = norm_func.fro_norm
         self.norm_denominator = norm_denominator
         self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.changed_prediction_indices_func = partial(
+            changed_prediction_indices_fn,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes
+        )
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -311,7 +316,7 @@ class MaxSensitivity(BatchedRobustnessMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 

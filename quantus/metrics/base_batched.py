@@ -516,7 +516,7 @@ class BatchedPerturbationMetric(BatchedMetric):
         )
 
 
-class BatchExplainable:
+class BatchExplainer:
 
     """Common functionality for metrics, which need to generate new explanations during evaluation."""
 

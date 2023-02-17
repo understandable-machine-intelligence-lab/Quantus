@@ -16,15 +16,15 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.metrics.base_batched import BatchExplainable
+from quantus.metrics.base_batched import BatchedPerturbationMetric, BatchExplainer
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.metrics.robustness.batched_robustness_metric import BatchedRobustnessMetric
+from quantus.helpers.utils import changed_prediction_indices as changed_prediction_indices_fn
 
 
-class RelativeInputStability(BatchedRobustnessMetric):
+class RelativeInputStability(BatchedPerturbationMetric):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
 
@@ -111,8 +111,12 @@ class RelativeInputStability(BatchedRobustnessMetric):
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
-        self.explainer = BatchExplainable(self.normalise, self.abs, self.normalise_func, self.normalise_func_kwargs)
+        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.explainer = BatchExplainer(self.normalise, self.abs, self.normalise_func, self.normalise_func_kwargs)
+        self.changed_prediction_indices_func = partial(
+            changed_prediction_indices_fn,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes
+        )
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -302,11 +306,11 @@ class RelativeInputStability(BatchedRobustnessMetric):
             )
             ris_batch[index] = ris
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self.return_nan_when_prediction_changes:
+            if not self._return_nan_when_prediction_changes:
                 continue
 
             # If perturbed input caused change in prediction, then it's RIS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(
+            changed_prediction_indices = self.changed_prediction_indices_func(
                 model, x_batch, x_perturbed
             )
 
