@@ -22,6 +22,7 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
+from quantus.metrics.robustness.relative_stability.rrs_objective import RelativeRepresentationStabilityObjective
 
 
 class RelativeRepresentationStability(BatchedPerturbationMetric):
@@ -128,6 +129,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         self._layer_names = layer_names
         self._layer_indices = layer_indices
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.objective = RelativeRepresentationStabilityObjective(eps_min)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -209,58 +211,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
         )
-
-    def relative_representation_stability_objective(
-        self,
-        l_x: np.ndarray,
-        l_xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Computes relative representation stabilities maximization objective
-        as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors.
-
-        Parameters
-        ----------
-        l_x: np.ndarray
-            Internal representation for x_batch.
-        l_xs: np.ndarray
-            Internal representation for xs_batch.
-        e_x: np.ndarray
-            Explanations for x.
-        e_xs: np.ndarray
-            Explanations for xs.
-
-        Returns
-        -------
-        rrs_obj: np.ndarray
-            RRS maximization objective.
-        """
-
-        num_dim = e_x.ndim
-        if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
-        elif num_dim == 3:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
-        elif num_dim == 2:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
-        else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
-        # fmt: off
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
-        # fmt: on
-        denominator = l_x - l_xs
-        denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
-        denominator = np.linalg.norm(denominator, axis=-1)
-        denominator += (denominator == 0) * self._eps_min
-        return nominator / denominator
 
     def generate_normalised_explanations_batch(
         self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
@@ -349,7 +299,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
                 x_perturbed, self._layer_names, self._layer_indices
             )
             # Compute maximization's objective.
-            rrs = self.relative_representation_stability_objective(
+            rrs = self.objective(
                 internal_representations,
                 internal_representations_perturbed,
                 a_batch,

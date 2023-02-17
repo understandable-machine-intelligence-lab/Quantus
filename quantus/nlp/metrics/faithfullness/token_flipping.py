@@ -1,0 +1,2 @@
+class TokenFlipping:
+    pass

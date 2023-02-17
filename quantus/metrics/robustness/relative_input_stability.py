@@ -22,6 +22,7 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
+from quantus.metrics.robustness.relative_stability.ris_objective import RelativeInputStabilityObjective
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
@@ -112,6 +113,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
         self._nr_samples = nr_samples
         self._eps_min = eps_min
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.objective = RelativeInputStabilityObjective(eps_min)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -193,56 +195,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             batch_size=batch_size,
         )
 
-    def relative_input_stability_objective(
-        self, x: np.ndarray, xs: np.ndarray, e_x: np.ndarray, e_xs: np.ndarray
-    ) -> np.ndarray:
-        """
-        Computes relative input stabilities maximization objective
-        as defined here :ref:`https://arxiv.org/pdf/2203.06877.pdf` by the authors.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            Batch of images.
-        xs: np.ndarray
-            Batch of perturbed images.
-        e_x: np.ndarray
-            Explanations for x.
-        e_xs: np.ndarray
-            Explanations for xs.
-
-        Returns
-        -------
-        ris_obj: np.ndarray
-            RIS maximization objective.
-        """
-        num_dim = x.ndim
-        if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
-        elif num_dim == 3:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
-        elif num_dim == 2:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
-        else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
-        # fmt: off
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
-        # fmt: on
-
-        denominator = x - xs
-        denominator /= x + (x == 0) * self._eps_min
-        # fmt: off
-        denominator = norm_function(denominator)
-        # fmt: on
-        denominator += (denominator == 0) * self._eps_min
-        return nominator / denominator
-
     def generate_normalised_explanations_batch(
         self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
     ) -> np.ndarray:
@@ -323,7 +275,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 x_perturbed, y_batch, _explain_func
             )
             # Compute maximization's objective.
-            ris = self.relative_input_stability_objective(
+            ris = self.objective(
                 x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
             ris_batch[index] = ris

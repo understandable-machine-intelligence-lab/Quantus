@@ -29,7 +29,7 @@ from tests.nlp.util import skip_on_apple_silicon
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_max_sensitivity_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
+def test_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
     metric = MaxSensitivity(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
@@ -57,7 +57,7 @@ def test_max_sensitivity_huggingface_model_tf(model, x_batch, init_kwargs, call_
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_max_sensitivity_keras_model(model, x_batch, init_kwargs, call_kwargs):
+def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
     metric = MaxSensitivity(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
@@ -84,7 +84,7 @@ def test_max_sensitivity_keras_model(model, x_batch, init_kwargs, call_kwargs):
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_max_sensitivity_huggingface_model_torch(
+def test_model_torch(
     model, x_batch, init_kwargs, call_kwargs
 ):
     metric = MaxSensitivity(nr_samples=5, **init_kwargs)

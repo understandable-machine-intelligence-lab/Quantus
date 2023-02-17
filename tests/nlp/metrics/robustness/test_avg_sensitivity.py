@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
@@ -32,7 +30,7 @@ from tests.nlp.util import skip_on_apple_silicon
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_average_sensitivity_huggingface_model_tf(
+def test_huggingface_model_tf(
     model, x_batch, init_kwargs, call_kwargs
 ):
     metric = AvgSensitivity(nr_samples=5, **init_kwargs)
@@ -62,7 +60,7 @@ def test_average_sensitivity_huggingface_model_tf(
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_average_sensitivity_keras_model(model, x_batch, init_kwargs, call_kwargs):
+def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
     metric = AvgSensitivity(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
@@ -89,7 +87,7 @@ def test_average_sensitivity_keras_model(model, x_batch, init_kwargs, call_kwarg
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_average_sensitivity_huggingface_model_torch(
+def test_huggingface_model_torch(
     model, x_batch, init_kwargs, call_kwargs
 ):
     metric = AvgSensitivity(nr_samples=5, **init_kwargs)

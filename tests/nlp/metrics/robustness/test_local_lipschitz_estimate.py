@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from quantus.nlp import (
-    RelativeRepresentationStability,
+    LocalLipschitzEstimate,
     PerturbationType,
     uniform_noise
 )
@@ -32,7 +32,7 @@ from quantus.nlp import (
 def test_huggingface_model_tf(
         model, x_batch, init_kwargs, call_kwargs
 ):
-    metric = RelativeRepresentationStability(nr_samples=5, **init_kwargs)
+    metric = LocalLipschitzEstimate(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
 
@@ -61,6 +61,6 @@ def test_huggingface_model_tf(
 def test_huggingface_model_torch(
         model, x_batch, init_kwargs, call_kwargs
 ):
-    metric = RelativeRepresentationStability(nr_samples=5, **init_kwargs)
+    metric = LocalLipschitzEstimate(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()

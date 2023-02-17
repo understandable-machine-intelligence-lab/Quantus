@@ -61,3 +61,15 @@ def linf_norm(a: np.array) -> float:
     """
     assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
     return np.linalg.norm(a, ord=np.inf)
+
+
+def lp_norm_4d(arr: np.ndarray) -> np.ndarray:
+    return np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)
+
+
+def lp_norm_3d(arr: np.ndarray) -> np.ndarray:
+    return np.linalg.norm(arr, axis=(-1, -2))
+
+
+def lp_norm_2d(arr: np.ndarray) -> np.ndarray:
+    return np.linalg.norm(arr, axis=-1)

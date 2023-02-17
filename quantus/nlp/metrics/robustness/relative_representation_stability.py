@@ -11,7 +11,7 @@ from quantus.nlp.metrics.batched_text_classification_metric import (
 )
 
 
-class RelativeOutputStability(BatchedTextClassificationMetric):
+class RelativeRepresentationStability(BatchedTextClassificationMetric):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits

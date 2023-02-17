@@ -21,6 +21,7 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
+from quantus.metrics.robustness.relative_stability.ros_objective import RelativeOutputStabilityObjective
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -115,6 +116,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         self._nr_samples = nr_samples
         self._eps_min = eps_min
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.objective = RelativeOutputStabilityObjective(eps_min)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -199,57 +201,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             batch_size=batch_size,
         )
 
-    def relative_output_stability_objective(
-        self,
-        h_x: np.ndarray,
-        h_xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Computes relative output stabilities maximization objective
-        as defined here :ref:`https://arxiv.org/pdf/2203.06877.pdf` by the authors.
 
-        Parameters
-        ----------
-        h_x: np.ndarray
-            Output logits for x_batch.
-        h_xs: np.ndarray
-            Output logits for xs_batch.
-        e_x: np.ndarray
-            Explanations for x.
-        e_xs: np.ndarray
-            Explanations for xs.
-
-        Returns
-        -------
-        ros_obj: np.ndarray
-            ROS maximization objective.
-        """
-
-        num_dim = e_x.ndim
-        if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
-        elif num_dim == 3:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
-        elif num_dim == 2:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
-        else:
-            raise ValueError(
-                "Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
-        # fmt: off
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
-        # fmt: on
-
-        denominator = h_x - h_xs
-        denominator = np.linalg.norm(denominator, axis=-1)
-        denominator += (denominator == 0) * self._eps_min  # prevent division by 0
-        return nominator / denominator
 
     def generate_normalised_explanations_batch(
         self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
@@ -334,7 +286,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             # Execute forward pass on perturbed inputs.
             logits_perturbed = model.predict(x_perturbed)
             # Compute maximization's objective.
-            ros = self.relative_output_stability_objective(
+            ros = self.objective(
                 logits, logits_perturbed, a_batch, a_batch_perturbed
             )
             ros_batch[index] = ros
