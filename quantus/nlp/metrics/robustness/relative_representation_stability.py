@@ -1,17 +1,17 @@
-# This file is part of Quantus.
-# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
-# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
 from __future__ import annotations
 
-from quantus.nlp.metrics.batched_text_classification_metric import (
-    BatchedTextClassificationMetric,
+from typing import List, Optional
+
+import numpy as np
+
+from quantus.metrics.robustness.internal.rrs_objective import (
+    RelativeRepresentationStabilityObjective,
 )
+from quantus.nlp.helpers.types import Explanation, TextClassifier
+from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
 
 
-class RelativeRepresentationStability(BatchedTextClassificationMetric):
+class RelativeRepresentationStability(RelativeStability):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits
@@ -24,4 +24,52 @@ class RelativeRepresentationStability(BatchedTextClassificationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    pass
+    def __init__(
+        self,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[str]] = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.objective = RelativeRepresentationStabilityObjective(self.eps_min)
+        self.layer_names = layer_names
+        self.layer_indices = layer_indices
+
+    def compute_objective_plain_text(
+        self,
+        x_batch: List[str],
+        x_batch_perturbed: List[str],
+        a_batch: List[Explanation],
+        a_batch_perturbed: List[Explanation],
+        model: TextClassifier,
+    ) -> np.ndarray:
+        l_x = model.get_hidden_representations(
+            x_batch, self.layer_names, self.layer_indices
+        )
+        l_xs = model.get_hidden_representations(
+            x_batch_perturbed, self.layer_names, self.layer_indices
+        )
+
+        return self.objective(
+            l_x,
+            l_xs,
+            np.asarray([i[1] for i in a_batch]),
+            np.asarray([i[1] for i in a_batch_perturbed]),
+        )
+
+    def compute_objective_latent_space(
+        self,
+        x_batch: np.ndarray,
+        x_batch_perturbed: np.ndarray,
+        a_batch: np.ndarray,
+        a_batch_perturbed: np.ndarray,
+        model: TextClassifier,
+        attention_mask: Optional[np.ndarray],
+    ):
+        l_x = model.get_hidden_representations_embeddings(
+            x_batch, attention_mask, self.layer_names, self.layer_indices
+        )
+        l_xs = model.get_hidden_representations_embeddings(
+            x_batch_perturbed, attention_mask, self.layer_names, self.layer_indices
+        )
+        return self.objective(l_x, l_xs, a_batch, a_batch_perturbed)

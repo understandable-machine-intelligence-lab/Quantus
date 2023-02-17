@@ -1,11 +1,7 @@
 import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
-from quantus.nlp import (
-    AvgSensitivity,
-    PerturbationType,
-    uniform_noise
-)
+from quantus.nlp import AvgSensitivityMetric, PerturbationType, uniform_noise
 from tests.nlp.util import skip_on_apple_silicon
 
 
@@ -24,16 +20,17 @@ from tests.nlp.util import skip_on_apple_silicon
         (
             lazy_fixture("tf_distilbert_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
+            {
+                "perturbation_type": PerturbationType.latent_space,
+                "perturb_func": uniform_noise,
+            },
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_huggingface_model_tf(
-    model, x_batch, init_kwargs, call_kwargs
-):
-    metric = AvgSensitivity(nr_samples=5, **init_kwargs)
+def test_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
+    metric = AvgSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
 
@@ -54,14 +51,17 @@ def test_huggingface_model_tf(
         (
             lazy_fixture("fnet_ag_news_model"),
             lazy_fixture("ag_news_dataset"),
-            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
+            {
+                "perturbation_type": PerturbationType.latent_space,
+                "perturb_func": uniform_noise,
+            },
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
     ids=["plain_text", "latent_space"],
 )
 def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
-    metric = AvgSensitivity(nr_samples=5, **init_kwargs)
+    metric = AvgSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
 
@@ -81,15 +81,16 @@ def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
         (
             lazy_fixture("tf_distilbert_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
+            {
+                "perturbation_type": PerturbationType.latent_space,
+                "perturb_func": uniform_noise,
+            },
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_huggingface_model_torch(
-    model, x_batch, init_kwargs, call_kwargs
-):
-    metric = AvgSensitivity(nr_samples=5, **init_kwargs)
+def test_huggingface_model_torch(model, x_batch, init_kwargs, call_kwargs):
+    metric = AvgSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()

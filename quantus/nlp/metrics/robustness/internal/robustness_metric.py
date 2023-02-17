@@ -4,13 +4,16 @@ import numpy as np
 from typing import List, Optional
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.metrics.batched_perturbation_metric import BatchedPerturbationMetric
 
 
-class BatchedRobustnessMetric:
+class RobustnessMetric(BatchedPerturbationMetric):
 
     """Common functionality for batched robustness metrics."""
 
-    return_nan_when_prediction_changes: bool = False
+    def __init__(self, *args, return_nan_when_prediction_changes, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
     def indexes_of_changed_predictions_plain_text(
         self, model: TextClassifier, x_batch: List[str], x_batch_perturbed: List[str]

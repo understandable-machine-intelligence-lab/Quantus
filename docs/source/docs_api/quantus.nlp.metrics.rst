@@ -12,6 +12,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   quantus.nlp.metrics.faithfullness
+   quantus.nlp.metrics.randomisation
    quantus.nlp.metrics.robustness
 
 Submodules
@@ -20,4 +22,5 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   quantus.nlp.metrics.text_classification_metric
+   quantus.nlp.metrics.batched_metric
+   quantus.nlp.metrics.batched_perturbation_metric

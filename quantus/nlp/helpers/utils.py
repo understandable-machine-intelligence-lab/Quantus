@@ -3,12 +3,14 @@ from __future__ import annotations
 import sys
 import numpy as np
 from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any
+from functools import singledispatch, update_wrapper
 
 
 from quantus.nlp.helpers.types import (
     Explanation,
     NormaliseFn,
     NoiseType,
+    TextClassifier,
 )
 
 T = TypeVar("T")
@@ -209,3 +211,34 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
     if val is None:
         return None
     return func(val)
+
+
+def get_embeddings(x_batch: List[str], model: TextClassifier) -> np.ndarray:
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    input_ids, mask = unpack_token_ids_and_attention_mask(encoded_input)
+    return safe_asarray(model.embedding_lookup(input_ids))
+
+
+def methdispatch(func: Callable):
+    dispatcher = singledispatch(func)
+
+    def wrapper(*args, **kwargs):
+        return dispatcher.dispatch(args[1].__class__)(*args, **kwargs)
+
+    wrapper.register = dispatcher.register
+    update_wrapper(wrapper, func)
+    return wrapper
+
+
+def explanations_similarity(
+    a_batch: List[Explanation],
+    b_batch: List[Explanation],
+    similarity_fn: Callable[[np.ndarray, np.ndarray], T],
+    padded: bool = True,
+    numerical_only: bool = True,
+) -> T:
+    """Compute similarity between batches of explanations using provided similarity_fn."""
+    return np.asarray(
+        explanation_similarity(a, b, similarity_fn, padded, numerical_only)
+        for a, b in zip(a_batch, b_batch)
+    )

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from quantus.nlp import (
-    MaxSensitivity,
+    MaxSensitivityMetric,
     PerturbationType,
 )
 from tests.nlp.util import skip_on_apple_silicon
@@ -30,7 +30,7 @@ from tests.nlp.util import skip_on_apple_silicon
     ids=["plain_text", "latent_space"],
 )
 def test_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
-    metric = MaxSensitivity(nr_samples=5, **init_kwargs)
+    metric = MaxSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
 
@@ -58,7 +58,7 @@ def test_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
     ids=["plain_text", "latent_space"],
 )
 def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
-    metric = MaxSensitivity(nr_samples=5, **init_kwargs)
+    metric = MaxSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()
 
@@ -84,9 +84,7 @@ def test_keras_model(model, x_batch, init_kwargs, call_kwargs):
     ],
     ids=["plain_text", "latent_space"],
 )
-def test_model_torch(
-    model, x_batch, init_kwargs, call_kwargs
-):
-    metric = MaxSensitivity(nr_samples=5, **init_kwargs)
+def test_model_torch(model, x_batch, init_kwargs, call_kwargs):
+    metric = MaxSensitivityMetric(nr_samples=5, **init_kwargs)
     result = metric(model, x_batch, **call_kwargs)  # noqa
     assert not (np.asarray(result) == 0).all()

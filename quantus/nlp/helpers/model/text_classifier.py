@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Generator
 from abc import ABC, abstractmethod
 from quantus.nlp.helpers.model.tokenizer import Tokenizer
 
@@ -45,4 +45,34 @@ class TextClassifier(ABC):
     @abstractmethod
     def weights(self, weights):
         """Set model's (learnable) parameters."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_hidden_representations(
+        self,
+        x_batch: List[str],
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_hidden_representations_embeddings(
+        self,
+        x_batch: np.ndarray,
+        attention_mask: Optional[np.ndarray],
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def nr_layers(self) -> int:
         raise NotImplementedError

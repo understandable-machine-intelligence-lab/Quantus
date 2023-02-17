@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from quantus.nlp.metrics.batched_text_classification_metric import (
-    BatchedTextClassificationMetric,
-)
+import numpy as np
+
+from quantus.functions.similarity_func import lipschitz_constant
+from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.metrics.robustness.internal.sensitivity_metric import SensitivityMetric
+from quantus.nlp.helpers.utils import get_embeddings
 
 
-class LocalLipschitzEstimate(BatchedTextClassificationMetric):
+class LocalLipschitzEstimate(SensitivityMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -21,3 +25,38 @@ class LocalLipschitzEstimate(BatchedTextClassificationMetric):
         2) David Alvarez-Melis and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
         neural networks." NeurIPS (2018): 7786-7795.
     """
+
+    def compute_similarity_plain_text(
+        self,
+        a: Explanation,
+        a_perturbed: Explanation,
+        x: str,
+        x_perturbed: str,
+        model: TextClassifier,
+    ) -> float:
+        return self.compute_similarity_latent_space(
+            a[1],
+            a_perturbed[1],
+            get_embeddings([x], model)[0],
+            get_embeddings([x_perturbed], model)[0],
+        )
+
+    def compute_similarity_latent_space(
+        self,
+        a: np.ndarray,
+        a_perturbed: np.ndarray,
+        x: np.ndarray,
+        x_perturbed: np.ndarray,
+    ) -> float:
+        return lipschitz_constant(
+            a=a,
+            b=a_perturbed,
+            c=x,
+            d=x_perturbed,
+            norm_numerator=self.norm_numerator,
+            norm_denominator=self.norm_denominator,
+        )
+
+    def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
+        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
+        return max_func(scores, axis=1)

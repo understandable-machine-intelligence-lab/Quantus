@@ -15,3 +15,7 @@ class Tokenizer(ABC):
     def convert_ids_to_tokens(self, ids) -> List[str]:
         """Convert batch of vocabulary id's batch to batch of plain-text strings."""
         raise NotImplementedError
+
+    @abstractmethod
+    def join_tokens(self, tokens: List[str]) -> str:
+        raise NotImplementedError

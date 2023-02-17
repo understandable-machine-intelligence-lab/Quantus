@@ -1,17 +1,19 @@
-# This file is part of Quantus.
-# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
-# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
 from __future__ import annotations
 
-from quantus.nlp.metrics.batched_text_classification_metric import (
-    BatchedTextClassificationMetric,
+import numpy as np
+from typing import List, Optional
+
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.helpers.utils import get_embeddings
+from quantus.metrics.robustness.internal.ros_objective import (
+    RelativeOutputStabilityObjective,
 )
+from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
+from quantus.nlp.helpers.utils import safe_asarray
 
 
-class RelativeOutputStability(BatchedTextClassificationMetric):
+class RelativeOutputStability(RelativeStability):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits
@@ -25,4 +27,39 @@ class RelativeOutputStability(BatchedTextClassificationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.objective = RelativeOutputStabilityObjective(self.eps_min)
+
+    def compute_objective_latent_space(
+        self,
+        x_batch: np.ndarray,
+        x_batch_perturbed: np.ndarray,
+        a_batch: np.ndarray,
+        a_batch_perturbed: np.ndarray,
+        model: TextClassifier,
+        attention_mask: Optional[np.ndarray],
+    ):
+        h_x = model(x_batch, attention_mask)
+        h_x = safe_asarray(h_x)
+        h_xs = model(x_batch_perturbed, attention_mask)
+        h_xs = safe_asarray(h_xs)
+        return self.objective(h_x, h_xs, a_batch, a_batch_perturbed)
+
+    def compute_objective_plain_text(
+        self,
+        x_batch: List[str],
+        x_batch_perturbed: List[str],
+        a_batch: List[Explanation],
+        a_batch_perturbed: List[Explanation],
+        model: TextClassifier,
+    ) -> np.ndarray:
+        h_x = model.predict(x_batch)
+        h_xs = model.predict(x_batch_perturbed)
+
+        return self.objective(
+            h_x,
+            h_xs,
+            np.asarray([i[1] for i in a_batch]),
+            np.asarray([i[1] for i in a_batch_perturbed]),
+        )

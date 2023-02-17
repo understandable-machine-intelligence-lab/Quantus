@@ -21,7 +21,7 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
-from quantus.metrics.robustness.relative_stability.ros_objective import RelativeOutputStabilityObjective
+from quantus.metrics.robustness.internal.ros_objective import RelativeOutputStabilityObjective
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):

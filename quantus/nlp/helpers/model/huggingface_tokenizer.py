@@ -9,8 +9,6 @@ class HuggingFaceTokenizer(Tokenizer):
 
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
-    tokenizer: PreTrainedTokenizerBase
-
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         self.tokenizer = tokenizer
 
@@ -19,3 +17,6 @@ class HuggingFaceTokenizer(Tokenizer):
 
     def convert_ids_to_tokens(self, ids: np.ndarray) -> List[str]:
         return self.tokenizer.convert_ids_to_tokens(ids)
+
+    def join_tokens(self, tokens: List[str]) -> str:
+        return self.tokenizer.convert_tokens_to_string(tokens)
