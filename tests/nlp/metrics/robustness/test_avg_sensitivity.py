@@ -6,6 +6,7 @@ from pytest_lazyfixture import lazy_fixture
 from quantus.nlp import (
     AvgSensitivity,
     PerturbationType,
+    uniform_noise
 )
 from tests.nlp.util import skip_on_apple_silicon
 
@@ -25,7 +26,7 @@ from tests.nlp.util import skip_on_apple_silicon
         (
             lazy_fixture("tf_distilbert_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"perturbation_type": PerturbationType.latent_space},
+            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
@@ -55,7 +56,7 @@ def test_average_sensitivity_huggingface_model_tf(
         (
             lazy_fixture("fnet_ag_news_model"),
             lazy_fixture("ag_news_dataset"),
-            {"perturbation_type": PerturbationType.latent_space},
+            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
@@ -82,7 +83,7 @@ def test_average_sensitivity_keras_model(model, x_batch, init_kwargs, call_kwarg
         (
             lazy_fixture("tf_distilbert_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"perturbation_type": PerturbationType.latent_space},
+            {"perturbation_type": PerturbationType.latent_space, "perturb_func": uniform_noise},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],

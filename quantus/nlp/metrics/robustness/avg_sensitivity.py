@@ -31,7 +31,7 @@ from quantus.nlp.helpers.utils import (
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.functions.perturb_func import spelling_replacement, uniform_noise
+from quantus.nlp.functions.perturb_func import spelling_replacement
 
 
 class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric):  # noqa
@@ -65,7 +65,7 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         normalise_func: NormaliseFn = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
         perturbation_type: PerturbationType = PerturbationType.plain_text,
-        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = None,
+        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable[[np.ndarray], float] = np.mean,
@@ -121,12 +121,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
             Unused.
         """
 
-        if perturb_func is None:
-            if perturbation_type == PerturbationType.plain_text:
-                perturb_func = spelling_replacement
-            if perturbation_type == PerturbationType.latent_space:
-                perturb_func = uniform_noise
-
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -144,7 +138,6 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         )
 
         # Save metric-specific attributes.
-        self.noise_type = perturbation_type
         self.nr_samples = nr_samples
         self.similarity_func = similarity_func
         self.similarity_func_kwargs = value_or_default(
@@ -191,11 +184,11 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         similarities = np.zeros((self.nr_samples, batch_size))
 
         for step_id in range(self.nr_samples):
-            if self.noise_type == PerturbationType.plain_text:
+            if self.perturbation_type == PerturbationType.plain_text:
                 similarities[step_id] = self._evaluate_batch_step_plain_text_noise(
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
-            if self.noise_type == PerturbationType.latent_space:
+            if self.perturbation_type == PerturbationType.latent_space:
                 a_batch_numerical = np.asarray([i[1] for i in a_batch])
                 similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
                     model,
@@ -227,8 +220,8 @@ class AvgSensitivity(BatchedTextClassificationMetric, BatchedRobustnessMetric): 
         )
 
         a_perturbed = self.explain_func(
-            model, x_perturbed, y_batch, **self.explain_func_kwargs
-        )  # noqa
+            model, x_perturbed, y_batch, **self.explain_func_kwargs # noqa
+        )
         a_perturbed = self.normalise_a_batch(a_perturbed)
 
         similarities = np.zeros(batch_size)
