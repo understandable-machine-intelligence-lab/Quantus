@@ -17,7 +17,6 @@ import numpy as np
 import tensorflow as tf
 from warnings import warn
 from cachetools import cachedmethod, LRUCache
-from functools import cached_property
 import operator
 
 from quantus.helpers.model.model_interface import ModelInterface
@@ -87,7 +86,7 @@ class TensorFlowModel(ModelInterface):
         }
         return predict_kwargs
 
-    @cached_property
+    @property
     def _last_layer_is_softmax(self) -> bool:
         """
         Checks if the last layer is an instance of tf.keras.layers.Softmax.
