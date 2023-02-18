@@ -223,7 +223,7 @@ class TensorFlowModel(ModelInterface):
         """
         Get the original tf model.
         """
-        return self.get_softmax_arg_model()
+        return self.model
 
     def state_dict(self):
         """

@@ -169,7 +169,7 @@ class PyTorchModel(ModelInterface):
         """
         Get the original torch model.
         """
-        return self.get_softmax_arg_model()
+        return self.model
 
     def state_dict(self) -> dict:
         """
