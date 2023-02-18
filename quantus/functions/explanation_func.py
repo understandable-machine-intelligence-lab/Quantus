@@ -20,6 +20,7 @@ from quantus.helpers.utils import (
     get_baseline_value,
     infer_channel_first,
     make_channel_last,
+    get_wrapped_model,
 )
 
 
@@ -180,6 +181,19 @@ def generate_tf_explanation(
     """
     method = kwargs.get("method", "VanillaGradients")
     method_kwargs = kwargs.get("method_kwargs", {})
+    softmax = kwargs.get("softmax", None)
+    if softmax is not None:
+        if method == "VanillaGradients":
+            warnings.warn(
+                f"tf-explain VanillaGradients method only supports the following architectures:"
+                f"a layer which computes class scores with no activation, "
+                f"followed by an activation layer. Softmax argument is set to False.\n",
+                category=UserWarning,
+            )
+            softmax = True
+        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=False)
+        model = wrapped_model.get_softmax_arg_model()
+
     inputs = inputs.reshape(-1, *model.input_shape[1:])
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
@@ -198,6 +212,7 @@ def generate_tf_explanation(
         method = constants.DEPRECATED_XAI_METHODS_TF[method]
 
     if method == "VanillaGradients":
+
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
@@ -370,6 +385,19 @@ def generate_captum_explanation(
     explanation: np.ndarray
          Returns np.ndarray of same shape as inputs.
     """
+
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+
+    softmax = kwargs.get("softmax", None)
+    if softmax is not None:
+        warnings.warn(
+            f"Softmax argument has been passed to the explanation function. Different XAI "
+            f"methods may or may not require the output to go through softmax activation. "
+            f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
+            category=UserWarning,
+        )
+        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=channel_first)
+        model = wrapped_model.get_softmax_arg_model()
 
     method = kwargs.get("method", "Gradient")
     method_kwargs = kwargs.get("method_kwargs", {})
@@ -595,6 +623,18 @@ def generate_zennit_explanation(
          Returns np.ndarray of same shape as inputs.
 
     """
+
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
+    softmax = kwargs.get("softmax", None)
+    if softmax is not None:
+        warnings.warn(
+            f"Softmax argument has been passed to the explanation function. Different XAI "
+            f"methods may or may not require the output to go through softmax activation. "
+            f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
+            category=UserWarning,
+        )
+        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=channel_first)
+        model = wrapped_model.get_softmax_arg_model()
 
     assert 0 not in kwargs.get(
         "reduce_axes", [1]

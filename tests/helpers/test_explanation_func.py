@@ -21,6 +21,7 @@ from quantus.functions.normalise_func import normalise_by_max
                 "composite": None,
                 "attributor": zattr.Gradient,
                 "xai_lib": "zennit",
+                "softmax": False,
             },
             {"shape": (10, 1, 100)},
         ),
@@ -475,7 +476,7 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {"method": "LRP", },
+            {"method": "LRP", "softmax": False},
             {"shape": (8, 1, 28, 28)},
         ),
         (
@@ -577,13 +578,19 @@ from quantus.functions.normalise_func import normalise_by_max
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {"method": "SmoothGrad", },
+            {"method": "SmoothGrad", "softmax": False},
             {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {},
+            {"warning": UserWarning},
+        ),
+        (
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {"method": "VanillaGradients", "softmax": False},
             {"warning": UserWarning},
         ),
         (
