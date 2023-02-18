@@ -56,7 +56,7 @@ def test_get_softmax_arg_model(
     load_mnist_model_tf,
 ):
 
-    model = TensorFlowModel(model=load_mnist_model_tf, **params)
+    model = TensorFlowModel(model=load_mnist_model_tf, softmax=True)
     new_model = TensorFlowModel(model=model.get_softmax_arg_model(), **params)
 
     out = new_model.predict(x=data)

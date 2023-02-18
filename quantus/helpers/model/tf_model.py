@@ -105,8 +105,8 @@ class TensorFlowModel(ModelInterface):
         """
 
         if self._last_layer_is_softmax:
-            new_model = clone_model(self.model)
-            new_model.layers.pop()
+            output_layer = self.model.layers[-2].output
+            new_model = Model(inputs=[self.model.input], outputs=[output_layer])
             return new_model
 
         output_activation = self.model.layers[-1].activation
