@@ -10,7 +10,6 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
 from cachetools import cachedmethod, LRUCache
-from functools import cached_property
 import operator
 
 import numpy as np
@@ -57,7 +56,7 @@ class PyTorchModel(ModelInterface):
         self.device = device
         self.cache = LRUCache(100)
 
-    @cached_property
+    @property
     def _last_layer_is_softmax(self) -> bool:
         """
         Checks if the last layer is an instance of torch.nn.Softmax.
