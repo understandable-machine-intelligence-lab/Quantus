@@ -9,6 +9,7 @@ from scipy.special import softmax
 
 from quantus.helpers.model.pytorch_model import PyTorchModel
 
+
 @pytest.fixture
 def mock_input_torch_array():
     return {"x": np.zeros((1, 1, 28, 28))}
@@ -158,7 +159,12 @@ def test_get_random_layer_generator(load_mnist_model):
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
     "params",
-    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}, {"layer_indices": [-1, -2]}],
+    [
+        {},
+        {"layer_names": ["conv_2"]},
+        {"layer_indices": [0, 1]},
+        {"layer_indices": [-1, -2]},
+    ],
     ids=["all layers", "2nd conv", "1st 2 layers", "last 2 layers"],
 )
 def test_get_hidden_layers_output(load_mnist_model, params):
