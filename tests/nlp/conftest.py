@@ -8,33 +8,28 @@ BATCH_SIZE = 8
 
 
 @pytest.fixture(scope="session")
-def sst2_dataset_huge_batch():
-    ds = load_dataset("sst2")["test"]["sentence"]
-    return ds[:1024]
+def sst2_dataset():
+    dataset = load_dataset("sst2")["test"]["sentence"]
+    return dataset[:BATCH_SIZE]
 
 
 @pytest.fixture(scope="session")
-def sst2_dataset(sst2_dataset_huge_batch):
-    return sst2_dataset_huge_batch[:BATCH_SIZE]
-
-
-@pytest.fixture(scope="session")
-def ag_news_dataset():
-    ds = load_dataset("ag_news")["test"]["text"]
-    return ds[:BATCH_SIZE]
-
-
-@pytest.fixture(scope="session")
-def tf_distilbert_sst2_model():
+def tf_sst2_model():
     return TFHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
 
 @pytest.fixture(scope="session")
-def torch_distilbert_sst2_model():
+def emotion_dataset():
+    dataset = load_dataset("SetFit/emotion")["test"]["text"]
+    return dataset[:BATCH_SIZE]
+
+
+@pytest.fixture(scope="session")
+def emotion_model():
     return TorchHuggingFaceTextClassifier.from_pretrained(
-        "distilbert-base-uncased-finetuned-sst-2-english"
+        "michellejieli/emotion_text_classifier"
     )
 
 
@@ -71,10 +66,3 @@ def a_tuple_text_ragged_2(a_tuple_text):
         (list(a_tuple_text[0][0]), a_tuple_text[0][1]),
         (list(a_tuple_text[1][0][:37]), a_tuple_text[1][1][:37]),
     )
-
-
-@pytest.fixture(scope="session")
-def fnet_ag_news_model():
-    from .tf_fnet_text_classifier import fnet_text_classifier
-
-    return fnet_text_classifier()

@@ -15,12 +15,12 @@ from keras import Model
 from keras.models import clone_model
 import numpy as np
 import tensorflow as tf
+from warnings import warn
 from cachetools import cachedmethod, LRUCache
 import operator
 
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import utils
-from quantus.helpers.model.tf_utils import get_hidden_representations, get_random_layer_generator
 
 
 class TensorFlowModel(ModelInterface):
@@ -210,7 +210,57 @@ class TensorFlowModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        return get_random_layer_generator(self.model, order, seed)
+        original_parameters = self.state_dict()
+        random_layer_model = clone_model(self.model)
+
+        layers = [
+            _layer
+            for _layer in random_layer_model.layers
+            if len(_layer.get_weights()) > 0
+        ]
+
+        if order == "top_down":
+            layers = layers[::-1]
+
+        for layer in layers:
+            if order == "independent":
+                random_layer_model.set_weights(original_parameters)
+            weights = layer.get_weights()
+            np.random.seed(seed=seed + 1)
+            layer.set_weights([np.random.permutation(w) for w in weights])
+            yield layer.name, random_layer_model
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _build_hidden_representation_model(
+        self, layer_names: Tuple, layer_indices: Tuple
+    ) -> Model:
+        """
+        Build a keras model, which outputs the internal representation of layers,
+        specified in layer_names or layer_indices, default all.
+        This requires re-tracing the model, so we cache it to improve metric evaluation time.
+        """
+        if layer_names == () and layer_indices == ():
+            warn(
+                "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
+                "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
+                " from original model. This can be very computationally expensive."
+            )
+
+        def is_layer_of_interest(index: int, name: str) -> bool:
+            if layer_names == () and layer_indices == ():
+                return True
+            return index in layer_indices or name in layer_names
+
+        outputs_of_interest = []
+        for i, layer in enumerate(self.model.layers):
+            if is_layer_of_interest(i, layer.name):
+                outputs_of_interest.append(layer.output)
+
+        if len(outputs_of_interest) == 0:
+            raise ValueError("No hidden representations were selected.")
+
+        hidden_representation_model = Model(self.model.input, outputs_of_interest)
+        return hidden_representation_model
 
     @cachedmethod(operator.attrgetter("cache"))
     def add_mean_shift_to_first_layer(
@@ -292,9 +342,36 @@ class TensorFlowModel(ModelInterface):
         L: np.ndarray
             2D tensor with shape (batch_size, None)
         """
+
+        num_layers = len(self.model.layers)
+
+        if layer_indices is None:
+            layer_indices = []
+
+        # E.g., user can provide index -1, in order to get only representations of the last layer.
+        # E.g., for 7 layers in total, this would correspond to positive index 6.
+        positive_layer_indices = [
+            i if i >= 0 else num_layers + i for i in layer_indices
+        ]
+        if layer_names is None:
+            layer_names = []
+
+        # List is not hashable, so we pass names + indices as tuples.
+        hidden_representation_model = self._build_hidden_representation_model(
+            tuple(layer_names), tuple(positive_layer_indices)
+        )
         predict_kwargs = self._get_predict_kwargs(**kwargs)
+        internal_representation = hidden_representation_model.predict(
+            x, **predict_kwargs
+        )
+        input_batch_size = x.shape[0]
 
-        def predict(model, x_batch):
-            return model.predict(x_batch, **predict_kwargs)
+        # If we requested outputs only of 1 layer, keras will already return np.ndarray.
+        # Otherwise, keras returns a List of np.ndarray's.
+        if isinstance(internal_representation, np.ndarray):
+            return internal_representation.reshape((input_batch_size, -1))
 
-        return get_hidden_representations(self.model, x, predict, layer_names, layer_indices)
+        internal_representation = [
+            i.reshape((input_batch_size, -1)) for i in internal_representation
+        ]
+        return np.hstack(internal_representation)

@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import List, Tuple, Callable, Union, TYPE_CHECKING, Optional
+from typing import (
+    List,
+    Tuple,
+    Callable,
+    Union,
+    TYPE_CHECKING,
+    Optional,
+    NamedTuple,
+    Dict,
+)
 import numpy as np
 from enum import Enum, auto
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
@@ -37,3 +46,8 @@ class NoiseType(Enum):
 
     additive = auto()
     multiplicative = auto()
+
+
+class MetricCallKwargs(NamedTuple):
+    name: str
+    kwargs: Dict

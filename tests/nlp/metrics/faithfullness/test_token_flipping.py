@@ -1,40 +1,39 @@
 import numpy as np
 import pytest
-from pytest_lazyfixture import lazy_fixture
-from quantus.nlp import TokenFlipping, PerturbationType, uniform_noise
+from quantus.nlp import TokenFlipping
 
 
 @pytest.mark.nlp
 @pytest.mark.parametrize(
-    "model, x_batch, init_kwargs, call_kwargs",
+    "init_kwargs, call_kwargs",
     [
         (
-            lazy_fixture("tf_distilbert_sst2_model"),
-            lazy_fixture("sst2_dataset"),
-            {"abs": True, "normalise": True},
+            {"normalise": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
 )
-def test_huggingface_model_tf(model, x_batch, init_kwargs, call_kwargs):
-    metric = TokenFlipping(nr_samples=5, **init_kwargs)
-    result = metric(model, x_batch, **call_kwargs)  # noqa
-    assert not (np.asarray(result) == 0).all()
+def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
+    metric = TokenFlipping(**init_kwargs)
+    result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
+    assert not (np.asarray(result) == np.NINF).all()
 
 
 @pytest.mark.nlp
 @pytest.mark.parametrize(
-    "model, x_batch, init_kwargs, call_kwargs",
+    "init_kwargs, call_kwargs",
     [
         (
-            lazy_fixture("tf_distilbert_sst2_model"),
-            lazy_fixture("sst2_dataset"),
-            {"abs": True, "normalise": True},
+            {"normalise": True},
+            {"explain_func_kwargs": {"method": "GradNorm"}},
+        ),
+        (
+            {"normalise": True, "return_auc_per_sample": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
 )
-def test_huggingface_model_torch(model, x_batch, init_kwargs, call_kwargs):
-    metric = TokenFlipping(nr_samples=5, **init_kwargs)
-    result = metric(model, x_batch, **call_kwargs)  # noqa
-    assert not (np.asarray(result) == 0).all()
+def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
+    metric = TokenFlipping(**init_kwargs)
+    result = metric(emotion_model, emotion_dataset, **call_kwargs)
+    assert not (np.asarray(result) == np.NINF).all()

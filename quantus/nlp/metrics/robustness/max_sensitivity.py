@@ -38,7 +38,7 @@ class MaxSensitivity(SensitivityMetric):
         self,
         *,
         similarity_func: SimilarityFn = difference,
-        abs: bool = False,
+        abs: bool = False,  # noqa
         normalise: bool = True,
         normalise_func: NormaliseFn = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,

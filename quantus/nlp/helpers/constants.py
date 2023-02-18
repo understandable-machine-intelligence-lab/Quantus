@@ -1,15 +1,24 @@
-"""This module contains constants and simple methods to retreive the available metrics, perturbation-,
-similarity-, normalisation- functions and explanation methods in Quantus."""
-
-# This file is part of Quantus.
-# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
-# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
 from typing import List, Dict
 from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivity
 from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivity
+from quantus.nlp.metrics.robustness.local_lipschitz_estimate import (
+    LocalLipschitzEstimate,
+)
+from quantus.nlp.metrics.robustness.relative_input_stability import (
+    RelativeInputStability,
+)
+from quantus.nlp.metrics.robustness.relative_output_stability import (
+    RelativeOutputStability,
+)
+from quantus.nlp.metrics.robustness.relative_representation_stability import (
+    RelativeRepresentationStability,
+)
+from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
+    ModelParameterRandomisation,
+)
+from quantus.nlp.metrics.randomisation.random_logit import RandomLogit
+from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
+
 from quantus.nlp.functions.perturb_func import (
     spelling_replacement,
     synonym_replacement,
@@ -19,12 +28,20 @@ from quantus.nlp.functions.perturb_func import (
 )
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 
-
 AVAILABLE_METRICS = {
     "Robustness": {
+        "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
+        "Relative Input Stability": RelativeInputStability,
+        "Relative Output Stability": RelativeOutputStability,
+        "Relative Representation Stability": RelativeRepresentationStability,
     },
+    "Randomisation": {
+        "Model Parameter Randomisation": ModelParameterRandomisation,
+        "Random Logit": RandomLogit,
+    },
+    "Faithfulness": {"Token-Flipping": TokenFlipping},
 }
 
 AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS = {
@@ -43,9 +60,7 @@ AVAILABLE_PERTURBATION_FUNCTIONS = {
     **AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS,
 }
 
-
 AVAILABLE_NORMALISATION_FUNCTIONS = {"normalize_sum_to_1": normalize_sum_to_1}
-
 
 AVAILABLE_PLAIN_TEXT_XAI_METHODS = [
     "GradNorm",
@@ -141,36 +156,12 @@ def available_perturbation_functions() -> List[str]:
 
 
 def available_plain_text_perturbation_functions() -> List[str]:
-    """
-    Retrieve the available plain-text perturbation functions in Quantus.
-
-    Returns
-    -------
-    List[str]
-        With the available perturbation functions in Quantus.
-    """
     return [c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()]
 
 
 def available_latent_space_perturbation_functions() -> List[str]:
-    """
-    Retrieve the available perturbation functions in Quantus.
-
-    Returns
-    -------
-    List[str]
-        With the available perturbation functions in Quantus.
-    """
     return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]
 
 
 def available_normalisation_functions() -> List[str]:
-    """
-    Retrieve the available normalisation functions in Quantus.
-
-    Returns
-    -------
-    List[str]
-        With the available normalisation functions in Quantus.
-    """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]

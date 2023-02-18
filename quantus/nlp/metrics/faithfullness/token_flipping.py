@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional, Callable, Dict
 
 import numpy as np
 
@@ -8,6 +8,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.helpers.utils import calculate_auc
 from quantus.nlp.metrics.batched_metric import BatchedMetric
+from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 
 
 class TokenFlipping(BatchedMetric):
@@ -19,11 +20,27 @@ class TokenFlipping(BatchedMetric):
     def __init__(
         self,
         *,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable] = normalize_sum_to_1,
+        normalise_func_kwargs: Optional[Dict] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
         return_auc_per_sample: bool = False,
-        mask_token: str = "[MASK]",
-        **kwargs,
+        mask_token: str = "[UNK]",
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            disable_warnings=disable_warnings,
+            display_progressbar=display_progressbar,
+        )
         self.return_auc_per_sample = return_auc_per_sample
         self.mask_token = mask_token
 
@@ -33,47 +50,39 @@ class TokenFlipping(BatchedMetric):
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
+        *args,
+        **kwargs,
     ) -> np.ndarray | float:
         # Get indices of sorted attributions (descending).
-        a_indices = self.argsort_attributions(a_batch)
-        n_perturbations = len(a_batch[0])
-        n_perturbations = len(range(0, len(a_indices), n_perturbations))
-        preds = [None for _ in range(n_perturbations)]
+        scores = np.full(shape=(len(a_batch[0][1]), len(x_batch)), fill_value=np.NINF)
 
-        for i, flip_indices in enumerate(a_indices):
-            x_perturbed = self.get_masked_inputs(a_batch, flip_indices, model)
+        mask_indices_batch = []
+        for a in a_batch:
+            mask_indices_batch.append(np.argsort(a[1])[::-1])
+        mask_indices_batch = np.asarray(mask_indices_batch).T
+
+        for i, mask_indices in enumerate(mask_indices_batch):
+            a_batch_tokens = [i[0] for i in a_batch]
+            x_masked_batch = []
+            for a, i in zip(a_batch_tokens, mask_indices):
+                x_masked = a.copy()
+                x_masked[i] = self.mask_token
+                x_masked_batch.append(x_masked)
+
+            x_masked_batch = model.tokenizer.join_tokens(
+                x_masked_batch, ignore_special_tokens=[self.mask_token]
+            )
             # Predict on perturbed input x.
-            y_pred_perturb = float(model.predict(x_perturbed)[:, y_batch])
-            preds[i] = y_pred_perturb
+            logits = model.predict(x_masked_batch)
+            logits_for_labels = np.asarray([y[i] for y, i in zip(logits, y_batch)])
+            scores[i] = logits_for_labels
 
         if self.return_auc_per_sample:
-            return calculate_auc(np.asarray(preds))
+            return calculate_auc(np.asarray(scores))
 
-        return preds
+        return scores
 
     @property
     def auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
         return np.mean([calculate_auc(np.array(curve)) for curve in self.last_results])
-
-    def get_masked_inputs(
-        self, a_batch: List[Explanation], mask_indices: List[str], model: TextClassifier
-    ) -> List[str]:
-        a_batch_tokens = [i[0] for i in a_batch]
-
-        masked_inputs = []
-        for a, i in zip(a_batch_tokens, mask_indices):
-            a[i] = self.mask_token
-            masked_x = model.tokenizer.join_tokens(a)
-            masked_inputs.append(masked_x)
-
-        return masked_inputs
-
-    @staticmethod
-    def argsort_attributions(a_batch: List[Explanation]) -> np.ndarray:
-        indices = []
-
-        for a in a_batch:
-            indices.append(np.argsort(a[1]))
-
-        return np.asarray(indices).T

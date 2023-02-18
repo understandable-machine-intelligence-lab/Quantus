@@ -29,13 +29,20 @@ def test_list_is_divisible(sst2_dataset_huge_batch):
 
 @pytest.mark.nlp
 @pytest.mark.parametrize(
-    "a_shape, b_shape", [
+    "a_shape, b_shape",
+    [
         (5, 5),
         (5, 7),
         (7, 5),
         ((10, 5), (11, 5)),
-        ((11, 5), (10, 5))
-    ]
+        ((11, 5), (10, 5)),
+        ((8, 4), (8, 5)),
+        ((8, 5), (8, 4)),
+        ((8, 39, 5), (8, 40, 5)),
+        ((8, 40, 5), (8, 39, 5)),
+        ((8, 7, 39, 5), (8, 7, 40, 5)),
+        ((8, 7, 40, 5), (8, 7, 39, 5)),
+    ],
 )
 def test_pad(a_shape, b_shape):
     a = np.random.uniform(size=a_shape)

@@ -56,16 +56,16 @@ class SensitivityMetric(RobustnessMetric):
         input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
         x_batch_embeddings = safe_asarray(model.embedding_lookup(input_ids))
 
-        similarities = np.zeros((self.nr_samples, batch_size))
+        scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
         for step_id in range(self.nr_samples):
             if self.perturbation_type == PerturbationType.plain_text:
-                similarities[step_id] = self._evaluate_batch_step_plain_text_noise(
+                scores[step_id] = self._evaluate_batch_step_plain_text_noise(
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
             if self.perturbation_type == PerturbationType.latent_space:
                 a_batch_numerical = np.asarray([i[1] for i in a_batch])
-                similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
+                scores[step_id] = self._evaluate_batch_step_latent_space_noise(
                     model,
                     y_batch,
                     a_batch_numerical,
@@ -73,7 +73,7 @@ class SensitivityMetric(RobustnessMetric):
                     attention_mask,
                 )
 
-        scores = self.aggregate_instances(similarities)
+        scores = self.aggregate_instances(scores)
         return self.aggregate_func(scores) if self.return_aggregate else scores
 
     def _evaluate_batch_step_plain_text_noise(
@@ -145,7 +145,7 @@ class SensitivityMetric(RobustnessMetric):
             model,
             x_batch_embeddings_perturbed,
             y_batch,
-            attention_mask,  # noqa
+            attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
         )
         a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)

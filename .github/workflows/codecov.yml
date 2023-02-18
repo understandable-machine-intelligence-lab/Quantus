@@ -11,7 +11,8 @@ jobs:
           pip install \
             -r requirements.txt \
             -r requirements_test.txt \
-            -r requirements_nlp.txt
+            -r requirements_nlp.txt \
+            'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
       - name: Upload
         uses:  codecov/codecov-action@v3

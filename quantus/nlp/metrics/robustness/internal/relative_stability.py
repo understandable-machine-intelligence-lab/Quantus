@@ -20,7 +20,7 @@ class RelativeStability(RobustnessMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    def __init__(self, *, eps_min: float = 1e-5, nr_samples: int = 50, **kwargs):
+    def __init__(self, *, eps_min: float, nr_samples: int, **kwargs):
         super().__init__(**kwargs)
         self.eps_min = eps_min
         self.nr_samples = nr_samples
@@ -34,7 +34,7 @@ class RelativeStability(RobustnessMetric):
         **kwargs,
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
-        scores = np.zeros(shape=[self.nr_samples, batch_size])
+        scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
         for step_id in range(self.nr_samples):
             if self.perturbation_type == PerturbationType.plain_text:
@@ -52,8 +52,6 @@ class RelativeStability(RobustnessMetric):
 
         # Compute RIS.
         result = np.max(scores, axis=0)
-        if self.return_aggregate:
-            result = [self.aggregate_func(result)]
         return result
 
     def _evaluate_batch_step_plain_text_noise(
@@ -64,18 +62,19 @@ class RelativeStability(RobustnessMetric):
         a_batch: List[Explanation],
     ) -> np.ndarray | float:
         # Perturb input.
-        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)
+        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)  # noqa
         # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_func(
-            model, x_perturbed, y_batch, **self.explain_func_kwargs
-        )
+        # fmt: off
+        a_batch_perturbed = self.explain_func(model, x_perturbed, y_batch, **self.explain_func_kwargs)  # noqa
+        # fmt: on
+        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
         # Compute maximization's objective.
-        ris = self.compute_objective_plain_text(
+        rs = self.compute_objective_plain_text(
             x_batch, x_perturbed, a_batch, a_batch_perturbed, model
         )
         # We're done with this sample if `return_nan_when_prediction_changes`==False.
         if not self.return_nan_when_prediction_changes:
-            return ris
+            return rs
 
         # If perturbed input caused change in prediction, then it's RIS=nan.
         changed_prediction_indices = self.indexes_of_changed_predictions_plain_text(
@@ -83,9 +82,9 @@ class RelativeStability(RobustnessMetric):
         )
 
         if len(changed_prediction_indices) != 0:
-            ris[changed_prediction_indices] = np.nan
+            rs[changed_prediction_indices] = np.nan
 
-        return ris
+        return rs
 
     def _evaluate_batch_step_latent_space_noise(
         self,
@@ -99,27 +98,30 @@ class RelativeStability(RobustnessMetric):
         x_batch_embeddings = safe_asarray(model.embedding_lookup(input_ids))
 
         # Perturb input.
-        x_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs)
+        # fmt: off
+        x_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs)  # noqa
+        # fmt: on
         # Generate explanations for perturbed input.
         a_batch_perturbed = self.explain_func(
             model,
             x_batch_embeddings,
             y_batch,
-            attention_mask,
-            **self.explain_func_kwargs,
+            attention_mask=attention_mask,  # noqa
+            **self.explain_func_kwargs,  # noqa
         )
+        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
         # Compute maximization's objective.
-        ris = self.compute_objective_latent_space(
+        rs = self.compute_objective_latent_space(
             x_batch_embeddings,
             x_perturbed,
             a_batch,
-            a_batch_perturbed,
+            a_batch_perturbed,  # noqa
             model,
             attention_mask,
         )
         # We're done with this sample if `return_nan_when_prediction_changes`==False.
         if not self.return_nan_when_prediction_changes:
-            return ris
+            return rs
 
         # If perturbed input caused change in prediction, then it's RIS=nan.
         changed_prediction_indices = self.indexes_of_changed_predictions_latent(
@@ -127,9 +129,9 @@ class RelativeStability(RobustnessMetric):
         )
 
         if len(changed_prediction_indices) != 0:
-            ris[changed_prediction_indices] = np.nan
+            rs[changed_prediction_indices] = np.nan
 
-        return ris
+        return rs
 
     @abstractmethod
     def compute_objective_latent_space(

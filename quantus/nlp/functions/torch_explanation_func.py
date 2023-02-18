@@ -78,10 +78,19 @@ def torch_explain_gradient_norm_numerical(
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device  # noqa
+    try:
+        input_embeddings = torch.tensor(
+            input_embeddings, requires_grad=True, device=device
+        )
+    except TypeError:
+        input_embeddings = torch.tensor(
+            input_embeddings, requires_grad=True, device=device, dtype=torch.float32
+        )
 
-    input_embeddings = torch.tensor(input_embeddings, requires_grad=True).to(device)
+    attention_mask = torch.tensor(attention_mask, device=device)
+
     logits = model(input_embeddings, attention_mask)
-    indexes = torch.reshape(torch.tensor(y_batch).to(device), (len(y_batch), 1))
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
     return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
@@ -142,10 +151,19 @@ def torch_explain_gradient_x_input_numerical(
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device  # noqa
+    try:
+        input_embeddings = torch.tensor(
+            input_embeddings, requires_grad=True, device=device
+        )
+    except TypeError:
+        input_embeddings = torch.tensor(
+            input_embeddings, requires_grad=True, device=device, dtype=torch.float32
+        )
 
-    input_embeddings = torch.tensor(input_embeddings, requires_grad=True).to(device)
+    attention_mask = torch.tensor(attention_mask, device=device)
+
     logits = model(input_embeddings, attention_mask)
-    indexes = torch.reshape(torch.tensor(y_batch).to(device), (len(y_batch), 1))
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
     return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
@@ -256,24 +274,31 @@ def torch_explain_integrated_gradients_numerical(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
                 )
             )
-
-    interpolated_embeddings = torch.tensor(
-        interpolated_embeddings, dtype=torch.float32, requires_grad=True
-    ).to(device)
+    try:
+        interpolated_embeddings = torch.tensor(
+            interpolated_embeddings, requires_grad=True, device=device
+        )
+    except TypeError:
+        interpolated_embeddings = torch.tensor(
+            interpolated_embeddings,
+            requires_grad=True,
+            device=device,
+            dtype=torch.float32,
+        )
     interpolated_embeddings = torch.reshape(
         interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]
     )
 
     if interpolated_attention_mask is not None:
-        interpolated_attention_mask = torch.tensor(interpolated_attention_mask).to(
-            device
+        interpolated_attention_mask = torch.tensor(
+            interpolated_attention_mask, device=device
         )
         interpolated_attention_mask = torch.reshape(
             interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[2:]]
         )
 
     logits = model(interpolated_embeddings, interpolated_attention_mask)
-    indexes = torch.reshape(torch.tensor(y_batch).to(device), (len(y_batch), 1))
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(
         torch.unbind(logits_for_class), interpolated_embeddings
@@ -282,7 +307,7 @@ def torch_explain_integrated_gradients_numerical(
         grads, [len(input_embeddings), num_steps + 1, *grads.shape[1:]]
     )
     scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
-    return scores.detach().cpu()
+    return scores.detach().cpu().numpy()
 
 
 def torch_explain_noise_grad_plus_plus_numerical(
@@ -310,9 +335,9 @@ def torch_explain_noise_grad_plus_plus_numerical(
         base_model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
         model.model = base_model
-        np_scores = explain_fn(
-            model, inputs, targets, attention_mask=attention_mask
-        )  # noqa
+        # fmt: off
+        np_scores = explain_fn(model, inputs, targets, attention_mask=attention_mask)  # noqa
+        # fmt: on
         return torch.tensor(np_scores, device=device)
 
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
@@ -343,7 +368,7 @@ def torch_explain_noise_grad_plus_plus(
     """
     NoiseGrad++ is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
     by adding stochasticity to model's weights and model's inputs. This method requires noisegrad package,
-    install it with: `pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git@allow-non-images'`.
+    install it with: `pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git'`.
 
     Parameters
     ----------

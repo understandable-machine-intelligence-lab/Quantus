@@ -11,12 +11,9 @@ from transformers import (
 )
 from transformers.tf_utils import shape_list
 import tensorflow as tf
-from quantus.helpers.model.tf_utils import (
-    get_hidden_representations,
-    get_random_layer_generator,
-)
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask
 
 if TYPE_CHECKING:
     from quantus.nlp.helpers.types import TF_TensorLike
@@ -24,9 +21,7 @@ if TYPE_CHECKING:
 
 class TFHuggingFaceTextClassifier(TextClassifier):
     def __init__(
-        self,
-        tokenizer: PreTrainedTokenizerBase,
-        model: TFPreTrainedModel,
+        self, tokenizer: PreTrainedTokenizerBase, model: TFPreTrainedModel, handle: str
     ):
         self.model = model
         self.tokenizer = HuggingFaceTokenizer(tokenizer)
@@ -36,6 +31,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         self.position_embedding_matrix = tf.convert_to_tensor(
             model.get_input_embeddings().position_embeddings, dtype=tf.float32
         )
+        self.handle = handle
 
     @staticmethod
     def from_pretrained(handle: str) -> TFHuggingFaceTextClassifier:
@@ -43,6 +39,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         return TFHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle),
             TFAutoModelForSequenceClassification.from_pretrained(handle),
+            handle,
         )
 
     def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> tf.Tensor:
@@ -80,45 +77,60 @@ class TFHuggingFaceTextClassifier(TextClassifier):
     def weights(self, weights: List[np.ndarray]):
         self.model.set_weights(weights)
 
-    def get_hidden_representations(
-        self,
-        x_batch: List[str],
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-    ) -> np.ndarray:
-        def predict(model, xx_batch):
-            encoded_input = self.tokenizer.tokenize(xx_batch)
-            return model(**encoded_input).logits
-
-        return get_hidden_representations(
-            self.model, x_batch, predict, layer_names, layer_indices
-        )
-
-    def get_hidden_representations_embeddings(
-        self,
-        x_batch: np.ndarray,
-        attention_mask: Optional[np.ndarray],
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-    ) -> np.ndarray:
-        def predict(model, xx_batch):
-            return model(
-                None,
-                inputs_embeds=xx_batch,
-                attention_mask=attention_mask,
-                training=False,
-            ).logits
-
-        return get_hidden_representations(
-            self.model, x_batch, predict, layer_names, layer_indices
-        )
-
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42
     ) -> Generator:
-        return get_random_layer_generator(self.model, order, seed)
+        original_weights = self.model.get_weights()
+        random_layer_model = TFAutoModelForSequenceClassification.from_pretrained(
+            self.handle
+        )
+        layers = self.layers_fn(random_layer_model)
 
-    @property
-    def nr_layers(self) -> int:
-        # TODO flatten modules
-        return len(self.model.layers)
+        if order == "top_down":
+            layers = layers[::-1]
+
+        for layer in layers:
+            if order == "independent":
+                random_layer_model.set_weights(original_weights)
+            weights = layer.get_weights()
+            np.random.seed(seed=seed + 1)
+            layer.set_weights([np.random.permutation(w) for w in weights])
+            random_layer_model_wrapper = TFHuggingFaceTextClassifier(
+                AutoTokenizer.from_pretrained(self.handle),
+                random_layer_model,
+                self.handle,
+            )
+            yield layer.name, random_layer_model_wrapper
+
+    @staticmethod
+    def layers_fn(new_model):
+        layers = list(new_model._flatten_layers(include_self=False))
+        layers = list(
+            filter(
+                lambda i: len(list(i._flatten_layers(include_self=False))) == 0, layers
+            )
+        )
+        return layers
+
+    def get_hidden_representations(self, x_batch: List[str]) -> np.ndarray:
+        inputs_ids, attention_mask = unpack_token_ids_and_attention_mask(
+            self.tokenizer.tokenize(x_batch)
+        )
+        x_batch_embeddings = self.embedding_lookup(inputs_ids)
+        return self.get_hidden_representations_embeddings(
+            x_batch_embeddings, attention_mask
+        )
+
+    def get_hidden_representations_embeddings(
+        self, x_batch: np.ndarray, attention_mask: Optional[np.ndarray]
+    ) -> np.ndarray:
+        hidden_states = self.model(
+            None,
+            attention_mask,
+            inputs_embeds=x_batch,
+            training=False,
+            output_hidden_states=True,
+        ).hidden_states
+        hidden_states = np.asarray(hidden_states)
+        hidden_states = np.moveaxis(hidden_states, 0, 1)
+        return hidden_states

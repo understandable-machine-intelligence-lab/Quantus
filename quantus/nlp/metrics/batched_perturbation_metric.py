@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from abc import ABC
 from typing import Optional, Dict
 
 from quantus.nlp.helpers.utils import value_or_default
@@ -10,7 +12,7 @@ from quantus.nlp.helpers.types import (
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 
 
-class BatchedPerturbationMetric(BatchedMetric):
+class BatchedPerturbationMetric(BatchedMetric, ABC):
     def __init__(
         self,
         perturbation_type: PerturbationType,

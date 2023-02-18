@@ -2,19 +2,16 @@ from __future__ import annotations
 
 import random
 from typing import List, Optional, Dict, Callable
-from functools import partial
-
 import numpy as np
 
 from quantus.functions.similarity_func import ssim
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import Explanation, NormaliseFn, SimilarityFn
+from quantus.nlp.helpers.types import Explanation, SimilarityFn, NormaliseFn
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.helpers.utils import (
-    normalise_attributions,
-    abs_attributions,
     explanation_similarity,
 )
+from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 
 
 class RandomLogit(BatchedMetric):
@@ -32,12 +29,28 @@ class RandomLogit(BatchedMetric):
     def __init__(
         self,
         *,
+        num_classes: int,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
+        normalise_func_kwargs: Optional[Dict] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
         similarity_func: SimilarityFn = ssim,
-        num_classes: int = 2,
         seed: int = 42,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            disable_warnings=disable_warnings,
+            display_progressbar=display_progressbar,
+        )
         self.num_classes = num_classes
         self.similarity_func = similarity_func
         self.seed = seed
@@ -59,26 +72,19 @@ class RandomLogit(BatchedMetric):
             model,
             x_batch,
             y_off,
-            **self.explain_func_kwargs,
+            **self.explain_func_kwargs,  # noqa
         )
 
         # Normalise and take absolute values of the attributions, if True.
-        if self.normalise:
-            normalise_fn = partial(self.normalise_func, **self.normalise_func_kwargs)
-            a_perturbed = normalise_attributions(a_batch, normalise_fn)
-
-        if self.abs:
-            a_perturbed = abs_attributions(a_batch)
-
-        similarity_fn = partial(self.similarity_func, **self.similarity_func_kwargs)
+        a_perturbed = self.normalise_a_batch(a_perturbed)
         scores = [
-            explanation_similarity(a, b, similarity_fn)
+            explanation_similarity(a, b, self.similarity_func)
             for a, b in zip(a_batch, a_perturbed)
         ]
         return np.asarray(scores)
 
     def off_label_choice(self, y: int) -> int:
-        all_labels = list(range(self.nr_classes))
+        all_labels = list(range(self.num_classes))
         del all_labels[y]
         random.seed(self.seed)
         return random.choice(all_labels)

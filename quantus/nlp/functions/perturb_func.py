@@ -8,7 +8,7 @@ from quantus.nlp.helpers.utils import apply_noise
 from quantus.nlp.helpers.types import NoiseType
 
 
-def spelling_replacement(text: List[str], k: int = 1, **kwargs) -> List[str]:
+def spelling_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
     """
     Replace k words in each entry of text by alternative spelling.
 
@@ -24,7 +24,7 @@ def spelling_replacement(text: List[str], k: int = 1, **kwargs) -> List[str]:
     return aug.augment(text)
 
 
-def synonym_replacement(text: List[str], k: int = 1, **kwargs) -> List[str]:
+def synonym_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
     """
     Replace k words in each entry of text by synonym.
 

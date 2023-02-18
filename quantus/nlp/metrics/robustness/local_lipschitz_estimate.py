@@ -43,7 +43,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
     def __init__(
         self,
         *,
-        abs: bool = False,
+        abs: bool = False,  # noqa
         normalise: bool = True,
         normalise_func: NormaliseFn = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
@@ -88,16 +88,16 @@ class LocalLipschitzEstimate(RobustnessMetric):
         input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
         x_batch_embeddings = get_embeddings(x_batch, model)
 
-        similarities = np.zeros((self.nr_samples, batch_size))
+        scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
         for step_id in range(self.nr_samples):
             if self.perturbation_type == PerturbationType.plain_text:
-                similarities[step_id] = self._evaluate_batch_step_plain_text_noise(
+                scores[step_id] = self._evaluate_batch_step_plain_text_noise(
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
             if self.perturbation_type == PerturbationType.latent_space:
                 a_batch_numerical = np.asarray([i[1] for i in a_batch])
-                similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
+                scores[step_id] = self._evaluate_batch_step_latent_space_noise(
                     model,
                     y_batch,
                     a_batch_numerical,
@@ -106,8 +106,8 @@ class LocalLipschitzEstimate(RobustnessMetric):
                 )
 
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        scores = max_func(similarities, axis=1)
-        return self.aggregate_func(scores) if self.return_aggregate else scores
+        scores = max_func(scores, axis=1)
+        return scores
 
     def _evaluate_batch_step_plain_text_noise(
         self,
@@ -136,7 +136,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
 
         x_batch_embeddings_perturbed = get_embeddings(x_perturbed, model)
 
-        similarities = np.zeros(batch_size)
+        similarities = np.full(batch_size, fill_value=np.NINF)
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
@@ -189,11 +189,11 @@ class LocalLipschitzEstimate(RobustnessMetric):
             model,
             x_batch_embeddings_perturbed,
             y_batch,
-            attention_mask,  # noqa
+            attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
         )
 
-        similarities = np.zeros(batch_size)
+        similarities = np.full(batch_size, fill_value=np.NINF)
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
@@ -202,7 +202,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
                 continue
 
             a, a_perturbed = pad_ragged_vector(
-                a_batch[instance_id], a_batch_perturbed[instance_id] # noqa
+                a_batch[instance_id], a_batch_perturbed[instance_id]  # noqa
             )
             x, x_perturbed = pad_ragged_vector(
                 x_batch_embeddings[instance_id],

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import sys
 import numpy as np
-from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, Iterable
+from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
 from functools import singledispatch, update_wrapper
 
+if TYPE_CHECKING:
+    import torch
 
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -44,8 +46,12 @@ def _pad_array_right(
         return _pad_array_1d(a, target_shape, pad_value)
     elif len(a.shape) == 2:
         return _pad_array_2d(a, target_shape, pad_value)
+    elif len(a.shape) == 3:
+        return _pad_array_3d(a, target_shape, pad_value)
+    elif len(a.shape) == 4:
+        return np.asarray([_pad_array_3d(i, target_shape[1:], pad_value) for i in a])
     else:
-        raise NotImplementedError
+        raise ValueError("This is not expected.")
 
 
 def _pad_array_1d(a: np.ndarray, target_shape: Tuple[int], pad_value: float):
@@ -56,8 +62,22 @@ def _pad_array_1d(a: np.ndarray, target_shape: Tuple[int], pad_value: float):
 def _pad_array_2d(a: np.ndarray, target_shape: Tuple[int, int], pad_value: float):
     pad_len = target_shape[0] - len(a)
     pad_shape = target_shape[1]
+    if pad_len != 0:
+        padding = np.full(shape=(pad_len, pad_shape), fill_value=pad_value)
+        return np.concatenate([a, padding], axis=0)
+    pad_len = len(a)
+    pad_shape = target_shape[1] - a.shape[1]
+
     padding = np.full(shape=(pad_len, pad_shape), fill_value=pad_value)
-    return np.concatenate([a, padding], axis=0)
+    return np.concatenate([a, padding], axis=1)
+
+
+def _pad_array_3d(a: np.ndarray, target_shape: Tuple[int, int, int], pad_value: float):
+    batch_size = target_shape[0]
+    pad_len = target_shape[1] - a.shape[1]
+    pad_shape = target_shape[2]
+    padding = np.full(shape=(batch_size, pad_len, pad_shape), fill_value=pad_value)
+    return np.concatenate([a, padding], axis=1)
 
 
 def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
@@ -260,3 +280,14 @@ def explanations_similarity(
         explanation_similarity(a, b, similarity_fn, padded, numerical_only)
         for a, b in zip(a_batch, b_batch)
     )
+
+
+def choose_torch_device() -> torch.device:
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch.backends, "mps"):
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+    return torch.device("cpu")

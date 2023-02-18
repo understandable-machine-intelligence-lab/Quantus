@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from abc import ABC
+
 import numpy as np
 from typing import List, Optional
 
@@ -7,7 +9,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.batched_perturbation_metric import BatchedPerturbationMetric
 
 
-class RobustnessMetric(BatchedPerturbationMetric):
+class RobustnessMetric(BatchedPerturbationMetric, ABC):
 
     """Common functionality for batched robustness metrics."""
 

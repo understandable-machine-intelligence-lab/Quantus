@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 from tqdm.auto import tqdm
-from functools import partial
 from typing import List, Optional, Dict, Callable
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
@@ -10,11 +9,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import (
-    explanations_similarity,
-    normalise_attributions,
-    abs_attributions,
-)
+from quantus.nlp.helpers.utils import explanations_similarity
 
 
 class ModelParameterRandomisation(BatchedMetric):
@@ -37,13 +32,29 @@ class ModelParameterRandomisation(BatchedMetric):
     def __init__(
         self,
         *,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
+        normalise_func_kwargs: Optional[Dict] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
         similarity_func: SimilarityFn = correlation_spearman,
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            disable_warnings=disable_warnings,
+            display_progressbar=display_progressbar,
+        )
         self.seed = seed
         self.layer_order = layer_order
         self.return_sample_correlation = return_sample_correlation
@@ -68,6 +79,7 @@ class ModelParameterRandomisation(BatchedMetric):
             a_batch=a_batch,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
+            batch_size=batch_size,
         )
         model = data["model"]
         x_batch = data["x_batch"]
@@ -78,7 +90,7 @@ class ModelParameterRandomisation(BatchedMetric):
         self.last_results = {}
 
         # Get number of iterations from number of layers.
-        n_layers = model.nr_layers
+        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
 
         model_iterator = tqdm(
             model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
@@ -92,8 +104,10 @@ class ModelParameterRandomisation(BatchedMetric):
                 random_layer_model,
                 x_batch,
                 y_batch,
-                **self.explain_func_kwargs,
+                **self.explain_func_kwargs,  # noqa
             )
+
+            a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
 
             similarity_scores = self.evaluate_batch(a_batch, a_batch_perturbed)
             # Save similarity scores in a result dictionary.
@@ -105,7 +119,7 @@ class ModelParameterRandomisation(BatchedMetric):
         if self.return_aggregate:
             assert self.return_sample_correlation, (
                 "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute te aggregat"
+                " to True in order to compute te aggregate"
             )
             self.last_results = [self.aggregate_func(self.last_results)]
 
@@ -117,14 +131,8 @@ class ModelParameterRandomisation(BatchedMetric):
         self,
         a_batch: List[Explanation],
         a_perturbed: List[Explanation],
+        *args,
+        **kwargs,
     ) -> float:
-        if self.normalise:
-            normalise_fn = partial(self.normalise_func, **self.normalise_func_kwargs)
-            a_perturbed = normalise_attributions(a_perturbed, normalise_fn)
-
-        if self.abs:
-            a_perturbed = abs_attributions(a_perturbed)
-
         # Compute distance measure.
-        similarity_fn = partial(self.similarity_func, **self.similarity_func_kwargs)
-        return explanations_similarity(a_batch, a_perturbed, similarity_fn)
+        return explanations_similarity(a_batch, a_perturbed, self.similarity_func)

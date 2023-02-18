@@ -36,13 +36,25 @@ class RelativeRepresentationStabilityObjective:
             RRS maximization objective.
         """
 
-        num_dim = e_x.ndim
-        if num_dim == 4:
-            norm_function = lp_norm_4d
-        elif num_dim == 3:
-            norm_function = lp_norm_3d
-        elif num_dim == 2:
-            norm_function = lp_norm_2d
+        nominator_num_dim = e_x.ndim
+        if nominator_num_dim == 4:
+            nominator_norm_function = lp_norm_4d
+        elif nominator_num_dim == 3:
+            nominator_norm_function = lp_norm_3d
+        elif nominator_num_dim == 2:
+            nominator_norm_function = lp_norm_2d
+        else:
+            raise ValueError(
+                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
+            )
+
+        denominator_num_dim = l_x.ndim
+        if denominator_num_dim == 4:
+            denominator_norm_function = lp_norm_4d
+        elif denominator_num_dim == 3:
+            denominator_norm_function = lp_norm_3d
+        elif denominator_num_dim == 2:
+            denominator_norm_function = lp_norm_2d
         else:
             raise ValueError(
                 "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
@@ -50,10 +62,10 @@ class RelativeRepresentationStabilityObjective:
 
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
+        nominator = nominator_norm_function(nominator)
         # fmt: on
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
-        denominator = np.linalg.norm(denominator, axis=-1)
+        denominator = denominator_norm_function(denominator)
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator

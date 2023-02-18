@@ -3,9 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 import numpy as np
 from typing import List, Optional, Dict, Any, Callable
-from functools import partial
-
-from quantus import ModelInterface
 from quantus.metrics.base_batched import BatchedMetric as Base
 from functools import partial
 
@@ -27,10 +24,10 @@ from quantus.nlp.functions.explanation_func import explain
 class BatchedMetric(Base):
     def __init__(
         self,
-        abs: bool,
+        abs: bool,  # noqa
         normalise: bool,
         normalise_func: Optional[Callable],
-        normalise_func_kwargs: Optional[Dict[str, Any]],
+        normalise_func_kwargs: Optional[Dict],
         return_aggregate: bool,
         aggregate_func: Optional[Callable],
         disable_warnings: bool,
@@ -80,6 +77,8 @@ class BatchedMetric(Base):
         self.last_results = []
         for data_batch in batch_generator:
             result = self.evaluate_batch(**data_batch)
+            if self.return_aggregate:
+                result = self.aggregate_func(result)
             self.last_results.extend(result)
 
         # Call post-processing.
@@ -102,9 +101,9 @@ class BatchedMetric(Base):
         batch_size: int,
         **kwargs,
     ) -> Dict:
-        self.explain_func_kwargs = value_or_default(
-            explain_func_kwargs, lambda: {}
-        )  # noqa
+        # fmt: off
+        self.explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})  # noqa
+        # fmt: on
         # Save as attribute, some metrics need it during processing.
         self.explain_func = explain_func  # noqa
         y_batch = value_or_default(
