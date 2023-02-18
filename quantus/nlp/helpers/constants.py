@@ -8,8 +8,8 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from typing import List, Dict
-from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivityMetric
-from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivityMetric
+from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivity
+from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivity
 from quantus.nlp.functions.perturb_func import (
     spelling_replacement,
     synonym_replacement,
@@ -22,8 +22,8 @@ from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 
 AVAILABLE_METRICS = {
     "Robustness": {
-        "Max-Sensitivity": MaxSensitivityMetric,
-        "Avg-Sensitivity": AvgSensitivityMetric,
+        "Max-Sensitivity": MaxSensitivity,
+        "Avg-Sensitivity": AvgSensitivity,
     },
 }
 

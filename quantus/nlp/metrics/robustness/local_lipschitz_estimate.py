@@ -1,15 +1,29 @@
 from __future__ import annotations
 
 import numpy as np
+from typing import Optional, Dict, Callable, List
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 
-from quantus.functions.similarity_func import lipschitz_constant
-from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.functions.perturb_func import spelling_replacement
+from quantus.nlp.functions.normalise_func import normalize_sum_to_1
+from quantus.nlp.helpers.types import (
+    Explanation,
+    NormaliseFn,
+    PerturbationType,
+    PlainTextPerturbFn,
+    NumericalPerturbFn,
+)
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.metrics.robustness.internal.sensitivity_metric import SensitivityMetric
-from quantus.nlp.helpers.utils import get_embeddings
+from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
+from quantus.nlp.helpers.utils import (
+    get_embeddings,
+    pad_ragged_vector,
+    unpack_token_ids_and_attention_mask,
+)
+from quantus.helpers.warn import warn_perturbation_caused_no_change
 
 
-class LocalLipschitzEstimate(SensitivityMetric):
+class LocalLipschitzEstimate(RobustnessMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -26,37 +40,183 @@ class LocalLipschitzEstimate(SensitivityMetric):
         neural networks." NeurIPS (2018): 7786-7795.
     """
 
-    def compute_similarity_plain_text(
+    def __init__(
         self,
-        a: Explanation,
-        a_perturbed: Explanation,
-        x: str,
-        x_perturbed: str,
+        *,
+        abs: bool = False,
+        normalise: bool = True,
+        normalise_func: NormaliseFn = normalize_sum_to_1,
+        normalise_func_kwargs: Optional[Dict] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        perturbation_type: PerturbationType = PerturbationType.plain_text,
+        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
+        perturb_func_kwargs: Optional[Dict] = None,
+        nr_samples: int = 50,
+        return_nan_when_prediction_changes: bool = False,
+    ):
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            disable_warnings=disable_warnings,
+            display_progressbar=display_progressbar,
+            perturbation_type=perturbation_type,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
+        )
+        self.nr_samples = nr_samples
+
+    def evaluate_batch(
+        self,
         model: TextClassifier,
-    ) -> float:
-        return self.compute_similarity_latent_space(
-            a[1],
-            a_perturbed[1],
-            get_embeddings([x], model)[0],
-            get_embeddings([x_perturbed], model)[0],
-        )
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation] | np.ndarray,
+        *args,
+        **kwargs,
+    ) -> np.ndarray | float:
+        batch_size = len(x_batch)
 
-    def compute_similarity_latent_space(
-        self,
-        a: np.ndarray,
-        a_perturbed: np.ndarray,
-        x: np.ndarray,
-        x_perturbed: np.ndarray,
-    ) -> float:
-        return lipschitz_constant(
-            a=a,
-            b=a_perturbed,
-            c=x,
-            d=x_perturbed,
-            norm_numerator=self.norm_numerator,
-            norm_denominator=self.norm_denominator,
-        )
+        tokenized_input = model.tokenizer.tokenize(x_batch)
+        input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
+        x_batch_embeddings = get_embeddings(x_batch, model)
 
-    def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
+        similarities = np.zeros((self.nr_samples, batch_size))
+
+        for step_id in range(self.nr_samples):
+            if self.perturbation_type == PerturbationType.plain_text:
+                similarities[step_id] = self._evaluate_batch_step_plain_text_noise(
+                    model, x_batch, y_batch, a_batch, x_batch_embeddings
+                )
+            if self.perturbation_type == PerturbationType.latent_space:
+                a_batch_numerical = np.asarray([i[1] for i in a_batch])
+                similarities[step_id] = self._evaluate_batch_step_latent_space_noise(
+                    model,
+                    y_batch,
+                    a_batch_numerical,
+                    x_batch_embeddings,
+                    attention_mask,
+                )
+
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        return max_func(scores, axis=1)
+        scores = max_func(similarities, axis=1)
+        return self.aggregate_func(scores) if self.return_aggregate else scores
+
+    def _evaluate_batch_step_plain_text_noise(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        x_batch_embeddings: np.ndarray,
+    ) -> np.ndarray | float:
+        batch_size = len(x_batch)
+        # Perturb input.
+        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)  # noqa
+        warn_perturbation_caused_no_change(np.asarray(x_batch), np.asarray(x_perturbed))
+
+        changed_prediction_indices = self.indexes_of_changed_predictions_plain_text(
+            model, x_batch, x_perturbed
+        )
+
+        a_batch_perturbed = self.explain_func(
+            model, x_perturbed, y_batch, **self.explain_func_kwargs  # noqa
+        )
+        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
+
+        a_batch_scores = [i[1] for i in a_batch]
+        a_batch_perturbed_scores = [i[1] for i in a_batch_perturbed]
+
+        x_batch_embeddings_perturbed = get_embeddings(x_perturbed, model)
+
+        similarities = np.zeros(batch_size)
+
+        # Measure similarity for each instance separately.
+        for instance_id in range(batch_size):
+            if instance_id in changed_prediction_indices:
+                similarities[instance_id] = np.nan
+                continue
+
+            a, a_batch_perturbed = pad_ragged_vector(
+                a_batch_scores[instance_id], a_batch_perturbed_scores[instance_id]
+            )
+            x, x_perturbed = pad_ragged_vector(
+                x_batch_embeddings[instance_id],
+                x_batch_embeddings_perturbed[instance_id],
+            )
+            sensitivities = lipschitz_constant(
+                a=a,
+                b=a_batch_perturbed,
+                c=x.reshape(-1),
+                d=x_perturbed.reshape(-1),
+                norm_numerator=distance_euclidean,
+                norm_denominator=distance_euclidean,
+            )
+
+            similarities[instance_id] = sensitivities
+
+        return similarities
+
+    def _evaluate_batch_step_latent_space_noise(
+        self,
+        model: TextClassifier,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        x_batch_embeddings: np.ndarray,
+        attention_mask: Optional[np.ndarray],
+    ) -> np.ndarray:
+        batch_size = len(x_batch_embeddings)
+        # Perturb input.
+        # fmt: off
+        x_batch_embeddings_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs)  # noqa
+        # fmt: on
+        warn_perturbation_caused_no_change(
+            x_batch_embeddings, x_batch_embeddings_perturbed
+        )
+
+        changed_prediction_indices = self.indexes_of_changed_predictions_latent(
+            model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
+        )
+
+        a_batch_perturbed = self.explain_func(
+            model,
+            x_batch_embeddings_perturbed,
+            y_batch,
+            attention_mask,  # noqa
+            **self.explain_func_kwargs,  # noqa
+        )
+
+        similarities = np.zeros(batch_size)
+
+        # Measure similarity for each instance separately.
+        for instance_id in range(batch_size):
+            if instance_id in changed_prediction_indices:
+                similarities[instance_id] = np.nan
+                continue
+
+            a, a_perturbed = pad_ragged_vector(
+                a_batch[instance_id], a_batch_perturbed[instance_id] # noqa
+            )
+            x, x_perturbed = pad_ragged_vector(
+                x_batch_embeddings[instance_id],
+                x_batch_embeddings_perturbed[instance_id],
+            )
+            sensitivities = lipschitz_constant(
+                a=a,
+                b=a_perturbed,
+                c=x.reshape(-1),
+                d=x_perturbed.reshape(-1),
+                norm_numerator=distance_euclidean,
+                norm_denominator=distance_euclidean,
+            )
+
+            similarities[instance_id] = sensitivities
+
+        return similarities

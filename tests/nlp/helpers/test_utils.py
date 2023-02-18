@@ -1,8 +1,12 @@
 from typing import List
 
-from quantus.nlp.helpers.utils import batch_list
+import numpy as np
+import pytest
+
+from quantus.nlp.helpers.utils import batch_list, pad_ragged_vector
 
 
+@pytest.mark.nlp
 def test_batch_list(sst2_dataset_huge_batch):
     flat_list = sst2_dataset_huge_batch[:1000]
     batched_list = batch_list(flat_list, batch_size=32)
@@ -13,6 +17,7 @@ def test_batch_list(sst2_dataset_huge_batch):
             assert len(element) == 32
 
 
+@pytest.mark.nlp
 def test_list_is_divisible(sst2_dataset_huge_batch):
     flat_list = sst2_dataset_huge_batch
     batched_list = batch_list(flat_list, batch_size=32)
@@ -20,3 +25,22 @@ def test_list_is_divisible(sst2_dataset_huge_batch):
     for index, element in enumerate(batched_list):
         assert isinstance(element, List)
         assert len(element) == 32
+
+
+@pytest.mark.nlp
+@pytest.mark.parametrize(
+    "a_shape, b_shape", [
+        (5, 5),
+        (5, 7),
+        (7, 5),
+        ((10, 5), (11, 5)),
+        ((11, 5), (10, 5))
+    ]
+)
+def test_pad(a_shape, b_shape):
+    a = np.random.uniform(size=a_shape)
+    b = np.random.uniform(size=b_shape)
+
+    a_padded, b_padded = pad_ragged_vector(a, b)
+
+    assert a_padded.shape == b_padded.shape

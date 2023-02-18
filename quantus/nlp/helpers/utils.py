@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import numpy as np
-from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any
+from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, Iterable
 from functools import singledispatch, update_wrapper
 
 
@@ -28,18 +28,36 @@ def pad_ragged_vector(
     a: np.ndarray, b: np.ndarray, *, pad_value: float = 0
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Pad a or b, such that both are of the same length."""
-    max_len = max([len(a), len(b)])
+    max_len = max([a.shape, b.shape])
     return (
         _pad_array_right(a, max_len, pad_value),
         _pad_array_right(b, max_len, pad_value),
     )
 
 
-def _pad_array_right(a: np.ndarray, target_length: int, pad_value: float) -> np.ndarray:
-    if len(a) == target_length:
+def _pad_array_right(
+    a: np.ndarray, target_shape: Tuple, pad_value: float
+) -> np.ndarray:
+    if a.shape == target_shape:
         return a
-    pad_len = target_length - len(a)
+    if len(a.shape) == 1:
+        return _pad_array_1d(a, target_shape, pad_value)
+    elif len(a.shape) == 2:
+        return _pad_array_2d(a, target_shape, pad_value)
+    else:
+        raise NotImplementedError
+
+
+def _pad_array_1d(a: np.ndarray, target_shape: Tuple[int], pad_value: float):
+    pad_len = target_shape[0] - len(a)
     return np.pad(a, (0, pad_len), constant_values=pad_value)
+
+
+def _pad_array_2d(a: np.ndarray, target_shape: Tuple[int, int], pad_value: float):
+    pad_len = target_shape[0] - len(a)
+    pad_shape = target_shape[1]
+    padding = np.full(shape=(pad_len, pad_shape), fill_value=pad_value)
+    return np.concatenate([a, padding], axis=0)
 
 
 def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:

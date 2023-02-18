@@ -188,7 +188,7 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
 * Hyperparameters affecting the metric function itself are set in the `__init__` method of each metric.
   Extending the above example of MaxSensitivity, various init hyperparameters can be set as follows:
     ```python
-    max_sensitivity = quantus.MaxSensitivityMetric(
+    max_sensitivity = quantus.MaxSensitivity(
         nr_samples=10,
         lower_bound=0.2,
         norm_numerator=quantus.fro_norm,
@@ -221,8 +221,8 @@ To utilise `quantus.evaluate()`, you simply need to define two things:
 1. The **Metrics** you would like to use for evaluation (each `__init__` parameter configuration counts as its own metric):
     ```python
     metrics = {
-        "max-sensitivity-10": quantus.MaxSensitivityMetric(nr_samples=10),
-        "max-sensitivity-20": quantus.MaxSensitivityMetric(nr_samples=20),
+        "max-sensitivity-10": quantus.MaxSensitivity(nr_samples=10),
+        "max-sensitivity-20": quantus.MaxSensitivity(nr_samples=20),
         "region-perturbation": quantus.RegionPerturbation(),
     }
     ```

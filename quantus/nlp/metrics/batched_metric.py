@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 import numpy as np
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any, Callable
 from functools import partial
+
+from quantus import ModelInterface
 from quantus.metrics.base_batched import BatchedMetric as Base
 from functools import partial
 
@@ -23,6 +25,29 @@ from quantus.nlp.functions.explanation_func import explain
 
 
 class BatchedMetric(Base):
+    def __init__(
+        self,
+        abs: bool,
+        normalise: bool,
+        normalise_func: Optional[Callable],
+        normalise_func_kwargs: Optional[Dict[str, Any]],
+        return_aggregate: bool,
+        aggregate_func: Optional[Callable],
+        disable_warnings: bool,
+        display_progressbar: bool,
+    ):
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            default_plot_func=None,
+            disable_warnings=disable_warnings,
+            display_progressbar=display_progressbar,
+        )
+
     def __call__(
         self,
         model: TextClassifier,
@@ -163,7 +188,11 @@ class BatchedMetric(Base):
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
+        *args,
         **kwargs,
     ) -> np.ndarray | float:
         """Must be implemented by respective metric class."""
         raise NotImplementedError
+
+    def evaluate_instance(self, *args, **kwargs) -> Any:
+        raise ValueError("This is unexpected")

@@ -24,4 +24,4 @@ class BatchedPerturbationMetric(BatchedMetric):
 
         self.perturbation_type = perturbation_type
         self.perturb_func = perturb_func
-        self.explain_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})
+        self.perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})

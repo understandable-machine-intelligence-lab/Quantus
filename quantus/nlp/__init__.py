@@ -40,8 +40,8 @@ if util.find_spec("torch"):
         TorchHuggingFaceTextClassifier,
     )
 
-from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivityMetric
-from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivityMetric
+from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivity
+from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivity
 from quantus.nlp.metrics.robustness.relative_input_stability import (
     RelativeInputStability,
 )

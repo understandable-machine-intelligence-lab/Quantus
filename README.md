@@ -321,12 +321,12 @@ To apply a metric to your setting (e.g., [Max-Sensitivity](https://arxiv.org/abs
 it first needs to be instantiated:
 
 ```python
-metric = quantus.MaxSensitivityMetric(nr_samples=10,
-                                      lower_bound=0.2,
-                                      norm_numerator=quantus.fro_norm,
-                                      norm_denominator=quantus.fro_norm,
-                                      perturb_func=quantus.uniform_noise,
-                                      similarity_func=quantus.difference)
+metric = quantus.MaxSensitivity(nr_samples=10,
+                                lower_bound=0.2,
+                                norm_numerator=quantus.fro_norm,
+                                norm_denominator=quantus.fro_norm,
+                                perturb_func=quantus.uniform_noise,
+                                similarity_func=quantus.difference)
 ```
 
 and then applied to your model, data, and (pre-computed) explanations:
@@ -385,8 +385,8 @@ e.g., multiple XAI methods, multifaceted evaluation through several metrics, or 
 1. The **Metrics** you would like to use for evaluation (each `__init__` parameter configuration counts as its own metric):
     ```python
     metrics = {
-        "max-sensitivity-10": quantus.MaxSensitivityMetric(nr_samples=10),
-        "max-sensitivity-20": quantus.MaxSensitivityMetric(nr_samples=20),
+        "max-sensitivity-10": quantus.MaxSensitivity(nr_samples=10),
+        "max-sensitivity-20": quantus.MaxSensitivity(nr_samples=20),
         "region-perturbation": quantus.RegionPerturbation(),
     }
     ```

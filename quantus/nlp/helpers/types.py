@@ -22,6 +22,7 @@ NumericalExplainFn = Callable[
 ]
 NormaliseFn = Callable[[np.ndarray], np.ndarray]
 SimilarityFn = Callable[[np.ndarray, np.ndarray], Union[np.ndarray, float]]
+NormFm = Callable[[np.ndarray], float]
 
 
 class PerturbationType(Enum):

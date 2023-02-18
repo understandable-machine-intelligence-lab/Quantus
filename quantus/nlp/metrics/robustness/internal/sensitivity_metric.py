@@ -4,16 +4,19 @@ from quantus.nlp.metrics.robustness.internal.robustness_metric import Robustness
 from abc import abstractmethod
 import numpy as np
 from typing import List, Callable, Optional
-from quantus.functions.norm_func import fro_norm
 
+
+from quantus.functions.similarity_func import difference
 from quantus.nlp.helpers.types import (
     Explanation,
     TextClassifier,
     PerturbationType,
+    SimilarityFn,
 )
 from quantus.nlp.helpers.utils import (
     unpack_token_ids_and_attention_mask,
     safe_asarray,
+    explanation_similarity,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 
@@ -24,9 +27,10 @@ class SensitivityMetric(RobustnessMetric):
     def __init__(
         self,
         *args,
-        norm_numerator: Callable[[np.ndarray], float] = fro_norm,
-        norm_denominator: Callable[[np.ndarray], float] = fro_norm,
-        nr_samples: int = 50,
+        norm_numerator: Callable[[np.ndarray], float],
+        norm_denominator: Callable[[np.ndarray], float],
+        nr_samples: int,
+        similarity_func: SimilarityFn = difference,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -35,6 +39,7 @@ class SensitivityMetric(RobustnessMetric):
         self.nr_samples = nr_samples
         self.norm_numerator = norm_numerator
         self.norm_denominator = norm_denominator
+        self.similarity_func = similarity_func
 
     def evaluate_batch(
         self,
@@ -42,6 +47,8 @@ class SensitivityMetric(RobustnessMetric):
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation] | np.ndarray,
+        *args,
+        **kwargs,
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
 
@@ -79,36 +86,31 @@ class SensitivityMetric(RobustnessMetric):
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
         # Perturb input.
-        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)
+        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)  # noqa
         warn_perturbation_caused_no_change(np.asarray(x_batch), np.asarray(x_perturbed))
 
         changed_prediction_indices = self.indexes_of_changed_predictions_plain_text(
             model, x_batch, x_perturbed
         )
 
-        a_perturbed = self.explain_func(
+        a_perturbed_perturbed = self.explain_func(
             model, x_perturbed, y_batch, **self.explain_func_kwargs  # noqa
         )
-        a_perturbed = self.normalise_a_batch(a_perturbed)
+        a_perturbed_perturbed = self.normalise_a_batch(a_perturbed_perturbed)
 
         similarities = np.zeros(batch_size)
 
         # Measure similarity for each instance separately.
         for instance_id in range(batch_size):
-            if (
-                self.return_nan_when_prediction_changes
-                and instance_id in changed_prediction_indices
-            ):
+            if instance_id in changed_prediction_indices:
                 similarities[instance_id] = np.nan
                 continue
 
-            sensitivities = self.compute_similarity_plain_text(
+            sensitivities = explanation_similarity(
                 a_batch[instance_id],
-                a_perturbed[instance_id],
-                x_batch[instance_id],
-                x_perturbed[instance_id],
+                a_perturbed_perturbed[instance_id],
+                self.similarity_func,
             )
-
             numerator = self.norm_numerator(sensitivities)
             denominator = self.norm_denominator(
                 x_batch_embeddings[instance_id].flatten()
@@ -128,9 +130,9 @@ class SensitivityMetric(RobustnessMetric):
     ) -> np.ndarray:
         batch_size = len(x_batch_embeddings)
         # Perturb input.
-        x_batch_embeddings_perturbed = self.perturb_func(
-            x_batch_embeddings, **self.perturb_func_kwargs
-        )
+        # fmt: off
+        x_batch_embeddings_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs) # noqa
+        # fmt: on
         warn_perturbation_caused_no_change(
             x_batch_embeddings, x_batch_embeddings_perturbed
         )
@@ -139,13 +141,14 @@ class SensitivityMetric(RobustnessMetric):
             model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
         )
 
-        a_perturbed = self.explain_func(
+        a_batch_perturbed = self.explain_func(
             model,
             x_batch_embeddings_perturbed,
             y_batch,
             attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
         )
+        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
 
         similarities = np.zeros(batch_size)
 
@@ -155,11 +158,9 @@ class SensitivityMetric(RobustnessMetric):
                 similarities[instance_id] = np.nan
                 continue
 
-            sensitivities = self.compute_similarity_latent_space(
+            sensitivities = self.similarity_func(
                 a_batch[instance_id],
-                a_perturbed[instance_id],
-                x_batch_embeddings[instance_id],
-                x_batch_embeddings_perturbed[instance_id],
+                a_batch_perturbed[instance_id],  # noqa
             )
 
             numerator = self.norm_numerator(sensitivities)
@@ -170,27 +171,6 @@ class SensitivityMetric(RobustnessMetric):
             similarities[instance_id] = numerator / denominator
 
         return similarities
-
-    @abstractmethod
-    def compute_similarity_plain_text(
-        self,
-        a: Explanation,
-        a_perturbed: Explanation,
-        x: str,
-        x_perturbed: str,
-        model: TextClassifier,
-    ) -> float:
-        raise NotImplementedError
-
-    @abstractmethod
-    def compute_similarity_latent_space(
-        self,
-        a: np.ndarray,
-        a_perturbed: np.ndarray,
-        x: np.ndarray,
-        x_perturbed: np.ndarray,
-    ) -> float:
-        raise NotImplementedError
 
     @abstractmethod
     def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
