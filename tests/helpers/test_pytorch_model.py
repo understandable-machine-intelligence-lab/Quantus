@@ -70,7 +70,7 @@ def test_get_softmax_arg_model(
 ):
     load_mnist_model.eval()
 
-    model = PyTorchModel(load_mnist_model, **params)
+    model = PyTorchModel(load_mnist_model, softmax=True)
     sm_model = model.get_softmax_arg_model()
     sm_model.eval()
     new_model = PyTorchModel(model=sm_model, **params)
