@@ -185,9 +185,9 @@ def generate_tf_explanation(
     if softmax is not None:
         if method == "VanillaGradients":
             warnings.warn(
-                f"tf-explain VanillaGradients method only supports the following architectures:"
+                f"tf-explain VanillaGradients method only supports the following architecture:"
                 f"a layer which computes class scores with no activation, "
-                f"followed by an activation layer. Softmax argument is set to False.\n",
+                f"followed by an activation layer. Softmax argument is set to True.\n",
                 category=UserWarning,
             )
             softmax = True
@@ -212,7 +212,6 @@ def generate_tf_explanation(
         method = constants.DEPRECATED_XAI_METHODS_TF[method]
 
     if method == "VanillaGradients":
-
         explainer = tf_explain.core.vanilla_gradients.VanillaGradients()
         explanation = (
             np.array(
