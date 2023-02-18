@@ -9,7 +9,7 @@
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
-from cachetools import cachedmethod
+from cachetools import cachedmethod, LRUCache
 from functools import cached_property
 import operator
 
@@ -55,6 +55,7 @@ class PyTorchModel(ModelInterface):
             model_predict_kwargs=model_predict_kwargs,
         )
         self.device = device
+        self.cache = LRUCache(100)
 
     @cached_property
     def _last_layer_is_softmax(self) -> bool:
@@ -168,7 +169,7 @@ class PyTorchModel(ModelInterface):
         """
         Get the original torch model.
         """
-        return self.model
+        return self.get_softmax_arg_model()
 
     def state_dict(self) -> dict:
         """
