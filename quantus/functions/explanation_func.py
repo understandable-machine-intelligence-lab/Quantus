@@ -75,6 +75,19 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     kwargs: optional
             Keyword arguments.
 
+            xai_lib: string, optional
+                XAI library: captum, tf-explain or zennit.
+            method: string, optional
+                XAI method (used with captum and tf-explain libraries).
+            attributor: string, optional
+                XAI method (used with zennit).
+            method_kwargs: dictionary, optional
+                Keyword arguments to be passed to the attribution function.
+            softmax: boolean, optional
+                Indicated whether softmax activation in the last layer shall be removed.
+            channel_first: boolean, optional
+                Indicates if the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
     Returns
     -------
     explanation: np.ndarray
@@ -125,6 +138,20 @@ def get_explanation(model, inputs, targets, **kwargs):
     kwargs: optional
             Keyword arguments.
 
+            xai_lib: string, optional
+                XAI library: captum, tf-explain or zennit.
+            method: string, optional
+                XAI method (used with captum and tf-explain libraries).
+            attributor: string, optional
+                XAI method (used with zennit).
+            method_kwargs: dictionary, optional
+                Keyword arguments to be passed to the attribution function.
+            softmax: boolean, optional
+                Indicated whether softmax activation in the last layer shall be removed.
+            channel_first: boolean, optional
+                Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
+
     Returns
     -------
     explanation: np.ndarray
@@ -173,6 +200,15 @@ def generate_tf_explanation(
     kwargs: optional
             Keyword arguments.
 
+            method: string, optional
+                XAI method.
+            method_kwargs: dictionary, optional
+                Keyword arguments to be passed to the attribution function.
+            softmax: boolean, optional
+                Indicated whether softmax activation in the last layer shall be removed.
+            channel_first: boolean, optional
+                Indicates if the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
     Returns
     -------
     explanation: np.ndarray
@@ -379,6 +415,15 @@ def generate_captum_explanation(
     kwargs: optional
             Keyword arguments. May include method_kwargs dictionary which includes keyword arguments for a method call.
 
+            xai_lib: string
+                XAI library: captum, tf-explain or zennit.
+            method: string
+                XAI method.
+            method_kwargs: dict
+                Keyword arguments to be passed to the attribution function.
+            channel_first: boolean, optional
+                Indicates of the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
     Returns
     -------
     explanation: np.ndarray
@@ -615,6 +660,16 @@ def generate_zennit_explanation(
         Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
     kwargs: optional
             Keyword arguments.
+
+            attributor: string, optional
+                XAI method.
+            method_kwargs: dictionary, optional
+                Keyword arguments to be passed to the attribution function.
+            softmax: boolean, optional
+                Indicated whether softmax activation in the last layer shall be removed.
+            channel_first: boolean, optional
+                Indicates if the image dimensions are channel first, or channel last.
+                Inferred from the input shape if None.
 
     Returns
     -------
