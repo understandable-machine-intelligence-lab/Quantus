@@ -52,7 +52,7 @@ def torch_explain_gradient_norm(
 
     """
 
-    device = model.device  # noqa
+    device = model.device  # type: ignore
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
@@ -77,7 +77,7 @@ def torch_explain_gradient_norm_numerical(
 ) -> np.ndarray:
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = model.device  # noqa
+    device = model.device  # type: ignore
     try:
         input_embeddings = torch.tensor(
             input_embeddings, requires_grad=True, device=device
@@ -125,7 +125,7 @@ def torch_explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    device = model.device  # noqa
+    device = model.device  # type: ignore
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
     attention_mask = torch.tensor(attention_mask).to(device)
@@ -150,7 +150,7 @@ def torch_explain_gradient_x_input_numerical(
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = model.device  # noqa
+    device = model.device  # type: ignore
     try:
         input_embeddings = torch.tensor(
             input_embeddings, requires_grad=True, device=device
@@ -223,7 +223,7 @@ def torch_explain_integrated_gradients(
 
     """
 
-    device = model.device  # noqa
+    device = model.device  # type: ignore
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
@@ -254,12 +254,12 @@ def torch_explain_integrated_gradients_numerical(
     baseline_fn: Optional[BaselineFn] = None,
 ) -> np.ndarray:
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-    device = model.device  # noqa
+    device = model.device  # type: ignore
 
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
 
     interpolated_embeddings = []
-    interpolated_attention_mask = None if attention_mask is None else []
+    interpolated_attention_mask = None if attention_mask is None else []  # type: ignore
 
     for i, embeddings_i in enumerate(input_embeddings):
         np_embeddings_i = embeddings_i.detach().cpu()
@@ -269,7 +269,7 @@ def torch_explain_integrated_gradients_numerical(
             )
         )
         if attention_mask is not None:
-            interpolated_attention_mask.append(
+            interpolated_attention_mask.append(  # type: ignore
                 np.broadcast_to(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
                 )
@@ -286,7 +286,7 @@ def torch_explain_integrated_gradients_numerical(
             dtype=torch.float32,
         )
     interpolated_embeddings = torch.reshape(
-        interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]
+        interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
     )
 
     if interpolated_attention_mask is not None:
@@ -294,7 +294,7 @@ def torch_explain_integrated_gradients_numerical(
             interpolated_attention_mask, device=device
         )
         interpolated_attention_mask = torch.reshape(
-            interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[2:]]
+            interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[2:]]  # type: ignore
         )
 
     logits = model(interpolated_embeddings, interpolated_attention_mask)
@@ -320,7 +320,7 @@ def torch_explain_noise_grad_plus_plus_numerical(
 ) -> np.ndarray:
     from noisegrad import NoiseGradPlusPlus
 
-    device = model.device  # noqa
+    device = model.device  # type: ignore
     attention_mask = map_optional(
         attention_mask, functools.partial(torch.tensor, device=device)
     )
@@ -329,21 +329,21 @@ def torch_explain_noise_grad_plus_plus_numerical(
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
 
-    original_base_model = model.model  # noqa
+    original_base_model = model.model  # type: ignore
 
     def explanation_fn(
         base_model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
-        model.model = base_model
+        model.model = base_model  # type: ignore
         # fmt: off
-        np_scores = explain_fn(model, inputs, targets, attention_mask=attention_mask)  # noqa
+        np_scores = explain_fn(model, inputs, targets, attention_mask=attention_mask)  # type: ignore
         # fmt: on
         return torch.tensor(np_scores, device=device)
 
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
         ng_pp.enhance_explanation(
-            model.model,  # noqa
+            model.model,  # type: ignore
             input_embeddings,
             y_batch,
             explanation_fn=explanation_fn,
@@ -353,7 +353,7 @@ def torch_explain_noise_grad_plus_plus_numerical(
         .numpy()
     )
 
-    model.model = original_base_model
+    model.model = original_base_model  # type: ignore
     return scores
 
 
@@ -399,7 +399,7 @@ def torch_explain_noise_grad_plus_plus(
             raise ValueError(
                 "Can't use NoiseGrad++ as baseline function for NoiseGrad++."
             )
-        explain_fn = _numerical_method_mapping[explain_fn]
+        explain_fn = _numerical_method_mapping[explain_fn]  # type: ignore
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
@@ -420,7 +420,7 @@ _method_mapping: Dict[str, ExplainFn] = {
     "NoiseGrad++": torch_explain_noise_grad_plus_plus,
 }
 
-_numerical_method_mapping: Dict[str, NumericalExplainFn] = {
+_numerical_method_mapping = {
     "GradNorm": torch_explain_gradient_norm_numerical,
     "GradXInput": torch_explain_gradient_x_input_numerical,
     "IntGrad": torch_explain_integrated_gradients_numerical,
@@ -449,5 +449,5 @@ def torch_explain(
         raise ValueError(
             f"Unsupported explanation method: {method}, supported are: {list(_numerical_method_mapping.keys())}"
         )
-    explain_fn = _numerical_method_mapping[method]
+    explain_fn = _numerical_method_mapping[method]  # type: ignore
     return explain_fn(model, x_batch, y_batch, *args, **kwargs)

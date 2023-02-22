@@ -241,14 +241,14 @@ def tf_explain_integrated_gradients_numerical(
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: tf.zeros_like(x))
 
     interpolated_embeddings = []
-    interpolated_attention_mask = None if attention_mask is None else []
+    interpolated_attention_mask = None if attention_mask is None else []  # type: ignore
 
     for i, embeddings_i in enumerate(embeddings):
         interpolated_embeddings.append(
             get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
         )
         if attention_mask is not None:
-            interpolated_attention_mask.append(
+            interpolated_attention_mask.append( # type: ignore
                 tf.broadcast_to(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
                 )
@@ -260,7 +260,7 @@ def tf_explain_integrated_gradients_numerical(
     if interpolated_attention_mask is not None:
         interpolated_attention_mask = tf.cast(interpolated_attention_mask, tf.float32)
         interpolated_attention_mask = tf.reshape(
-            interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[1:]]
+            interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[1:]]  # type: ignore
         )
 
     with tf.GradientTape() as tape:
@@ -468,5 +468,5 @@ def tf_explain(
         raise ValueError(
             f"Unsupported explanation method: {method}, supported are: {list(_numerical_method_mapping.keys())}"
         )
-    explain_fn = _numerical_method_mapping[method]
+    explain_fn = _numerical_method_mapping[method]  # type: ignore
     return explain_fn(model, x_batch, y_batch, *args, **kwargs)

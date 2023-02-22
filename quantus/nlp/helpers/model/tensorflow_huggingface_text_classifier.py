@@ -78,7 +78,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         self.model.set_weights(weights)
 
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, flatten_layers: bool = False
+        self, order: str = "top_down", seed: int = 42, flatten_layers: bool = False, **kwargs
     ) -> Generator:
         original_weights = self.model.get_weights()
         random_layer_model = TFAutoModelForSequenceClassification.from_pretrained(

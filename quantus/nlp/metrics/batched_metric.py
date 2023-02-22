@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 import numpy as np
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Dict, Any, Callable, no_type_check
 from quantus.metrics.base_batched import BatchedMetric as Base
 from functools import partial
 
@@ -45,6 +45,7 @@ class BatchedMetric(Base):
             display_progressbar=display_progressbar,
         )
 
+    @no_type_check
     def __call__(
         self,
         model: TextClassifier,
@@ -89,6 +90,7 @@ class BatchedMetric(Base):
 
         return np.asarray(self.last_results)
 
+    @no_type_check
     def general_preprocess(
         self,
         *,
@@ -162,7 +164,7 @@ class BatchedMetric(Base):
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
-        batch_size: Optional[int],
+        batch_size: int,
     ) -> List[Explanation] | np.ndarray:
         explain_fn = partial(self.explain_func, **self.explain_func_kwargs)
         if len(x_batch) <= batch_size:
@@ -181,13 +183,12 @@ class BatchedMetric(Base):
             return a_batches
 
     @abstractmethod
-    def evaluate_batch(
+    def evaluate_batch(  # type: ignore
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
-        *args,
         **kwargs,
     ) -> np.ndarray | float:
         """Must be implemented by respective metric class."""

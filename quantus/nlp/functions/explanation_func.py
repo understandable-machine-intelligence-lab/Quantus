@@ -24,8 +24,8 @@ def explain_lime(
     y_batch: np.ndarray,
     *,
     batch_size: int = 64,
-    init_kwargs: Dict = None,
-    call_kwargs: Dict = None,
+    init_kwargs: Optional[Dict] = None,
+    call_kwargs: Optional[Dict] = None,
 ) -> List[Explanation]:
     """
     Generate explanations using LIME method. This method depends on lime pip package.
@@ -82,8 +82,8 @@ def explain_shap(
     if safe_isinstance(model, [TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass]):
         predict_fn = pipeline(
             "text-classification",
-            model=model.model,  # noqa
-            tokenizer=model.tokenizer.tokenizer,  # noqa
+            model=model.model,  # type: ignore
+            tokenizer=model.tokenizer.tokenizer,  # type: ignore
             top_k=None,
             device=getattr(model, "device", None),
         )

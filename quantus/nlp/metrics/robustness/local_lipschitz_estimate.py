@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import Optional, Dict, Callable, List
+from typing import Optional, Dict, Callable, List, no_type_check
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 
 from quantus.nlp.functions.perturb_func import spelling_replacement
@@ -73,6 +73,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
         )
         self.nr_samples = nr_samples
 
+    @no_type_check
     def evaluate_batch(
         self,
         model: TextClassifier,

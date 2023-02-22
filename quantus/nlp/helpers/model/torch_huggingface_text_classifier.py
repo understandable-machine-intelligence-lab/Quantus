@@ -83,7 +83,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
                 )
         return self.model(None, attention_mask, inputs_embeds=inputs_embeds).logits
 
-    def predict(self, text: List[str], batch_size: int = 64) -> np.ndarray:
+    def predict(self, text: List[str], batch_size: int = 64, **kwargs) -> np.ndarray:
         if len(text) <= batch_size:
             return self._predict_on_batch(text)
 
@@ -114,7 +114,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
 
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42, **kwargs
-    ) -> Generator[nn.Module, TorchHuggingFaceTextClassifier]:
+    ) -> Generator[Tuple[nn.Module, TorchHuggingFaceTextClassifier], None, None]:
         original_parameters = self.model.state_dict()
         random_layer_model = deepcopy(self.model)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import List, Optional, Dict, Callable
+from typing import List, Optional, Dict, Callable, no_type_check
 import numpy as np
 
 from quantus.functions.similarity_func import ssim
@@ -55,6 +55,7 @@ class RandomLogit(BatchedMetric):
         self.similarity_func = similarity_func
         self.seed = seed
 
+    @no_type_check
     def evaluate_batch(
         self,
         model: TextClassifier,

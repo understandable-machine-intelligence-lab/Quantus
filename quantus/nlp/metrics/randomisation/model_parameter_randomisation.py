@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from tqdm.auto import tqdm
-from typing import List, Optional, Dict, Callable
+from typing import List, Optional, Dict, Callable, no_type_check
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
@@ -60,6 +60,7 @@ class ModelParameterRandomisation(BatchedMetric):
         self.return_sample_correlation = return_sample_correlation
         self.similarity_func = similarity_func
 
+    @no_type_check
     def __call__(
         self,
         model: TextClassifier,
@@ -133,8 +134,9 @@ class ModelParameterRandomisation(BatchedMetric):
 
         self.all_results.append(self.last_results)
 
-        return self.last_results
+        return self.last_results  # type: ignore
 
+    @no_type_check
     def evaluate_batch(
         self,
         a_batch: List[Explanation],

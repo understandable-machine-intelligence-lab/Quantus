@@ -3,7 +3,7 @@ from __future__ import annotations
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
 from abc import abstractmethod
 import numpy as np
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, no_type_check
 
 
 from quantus.functions.similarity_func import difference
@@ -41,6 +41,7 @@ class SensitivityMetric(RobustnessMetric):
         self.norm_denominator = norm_denominator
         self.similarity_func = similarity_func
 
+    @no_type_check
     def evaluate_batch(
         self,
         model: TextClassifier,

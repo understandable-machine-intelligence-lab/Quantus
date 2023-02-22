@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Callable, Dict
+from typing import List, Optional, Callable, Dict, no_type_check
 
 import numpy as np
 
@@ -45,6 +45,7 @@ class TokenFlipping(BatchedMetric):
         self.return_auc_per_sample = return_auc_per_sample
         self.mask_token = mask_token
 
+    @no_type_check
     def evaluate_batch(
         self,
         model: TextClassifier,
@@ -65,8 +66,8 @@ class TokenFlipping(BatchedMetric):
         for i, mask_indices in enumerate(mask_indices_batch):
             a_batch_tokens = [i[0] for i in a_batch]
             x_masked_batch = []
-            for a, i in zip(a_batch_tokens, mask_indices):
-                x_masked = a.copy()
+            for a, i in zip(a_batch_tokens, mask_indices):  # type: ignore
+                x_masked = a.copy()  # type: ignore
                 x_masked[i] = self.mask_token
                 x_masked_batch.append(x_masked)
 

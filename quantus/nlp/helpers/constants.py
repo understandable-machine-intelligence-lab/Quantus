@@ -104,7 +104,7 @@ def available_metrics() -> Dict[str, List[str]]:
     Dict[str, str]
         With the available metrics, under each category in Quantus.
     """
-    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}
+    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}  # type: ignore
 
 
 def available_xai_methods() -> List[str]:

@@ -88,7 +88,7 @@ def visualise_explanations_as_html(
     *,
     labels: Optional[List[str]] = None,
     ignore_special_tokens: bool = False,
-    special_tokens: List[str] = None,
+    special_tokens: Optional[List[str]] = None,
 ) -> str:
     """
     Creates a heatmap visualisation from list of explanations.

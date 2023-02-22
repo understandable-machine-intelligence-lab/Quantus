@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import Optional, List, no_type_check
 import numpy as np
 
 
@@ -25,6 +25,7 @@ class RelativeStability(RobustnessMetric):
         self.eps_min = eps_min
         self.nr_samples = nr_samples
 
+    @no_type_check
     def evaluate_batch(
         self,
         model: TextClassifier,

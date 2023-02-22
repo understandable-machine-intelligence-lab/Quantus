@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 import numpy as np
 from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
-from functools import singledispatch, update_wrapper
 
 if TYPE_CHECKING:
     import torch
@@ -105,7 +104,7 @@ def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
     batches = np.asarray(batches).reshape((-1, batch_size)).tolist()
 
     batches.append(flat_list[len(flat_list) // batch_size * batch_size :])
-    return batches
+    return batches  # type: ignore
 
 
 def abs_attributions(a_batch: List[Explanation]) -> List[Explanation]:
@@ -160,9 +159,12 @@ def apply_noise(arr: T, noise: T, noise_type: NoiseType) -> T:
             "Only instances of NoiseType enum are supported for noise_type kwarg."
         )
     if noise_type == NoiseType.additive:
-        return arr + noise
+        return arr + noise  # type: ignore
     if noise_type == NoiseType.multiplicative:
-        return arr * noise
+        return arr * noise  # type: ignore
+
+    # Just to make mypy shut up.
+    raise ValueError("This is not expected.")
 
 
 def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:
@@ -187,7 +189,7 @@ def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:
     if isinstance(class_path_str, str):
         class_path_strs = [class_path_str]
     elif isinstance(class_path_str, list) or isinstance(class_path_str, tuple):
-        class_path_strs = class_path_str
+        class_path_strs = class_path_str  # type: ignore
     else:
         class_path_strs = [""]
 
@@ -241,7 +243,7 @@ def explanation_similarity(
 def safe_asarray(arr: T) -> np.ndarray:
     """Convert Tensorflow or Torch tensors to numpy arrays."""
     if safe_isinstance(arr, "torch.Tensor"):
-        return arr.detach().cpu().numpy()
+        return arr.detach().cpu().numpy()  # type: ignore
     return np.asarray(arr)
 
 
@@ -255,17 +257,6 @@ def get_embeddings(x_batch: List[str], model: TextClassifier) -> np.ndarray:
     encoded_input = model.tokenizer.tokenize(x_batch)
     input_ids, mask = unpack_token_ids_and_attention_mask(encoded_input)
     return safe_asarray(model.embedding_lookup(input_ids))
-
-
-def methdispatch(func: Callable):
-    dispatcher = singledispatch(func)
-
-    def wrapper(*args, **kwargs):
-        return dispatcher.dispatch(args[1].__class__)(*args, **kwargs)
-
-    wrapper.register = dispatcher.register
-    update_wrapper(wrapper, func)
-    return wrapper
 
 
 def explanations_similarity(
