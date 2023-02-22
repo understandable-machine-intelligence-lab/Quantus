@@ -9,6 +9,7 @@ def unknown_token_baseline_function(_) -> np.ndarray:
 
 
 @pytest.mark.nlp
+@pytest.mark.explain_func
 @pytest.mark.parametrize(
     "kwargs",
     [
@@ -38,6 +39,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.explain_func
 @pytest.mark.parametrize(
     "kwargs",
     [

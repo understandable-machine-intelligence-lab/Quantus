@@ -5,6 +5,7 @@ from quantus.nlp import ModelParameterRandomisation
 
 
 @pytest.mark.nlp
+@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -33,6 +34,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [

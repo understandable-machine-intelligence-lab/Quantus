@@ -24,12 +24,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install \
-            -r requirements.txt \
-            -r requirements_test.txt \
-            -r requirements_nlp.txt \
-            mypy==0.982 black --upgrade typing-extensions \
-            'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git'
+        pip install -r requirements.txt -r requirements_test.txt -r requirements_nlp.txt
+        pip install mypy==0.982 black --upgrade typing-extensions 
+        pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
     - name: Lint
       run: |
         # stop the build if there are Python syntax errors or undefined names

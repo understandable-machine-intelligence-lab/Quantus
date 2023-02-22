@@ -4,6 +4,7 @@ from quantus.nlp import normalize_sum_to_1
 
 
 @pytest.mark.nlp
+@pytest.mark.normalise_func
 @pytest.mark.parametrize(
     "size",
     [
@@ -18,6 +19,7 @@ def test_normalise_func(size):
 
 
 @pytest.mark.nlp
+@pytest.mark.normalise_func
 def test_invalid_input_shape():
     x_batch = np.random.default_rng(0).normal(size=(8, 32, 32))
     with pytest.raises(ValueError):

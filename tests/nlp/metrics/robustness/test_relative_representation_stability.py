@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
-from typing import List
 from quantus.nlp import RelativeRepresentationStability, PerturbationType, uniform_noise
 
 
 @pytest.mark.nlp
+@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -37,6 +37,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [

@@ -1,3 +1,4 @@
+import pytest
 import quantus.nlp as qn
 
 METRICS = {
@@ -23,6 +24,8 @@ CALL_KWARGS = {
 }
 
 
+@pytest.mark.nlp
+@pytest.mark.evaluate_func
 def test_tf_model(tf_sst2_model, sst2_dataset, capsys):
     # Just check that it doesn't fail with expected inputs.
     qn.evaluate(

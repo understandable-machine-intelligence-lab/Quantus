@@ -5,6 +5,7 @@ from quantus.nlp.helpers.utils import batch_list, pad_ragged_vector
 
 
 @pytest.mark.nlp
+@pytest.mark.utils
 def test_batch_list(sst2_dataset_huge_batch):
     flat_list = sst2_dataset_huge_batch[:1000]
     batched_list = batch_list(flat_list, batch_size=32)
@@ -16,6 +17,7 @@ def test_batch_list(sst2_dataset_huge_batch):
 
 
 @pytest.mark.nlp
+@pytest.mark.utils
 def test_list_is_divisible(sst2_dataset_huge_batch):
     flat_list = sst2_dataset_huge_batch
     batched_list = batch_list(flat_list, batch_size=32)
@@ -26,6 +28,7 @@ def test_list_is_divisible(sst2_dataset_huge_batch):
 
 
 @pytest.mark.nlp
+@pytest.mark.utils
 @pytest.mark.parametrize(
     "a_shape, b_shape",
     [
