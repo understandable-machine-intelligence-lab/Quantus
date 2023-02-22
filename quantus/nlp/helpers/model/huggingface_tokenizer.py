@@ -24,7 +24,7 @@ class HuggingFaceTokenizer(Tokenizer):
         self, tokens: List[List[str]], ignore_special_tokens: Optional[List[str]] = None
     ) -> List[str]:
         ignore_special_tokens = value_or_default(ignore_special_tokens, lambda: [])
-        vocab = defaultdict(lambda: self.tokenizer.unk_token_id) # type: ignore
+        vocab = defaultdict(lambda: self.tokenizer.unk_token_id)  # type: ignore
         vocab.update(self.tokenizer.get_vocab())
         special_tokens = list(self.tokenizer.special_tokens_map.values())
         ids_batch = []

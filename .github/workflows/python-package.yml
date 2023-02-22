@@ -9,8 +9,8 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -39,7 +39,7 @@ jobs:
         black quantus
     - name: Test with pytest
       run: |
-        pytest
+        pytest -n auto
     - name: Test importing Quantus
       run: |
         pip install .

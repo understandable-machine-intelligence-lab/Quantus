@@ -1,8 +1,9 @@
 name: codecov
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Fetch
         uses: actions/checkout@master
@@ -13,7 +14,7 @@ jobs:
 
       - name: Test
         run: |
-          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -n auto
       - name: Upload
         uses:  codecov/codecov-action@v3
         with:

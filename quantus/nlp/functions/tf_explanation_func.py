@@ -248,7 +248,7 @@ def tf_explain_integrated_gradients_numerical(
             get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
         )
         if attention_mask is not None:
-            interpolated_attention_mask.append( # type: ignore
+            interpolated_attention_mask.append(  # type: ignore
                 tf.broadcast_to(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
                 )

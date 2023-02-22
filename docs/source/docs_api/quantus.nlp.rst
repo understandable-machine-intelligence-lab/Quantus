@@ -15,3 +15,11 @@ Subpackages
    quantus.nlp.functions
    quantus.nlp.helpers
    quantus.nlp.metrics
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   quantus.nlp.evaluation
