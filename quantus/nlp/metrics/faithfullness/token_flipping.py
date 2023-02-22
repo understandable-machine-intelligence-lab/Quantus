@@ -14,7 +14,8 @@ from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 class TokenFlipping(BatchedMetric):
     """
     References:
-        - https://arxiv.org/abs/2202.07304, https://github.com/AmeenAli/XAI_Transformers/blob/main/SST/run_sst.py#L127
+        - https://arxiv.org/abs/2202.07304
+        - https://github.com/AmeenAli/XAI_Transformers/blob/main/SST/run_sst.py#L127
     """
 
     def __init__(

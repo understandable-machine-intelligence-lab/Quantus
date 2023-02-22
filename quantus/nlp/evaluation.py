@@ -27,11 +27,8 @@ def evaluate(
             Indicates whether tqdm progress bar should be displayed.
         call_kwargs:
             Dict where keys are metric name, and values are
-                1) Dict of kwargs passed to each metric's __call__ method.
-                    In this case each metric is evaluated once.
-                2) List of `qn.MetricCallKwarg`.
-                    In this case each metric is evaluated with each variant of call_kwargs.
-                    `qn.MetricCallKwarg.name` is used to identify call_kwargs variant, must be unique for each metric.
+                -  Dict of kwargs passed to each metric's __call__ method. In this case each metric is evaluated once.
+                - List of `qn.MetricCallKwarg`. In this case each metric is evaluated with each variant of call_kwargs. `qn.MetricCallKwarg.name` is used to identify call_kwargs variant, must be unique for each metric.
             Internally, `defaultdict` is used, so there is no need to provide kwargs for metrics, which should be evaluated with default ones.
 
     Returns:

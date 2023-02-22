@@ -56,7 +56,7 @@ class BatchedMetric(Base):
         explain_func_kwargs: Optional[Dict] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[np.ndarray | float]:
+    ) -> np.ndarray | float:
         check_kwargs(kwargs)
         data = self.general_preprocess(
             model=model,
@@ -87,7 +87,7 @@ class BatchedMetric(Base):
         # Append content of last results to all results.
         self.all_results.append(self.last_results)
 
-        return self.last_results
+        return np.asarray(self.last_results)
 
     def general_preprocess(
         self,

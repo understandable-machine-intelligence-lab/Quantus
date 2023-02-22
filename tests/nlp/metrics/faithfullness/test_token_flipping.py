@@ -11,12 +11,24 @@ from quantus.nlp import TokenFlipping
             {"normalise": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
+        (
+            {"abs": True, "return_auc_per_sample": True},
+            {"explain_func_kwargs": {"method": "GradNorm"}},
+        ),
     ],
 )
 def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     metric = TokenFlipping(**init_kwargs)
     result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
-    assert not (np.asarray(result) == np.NINF).all()
+    assert isinstance(result, np.ndarray)
+    assert isinstance(result, np.ndarray)
+    # fmt: off
+    assert not (result == np.NINF ).any()  # noqa
+    assert not (result == np.PINF ).any()  # noqa
+    assert not (result == np.NAN  ).any()  # noqa
+    assert not (result == np.NZERO).any()
+    assert not (result == np.PZERO).any()
+    # fmt: on
 
 
 @pytest.mark.nlp
@@ -28,7 +40,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
         (
-            {"normalise": True, "return_auc_per_sample": True},
+            {"abs": True, "return_auc_per_sample": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
@@ -36,4 +48,11 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
     metric = TokenFlipping(**init_kwargs)
     result = metric(emotion_model, emotion_dataset, **call_kwargs)
-    assert not (np.asarray(result) == np.NINF).all()
+    assert isinstance(result, np.ndarray)
+    # fmt: off
+    assert not (result == np.NINF ).any()  # noqa
+    assert not (result == np.PINF ).any()  # noqa
+    assert not (result == np.NAN  ).any()  # noqa
+    assert not (result == np.NZERO).any()
+    assert not (result == np.PZERO).any()
+    # fmt: on

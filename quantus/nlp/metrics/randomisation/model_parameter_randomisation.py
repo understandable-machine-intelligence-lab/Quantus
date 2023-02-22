@@ -71,7 +71,7 @@ class ModelParameterRandomisation(BatchedMetric):
         explain_func_kwargs: Optional[Dict] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> List[np.ndarray | float]:
+    ) -> Dict[str, np.ndarray]:
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -90,10 +90,18 @@ class ModelParameterRandomisation(BatchedMetric):
         self.last_results = {}
 
         # Get number of iterations from number of layers.
-        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
+        n_layers = len(
+            list(
+                model.get_random_layer_generator(
+                    order=self.layer_order, seed=self.seed, **kwargs
+                )
+            )
+        )
 
         model_iterator = tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
+            model.get_random_layer_generator(
+                order=self.layer_order, seed=self.seed, **kwargs
+            ),
             total=n_layers,
             disable=not self.display_progressbar,
         )

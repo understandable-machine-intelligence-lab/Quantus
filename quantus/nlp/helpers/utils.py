@@ -277,8 +277,10 @@ def explanations_similarity(
 ) -> T:
     """Compute similarity between batches of explanations using provided similarity_fn."""
     return np.asarray(
-        explanation_similarity(a, b, similarity_fn, padded, numerical_only)
-        for a, b in zip(a_batch, b_batch)
+        [
+            explanation_similarity(a, b, similarity_fn, padded, numerical_only)
+            for a, b in zip(a_batch, b_batch)
+        ]
     )
 
 

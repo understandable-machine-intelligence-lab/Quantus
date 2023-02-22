@@ -113,7 +113,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         self.model.load_state_dict(weights)
 
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
+        self, order: str = "top_down", seed: int = 42, **kwargs
     ) -> Generator[nn.Module, TorchHuggingFaceTextClassifier]:
         original_parameters = self.model.state_dict()
         random_layer_model = deepcopy(self.model)

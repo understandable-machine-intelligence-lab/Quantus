@@ -64,6 +64,6 @@ class TextClassifier(ABC):
 
     @abstractmethod
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
+        self, order: str = "top_down", seed: int = 42, **kwargs
     ) -> Generator[Any, TextClassifier]:
         raise NotImplementedError
