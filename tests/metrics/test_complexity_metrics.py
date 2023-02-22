@@ -2,10 +2,18 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+import numpy as np
+
 
 from quantus.functions.explanation_func import explain
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.complexity import Complexity, EffectiveComplexity, Sparseness
+
+
+def explain_func_stub(*args, **kwargs):
+    # tf-explain does not support 2D inputs
+    input_shape = kwargs.get("inputs").shape
+    return np.random.uniform(low=0, high=0.5, size=input_shape)
 
 
 @pytest.mark.complexity
@@ -140,6 +148,40 @@ from quantus.metrics.complexity import Complexity, EffectiveComplexity, Sparsene
             },
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_sparseness(
@@ -155,7 +197,7 @@ def test_sparseness(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+        a_batch=data.get("a_batch"),
         **call_params
     )
     if isinstance(expected, float):
@@ -298,6 +340,40 @@ def test_sparseness(
             },
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_complexity(
@@ -313,7 +389,7 @@ def test_complexity(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+        a_batch=data.get("a_batch"),
         **call_params
     )
     assert scores is not None, "Test failed."
@@ -451,6 +527,40 @@ def test_complexity(
             },
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            lazy_fixture("titanic_model_torch"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "IntegratedGradients",
+                        "reduce_axes": (),
+                    },
+                },
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_effective_complexity(
@@ -466,7 +576,7 @@ def test_effective_complexity(
         model=model,
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
-        a_batch=data["a_batch"],
+        a_batch=data.get("a_batch"),
         **call_params
     )
     assert scores is not None, "Test failed."
