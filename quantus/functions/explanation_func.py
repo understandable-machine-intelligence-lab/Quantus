@@ -274,6 +274,8 @@ def generate_tf_explanation(
             )
             / 255
         )
+        # The TF explain library does not average over channels for OcclusionSensitivity explanation.
+        explanation = explanation.mean(axis=-1)
 
     elif method == "GradCAM":
         if "gc_layer" in kwargs:
@@ -295,6 +297,8 @@ def generate_tf_explanation(
             )
             / 255
         )
+        # The TF explain library does not average over channels for GradCAM explanation.
+        explanation = explanation.mean(axis=-1)
 
     elif method == "SmoothGrad":
 

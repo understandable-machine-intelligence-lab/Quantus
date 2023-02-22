@@ -829,6 +829,9 @@ def test_generate_tf_explanation(
     a_batch = generate_tf_explanation(
         model=model, inputs=x_batch, targets=y_batch, **params
     )
+    print("SHAPE", a_batch.shape)
+    explanation = a_batch.mean(axis=-1)
+    print("SHAPE 2", explanation.shape)
 
     if isinstance(expected, float):
         assert all(s == expected for s in a_batch), "Test failed."
