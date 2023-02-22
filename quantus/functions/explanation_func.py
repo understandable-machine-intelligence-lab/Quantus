@@ -327,6 +327,10 @@ def generate_tf_explanation(
             f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
         )
 
+    # The TF explain library does not average over channels for GradCAM or OcclusionSensitivity explanation.
+    if inputs.ndim == explanation.ndim:
+        explanation = explanation.mean(axis=-1)
+
     if (
         not kwargs.get("normalise", True)
         or not kwargs.get("abs", True)
