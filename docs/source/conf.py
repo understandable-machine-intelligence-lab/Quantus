@@ -21,7 +21,6 @@ author = "Anna Hedström"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ["myst_parser", "sphinx.ext.autodoc", "numpydoc"]
-
 source_suffix = [".rst", ".md"]
 
 templates_path = ["_templates"]
@@ -33,8 +32,6 @@ language = "en"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = {
-    "logo_only": True,
-}
+html_theme_options = {"logo_only": True,}
 html_logo = "assets/quantus_logo 2.png"
 html_static_path = ["", "_static"]

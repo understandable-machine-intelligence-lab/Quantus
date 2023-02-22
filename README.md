@@ -22,18 +22,17 @@ _Quantus is currently under active development so carefully note the Quantus rel
         
 ## News and Highlights! :rocket:
 
-- Accepted to Journal of Machine Learning Research (MLOSS)! Read more [here](https://jmlr.org/papers/v24/22-0142.html).
-- Please see our [latest release](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) which minor version includes some [heavy API changes](https://github.com/understandable-machine-intelligence-lab/Quantus/releases/tag/v0.2.0)!
-- Offers more than **30+ metrics in 6 categories** for XAI evaluation 
-- Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch and TensorFlow)
+- Accepted to Journal of Machine Learning Research (MLOSS) ([paper](https://jmlr.org/papers/v24/22-0142.html))!
+- Offers more than **30+ metrics in 6 categories** for XAI evaluation
+- Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/) and [tf-explain](https://tf-explain.readthedocs.io/en/latest/))
+- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
 - Latest metrics additions:
-    - <b>Consistency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
-    - <b>Sufficiency </b><a href="https://arxiv.org/abs/2202.00734">(Dasgupta et al., 2022)</a>
     - <b>Relative Input Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
     - <b>Relative Output Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
     - <b>Relative Representation Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Chirag Agarwal, et. al., 2022)</a>
-- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
+
+See [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) for the latest release(s).
 
 ## Citation
 
@@ -52,11 +51,9 @@ interesting or useful in your research, use the following Bibtex annotation to c
   pages   = {1--11},
   url     = {http://jmlr.org/papers/v24/22-0142.html}
 }
-
-
 ```
 
-When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked above).
+When applying the individual metrics of Quantus, please make sure to also properly cite the work of the original authors (as linked below).
 
 ## Table of contents
 
