@@ -29,7 +29,7 @@ jobs:
             -r requirements_test.txt \
             -r requirements_nlp.txt \
             mypy==0.982 black --upgrade typing-extensions \
-            'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
+            'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git'
     - name: Lint
       run: |
         # stop the build if there are Python syntax errors or undefined names
