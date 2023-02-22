@@ -274,8 +274,6 @@ def generate_tf_explanation(
             )
             / 255
         )
-        # The TF explain library does not average over channels for OcclusionSensitivity explanation.
-        explanation = explanation.mean(axis=-1)
 
     elif method == "GradCAM":
         if "gc_layer" in kwargs:
@@ -297,8 +295,6 @@ def generate_tf_explanation(
             )
             / 255
         )
-        # The TF explain library does not average over channels for GradCAM explanation.
-        explanation = explanation.mean(axis=-1)
 
     elif method == "SmoothGrad":
 
@@ -330,6 +326,10 @@ def generate_tf_explanation(
         raise KeyError(
             f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
         )
+
+    # The TF explain library does not average over channels for GradCAM or OcclusionSensitivity explanation.
+    if inputs.ndim == explanation.ndim:
+        explanation = explanation.mean(axis=-1)
 
     if (
         not kwargs.get("normalise", True)
