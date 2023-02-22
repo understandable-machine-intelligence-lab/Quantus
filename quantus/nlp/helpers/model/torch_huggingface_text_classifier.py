@@ -21,7 +21,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TensorLike
+    from quantus.nlp.helpers.types import TensorLike # pragma: not covered
 
 
 class TorchHuggingFaceTextClassifier(TextClassifier):

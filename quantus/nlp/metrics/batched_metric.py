@@ -192,7 +192,7 @@ class BatchedMetric(Base):
         **kwargs,
     ) -> np.ndarray | float:
         """Must be implemented by respective metric class."""
-        raise NotImplementedError
+        raise NotImplementedError # pragma: not covered
 
     def evaluate_instance(self, *args, **kwargs) -> Any:
-        raise ValueError("This is unexpected")
+        raise ValueError("This is unexpected")  # pragma: not covered

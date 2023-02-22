@@ -18,9 +18,9 @@ from quantus.nlp.helpers.utils import (
 )
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TensorLike
+    from quantus.nlp.helpers.types import TensorLike  # pragma: not covered
 
-    BaselineFn = Callable[[TensorLike], TensorLike]
+    BaselineFn = Callable[[TensorLike], TensorLike]  # pragma: not covered
 
 
 def torch_explain_gradient_norm(

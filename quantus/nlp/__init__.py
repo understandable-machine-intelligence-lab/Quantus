@@ -63,7 +63,7 @@ from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TF_TensorLike, TensorLike
+    from quantus.nlp.helpers.types import TF_TensorLike, TensorLike # pragma: not covered
 
 from quantus.nlp.helpers.types import (
     Explanation,

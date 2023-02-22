@@ -20,7 +20,7 @@ class TextClassifier(ABC):
         This method must return tensors of corresponding DNN framework.
         This method must be able to record gradients, as it potentially will be used by gradient based XAI methods.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
@@ -28,31 +28,31 @@ class TextClassifier(ABC):
         Execute forward pass with plain text inputs, return logits as np.ndarray.
         This method must be able to handle huge batches, as it potentially could be called with entire dataset.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def embedding_lookup(self, input_ids, **kwargs):
         """Convert vocabulary ids to model's latent representations"""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @property
     @abstractmethod
     def weights(self):
         """Get model's (learnable) parameters."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @weights.setter
     @abstractmethod
     def weights(self, weights):
         """Set model's (learnable) parameters."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def get_hidden_representations(
         self,
         x_batch: List[str],
     ) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def get_hidden_representations_embeddings(
@@ -60,10 +60,10 @@ class TextClassifier(ABC):
         x_batch: np.ndarray,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42, **kwargs
     ) -> Generator[Tuple[Any, TextClassifier], None, None]:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: not covered

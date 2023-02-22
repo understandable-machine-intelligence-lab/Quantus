@@ -175,4 +175,4 @@ class SensitivityMetric(RobustnessMetric):
 
     @abstractmethod
     def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError # pragma: not covered

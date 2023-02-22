@@ -144,7 +144,7 @@ class RelativeStability(RobustnessMetric):
         model: TextClassifier,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError # pragma: not covered
 
     @abstractmethod
     def compute_objective_plain_text(
@@ -155,4 +155,4 @@ class RelativeStability(RobustnessMetric):
         a_batch_perturbed: List[Explanation],
         model: TextClassifier,
     ) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError # pragma: not covered

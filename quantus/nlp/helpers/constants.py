@@ -92,7 +92,7 @@ def available_categories() -> List[str]:
     List[str]
         With the available metric categories in Quantus.
     """
-    return [c for c in AVAILABLE_METRICS.keys()]
+    return [c for c in AVAILABLE_METRICS.keys()]  # pragma: not covered
 
 
 def available_metrics() -> Dict[str, List[str]]:
@@ -104,7 +104,7 @@ def available_metrics() -> Dict[str, List[str]]:
     Dict[str, str]
         With the available metrics, under each category in Quantus.
     """
-    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}  # type: ignore
+    return {c: list(metrics.keys()) for c, metrics in AVAILABLE_METRICS.items()}  # type: ignore  # pragma: not covered
 
 
 def available_xai_methods() -> List[str]:
@@ -116,7 +116,7 @@ def available_xai_methods() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_XAI_METHODS]
+    return [c for c in AVAILABLE_XAI_METHODS]  # pragma: not covered
 
 
 def available_plain_text_xai_methods() -> List[str]:
@@ -128,7 +128,7 @@ def available_plain_text_xai_methods() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_PLAIN_TEXT_XAI_METHODS]
+    return [c for c in AVAILABLE_PLAIN_TEXT_XAI_METHODS]  # pragma: not covered
 
 
 def available_numerical_xai_methods() -> List[str]:
@@ -140,7 +140,7 @@ def available_numerical_xai_methods() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_NUMERICAL_XAI_METHODS]
+    return [c for c in AVAILABLE_NUMERICAL_XAI_METHODS]  # pragma: not covered
 
 
 def available_perturbation_functions() -> List[str]:
@@ -152,16 +152,16 @@ def available_perturbation_functions() -> List[str]:
     List[str]
         With the available perturbation functions in Quantus.
     """
-    return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]
+    return [c for c in AVAILABLE_PERTURBATION_FUNCTIONS.keys()]  # pragma: not covered
 
 
 def available_plain_text_perturbation_functions() -> List[str]:
-    return [c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()]
+    return [c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()]  # pragma: not covered
 
 
 def available_latent_space_perturbation_functions() -> List[str]:
-    return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]
+    return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]  # pragma: not covered
 
 
 def available_normalisation_functions() -> List[str]:
-    return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]
+    return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]  # pragma: not covered

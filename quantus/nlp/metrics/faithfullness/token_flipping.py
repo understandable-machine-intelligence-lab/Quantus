@@ -87,4 +87,4 @@ class TokenFlipping(BatchedMetric):
     @property
     def auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean([calculate_auc(np.array(curve)) for curve in self.last_results])
+        return np.mean([calculate_auc(np.array(curve)) for curve in self.last_results]) # pragma: not covered

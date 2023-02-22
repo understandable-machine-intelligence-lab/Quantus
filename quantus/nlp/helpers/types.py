@@ -13,11 +13,11 @@ from enum import Enum, auto
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
 if TYPE_CHECKING:
-    import tensorflow
-    import torch
+    import tensorflow  # pragma: not covered
+    import torch  # pragma: not covered
 
-    TF_TensorLike = Union[tensorflow.Tensor, np.ndarray]
-    TensorLike = Union[torch.Tensor, np.ndarray]
+    TF_TensorLike = Union[tensorflow.Tensor, np.ndarray]  # pragma: not covered
+    TensorLike = Union[torch.Tensor, np.ndarray]  # pragma: not covered
 
 
 PlainTextPerturbFn = Callable[[List[str]], List[str]]

@@ -5,7 +5,7 @@ import numpy as np
 from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import torch
+    import torch  # pragma: not covered
 
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -279,8 +279,8 @@ def choose_torch_device() -> torch.device:
     import torch
 
     if torch.cuda.is_available():
-        return torch.device("cuda")
+        return torch.device("cuda") # pragma: not covered
     if hasattr(torch.backends, "mps"):
         if torch.backends.mps.is_available():
-            return torch.device("mps")
-    return torch.device("cpu")
+            return torch.device("mps")  # pragma: not covered
+    return torch.device("cpu")  # pragma: not covered

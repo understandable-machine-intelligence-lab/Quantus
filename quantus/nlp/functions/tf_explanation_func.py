@@ -21,9 +21,9 @@ from quantus.nlp.helpers.utils import (
 )
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import Explanation, TF_TensorLike
+    from quantus.nlp.helpers.types import Explanation, TF_TensorLike  # pragma: not covered
 
-    BaselineFn = Callable[[TF_TensorLike], TF_TensorLike]
+    BaselineFn = Callable[[TF_TensorLike], TF_TensorLike]  # pragma: not covered
 
 
 def tf_explain_gradient_norm(

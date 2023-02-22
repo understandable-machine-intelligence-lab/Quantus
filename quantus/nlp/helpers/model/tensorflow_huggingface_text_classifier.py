@@ -16,7 +16,7 @@ from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TF_TensorLike
+    from quantus.nlp.helpers.types import TF_TensorLike # pragma: not covered
 
 
 class TFHuggingFaceTextClassifier(TextClassifier):
