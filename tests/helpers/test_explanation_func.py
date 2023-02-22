@@ -755,7 +755,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "OcclusionSensitivity",},
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -795,7 +795,7 @@ def test_generate_captum_explanation(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "GradCAM",},
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -829,9 +829,6 @@ def test_generate_tf_explanation(
     a_batch = generate_tf_explanation(
         model=model, inputs=x_batch, targets=y_batch, **params
     )
-    print("SHAPE", a_batch.shape)
-    explanation = a_batch.mean(axis=-1)
-    print("SHAPE 2", explanation.shape)
 
     if isinstance(expected, float):
         assert all(s == expected for s in a_batch), "Test failed."
