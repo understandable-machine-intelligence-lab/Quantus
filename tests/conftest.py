@@ -3,8 +3,17 @@ import pickle
 import torch
 import numpy as np
 from keras.datasets import cifar10
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
-from quantus.helpers.model.models import LeNet, LeNetTF, ConvNet1D, ConvNet1DTF
+from quantus.helpers.model.models import (
+    LeNet,
+    LeNetTF,
+    ConvNet1D,
+    ConvNet1DTF,
+    TitanicSimpleTFModel,
+    TitanicSimpleTorchModel,
+)
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
@@ -159,3 +168,32 @@ def flat_sequence_array():
         "shape": (3, 28),
         "channel_first": True,
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+def titanic_model_torch():
+    model = TitanicSimpleTorchModel()
+    model.load_state_dict(torch.load("tests/assets/titanic_model_torch.pickle"))
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def titanic_model_tf(titanic_dataset):
+    model = TitanicSimpleTFModel()
+    model(titanic_dataset["x_batch"], training=False)
+    model.load_weights("tests/assets/titanic_model_tensorflow.keras")
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def titanic_dataset():
+    df = pd.read_csv("tutorials/assets/titanic3.csv")
+    df = df[["age", "embarked", "fare", "parch", "pclass", "sex", "sibsp", "survived"]]
+    df["age"] = df["age"].fillna(df["age"].mean())
+    df["fare"] = df["fare"].fillna(df["fare"].mean())
+
+    df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
+    X = df_enc.drop(["survived"], axis=1).values
+    Y = df_enc["survived"].values
+    _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
+    return {"x_batch": test_features, "y_batch": test_labels}
