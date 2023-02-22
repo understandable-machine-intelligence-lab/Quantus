@@ -558,7 +558,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {"method": "OcclusionSensitivity",},
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
