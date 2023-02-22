@@ -17,7 +17,6 @@ from quantus.nlp import RelativeOutputStability, PerturbationType, uniform_noise
             {
                 "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
-                "perturb_func_kwargs": {"low": -20.0, "high": 20.0},
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),

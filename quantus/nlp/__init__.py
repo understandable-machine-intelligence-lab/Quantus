@@ -74,7 +74,6 @@ from quantus.nlp.helpers.types import (
     SimilarityFn,
     PerturbationType,
     NoiseType,
-    MetricCallKwargs,
 )
 
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1

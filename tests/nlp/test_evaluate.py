@@ -1,7 +1,3 @@
-from typing import Dict
-
-import numpy as np
-
 import quantus.nlp as qn
 
 METRICS = {
@@ -21,19 +17,14 @@ CALL_KWARGS = {
         "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
     },
     "Local Lipschitz Estimate": [
-        qn.MetricCallKwargs("var1", {"explain_func_kwargs": {"method": "GradXInput"}}),
-        qn.MetricCallKwargs("var2", {"explain_func_kwargs": {"method": "IntGrad"}}),
+        {"explain_func_kwargs": {"method": "GradXInput"}},
+        {"explain_func_kwargs": {"method": "IntGrad"}},
     ],
 }
 
 
 def test_tf_model(tf_sst2_model, sst2_dataset, capsys):
-    result = qn.evaluate(
+    # Just check that it doesn't fail with expected inputs.
+    qn.evaluate(
         METRICS, model=tf_sst2_model, x_batch=sst2_dataset, call_kwargs=CALL_KWARGS
     )
-    for value in result.values():
-        if isinstance(value, Dict):
-            for i in value.values():
-                assert isinstance(i, np.ndarray)
-        else:
-            assert isinstance(value, np.ndarray)

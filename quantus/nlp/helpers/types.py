@@ -7,8 +7,6 @@ from typing import (
     Union,
     TYPE_CHECKING,
     Optional,
-    NamedTuple,
-    Dict,
 )
 import numpy as np
 from enum import Enum, auto
@@ -46,8 +44,3 @@ class NoiseType(Enum):
 
     additive = auto()
     multiplicative = auto()
-
-
-class MetricCallKwargs(NamedTuple):
-    name: str
-    kwargs: Dict

@@ -1,8 +1,6 @@
 from typing import List
-
 import numpy as np
 import pytest
-
 from quantus.nlp.helpers.utils import batch_list, pad_ragged_vector
 
 
@@ -47,7 +45,5 @@ def test_list_is_divisible(sst2_dataset_huge_batch):
 def test_pad(a_shape, b_shape):
     a = np.random.uniform(size=a_shape)
     b = np.random.uniform(size=b_shape)
-
     a_padded, b_padded = pad_ragged_vector(a, b)
-
     assert a_padded.shape == b_padded.shape

@@ -104,7 +104,7 @@ class RelativeStability(RobustnessMetric):
         # Generate explanations for perturbed input.
         a_batch_perturbed = self.explain_func(
             model,
-            x_batch_embeddings,
+            x_perturbed,
             y_batch,
             attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa

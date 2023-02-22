@@ -18,7 +18,7 @@ def test_normalise_func(size):
 
 
 @pytest.mark.nlp
-def test_exception():
+def test_invalid_input_shape():
     x_batch = np.random.default_rng(0).normal(size=(8, 32, 32))
     with pytest.raises(ValueError):
         normalize_sum_to_1(x_batch)

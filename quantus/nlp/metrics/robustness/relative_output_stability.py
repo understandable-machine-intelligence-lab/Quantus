@@ -82,8 +82,7 @@ class RelativeOutputStability(RelativeStability):
         h_x = safe_asarray(h_x)
         h_xs = model(x_batch_perturbed, attention_mask)
         h_xs = safe_asarray(h_xs)
-        e_x, e_xs = pad_ragged_vector(a_batch, a_batch_perturbed)
-        return self.objective(h_x, h_xs, e_x, e_xs)
+        return self.objective(h_x, h_xs, a_batch, a_batch_perturbed)
 
     def compute_objective_plain_text(
         self,
