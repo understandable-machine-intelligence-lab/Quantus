@@ -17,7 +17,5 @@ class Tokenizer(ABC):
         raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
-    def join_tokens(
-        self, tokens: List[List[str]], ignore_special_tokens: List[str]
-    ) -> List[str]:
-        raise NotImplementedError  # pragma: not covered
+    def token_id(self, token: str) -> int:
+        raise NotImplementedError

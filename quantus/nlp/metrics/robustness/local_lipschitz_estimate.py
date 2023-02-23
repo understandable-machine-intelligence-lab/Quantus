@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 from typing import Optional, Dict, Callable, List, no_type_check
-from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 
+from quantus.helpers.warn import warn_perturbation_caused_no_change
+from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.nlp.functions.perturb_func import spelling_replacement
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.types import (
@@ -20,7 +21,6 @@ from quantus.nlp.helpers.utils import (
     pad_ragged_vector,
     unpack_token_ids_and_attention_mask,
 )
-from quantus.helpers.warn import warn_perturbation_caused_no_change
 
 
 class LocalLipschitzEstimate(RobustnessMetric):
@@ -56,6 +56,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
         perturb_func_kwargs: Optional[Dict] = None,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
+        default_plot_func: Optional[Callable] = None,
     ):
         super().__init__(
             abs=abs,
@@ -70,6 +71,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             return_nan_when_prediction_changes=return_nan_when_prediction_changes,
+            default_plot_func=default_plot_func,
         )
         self.nr_samples = nr_samples
 
@@ -107,7 +109,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
                 )
 
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        scores = max_func(scores, axis=1)
+        scores = max_func(scores, axis=0)
         return scores
 
     def _evaluate_batch_step_plain_text_noise(

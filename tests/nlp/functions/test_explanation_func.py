@@ -16,6 +16,7 @@ def unknown_token_baseline_function(_) -> np.ndarray:
         {"method": "GradNorm"},
         {"method": "GradXInput"},
         {"method": "IntGrad"},
+        {"method": "IntGrad", "batch_interpolated_inputs": False},
         {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {
@@ -27,6 +28,7 @@ def unknown_token_baseline_function(_) -> np.ndarray:
         },
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
+        {"method": "AttentionLast"},
     ],
 )
 def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
@@ -46,6 +48,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "GradNorm"},
         {"method": "GradXInput"},
         {"method": "IntGrad"},
+        {"method": "IntGrad", "batch_interpolated_inputs": False},
         {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
         {
             "method": "NoiseGrad++",
@@ -59,6 +62,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         },
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
+        {"method": "AttentionLast"},
     ],
 )
 def test_torch_model(emotion_model, emotion_dataset, kwargs):

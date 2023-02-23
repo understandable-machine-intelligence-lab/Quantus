@@ -50,6 +50,7 @@ class RelativeRepresentationStability(RelativeStability):
         eps_min: float = 1e-5,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
+        default_plot_func: Optional[Callable] = None,
     ):
         super().__init__(
             abs=abs,
@@ -66,6 +67,7 @@ class RelativeRepresentationStability(RelativeStability):
             perturb_func_kwargs=perturb_func_kwargs,
             eps_min=eps_min,
             nr_samples=nr_samples,
+            default_plot_func=default_plot_func,
         )
         self.objective = RelativeRepresentationStabilityObjective(self.eps_min)
 

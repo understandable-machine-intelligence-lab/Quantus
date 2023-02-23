@@ -16,7 +16,7 @@ from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TF_TensorLike # pragma: not covered
+    from quantus.nlp.helpers.types import TF_TensorLike  # pragma: not covered
 
 
 class TFHuggingFaceTextClassifier(TextClassifier):
@@ -62,6 +62,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             training=False,
+            **kwargs,
         ).logits
 
     def predict(self, text: List[str], batch_size: int = 64, **kwargs) -> np.ndarray:
@@ -81,16 +82,12 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         self,
         order: str = "top_down",
         seed: int = 42,
-        flatten_layers: bool = False,
-        **kwargs,
     ) -> Generator:
-        original_weights = self.model.get_weights()
+        original_weights = self.model.get_weights().copy()
         random_layer_model = TFAutoModelForSequenceClassification.from_pretrained(
             self.handle
         )
-        layers = (
-            self.layers_fn(random_layer_model) if flatten_layers else self.model.layers
-        )
+        layers = list(self.model._flatten_layers(include_self=False, recursive=True))
 
         if order == "top_down":
             layers = layers[::-1]
@@ -107,16 +104,6 @@ class TFHuggingFaceTextClassifier(TextClassifier):
                 self.handle,
             )
             yield layer.name, random_layer_model_wrapper
-
-    @staticmethod
-    def layers_fn(new_model):
-        layers = list(new_model._flatten_layers(include_self=False))
-        layers = list(
-            filter(
-                lambda i: len(list(i._flatten_layers(include_self=False))) == 0, layers
-            )
-        )
-        return layers
 
     def get_hidden_representations(self, x_batch: List[str]) -> np.ndarray:
         inputs_ids, attention_mask = unpack_token_ids_and_attention_mask(

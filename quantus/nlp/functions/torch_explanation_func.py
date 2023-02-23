@@ -8,6 +8,9 @@ from typing import List, Callable, Optional, Dict, TYPE_CHECKING
 import numpy as np
 import torch
 
+from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
+    TorchHuggingFaceTextClassifier,
+)
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, ExplainFn, NumericalExplainFn
 from quantus.nlp.helpers.utils import (
@@ -176,6 +179,7 @@ def torch_explain_integrated_gradients(
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
+    batch_interpolated_inputs: bool = True,
 ) -> List[Explanation]:
     """
     A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
@@ -206,6 +210,9 @@ def torch_explain_integrated_gradients(
     baseline_fn:
         Function used to created baseline values, by default will create zeros tensor. Alternatively, e.g.,
         embedding for [UNK] token could be used.
+    batch_interpolated_inputs:
+        Indicates if interpolated inputs should be stacked into 1 bigger batch.
+        This speeds up the explanation, however can be very memory intensive.
 
     Returns
     -------
@@ -217,13 +224,11 @@ def torch_explain_integrated_gradients(
     Specifying [UNK] token as baseline:
 
     >>> def unknown_token_baseline_function(x):
-        ... return torch.tensor(np.load(...), dtype=torch.float32).to(device)
+        ... return torch.tensor(np.load(...), dtype=torch.float32).to(device) # noqa
 
     >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-
-    device = model.device  # type: ignore
 
     tokens = model.tokenizer.tokenize(x_batch)
     input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
@@ -237,6 +242,7 @@ def torch_explain_integrated_gradients(
         attention_mask,
         num_steps=num_steps,
         baseline_fn=baseline_fn,
+        batch_interpolated_inputs=batch_interpolated_inputs,
     )
 
     return [
@@ -252,6 +258,7 @@ def torch_explain_integrated_gradients_numerical(
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
+    batch_interpolated_inputs: bool = True,
 ) -> np.ndarray:
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
     device = model.device  # type: ignore
@@ -274,6 +281,28 @@ def torch_explain_integrated_gradients_numerical(
                     attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
                 )
             )
+
+    if batch_interpolated_inputs:
+        return _torch_explain_integrated_gradients_batched(
+            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+        )
+    else:
+        return _torch_explain_integrated_gradients_iterative(
+            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+        )
+
+
+def _torch_explain_integrated_gradients_batched(
+    model: TextClassifier,
+    interpolated_embeddings: List[TensorLike],
+    y_batch: np.ndarray,
+    interpolated_attention_mask: Optional[List[TensorLike]],
+) -> np.ndarray:
+    device = model.device  # type: ignore
+
+    batch_size = len(interpolated_embeddings)
+    num_steps = len(interpolated_embeddings[0])
+
     try:
         interpolated_embeddings = torch.tensor(
             interpolated_embeddings, requires_grad=True, device=device
@@ -285,6 +314,7 @@ def torch_explain_integrated_gradients_numerical(
             device=device,
             dtype=torch.float32,
         )
+
     interpolated_embeddings = torch.reshape(
         interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
     )
@@ -296,18 +326,117 @@ def torch_explain_integrated_gradients_numerical(
         interpolated_attention_mask = torch.reshape(
             interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[2:]]  # type: ignore
         )
-
     logits = model(interpolated_embeddings, interpolated_attention_mask)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(
         torch.unbind(logits_for_class), interpolated_embeddings
     )[0]
-    grads = torch.reshape(
-        grads, [len(input_embeddings), num_steps + 1, *grads.shape[1:]]
-    )
+    grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
     scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
     return scores.detach().cpu().numpy()
+
+
+def _torch_explain_integrated_gradients_iterative(
+    model: TextClassifier,
+    interpolated_embeddings_batch: List[TensorLike],
+    y_batch: np.ndarray,
+    interpolated_attention_mask_batch: Optional[List[TensorLike]],
+) -> np.ndarray:
+    batch_size = len(interpolated_embeddings_batch)
+    num_steps = len(interpolated_embeddings_batch[0])
+
+    device = model.device  # type: ignore
+    scores = []
+
+    for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
+        interpolated_attention_mask = (
+            interpolated_attention_mask_batch[i]
+            if interpolated_attention_mask_batch is not None
+            else None
+        )
+
+        try:
+            interpolated_embeddings = torch.tensor(
+                interpolated_embeddings, requires_grad=True, device=device
+            )
+        except TypeError:
+            interpolated_embeddings = torch.tensor(
+                interpolated_embeddings,
+                requires_grad=True,
+                device=device,
+                dtype=torch.float32,
+            )
+        if interpolated_attention_mask is not None:
+            interpolated_attention_mask = torch.tensor(
+                interpolated_attention_mask, device=device
+            )
+
+        logits = model(interpolated_embeddings, interpolated_attention_mask)
+        logits_for_class = logits[:, y_batch[i]]
+        grads = torch.autograd.grad(
+            torch.unbind(logits_for_class), interpolated_embeddings
+        )[0]
+        score = torch.trapz(torch.trapz(grads, dim=-1), dim=0)
+
+        scores.append(score.detach().cpu().numpy())
+
+    return np.asarray(scores)
+
+
+def torch_explain_attention_last(
+    model: TextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+) -> List[Explanation]:
+    """Attention-Last explanation as described in https://arxiv.org/pdf/2202.07304.pdf."""
+    if not isinstance(model, TorchHuggingFaceTextClassifier):
+        raise ValueError(
+            f"Attention-Last explanation is supported only for models from Huggingface hub."
+        )
+
+    tokens = model.tokenizer.tokenize(x_batch)
+    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
+    embeddings = model.embedding_lookup(input_ids)
+    scores = torch_explain_attention_last_numerical(
+        model,
+        embeddings,
+        y_batch,
+        attention_mask,
+    )
+
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+def torch_explain_attention_last_numerical(
+    model: TorchHuggingFaceTextClassifier,
+    embeddings: TensorLike,
+    y_batch: TensorLike,
+    attention_mask: Optional[TensorLike],
+) -> np.ndarray:
+    if not isinstance(attention_mask, torch.Tensor):
+        attention_mask = torch.tensor(attention_mask, device=model.device)
+    if not isinstance(embeddings, torch.Tensor):
+        try:
+            embeddings = torch.tensor(embeddings, device=model.device)
+        except TypeError:
+            embeddings = torch.tensor(
+                embeddings, device=model.device, dtype=torch.float32
+            )
+
+    attentions = model.model(
+        None,
+        inputs_embeds=embeddings,
+        attention_mask=attention_mask,
+        output_attentions=True,
+    ).attentions
+
+    last_transformer_block_scores = attentions[-1]
+    last_attention_head_scores = last_transformer_block_scores[:, 0]
+    scores = torch.mean(last_attention_head_scores, dim=-1)
+    return scores.detach().cpu.numpy()
 
 
 def torch_explain_noise_grad_plus_plus_numerical(
@@ -418,6 +547,7 @@ _method_mapping: Dict[str, ExplainFn] = {
     "GradXInput": torch_explain_gradient_x_input,
     "IntGrad": torch_explain_integrated_gradients,
     "NoiseGrad++": torch_explain_noise_grad_plus_plus,
+    "AttentionLast": torch_explain_attention_last,
 }
 
 _numerical_method_mapping = {
@@ -425,6 +555,7 @@ _numerical_method_mapping = {
     "GradXInput": torch_explain_gradient_x_input_numerical,
     "IntGrad": torch_explain_integrated_gradients_numerical,
     "NoiseGrad++": torch_explain_noise_grad_plus_plus_numerical,
+    "AttentionLat": torch_explain_attention_last_numerical,
 }
 
 

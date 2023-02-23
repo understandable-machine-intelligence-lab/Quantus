@@ -22,7 +22,7 @@ from quantus.nlp.functions.perturb_func import (
     gaussian_noise,
 )
 
-from quantus.nlp.functions.plot_func import (
+from quantus.nlp.helpers.plotting import (
     visualise_explanations_as_pyplot,
     visualise_explanations_as_html,
 )
@@ -63,7 +63,10 @@ from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TF_TensorLike, TensorLike # pragma: not covered
+    from quantus.nlp.helpers.types import (
+        TF_TensorLike,
+        TensorLike,
+    )  # pragma: not covered
 
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -79,3 +82,4 @@ from quantus.nlp.helpers.types import (
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.utils import normalise_attributions, abs_attributions
 from quantus.nlp.evaluation import evaluate
+from quantus.nlp.helpers.plotting import plot_token_flipping_experiment

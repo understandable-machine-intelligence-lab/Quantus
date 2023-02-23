@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional, Dict, TYPE_CHECKING, Generator, Tuple
+from typing import List, Optional, Dict, TYPE_CHECKING, Generator
 from copy import deepcopy
 from transformers import (
     PreTrainedModel,
@@ -10,7 +10,6 @@ from transformers import (
     AutoTokenizer,
 )
 import torch
-import torch.nn as nn
 from quantus.nlp.helpers.utils import (
     unpack_token_ids_and_attention_mask,
     batch_list,
@@ -21,7 +20,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TensorLike # pragma: not covered
+    from quantus.nlp.helpers.types import TensorLike  # pragma: not covered
 
 
 class TorchHuggingFaceTextClassifier(TextClassifier):
@@ -81,7 +80,9 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
                 inputs_embeds = torch.tensor(
                     inputs_embeds, device=self.device, dtype=torch.float32
                 )
-        return self.model(None, attention_mask, inputs_embeds=inputs_embeds).logits
+        return self.model(
+            None, attention_mask, inputs_embeds=inputs_embeds, **kwargs
+        ).logits
 
     def predict(self, text: List[str], batch_size: int = 64, **kwargs) -> np.ndarray:
         if len(text) <= batch_size:
@@ -113,15 +114,13 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         self.model.load_state_dict(weights)
 
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ) -> Generator[Tuple[nn.Module, TorchHuggingFaceTextClassifier], None, None]:
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator:
         original_parameters = self.model.state_dict()
         random_layer_model = deepcopy(self.model)
 
         modules = [
-            l
-            for l in self.named_modules_fn(self.model)
-            if (hasattr(l[1], "reset_parameters"))
+            l for l in self.model.named_modules() if (hasattr(l[1], "reset_parameters"))
         ]
 
         if order == "top_down":
@@ -139,16 +138,6 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
                 self.device,
             )
             yield module[0], random_layer_model_wrapper
-
-    @staticmethod
-    def named_modules_fn(model: nn.Module) -> List[Tuple[str, nn.Module]]:
-        def is_flat(named_module: Tuple[str, nn.Module]) -> bool:
-            module = named_module[1]
-            return len(list(module.named_children())) == 0
-
-        modules = list(model.named_modules())
-
-        return list(filter(is_flat, modules))
 
     def get_hidden_representations(
         self,

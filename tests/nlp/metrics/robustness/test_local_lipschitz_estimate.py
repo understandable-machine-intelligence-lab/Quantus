@@ -34,6 +34,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     assert not (result == np.NZERO).any()
     assert not (result == np.PZERO).any()
     # fmt: on
+    assert result.shape == (8,)
 
 
 @pytest.mark.nlp
@@ -67,3 +68,4 @@ def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
     assert not (result == np.NZERO).any()
     assert not (result == np.PZERO).any()
     # fmt: on
+    assert result.shape == (8,)

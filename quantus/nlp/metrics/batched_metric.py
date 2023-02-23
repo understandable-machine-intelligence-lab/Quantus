@@ -3,9 +3,9 @@ from __future__ import annotations
 from abc import abstractmethod
 import numpy as np
 from typing import List, Optional, Dict, Any, Callable, no_type_check
-from quantus.metrics.base_batched import BatchedMetric as Base
 from functools import partial
 
+from quantus.metrics.base_batched import BatchedMetric as Base
 from quantus.nlp.helpers.types import (
     ExplainFn,
     Explanation,
@@ -32,6 +32,7 @@ class BatchedMetric(Base):
         aggregate_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
+        default_plot_func: Optional[Callable],
     ):
         super().__init__(
             abs=abs,
@@ -40,9 +41,9 @@ class BatchedMetric(Base):
             normalise_func_kwargs=normalise_func_kwargs,
             return_aggregate=return_aggregate,
             aggregate_func=aggregate_func,
-            default_plot_func=None,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
+            default_plot_func=default_plot_func,
         )
 
     @no_type_check
@@ -192,7 +193,7 @@ class BatchedMetric(Base):
         **kwargs,
     ) -> np.ndarray | float:
         """Must be implemented by respective metric class."""
-        raise NotImplementedError # pragma: not covered
+        raise NotImplementedError  # pragma: not covered
 
     def evaluate_instance(self, *args, **kwargs) -> Any:
         raise ValueError("This is unexpected")  # pragma: not covered

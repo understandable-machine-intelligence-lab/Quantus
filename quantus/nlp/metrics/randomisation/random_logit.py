@@ -40,6 +40,7 @@ class RandomLogit(BatchedMetric):
         display_progressbar: bool = False,
         similarity_func: SimilarityFn = ssim,
         seed: int = 42,
+        default_plot_func: Optional[Callable] = None,
     ):
         super().__init__(
             abs=abs,
@@ -50,6 +51,7 @@ class RandomLogit(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
+            default_plot_func=default_plot_func,
         )
         self.num_classes = num_classes
         self.similarity_func = similarity_func

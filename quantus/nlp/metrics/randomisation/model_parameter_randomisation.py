@@ -4,6 +4,7 @@ import numpy as np
 from tqdm.auto import tqdm
 from typing import List, Optional, Dict, Callable, no_type_check
 from quantus.functions.similarity_func import correlation_spearman
+from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
 from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.batched_metric import BatchedMetric
@@ -44,6 +45,9 @@ class ModelParameterRandomisation(BatchedMetric):
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
+        default_plot_func: Optional[
+            Callable
+        ] = plot_model_parameter_randomisation_experiment,
     ):
         super().__init__(
             abs=abs,
@@ -54,6 +58,7 @@ class ModelParameterRandomisation(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
+            default_plot_func=default_plot_func,
         )
         self.seed = seed
         self.layer_order = layer_order

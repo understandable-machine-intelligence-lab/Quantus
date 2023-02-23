@@ -120,7 +120,7 @@ def normalise_attributions(
 
 
 def unpack_token_ids_and_attention_mask(
-    tokens: Dict[str, np.ndarray] | np.ndarray
+    x_batch_encoded: Dict[str, np.ndarray] | np.ndarray
 ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Typically, tokenizers from huggingface hub will return Dict with "input_ids" and "attention_mask".
@@ -128,10 +128,10 @@ def unpack_token_ids_and_attention_mask(
     However, e.g., keras_nlp tokenizers don't return explicit attention mask.
     This function's purpose is to avoid handling both (and potentially more) cases in each metric, explanation function, etc.
     """
-    if isinstance(tokens, Dict):
-        return tokens["input_ids"], tokens["attention_mask"]
+    if isinstance(x_batch_encoded, Dict):
+        return x_batch_encoded["input_ids"], x_batch_encoded["attention_mask"]
     else:
-        return tokens, None
+        return x_batch_encoded, None
 
 
 def get_interpolated_inputs(
@@ -279,7 +279,7 @@ def choose_torch_device() -> torch.device:
     import torch
 
     if torch.cuda.is_available():
-        return torch.device("cuda") # pragma: not covered
+        return torch.device("cuda:0")  # pragma: not covered
     if hasattr(torch.backends, "mps"):
         if torch.backends.mps.is_available():
             return torch.device("mps")  # pragma: not covered

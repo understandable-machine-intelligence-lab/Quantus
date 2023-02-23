@@ -7,6 +7,9 @@ from typing import List, Callable, Optional, TYPE_CHECKING, Dict
 
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import (
+    TFHuggingFaceTextClassifier,
+)
 from quantus.nlp.helpers.types import (
     Explanation,
     NumericalExplainFn,
@@ -21,7 +24,10 @@ from quantus.nlp.helpers.utils import (
 )
 
 if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import Explanation, TF_TensorLike  # pragma: not covered
+    from quantus.nlp.helpers.types import (
+        Explanation,
+        TF_TensorLike,
+    )  # pragma: not covered
 
     BaselineFn = Callable[[TF_TensorLike], TF_TensorLike]  # pragma: not covered
 
@@ -164,6 +170,7 @@ def tf_explain_integrated_gradients(
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
+    batch_interpolated_inputs: bool = True,
 ) -> List[Explanation]:
     """
     A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
@@ -195,6 +202,9 @@ def tf_explain_integrated_gradients(
     baseline_fn:
         Function used to created baseline values, by default will create zeros tensor. Alternatively, e.g.,
         embedding for [UNK] token could be used.
+    batch_interpolated_inputs:
+        Indicates if interpolated inputs should be stacked into 1 bigger batch.
+        This speeds up the explanation, however can be very memory intensive.
 
     Returns
     -------
@@ -221,6 +231,7 @@ def tf_explain_integrated_gradients(
         attention_mask,
         num_steps=num_steps,
         baseline_fn=baseline_fn,
+        batch_interpolated_inputs=batch_interpolated_inputs,
     )
 
     return [
@@ -236,8 +247,10 @@ def tf_explain_integrated_gradients_numerical(
     *,
     num_steps: int = 32,
     baseline_fn: Optional[BaselineFn] = None,
+    batch_interpolated_inputs: bool = True,
 ) -> np.ndarray:
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
+
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: tf.zeros_like(x))
 
     interpolated_embeddings = []
@@ -254,8 +267,28 @@ def tf_explain_integrated_gradients_numerical(
                 )
             )
 
+    if batch_interpolated_inputs:
+        return _tf_explain_integrated_gradients_batched(
+            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+        )
+    else:
+        return _tf_explain_integrated_gradients_iterative(
+            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+        )
+
+
+def _tf_explain_integrated_gradients_batched(
+    model: TextClassifier,
+    interpolated_embeddings: List[TF_TensorLike],
+    y_batch: TF_TensorLike,
+    interpolated_attention_mask: Optional[List[TF_TensorLike]],
+) -> np.ndarray:
+    interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
+    num_steps = interpolated_embeddings.shape[1]
+
     interpolated_embeddings = tf.reshape(
-        tf.cast(interpolated_embeddings, dtype=tf.float32), [-1, *embeddings.shape[1:]]
+        tf.cast(interpolated_embeddings, dtype=tf.float32),
+        [-1, *interpolated_embeddings.shape[2:]],
     )
     if interpolated_attention_mask is not None:
         interpolated_attention_mask = tf.cast(interpolated_attention_mask, tf.float32)
@@ -269,16 +302,81 @@ def tf_explain_integrated_gradients_numerical(
         logits_for_label = tf.gather(logits, axis=-1, indices=y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
-    grads = tf.reshape(grads, [len(y_batch), num_steps + 1, *grads.shape[1:]])
+    grads = tf.reshape(grads, [len(y_batch), num_steps, *grads.shape[1:]])
     return np.trapz(np.trapz(grads, axis=1), axis=-1)
 
 
-_numerical_method_mapping: Dict[str, NumericalExplainFn] = {
-    "GradNorm": tf_explain_gradient_norm_numerical,
-    "GradXInput": tf_explain_gradient_x_input_numerical,
-    "IntGrad": tf_explain_integrated_gradients_numerical,
-    "NoiseGrad++": tf_explain_integrated_gradients_numerical,
-}
+def _tf_explain_integrated_gradients_iterative(
+    model: TextClassifier,
+    interpolated_embeddings_batch: List[TF_TensorLike],
+    y_batch: TF_TensorLike,
+    interpolated_attention_mask_batch: Optional[List[TF_TensorLike]],
+) -> np.ndarray:
+    scores = []
+
+    for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
+        interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
+        interpolated_attention_mask = (
+            interpolated_attention_mask_batch[i]
+            if interpolated_attention_mask_batch is not None
+            else None
+        )
+
+        with tf.GradientTape() as tape:
+            tape.watch(interpolated_embeddings)
+            logits = model(interpolated_embeddings, interpolated_attention_mask)
+            logits_for_label = tf.gather(logits, axis=-1, indices=y_batch[i])
+
+        grads = tape.gradient(logits_for_label, interpolated_embeddings)
+        scores.append(np.trapz(np.trapz(grads, axis=0), axis=-1))
+
+    return np.asarray(scores)
+
+
+def tf_explain_attention_last(
+    model: TextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+) -> List[Explanation]:
+    """Attention-Last explanation as described in https://arxiv.org/pdf/2202.07304.pdf."""
+    if not isinstance(model, TFHuggingFaceTextClassifier):
+        raise ValueError(
+            f"Attention-Last explanation is supported only for models from Huggingface hub."
+        )
+
+    tokens = model.tokenizer.tokenize(x_batch)
+    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
+    embeddings = model.embedding_lookup(input_ids)
+    scores = tf_explain_attention_last_numerical(
+        model,
+        embeddings,
+        y_batch,
+        attention_mask,
+    )
+
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+def tf_explain_attention_last_numerical(
+    model: TFHuggingFaceTextClassifier,
+    embeddings: TF_TensorLike,
+    y_batch: TF_TensorLike,
+    attention_mask: Optional[TF_TensorLike],
+) -> np.ndarray:
+    attentions = model.model(
+        None,
+        inputs_embeds=embeddings,
+        attention_mask=attention_mask,
+        output_attentions=True,
+        training=False,
+    ).attentions
+
+    last_transformer_block_scores = attentions[-1]
+    last_attention_head_scores = tf.gather(last_transformer_block_scores, 0, axis=1)
+    scores = tf.reduce_mean(last_attention_head_scores, axis=-1)
+    return scores.numpy()
 
 
 def tf_explain_noise_grad_plus_plus(
@@ -444,6 +542,15 @@ _method_mapping: Dict[str, ExplainFn] = {
     "GradXInput": tf_explain_gradient_x_input,
     "IntGrad": tf_explain_integrated_gradients,
     "NoiseGrad++": tf_explain_noise_grad_plus_plus,
+    "AttentionLast": tf_explain_attention_last,
+}
+
+_numerical_method_mapping: Dict[str, NumericalExplainFn] = {
+    "GradNorm": tf_explain_gradient_norm_numerical,
+    "GradXInput": tf_explain_gradient_x_input_numerical,
+    "IntGrad": tf_explain_integrated_gradients_numerical,
+    "NoiseGrad++": tf_explain_integrated_gradients_numerical,
+    "AttentionLast": tf_explain_attention_last_numerical,
 }
 
 

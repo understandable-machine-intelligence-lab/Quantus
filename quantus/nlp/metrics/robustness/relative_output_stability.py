@@ -3,6 +3,10 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Optional, Dict, Callable
 
+from quantus.metrics.robustness.internal.ros_objective import (
+    RelativeOutputStabilityObjective,
+)
+
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -11,9 +15,7 @@ from quantus.nlp.helpers.types import (
     NumericalPerturbFn,
     PlainTextPerturbFn,
 )
-from quantus.metrics.robustness.internal.ros_objective import (
-    RelativeOutputStabilityObjective,
-)
+
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
 from quantus.nlp.helpers.utils import safe_asarray, pad_ragged_vector
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
@@ -50,6 +52,7 @@ class RelativeOutputStability(RelativeStability):
         eps_min: float = 1e-5,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
+        default_plot_func: Optional[Callable] = None,
     ):
         super().__init__(
             abs=abs,
@@ -66,6 +69,7 @@ class RelativeOutputStability(RelativeStability):
             perturb_func_kwargs=perturb_func_kwargs,
             eps_min=eps_min,
             nr_samples=nr_samples,
+            default_plot_func=default_plot_func,
         )
         self.objective = RelativeOutputStabilityObjective(self.eps_min)
 

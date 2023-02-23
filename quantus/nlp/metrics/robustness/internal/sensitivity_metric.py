@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
 from abc import abstractmethod
 import numpy as np
 from typing import List, Callable, Optional, no_type_check
@@ -19,6 +18,8 @@ from quantus.nlp.helpers.utils import (
     explanation_similarity,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
+
+from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
 
 
 class SensitivityMetric(RobustnessMetric):
@@ -175,4 +176,4 @@ class SensitivityMetric(RobustnessMetric):
 
     @abstractmethod
     def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
-        raise NotImplementedError # pragma: not covered
+        raise NotImplementedError  # pragma: not covered

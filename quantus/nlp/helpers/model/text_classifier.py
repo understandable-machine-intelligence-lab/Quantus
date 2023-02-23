@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional, TypeVar, Generator, Any, Tuple
+from typing import List, Optional, TypeVar, Generator
 from abc import ABC, abstractmethod
 from quantus.nlp.helpers.model.tokenizer import Tokenizer
 
@@ -64,6 +64,6 @@ class TextClassifier(ABC):
 
     @abstractmethod
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ) -> Generator[Tuple[Any, TextClassifier], None, None]:
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator:
         raise NotImplementedError  # pragma: not covered

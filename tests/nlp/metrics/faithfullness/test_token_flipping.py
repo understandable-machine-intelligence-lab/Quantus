@@ -6,19 +6,19 @@ from quantus.nlp import TokenFlipping
 @pytest.mark.nlp
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "init_kwargs, call_kwargs",
+    "init_kwargs, call_kwargs, expected_shape",
     [
-        (
-            {"normalise": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-        ),
+        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 40)),
         (
             {"abs": True, "return_auc_per_sample": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
+            (8,),
         ),
     ],
 )
-def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
+def test_tf_model(
+    tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs, expected_shape
+):
     metric = TokenFlipping(**init_kwargs)
     result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
@@ -30,24 +30,25 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     assert not (result == np.NZERO).any()
     assert not (result == np.PZERO).any()
     # fmt: on
+    assert result.shape == expected_shape
 
 
 @pytest.mark.nlp
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
-    "init_kwargs, call_kwargs",
+    "init_kwargs, call_kwargs, expected_shape",
     [
-        (
-            {"normalise": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-        ),
+        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 39)),
         (
             {"abs": True, "return_auc_per_sample": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
+            (8,),
         ),
     ],
 )
-def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
+def test_torch_model(
+    emotion_model, emotion_dataset, init_kwargs, call_kwargs, expected_shape
+):
     metric = TokenFlipping(**init_kwargs)
     result = metric(emotion_model, emotion_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
@@ -58,3 +59,4 @@ def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
     assert not (result == np.NZERO).any()
     assert not (result == np.PZERO).any()
     # fmt: on
+    assert result.shape == expected_shape

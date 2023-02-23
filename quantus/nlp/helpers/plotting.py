@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 
+from quantus.functions.loss_func import mse
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import value_or_default
-
 
 DEFAULT_SPECIAL_TOKENS = [
     "[CLS]",
@@ -15,7 +17,6 @@ DEFAULT_SPECIAL_TOKENS = [
 
 
 class ColorMapper:
-
     """
     - Highest score get red (255,0,0).
     - Lowest score gets blue (0,0,255).
@@ -223,3 +224,24 @@ def visualise_explanations_as_pyplot(explanations: List[Explanation]):
     ax.set_xticks([])
     ax.set_yticks([])
     return fig
+
+
+def plot_token_flipping_experiment(
+        score: np.ndarray,
+        original_prediction: np.ndarray
+):
+    """
+    AU-MSE - area under the mean squared error (y0−ymt)
+    curve for pruning. Lower is better and indicates that removing less
+    relevant nodes has little effect on the model prediction.
+    """
+    if len(score.shape) != 2:
+        raise ValueError(f"Scores must be 2 dimensional.")
+
+    y = np.asarray(list(range(len(score[0])))) + 1
+    x = mse(np.broadcast_to(original_prediction, (score.shape[1], score.shape[0])).T, score)
+    plt.plot(y, x)
+
+    plt.title("Token Flipping Experiment")
+    plt.xlabel("Number of tokens flipped")
+    plt.ylabel("MSE")

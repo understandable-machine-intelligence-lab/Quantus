@@ -2,9 +2,11 @@ import numpy as np
 import pytest
 from typing import Dict
 from quantus.nlp import ModelParameterRandomisation
+import os
 
 
 @pytest.mark.nlp
+@pytest.mark.skipif("SKIP_MPR" in os.environ)
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
@@ -34,6 +36,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.skipif("SKIP_MPR" in os.environ)
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",

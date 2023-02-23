@@ -156,11 +156,15 @@ def available_perturbation_functions() -> List[str]:
 
 
 def available_plain_text_perturbation_functions() -> List[str]:
-    return [c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()]  # pragma: not covered
+    return [
+        c for c in AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys()
+    ]  # pragma: not covered
 
 
 def available_latent_space_perturbation_functions() -> List[str]:
-    return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]  # pragma: not covered
+    return [
+        c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()
+    ]  # pragma: not covered
 
 
 def available_normalisation_functions() -> List[str]:

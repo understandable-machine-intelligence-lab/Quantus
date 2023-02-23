@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Optional, List, no_type_check
 import numpy as np
-
+from abc import abstractmethod
 
 from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
 from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask, safe_asarray
-from abc import abstractmethod
 
 
 class RelativeStability(RobustnessMetric):
@@ -144,7 +143,7 @@ class RelativeStability(RobustnessMetric):
         model: TextClassifier,
         attention_mask: Optional[np.ndarray],
     ) -> np.ndarray:
-        raise NotImplementedError # pragma: not covered
+        raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def compute_objective_plain_text(
@@ -155,4 +154,4 @@ class RelativeStability(RobustnessMetric):
         a_batch_perturbed: List[Explanation],
         model: TextClassifier,
     ) -> np.ndarray:
-        raise NotImplementedError # pragma: not covered
+        raise NotImplementedError  # pragma: not covered

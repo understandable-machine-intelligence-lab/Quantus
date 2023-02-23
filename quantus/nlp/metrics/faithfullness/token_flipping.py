@@ -3,12 +3,15 @@ from __future__ import annotations
 from typing import List, Optional, Callable, Dict, no_type_check
 
 import numpy as np
+from quantus.helpers.utils import calculate_auc
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import Explanation
-from quantus.helpers.utils import calculate_auc
+from quantus.nlp.helpers.types import Explanation, NormaliseFn
+
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
+from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask, safe_asarray
+from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
 
 
 class TokenFlipping(BatchedMetric):
@@ -16,6 +19,13 @@ class TokenFlipping(BatchedMetric):
     References:
         - https://arxiv.org/abs/2202.07304
         - https://github.com/AmeenAli/XAI_Transformers/blob/main/SST/run_sst.py#L127
+        - https://arxiv.org/pdf/2205.15389.pdf
+
+    For the NLP experiments, we consider token sequences
+    instead of graph nodes. In the pruning task, we remove tokens
+    from lowest to highest absolute relevance by replacing them
+    with “UNK” tokens, similarly to the ablation experiments
+    of Abnar & Zuidema (2020).
     """
 
     def __init__(
@@ -23,7 +33,7 @@ class TokenFlipping(BatchedMetric):
         *,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[Callable] = normalize_sum_to_1,
+        normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
         return_aggregate: bool = False,
         aggregate_func: Optional[Callable] = np.mean,
@@ -31,6 +41,7 @@ class TokenFlipping(BatchedMetric):
         display_progressbar: bool = False,
         return_auc_per_sample: bool = False,
         mask_token: str = "[UNK]",
+        default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
     ):
         super().__init__(
             abs=abs,
@@ -41,6 +52,7 @@ class TokenFlipping(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
+            default_plot_func=default_plot_func,
         )
         self.return_auc_per_sample = return_auc_per_sample
         self.mask_token = mask_token
@@ -54,37 +66,41 @@ class TokenFlipping(BatchedMetric):
         a_batch: List[Explanation],
         *args,
         **kwargs,
-    ) -> np.ndarray | float:
-        # Get indices of sorted attributions (descending).
-        scores = np.full(shape=(len(a_batch[0][1]), len(x_batch)), fill_value=np.NINF)
+    ) -> np.ndarray | float | Dict[str, float]:
+        batch_size = len(a_batch)
+        num_tokens = len(a_batch[0][1])
 
-        mask_indices_batch = []
+        # We need to have tokens axis at positions 0, so we can just insert batches.
+        scores = np.full(shape=(num_tokens, batch_size), fill_value=np.NINF)
+
+        logits = model.predict(x_batch)
+        logits = safe_asarray(logits)
+        logits_for_labels = np.asarray([y[i] for y, i in zip(logits, y_batch)])
+        scores[0] = logits_for_labels
+
+        mask_indices_all = []
         for a in a_batch:
-            mask_indices_batch.append(np.argsort(a[1])[::-1])
-        mask_indices_batch = np.asarray(mask_indices_batch).T
+            mask_indices_all.append(np.argsort(a[1]))
+        mask_indices_all = np.asarray(mask_indices_all).T
 
-        for i, mask_indices in enumerate(mask_indices_batch):
-            a_batch_tokens = [i[0] for i in a_batch]
-            x_masked_batch = []
-            for a, i in zip(a_batch_tokens, mask_indices):  # type: ignore
-                x_masked = a.copy()  # type: ignore
-                x_masked[i] = self.mask_token
-                x_masked_batch.append(x_masked)
+        x_batch_encoded = model.tokenizer.tokenize(x_batch)
+        input_ids, attention_mask = unpack_token_ids_and_attention_mask(x_batch_encoded)
+        mask_token_id = model.tokenizer.token_id(self.mask_token)
 
-            x_masked_batch = model.tokenizer.join_tokens(
-                x_masked_batch, ignore_special_tokens=[self.mask_token]
-            )
+        for i, mask_indices_batch in enumerate(mask_indices_all):
+            for index_in_batch, mask_index in enumerate(mask_indices_batch):
+                input_ids[index_in_batch][mask_index] = mask_token_id
+
+            embeddings = model.embedding_lookup(input_ids)
             # Predict on perturbed input x.
-            logits = model.predict(x_masked_batch)
-            logits_for_labels = np.asarray([y[i] for y, i in zip(logits, y_batch)])
-            scores[i] = logits_for_labels
+            logits = model(embeddings, attention_mask)
+            logits = safe_asarray(logits)
+            scores[i] = np.argmax(logits, axis=-1)
+
+        # Move batch axis to 0's position.
+        scores = scores.T
 
         if self.return_auc_per_sample:
-            return calculate_auc(np.asarray(scores))
+            return calculate_auc(scores)
 
         return scores
-
-    @property
-    def auc_score(self):
-        """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean([calculate_auc(np.array(curve)) for curve in self.last_results]) # pragma: not covered

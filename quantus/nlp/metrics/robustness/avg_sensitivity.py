@@ -51,6 +51,7 @@ class AvgSensitivity(SensitivityMetric):
         norm_denominator: NormFm = fro_norm,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
+        default_plot_func: Optional[Callable] = None,
     ):
         super().__init__(
             abs=abs,
@@ -69,6 +70,7 @@ class AvgSensitivity(SensitivityMetric):
             nr_samples=nr_samples,
             return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             similarity_func=similarity_func,
+            default_plot_func=default_plot_func,
         )
 
     def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:

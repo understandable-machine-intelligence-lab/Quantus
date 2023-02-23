@@ -5,14 +5,14 @@ import numpy as np
 from typing import Dict, List, Optional
 import warnings
 from transformers import pipeline
+from functools import partial
 
+from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.utils import (
     value_or_default,
     safe_isinstance,
 )
-from functools import partial
-from quantus.nlp.helpers.types import Explanation
 
 TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TFHuggingFaceTextClassifier"
 Torch_HuggingfaceModelClass = "quantus.nlp.helpers.model.torch_huggingface_text_classifier.TorchHuggingFaceTextClassifier"
