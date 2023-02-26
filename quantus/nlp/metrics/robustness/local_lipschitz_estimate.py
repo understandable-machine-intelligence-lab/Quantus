@@ -19,7 +19,6 @@ from quantus.nlp.metrics.robustness.internal.robustness_metric import Robustness
 from quantus.nlp.helpers.utils import (
     get_embeddings,
     pad_ragged_vector,
-    unpack_token_ids_and_attention_mask,
 )
 
 

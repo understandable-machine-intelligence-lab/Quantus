@@ -11,10 +11,8 @@ from transformers import (
 )
 import torch
 from quantus.nlp.helpers.utils import (
-    unpack_token_ids_and_attention_mask,
     batch_list,
     value_or_default,
-    choose_torch_device,
 )
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
@@ -28,11 +26,9 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         self,
         tokenizer: PreTrainedTokenizerBase,
         model: PreTrainedModel,
-        handle: str,
         device: Optional[torch.device],
     ):
-        self.device = value_or_default(device, choose_torch_device)
-        self.handle = handle
+        self.device = value_or_default(device, lambda: torch.device("cpu"))
         self.model = model.to(self.device)
         self.tokenizer = HuggingFaceTokenizer(tokenizer)
 
@@ -46,7 +42,6 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         return TorchHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle),
             AutoModelForSequenceClassification.from_pretrained(handle),
-            handle,
             device,
         )
 

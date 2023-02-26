@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import sys
 import numpy as np
-from typing import List, Tuple, Callable, TypeVar, Dict, Optional, Any, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import torch  # pragma: not covered
+from typing import List, Tuple, Callable, TypeVar, Optional, Any
 
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -42,7 +39,8 @@ def _pad_array_right(
     if a.shape == target_shape:
         return a
     if len(a.shape) == 1:
-        return _pad_array_1d(a, target_shape, pad_value)
+        pad_len = target_shape[0] - len(a)
+        return np.pad(a, (0, pad_len), constant_values=pad_value)
     elif len(a.shape) == 2:
         return _pad_array_2d(a, target_shape, pad_value)
     elif len(a.shape) == 3:
@@ -51,11 +49,6 @@ def _pad_array_right(
         return np.asarray([_pad_array_3d(i, target_shape[1:], pad_value) for i in a])
     else:
         raise ValueError("This is not expected.")
-
-
-def _pad_array_1d(a: np.ndarray, target_shape: Tuple[int], pad_value: float):
-    pad_len = target_shape[0] - len(a)
-    return np.pad(a, (0, pad_len), constant_values=pad_value)
 
 
 def _pad_array_2d(a: np.ndarray, target_shape: Tuple[int, int], pad_value: float):
@@ -117,21 +110,6 @@ def normalise_attributions(
 ) -> List[Explanation]:
     """Apply normalise_fn to numerical component of explanations."""
     return [(tokens, normalise_fn(scores)) for tokens, scores in a_batch]
-
-
-def unpack_token_ids_and_attention_mask(
-    x_batch_encoded: Dict[str, np.ndarray] | np.ndarray
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-    """
-    Typically, tokenizers from huggingface hub will return Dict with "input_ids" and "attention_mask".
-    Both values must be passed into model for correct inference.
-    However, e.g., keras_nlp tokenizers don't return explicit attention mask.
-    This function's purpose is to avoid handling both (and potentially more) cases in each metric, explanation function, etc.
-    """
-    if isinstance(x_batch_encoded, Dict):
-        return x_batch_encoded["input_ids"], x_batch_encoded["attention_mask"]
-    else:
-        return x_batch_encoded, None
 
 
 def get_interpolated_inputs(
@@ -255,8 +233,7 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
 
 def get_embeddings(x_batch: List[str], model: TextClassifier) -> np.ndarray:
     encoded_input = model.tokenizer.tokenize(x_batch)
-    input_ids, mask = unpack_token_ids_and_attention_mask(encoded_input)
-    return safe_asarray(model.embedding_lookup(input_ids))
+    return safe_asarray(model.embedding_lookup(encoded_input))
 
 
 def explanations_similarity(
@@ -273,14 +250,3 @@ def explanations_similarity(
             for a, b in zip(a_batch, b_batch)
         ]
     )
-
-
-def choose_torch_device() -> torch.device:
-    import torch
-
-    if torch.cuda.is_available():
-        return torch.device("cuda:0")  # pragma: not covered
-    if hasattr(torch.backends, "mps"):
-        if torch.backends.mps.is_available():
-            return torch.device("mps")  # pragma: not covered
-    return torch.device("cpu")  # pragma: not covered

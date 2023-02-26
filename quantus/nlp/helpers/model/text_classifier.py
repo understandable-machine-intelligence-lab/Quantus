@@ -1,24 +1,22 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional, TypeVar, Generator
+from typing import List, TypeVar, Generator, Tuple
 from abc import ABC, abstractmethod
-from quantus.nlp.helpers.model.tokenizer import Tokenizer
 
 T = TypeVar("T")
 
 
 class TextClassifier(ABC):
-    tokenizer: Tokenizer
 
     """An interface for model, trained for text-classification task (aka sentiment analysis)."""
 
     @abstractmethod
-    def __call__(self, inputs_embeds: T, attention_mask: Optional[T], **kwargs) -> T:
+    def __call__(self, inputs_embeds: T, **kwargs) -> T:
         """
         Execute forward pass on latent representation for input tokens.
         This method must return tensors of corresponding DNN framework.
-        This method must be able to record gradients, as it potentially will be used by gradient based XAI methods.
+        This method must be able to record gradients, as it is used internally by gradient based XAI methods.
         """
         raise NotImplementedError  # pragma: not covered
 
@@ -52,18 +50,33 @@ class TextClassifier(ABC):
         self,
         x_batch: List[str],
     ) -> np.ndarray:
+        """
+        Returns model's internal representations for x_batch.
+        This method is required for Relative Representation Stability with plain-text noise.
+        """
         raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def get_hidden_representations_embeddings(
-        self,
-        x_batch: np.ndarray,
-        attention_mask: Optional[np.ndarray],
+        self, x_batch: np.ndarray, **kwargs
     ) -> np.ndarray:
+        """
+        Returns model's internal representations for x_batch.
+        This method is required for Relative Representation Stability with latent space (numerical) noise.
+        """
         raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42
-    ) -> Generator:
+    ) -> Generator[Tuple[str, TextClassifier], None, None]:
+        """
+        Yields layer name, and new model with this layer perturbed.
+        This method is required for Model Parameter Randomisation Metric.
+        """
         raise NotImplementedError  # pragma: not covered
+
+    @property
+    @abstractmethod
+    def tokenizer(self):
+        raise NotImplementedError

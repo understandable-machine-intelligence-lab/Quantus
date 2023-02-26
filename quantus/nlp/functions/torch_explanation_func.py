@@ -154,17 +154,22 @@ def torch_explain_gradient_x_input_numerical(
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device  # type: ignore
-    try:
+    if isinstance(input_embeddings, torch.Tensor):
         input_embeddings = torch.tensor(
-            input_embeddings, requires_grad=True, device=device
+            input_embeddings.clone().detach(),
+            requires_grad=True,
+            device=device,
+            dtype=input_embeddings.dtype,
         )
-    except TypeError:
+    else:
         input_embeddings = torch.tensor(
-            input_embeddings, requires_grad=True, device=device, dtype=torch.float32
+            input_embeddings,
+            requires_grad=True,
+            device=device,
+            dtype=input_embeddings.dtype,
         )
 
     attention_mask = torch.tensor(attention_mask, device=device)
-
     logits = model(input_embeddings, attention_mask)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
@@ -303,18 +308,9 @@ def _torch_explain_integrated_gradients_batched(
     batch_size = len(interpolated_embeddings)
     num_steps = len(interpolated_embeddings[0])
 
-    try:
-        interpolated_embeddings = torch.tensor(
-            interpolated_embeddings, requires_grad=True, device=device
-        )
-    except TypeError:
-        interpolated_embeddings = torch.tensor(
-            interpolated_embeddings,
-            requires_grad=True,
-            device=device,
-            dtype=torch.float32,
-        )
-
+    interpolated_embeddings = torch.tensor(
+        interpolated_embeddings, requires_grad=True, device=device
+    )
     interpolated_embeddings = torch.reshape(
         interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
     )

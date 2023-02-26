@@ -226,10 +226,7 @@ def visualise_explanations_as_pyplot(explanations: List[Explanation]):
     return fig
 
 
-def plot_token_flipping_experiment(
-        score: np.ndarray,
-        original_prediction: np.ndarray
-):
+def plot_token_flipping_experiment(score: np.ndarray, original_prediction: np.ndarray):
     """
     AU-MSE - area under the mean squared error (y0−ymt)
     curve for pruning. Lower is better and indicates that removing less
@@ -239,7 +236,9 @@ def plot_token_flipping_experiment(
         raise ValueError(f"Scores must be 2 dimensional.")
 
     y = np.asarray(list(range(len(score[0])))) + 1
-    x = mse(np.broadcast_to(original_prediction, (score.shape[1], score.shape[0])).T, score)
+    x = mse(
+        np.broadcast_to(original_prediction, (score.shape[1], score.shape[0])).T, score
+    )
     plt.plot(y, x)
 
     plt.title("Token Flipping Experiment")

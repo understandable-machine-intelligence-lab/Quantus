@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
-from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask, safe_asarray
+from quantus.nlp.helpers.utils import safe_asarray
 
 
 class RelativeStability(RobustnessMetric):

@@ -19,3 +19,5 @@ pandas>=1.5.3
 datasets>=2.9.0
 shap>=0.41.0
 lime>=0.2.0.1
+
+keras_nlp

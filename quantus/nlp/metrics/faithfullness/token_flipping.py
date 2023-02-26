@@ -10,7 +10,7 @@ from quantus.nlp.helpers.types import Explanation, NormaliseFn
 
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import unpack_token_ids_and_attention_mask, safe_asarray
+from quantus.nlp.helpers.utils import safe_asarray
 from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
 
 

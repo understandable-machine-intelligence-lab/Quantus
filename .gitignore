@@ -40,3 +40,8 @@ tutorials/invited_talks/
 
 # PyCharm project files
 .idea
+
+# VS Code project files
+.vscode
+
+.env

@@ -22,3 +22,4 @@
 - tests for invalid inputs/arguments.
 - tests for `return_nan_when_prediction_changes`
 - NLP tasks beside sentiment analysis
+- some models need token type ids, dont unpack, just return dict.

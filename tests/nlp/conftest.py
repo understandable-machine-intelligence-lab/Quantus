@@ -66,3 +66,25 @@ def a_tuple_text_ragged_2(a_tuple_text):
         (list(a_tuple_text[0][0]), a_tuple_text[0][1]),
         (list(a_tuple_text[1][0][:37]), a_tuple_text[1][1][:37]),
     )
+
+
+@pytest.fixture(scope="session")
+def torch_fnet():
+    # TODO
+    # This model is interesting because it has not attention mask, but requires type_ids
+    return TorchHuggingFaceTextClassifier.from_pretrained(
+        "gchhablani/fnet-base-finetuned-sst2"
+    )
+
+
+@pytest.fixture(scope="session")
+def fnet_keras():
+    # TODO
+    # This model is interesting because the tokenizer doesn't return dict
+    pass
+
+
+@pytest.fixture(scope="session")
+def ag_news_dataset():
+    # TODO
+    pass

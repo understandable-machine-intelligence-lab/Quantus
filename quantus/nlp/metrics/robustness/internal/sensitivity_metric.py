@@ -13,7 +13,6 @@ from quantus.nlp.helpers.types import (
     SimilarityFn,
 )
 from quantus.nlp.helpers.utils import (
-    unpack_token_ids_and_attention_mask,
     safe_asarray,
     explanation_similarity,
 )

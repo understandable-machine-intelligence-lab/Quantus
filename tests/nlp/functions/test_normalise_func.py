@@ -11,6 +11,7 @@ from quantus.nlp import normalize_sum_to_1
         (8,),
         (8, 32),
     ],
+    ids=["1D", "2D"],
 )
 def test_normalise_func(size):
     x_batch = np.random.default_rng(0).normal(size=size)
