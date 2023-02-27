@@ -1,9 +1,9 @@
+"""Based on https://github.com/AmeenAli/XAI_Transformers."""
+
 from torch import nn
 import torch
-import sys
 import copy
 import torch.functional as F
-from utils import LayerNorm
 
 
 class LayerNormImpl(nn.Module):

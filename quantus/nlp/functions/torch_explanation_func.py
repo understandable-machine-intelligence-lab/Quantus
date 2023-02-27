@@ -32,9 +32,9 @@ if TYPE_CHECKING:
 
 def _get_device(model: TextClassifier) -> torch.device:
     if hasattr(model, "device"):
-        return model.device
+        return model.device # noqa
     if hasattr(model, "_device"):
-        return model._device
+        return model._device # noqa
     return torch.device("cpu")
 
 
@@ -44,7 +44,7 @@ def _get_torch_model(model: TextClassifier):
             "Please define .model property on your implementation of TextClassifier."
         )
 
-    return model.model
+    return model.model # noqa
 
 
 def torch_explain_gradient_norm(
