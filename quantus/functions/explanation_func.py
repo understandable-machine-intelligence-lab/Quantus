@@ -88,6 +88,10 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
             channel_first: boolean, optional
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
+            reduce_axes: tuple
+                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
+                the original dimensions.
+
     Returns
     -------
     explanation: np.ndarray
@@ -151,7 +155,9 @@ def get_explanation(model, inputs, targets, **kwargs):
             channel_first: boolean, optional
                 Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
-
+            reduce_axes: tuple
+                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
+                the original dimensions.
     Returns
     -------
     explanation: np.ndarray
@@ -209,6 +215,9 @@ def generate_tf_explanation(
             channel_first: boolean, optional
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
+            reduce_axes: tuple
+                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
+                the original dimensions.
     Returns
     -------
     explanation: np.ndarray
@@ -217,6 +226,7 @@ def generate_tf_explanation(
     """
     method = kwargs.get("method", "VanillaGradients")
     method_kwargs = kwargs.get("method_kwargs", {})
+    reduce_axes = kwargs.get("reduce_axes", ())
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
         if method == "VanillaGradients":
@@ -377,20 +387,22 @@ def generate_tf_explanation(
             f"Specify a XAI method that already has been implemented {constants.AVAILABLE_XAI_METHODS_TF}."
         )
 
-    if (
-        not kwargs.get("normalise", True)
-        or not kwargs.get("abs", True)
-        or not kwargs.get("pos_only", True)
-        or kwargs.get("neg_only", False)
-        or kwargs.get("reduce_axes", None) is not None
-    ):
-        raise KeyError(
-            "Only normalizsd absolute explanations are currently supported for TensorFlow models (tf-explain). "
-            "Set normalise=true, abs=true, pos_only=true, neg_only=false. reduce_axes parameter is not available; "
-            "explanations are always reduced over channel axis."
-        )
+    assert 0 not in reduce_axes, (
+        "Reduction over batch_axis is not available, please do not "
+        "include axis 0 in 'reduce_axes' kwargs."
+    )
+    assert np.all(np.array(reduce_axes) <= explanation.ndim - 1), (
+        "Cannot reduce attributions over more axes than each sample has dimensions, but got "
+        "{} and  {}.".format(len(reduce_axes), inputs.ndim - 1)
+    )
 
-    return explanation
+    reduce_axes = {"axis": tuple(reduce_axes), "keepdims": True}
+
+    # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
+    if (len(tuple(reduce_axes)) == 0) | (explanation.ndim < 3):
+        return explanation
+
+    return explanation.sum(**reduce_axes)
 
 
 def generate_captum_explanation(
@@ -424,6 +436,9 @@ def generate_captum_explanation(
             channel_first: boolean, optional
                 Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
+            reduce_axes: tuple
+                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
+                the original dimensions.
     Returns
     -------
     explanation: np.ndarray
@@ -440,7 +455,9 @@ def generate_captum_explanation(
             f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
             category=UserWarning,
         )
-        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=channel_first)
+        wrapped_model = get_wrapped_model(
+            model, softmax=softmax, channel_first=channel_first
+        )
         model = wrapped_model.get_softmax_arg_model()
 
     method = kwargs.get("method", "Gradient")
@@ -670,7 +687,9 @@ def generate_zennit_explanation(
             channel_first: boolean, optional
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
-
+            reduce_axes: tuple
+                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
+                the original dimensions.
     Returns
     -------
     explanation: np.ndarray
@@ -687,7 +706,9 @@ def generate_zennit_explanation(
             f"Make sure that your softmax argument choice aligns with the method intended usage.\n",
             category=UserWarning,
         )
-        wrapped_model = get_wrapped_model(model, softmax=softmax, channel_first=channel_first)
+        wrapped_model = get_wrapped_model(
+            model, softmax=softmax, channel_first=channel_first
+        )
         model = wrapped_model.get_softmax_arg_model()
 
     assert 0 not in kwargs.get(
