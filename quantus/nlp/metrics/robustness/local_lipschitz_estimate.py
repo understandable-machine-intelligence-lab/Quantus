@@ -86,10 +86,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
 
-        tokenized_input = model.tokenizer.tokenize(x_batch)
-        input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
-        x_batch_embeddings = get_embeddings(x_batch, model)
-
+        x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
         for step_id in range(self.nr_samples):
@@ -104,7 +101,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
                     y_batch,
                     a_batch_numerical,
                     x_batch_embeddings,
-                    attention_mask,
+                    **predict_kwargs,
                 )
 
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
@@ -136,7 +133,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
         a_batch_scores = [i[1] for i in a_batch]
         a_batch_perturbed_scores = [i[1] for i in a_batch_perturbed]
 
-        x_batch_embeddings_perturbed = get_embeddings(x_perturbed, model)
+        x_batch_embeddings_perturbed, _ = get_embeddings(x_perturbed, model)
 
         similarities = np.full(batch_size, fill_value=np.NINF)
 
@@ -172,7 +169,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         x_batch_embeddings: np.ndarray,
-        attention_mask: Optional[np.ndarray],
+        **kwargs,
     ) -> np.ndarray:
         batch_size = len(x_batch_embeddings)
         # Perturb input.
@@ -184,17 +181,16 @@ class LocalLipschitzEstimate(RobustnessMetric):
         )
 
         changed_prediction_indices = self.indexes_of_changed_predictions_latent(
-            model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
+            model, x_batch_embeddings, x_batch_embeddings_perturbed, **kwargs
         )
 
         a_batch_perturbed = self.explain_func(
             model,
             x_batch_embeddings_perturbed,
             y_batch,
-            attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
+            **kwargs,  # noqa
         )
-
         similarities = np.full(batch_size, fill_value=np.NINF)
 
         # Measure similarity for each instance separately.

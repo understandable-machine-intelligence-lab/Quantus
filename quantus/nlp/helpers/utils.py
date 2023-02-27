@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import numpy as np
-from typing import List, Tuple, Callable, TypeVar, Optional, Any
+from typing import List, Tuple, Callable, TypeVar, Optional, Any, Dict
 
 from quantus.nlp.helpers.types import (
     Explanation,
@@ -231,9 +231,30 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
     return func(val)
 
 
-def get_embeddings(x_batch: List[str], model: TextClassifier) -> np.ndarray:
+def get_embeddings(
+    x_batch: List[str], model: TextClassifier
+) -> Tuple[np.ndarray, Dict]:
     encoded_input = model.tokenizer.tokenize(x_batch)
-    return safe_asarray(model.embedding_lookup(encoded_input))
+    if isinstance(encoded_input, Dict):
+        input_ids = encoded_input.pop("input_ids")
+    else:
+        input_ids = encoded_input
+
+    embeddings = safe_asarray(model.embedding_lookup(input_ids))
+    if isinstance(encoded_input, Dict):
+        return embeddings, encoded_input
+    return embeddings, {}
+
+
+def get_input_ids(x_batch: List[str], model: TextClassifier) -> Tuple[np.ndarray, Dict]:
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    if isinstance(encoded_input, Dict):
+        input_ids = encoded_input.pop("input_ids")
+    else:
+        input_ids = encoded_input
+    if isinstance(encoded_input, Dict):
+        return input_ids, encoded_input
+    return input_ids, encoded_input
 
 
 def explanations_similarity(
@@ -250,3 +271,11 @@ def explanations_similarity(
             for a, b in zip(a_batch, b_batch)
         ]
     )
+
+
+def apply_to_dict(dictionary: Dict[str, T], func: Callable[[T], R]) -> Dict[str, R]:
+    result = {}
+    for k, v in dictionary.items():
+        result[k] = func(v)
+
+    return result

@@ -7,6 +7,7 @@ from typing import List, Callable, Optional, Dict, TYPE_CHECKING
 
 import numpy as np
 import torch
+from copy import deepcopy
 
 from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
     TorchHuggingFaceTextClassifier,
@@ -14,16 +15,36 @@ from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, ExplainFn, NumericalExplainFn
 from quantus.nlp.helpers.utils import (
-    unpack_token_ids_and_attention_mask,
     get_interpolated_inputs,
     value_or_default,
     map_optional,
+    apply_to_dict,
+    get_embeddings,
+    get_input_ids,
+    safe_asarray,
 )
 
 if TYPE_CHECKING:
     from quantus.nlp.helpers.types import TensorLike  # pragma: not covered
 
     BaselineFn = Callable[[TensorLike], TensorLike]  # pragma: not covered
+
+
+def _get_device(model: TextClassifier) -> torch.device:
+    if hasattr(model, "device"):
+        return model.device
+    if hasattr(model, "_device"):
+        return model._device
+    return torch.device("cpu")
+
+
+def _get_torch_model(model: TextClassifier):
+    if not hasattr(model, "model"):
+        raise ValueError(
+            "Please define .model property on your implementation of TextClassifier."
+        )
+
+    return model.model
 
 
 def torch_explain_gradient_norm(
@@ -55,17 +76,11 @@ def torch_explain_gradient_norm(
 
     """
 
-    device = model.device  # type: ignore
-
-    tokens = model.tokenizer.tokenize(x_batch)
-    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-    attention_mask = torch.tensor(attention_mask).to(device)
-    input_embeds = model.embedding_lookup(input_ids)
+    device = _get_device(model)
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
     scores = torch_explain_gradient_norm_numerical(
-        model,
-        input_embeds,
-        y_batch,
-        attention_mask,
+        model, input_embeds, y_batch, **kwargs
     )
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
@@ -73,26 +88,19 @@ def torch_explain_gradient_norm(
 
 
 def torch_explain_gradient_norm_numerical(
-    model: TextClassifier,
-    input_embeddings: TensorLike,
-    y_batch: np.ndarray,
-    attention_mask: Optional[TensorLike],
+    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
 ) -> np.ndarray:
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = model.device  # type: ignore
-    try:
-        input_embeddings = torch.tensor(
-            input_embeddings, requires_grad=True, device=device
-        )
-    except TypeError:
-        input_embeddings = torch.tensor(
-            input_embeddings, requires_grad=True, device=device, dtype=torch.float32
-        )
+    device = _get_device(model)
+    dtype = _get_torch_model(model).dtype
 
-    attention_mask = torch.tensor(attention_mask, device=device)
+    input_embeddings = torch.tensor(
+        input_embeddings, requires_grad=True, device=device, dtype=dtype
+    )
 
-    logits = model(input_embeddings, attention_mask)
+    kwargs = apply_to_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    logits = model(input_embeddings, **kwargs)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
@@ -128,16 +136,11 @@ def torch_explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    device = model.device  # type: ignore
-    tokens = model.tokenizer.tokenize(x_batch)
-    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-    attention_mask = torch.tensor(attention_mask).to(device)
-    input_embeds = model.embedding_lookup(input_ids)
+    device = _get_device(model)
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
     scores = torch_explain_gradient_x_input_numerical(
-        model,
-        input_embeds,
-        y_batch,
-        attention_mask,
+        model, input_embeds, y_batch, **kwargs
     )
 
     return [
@@ -146,31 +149,17 @@ def torch_explain_gradient_x_input(
 
 
 def torch_explain_gradient_x_input_numerical(
-    model: TextClassifier,
-    input_embeddings: TensorLike,
-    y_batch: np.ndarray,
-    attention_mask: Optional[TensorLike],
+    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = model.device  # type: ignore
-    if isinstance(input_embeddings, torch.Tensor):
-        input_embeddings = torch.tensor(
-            input_embeddings.clone().detach(),
-            requires_grad=True,
-            device=device,
-            dtype=input_embeddings.dtype,
-        )
-    else:
-        input_embeddings = torch.tensor(
-            input_embeddings,
-            requires_grad=True,
-            device=device,
-            dtype=input_embeddings.dtype,
-        )
-
-    attention_mask = torch.tensor(attention_mask, device=device)
-    logits = model(input_embeddings, attention_mask)
+    device = _get_device(model)
+    dtype = _get_torch_model(model).dtype
+    input_embeddings = torch.tensor(
+        input_embeddings, requires_grad=True, device=device, dtype=dtype
+    )
+    kwargs = apply_to_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    logits = model(input_embeddings, **kwargs)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
@@ -184,7 +173,7 @@ def torch_explain_integrated_gradients(
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
-    batch_interpolated_inputs: bool = True,
+    batch_interpolated_inputs: bool = False,
 ) -> List[Explanation]:
     """
     A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
@@ -234,20 +223,17 @@ def torch_explain_integrated_gradients(
     >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-
-    tokens = model.tokenizer.tokenize(x_batch)
-    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-
-    input_embeds = model.embedding_lookup(input_ids)
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
 
     scores = torch_explain_integrated_gradients_numerical(
         model,
         input_embeds,
         y_batch,
-        attention_mask,
         num_steps=num_steps,
         baseline_fn=baseline_fn,
         batch_interpolated_inputs=batch_interpolated_inputs,
+        **kwargs,
     )
 
     return [
@@ -259,41 +245,31 @@ def torch_explain_integrated_gradients_numerical(
     model: TextClassifier,
     input_embeddings: TensorLike,
     y_batch: np.ndarray,
-    attention_mask: Optional[TensorLike],
     *,
     num_steps: int = 10,
     baseline_fn: Optional[BaselineFn] = None,
-    batch_interpolated_inputs: bool = True,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
 ) -> np.ndarray:
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-    device = model.device  # type: ignore
+    device = _get_device(model)
 
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
 
     interpolated_embeddings = []
-    interpolated_attention_mask = None if attention_mask is None else []  # type: ignore
 
     for i, embeddings_i in enumerate(input_embeddings):
-        np_embeddings_i = embeddings_i.detach().cpu()
         interpolated_embeddings.append(
-            get_interpolated_inputs(
-                baseline_fn(np_embeddings_i), np_embeddings_i, num_steps
-            )
+            get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
         )
-        if attention_mask is not None:
-            interpolated_attention_mask.append(  # type: ignore
-                np.broadcast_to(
-                    attention_mask[i], (num_steps + 1, *attention_mask[i].shape)
-                )
-            )
 
     if batch_interpolated_inputs:
         return _torch_explain_integrated_gradients_batched(
-            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+            model, interpolated_embeddings, y_batch, **kwargs
         )
     else:
         return _torch_explain_integrated_gradients_iterative(
-            model, interpolated_embeddings, y_batch, interpolated_attention_mask
+            model, interpolated_embeddings, y_batch, **kwargs
         )
 
 
@@ -301,28 +277,29 @@ def _torch_explain_integrated_gradients_batched(
     model: TextClassifier,
     interpolated_embeddings: List[TensorLike],
     y_batch: np.ndarray,
-    interpolated_attention_mask: Optional[List[TensorLike]],
+    **kwargs,
 ) -> np.ndarray:
-    device = model.device  # type: ignore
+    device = _get_device(model)
 
     batch_size = len(interpolated_embeddings)
     num_steps = len(interpolated_embeddings[0])
 
+    dtype = _get_torch_model(model).dtype
+
     interpolated_embeddings = torch.tensor(
-        interpolated_embeddings, requires_grad=True, device=device
+        interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
     )
     interpolated_embeddings = torch.reshape(
         interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
     )
 
-    if interpolated_attention_mask is not None:
-        interpolated_attention_mask = torch.tensor(
-            interpolated_attention_mask, device=device
-        )
-        interpolated_attention_mask = torch.reshape(
-            interpolated_attention_mask, [-1, *interpolated_attention_mask.shape[2:]]  # type: ignore
-        )
-    logits = model(interpolated_embeddings, interpolated_attention_mask)
+    def pseudo_interpolate(x):
+        x = np.broadcast_to(x, (num_steps, *x.shape))
+        x = np.reshape(x, (-1, *x.shape[2:]))
+        return x
+
+    interpolated_kwargs = apply_to_dict(kwargs, pseudo_interpolate)
+    logits = model(interpolated_embeddings, **interpolated_kwargs)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(
@@ -337,43 +314,31 @@ def _torch_explain_integrated_gradients_iterative(
     model: TextClassifier,
     interpolated_embeddings_batch: List[TensorLike],
     y_batch: np.ndarray,
-    interpolated_attention_mask_batch: Optional[List[TensorLike]],
+    **kwargs,
 ) -> np.ndarray:
     batch_size = len(interpolated_embeddings_batch)
     num_steps = len(interpolated_embeddings_batch[0])
+    dtype = _get_torch_model(model).dtype
 
-    device = model.device  # type: ignore
+    device = _get_device(model)
     scores = []
 
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
-        interpolated_attention_mask = (
-            interpolated_attention_mask_batch[i]
-            if interpolated_attention_mask_batch is not None
-            else None
+        interpolated_embeddings = torch.tensor(
+            interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
         )
 
-        try:
-            interpolated_embeddings = torch.tensor(
-                interpolated_embeddings, requires_grad=True, device=device
-            )
-        except TypeError:
-            interpolated_embeddings = torch.tensor(
-                interpolated_embeddings,
-                requires_grad=True,
-                device=device,
-                dtype=torch.float32,
-            )
-        if interpolated_attention_mask is not None:
-            interpolated_attention_mask = torch.tensor(
-                interpolated_attention_mask, device=device
-            )
+        interpolated_kwargs = apply_to_dict(
+            {k: v[i] for k, v in kwargs.items()},
+            lambda x: np.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
+        )
 
-        logits = model(interpolated_embeddings, interpolated_attention_mask)
+        logits = model(interpolated_embeddings, **interpolated_kwargs)
         logits_for_class = logits[:, y_batch[i]]
         grads = torch.autograd.grad(
             torch.unbind(logits_for_class), interpolated_embeddings
         )[0]
-        score = torch.trapz(torch.trapz(grads, dim=-1), dim=0)
+        score = torch.trapz(grads, dim=0)
 
         scores.append(score.detach().cpu().numpy())
 
@@ -439,29 +404,25 @@ def torch_explain_noise_grad_plus_plus_numerical(
     model: TextClassifier,
     input_embeddings: TensorLike,
     y_batch: np.ndarray,
-    attention_mask: Optional[TensorLike],
     explain_fn: NumericalExplainFn,
     init_kwargs: Optional[Dict],
+    **kwargs,
 ) -> np.ndarray:
     from noisegrad import NoiseGradPlusPlus
 
-    device = model.device  # type: ignore
-    attention_mask = map_optional(
-        attention_mask, functools.partial(torch.tensor, device=device)
-    )
+    device = _get_device(model)
     input_embeddings = torch.tensor(input_embeddings, device=device)
     y_batch = torch.tensor(y_batch, device=device)
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
-
-    original_base_model = model.model  # type: ignore
+    og_model = deepcopy(_get_torch_model(model))
 
     def explanation_fn(
-        base_model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+        _model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
-        model.model = base_model  # type: ignore
+        model.model = _model  # type: ignore
         # fmt: off
-        np_scores = explain_fn(model, inputs, targets, attention_mask=attention_mask)  # type: ignore
+        np_scores = explain_fn(model, inputs, targets, **kwargs)  # type: ignore
         # fmt: on
         return torch.tensor(np_scores, device=device)
 
@@ -478,7 +439,7 @@ def torch_explain_noise_grad_plus_plus_numerical(
         .numpy()
     )
 
-    model.model = original_base_model  # type: ignore
+    model.model = og_model
     return scores
 
 
@@ -526,12 +487,11 @@ def torch_explain_noise_grad_plus_plus(
             )
         explain_fn = _numerical_method_mapping[explain_fn]  # type: ignore
 
-    tokens = model.tokenizer.tokenize(x_batch)
-    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.embedding_lookup(input_ids)
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
 
     scores = torch_explain_noise_grad_plus_plus_numerical(
-        model, embeddings, y_batch, attention_mask, explain_fn, init_kwargs
+        model, embeddings, y_batch, explain_fn, init_kwargs
     )
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)

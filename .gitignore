@@ -45,3 +45,5 @@ tutorials/invited_talks/
 .vscode
 
 .env
+Dockerfile
+run.sh

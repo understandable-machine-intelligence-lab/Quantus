@@ -17,7 +17,7 @@ from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
     ModelParameterRandomisation,
 )
 from quantus.nlp.metrics.randomisation.random_logit import RandomLogit
-from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
+from quantus.nlp.metrics.faithfullness.token_pruning import TokenPruning
 
 from quantus.nlp.functions.perturb_func import (
     spelling_replacement,
@@ -41,7 +41,25 @@ AVAILABLE_METRICS = {
         "Model Parameter Randomisation": ModelParameterRandomisation,
         "Random Logit": RandomLogit,
     },
-    "Faithfulness": {"Token-Flipping": TokenFlipping},
+    "Faithfulness": {"Token Pruning": TokenPruning},
+}
+
+METRICS_SUPPORT_PLAIN_TEXT_PERTURBATION = {
+    "Local Lipschitz Estimate": LocalLipschitzEstimate,
+    "Max-Sensitivity": MaxSensitivity,
+    "Avg-Sensitivity": AvgSensitivity,
+    "Relative Input Stability": RelativeInputStability,
+    "Relative Output Stability": RelativeOutputStability,
+    "Relative Representation Stability": RelativeRepresentationStability,
+}
+
+METRICS_SUPPORT_NUMERICAL_PERTURBATION = {
+    "Local Lipschitz Estimate": LocalLipschitzEstimate,
+    "Max-Sensitivity": MaxSensitivity,
+    "Avg-Sensitivity": AvgSensitivity,
+    "Relative Input Stability": RelativeInputStability,
+    "Relative Output Stability": RelativeOutputStability,
+    "Relative Representation Stability": RelativeRepresentationStability,
 }
 
 AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS = {
@@ -169,3 +187,11 @@ def available_latent_space_perturbation_functions() -> List[str]:
 
 def available_normalisation_functions() -> List[str]:
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]  # pragma: not covered
+
+
+def metrics_support_plain_text_perturbation() -> List[str]:
+    return [k for k in METRICS_SUPPORT_PLAIN_TEXT_PERTURBATION.keys()]
+
+
+def metrics_support_numerical_perturbation() -> List[str]:
+    return [k for k in METRICS_SUPPORT_NUMERICAL_PERTURBATION]

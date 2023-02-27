@@ -76,6 +76,7 @@ class RelativeInputStability(RelativeStability):
         a_batch: np.ndarray,
         a_batch_perturbed: np.ndarray,
         *args,
+        **kwargs,
     ):
         return self.objective(x_batch, x_batch_perturbed, a_batch, a_batch_perturbed)
 
@@ -87,8 +88,8 @@ class RelativeInputStability(RelativeStability):
         a_batch_perturbed: List[Explanation],
         model: TextClassifier,
     ) -> np.ndarray:
-        x = get_embeddings(x_batch, model)
-        xs = get_embeddings(x_batch_perturbed, model)
+        x, _ = get_embeddings(x_batch, model)
+        xs, _ = get_embeddings(x_batch_perturbed, model)
         x, xs = pad_ragged_vector(x, xs)
 
         e_x = np.asarray([i[1] for i in a_batch])

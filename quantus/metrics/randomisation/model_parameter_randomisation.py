@@ -309,7 +309,7 @@ class ModelParameterRandomisation(Metric):
         )
 
         if self.return_sample_correlation:
-            self.last_results = self.compute_correlation_per_sample()
+            self.last_results = self.compute_correlation_per_sample(self.last_results)
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -400,21 +400,22 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
+    @staticmethod
     def compute_correlation_per_sample(
-        self,
+        last_results: Dict,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.last_results, dict), (
+        assert isinstance(last_results, dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
-        layer_length = len(self.last_results[list(self.last_results.keys())[0]])
+        layer_length = len(last_results[list(last_results.keys())[0]])
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.last_results:
-                results[sample].append(float(self.last_results[layer][sample]))
+            for layer in last_results:
+                results[sample].append(float(last_results[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())

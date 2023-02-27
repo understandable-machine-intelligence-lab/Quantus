@@ -23,10 +23,10 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         self._model = model
         self._tokenizer = HuggingFaceTokenizer(tokenizer)
         self._word_embedding_matrix = tf.convert_to_tensor(
-            model.get_input_embeddings().weight, dtype=tf.float32
+            self._model.get_input_embeddings().weight
         )
         self._position_embedding_matrix = tf.convert_to_tensor(
-            model.get_input_embeddings().position_embeddings, dtype=tf.float32
+            self._model.get_input_embeddings().position_embeddings
         )
 
     @staticmethod
@@ -36,10 +36,6 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             AutoTokenizer.from_pretrained(handle),
             TFAutoModelForSequenceClassification.from_pretrained(handle),
         )
-
-    @property
-    def tokenizer(self):
-        return self._tokenizer
 
     def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> tf.Tensor:
         word_embeds = tf.nn.embedding_lookup(self._word_embedding_matrix, input_ids)
@@ -82,9 +78,15 @@ class TFHuggingFaceTextClassifier(TextClassifier):
     ) -> Generator:
         original_weights = self._model.get_weights().copy()
         random_layer_model = TFAutoModelForSequenceClassification.from_pretrained(
-            self.handle
+            self._model.name_or_path
         )
-        layers = list(self._model._flatten_layers(include_self=False, recursive=True))
+
+        layers = list(
+            random_layer_model._flatten_layers(include_self=False, recursive=True)
+        )
+        random_layer_model_wrapper = TFHuggingFaceTextClassifier(
+            self._tokenizer._tokenizer, random_layer_model
+        )
 
         if order == "top_down":
             layers = layers[::-1]
@@ -95,11 +97,6 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             weights = layer.get_weights()
             np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
-            random_layer_model_wrapper = TFHuggingFaceTextClassifier(
-                AutoTokenizer.from_pretrained(self.handle),
-                random_layer_model,
-                self.handle,
-            )
             yield layer.name, random_layer_model_wrapper
 
     def get_hidden_representations(self, x_batch: List[str]) -> np.ndarray:
@@ -120,8 +117,12 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             inputs_embeds=x_batch,
             training=False,
             output_hidden_states=True,
-            **kwargs
+            **kwargs,
         ).hidden_states
         hidden_states = np.asarray(hidden_states)
         hidden_states = np.moveaxis(hidden_states, 0, 1)
         return hidden_states
+
+    @property
+    def tokenizer(self):
+        return self._tokenizer

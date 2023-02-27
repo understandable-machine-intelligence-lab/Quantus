@@ -39,7 +39,7 @@ jobs:
         black quantus
     - name: Test with pytest
       run: |
-        export SKIP_MPR=1 # skip MPR test, as they fail with OOM
+        export CI=1 # skip MPR test, as they fail with OOM
         pytest
     - name: Test importing Quantus
       run: |

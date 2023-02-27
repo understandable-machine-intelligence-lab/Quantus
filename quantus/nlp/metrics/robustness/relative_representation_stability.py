@@ -97,10 +97,8 @@ class RelativeRepresentationStability(RelativeStability):
         a_batch: np.ndarray,
         a_batch_perturbed: np.ndarray,
         model: TextClassifier,
-        attention_mask: Optional[np.ndarray],
+        **kwargs,
     ):
-        l_x = model.get_hidden_representations_embeddings(x_batch, attention_mask)
-        l_xs = model.get_hidden_representations_embeddings(
-            x_batch_perturbed, attention_mask
-        )
+        l_x = model.get_hidden_representations_embeddings(x_batch, **kwargs)
+        l_xs = model.get_hidden_representations_embeddings(x_batch_perturbed, **kwargs)
         return self.objective(l_x, l_xs, a_batch, a_batch_perturbed)

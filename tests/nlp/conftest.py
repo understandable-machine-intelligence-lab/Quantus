@@ -70,7 +70,6 @@ def a_tuple_text_ragged_2(a_tuple_text):
 
 @pytest.fixture(scope="session")
 def torch_fnet():
-    # TODO
     # This model is interesting because it has not attention mask, but requires type_ids
     return TorchHuggingFaceTextClassifier.from_pretrained(
         "gchhablani/fnet-base-finetuned-sst2"

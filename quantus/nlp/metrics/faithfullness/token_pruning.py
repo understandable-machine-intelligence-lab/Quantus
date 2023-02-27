@@ -11,10 +11,10 @@ from quantus.nlp.helpers.types import Explanation, NormaliseFn
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.utils import safe_asarray
-from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
+from quantus.nlp.helpers.plotting import plot_token_pruning_experiment
 
 
-class TokenFlipping(BatchedMetric):
+class TokenPruning(BatchedMetric):
     """
     References:
         - https://arxiv.org/abs/2202.07304
@@ -41,7 +41,7 @@ class TokenFlipping(BatchedMetric):
         display_progressbar: bool = False,
         return_auc_per_sample: bool = False,
         mask_token: str = "[UNK]",
-        default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
+        default_plot_func: Optional[Callable] = plot_token_pruning_experiment,
     ):
         super().__init__(
             abs=abs,
@@ -84,7 +84,13 @@ class TokenFlipping(BatchedMetric):
         mask_indices_all = np.asarray(mask_indices_all).T
 
         x_batch_encoded = model.tokenizer.tokenize(x_batch)
-        input_ids, attention_mask = unpack_token_ids_and_attention_mask(x_batch_encoded)
+        if isinstance(x_batch_encoded, Dict):
+            input_ids = x_batch_encoded.pop("input_ids")
+            kwargs = x_batch_encoded
+        else:
+            input_ids = x_batch_encoded
+            kwargs = {}
+
         mask_token_id = model.tokenizer.token_id(self.mask_token)
 
         for i, mask_indices_batch in enumerate(mask_indices_all):
@@ -92,10 +98,9 @@ class TokenFlipping(BatchedMetric):
                 input_ids[index_in_batch][mask_index] = mask_token_id
 
             embeddings = model.embedding_lookup(input_ids)
-            # Predict on perturbed input x.
-            logits = model(embeddings, attention_mask)
+            logits = model(embeddings, **kwargs)
             logits = safe_asarray(logits)
-            scores[i] = np.argmax(logits, axis=-1)
+            scores[i] = np.take(logits, y_batch)
 
         # Move batch axis to 0's position.
         scores = scores.T

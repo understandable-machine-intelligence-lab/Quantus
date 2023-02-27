@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 import numpy as np
-from typing import List, Callable, Optional, no_type_check
+from typing import List, Callable, Optional, no_type_check, Dict
 
 
 from quantus.functions.similarity_func import difference
@@ -15,6 +15,8 @@ from quantus.nlp.helpers.types import (
 from quantus.nlp.helpers.utils import (
     safe_asarray,
     explanation_similarity,
+    get_embeddings,
+    get_input_ids,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 
@@ -52,11 +54,7 @@ class SensitivityMetric(RobustnessMetric):
         **kwargs,
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
-
-        tokenized_input = model.tokenizer.tokenize(x_batch)
-        input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
-        x_batch_embeddings = safe_asarray(model.embedding_lookup(input_ids))
-
+        x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
         for step_id in range(self.nr_samples):
@@ -71,7 +69,7 @@ class SensitivityMetric(RobustnessMetric):
                     y_batch,
                     a_batch_numerical,
                     x_batch_embeddings,
-                    attention_mask,
+                    **predict_kwargs,
                 )
 
         scores = self.aggregate_instances(scores)
@@ -127,7 +125,7 @@ class SensitivityMetric(RobustnessMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         x_batch_embeddings: np.ndarray,
-        attention_mask: Optional[np.ndarray],
+        **kwargs,
     ) -> np.ndarray:
         batch_size = len(x_batch_embeddings)
         # Perturb input.
@@ -139,15 +137,15 @@ class SensitivityMetric(RobustnessMetric):
         )
 
         changed_prediction_indices = self.indexes_of_changed_predictions_latent(
-            model, x_batch_embeddings, x_batch_embeddings_perturbed, attention_mask
+            model, x_batch_embeddings, x_batch_embeddings_perturbed, **kwargs
         )
 
         a_batch_perturbed = self.explain_func(
             model,
             x_batch_embeddings_perturbed,
             y_batch,
-            attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
+            **kwargs,  # noqa
         )
         a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
 

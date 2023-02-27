@@ -80,11 +80,11 @@ class RelativeOutputStability(RelativeStability):
         a_batch: np.ndarray,
         a_batch_perturbed: np.ndarray,
         model: TextClassifier,
-        attention_mask: Optional[np.ndarray],
+        **kwargs,
     ):
-        h_x = model(x_batch, attention_mask)
+        h_x = model(x_batch, **kwargs)
         h_x = safe_asarray(h_x)
-        h_xs = model(x_batch_perturbed, attention_mask)
+        h_xs = model(x_batch_perturbed, **kwargs)
         h_xs = safe_asarray(h_xs)
         return self.objective(h_x, h_xs, a_batch, a_batch_perturbed)
 

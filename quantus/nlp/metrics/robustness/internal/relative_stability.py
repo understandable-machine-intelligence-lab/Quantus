@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
-from quantus.nlp.helpers.utils import safe_asarray
+from quantus.nlp.helpers.utils import safe_asarray, get_embeddings, get_input_ids
 
 
 class RelativeStability(RobustnessMetric):
@@ -93,9 +93,7 @@ class RelativeStability(RobustnessMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
     ) -> np.ndarray:
-        tokenized_input = model.tokenizer.tokenize(x_batch)
-        input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokenized_input)
-        x_batch_embeddings = safe_asarray(model.embedding_lookup(input_ids))
+        x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
 
         # Perturb input.
         # fmt: off
@@ -106,8 +104,8 @@ class RelativeStability(RobustnessMetric):
             model,
             x_perturbed,
             y_batch,
-            attention_mask=attention_mask,  # noqa
             **self.explain_func_kwargs,  # noqa
+            **predict_kwargs,  # noqa
         )
         a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
         # Compute maximization's objective.
@@ -117,7 +115,7 @@ class RelativeStability(RobustnessMetric):
             a_batch,
             a_batch_perturbed,  # noqa
             model,
-            attention_mask,
+            **predict_kwargs,
         )
         # We're done with this sample if `return_nan_when_prediction_changes`==False.
         if not self.return_nan_when_prediction_changes:
@@ -125,7 +123,7 @@ class RelativeStability(RobustnessMetric):
 
         # If perturbed input caused change in prediction, then it's RIS=nan.
         changed_prediction_indices = self.indexes_of_changed_predictions_latent(
-            model, x_batch_embeddings, x_perturbed, attention_mask
+            model, x_batch_embeddings, x_perturbed, **predict_kwargs
         )
 
         if len(changed_prediction_indices) != 0:
@@ -141,7 +139,7 @@ class RelativeStability(RobustnessMetric):
         a_batch: np.ndarray,
         a_batch_perturbed: np.ndarray,
         model: TextClassifier,
-        attention_mask: Optional[np.ndarray],
+        **kwargs,
     ) -> np.ndarray:
         raise NotImplementedError  # pragma: not covered
 

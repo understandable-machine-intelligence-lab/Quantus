@@ -175,7 +175,9 @@ def visualise_explanations_as_html(
     return heatmap_template.replace("{{body}}", spans)
 
 
-def visualise_explanations_as_pyplot(explanations: List[Explanation]):
+def visualise_explanations_as_pyplot(
+    explanations: List[Explanation], labels: Optional[List[str]] = None
+):
     """
     Plots attributions over a batch of text sequence explanations.
 
@@ -203,11 +205,14 @@ def visualise_explanations_as_pyplot(explanations: List[Explanation]):
     fig, axes = plt.subplots(
         h_len,
         v_len,
-        figsize=(v_len, h_len * 0.5),
+        figsize=(v_len * 0.75, h_len * 1.25),
         gridspec_kw=dict(left=0.0, right=1.0),
     )
+    plt.subplots_adjust(hspace=1.0, wspace=0.0)
     for i, ax in enumerate(axes):
         color_mapper = ColorMapper(np.max(scores[i]), np.min(scores[i]))
+        if labels:
+            ax[v_len // 2].set_title(labels[i])
         for j in range(v_len):
             color = color_mapper.to_rgb(scores[i][j], normalize_to_1=True)
             rect = plt.Rectangle((0, 0), 1, 1, color=color)
@@ -226,7 +231,7 @@ def visualise_explanations_as_pyplot(explanations: List[Explanation]):
     return fig
 
 
-def plot_token_flipping_experiment(score: np.ndarray, original_prediction: np.ndarray):
+def plot_token_pruning_experiment(score: np.ndarray, original_prediction: np.ndarray):
     """
     AU-MSE - area under the mean squared error (y0−ymt)
     curve for pruning. Lower is better and indicates that removing less
@@ -241,6 +246,6 @@ def plot_token_flipping_experiment(score: np.ndarray, original_prediction: np.nd
     )
     plt.plot(y, x)
 
-    plt.title("Token Flipping Experiment")
+    plt.title("Token Pruning Experiment")
     plt.xlabel("Number of tokens flipped")
     plt.ylabel("MSE")

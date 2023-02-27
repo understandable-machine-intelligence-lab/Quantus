@@ -28,6 +28,7 @@ from quantus.nlp.helpers.plotting import (
 )
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.model.tokenizer import Tokenizer
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from importlib import util
 
@@ -58,7 +59,7 @@ from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
     ModelParameterRandomisation,
 )
 from quantus.nlp.metrics.randomisation.random_logit import RandomLogit
-from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
+from quantus.nlp.metrics.faithfullness.token_pruning import TokenPruning
 
 from typing import TYPE_CHECKING
 
@@ -82,4 +83,4 @@ from quantus.nlp.helpers.types import (
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.utils import normalise_attributions, abs_attributions
 from quantus.nlp.evaluation import evaluate
-from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
+from quantus.nlp.helpers.plotting import plot_token_pruning_experiment

@@ -19,6 +19,9 @@ from quantus.nlp.helpers.utils import (
     get_interpolated_inputs,
     value_or_default,
     apply_noise,
+    apply_to_dict,
+    get_embeddings,
+    get_input_ids,
 )
 
 if TYPE_CHECKING:
@@ -64,15 +67,8 @@ def tf_explain_gradient_norm(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    encoded_inputs = model.tokenizer.tokenize(x_batch)
-    if isinstance(encoded_inputs, Dict):
-        input_ids = encoded_inputs.pop("input_ids")
-        kwargs = encoded_inputs
-    else:
-        input_ids = encoded_inputs
-        kwargs = {}
-
-    embeddings = model.embedding_lookup(input_ids)
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
     scores = tf_explain_gradient_norm_numerical(model, embeddings, y_batch, **kwargs)
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
@@ -130,16 +126,8 @@ def tf_explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    encoded_inputs = model.tokenizer.tokenize(x_batch)
-    if isinstance(encoded_inputs, Dict):
-        input_ids = encoded_inputs.pop("input_ids")
-        kwargs = encoded_inputs
-    else:
-        input_ids = encoded_inputs
-        kwargs = {}
-
-    embeddings = model.embedding_lookup(input_ids)
-
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
     scores = tf_explain_gradient_x_input_numerical(model, embeddings, y_batch, **kwargs)
 
     return [
@@ -221,14 +209,8 @@ def tf_explain_integrated_gradients(
     >>> tf_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-    encoded_inputs = model.tokenizer.tokenize(x_batch)
-    if isinstance(encoded_inputs, Dict):
-        input_ids = encoded_inputs.pop("input_ids")
-        kwargs = encoded_inputs
-    else:
-        input_ids = encoded_inputs
-        kwargs = {}
-    embeddings = model.embedding_lookup(input_ids)
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
     scores = tf_explain_integrated_gradients_numerical(
         model,
         embeddings,
@@ -287,11 +269,13 @@ def _tf_explain_integrated_gradients_batched(
         tf.cast(interpolated_embeddings, dtype=tf.float32),
         [-1, *interpolated_embeddings.shape[2:]],
     )
-    interpolated_kwargs = {}
-    for k, v in kwargs.items():
-        v = tf.broadcast_to(v, (num_steps, *v.shape))
-        v = tf.reshape(v, (-1, *v.shape[2:]))
-        interpolated_kwargs[k] = v
+
+    def pseduo_interpolate(x):
+        x = tf.broadcast_to(x, (num_steps, *x.shape))
+        x = tf.reshape(x, (-1, *x.shape[2:]))
+        return x
+
+    interpolated_kwargs = apply_to_dict(kwargs, pseduo_interpolate)
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
@@ -314,11 +298,10 @@ def _tf_explain_integrated_gradients_iterative(
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
         interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
 
-        interpolated_kwargs = {k: v[i] for k, v in kwargs.items()}
-        for k, v in interpolated_kwargs.items():
-            interpolated_kwargs[k] = tf.broadcast_to(
-                v, (interpolated_embeddings.shape[0], *v.shape)
-            )
+        interpolated_kwargs = apply_to_dict(
+            {k: v[i] for k, v in kwargs.items()},
+            lambda x: tf.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
+        )
 
         with tf.GradientTape() as tape:
             tape.watch(interpolated_embeddings)
@@ -404,15 +387,8 @@ def tf_explain_noise_grad_plus_plus(
 
     """
 
-    encoded_inputs = model.tokenizer.tokenize(x_batch)
-    if isinstance(encoded_inputs, Dict):
-        input_ids = encoded_inputs.pop("input_ids")
-        kwargs = encoded_inputs
-    else:
-        input_ids = encoded_inputs
-        kwargs = {}
-
-    embeddings = model.embedding_lookup(input_ids)
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
     scores = tf_explain_noise_grad_plus_plus_numerical(
         model,
         embeddings,
