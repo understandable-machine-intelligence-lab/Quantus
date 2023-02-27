@@ -13,11 +13,9 @@ from quantus.nlp.helpers.types import (
     Explanation,
     TextClassifier,
     NormaliseFn,
-    PlainTextPerturbFn,
-    NumericalPerturbFn,
-    PerturbationType,
+    PerturbFn,
 )
-from quantus.nlp.helpers.utils import pad_ragged_vector
+from quantus.nlp.helpers.utils import pad_ragged_arrays
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
 
 
@@ -44,8 +42,7 @@ class RelativeRepresentationStability(RelativeStability):
         aggregate_func: Callable = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        perturbation_type: PerturbationType = PerturbationType.plain_text,
-        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
+        perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
         eps_min: float = 1e-5,
         nr_samples: int = 50,
@@ -62,7 +59,6 @@ class RelativeRepresentationStability(RelativeStability):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            perturbation_type=perturbation_type,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             eps_min=eps_min,
@@ -81,12 +77,12 @@ class RelativeRepresentationStability(RelativeStability):
     ) -> np.ndarray:
         l_x = model.get_hidden_representations(x_batch)
         l_xs = model.get_hidden_representations(x_batch_perturbed)
-        l_x, l_xs = pad_ragged_vector(l_x, l_xs)
+        l_x, l_xs = pad_ragged_arrays(l_x, l_xs)
 
         e_x = np.asarray([i[1] for i in a_batch])
         e_xs = np.asarray([i[1] for i in a_batch_perturbed])
 
-        e_x, e_xs = pad_ragged_vector(e_x, e_xs)
+        e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
 
         return self.objective(l_x, l_xs, e_x, e_xs)
 
@@ -99,6 +95,6 @@ class RelativeRepresentationStability(RelativeStability):
         model: TextClassifier,
         **kwargs,
     ):
-        l_x = model.get_hidden_representations_embeddings(x_batch, **kwargs)
-        l_xs = model.get_hidden_representations_embeddings(x_batch_perturbed, **kwargs)
+        l_x = model.get_hidden_representations(x_batch, **kwargs)
+        l_xs = model.get_hidden_representations(x_batch_perturbed, **kwargs)
         return self.objective(l_x, l_xs, a_batch, a_batch_perturbed)

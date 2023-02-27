@@ -6,7 +6,6 @@ from quantus.nlp.helpers.model.tokenizer import Tokenizer
 
 
 class HuggingFaceTokenizer(Tokenizer):
-
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
     def __init__(self, tokenizer: PreTrainedTokenizerBase):

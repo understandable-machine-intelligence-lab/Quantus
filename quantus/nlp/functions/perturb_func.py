@@ -1,14 +1,15 @@
 from typing import List
 
+from typing import Callable, Optional
 import numpy as np
 from nlpaug.augmenter.word import SynonymAug, SpellingAug
 from nlpaug.augmenter.char import KeyboardAug
+from quantus.nlp.helpers.utils import value_or_default
 
-from quantus.nlp.helpers.utils import apply_noise
-from quantus.nlp.helpers.types import NoiseType
+_ApplyFn = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 
-def spelling_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
+def spelling_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
     """
     Replace k words in each entry of text by alternative spelling.
 
@@ -21,10 +22,10 @@ def spelling_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
 
     """
     aug = SpellingAug(aug_max=k, aug_min=k, **kwargs)
-    return aug.augment(text)
+    return aug.augment(x_batch)
 
 
-def synonym_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
+def synonym_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
     """
     Replace k words in each entry of text by synonym.
 
@@ -36,10 +37,10 @@ def synonym_replacement(text: List[str], k: int = 3, **kwargs) -> List[str]:
     ... ['nervous mishmash of styles and genres.']
     """
     aug = SynonymAug(aug_max=k, aug_min=k, **kwargs)
-    return aug.augment(text)
+    return aug.augment(x_batch)
 
 
-def typo_replacement(text: List[str], k: int = 1, **kwargs) -> List[str]:
+def typo_replacement(x_batch: List[str], k: int = 1, **kwargs) -> List[str]:
     """
     Replace k characters in k words in each entry of text mimicking typo.
 
@@ -52,26 +53,22 @@ def typo_replacement(text: List[str], k: int = 1, **kwargs) -> List[str]:
     aug = KeyboardAug(
         aug_char_max=k, aug_char_min=k, aug_word_min=k, aug_word_max=k, **kwargs
     )
-    return aug.augment(text)
+    return aug.augment(x_batch)
 
 
 def uniform_noise(
-    arr: np.ndarray,
-    noise_type: NoiseType = NoiseType.additive,
-    seed: int = 42,
-    **kwargs
+    x_batch: np.ndarray, seed: int = 42, apply_fn: Optional[_ApplyFn] = None, **kwargs
 ) -> np.ndarray:
     """Apply uniform noise to arr."""
-    noise = np.random.default_rng(seed).uniform(size=arr.shape, **kwargs)
-    return apply_noise(arr, noise, noise_type)
+    apply_fn = value_or_default(apply_fn, lambda: lambda x, y: x + y)
+    noise = np.random.default_rng(seed).uniform(size=x_batch.shape, **kwargs)
+    return apply_fn(x_batch, noise)
 
 
 def gaussian_noise(
-    arr: np.ndarray,
-    noise_type: NoiseType = NoiseType.additive,
-    seed: int = 42,
-    **kwargs
+    x_batch: np.ndarray, seed: int = 42, apply_fn: Optional[_ApplyFn] = None, **kwargs
 ) -> np.ndarray:
     """Apply gaussian noise to arr."""
-    noise = np.random.default_rng(seed).normal(size=arr.shape, **kwargs)
-    return apply_noise(arr, noise, noise_type)
+    apply_fn = value_or_default(apply_fn, lambda: lambda x, y: x + y)
+    noise = np.random.default_rng(seed).normal(size=x_batch.shape, **kwargs)
+    return apply_fn(x_batch, noise)

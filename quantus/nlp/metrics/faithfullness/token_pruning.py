@@ -10,7 +10,7 @@ from quantus.nlp.helpers.types import Explanation, NormaliseFn
 
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import safe_asarray
+from quantus.nlp.helpers.utils import safe_as_array
 from quantus.nlp.helpers.plotting import plot_token_pruning_experiment
 
 
@@ -74,7 +74,7 @@ class TokenPruning(BatchedMetric):
         scores = np.full(shape=(num_tokens, batch_size), fill_value=np.NINF)
 
         logits = model.predict(x_batch)
-        logits = safe_asarray(logits)
+        logits = safe_as_array(logits)
         logits_for_labels = np.asarray([y[i] for y, i in zip(logits, y_batch)])
         scores[0] = logits_for_labels
 
@@ -99,7 +99,7 @@ class TokenPruning(BatchedMetric):
 
             embeddings = model.embedding_lookup(input_ids)
             logits = model(embeddings, **kwargs)
-            logits = safe_asarray(logits)
+            logits = safe_as_array(logits)
             scores[i] = np.take(logits, y_batch)
 
         # Move batch axis to 0's position.

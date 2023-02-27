@@ -11,7 +11,8 @@ from quantus.nlp.helpers.constants import (
     available_xai_methods,
     available_plain_text_xai_methods,
     available_numerical_xai_methods,
-    AVAILABLE_PERTURBATION_FUNCTIONS,
+    avilable_metrics_numerical_perturbation,
+    available_metrics_plain_text_perturbation,
 )
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.perturb_func import (
@@ -61,26 +62,16 @@ from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
 from quantus.nlp.metrics.randomisation.random_logit import RandomLogit
 from quantus.nlp.metrics.faithfullness.token_pruning import TokenPruning
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import (
-        TF_TensorLike,
-        TensorLike,
-    )  # pragma: not covered
 
 from quantus.nlp.helpers.types import (
     Explanation,
     ExplainFn,
-    PlainTextPerturbFn,
-    NumericalPerturbFn,
     NormaliseFn,
     SimilarityFn,
     PerturbationType,
-    NoiseType,
+    PerturbFn,
 )
 
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import normalise_attributions, abs_attributions
 from quantus.nlp.evaluation import evaluate
 from quantus.nlp.helpers.plotting import plot_token_pruning_experiment

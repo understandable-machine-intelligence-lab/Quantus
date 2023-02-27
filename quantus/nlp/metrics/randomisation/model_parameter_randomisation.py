@@ -13,7 +13,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import explanations_similarity
+from quantus.nlp.helpers.utils import explanations_batch_similarity
 
 
 class ModelParameterRandomisation(BatchedMetric):
@@ -151,6 +151,6 @@ class ModelParameterRandomisation(BatchedMetric):
         a_perturbed: List[Explanation],
         *args,
         **kwargs,
-    ) -> float:
+    ) -> np.ndarray:
         # Compute distance measure.
-        return explanations_similarity(a_batch, a_perturbed, self.similarity_func)
+        return explanations_batch_similarity(a_batch, a_perturbed, self.similarity_func)

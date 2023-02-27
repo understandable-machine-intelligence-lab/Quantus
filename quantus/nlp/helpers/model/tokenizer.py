@@ -18,4 +18,5 @@ class Tokenizer(ABC):
 
     @abstractmethod
     def token_id(self, token: str) -> int:
+        """Get id of token. This method is required for TokenPruning metric."""
         raise NotImplementedError

@@ -16,7 +16,6 @@ from quantus.nlp import AvgSensitivity, PerturbationType, uniform_noise
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},
@@ -48,7 +47,6 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},
@@ -79,7 +77,6 @@ def test_keras_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},
@@ -110,7 +107,6 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, init_kwargs, call_k
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},

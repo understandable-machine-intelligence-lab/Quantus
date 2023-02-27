@@ -11,6 +11,23 @@ class TextClassifier(ABC):
 
     """An interface for model, trained for text-classification task (aka sentiment analysis)."""
 
+    @property
+    @abstractmethod
+    def tokenizer(self):
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def weights(self):
+        """Get model's (learnable) parameters."""
+        raise NotImplementedError  # pragma: not covered
+
+    @weights.setter
+    @abstractmethod
+    def weights(self, weights):
+        """Set model's (learnable) parameters."""
+        raise NotImplementedError  # pragma: not covered
+
     @abstractmethod
     def __call__(self, inputs_embeds: T, **kwargs) -> T:
         """
@@ -33,36 +50,13 @@ class TextClassifier(ABC):
         """Convert vocabulary ids to model's latent representations"""
         raise NotImplementedError  # pragma: not covered
 
-    @property
-    @abstractmethod
-    def weights(self):
-        """Get model's (learnable) parameters."""
-        raise NotImplementedError  # pragma: not covered
-
-    @weights.setter
-    @abstractmethod
-    def weights(self, weights):
-        """Set model's (learnable) parameters."""
-        raise NotImplementedError  # pragma: not covered
-
     @abstractmethod
     def get_hidden_representations(
-        self,
-        x_batch: List[str],
+        self, x_batch: List[str] | np.ndarray, **kwargs
     ) -> np.ndarray:
         """
         Returns model's internal representations for x_batch.
-        This method is required for Relative Representation Stability with plain-text noise.
-        """
-        raise NotImplementedError  # pragma: not covered
-
-    @abstractmethod
-    def get_hidden_representations_embeddings(
-        self, x_batch: np.ndarray, **kwargs
-    ) -> np.ndarray:
-        """
-        Returns model's internal representations for x_batch.
-        This method is required for Relative Representation Stability with latent space (numerical) noise.
+        This method is required for Relative Representation Stability.
         """
         raise NotImplementedError  # pragma: not covered
 
@@ -75,8 +69,3 @@ class TextClassifier(ABC):
         This method is required for Model Parameter Randomisation Metric.
         """
         raise NotImplementedError  # pragma: not covered
-
-    @property
-    @abstractmethod
-    def tokenizer(self):
-        raise NotImplementedError

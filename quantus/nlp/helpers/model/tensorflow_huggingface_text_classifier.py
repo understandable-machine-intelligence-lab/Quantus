@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional, TYPE_CHECKING, Generator, Dict
+from typing import List, TYPE_CHECKING, Generator
+from multimethod import multimethod
 
 from transformers import (
     TFPreTrainedModel,
@@ -13,9 +14,6 @@ from transformers.tf_utils import shape_list
 import tensorflow as tf
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-
-if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TF_TensorLike  # pragma: not covered
 
 
 class TFHuggingFaceTextClassifier(TextClassifier):
@@ -98,19 +96,25 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, random_layer_model_wrapper
 
-    def get_hidden_representations(self, x_batch: List[str]) -> np.ndarray:
+    @multimethod
+    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:
+        pass
+
+    @get_hidden_representations.register
+    def get_hidden_representations(self, x_batch: List[str], **kwargs) -> np.ndarray:
         encoded_batch = self._tokenizer.tokenize(x_batch)
+        hidden_states = self._model(
+            **encoded_batch,
+            training=False,
+            output_hidden_states=True,
+            **kwargs,
+        ).hidden_states
+        hidden_states = np.asarray(hidden_states)
+        hidden_states = np.moveaxis(hidden_states, 0, 1)
+        return hidden_states
 
-        inputs_ids = encoded_batch.pop("input_ids")
-
-        x_batch_embeddings = self.embedding_lookup(inputs_ids)
-        return self.get_hidden_representations_embeddings(
-            x_batch_embeddings, **encoded_batch
-        )
-
-    def get_hidden_representations_embeddings(
-        self, x_batch: np.ndarray, **kwargs
-    ) -> np.ndarray:
+    @get_hidden_representations.register
+    def get_hidden_representations(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
         hidden_states = self._model(
             None,
             inputs_embeds=x_batch,

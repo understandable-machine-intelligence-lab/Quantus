@@ -1,15 +1,12 @@
 
 import numpy as np
-from quantus.functions.norm_func import lp_norm_2d, lp_norm_3d, lp_norm_4d
+from quantus.functions.norm_func import l2_norm
 
 
 class RelativeOutputStabilityObjective:
 
     def __init__(self, eps_min: float):
         self._eps_min = eps_min
-
-
-
 
     def __call__(
         self,
@@ -39,24 +36,12 @@ class RelativeOutputStabilityObjective:
             ROS maximization objective.
         """
 
-        num_dim = e_x.ndim
-        if num_dim == 4:
-            norm_function = lp_norm_4d
-        elif num_dim == 3:
-            norm_function = lp_norm_3d
-        elif num_dim == 2:
-            norm_function = lp_norm_2d
-        else:
-            raise ValueError(
-                "Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
+        nominator = l2_norm(nominator)
         # fmt: on
 
         denominator = h_x - h_xs
-        denominator = np.linalg.norm(denominator, axis=-1)
+        denominator = l2_norm(denominator)
         denominator += (denominator == 0) * self._eps_min  # prevent division by 0
         return nominator / denominator

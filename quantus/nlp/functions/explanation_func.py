@@ -6,12 +6,20 @@ from typing import Dict, List, Optional
 import warnings
 from transformers import pipeline
 from functools import partial
+from importlib import util
+
+if util.find_spec("tensorflow"):
+    from quantus.nlp.functions.tf_explanation_func import tf_explain
+
+if util.find_spec("torch"):
+    from quantus.nlp.functions.torch_explanation_func import torch_explain
 
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.utils import (
     value_or_default,
     safe_isinstance,
+    add_default_items,
 )
 
 TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TFHuggingFaceTextClassifier"
@@ -36,19 +44,17 @@ def explain_lime(
         - https://github.com/marcotcr/lime
     """
 
-    from lime.lime_text import LimeTextExplainer  # noqa
+    from lime.lime_text import LimeTextExplainer
 
-    init_kwargs = value_or_default(init_kwargs, lambda: {})
-    call_kwargs = value_or_default(call_kwargs, lambda: {})
+    init_kwargs = add_default_items(init_kwargs, {"mask_string": "[MASK]"})
+    call_kwargs = add_default_items(call_kwargs, {"top_labels": 1})
     predict_fn = partial(model.predict, batch_size=batch_size)
 
-    explainer = LimeTextExplainer(mask_string="[MASK]", **init_kwargs)
+    explainer = LimeTextExplainer(**init_kwargs)
 
     explanations = []
     for x, y in zip(x_batch, y_batch):
-        ex = explainer.explain_instance(
-            x, predict_fn, top_labels=1, **call_kwargs
-        ).as_list(label=y)
+        ex = explainer.explain_instance(x, predict_fn, **call_kwargs).as_list(label=y)
         explanations.append(([i[0] for i in ex], np.asarray([i[1] for i in ex])))
 
     return explanations
@@ -72,11 +78,11 @@ def explain_shap(
         - https://github.com/slundberg/shap
     """
 
-    import shap  # noqa
+    import shap
     import shap.maskers
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
-    call_kwargs = value_or_default(call_kwargs, lambda: {})
+    call_kwargs = add_default_items(call_kwargs, {"silent": True})
     predict_fn = partial(model.predict, batch_size=batch_size)
 
     if safe_isinstance(model, [TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass]):
@@ -93,19 +99,36 @@ def explain_shap(
             predict_fn, shap.maskers.Text(), **init_kwargs  # noqa
         )
 
-    shapley_values = explainer(
-        x_batch, silent=True, batch_size=batch_size, **call_kwargs
-    )
+    shapley_values = explainer(x_batch, batch_size=batch_size, **call_kwargs)
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
+
+
+def _is_torch_model(model: TextClassifier):
+    if safe_isinstance(model, Torch_HuggingfaceModelClass):
+        return True
+    for i in ("model", "_model"):
+        if hasattr(model, i):
+            internal_model = getattr(model, i)
+            if safe_isinstance(internal_model, "torch.nn.Module"):
+                return True
+    return False
+
+
+def _is_tf_model(model: TextClassifier):
+    if safe_isinstance(model, TF_HuggingfaceModelClass):
+        return True
+    for i in ("model", "_model"):
+        if hasattr(model, i):
+            internal_model = getattr(model, i)
+            if safe_isinstance(internal_model, ("keras.Model", "tensorflow.Module")):
+                return True
+    return False
 
 
 def explain(
     model: TextClassifier,
-    x_batch: List[str] | np.ndarray,
-    y_batch: np.ndarray,
     *args,
     method: Optional[str] = None,
-    framework: Optional[str] = None,
     **kwargs,
 ) -> List[Explanation]:
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
@@ -119,48 +142,14 @@ def explain(
         method = "GradNorm"
 
     if method == "LIME":
-        return explain_lime(model, x_batch, y_batch, **kwargs)
+        return explain_lime(model, *args, **kwargs)
     if method == "SHAP":
-        return explain_shap(model, x_batch, y_batch, **kwargs)
+        return explain_shap(model, *args, **kwargs)
 
-    if safe_isinstance(model, TF_HuggingfaceModelClass):
-        from .tf_explanation_func import tf_explain
+    if _is_tf_model(model):
+        return tf_explain(model, *args, method=method, **kwargs)
 
-        return tf_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
+    if _is_torch_model(model):
+        return torch_explain(model, *args, method=method, **kwargs)
 
-    if safe_isinstance(model, Torch_HuggingfaceModelClass):
-        from .torch_explanation_func import torch_explain
-
-        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
-
-    internal_model = None
-    for i in ("model", "_model"):
-        if hasattr(model, i):
-            internal_model = getattr(model, i)
-            break
-
-    if safe_isinstance(internal_model, "keras.Model"):
-        from .tf_explanation_func import tf_explain
-
-        return tf_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
-
-    if safe_isinstance(internal_model, "torch.nn.Module"):
-        from .torch_explanation_func import torch_explain
-
-        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
-
-    if framework is None:
-        raise ValueError(
-            f"Unable to identify framework of the model, please provide framework kwarg"
-        )
-
-    if framework in ("tf", "tensorflow", "keras"):
-        from .tf_explanation_func import tf_explain
-
-        return tf_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
-    if framework in ("torch", "pytorch", "pt"):
-        from .torch_explanation_func import torch_explain
-
-        return torch_explain(model, x_batch, y_batch, *args, method=method, **kwargs)
-
-    raise ValueError(f"Unknown DNN framework {framework}")
+    raise ValueError(f"Unable to identify DNN framework of the model.")

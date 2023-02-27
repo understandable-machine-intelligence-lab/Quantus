@@ -11,12 +11,14 @@ from quantus.nlp.helpers.types import (
     TextClassifier,
     PerturbationType,
     SimilarityFn,
+    NormFn,
 )
 from quantus.nlp.helpers.utils import (
-    safe_asarray,
+    safe_as_array,
     explanation_similarity,
     get_embeddings,
     get_input_ids,
+    determine_perturbation_type,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 
@@ -29,8 +31,8 @@ class SensitivityMetric(RobustnessMetric):
     def __init__(
         self,
         *args,
-        norm_numerator: Callable[[np.ndarray], float],
-        norm_denominator: Callable[[np.ndarray], float],
+        norm_numerator: NormFn,
+        norm_denominator: NormFn,
         nr_samples: int,
         similarity_func: SimilarityFn = difference,
         **kwargs,
@@ -56,18 +58,18 @@ class SensitivityMetric(RobustnessMetric):
         batch_size = len(x_batch)
         x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
+        perturbation_type = determine_perturbation_type(self.perturb_func)
 
         for step_id in range(self.nr_samples):
-            if self.perturbation_type == PerturbationType.plain_text:
+            if perturbation_type == PerturbationType.plain_text:
                 scores[step_id] = self._evaluate_batch_step_plain_text_noise(
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
-            if self.perturbation_type == PerturbationType.latent_space:
-                a_batch_numerical = np.asarray([i[1] for i in a_batch])
+            if perturbation_type == PerturbationType.latent_space:
                 scores[step_id] = self._evaluate_batch_step_latent_space_noise(
                     model,
                     y_batch,
-                    a_batch_numerical,
+                    a_batch,
                     x_batch_embeddings,
                     **predict_kwargs,
                 )
@@ -123,10 +125,11 @@ class SensitivityMetric(RobustnessMetric):
         self,
         model: TextClassifier,
         y_batch: np.ndarray,
-        a_batch: np.ndarray,
+        a_batch: List[Explanation],
         x_batch_embeddings: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
+        a_batch_numerical = np.asarray([i[1] for i in a_batch])
         batch_size = len(x_batch_embeddings)
         # Perturb input.
         # fmt: off
@@ -158,7 +161,7 @@ class SensitivityMetric(RobustnessMetric):
                 continue
 
             sensitivities = self.similarity_func(
-                a_batch[instance_id],
+                a_batch_numerical[instance_id],
                 a_batch_perturbed[instance_id],  # noqa
             )
 

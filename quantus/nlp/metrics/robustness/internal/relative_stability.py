@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional, List, no_type_check
+from typing import List, no_type_check
 import numpy as np
 from abc import abstractmethod
 
 from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
-from quantus.nlp.helpers.utils import safe_asarray, get_embeddings, get_input_ids
+from quantus.nlp.helpers.utils import get_embeddings, determine_perturbation_type
 
 
 class RelativeStability(RobustnessMetric):
@@ -36,25 +36,22 @@ class RelativeStability(RobustnessMetric):
         batch_size = len(x_batch)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
+        perturbation_type = determine_perturbation_type(self.perturb_func)
         for step_id in range(self.nr_samples):
-            if self.perturbation_type == PerturbationType.plain_text:
-                scores[step_id] = self._evaluate_batch_step_plain_text_noise(
+            if perturbation_type == PerturbationType.plain_text:
+                scores[step_id] = self._evaluate_step_plain_text_perturbation(
                     model, x_batch, y_batch, a_batch
                 )
-            if self.perturbation_type == PerturbationType.latent_space:
-                a_batch_numerical = np.asarray([i[1] for i in a_batch])
-                scores[step_id] = self._evaluate_batch_step_latent_space_noise(
-                    model,
-                    x_batch,
-                    y_batch,
-                    a_batch_numerical,
+            if perturbation_type == PerturbationType.latent_space:
+                scores[step_id] = self._evaluate_step_latent_space_pertubation(
+                    model, x_batch, y_batch, a_batch
                 )
 
         # Compute RIS.
         result = np.max(scores, axis=0)
         return result
 
-    def _evaluate_batch_step_plain_text_noise(
+    def _evaluate_step_plain_text_perturbation(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -86,13 +83,15 @@ class RelativeStability(RobustnessMetric):
 
         return rs
 
-    def _evaluate_batch_step_latent_space_noise(
+    def _evaluate_step_latent_space_pertubation(
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
-        a_batch: np.ndarray,
+        a_batch: List[Explanation],
     ) -> np.ndarray:
+        """Latent-space perturbation."""
+        a_batch_numerical = np.asarray([i[1] for i in a_batch])
         x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
 
         # Perturb input.
@@ -112,7 +111,7 @@ class RelativeStability(RobustnessMetric):
         rs = self.compute_objective_latent_space(
             x_batch_embeddings,
             x_perturbed,
-            a_batch,
+            a_batch_numerical,
             a_batch_perturbed,  # noqa
             model,
             **predict_kwargs,

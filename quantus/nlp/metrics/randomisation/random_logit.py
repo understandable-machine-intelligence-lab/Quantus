@@ -8,10 +8,8 @@ from quantus.functions.similarity_func import ssim
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, SimilarityFn, NormaliseFn
 from quantus.nlp.metrics.batched_metric import BatchedMetric
-from quantus.nlp.helpers.utils import (
-    explanation_similarity,
-)
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
+from quantus.nlp.helpers.utils import explanations_batch_similarity
 
 
 class RandomLogit(BatchedMetric):
@@ -61,7 +59,7 @@ class RandomLogit(BatchedMetric):
     def evaluate_batch(
         self,
         model: TextClassifier,
-        x_batch: List[str],
+        x_batch: List[str] | np.ndarray,
         y_batch: np.ndarray,
         a_batch: List[Explanation],
         **kwargs,
@@ -80,10 +78,9 @@ class RandomLogit(BatchedMetric):
 
         # Normalise and take absolute values of the attributions, if True.
         a_perturbed = self.normalise_a_batch(a_perturbed)
-        scores = [
-            explanation_similarity(a, b, self.similarity_func)
-            for a, b in zip(a_batch, a_perturbed)
-        ]
+        scores = explanations_batch_similarity(
+            a_batch, a_perturbed, self.similarity_func
+        )
         return np.asarray(scores)
 
     def off_label_choice(self, y: int) -> int:

@@ -8,16 +8,10 @@ from quantus.metrics.robustness.internal.ros_objective import (
 )
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import (
-    Explanation,
-    NormaliseFn,
-    PerturbationType,
-    NumericalPerturbFn,
-    PlainTextPerturbFn,
-)
+from quantus.nlp.helpers.types import Explanation, NormaliseFn, PerturbFn
 
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
-from quantus.nlp.helpers.utils import safe_asarray, pad_ragged_vector
+from quantus.nlp.helpers.utils import safe_as_array, pad_ragged_arrays
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.functions.perturb_func import spelling_replacement
 
@@ -46,8 +40,7 @@ class RelativeOutputStability(RelativeStability):
         aggregate_func: Callable = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        perturbation_type: PerturbationType = PerturbationType.plain_text,
-        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
+        perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
         eps_min: float = 1e-5,
         nr_samples: int = 50,
@@ -64,7 +57,6 @@ class RelativeOutputStability(RelativeStability):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            perturbation_type=perturbation_type,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             eps_min=eps_min,
@@ -83,9 +75,9 @@ class RelativeOutputStability(RelativeStability):
         **kwargs,
     ):
         h_x = model(x_batch, **kwargs)
-        h_x = safe_asarray(h_x)
+        h_x = safe_as_array(h_x)
         h_xs = model(x_batch_perturbed, **kwargs)
-        h_xs = safe_asarray(h_xs)
+        h_xs = safe_as_array(h_xs)
         return self.objective(h_x, h_xs, a_batch, a_batch_perturbed)
 
     def compute_objective_plain_text(
@@ -102,5 +94,5 @@ class RelativeOutputStability(RelativeStability):
         e_x = np.asarray([i[1] for i in a_batch])
         e_xs = np.asarray([i[1] for i in a_batch_perturbed])
 
-        e_x, e_xs = pad_ragged_vector(e_x, e_xs)
+        e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
         return self.objective(h_x, h_xs, e_x, e_xs)

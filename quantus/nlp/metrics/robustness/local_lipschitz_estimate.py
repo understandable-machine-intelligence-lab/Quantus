@@ -11,14 +11,14 @@ from quantus.nlp.helpers.types import (
     Explanation,
     NormaliseFn,
     PerturbationType,
-    PlainTextPerturbFn,
-    NumericalPerturbFn,
+    PerturbFn,
 )
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
 from quantus.nlp.helpers.utils import (
     get_embeddings,
-    pad_ragged_vector,
+    pad_ragged_arrays,
+    determine_perturbation_type,
 )
 
 
@@ -50,8 +50,7 @@ class LocalLipschitzEstimate(RobustnessMetric):
         aggregate_func: Optional[Callable] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        perturbation_type: PerturbationType = PerturbationType.plain_text,
-        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
+        perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
@@ -66,7 +65,6 @@ class LocalLipschitzEstimate(RobustnessMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            perturbation_type=perturbation_type,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             return_nan_when_prediction_changes=return_nan_when_prediction_changes,
@@ -89,17 +87,18 @@ class LocalLipschitzEstimate(RobustnessMetric):
         x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
 
+        perturbation_type = determine_perturbation_type(self.perturb_func)
+
         for step_id in range(self.nr_samples):
-            if self.perturbation_type == PerturbationType.plain_text:
+            if perturbation_type == PerturbationType.plain_text:
                 scores[step_id] = self._evaluate_batch_step_plain_text_noise(
                     model, x_batch, y_batch, a_batch, x_batch_embeddings
                 )
-            if self.perturbation_type == PerturbationType.latent_space:
-                a_batch_numerical = np.asarray([i[1] for i in a_batch])
+            if perturbation_type == PerturbationType.latent_space:
                 scores[step_id] = self._evaluate_batch_step_latent_space_noise(
                     model,
                     y_batch,
-                    a_batch_numerical,
+                    a_batch,
                     x_batch_embeddings,
                     **predict_kwargs,
                 )
@@ -143,10 +142,10 @@ class LocalLipschitzEstimate(RobustnessMetric):
                 similarities[instance_id] = np.nan
                 continue
 
-            a, a_batch_perturbed = pad_ragged_vector(
+            a, a_batch_perturbed = pad_ragged_arrays(
                 a_batch_scores[instance_id], a_batch_perturbed_scores[instance_id]
             )
-            x, x_perturbed = pad_ragged_vector(
+            x, x_perturbed = pad_ragged_arrays(
                 x_batch_embeddings[instance_id],
                 x_batch_embeddings_perturbed[instance_id],
             )
@@ -167,10 +166,11 @@ class LocalLipschitzEstimate(RobustnessMetric):
         self,
         model: TextClassifier,
         y_batch: np.ndarray,
-        a_batch: np.ndarray,
+        a_batch: List[Explanation],
         x_batch_embeddings: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
+        a_batch_numerical = np.asarray([i[1] for i in a_batch])
         batch_size = len(x_batch_embeddings)
         # Perturb input.
         # fmt: off
@@ -199,10 +199,10 @@ class LocalLipschitzEstimate(RobustnessMetric):
                 similarities[instance_id] = np.nan
                 continue
 
-            a, a_perturbed = pad_ragged_vector(
-                a_batch[instance_id], a_batch_perturbed[instance_id]  # noqa
+            a, a_perturbed = pad_ragged_arrays(
+                a_batch_numerical[instance_id], a_batch_perturbed[instance_id]  # noqa
             )
-            x, x_perturbed = pad_ragged_vector(
+            x, x_perturbed = pad_ragged_arrays(
                 x_batch_embeddings[instance_id],
                 x_batch_embeddings_perturbed[instance_id],
             )

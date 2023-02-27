@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
-
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
 from quantus.functions.loss_func import mse
 from quantus.nlp.helpers.types import Explanation
@@ -188,13 +187,13 @@ def visualise_explanations_as_pyplot(
     ----------
     explanations:
         List of tuples (tokens, salience) containing batch of explanations.
+    labels:
+        Optional labels to display above each row.
 
     Returns
     -------
     plot: matplotplib.pyplot.figure object, which will be automatically rendered by jupyter.
     """
-
-    import matplotlib.pyplot as plt
 
     h_len = len(explanations)
     v_len = len(explanations[0][0])
@@ -208,7 +207,8 @@ def visualise_explanations_as_pyplot(
         figsize=(v_len * 0.75, h_len * 1.25),
         gridspec_kw=dict(left=0.0, right=1.0),
     )
-    plt.subplots_adjust(hspace=1.0, wspace=0.0)
+    hspace = 1.0 if labels is not None else 0.1
+    plt.subplots_adjust(hspace=hspace, wspace=0.0)
     for i, ax in enumerate(axes):
         color_mapper = ColorMapper(np.max(scores[i]), np.min(scores[i]))
         if labels:

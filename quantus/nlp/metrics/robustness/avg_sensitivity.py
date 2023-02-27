@@ -6,14 +6,7 @@ from typing import Callable, Optional, Dict
 from quantus.functions.norm_func import fro_norm
 from quantus.functions.similarity_func import difference
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.types import (
-    SimilarityFn,
-    NormaliseFn,
-    NormFm,
-    PerturbationType,
-    PlainTextPerturbFn,
-    NumericalPerturbFn,
-)
+from quantus.nlp.helpers.types import SimilarityFn, NormaliseFn, NormFn, PerturbFn
 from quantus.nlp.functions.perturb_func import spelling_replacement
 from quantus.nlp.metrics.robustness.internal.sensitivity_metric import SensitivityMetric
 
@@ -44,11 +37,10 @@ class AvgSensitivity(SensitivityMetric):
         aggregate_func: Optional[Callable] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        perturbation_type: PerturbationType = PerturbationType.plain_text,
-        perturb_func: PlainTextPerturbFn | NumericalPerturbFn = spelling_replacement,
+        perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
-        norm_numerator: NormFm = fro_norm,
-        norm_denominator: NormFm = fro_norm,
+        norm_numerator: NormFn = fro_norm,
+        norm_denominator: NormFn = fro_norm,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
         default_plot_func: Optional[Callable] = None,
@@ -62,7 +54,6 @@ class AvgSensitivity(SensitivityMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            perturbation_type=perturbation_type,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
             norm_numerator=norm_numerator,

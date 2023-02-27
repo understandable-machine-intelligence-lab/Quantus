@@ -180,18 +180,16 @@ def available_plain_text_perturbation_functions() -> List[str]:
 
 
 def available_latent_space_perturbation_functions() -> List[str]:
-    return [
-        c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()
-    ]  # pragma: not covered
+    return [c for c in AVAILABLE_LATENT_SPACE_PERTURBATION_FUNCTIONS.keys()]
 
 
 def available_normalisation_functions() -> List[str]:
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]  # pragma: not covered
 
 
-def metrics_support_plain_text_perturbation() -> List[str]:
+def available_metrics_plain_text_perturbation() -> List[str]:
     return [k for k in METRICS_SUPPORT_PLAIN_TEXT_PERTURBATION.keys()]
 
 
-def metrics_support_numerical_perturbation() -> List[str]:
+def avilable_metrics_numerical_perturbation() -> List[str]:
     return [k for k in METRICS_SUPPORT_NUMERICAL_PERTURBATION]

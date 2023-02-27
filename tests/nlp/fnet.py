@@ -106,10 +106,7 @@ class FNetAdapter(qn.TextClassifier):
     def tokenizer(self) -> qn.Tokenizer:
         return self._tokenizer
 
-
-    def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
-    ):
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
         pass
 
     def get_hidden_representations(

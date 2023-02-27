@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 import pytest
-from quantus.nlp.helpers.utils import batch_list, pad_ragged_vector
+from quantus.nlp.helpers.utils import batch_list, pad_ragged_arrays
 
 
 @pytest.mark.nlp
@@ -48,5 +48,5 @@ def test_list_is_divisible():
 def test_pad(a_shape, b_shape):
     a = np.random.uniform(size=a_shape)
     b = np.random.uniform(size=b_shape)
-    a_padded, b_padded = pad_ragged_vector(a, b)
+    a_padded, b_padded = pad_ragged_arrays(a, b)
     assert a_padded.shape == b_padded.shape

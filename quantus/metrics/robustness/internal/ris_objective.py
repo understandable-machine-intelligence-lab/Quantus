@@ -1,5 +1,5 @@
 import numpy as np
-from quantus.functions.norm_func import lp_norm_2d, lp_norm_3d, lp_norm_4d
+from quantus.functions.norm_func import l2_norm
 
 
 class RelativeInputStabilityObjective:
@@ -30,27 +30,16 @@ class RelativeInputStabilityObjective:
         ris_obj: np.ndarray
             RIS maximization objective.
         """
-        num_dim = x.ndim
-        if num_dim == 4:
-            norm_function = lp_norm_4d
-        elif num_dim == 3:
-            norm_function = lp_norm_3d
-        elif num_dim == 2:
-            norm_function = lp_norm_2d
-        else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
 
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
+        nominator = l2_norm(nominator)
         # fmt: on
 
         denominator = x - xs
         denominator /= x + (x == 0) * self._eps_min
         # fmt: off
-        denominator = norm_function(denominator)
+        denominator = l2_norm(denominator)
         # fmt: on
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator

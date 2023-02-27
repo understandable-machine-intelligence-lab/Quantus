@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from quantus.nlp import RelativeOutputStability, PerturbationType, uniform_noise
+from quantus.nlp import RelativeOutputStability, uniform_noise
 
 
 @pytest.mark.nlp
@@ -15,7 +15,6 @@ from quantus.nlp import RelativeOutputStability, PerturbationType, uniform_noise
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},
@@ -46,7 +45,6 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
         ),
         (
             {
-                "perturbation_type": PerturbationType.latent_space,
                 "perturb_func": uniform_noise,
             },
             {"explain_func_kwargs": {"method": "GradNorm"}},

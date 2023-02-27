@@ -1,11 +1,15 @@
 import numpy as np
 import pytest
+from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.mark.nlp
 @pytest.mark.tf_model
-def test_get_hidden_representations_tf(tf_sst2_model, sst2_dataset):
-    result = tf_sst2_model.get_hidden_representations(sst2_dataset)
+@pytest.mark.parametrize(
+    "x_batch", [lazy_fixture("sst2_dataset"), np.random.uniform(size=(8, 30, 768))]
+)
+def test_get_hidden_representations_tf(tf_sst2_model, x_batch):
+    result = tf_sst2_model.get_hidden_representations(x_batch)
     assert isinstance(result, np.ndarray)
 
 

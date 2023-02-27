@@ -6,6 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
 import numpy as np
 
 
@@ -27,7 +28,7 @@ def fro_norm(a: np.array) -> float:
     return np.linalg.norm(a)
 
 
-def l2_norm(a: np.array) -> float:
+def l2_norm(a: np.array) -> float | np.ndarray:
     """
     Calculate L2 norm for an array.
 
@@ -41,8 +42,16 @@ def l2_norm(a: np.array) -> float:
     float
         The norm.
     """
-    assert a.ndim == 1, "Check that 'l2_norm' receives a 1D array."
-    return np.linalg.norm(a)
+    if a.ndim == 4:
+        return np.linalg.norm(np.linalg.norm(a, axis=(-1, -2)), axis=-1)
+    if a.ndim == 3:
+        return np.linalg.norm(a, axis=(-1, -2))
+    if a.ndim == 2:
+        return np.linalg.norm(a, axis=-1)
+    if a.ndim == 1:
+        return np.linalg.norm(a)
+
+    raise ValueError(f"Unsupported ndim for L2 norm, supported are 4, 3, 2, 1, found {a.ndim}")
 
 
 def linf_norm(a: np.array) -> float:
@@ -61,15 +70,3 @@ def linf_norm(a: np.array) -> float:
     """
     assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
     return np.linalg.norm(a, ord=np.inf)
-
-
-def lp_norm_4d(arr: np.ndarray) -> np.ndarray:
-    return np.linalg.norm(np.linalg.norm(arr, axis=(-1, -2)), axis=-1)
-
-
-def lp_norm_3d(arr: np.ndarray) -> np.ndarray:
-    return np.linalg.norm(arr, axis=(-1, -2))
-
-
-def lp_norm_2d(arr: np.ndarray) -> np.ndarray:
-    return np.linalg.norm(arr, axis=-1)

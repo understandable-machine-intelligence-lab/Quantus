@@ -1,57 +1,57 @@
 """Explanation functions for Torch models."""
 
 from __future__ import annotations
-
-import functools
-from typing import List, Callable, Optional, Dict, TYPE_CHECKING
+from typing import List, Callable, Optional, Dict, Union
 
 import numpy as np
 import torch
 from copy import deepcopy
-
-from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
-    TorchHuggingFaceTextClassifier,
-)
+from multimethod import multimethod
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import Explanation, ExplainFn, NumericalExplainFn
+from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
-    get_interpolated_inputs,
     value_or_default,
-    map_optional,
-    apply_to_dict,
+    map_dict,
     get_embeddings,
     get_input_ids,
-    safe_asarray,
 )
 
-if TYPE_CHECKING:
-    from quantus.nlp.helpers.types import TensorLike  # pragma: not covered
-
-    BaselineFn = Callable[[TensorLike], TensorLike]  # pragma: not covered
-
-
-def _get_device(model: TextClassifier) -> torch.device:
-    if hasattr(model, "device"):
-        return model.device # type: ignore
-    if hasattr(model, "_device"):
-        return model._device # type: ignore
-    return torch.device("cpu")
+# Just to save some typing effort
+_TensorLike = Union[torch.Tensor, np.ndarray]
+_BaselineFn = Callable[[_TensorLike], _TensorLike]
+_TextOrVector = Union[List[str], _TensorLike]
+_Scores = Union[List[Explanation], np.ndarray]
 
 
-def _get_torch_model(model: TextClassifier):
-    if not hasattr(model, "model"):
-        raise ValueError(
-            "Please define .model property on your implementation of TextClassifier."
-        )
+def available_xai_methods() -> Dict:
+    return {
+        "GradNorm": torch_explain_gradient_norm,
+        "GradXInput": torch_explain_gradient_x_input,
+        "IntGrad": torch_explain_integrated_gradients,
+        "NoiseGrad++": torch_explain_noise_grad_plus_plus,
+    }
 
-    return model.model # type: ignore
 
-
-def torch_explain_gradient_norm(
+def torch_explain(
     model: TextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
-) -> List[Explanation]:
+    *args,
+    method: str,
+    **kwargs,
+) -> _Scores:
+    method_mapping = available_xai_methods()
+
+    if method not in method_mapping:
+        raise ValueError(
+            f"Unsupported explanation method: {method}, supported are: {list(method_mapping.keys())}"
+        )
+    explain_fn = method_mapping[method]  # type: ignore
+    return explain_fn(model, *args, **kwargs)
+
+
+@multimethod
+def torch_explain_gradient_norm(
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
         - Convert inputs to models latent representations.
@@ -75,43 +75,13 @@ def torch_explain_gradient_norm(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-
-    device = _get_device(model)
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
-    scores = torch_explain_gradient_norm_numerical(
-        model, input_embeds, y_batch, **kwargs
-    )
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
+    pass
 
 
-def torch_explain_gradient_norm_numerical(
-    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
-) -> np.ndarray:
-    """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-
-    device = _get_device(model)
-    dtype = _get_torch_model(model).dtype
-
-    input_embeddings = torch.tensor(
-        input_embeddings, requires_grad=True, device=device, dtype=dtype
-    )
-
-    kwargs = apply_to_dict(kwargs, lambda x: torch.tensor(x, device=device))
-    logits = model(input_embeddings, **kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
-    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
-    return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
-
-
+@multimethod
 def torch_explain_gradient_x_input(
-    model: TextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
-) -> List[Explanation]:
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
         - Convert inputs to models latent representations.
@@ -136,45 +106,20 @@ def torch_explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    device = _get_device(model)
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
-    scores = torch_explain_gradient_x_input_numerical(
-        model, input_embeds, y_batch, **kwargs
-    )
-
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
+    pass
 
 
-def torch_explain_gradient_x_input_numerical(
-    model: TextClassifier, input_embeddings: TensorLike, y_batch: np.ndarray, **kwargs
-) -> np.ndarray:
-    """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-
-    device = _get_device(model)
-    dtype = _get_torch_model(model).dtype
-    input_embeddings = torch.tensor(
-        input_embeddings, requires_grad=True, device=device, dtype=dtype
-    )
-    kwargs = apply_to_dict(kwargs, lambda x: torch.tensor(x, device=device))
-    logits = model(input_embeddings, **kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
-    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
-    return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
-
-
+@multimethod
 def torch_explain_integrated_gradients(
     model: TextClassifier,
-    x_batch: List[str],
+    x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
     num_steps: int = 10,
-    baseline_fn: Optional[BaselineFn] = None,
+    baseline_fn: Optional[_BaselineFn] = None,
     batch_interpolated_inputs: bool = False,
-) -> List[Explanation]:
+    **kwargs,
+) -> _Scores:
     """
     A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
         - Convert inputs to models latent representations.
@@ -223,178 +168,18 @@ def torch_explain_integrated_gradients(
     >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
-
-    scores = torch_explain_integrated_gradients_numerical(
-        model,
-        input_embeds,
-        y_batch,
-        num_steps=num_steps,
-        baseline_fn=baseline_fn,
-        batch_interpolated_inputs=batch_interpolated_inputs,
-        **kwargs,
-    )
-
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
+    pass
 
 
-def torch_explain_integrated_gradients_numerical(
-    model: TextClassifier,
-    input_embeddings: TensorLike,
-    y_batch: np.ndarray,
-    *,
-    num_steps: int = 10,
-    baseline_fn: Optional[BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
-    **kwargs,
-) -> np.ndarray:
-    """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-    device = _get_device(model)
-
-    baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
-
-    interpolated_embeddings = []
-
-    for i, embeddings_i in enumerate(input_embeddings):
-        interpolated_embeddings.append(
-            get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
-        )
-
-    if batch_interpolated_inputs:
-        return _torch_explain_integrated_gradients_batched(
-            model, interpolated_embeddings, y_batch, **kwargs
-        )
-    else:
-        return _torch_explain_integrated_gradients_iterative(
-            model, interpolated_embeddings, y_batch, **kwargs
-        )
-
-
-def _torch_explain_integrated_gradients_batched(
-    model: TextClassifier,
-    interpolated_embeddings: List[TensorLike],
-    y_batch: np.ndarray,
-    **kwargs,
-) -> np.ndarray:
-    device = _get_device(model)
-
-    batch_size = len(interpolated_embeddings)
-    num_steps = len(interpolated_embeddings[0])
-
-    dtype = _get_torch_model(model).dtype
-
-    interpolated_embeddings = torch.tensor(
-        interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
-    )
-    interpolated_embeddings = torch.reshape(
-        interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
-    )
-
-    def pseudo_interpolate(x):
-        x = np.broadcast_to(x, (num_steps, *x.shape))
-        x = np.reshape(x, (-1, *x.shape[2:]))
-        return x
-
-    interpolated_kwargs = apply_to_dict(kwargs, pseudo_interpolate)
-    logits = model(interpolated_embeddings, **interpolated_kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
-    grads = torch.autograd.grad(
-        torch.unbind(logits_for_class), interpolated_embeddings
-    )[0]
-    grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
-    scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
-    return scores.detach().cpu().numpy()
-
-
-def _torch_explain_integrated_gradients_iterative(
-    model: TextClassifier,
-    interpolated_embeddings_batch: List[TensorLike],
-    y_batch: np.ndarray,
-    **kwargs,
-) -> np.ndarray:
-    batch_size = len(interpolated_embeddings_batch)
-    num_steps = len(interpolated_embeddings_batch[0])
-    dtype = _get_torch_model(model).dtype
-
-    device = _get_device(model)
-    scores = []
-
-    for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
-        interpolated_embeddings = torch.tensor(
-            interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
-        )
-
-        interpolated_kwargs = apply_to_dict(
-            {k: v[i] for k, v in kwargs.items()},
-            lambda x: np.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
-        )
-
-        logits = model(interpolated_embeddings, **interpolated_kwargs)
-        logits_for_class = logits[:, y_batch[i]]
-        grads = torch.autograd.grad(
-            torch.unbind(logits_for_class), interpolated_embeddings
-        )[0]
-        score = torch.trapz(grads, dim=0)
-
-        scores.append(score.detach().cpu().numpy())
-
-    return np.asarray(scores)
-
-
-def torch_explain_noise_grad_plus_plus_numerical(
-    model: TextClassifier,
-    input_embeddings: TensorLike,
-    y_batch: np.ndarray,
-    explain_fn: NumericalExplainFn,
-    init_kwargs: Optional[Dict],
-    **kwargs,
-) -> np.ndarray:
-    from noisegrad import NoiseGradPlusPlus
-
-    device = _get_device(model)
-    input_embeddings = torch.tensor(input_embeddings, device=device)
-    y_batch = torch.tensor(y_batch, device=device)
-
-    init_kwargs = value_or_default(init_kwargs, lambda: {})
-    og_model = deepcopy(_get_torch_model(model))
-
-    def explanation_fn(
-        _model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
-        model.model = _model  # type: ignore
-        # fmt: off
-        np_scores = explain_fn(model, inputs, targets, **kwargs)  # type: ignore
-        # fmt: on
-        return torch.tensor(np_scores, device=device)
-
-    ng_pp = NoiseGradPlusPlus(**init_kwargs)
-    scores = (
-        ng_pp.enhance_explanation(
-            model.model,  # type: ignore
-            input_embeddings,
-            y_batch,
-            explanation_fn=explanation_fn,
-        )
-        .detach()
-        .cpu()
-        .numpy()
-    )
-
-    model.model = og_model
-    return scores
-
-
+@multimethod
 def torch_explain_noise_grad_plus_plus(
     model: TextClassifier,
-    x_batch: List[str],
-    y_batch: TensorLike,
+    x_batch: _TensorLike,
+    y_batch: np.ndarray,
     *,
-    explain_fn: NumericalExplainFn | str = "IntGrad",
+    explain_fn: Union[Callable, str] = "IntGrad",
     init_kwargs: Optional[Dict] = None,
+    **kwargs,
 ) -> List[Explanation]:
     """
     NoiseGrad++ is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
@@ -424,60 +209,311 @@ def torch_explain_noise_grad_plus_plus(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
+    pass
 
+
+@torch_explain_gradient_norm.register
+def _torch_explain_gradient_norm(
+    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+) -> List[Explanation]:
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
+    scores = torch_explain_gradient_norm(model, input_embeds, y_batch, **kwargs)
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+@torch_explain_gradient_norm.register
+def _torch_explain_gradient_norm(
+    model: TextClassifier, input_embeddings: _TensorLike, y_batch: np.ndarray, **kwargs
+) -> np.ndarray:
+    """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
+
+    device = _get_device(model)
+    dtype = _get_torch_model(model).dtype
+
+    input_embeddings = torch.tensor(
+        input_embeddings, requires_grad=True, device=device, dtype=dtype
+    )
+
+    kwargs = map_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    logits = model(input_embeddings, **kwargs)
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
+    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
+    return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
+
+
+@torch_explain_gradient_x_input.register
+def _torch_explain_gradient_x_input(
+    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+) -> List[Explanation]:
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
+    scores = torch_explain_gradient_x_input(model, input_embeds, y_batch, **kwargs)
+
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+@torch_explain_gradient_x_input.register
+def _torch_explain_gradient_x_input(
+    model: TextClassifier, input_embeddings: _TensorLike, y_batch: np.ndarray, **kwargs
+) -> np.ndarray:
+    """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
+
+    device = _get_device(model)
+    dtype = _get_torch_model(model).dtype
+    input_embeddings = torch.tensor(
+        input_embeddings, requires_grad=True, device=device, dtype=dtype
+    )
+    kwargs = map_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    logits = model(input_embeddings, **kwargs)
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
+    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
+    return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
+
+
+@torch_explain_integrated_gradients.register
+def _torch_explain_integrated_gradients(
+    model: TextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    *,
+    num_steps: int = 10,
+    baseline_fn: Optional[_BaselineFn] = None,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
+) -> List[Explanation]:
+    input_ids, _ = get_input_ids(x_batch, model)
+    input_embeds, kwargs = get_embeddings(x_batch, model)
+
+    scores = torch_explain_integrated_gradients(
+        model,
+        input_embeds,
+        y_batch,
+        num_steps=num_steps,
+        baseline_fn=baseline_fn,
+        batch_interpolated_inputs=batch_interpolated_inputs,
+        **kwargs,
+    )
+
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+@torch_explain_integrated_gradients.register
+def _torch_explain_integrated_gradients(
+    model: TextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: np.ndarray,
+    *,
+    num_steps: int = 10,
+    baseline_fn: Optional[_BaselineFn] = None,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
+) -> np.ndarray:
+    baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
+
+    interpolated_embeddings = []
+
+    for i, embeddings_i in enumerate(input_embeddings):
+        interpolated_embeddings.append(
+            get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
+        )
+
+    if batch_interpolated_inputs:
+        return _torch_explain_integrated_gradients_batched(
+            model, interpolated_embeddings, y_batch, **kwargs
+        )
+    else:
+        return _torch_explain_integrated_gradients_iterative(
+            model, interpolated_embeddings, y_batch, **kwargs
+        )
+
+
+def _torch_explain_integrated_gradients_batched(
+    model: TextClassifier,
+    interpolated_embeddings: List[_TensorLike],
+    y_batch: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    device = _get_device(model)
+
+    batch_size = len(interpolated_embeddings)
+    num_steps = len(interpolated_embeddings[0])
+
+    dtype = _get_torch_model(model).dtype
+
+    interpolated_embeddings = torch.tensor(
+        interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
+    )
+    interpolated_embeddings = torch.reshape(
+        interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
+    )
+
+    def pseudo_interpolate(x):
+        x = np.broadcast_to(x, (num_steps, *x.shape))
+        x = np.reshape(x, (-1, *x.shape[2:]))
+        return x
+
+    interpolated_kwargs = map_dict(kwargs, pseudo_interpolate)
+    logits = model(interpolated_embeddings, **interpolated_kwargs)
+    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
+    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    grads = torch.autograd.grad(
+        torch.unbind(logits_for_class), interpolated_embeddings
+    )[0]
+    grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
+    scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
+    return scores.detach().cpu().numpy()
+
+
+def _torch_explain_integrated_gradients_iterative(
+    model: TextClassifier,
+    interpolated_embeddings_batch: List[_TensorLike],
+    y_batch: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
+    dtype = _get_torch_model(model).dtype
+
+    device = _get_device(model)
+    scores = []
+
+    for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
+        interpolated_embeddings = torch.tensor(
+            interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
+        )
+
+        interpolated_kwargs = map_dict(
+            {k: v[i] for k, v in kwargs.items()},
+            lambda x: np.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
+        )
+
+        logits = model(interpolated_embeddings, **interpolated_kwargs)
+        logits_for_class = logits[:, y_batch[i]]
+        grads = torch.autograd.grad(
+            torch.unbind(logits_for_class), interpolated_embeddings
+        )[0]
+        score = torch.trapz(grads, dim=0)
+
+        scores.append(score.detach().cpu().numpy())
+
+    return np.asarray(scores)
+
+
+@torch_explain_noise_grad_plus_plus.register
+def _torch_explain_noise_grad_plus_plus(
+    model: TextClassifier,
+    x_batch: List[str],
+    y_batch: _TensorLike,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
+) -> List[Explanation]:
     if isinstance(explain_fn, str):
         if explain_fn == "NoiseGrad++":
             raise ValueError(
                 "Can't use NoiseGrad++ as baseline function for NoiseGrad++."
             )
-        explain_fn = _numerical_method_mapping[explain_fn]  # type: ignore
+        method_mapping = available_xai_methods()
+        if explain_fn not in method_mapping:
+            raise ValueError(
+                f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
+            )
+        explain_fn = method_mapping[explain_fn]
 
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
 
-    scores = torch_explain_noise_grad_plus_plus_numerical(
-        model, embeddings, y_batch, explain_fn, init_kwargs
+    scores = torch_explain_noise_grad_plus_plus(
+        model, embeddings, y_batch, explain_fn, init_kwargs, **kwargs
     )
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
     ]
 
 
-_method_mapping: Dict[str, ExplainFn] = {
-    "GradNorm": torch_explain_gradient_norm,
-    "GradXInput": torch_explain_gradient_x_input,
-    "IntGrad": torch_explain_integrated_gradients,
-    "NoiseGrad++": torch_explain_noise_grad_plus_plus,
-}
-
-_numerical_method_mapping = {
-    "GradNorm": torch_explain_gradient_norm_numerical,
-    "GradXInput": torch_explain_gradient_x_input_numerical,
-    "IntGrad": torch_explain_integrated_gradients_numerical,
-    "NoiseGrad++": torch_explain_noise_grad_plus_plus_numerical,
-}
-
-
-def torch_explain(
+@torch_explain_noise_grad_plus_plus.register
+def _torch_explain_noise_grad_plus_plus(
     model: TextClassifier,
-    x_batch: List[str] | np.ndarray,
+    input_embeddings: _TensorLike,
     y_batch: np.ndarray,
-    method: str,
-    *args,
+    explain_fn: Callable,
+    init_kwargs: Optional[Dict],
     **kwargs,
-) -> List[Explanation] | np.ndarray:
-    """Execute plain text or numerical gradient based explanation methods based on type of inputs provided."""
-    if isinstance(x_batch[0], str):
-        if method not in _method_mapping:
-            raise ValueError(
-                f"Unsupported explanation method: {method}, supported are: {list(_method_mapping.keys())}"
-            )
-        explain_fn = _method_mapping[method]
-        return explain_fn(model, x_batch, y_batch, **kwargs)  # noqa
+) -> np.ndarray:
+    from noisegrad import NoiseGradPlusPlus
 
-    if method not in _numerical_method_mapping:
-        raise ValueError(
-            f"Unsupported explanation method: {method}, supported are: {list(_numerical_method_mapping.keys())}"
+    device = _get_device(model)
+    input_embeddings = torch.tensor(input_embeddings, device=device)
+    y_batch = torch.tensor(y_batch, device=device)
+
+    init_kwargs = value_or_default(init_kwargs, lambda: {})
+    og_model = deepcopy(_get_torch_model(model))
+
+    def explanation_fn(
+        _model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        model.model = _model  # type: ignore
+        # fmt: off
+        np_scores = explain_fn(model, inputs, targets, **kwargs)
+        # fmt: on
+        return torch.tensor(np_scores, device=device)
+
+    ng_pp = NoiseGradPlusPlus(**init_kwargs)
+    scores = (
+        ng_pp.enhance_explanation(
+            model.model,  # type: ignore
+            input_embeddings,
+            y_batch,
+            explanation_fn=explanation_fn,
         )
-    explain_fn = _numerical_method_mapping[method]  # type: ignore
-    return explain_fn(model, x_batch, y_batch, *args, **kwargs)
+        .detach()
+        .cpu()
+        .numpy()
+    )
+
+    model.model = og_model
+    return scores
+
+
+def _get_device(model: TextClassifier) -> torch.device:
+    if hasattr(model, "device"):
+        return model.device  # type: ignore
+    if hasattr(model, "_device"):
+        return model._device  # type: ignore
+    return torch.device("cpu")
+
+
+def _get_torch_model(model: TextClassifier):
+    if not hasattr(model, "model"):
+        raise ValueError(
+            "Please define .model property on your implementation of TextClassifier."
+        )
+
+    return model.model  # type: ignore
+
+
+def get_interpolated_inputs(
+    baseline: np.ndarray, target: np.ndarray, num_steps: int
+) -> np.ndarray:
+    """Gets num_step linearly interpolated inputs from baseline to target."""
+    if num_steps <= 0:
+        return np.array([])
+    if num_steps == 1:
+        return np.array([baseline, target])
+
+    delta = target - baseline
+    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
+        :, np.newaxis, np.newaxis
+    ]
+    shape = (num_steps + 1,) + delta.shape
+    deltas = scales * np.broadcast_to(delta, shape)
+    interpolated_inputs = baseline + deltas
+    return interpolated_inputs

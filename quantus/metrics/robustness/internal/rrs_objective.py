@@ -1,6 +1,6 @@
 
 import numpy as np
-from quantus.functions.norm_func import lp_norm_2d, lp_norm_3d, lp_norm_4d
+from quantus.functions.norm_func import l2_norm
 
 
 class RelativeRepresentationStabilityObjective:
@@ -36,36 +36,12 @@ class RelativeRepresentationStabilityObjective:
             RRS maximization objective.
         """
 
-        nominator_num_dim = e_x.ndim
-        if nominator_num_dim == 4:
-            nominator_norm_function = lp_norm_4d
-        elif nominator_num_dim == 3:
-            nominator_norm_function = lp_norm_3d
-        elif nominator_num_dim == 2:
-            nominator_norm_function = lp_norm_2d
-        else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
-        denominator_num_dim = l_x.ndim
-        if denominator_num_dim == 4:
-            denominator_norm_function = lp_norm_4d
-        elif denominator_num_dim == 3:
-            denominator_norm_function = lp_norm_3d
-        elif denominator_num_dim == 2:
-            denominator_norm_function = lp_norm_2d
-        else:
-            raise ValueError(
-                "Relative Input Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
-
         # fmt: off
         nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = nominator_norm_function(nominator)
+        nominator = l2_norm(nominator)
         # fmt: on
         denominator = l_x - l_xs
         denominator /= l_x + (l_x == 0) * self._eps_min  # prevent division by 0
-        denominator = denominator_norm_function(denominator)
+        denominator = l2_norm(denominator)
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator

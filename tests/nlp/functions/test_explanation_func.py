@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from typing import List
 from tests.nlp.utils import skip_on_apple_silicon
-from quantus.nlp import explain, NoiseType
+from quantus.nlp import explain
 
 
 def unknown_token_baseline_function(_) -> np.ndarray:
@@ -26,7 +26,7 @@ def unknown_token_baseline_function(_) -> np.ndarray:
             "explain_fn": "GradXInput",
             "n": 2,
             "m": 2,
-            "noise_type": NoiseType.additive,
+            #"noise_type": NoiseType.additive,
         },
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
@@ -70,7 +70,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
             "explain_fn": "GradXInput",
             "n": 2,
             "m": 2,
-            "noise_type": NoiseType.additive,
+            #"noise_type": NoiseType.additive,
         },
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},

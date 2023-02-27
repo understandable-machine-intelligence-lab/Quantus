@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 import numpy as np
-from typing import List, Optional, Dict, Any, Callable, no_type_check
+from typing import List, Optional, Dict, Any, Callable, no_type_check, NoReturn
 from functools import partial
 
 from quantus.metrics.base_batched import BatchedMetric as Base
@@ -11,12 +11,7 @@ from quantus.nlp.helpers.types import (
     Explanation,
 )
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.utils import (
-    value_or_default,
-    batch_list,
-    normalise_attributions,
-    abs_attributions,
-)
+from quantus.nlp.helpers.utils import value_or_default, batch_list, map_explanations
 from quantus.helpers.warn import check_kwargs
 from quantus.nlp.functions.explanation_func import explain
 
@@ -146,16 +141,14 @@ class BatchedMetric(Base):
         if self.normalise:
             normalise_fn = partial(self.normalise_func, **self.normalise_func_kwargs)
             if not isinstance(a_batch, np.ndarray):
-                normalise_fn = partial(
-                    normalise_attributions, normalise_fn=normalise_fn
-                )
+                normalise_fn = partial(map_explanations, fn=normalise_fn)
             a_batch = normalise_fn(a_batch)
 
         if self.abs:
             if isinstance(a_batch, np.ndarray):
                 abs_func = np.abs
             else:
-                abs_func = abs_attributions
+                abs_func = partial(map_explanations, fn=np.abs)
             a_batch = abs_func(a_batch)
 
         return a_batch
@@ -195,5 +188,5 @@ class BatchedMetric(Base):
         """Must be implemented by respective metric class."""
         raise NotImplementedError  # pragma: not covered
 
-    def evaluate_instance(self, *args, **kwargs) -> Any:
+    def evaluate_instance(self, *args, **kwargs) -> NoReturn:
         raise ValueError("This is unexpected")  # pragma: not covered
