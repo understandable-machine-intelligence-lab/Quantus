@@ -345,35 +345,6 @@ def _torch_explain_integrated_gradients_iterative(
     return np.asarray(scores)
 
 
-def torch_explain_attention_last_numerical(
-    model: TorchHuggingFaceTextClassifier,
-    embeddings: TensorLike,
-    y_batch: TensorLike,
-    attention_mask: Optional[TensorLike],
-) -> np.ndarray:
-    if not isinstance(attention_mask, torch.Tensor):
-        attention_mask = torch.tensor(attention_mask, device=model.device)
-    if not isinstance(embeddings, torch.Tensor):
-        try:
-            embeddings = torch.tensor(embeddings, device=model.device)
-        except TypeError:
-            embeddings = torch.tensor(
-                embeddings, device=model.device, dtype=torch.float32
-            )
-
-    attentions = model.model(
-        None,
-        inputs_embeds=embeddings,
-        attention_mask=attention_mask,
-        output_attentions=True,
-    ).attentions
-
-    last_transformer_block_scores = attentions[-1]
-    last_attention_head_scores = last_transformer_block_scores[:, 0]
-    scores = torch.mean(last_attention_head_scores, dim=-1)
-    return scores.detach().cpu.numpy()
-
-
 def torch_explain_noise_grad_plus_plus_numerical(
     model: TextClassifier,
     input_embeddings: TensorLike,
@@ -477,7 +448,6 @@ _method_mapping: Dict[str, ExplainFn] = {
     "GradXInput": torch_explain_gradient_x_input,
     "IntGrad": torch_explain_integrated_gradients,
     "NoiseGrad++": torch_explain_noise_grad_plus_plus,
-    "AttentionLast": torch_explain_attention_last,
 }
 
 _numerical_method_mapping = {
@@ -485,7 +455,6 @@ _numerical_method_mapping = {
     "GradXInput": torch_explain_gradient_x_input_numerical,
     "IntGrad": torch_explain_integrated_gradients_numerical,
     "NoiseGrad++": torch_explain_noise_grad_plus_plus_numerical,
-    "AttentionLat": torch_explain_attention_last_numerical,
 }
 
 
