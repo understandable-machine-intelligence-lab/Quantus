@@ -87,7 +87,7 @@ class FNetAdapter(qn.TextClassifier):
 
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
         tokens = self._tokenizer.tokenize(text)
-        return self._model.predict(tokens, verbose=0, batch_size=batch_size)
+        return self._model.predict(tokens, verbose=0)
 
     def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> np.ndarray:
         token_embeds = self._model.embedding.token_embedding(input_ids)
@@ -109,7 +109,7 @@ class FNetAdapter(qn.TextClassifier):
 
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42
-    ) -> Generator[Tuple[str, TextClassifier], None, None]:
+    ):
         pass
 
     def get_hidden_representations(
