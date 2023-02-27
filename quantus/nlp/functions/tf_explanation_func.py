@@ -263,11 +263,11 @@ def _tf_explain_integrated_gradients_batched(
     **kwargs,
 ) -> np.ndarray:
     interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
-    num_steps = interpolated_embeddings.shape[1]
+    num_steps = interpolated_embeddings.shape[1] # type: ignore
 
     interpolated_embeddings = tf.reshape(
         tf.cast(interpolated_embeddings, dtype=tf.float32),
-        [-1, *interpolated_embeddings.shape[2:]],
+        [-1, *interpolated_embeddings.shape[2:]], # type: ignore
     )
 
     def pseduo_interpolate(x):
@@ -460,7 +460,7 @@ def tf_explain_noise_grad_plus_plus_numerical(
                 embeddings.shape, mean=sg_mean, stddev=sg_std
             )
             noisy_embeddings = apply_noise(embeddings, inputs_noise, noise_type)
-            explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)
+            explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs) # type: ignore
             explanations[_n][_m] = explanation
 
     scores = np.mean(explanations, axis=(0, 1))
@@ -470,14 +470,14 @@ def tf_explain_noise_grad_plus_plus_numerical(
     return scores
 
 
-_method_mapping: Dict[str, ExplainFn] = {
+_method_mapping = {
     "GradNorm": tf_explain_gradient_norm,
     "GradXInput": tf_explain_gradient_x_input,
     "IntGrad": tf_explain_integrated_gradients,
     "NoiseGrad++": tf_explain_noise_grad_plus_plus,
 }
 
-_numerical_method_mapping: Dict[str, NumericalExplainFn] = {
+_numerical_method_mapping = {
     "GradNorm": tf_explain_gradient_norm_numerical,
     "GradXInput": tf_explain_gradient_x_input_numerical,
     "IntGrad": tf_explain_integrated_gradients_numerical,
