@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 from datasets import load_dataset
+import platform
 
+if platform.system() != "Darwin" or platform.processor() != "arm":
+    from tests.nlp.fnet import fnet_adapter
 from quantus.nlp import TFHuggingFaceTextClassifier, TorchHuggingFaceTextClassifier
 
 BATCH_SIZE = 8
@@ -78,12 +81,10 @@ def torch_fnet():
 
 @pytest.fixture(scope="session")
 def fnet_keras():
-    # TODO
     # This model is interesting because the tokenizer doesn't return dict
-    pass
+    return fnet_adapter()
 
 
 @pytest.fixture(scope="session")
 def ag_news_dataset():
-    # TODO
-    pass
+    return load_dataset("ag_news")["test"]["text"][:BATCH_SIZE]

@@ -58,10 +58,9 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             **kwargs,
         ).logits
 
-    def predict(self, text: List[str], batch_size: int = 64, **kwargs) -> np.ndarray:
-        return self._model.predict(
-            self._tokenizer.tokenize(text), verbose=0, batch_size=batch_size, **kwargs
-        ).logits
+    def predict(self, text: List[str], **kwargs) -> np.ndarray:
+        encoded_inputs = self._tokenizer.tokenize(text)
+        return self._model.predict(**encoded_inputs, verbose=0, **kwargs).logits
 
     @property
     def weights(self) -> List[np.ndarray]:

@@ -69,22 +69,6 @@ class TokenizerAdapter(qn.Tokenizer):
     def convert_ids_to_tokens(self, ids: List[int] | np.ndarray) -> List[str]:
         return [self._tokenizer.id_to_token(i) for i in ids]
 
-    def split_into_tokens(self, text: str) -> List[str]:
-        tokens = (
-            pretokenize(
-                tf.convert_to_tensor(text),
-                split=self._tokenizer.split,
-                split_on_cjk=self._tokenizer.split_on_cjk,
-                strip_accents=self._tokenizer.strip_accents,
-                lowercase=self._tokenizer.lowercase,
-            )
-            .numpy()
-            .tolist()
-        )
-
-        tokens = tokens[0]
-        return [i.decode("utf-8") for i in tokens]
-
     def token_id(self, token: str) -> int:
         return self._tokenizer.token_to_id(token)
 
@@ -94,21 +78,21 @@ class FNetAdapter(qn.TextClassifier):
         self._model = model
         self._tokenizer = tokenizer
 
-    def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> np.ndarray:
-        token_embeds = self._model.embedding.token_embedding(input_ids)
-        position_embeds = self._model.embedding.position_embedding(token_embeds)
-        return token_embeds + position_embeds
-
-    def __call__(self, inputs_embeds: TF_TensorLike, *args, **kwargs) -> tf.Tensor:
+    def __call__(self, inputs_embeds: TF_TensorLike, **kwargs) -> tf.Tensor:
         return self._model(
             tf.zeros(shape=tf.convert_to_tensor(tf.shape(inputs_embeds))[0]),
             training=False,
             input_embeddings=inputs_embeds,
         )
 
-    def predict(self, text: List[str], batch_size: int = 64) -> np.ndarray:
+    def predict(self, text: List[str], **kwargs) -> np.ndarray:
         tokens = self._tokenizer.tokenize(text)
         return self._model.predict(tokens, verbose=0, batch_size=batch_size)
+
+    def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> np.ndarray:
+        token_embeds = self._model.embedding.token_embedding(input_ids)
+        position_embeds = self._model.embedding.position_embedding(token_embeds)
+        return token_embeds + position_embeds
 
     @property
     def weights(self):
@@ -121,6 +105,23 @@ class FNetAdapter(qn.TextClassifier):
     @property
     def tokenizer(self) -> qn.Tokenizer:
         return self._tokenizer
+
+
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Tuple[str, TextClassifier], None, None]:
+        pass
+
+    def get_hidden_representations(
+        self,
+        x_batch: List[str],
+    ) -> np.ndarray:
+        pass
+
+    def get_hidden_representations_embeddings(
+        self, x_batch: np.ndarray, **kwargs
+    ) -> np.ndarray:
+        pass
 
 
 def fnet_adapter() -> FNetAdapter:
