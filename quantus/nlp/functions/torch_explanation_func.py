@@ -345,32 +345,6 @@ def _torch_explain_integrated_gradients_iterative(
     return np.asarray(scores)
 
 
-def torch_explain_attention_last(
-    model: TextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
-) -> List[Explanation]:
-    """Attention-Last explanation as described in https://arxiv.org/pdf/2202.07304.pdf."""
-    if not isinstance(model, TorchHuggingFaceTextClassifier):
-        raise ValueError(
-            f"Attention-Last explanation is supported only for models from Huggingface hub."
-        )
-
-    tokens = model.tokenizer.tokenize(x_batch)
-    input_ids, attention_mask = unpack_token_ids_and_attention_mask(tokens)
-    embeddings = model.embedding_lookup(input_ids)
-    scores = torch_explain_attention_last_numerical(
-        model,
-        embeddings,
-        y_batch,
-        attention_mask,
-    )
-
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
-
-
 def torch_explain_attention_last_numerical(
     model: TorchHuggingFaceTextClassifier,
     embeddings: TensorLike,
