@@ -8,9 +8,6 @@ from typing import TYPE_CHECKING, List
 from keras_nlp.tokenizers.word_piece_tokenizer import pretokenize
 import numpy as np
 
-if TYPE_CHECKING:
-    from quantus.nlp import TF_TensorLike
-
 import quantus.nlp as qn
 
 
@@ -78,7 +75,7 @@ class FNetAdapter(qn.TextClassifier):
         self._model = model
         self._tokenizer = tokenizer
 
-    def __call__(self, inputs_embeds: TF_TensorLike, **kwargs) -> tf.Tensor:
+    def __call__(self, inputs_embeds, **kwargs) -> tf.Tensor:
         return self._model(
             tf.zeros(shape=tf.convert_to_tensor(tf.shape(inputs_embeds))[0]),
             training=False,
@@ -89,7 +86,7 @@ class FNetAdapter(qn.TextClassifier):
         tokens = self._tokenizer.tokenize(text)
         return self._model.predict(tokens, verbose=0)
 
-    def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> np.ndarray:
+    def embedding_lookup(self, input_ids, **kwargs):
         token_embeds = self._model.embedding.token_embedding(input_ids)
         position_embeds = self._model.embedding.position_embedding(token_embeds)
         return token_embeds + position_embeds
@@ -107,18 +104,10 @@ class FNetAdapter(qn.TextClassifier):
         return self._tokenizer
 
     def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
-        pass
+        return super().get_random_layer_generator(order, seed)
 
-    def get_hidden_representations(
-        self,
-        x_batch: List[str],
-    ) -> np.ndarray:
-        pass
-
-    def get_hidden_representations_embeddings(
-        self, x_batch: np.ndarray, **kwargs
-    ) -> np.ndarray:
-        pass
+    def get_hidden_representations(self, x_batch, **kwargs):
+        return super().get_hidden_representations(x_batch, **kwargs)
 
 
 def fnet_adapter() -> FNetAdapter:

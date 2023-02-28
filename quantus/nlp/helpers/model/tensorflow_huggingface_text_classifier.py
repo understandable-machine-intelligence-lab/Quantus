@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, TYPE_CHECKING, Generator
+from typing import List, Generator
 from multimethod import multimethod
 
 from transformers import (
@@ -35,7 +35,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
             TFAutoModelForSequenceClassification.from_pretrained(handle),
         )
 
-    def embedding_lookup(self, input_ids: TF_TensorLike, **kwargs) -> tf.Tensor:
+    def embedding_lookup(self, input_ids: np.ndarray, **kwargs) -> tf.Tensor:
         word_embeds = tf.nn.embedding_lookup(self._word_embedding_matrix, input_ids)
         input_shape = shape_list(word_embeds)[:-1]
         position_ids = tf.expand_dims(tf.range(start=0, limit=input_shape[-1]), axis=0)
@@ -46,7 +46,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
 
     def __call__(
         self,
-        inputs_embeds: TF_TensorLike,
+        inputs_embeds: tf.Tensor,
         **kwargs,
     ) -> tf.Tensor:
         return self._model(

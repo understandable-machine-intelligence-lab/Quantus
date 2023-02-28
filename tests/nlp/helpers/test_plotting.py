@@ -20,7 +20,7 @@ def test_pyplot_visualization(a_batch_text):
 
 
 @pytest.mark.nlp
-def test_pyplot_token_flipping():
+def test_pyplot_token_prunning():
     scores = np.random.uniform(size=(8, 39))
     logits = np.random.uniform(size=(8,))
     # Just check that it doesn't fail with expected inputs.

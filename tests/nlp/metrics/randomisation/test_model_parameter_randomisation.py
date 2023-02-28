@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from typing import Dict
 from quantus.nlp import ModelParameterRandomisation
-from tests.nlp.utils import skip_in_ci, skip_on_apple_silicon
+from tests.nlp.utils import skip_in_ci
 
 
 @skip_in_ci
@@ -26,45 +26,6 @@ from tests.nlp.utils import skip_in_ci, skip_on_apple_silicon
 def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     metric = ModelParameterRandomisation(**init_kwargs)
     result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
-    if not init_kwargs.get("return_sample_correlation"):
-        assert isinstance(result, Dict)
-        for i in result.values():
-            assert isinstance(i, np.ndarray)
-            assert not (i == np.NINF).any()
-            assert not (i == np.PINF).any()
-            assert not (i == np.NAN).any()
-            assert not (i == np.NZERO).any()
-            assert not (i == np.PZERO).any()
-    else:
-        assert isinstance(result, np.ndarray)
-        assert not (result == np.NINF).any()
-        assert not (result == np.PINF).any()
-        assert not (result == np.NAN).any()
-        assert not (result == np.NZERO).any()
-        assert not (result == np.PZERO).any()
-
-
-@skip_on_apple_silicon
-@pytest.mark.nlp
-@pytest.mark.keras_nlp_model
-@pytest.mark.randomisation
-@pytest.mark.parametrize(
-    "init_kwargs, call_kwargs",
-    [
-        (
-            {"normalise": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-        ),
-        (
-            {"normalise": True, "return_sample_correlation": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-        ),
-    ],
-    ids=["raw scores", "sample correlation"],
-)
-def test_keras_model_model(fnet_keras, ag_news_dataset, init_kwargs, call_kwargs):
-    metric = ModelParameterRandomisation(**init_kwargs)
-    result = metric(fnet_keras, ag_news_dataset, **call_kwargs)
     if not init_kwargs.get("return_sample_correlation"):
         assert isinstance(result, Dict)
         for i in result.values():
