@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import List, Optional, Callable, Dict
 
 import numpy as np
-from quantus.metrics.robustness.internal.ris_objective import (
-    RelativeInputStabilityObjective,
-)
+from quantus.helpers.relative_stability import relative_input_stability_objective
 
 from quantus.nlp.helpers.types import Explanation, NormaliseFn, PerturbFn
 
@@ -59,7 +57,6 @@ class RelativeInputStability(RelativeStability):
             nr_samples=nr_samples,
             default_plot_func=default_plot_func,
         )
-        self.objective = RelativeInputStabilityObjective(self.eps_min)
 
     def compute_objective_latent_space(
         self,
@@ -70,7 +67,13 @@ class RelativeInputStability(RelativeStability):
         *args,
         **kwargs,
     ):
-        return self.objective(x_batch, x_batch_perturbed, a_batch, a_batch_perturbed)
+        return relative_input_stability_objective(
+            x_batch,
+            x_batch_perturbed,
+            a_batch,
+            a_batch_perturbed,
+            eps_min=self._eps_min,
+        )
 
     def compute_objective_plain_text(
         self,
@@ -89,4 +92,6 @@ class RelativeInputStability(RelativeStability):
 
         e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
 
-        return self.objective(x, xs, e_x, e_xs)
+        return relative_input_stability_objective(
+            x, xs, e_x, e_xs, eps_min=self._eps_min
+        )

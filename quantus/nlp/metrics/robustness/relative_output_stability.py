@@ -3,9 +3,7 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Optional, Dict, Callable
 
-from quantus.metrics.robustness.internal.ros_objective import (
-    RelativeOutputStabilityObjective,
-)
+from quantus.helpers.relative_stability import relative_output_stability_objective
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, NormaliseFn, PerturbFn
@@ -63,7 +61,6 @@ class RelativeOutputStability(RelativeStability):
             nr_samples=nr_samples,
             default_plot_func=default_plot_func,
         )
-        self.objective = RelativeOutputStabilityObjective(self.eps_min)
 
     def compute_objective_latent_space(
         self,
@@ -78,7 +75,9 @@ class RelativeOutputStability(RelativeStability):
         h_x = safe_as_array(h_x)
         h_xs = model(x_batch_perturbed, **kwargs)
         h_xs = safe_as_array(h_xs)
-        return self.objective(h_x, h_xs, a_batch, a_batch_perturbed)
+        return relative_output_stability_objective(
+            h_x, h_xs, a_batch, a_batch_perturbed, eps_min=self._eps_min
+        )
 
     def compute_objective_plain_text(
         self,
@@ -95,4 +94,6 @@ class RelativeOutputStability(RelativeStability):
         e_xs = np.asarray([i[1] for i in a_batch_perturbed])
 
         e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
-        return self.objective(h_x, h_xs, e_x, e_xs)
+        return relative_output_stability_objective(
+            h_x, h_xs, e_x, e_xs, eps_min=self._eps_min
+        )

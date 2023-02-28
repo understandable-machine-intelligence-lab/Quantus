@@ -1,7 +1,14 @@
 import numpy as np
 import pytest
 from tests.nlp.utils import skip_on_apple_silicon
-from quantus.nlp import uniform_noise, RelativeInputStability, RelativeRepresentationStability, RelativeOutputStability
+from quantus.nlp import (
+    uniform_noise,
+    RelativeInputStability,
+    RelativeRepresentationStability,
+    RelativeOutputStability,
+    typo_replacement,
+    synonym_replacement,
+)
 
 
 @pytest.mark.nlp
@@ -10,7 +17,7 @@ from quantus.nlp import uniform_noise, RelativeInputStability, RelativeRepresent
     "init_kwargs, call_kwargs",
     [
         (
-            {"normalise": True},
+            {"normalise": True, "perturb_func": typo_replacement},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
         (
@@ -41,7 +48,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     "init_kwargs, call_kwargs",
     [
         (
-            {"normalise": True},
+            {"normalise": True, "perturb_func": synonym_replacement},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
         (

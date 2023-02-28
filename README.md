@@ -349,7 +349,7 @@ scores = metric(
     x_batch=x_batch,
     y_batch=y_batch,
     device=device,
-    explain_func=quantus.explain,
+    explain_func=quantus.forward_and_explain,
     explain_func_kwargs={"method": "Saliency"}
 )
 ```

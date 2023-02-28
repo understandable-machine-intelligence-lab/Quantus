@@ -11,5 +11,11 @@ omit =
     quantus/helpers/constants.py
     quantus/helpers/plotting.py
 
+    quantus/nlp/helpers/constants.py
+    quantus/nlp/helpers/plotting.py
+    quantus/nlp/helpers/model/text_classifier.py
+    quantus/nlp/helpers/model/tokenizer.py
+
+
 [report]
 ignore_errors = True

@@ -7,8 +7,13 @@ import numpy as np
 import torch
 from copy import deepcopy
 from multimethod import multimethod
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from transformers import BertForSequenceClassification
+from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.functions.lrp.torch_bert_lrp import (
+    BertLRPConfig,
+    BertForSequenceClassificationLRP,
+)
 from quantus.nlp.helpers.utils import (
     value_or_default,
     map_dict,
@@ -30,6 +35,7 @@ def available_xai_methods() -> Dict:
         "GradXInput": torch_explain_gradient_x_input,
         "IntGrad": torch_explain_integrated_gradients,
         "NoiseGrad++": torch_explain_noise_grad_plus_plus,
+        "LRP": torch_explain_lrp,
     }
 
 
@@ -50,7 +56,7 @@ def torch_explain(
 
 @multimethod
 def torch_explain_gradient_norm(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
@@ -80,7 +86,7 @@ def torch_explain_gradient_norm(
 
 @multimethod
 def torch_explain_gradient_x_input(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
@@ -111,7 +117,7 @@ def torch_explain_gradient_x_input(
 
 @multimethod
 def torch_explain_integrated_gradients(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     x_batch: _TextOrVector,
     y_batch: _TensorLike,
     *,
@@ -173,7 +179,7 @@ def torch_explain_integrated_gradients(
 
 @multimethod
 def torch_explain_noise_grad_plus_plus(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     x_batch: _TensorLike,
     y_batch: _TensorLike,
     *,
@@ -212,9 +218,33 @@ def torch_explain_noise_grad_plus_plus(
     pass
 
 
+def torch_explain_lrp(
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    detach_layernorm: bool = True,
+    detach_kq: bool = True,
+    detach_mean: bool = True,
+) -> List[Explanation]:
+    """
+    - Verify model is BeRT
+    - Convert to LRP model
+    - Call forward_and_explain
+    """
+    torch_module = model.internal_model
+    if not isinstance(torch_module, BertForSequenceClassification):
+        raise ValueError(
+            f"Only BeRT models are supported for LRP explanations, but found {type(torch_module)}"
+        )
+
+    config = BertLRPConfig()
+
+    lrp_model = BertForSequenceClassificationLRP(config)
+
+
 @torch_explain_gradient_norm.register
 def _(
-    model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -226,12 +256,15 @@ def _(
 
 @torch_explain_gradient_norm.register
 def _(
-    model: TextClassifier, input_embeddings: _TensorLike, y_batch: np.ndarray, **kwargs
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = _get_device(model)
-    dtype = _get_torch_model(model).dtype
+    device = model.device
+    dtype = model.internal_model.dtype
 
     input_embeddings = torch.tensor(
         input_embeddings, requires_grad=True, device=device, dtype=dtype
@@ -247,7 +280,7 @@ def _(
 
 @torch_explain_gradient_x_input.register
 def _(
-    model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -260,12 +293,15 @@ def _(
 
 @torch_explain_gradient_x_input.register
 def _(
-    model: TextClassifier, input_embeddings: _TensorLike, y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: _TensorLike,
+    **kwargs,
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    device = _get_device(model)
-    dtype = _get_torch_model(model).dtype
+    device = model.device
+    dtype = model.internal_model.dtype
     input_embeddings = torch.tensor(
         input_embeddings, requires_grad=True, device=device, dtype=dtype
     )
@@ -279,7 +315,7 @@ def _(
 
 @torch_explain_integrated_gradients.register
 def _(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
     *,
@@ -308,7 +344,7 @@ def _(
 
 @torch_explain_integrated_gradients.register
 def _(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     input_embeddings: _TensorLike,
     y_batch: _TensorLike,
     *,
@@ -337,17 +373,17 @@ def _(
 
 
 def _torch_explain_integrated_gradients_batched(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     interpolated_embeddings: List[_TensorLike],
     y_batch: _TensorLike,
     **kwargs,
 ) -> np.ndarray:
-    device = _get_device(model)
+    device = model.device
 
     batch_size = len(interpolated_embeddings)
     num_steps = len(interpolated_embeddings[0])
 
-    dtype = _get_torch_model(model).dtype
+    dtype = model.internal_model.dtype
 
     interpolated_embeddings = torch.tensor(
         interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
@@ -379,9 +415,9 @@ def _torch_explain_integrated_gradients_iterative(
     y_batch: _TensorLike,
     **kwargs,
 ) -> np.ndarray:
-    dtype = _get_torch_model(model).dtype
+    dtype = model.internal_model.dtype
 
-    device = _get_device(model)
+    device = model.device
     scores = []
 
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
@@ -408,7 +444,7 @@ def _torch_explain_integrated_gradients_iterative(
 
 @torch_explain_noise_grad_plus_plus.register
 def _(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     x_batch: List[str],
     y_batch: _TensorLike,
     *,
@@ -441,7 +477,7 @@ def _(
 
 @torch_explain_noise_grad_plus_plus.register
 def _(
-    model: TextClassifier,
+    model: TorchTextClassifier,
     input_embeddings: _TensorLike,
     y_batch: _TensorLike,
     explain_fn: Callable,
@@ -450,17 +486,17 @@ def _(
 ) -> np.ndarray:
     from noisegrad import NoiseGradPlusPlus
 
-    device = _get_device(model)
+    device = model.device
     input_embeddings = torch.tensor(input_embeddings, device=device)
     y_batch = torch.tensor(y_batch, device=device)
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
-    og_model = deepcopy(_get_torch_model(model))
+    og_weights = model.weights.copy()
 
     def explanation_fn(
-        _model: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+        module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
-        model.model = _model  # type: ignore
+        model.weights = module.state_dict()
         # fmt: off
         np_scores = explain_fn(model, inputs, targets, **kwargs)
         # fmt: on
@@ -469,7 +505,7 @@ def _(
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
         ng_pp.enhance_explanation(
-            model.model,  # type: ignore
+            model.internal_model,
             input_embeddings,
             y_batch,
             explanation_fn=explanation_fn,
@@ -479,22 +515,5 @@ def _(
         .numpy()
     )
 
-    model.model = og_model # type: ignore
+    model.weights = og_weights
     return scores
-
-
-def _get_device(model: TextClassifier) -> torch.device:
-    if hasattr(model, "device"):
-        return model.device  # type: ignore
-    if hasattr(model, "_device"):
-        return model._device  # type: ignore
-    return torch.device("cpu")
-
-
-def _get_torch_model(model: TextClassifier):
-    if not hasattr(model, "model"):
-        raise ValueError(
-            "Please define .model property on your implementation of TextClassifier."
-        )
-
-    return model.model  # type: ignore

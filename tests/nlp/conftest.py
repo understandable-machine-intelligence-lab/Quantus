@@ -5,7 +5,10 @@ from datasets import load_dataset
 
 if platform.system() != "Darwin" or platform.processor() != "arm":
     from tests.nlp.fnet import fnet_adapter
-from quantus.nlp import TFHuggingFaceTextClassifier, TorchHuggingFaceTextClassifier
+from quantus.nlp import (
+    TensorFlowHuggingFaceTextClassifier,
+    TorchHuggingFaceTextClassifier,
+)
 
 BATCH_SIZE = 8
 
@@ -18,7 +21,7 @@ def sst2_dataset():
 
 @pytest.fixture(scope="session")
 def tf_sst2_model():
-    return TFHuggingFaceTextClassifier.from_pretrained(
+    return TensorFlowHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 

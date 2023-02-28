@@ -6,6 +6,14 @@ quantus.nlp.functions package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   quantus.nlp.functions.lrp
+
 Submodules
 ----------
 
@@ -15,7 +23,5 @@ Submodules
    quantus.nlp.functions.explanation_func
    quantus.nlp.functions.normalise_func
    quantus.nlp.functions.perturb_func
-   quantus.nlp.functions.tf_bert_lrp
    quantus.nlp.functions.tf_explanation_func
-   quantus.nlp.functions.torch_bert_lrp
    quantus.nlp.functions.torch_explanation_func

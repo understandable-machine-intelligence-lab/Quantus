@@ -4,8 +4,8 @@ from typing import List, Optional, Callable, Dict
 
 import numpy as np
 
-from quantus.metrics.robustness.internal.rrs_objective import (
-    RelativeRepresentationStabilityObjective,
+from quantus.helpers.relative_stability import (
+    relative_representation_stability_objective,
 )
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.functions.perturb_func import spelling_replacement
@@ -65,7 +65,6 @@ class RelativeRepresentationStability(RelativeStability):
             nr_samples=nr_samples,
             default_plot_func=default_plot_func,
         )
-        self.objective = RelativeRepresentationStabilityObjective(self.eps_min)
 
     def compute_objective_plain_text(
         self,
@@ -84,7 +83,9 @@ class RelativeRepresentationStability(RelativeStability):
 
         e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
 
-        return self.objective(l_x, l_xs, e_x, e_xs)
+        return relative_representation_stability_objective(
+            l_x, l_xs, e_x, e_xs, eps_min=self._eps_min
+        )
 
     def compute_objective_latent_space(
         self,
@@ -97,4 +98,6 @@ class RelativeRepresentationStability(RelativeStability):
     ):
         l_x = model.get_hidden_representations(x_batch, **kwargs)
         l_xs = model.get_hidden_representations(x_batch_perturbed, **kwargs)
-        return self.objective(l_x, l_xs, a_batch, a_batch_perturbed)
+        return relative_representation_stability_objective(
+            l_x, l_xs, a_batch, a_batch_perturbed, eps_min=self._eps_min
+        )

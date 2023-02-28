@@ -22,7 +22,7 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
-from quantus.metrics.robustness.internal.ris_objective import RelativeInputStabilityObjective
+from quantus.helpers.relative_stability import relative_input_stability_objective
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
@@ -113,7 +113,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
         self._nr_samples = nr_samples
         self._eps_min = eps_min
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
-        self.objective = RelativeInputStabilityObjective(eps_min)
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -275,8 +274,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 x_perturbed, y_batch, _explain_func
             )
             # Compute maximization's objective.
-            ris = self.objective(
-                x_batch, x_perturbed, a_batch, a_batch_perturbed
+            ris = relative_input_stability_objective(
+                x_batch, x_perturbed, a_batch, a_batch_perturbed, eps_min=self._eps_min
             )
             ris_batch[index] = ris
             # We're done with this sample if `return_nan_when_prediction_changes`==False.

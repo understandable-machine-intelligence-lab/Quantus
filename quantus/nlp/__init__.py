@@ -35,12 +35,16 @@ from importlib import util
 
 if util.find_spec("tensorflow"):
     from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import (
-        TFHuggingFaceTextClassifier,
+        TensorFlowHuggingFaceTextClassifier,
+    )
+    from quantus.nlp.helpers.model.tensorflow_text_classifier import (
+        TensorFlowTextClassifier,
     )
 if util.find_spec("torch"):
     from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
         TorchHuggingFaceTextClassifier,
     )
+    from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 
 from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivity
 from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivity

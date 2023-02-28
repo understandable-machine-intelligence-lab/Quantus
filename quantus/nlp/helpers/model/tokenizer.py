@@ -9,12 +9,12 @@ class Tokenizer(ABC):
     @abstractmethod
     def tokenize(self, text: List[str]):
         """Convert batch of plain-text inputs to vocabulary id's."""
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def convert_ids_to_tokens(self, ids) -> List[str]:
         """Convert batch of vocabulary id's batch to batch of plain-text strings."""
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def token_id(self, token: str) -> int:

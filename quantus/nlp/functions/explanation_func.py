@@ -22,8 +22,12 @@ from quantus.nlp.helpers.utils import (
     add_default_items,
 )
 
-TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TFHuggingFaceTextClassifier"
+TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TensorFlowHuggingFaceTextClassifier"
+TF_ModelClass = (
+    "quantus.nlp.helpers.model.tensorflow_text_classifier.TensorflowTextClassifier"
+)
 Torch_HuggingfaceModelClass = "quantus.nlp.helpers.model.torch_huggingface_text_classifier.TorchHuggingFaceTextClassifier"
+Torch_ModelClass = "quantus.nlp.helpers.model.torch_text_classifier.TorchTextClassifier"
 
 
 def explain_lime(
@@ -85,7 +89,7 @@ def explain_shap(
     call_kwargs = add_default_items(call_kwargs, {"silent": True})
     predict_fn = partial(model.predict, batch_size=batch_size)
 
-    if safe_isinstance(model, [TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass]):
+    if safe_isinstance(model, (TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass)):
         predict_fn = pipeline(
             "text-classification",
             model=model._model,  # type: ignore
@@ -104,25 +108,17 @@ def explain_shap(
 
 
 def _is_torch_model(model: TextClassifier):
-    if safe_isinstance(model, Torch_HuggingfaceModelClass):
+    if safe_isinstance(model, (Torch_HuggingfaceModelClass, Torch_ModelClass)):
         return True
-    for i in ("model", "_model"):
-        if hasattr(model, i):
-            internal_model = getattr(model, i)
-            if safe_isinstance(internal_model, "torch.nn.Module"):
-                return True
-    return False
+    return safe_isinstance(getattr(model, "internal_model", None), "torch.nn.Module")
 
 
 def _is_tf_model(model: TextClassifier):
-    if safe_isinstance(model, TF_HuggingfaceModelClass):
+    if safe_isinstance(model, (TF_HuggingfaceModelClass, TF_ModelClass)):
         return True
-    for i in ("model", "_model"):
-        if hasattr(model, i):
-            internal_model = getattr(model, i)
-            if safe_isinstance(internal_model, ("keras.Model", "tensorflow.Module")):
-                return True
-    return False
+    return safe_isinstance(
+        getattr(model, "internal_model", None), ("keras.Model", "tensorflow.Module")
+    )
 
 
 def explain(

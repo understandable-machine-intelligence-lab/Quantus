@@ -6,7 +6,9 @@ import tensorflow as tf
 from typing import List, Callable, Optional, Dict, Union
 from multimethod import multimethod
 
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.model.tensorflow_text_classifier import (
+    TensorFlowTextClassifier,
+)
 from quantus.nlp.helpers.types import (
     Explanation,
 )
@@ -55,7 +57,10 @@ def tf_explain(
 
 @multimethod
 def tf_explain_gradient_norm(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer.
@@ -91,7 +96,10 @@ def tf_explain_gradient_norm(
 
 @multimethod
 def tf_explain_gradient_x_input(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.
@@ -128,7 +136,7 @@ def tf_explain_gradient_x_input(
 
 @multimethod
 def tf_explain_integrated_gradients(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     num_steps: int = 10,
@@ -190,7 +198,7 @@ def tf_explain_integrated_gradients(
 
 @multimethod
 def tf_explain_noise_grad_plus_plus(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -232,7 +240,7 @@ def tf_explain_noise_grad_plus_plus(
         Number of times noise is applied to input embeddings, default=10
     explain_fn:
         Baseline explanation function. If string provided must be one of GradNorm, GradXInput, IntGrad.
-        Otherwise, must have `Callable[[TextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
+        Otherwise, must have `Callable[[TensorFlowTensorFlowTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
         Passing additional kwargs is not supported, please use partial application from functools package instead.
         Default IntGrad.
     noise_type:
@@ -267,7 +275,7 @@ def tf_explain_noise_grad_plus_plus(
 
 @tf_explain_gradient_norm.register
 def _(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
@@ -279,7 +287,10 @@ def _(
 
 @tf_explain_gradient_norm.register
 def _(
-    model: TextClassifier, embeddings: _TF_TensorLike, y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier,
+    embeddings: _TF_TensorLike,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     if not isinstance(embeddings, tf.Tensor):
         embeddings = tf.convert_to_tensor(embeddings, dtype=tf.float32)
@@ -295,7 +306,7 @@ def _(
 
 @tf_explain_gradient_x_input.register
 def _(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
@@ -308,7 +319,10 @@ def _(
 
 @tf_explain_gradient_x_input.register
 def _(
-    model: TextClassifier, embeddings: _TF_TensorLike, y_batch: np.ndarray, **kwargs
+    model: TensorFlowTextClassifier,
+    embeddings: _TF_TensorLike,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
     if not isinstance(embeddings, tf.Tensor):
@@ -325,7 +339,7 @@ def _(
 
 @tf_explain_integrated_gradients.register
 def _(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
     *,
@@ -353,7 +367,7 @@ def _(
 
 @tf_explain_integrated_gradients.register
 def _(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     embeddings: _TF_TensorLike,
     y_batch: np.ndarray,
     *,
@@ -383,7 +397,7 @@ def _(
 
 
 def _tf_explain_integrated_gradients_batched(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     interpolated_embeddings: List[_TF_TensorLike],
     y_batch: _TF_TensorLike,
     **kwargs,
@@ -414,7 +428,7 @@ def _tf_explain_integrated_gradients_batched(
 
 
 def _tf_explain_integrated_gradients_iterative(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     interpolated_embeddings_batch: List[_TF_TensorLike],
     y_batch: _TF_TensorLike,
     **kwargs,
@@ -442,7 +456,7 @@ def _tf_explain_integrated_gradients_iterative(
 
 @tf_explain_noise_grad_plus_plus.register
 def _(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
     *,
@@ -482,7 +496,7 @@ def _(
 
 @tf_explain_noise_grad_plus_plus.register
 def _(
-    model: TextClassifier,
+    model: TensorFlowTextClassifier,
     embeddings: _TF_TensorLike,
     y_batch: np.ndarray,
     *,

@@ -23,5 +23,6 @@ Submodules
    quantus.helpers.asserts
    quantus.helpers.constants
    quantus.helpers.plotting
+   quantus.helpers.relative_stability
    quantus.helpers.utils
    quantus.helpers.warn

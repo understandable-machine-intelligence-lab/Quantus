@@ -20,13 +20,13 @@ class TextClassifier(ABC):
     @abstractmethod
     def weights(self):
         """Get model's (learnable) parameters."""
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @weights.setter
     @abstractmethod
     def weights(self, weights):
         """Set model's (learnable) parameters."""
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def __call__(self, inputs_embeds: T, **kwargs) -> T:
@@ -35,7 +35,7 @@ class TextClassifier(ABC):
         This method must return tensors of corresponding DNN framework.
         This method must be able to record gradients, as it is used internally by gradient based XAI methods.
         """
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
@@ -43,12 +43,12 @@ class TextClassifier(ABC):
         Execute forward pass with plain text inputs, return logits as np.ndarray.
         This method must be able to handle huge batches, as it potentially could be called with entire dataset.
         """
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def embedding_lookup(self, input_ids, **kwargs):
         """Convert vocabulary ids to model's latent representations"""
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def get_hidden_representations(
@@ -58,7 +58,7 @@ class TextClassifier(ABC):
         Returns model's internal representations for x_batch.
         This method is required for Relative Representation Stability.
         """
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError
 
     @abstractmethod
     def get_random_layer_generator(
@@ -68,4 +68,4 @@ class TextClassifier(ABC):
         Yields layer name, and new model with this layer perturbed.
         This method is required for Model Parameter Randomisation Metric.
         """
-        raise NotImplementedError  # pragma: not covered
+        raise NotImplementedError

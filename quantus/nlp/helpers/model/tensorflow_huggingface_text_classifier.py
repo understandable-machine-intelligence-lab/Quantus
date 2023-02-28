@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Generator
+from typing import List
 from multimethod import multimethod
 
 from transformers import (
@@ -12,11 +12,13 @@ from transformers import (
 )
 from transformers.tf_utils import shape_list
 import tensorflow as tf
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.model.tensorflow_text_classifier import (
+    TensorFlowTextClassifier,
+)
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 
-class TFHuggingFaceTextClassifier(TextClassifier):
+class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier):
     def __init__(self, tokenizer: PreTrainedTokenizerBase, model: TFPreTrainedModel):
         self._model = model
         self._tokenizer = HuggingFaceTokenizer(tokenizer)
@@ -28,9 +30,9 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         )
 
     @staticmethod
-    def from_pretrained(handle: str) -> TFHuggingFaceTextClassifier:
+    def from_pretrained(handle: str) -> TensorFlowHuggingFaceTextClassifier:
         """A method, which mainly should be used to instantiate TensorFlow models from HuggingFace Hub."""
-        return TFHuggingFaceTextClassifier(
+        return TensorFlowHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle),
             TFAutoModelForSequenceClassification.from_pretrained(handle),
         )
@@ -59,42 +61,6 @@ class TFHuggingFaceTextClassifier(TextClassifier):
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
         encoded_inputs = self._tokenizer.tokenize(text)
         return self._model.predict(encoded_inputs, verbose=0, **kwargs).logits
-
-    @property
-    def weights(self) -> List[np.ndarray]:
-        return self._model.get_weights()
-
-    @weights.setter
-    def weights(self, weights: List[np.ndarray]):
-        self._model.set_weights(weights)
-
-    def get_random_layer_generator(
-        self,
-        order: str = "top_down",
-        seed: int = 42,
-    ) -> Generator:
-        original_weights = self._model.get_weights().copy()
-        random_layer_model = TFAutoModelForSequenceClassification.from_pretrained(
-            self._model.name_or_path
-        )
-
-        layers = list(
-            random_layer_model._flatten_layers(include_self=False, recursive=True)
-        )
-        random_layer_model_wrapper = TFHuggingFaceTextClassifier(
-            self._tokenizer._tokenizer, random_layer_model
-        )
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                random_layer_model.set_weights(original_weights)
-            weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
-            layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, random_layer_model_wrapper
 
     @multimethod
     def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:
@@ -129,3 +95,10 @@ class TFHuggingFaceTextClassifier(TextClassifier):
     @property
     def tokenizer(self):
         return self._tokenizer
+
+    @property
+    def internal_model(self) -> tf.keras.Model:
+        return self._model
+
+    def clone(self) -> TensorFlowTextClassifier:
+        return self.from_pretrained(self._model.name_or_path)

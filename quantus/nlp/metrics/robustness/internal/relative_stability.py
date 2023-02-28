@@ -21,7 +21,7 @@ class RelativeStability(RobustnessMetric):
 
     def __init__(self, *, eps_min: float, nr_samples: int, **kwargs):
         super().__init__(**kwargs)
-        self.eps_min = eps_min
+        self._eps_min = eps_min
         self.nr_samples = nr_samples
 
     @no_type_check

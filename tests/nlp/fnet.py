@@ -7,7 +7,10 @@ from keras_nlp.tokenizers import WordPieceTokenizer
 from typing import TYPE_CHECKING, List
 import numpy as np
 
-import quantus.nlp as qn
+from quantus.nlp.helpers.model.tokenizer import Tokenizer
+from quantus.nlp.helpers.model.tensorflow_text_classifier import (
+    TensorFlowTextClassifier,
+)
 
 
 MAX_SEQUENCE_LENGTH = 40
@@ -55,7 +58,7 @@ class FNet(tf.keras.Model):
         return self.top(x)
 
 
-class TokenizerAdapter(qn.Tokenizer):
+class TokenizerAdapter(Tokenizer):
     def __init__(self, tokenizer: WordPieceTokenizer):
         self._tokenizer = tokenizer
 
@@ -69,7 +72,7 @@ class TokenizerAdapter(qn.Tokenizer):
         return self._tokenizer.token_to_id(token)
 
 
-class FNetAdapter(qn.TextClassifier):
+class FNetAdapter(TensorFlowTextClassifier):
     def __init__(self, model: FNet, tokenizer: TokenizerAdapter):
         self._model = model
         self._tokenizer = tokenizer
@@ -91,22 +94,18 @@ class FNetAdapter(qn.TextClassifier):
         return token_embeds + position_embeds
 
     @property
-    def weights(self):
-        return self._model.get_weights()
-
-    @weights.setter
-    def weights(self, weights):
-        self._model.set_weights(weights)
-
-    @property
     def tokenizer(self) -> qn.Tokenizer:
         return self._tokenizer
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
-        return super().get_random_layer_generator(order, seed)
-
     def get_hidden_representations(self, x_batch, **kwargs):
         return super().get_hidden_representations(x_batch, **kwargs)
+
+    @property
+    def internal_model(self) -> tf.keras.Model:
+        return self._model
+
+    def clone(self) -> TensorFlowTextClassifier:
+        return fnet_adapter()
 
 
 def fnet_adapter() -> FNetAdapter:
