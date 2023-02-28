@@ -276,7 +276,9 @@ def determine_perturbation_type(func: Callable) -> PerturbationType:
 
 def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
     if noise_type not in ("additive", "multiplicative"):
-        raise ValueError(f"Unsupported noise_type, supported are: additive, multiplicative.")
+        raise ValueError(
+            f"Unsupported noise_type, supported are: additive, multiplicative."
+        )
     if noise_type == "additive":
         return arr + noise
     if noise_type == "multiplicative":

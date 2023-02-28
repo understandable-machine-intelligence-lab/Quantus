@@ -16,7 +16,7 @@ from quantus.nlp.helpers.utils import (
     get_embeddings,
     get_input_ids,
     apply_noise,
-    get_interpolated_inputs
+    get_interpolated_inputs,
 )
 
 # Just to save some typing effort
@@ -500,16 +500,15 @@ def _tf_explain_noise_grad_plus_plus(
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
     if isinstance(explain_fn, str):
-
         method_mapping = available_explanation_functions()
 
         if explain_fn == "NoiseGrad++":
             raise ValueError(
-            "Can't use NoiseGrad++ as baseline explanation function for NoiseGrad++"
-        )
+                "Can't use NoiseGrad++ as baseline explanation function for NoiseGrad++"
+            )
         if explain_fn not in method_mapping:
             raise ValueError(
-            f"Unsupported explain_fn {explain_fn}, supported are {list(method_mapping.keys())}"
+                f"Unsupported explain_fn {explain_fn}, supported are {list(method_mapping.keys())}"
             )
         explain_fn = method_mapping[explain_fn]
 

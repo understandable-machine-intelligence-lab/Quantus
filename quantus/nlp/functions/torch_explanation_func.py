@@ -14,7 +14,7 @@ from quantus.nlp.helpers.utils import (
     map_dict,
     get_embeddings,
     get_input_ids,
-    get_interpolated_inputs
+    get_interpolated_inputs,
 )
 
 # Just to save some typing effort
