@@ -35,7 +35,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     "init_kwargs, call_kwargs",
     [
         (
-            {"normalise": True, "num_classes": 2},
+            {"normalise": True, "num_classes": 4},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],

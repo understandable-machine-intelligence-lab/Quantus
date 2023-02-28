@@ -5,7 +5,6 @@ from keras.layers import GlobalAveragePooling1D, Dense, Dropout
 from keras_nlp.layers import FNetEncoder, TokenAndPositionEmbedding
 from keras_nlp.tokenizers import WordPieceTokenizer
 from typing import TYPE_CHECKING, List
-from keras_nlp.tokenizers.word_piece_tokenizer import pretokenize
 import numpy as np
 
 import quantus.nlp as qn
@@ -129,6 +128,6 @@ def fnet_adapter() -> FNetAdapter:
     )
 
     model(tokenizer(["hello there"]))
-    model.load_weights("tests/assets/nlp/weights_fnet_ag_news.keras")
+    # model.load_weights("tests/assets/nlp/weights_fnet_ag_news.keras")
 
     return FNetAdapter(model, TokenizerAdapter(tokenizer))

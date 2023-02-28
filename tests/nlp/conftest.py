@@ -1,7 +1,7 @@
+import platform
 import numpy as np
 import pytest
 from datasets import load_dataset
-import platform
 
 if platform.system() != "Darwin" or platform.processor() != "arm":
     from tests.nlp.fnet import fnet_adapter

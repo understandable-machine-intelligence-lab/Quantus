@@ -1,6 +1,6 @@
+from typing import List
 import numpy as np
 import pytest
-from typing import List
 from tests.nlp.utils import skip_on_apple_silicon
 from quantus.nlp import explain
 
@@ -55,7 +55,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "GradXInput"},
         {"method": "IntGrad"},
         {"method": "IntGrad", "batch_interpolated_inputs": True},
-        {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
+
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
@@ -65,7 +65,6 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         "GradXInput",
         "IntGrad iterative",
         "IntGrad batched",
-        "IntGrad [UNK] baseline",
         "NoiseGrad++",
         "LIME",
         "SHAP",

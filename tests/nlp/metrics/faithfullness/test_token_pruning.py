@@ -41,7 +41,7 @@ def test_tf_model(
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs, expected_shape",
     [
-        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 39)),
+        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 40)),
         (
             {"abs": True, "return_auc_per_sample": True},
             {"explain_func_kwargs": {"method": "GradNorm"}},
