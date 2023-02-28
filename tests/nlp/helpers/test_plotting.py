@@ -3,7 +3,7 @@ import numpy as np
 from quantus.nlp.helpers.plotting import (
     visualise_explanations_as_html,
     visualise_explanations_as_pyplot,
-    plot_token_pruning_experiment,
+    plot_token_flipping_experiment,
 )
 
 
@@ -24,4 +24,4 @@ def test_pyplot_token_prunning():
     scores = np.random.uniform(size=(8, 39))
     logits = np.random.uniform(size=(8,))
     # Just check that it doesn't fail with expected inputs.
-    plot_token_pruning_experiment(scores, logits)
+    plot_token_flipping_experiment(scores, logits)

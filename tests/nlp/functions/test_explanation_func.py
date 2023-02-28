@@ -55,7 +55,6 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "GradXInput"},
         {"method": "IntGrad"},
         {"method": "IntGrad", "batch_interpolated_inputs": True},
-
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},

@@ -16,7 +16,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
         "RRS": qn.RelativeRepresentationStability(nr_samples=5),
         # "ModelParameterRandomisation": qn.ModelParameterRandomisation(),
         "RandomLogit": qn.RandomLogit(num_classes=2),
-        "TokenFlipping": qn.TokenPruning(),
+        "TokenFlipping": qn.TokenFlipping(),
     }
 
     call_kwargs = {

@@ -11,7 +11,7 @@ from quantus.nlp.helpers.constants import (
     available_xai_methods,
     available_plain_text_xai_methods,
     available_numerical_xai_methods,
-    avilable_metrics_numerical_perturbation,
+    available_metrics_numerical_perturbation,
     available_metrics_plain_text_perturbation,
 )
 from quantus.nlp.functions.explanation_func import explain
@@ -60,7 +60,7 @@ from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
     ModelParameterRandomisation,
 )
 from quantus.nlp.metrics.randomisation.random_logit import RandomLogit
-from quantus.nlp.metrics.faithfullness.token_pruning import TokenPruning
+from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
 
 
 from quantus.nlp.helpers.types import (
@@ -74,4 +74,4 @@ from quantus.nlp.helpers.types import (
 
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.evaluation import evaluate
-from quantus.nlp.helpers.plotting import plot_token_pruning_experiment
+from quantus.nlp.helpers.plotting import plot_token_flipping_experiment

@@ -231,7 +231,7 @@ def visualise_explanations_as_pyplot(
     return fig
 
 
-def plot_token_pruning_experiment(score: np.ndarray, original_prediction: np.ndarray):
+def plot_token_flipping_experiment(score: np.ndarray, original_prediction: np.ndarray):
     """
     AU-MSE - area under the mean squared error (y0−ymt)
     curve for pruning. Lower is better and indicates that removing less
