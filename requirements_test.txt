@@ -24,4 +24,3 @@ keras_nlp
 pytest-order
 pytest-xdist
 pytest-profiling
-pytest-verbose-parametrize
