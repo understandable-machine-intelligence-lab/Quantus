@@ -110,7 +110,7 @@ class FNetAdapter(qn.TextClassifier):
 
 
 def fnet_adapter() -> FNetAdapter:
-    with open("tests/assets/nlp/vocab_fnet_ag_news.txt", "r") as file:
+    with open("tests/assets/nlp/fnet_vocab.txt", "r") as file:
         vocab = file.read().split("\n")
 
     tokenizer = WordPieceTokenizer(
