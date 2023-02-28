@@ -10,7 +10,7 @@ from multimethod import multimethod
 from transformers import BertForSequenceClassification
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.types import Explanation
-from quantus.nlp.functions.lrp.torch_bert_lrp import (
+from quantus.nlp.functions.lrp.torch_bert_lrp_ali import (
     BertLRPConfig,
     BertForSequenceClassificationLRP,
 )
@@ -40,9 +40,9 @@ def available_xai_methods() -> Dict:
 
 
 def torch_explain(
-        *args,
-        method: str,
-        **kwargs,
+    *args,
+    method: str,
+    **kwargs,
 ) -> _Scores:
     method_mapping = available_xai_methods()
 
@@ -56,7 +56,7 @@ def torch_explain(
 
 @multimethod
 def torch_explain_gradient_norm(
-        model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
@@ -86,7 +86,7 @@ def torch_explain_gradient_norm(
 
 @multimethod
 def torch_explain_gradient_x_input(
-        model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
@@ -117,14 +117,14 @@ def torch_explain_gradient_x_input(
 
 @multimethod
 def torch_explain_integrated_gradients(
-        model: TorchTextClassifier,
-        x_batch: _TextOrVector,
-        y_batch: _TensorLike,
-        *,
-        num_steps: int = 10,
-        baseline_fn: Optional[_BaselineFn] = None,
-        batch_interpolated_inputs: bool = False,
-        **kwargs,
+    model: TorchTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: _TensorLike,
+    *,
+    num_steps: int = 10,
+    baseline_fn: Optional[_BaselineFn] = None,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
 ) -> _Scores:
     """
     A baseline Integrated Gradients text-classification explainer. Integrated Gradients explanation algorithm is:
@@ -179,13 +179,13 @@ def torch_explain_integrated_gradients(
 
 @multimethod
 def torch_explain_noise_grad_plus_plus(
-        model: TorchTextClassifier,
-        x_batch: _TensorLike,
-        y_batch: _TensorLike,
-        *,
-        explain_fn: Union[Callable, str] = "IntGrad",
-        init_kwargs: Optional[Dict] = None,
-        **kwargs,
+    model: TorchTextClassifier,
+    x_batch: _TensorLike,
+    y_batch: _TensorLike,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
 ) -> List[Explanation]:
     """
     NoiseGrad++ is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
@@ -219,12 +219,12 @@ def torch_explain_noise_grad_plus_plus(
 
 
 def torch_explain_lrp(
-        model: TorchTextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        detach_layernorm: bool = True,
-        detach_kq: bool = True,
-        detach_mean: bool = True,
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    detach_layernorm: bool = True,
+    detach_kq: bool = True,
+    detach_mean: bool = True,
 ) -> List[Explanation]:
     """
     - Verify model is BeRT
@@ -240,27 +240,42 @@ def torch_explain_lrp(
     hf_config = model.internal_model.config
     modules = list(model.internal_model.modules())
 
+    hidden_size = hf_config["hidden_size"]
+    num_attention_heads = hf_config["num_attention_heads"]
+    attention_head_size = int(hidden_size / num_attention_heads)
+    all_head_size = num_attention_heads * attention_head_size
+
     config = BertLRPConfig(
         detach_mean=detach_mean,
         detach_kq=detach_kq,
         detach_layernorm=detach_layernorm,
         device=model.device,
-        hidden_size=hf_config["hidden_size"],
-        num_attention_heads=hf_config["num_attention_heads"],
+        hidden_size=hidden_size,
+        num_attention_heads=num_attention_heads,
         layer_norm_eps=hf_config["layer_norm_eps"],
-        n_classes=modules[-1].out_features,
-        n_blocks=hf_config["num_hidden_layers"],
-        attention_head_size=None,
-        all_head_size=None
+        num_classes=modules[-1].out_features,
+        num_attention_blocks=hf_config["num_hidden_layers"],
+        attention_head_size=attention_head_size,
+        all_head_size=all_head_size,
     )
 
     lrp_model = BertForSequenceClassificationLRP(config, torch_module.bert.embeddings)
-    return []
+
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    encoded_input = map_dict(encoded_input, model.to_tensor)
+
+    scores = lrp_model.explain(y_batch=y_batch, **encoded_input)
+    scores = scores.detach().cpu().numpy()
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
 
 
 @torch_explain_gradient_norm.register
 def _(
-        model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -272,10 +287,10 @@ def _(
 
 @torch_explain_gradient_norm.register
 def _(
-        model: TorchTextClassifier,
-        input_embeddings: _TensorLike,
-        y_batch: np.ndarray,
-        **kwargs,
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: np.ndarray,
+    **kwargs,
 ) -> np.ndarray:
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
@@ -296,7 +311,7 @@ def _(
 
 @torch_explain_gradient_x_input.register
 def _(
-        model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
+    model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -309,10 +324,10 @@ def _(
 
 @torch_explain_gradient_x_input.register
 def _(
-        model: TorchTextClassifier,
-        input_embeddings: _TensorLike,
-        y_batch: _TensorLike,
-        **kwargs,
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: _TensorLike,
+    **kwargs,
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
@@ -331,14 +346,14 @@ def _(
 
 @torch_explain_integrated_gradients.register
 def _(
-        model: TorchTextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        *,
-        num_steps: int = 10,
-        baseline_fn: Optional[_BaselineFn] = None,
-        batch_interpolated_inputs: bool = False,
-        **kwargs,
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    *,
+    num_steps: int = 10,
+    baseline_fn: Optional[_BaselineFn] = None,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -360,14 +375,14 @@ def _(
 
 @torch_explain_integrated_gradients.register
 def _(
-        model: TorchTextClassifier,
-        input_embeddings: _TensorLike,
-        y_batch: _TensorLike,
-        *,
-        num_steps: int = 10,
-        baseline_fn: Optional[_BaselineFn] = None,
-        batch_interpolated_inputs: bool = False,
-        **kwargs,
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: _TensorLike,
+    *,
+    num_steps: int = 10,
+    baseline_fn: Optional[_BaselineFn] = None,
+    batch_interpolated_inputs: bool = False,
+    **kwargs,
 ) -> np.ndarray:
     baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
 
@@ -389,10 +404,10 @@ def _(
 
 
 def _torch_explain_integrated_gradients_batched(
-        model: TorchTextClassifier,
-        interpolated_embeddings: List[_TensorLike],
-        y_batch: _TensorLike,
-        **kwargs,
+    model: TorchTextClassifier,
+    interpolated_embeddings: List[_TensorLike],
+    y_batch: _TensorLike,
+    **kwargs,
 ) -> np.ndarray:
     device = model.device
 
@@ -426,10 +441,10 @@ def _torch_explain_integrated_gradients_batched(
 
 
 def _torch_explain_integrated_gradients_iterative(
-        model: TorchTextClassifier,
-        interpolated_embeddings_batch: List[_TensorLike],
-        y_batch: _TensorLike,
-        **kwargs,
+    model: TorchTextClassifier,
+    interpolated_embeddings_batch: List[_TensorLike],
+    y_batch: _TensorLike,
+    **kwargs,
 ) -> np.ndarray:
     dtype = model.internal_model.dtype
 
@@ -460,13 +475,13 @@ def _torch_explain_integrated_gradients_iterative(
 
 @torch_explain_noise_grad_plus_plus.register
 def _(
-        model: TorchTextClassifier,
-        x_batch: List[str],
-        y_batch: _TensorLike,
-        *,
-        explain_fn: Union[Callable, str] = "IntGrad",
-        init_kwargs: Optional[Dict] = None,
-        **kwargs,
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: _TensorLike,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
 ) -> List[Explanation]:
     if isinstance(explain_fn, str):
         if explain_fn == "NoiseGrad++":
@@ -493,12 +508,12 @@ def _(
 
 @torch_explain_noise_grad_plus_plus.register
 def _(
-        model: TorchTextClassifier,
-        input_embeddings: _TensorLike,
-        y_batch: _TensorLike,
-        explain_fn: Callable,
-        init_kwargs: Optional[Dict],
-        **kwargs,
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: _TensorLike,
+    explain_fn: Callable,
+    init_kwargs: Optional[Dict],
+    **kwargs,
 ) -> np.ndarray:
     from noisegrad import NoiseGradPlusPlus
 
@@ -510,7 +525,7 @@ def _(
     og_weights = model.weights.copy()
 
     def explanation_fn(
-            module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+        module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
         model.weights = module.state_dict()
         # fmt: off

@@ -42,11 +42,9 @@ def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs):
     ],
     ids=["plain text", "latent space"],
 )
-def test_avg_sensitivity_keras_model(
-    tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs
-):
+def test_avg_sensitivity_keras_model(tf_sst2_model, sst2_dataset, init_kwargs):
     metric = AvgSensitivity(nr_samples=5, **init_kwargs)
-    result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
+    result = metric(tf_sst2_model, sst2_dataset)
     assert isinstance(result, np.ndarray)
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()

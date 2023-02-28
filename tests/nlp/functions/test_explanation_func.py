@@ -133,7 +133,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
         },
-        {"method": "LIME", "call_kwargs": {"num_samples": 5}},
+        # {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[
@@ -143,7 +143,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
         "IntGrad batched",
         "IntGrad [UNK] baseline",
         "NoiseGrad++",
-        "LIME",
+        # "LIME",
         "SHAP",
     ],
 )

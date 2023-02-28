@@ -38,7 +38,7 @@ def test_random_logit_torch_fnet_model(
     "init_kwargs, call_kwargs",
     [
         (
-            {"normalise": True, "num_classes": 2},
+            {"normalise": True, "num_classes": 4},
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
@@ -87,12 +87,14 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
 def test_model_parameter_randomisation_keras_fnet_model(fnet_keras, ag_news_dataset):
     metric = ModelParameterRandomisation()
     result = metric(fnet_keras, ag_news_dataset)
-    assert isinstance(result, np.ndarray)
-    assert not (result == np.NINF).any()
-    assert not (result == np.PINF).any()
-    assert not (result == np.NAN).any()
-    assert not (result == np.NZERO).any()
-    assert not (result == np.PZERO).any()
+    assert isinstance(result, Dict)
+    for i in result.values():
+        assert isinstance(i, np.ndarray)
+        assert not (i == np.NINF).any()
+        assert not (i == np.PINF).any()
+        assert not (i == np.NAN).any()
+        assert not (i == np.NZERO).any()
+        assert not (i == np.PZERO).any()
 
 
 @skip_in_ci

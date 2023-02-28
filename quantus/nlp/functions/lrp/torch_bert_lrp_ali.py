@@ -14,8 +14,8 @@ class BertLRPConfig:
     hidden_size: int
     num_attention_heads: int
     layer_norm_eps: float
-    n_classes: int
-    n_blocks: int
+    num_classes: int
+    num_attention_blocks: int
     attention_head_size: int
     all_head_size: int
     detach_layernorm: bool  # Detaches the attention-block-output LayerNorm
@@ -34,7 +34,7 @@ class BertForSequenceClassificationLRP(nn.Module):
     def __init__(self, config: BertLRPConfig, embeddings: BertEmbeddings):
         super().__init__()
 
-        n_blocks = config.n_blocks
+        n_blocks = config.num_attention_blocks
         self.n_blocks = n_blocks
         self.embeds = embeddings
 
@@ -44,31 +44,30 @@ class BertForSequenceClassificationLRP(nn.Module):
         )
         self.pooler = BertPooler(config)
         self.classifier = nn.Linear(
-            in_features=config.hidden_size, out_features=config.n_classes, bias=True
+            in_features=config.hidden_size, out_features=config.num_classes, bias=True
         )
         self.device = config.device
 
-    def forward_and_explain(
+    def explain(
         self,
         input_ids: Optional[torch.Tensor],
         y_batch: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids=None,
-        inputs_embeds=None,
-        labels=None,
-        past_key_values_length=0,
+        token_type_ids: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
         gammas: float | List[float] = 0.01,
-    ):
+    ) -> torch.Tensor:
         # Forward
         A = {}
 
         hidden_states = self.embeds(
             input_ids=input_ids,
+            attention_mask=attention_mask,
             token_type_ids=token_type_ids,
+            inputs_embeds=inputs_embeds,
             position_ids=None,
-            inputs_embeds=None,
             past_key_values_length=0,
-        ).to(self.config.device)
+        )
 
         A["hidden_states"] = hidden_states
 
@@ -122,9 +121,9 @@ class BertForSequenceClassificationLRP(nn.Module):
             R_attn = (R_grad) * A["attn_input_{}".format(i)]
             R_ = R_attn
 
-        R = R_.sum(2).detach().cpu().numpy()
+        R = R_.sum(2).detach()
 
-        return {"logits": logits, "R": R}
+        return R
 
 
 class BertSelfAttentionLRP(nn.Module):
