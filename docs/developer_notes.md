@@ -38,3 +38,4 @@ A copy is made of CONTRIBUTING.md to docs_dev/CONTRIBUTING.md. To avoid any inco
 #### TODO
 - LRP-based explanation methods.
 - docstring for metrics
+- Profile tests, speed up CI.

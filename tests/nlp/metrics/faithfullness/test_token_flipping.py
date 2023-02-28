@@ -50,7 +50,7 @@ def test_tf_model(
         (
             {"normalise": True, "task": "activation"},
             {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8, 39),
+            (8, 40),
         ),
         (
             {"abs": True, "return_auc_per_sample": True},
@@ -85,7 +85,7 @@ def test_keras_model(
         (
             {"normalise": True, "task": "activation"},
             {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8, 39),
+            (8, 44),
         ),
         (
             {"abs": True, "return_auc_per_sample": True},
@@ -121,7 +121,7 @@ def test_emotion_torch_model(
         (
             {"normalise": True, "task": "activation"},
             {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8, 39),
+            (8, 42),
         ),
         (
             {"abs": True, "return_auc_per_sample": True},

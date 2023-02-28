@@ -34,7 +34,7 @@ def get_input_ids(x_batch: List[str], model: TextClassifier) -> Tuple[np.ndarray
         input_ids = encoded_input
     if isinstance(encoded_input, Dict):
         return input_ids, encoded_input
-    return input_ids, encoded_input
+    return input_ids, {}
 
 
 def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:

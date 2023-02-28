@@ -43,3 +43,6 @@ tutorials/invited_talks/
 
 # VS Code project files
 .vscode
+
+# Profiling files
+prof

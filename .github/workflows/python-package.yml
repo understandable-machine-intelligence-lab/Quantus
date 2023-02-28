@@ -19,14 +19,16 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip' # caching pip dependencies
+
     - name: Install dependencies
       run: |
         pip install -r requirements.txt -r requirements_test.txt -r requirements_nlp.txt
         pip install mypy==0.982 black --upgrade typing-extensions 
+        # TODO: add to requirements_test.txt after release.
         pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
     #- name: Lint
     #  run: |
@@ -38,10 +40,12 @@ jobs:
     #    mypy quantus
     #    # run black
     #    black quantus
+
     - name: Test with pytest
       run: |
         export CI=1 # skip MPR test, as they fail with OOM
-        pytest
+        pytest --profile
+
     - name: Test importing Quantus
       run: |
         pip install .
