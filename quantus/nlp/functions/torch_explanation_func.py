@@ -14,6 +14,7 @@ from quantus.nlp.helpers.utils import (
     map_dict,
     get_embeddings,
     get_input_ids,
+    get_interpolated_inputs
 )
 
 # Just to save some typing effort
@@ -33,7 +34,6 @@ def available_xai_methods() -> Dict:
 
 
 def torch_explain(
-    model: TextClassifier,
     *args,
     method: str,
     **kwargs,
@@ -45,12 +45,12 @@ def torch_explain(
             f"Unsupported explanation method: {method}, supported are: {list(method_mapping.keys())}"
         )
     explain_fn = method_mapping[method]  # type: ignore
-    return explain_fn(model, *args, **kwargs)
+    return explain_fn(*args, **kwargs)
 
 
 @multimethod
 def torch_explain_gradient_norm(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
@@ -80,7 +80,7 @@ def torch_explain_gradient_norm(
 
 @multimethod
 def torch_explain_gradient_x_input(
-    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
@@ -113,7 +113,7 @@ def torch_explain_gradient_x_input(
 def torch_explain_integrated_gradients(
     model: TextClassifier,
     x_batch: _TextOrVector,
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     *,
     num_steps: int = 10,
     baseline_fn: Optional[_BaselineFn] = None,
@@ -175,7 +175,7 @@ def torch_explain_integrated_gradients(
 def torch_explain_noise_grad_plus_plus(
     model: TextClassifier,
     x_batch: _TensorLike,
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
     init_kwargs: Optional[Dict] = None,
@@ -214,7 +214,7 @@ def torch_explain_noise_grad_plus_plus(
 
 @torch_explain_gradient_norm.register
 def _torch_explain_gradient_norm(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -247,7 +247,7 @@ def _torch_explain_gradient_norm(
 
 @torch_explain_gradient_x_input.register
 def _torch_explain_gradient_x_input(
-    model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
@@ -260,7 +260,7 @@ def _torch_explain_gradient_x_input(
 
 @torch_explain_gradient_x_input.register
 def _torch_explain_gradient_x_input(
-    model: TextClassifier, input_embeddings: _TensorLike, y_batch: np.ndarray, **kwargs
+    model: TextClassifier, input_embeddings: _TensorLike, y_batch: _TensorLike, **kwargs
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
@@ -310,7 +310,7 @@ def _torch_explain_integrated_gradients(
 def _torch_explain_integrated_gradients(
     model: TextClassifier,
     input_embeddings: _TensorLike,
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     *,
     num_steps: int = 10,
     baseline_fn: Optional[_BaselineFn] = None,
@@ -339,7 +339,7 @@ def _torch_explain_integrated_gradients(
 def _torch_explain_integrated_gradients_batched(
     model: TextClassifier,
     interpolated_embeddings: List[_TensorLike],
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     **kwargs,
 ) -> np.ndarray:
     device = _get_device(model)
@@ -376,7 +376,7 @@ def _torch_explain_integrated_gradients_batched(
 def _torch_explain_integrated_gradients_iterative(
     model: TextClassifier,
     interpolated_embeddings_batch: List[_TensorLike],
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     **kwargs,
 ) -> np.ndarray:
     dtype = _get_torch_model(model).dtype
@@ -443,7 +443,7 @@ def _torch_explain_noise_grad_plus_plus(
 def _torch_explain_noise_grad_plus_plus(
     model: TextClassifier,
     input_embeddings: _TensorLike,
-    y_batch: np.ndarray,
+    y_batch: _TensorLike,
     explain_fn: Callable,
     init_kwargs: Optional[Dict],
     **kwargs,
@@ -498,22 +498,3 @@ def _get_torch_model(model: TextClassifier):
         )
 
     return model.model  # type: ignore
-
-
-def get_interpolated_inputs(
-    baseline: np.ndarray, target: np.ndarray, num_steps: int
-) -> np.ndarray:
-    """Gets num_step linearly interpolated inputs from baseline to target."""
-    if num_steps <= 0:
-        return np.array([])
-    if num_steps == 1:
-        return np.array([baseline, target])
-
-    delta = target - baseline
-    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
-        :, np.newaxis, np.newaxis
-    ]
-    shape = (num_steps + 1,) + delta.shape
-    deltas = scales * np.broadcast_to(delta, shape)
-    interpolated_inputs = baseline + deltas
-    return interpolated_inputs

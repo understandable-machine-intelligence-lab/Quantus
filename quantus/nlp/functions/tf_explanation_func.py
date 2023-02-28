@@ -15,6 +15,8 @@ from quantus.nlp.helpers.utils import (
     map_dict,
     get_embeddings,
     get_input_ids,
+    apply_noise,
+    get_interpolated_inputs
 )
 
 # Just to save some typing effort
@@ -35,7 +37,6 @@ def available_explanation_functions() -> Dict:
 
 
 def tf_explain(
-    model: TextClassifier,
     *args,
     method: str,
     **kwargs,
@@ -49,7 +50,7 @@ def tf_explain(
             f"Unsupported explanation method: {method}, supported are: {list(method_mapping.keys())}"
         )
     explain_fn = method_mapping[method]
-    return explain_fn(model, *args, **kwargs)  # noqa
+    return explain_fn(*args, **kwargs)  # noqa
 
 
 @multimethod
@@ -195,9 +196,12 @@ def tf_explain_noise_grad_plus_plus(
     *,
     n: int = 10,
     m: int = 10,
-    weight_noise_fn: Optional[_NoiseFn] = None,
-    inputs_noise_fn: Optional[_NoiseFn] = None,
+    mean: float = 1.0,
+    std: float = 0.2,
+    sg_mean: float = 0.0,
+    sg_std: float = 0.4,
     explain_fn: Union[Callable, str] = "IntGrad",
+    noise_type: str = "multiplicative",
     seed: int = 42,
     **kwargs,
 ) -> _Scores:
@@ -353,7 +357,7 @@ def _tf_explain_integrated_gradients(
     embeddings: _TF_TensorLike,
     y_batch: np.ndarray,
     *,
-    num_steps: int = 32,
+    num_steps: int = 10,
     baseline_fn: Optional[_BaselineFn] = None,
     batch_interpolated_inputs: bool = False,
     **kwargs,
@@ -365,7 +369,7 @@ def _tf_explain_integrated_gradients(
 
     for i, embeddings_i in enumerate(embeddings):
         interpolated_embeddings.append(
-            _get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
+            get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
         )
 
     if batch_interpolated_inputs:
@@ -441,6 +445,7 @@ def _tf_explain_noise_grad_plus_plus(
     model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
+    *,
     mean: float = 1.0,
     std: float = 0.2,
     sg_mean: float = 0.0,
@@ -448,6 +453,7 @@ def _tf_explain_noise_grad_plus_plus(
     n: int = 10,
     m: int = 10,
     explain_fn: Union[Callable, str] = "IntGrad",
+    noise_type: str = "multiplicative",
     seed: int = 42,
     **kwargs,
 ) -> List[Explanation]:
@@ -479,27 +485,33 @@ def _tf_explain_noise_grad_plus_plus(
     model: TextClassifier,
     embeddings: _TF_TensorLike,
     y_batch: np.ndarray,
+    *,
     n: int = 10,
     m: int = 10,
-    weight_noise_fn: Optional[_NoiseFn] = None,
-    inputs_noise_fn: Optional[_NoiseFn] = None,
+    mean: float = 1.0,
+    std: float = 0.2,
+    sg_mean: float = 0.0,
+    sg_std: float = 0.4,
+    noise_type: str = "multiplicative",
     explain_fn: Union[Callable, str] = "IntGrad",
     seed: int = 42,
     **kwargs,
 ) -> np.ndarray:
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
-    method_mapping = available_explanation_functions()
+    if isinstance(explain_fn, str):
 
-    if explain_fn == "NoiseGrad++":
-        raise ValueError(
+        method_mapping = available_explanation_functions()
+
+        if explain_fn == "NoiseGrad++":
+            raise ValueError(
             "Can't use NoiseGrad++ as baseline explanation function for NoiseGrad++"
         )
-    if explain_fn not in method_mapping:
-        raise ValueError(
+        if explain_fn not in method_mapping:
+            raise ValueError(
             f"Unsupported explain_fn {explain_fn}, supported are {list(method_mapping.keys())}"
-        )
-    explain_fn = method_mapping[explain_fn]
+            )
+        explain_fn = method_mapping[explain_fn]
 
     tf.random.set_seed(seed)
     original_weights = model.weights
@@ -529,22 +541,3 @@ def _tf_explain_noise_grad_plus_plus(
     model.weights = original_weights
 
     return scores
-
-
-def _get_interpolated_inputs(
-    baseline: _TF_TensorLike, target: _TF_TensorLike, num_steps: int
-) -> tf.Tensor:
-    """Gets num_step linearly interpolated inputs from baseline to target."""
-    if num_steps <= 0:
-        return tf.constant([])
-    if num_steps == 1:
-        return tf.constant([baseline, target])
-
-    delta = target - baseline
-    # fmt: off
-    scales = tf.linspace(0, 1, num_steps + 1, dtype=np.float32)[:, tf.newaxis, tf.newaxis]
-    # fmt: off
-    shape = (num_steps + 1,) + delta.shape
-    deltas = scales * tf.broadcast_to(delta, shape)
-    interpolated_inputs = baseline + deltas
-    return interpolated_inputs

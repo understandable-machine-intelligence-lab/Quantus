@@ -272,3 +272,31 @@ def determine_perturbation_type(func: Callable) -> PerturbationType:
     raise ValueError(
         f"Unsupported type annotation for perturbation function: {type_annotation}."
     )
+
+
+def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
+    if noise_type not in ("additive", "multiplicative"):
+        raise ValueError(f"Unsupported noise_type, supported are: additive, multiplicative.")
+    if noise_type == "additive":
+        return arr + noise
+    if noise_type == "multiplicative":
+        return arr * noise
+
+
+def get_interpolated_inputs(
+    baseline: np.ndarray, target: np.ndarray, num_steps: int
+) -> np.ndarray:
+    """Gets num_step linearly interpolated inputs from baseline to target."""
+    if num_steps <= 0:
+        return np.array([])
+    if num_steps == 1:
+        return np.array([baseline, target])
+
+    delta = target - baseline
+    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
+        :, np.newaxis, np.newaxis
+    ]
+    shape = (num_steps + 1,) + delta.shape
+    deltas = scales * np.broadcast_to(delta, shape)
+    interpolated_inputs = baseline + deltas
+    return interpolated_inputs
