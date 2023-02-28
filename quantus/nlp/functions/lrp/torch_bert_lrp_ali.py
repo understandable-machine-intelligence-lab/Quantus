@@ -1,12 +1,16 @@
 """Based on https://github.com/AmeenAli/XAI_Transformers."""
 
 from __future__ import annotations
+from transformers.modeling_utils import ModuleUtilsMixin
 from transformers.models.bert.modeling_bert import BertEmbeddings, BertPooler
 from torch import nn
 import torch
 import copy
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Tuple
+from torch import Tensor, device
+
+from quantus.nlp.helpers.utils import value_or_default
 
 
 @dataclass
@@ -21,7 +25,7 @@ class BertLRPConfig:
     detach_layernorm: bool  # Detaches the attention-block-output LayerNorm
     detach_kq: bool  # Detaches the kq-softmax branch
     detach_mean: bool
-    device: str
+    device: device
 
 
 @dataclass
@@ -50,75 +54,87 @@ class BertForSequenceClassificationLRP(nn.Module):
 
     def explain(
         self,
-        input_ids: Optional[torch.Tensor],
-        y_batch: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
+        input_ids: Optional[Tensor],
+        y_batch: Tensor,
+        attention_mask: Optional[Tensor] = None,
+        token_type_ids: Optional[Tensor] = None,
+        inputs_embeds: Optional[Tensor] = None,
+        position_ids: Optional[Tensor] = None,
         gammas: float | List[float] = 0.01,
-    ) -> torch.Tensor:
-        # Forward
-        A = {}
-
+    ) -> Tensor:
         hidden_states = self.embeds(
             input_ids=input_ids,
-            attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             inputs_embeds=inputs_embeds,
-            position_ids=None,
-            past_key_values_length=0,
+            position_ids=position_ids,
         )
 
-        A["hidden_states"] = hidden_states
+        if input_ids is not None and inputs_embeds is not None:
+            raise ValueError(
+                "You cannot specify both input_ids and inputs_embeds at the same time"
+            )
+        elif input_ids is not None:
+            input_shape = input_ids.size()
+        elif inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+        else:
+            raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        batch_size, seq_length = input_shape
+
+        attention_mask = value_or_default(
+            attention_mask,
+            lambda: torch.ones((batch_size, seq_length), device=self.device),
+        )
+        extended_attention_mask = get_extended_attention_mask(
+            attention_mask, input_shape
+        ).to(self.device)
 
         attn_input = hidden_states
+
+        attention_inputs = []
+        attention_inputs_data = []
 
         for i, attention_block in enumerate(self.attention_layers):
             # [1, 12, 768] -> [1, 12, 768]
             attn_inputdata = attn_input.data
             attn_inputdata.requires_grad_(True)
 
-            A["attn_input_{}_data".format(i)] = attn_inputdata
-            A["attn_input_{}".format(i)] = attn_input
+            attention_inputs_data.append(attn_inputdata)
+            attention_inputs.append(attn_input)
 
             gamma = gammas if isinstance(gammas, float) else gammas[i]
-
-            output, attention_probs = attention_block(
-                A["attn_input_{}_data".format(i)], gamma=gamma
+            output = attention_block(
+                attn_inputdata, gamma=gamma, attention_mask=extended_attention_mask
             )
             attn_input = output
 
-        # (1, 12, 768) -> (1x768)
-
-        outputdata = output.data
+        outputdata = output.data  # noqa
         outputdata.requires_grad_(True)
 
-        pooled = self.pooler(outputdata)  # A['attn_output'] )
+        pooled = self.pooler(outputdata)
 
-        # (1x768) -> (1,nclasses)
         pooleddata = pooled.data
         pooleddata.requires_grad_(True)
 
         logits = self.classifier(pooleddata)
 
-        A["logits"] = logits
+        indexes = torch.reshape(y_batch, (len(y_batch), 1))
+        logits_for_class = torch.gather(logits, dim=-1, index=indexes)
 
-        # Through clf layer
-        Rout = A["logits"][:, y_batch]
+        Rout = logits_for_class
 
-        self.R0 = Rout.detach().cpu().numpy()
+        torch.autograd.backward(torch.unbind(Rout))
+        (pooleddata.grad * pooled).sum().backward()
 
-        Rout.backward()
-        ((pooleddata.grad) * pooled).sum().backward()
-
-        Rpool = (outputdata.grad) * output
+        Rpool = outputdata.grad * output
 
         R_ = Rpool
         for i, attention_block in list(enumerate(self.attention_layers))[::-1]:
             R_.sum().backward()
 
-            R_grad = A["attn_input_{}_data".format(i)].grad
-            R_attn = (R_grad) * A["attn_input_{}".format(i)]
+            R_grad = attention_inputs_data[i].grad
+            R_attn = R_grad * attention_inputs[i]
             R_ = R_attn
 
         R = R_.sum(2).detach()
@@ -136,9 +152,7 @@ class BertSelfAttentionLRP(nn.Module):
         self.output = BertSelfOutputLRP(config)
         self.detach = config.detach_kq
 
-    def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
-        # x torch.Size([1, 10, 768])
-        # xout torch.Size([1, 10, 12, 64])
+    def transpose_for_scores(self, x: Tensor) -> Tensor:
         new_x_shape = x.size()[:-1] + (
             self.config.num_attention_heads,
             self.config.attention_head_size,
@@ -154,7 +168,12 @@ class BertSelfAttentionLRP(nn.Module):
         zp = player(x)
         return zp * (z / zp).data
 
-    def forward(self, hidden_states: torch.Tensor, gamma: float = 0) -> torch.Tensor:
+    def forward(
+        self,
+        hidden_states: Tensor,
+        attention_mask: Optional[Tensor] = None,
+        gamma: float = 0,
+    ) -> Tensor:
         pquery = make_player_layer(self.query, gamma)
         pkey = make_player_layer(self.key, gamma)
         pvalue = make_player_layer(self.value, gamma)
@@ -170,6 +189,10 @@ class BertSelfAttentionLRP(nn.Module):
 
         # torch.Size([1, 12, 10, 64]) , torch.Size([1, 12, 64, 10]) -> torch.Size([1, 12, 10, 10])
         attention_scores = torch.matmul(query_t, key_t.transpose(-1, -2))
+
+        if attention_mask is not None:
+            # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
+            attention_scores = attention_scores + attention_mask
 
         if self.detach:
             attention_probs = nn.Softmax(dim=-1)(attention_scores).detach()
@@ -202,8 +225,8 @@ class LayerNormImpl(nn.Module):
         self.eps = eps
         self.elementwise_affine = elementwise_affine
 
-        self.weight = nn.Parameter(torch.Tensor(hidden))
-        self.bias = nn.Parameter(torch.Tensor(hidden))
+        self.weight = nn.Parameter(Tensor(hidden))
+        self.bias = nn.Parameter(Tensor(hidden))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -211,7 +234,7 @@ class LayerNormImpl(nn.Module):
             nn.init.ones_(self.weight)
             nn.init.zeros_(self.bias)
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: Tensor) -> Tensor:
         mean = inputs.mean(dim=-1, keepdim=True)
         std = inputs.std(dim=-1, keepdim=True)
         if self.mean_detach:
@@ -237,16 +260,14 @@ class BertSelfOutputLRP(nn.Module):
 
         self.detach = config.detach_layernorm
 
-    def forward(
-        self, hidden_states: torch.Tensor, input_tensor: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, hidden_states: Tensor, input_tensor: Tensor) -> Tensor:
         hidden_states = self.dense(hidden_states)
         hidden_states = self.layer_norm(hidden_states + input_tensor)
         return hidden_states
 
     def player_forward(
-        self, hidden_states: torch.Tensor, input_tensor: torch.Tensor, gamma: float
-    ) -> torch.Tensor:
+        self, hidden_states: Tensor, input_tensor: Tensor, gamma: float
+    ) -> Tensor:
         player_dense = make_player_layer(self.dense, gamma)
         hidden_states = player_dense(hidden_states)
         hidden_states = self.layer_norm(hidden_states + input_tensor)
@@ -258,3 +279,38 @@ def make_player_layer(layer: nn.Module, gamma: float) -> nn.Module:
     player.weight = torch.nn.Parameter(layer.weight + gamma * layer.weight.clamp(min=0))
     player.bias = torch.nn.Parameter(layer.bias + gamma * layer.bias.clamp(min=0))
     return player
+
+
+def get_extended_attention_mask(
+    attention_mask: Tensor,
+    input_shape: Tuple[int],
+) -> Tensor:
+    # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
+    # ourselves in which case we just need to make it broadcastable to all heads.
+    if attention_mask.dim() == 3:
+        extended_attention_mask = attention_mask[:, None, :, :]
+    elif attention_mask.dim() == 2:
+        # Provided a padding mask of dimensions [batch_size, seq_length]
+        # - if the model is a decoder, apply a causal mask in addition to the padding mask
+        # - if the model is an encoder, make the mask broadcastable to [batch_size, num_heads, seq_length, seq_length]
+
+        extended_attention_mask = (
+            ModuleUtilsMixin.create_extended_attention_mask_for_decoder(
+                input_shape, attention_mask
+            )
+        )
+    else:
+        raise ValueError(
+            f"Wrong shape for input_ids (shape {input_shape}) or attention_mask (shape {attention_mask.shape})"
+        )
+
+    # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+    # masked positions, this operation will create a tensor which is 0.0 for
+    # positions we want to attend and the dtype's smallest value for masked positions.
+    # Since we are adding it to the raw scores before the softmax, this is
+    # effectively the same as removing these entirely.
+    extended_attention_mask = extended_attention_mask  # fp16 compatibility
+    extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(
+        torch.float64
+    ).min
+    return extended_attention_mask

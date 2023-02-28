@@ -156,10 +156,29 @@ def test_torch_fnet_model(torch_fnet, sst2_dataset, kwargs):
         assert isinstance(scores, np.ndarray)
 
 
-@pytest.mark.skip
-def test_bert_lrp_torch(sst2_dataset):
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"method": "LRP-Ali"},
+        {"method": "LRP-Ali", "detach_layernorm": False},
+        {"method": "LRP-Ali", "detach_kq": False},
+        {"method": "LRP-Ali", "detach_mean": False},
+        # {"method": "LRP-Chefer"},
+    ],
+    # ids=[
+    #    "Ali",
+    #    "Ali: detach_layernorm=False",
+    #    "Ali: detach_kq=False",
+    #    "Ali: detach_mean",
+    # ],
+)
+def test_bert_lrp_torch(sst2_dataset, kwargs):
     model = TorchHuggingFaceTextClassifier.from_pretrained(
         "gchhablani/bert-base-cased-finetuned-sst2"
     )
     y_batch = model.predict(sst2_dataset).argmax(axis=-1)
-    a_batch = explain(model, sst2_dataset, y_batch, method="LRP")
+    a_batch = explain(model, sst2_dataset, y_batch, **kwargs)
+    assert len(a_batch) == len(y_batch)
+    for tokens, scores in a_batch:
+        assert isinstance(tokens, List)
+        assert isinstance(scores, np.ndarray)

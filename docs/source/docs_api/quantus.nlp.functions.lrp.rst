@@ -12,4 +12,5 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   quantus.nlp.functions.lrp.torch_bert_lrp
+   quantus.nlp.functions.lrp.torch_bert_lrp_ali
+   quantus.nlp.functions.lrp.torch_bert_lrp_chefer

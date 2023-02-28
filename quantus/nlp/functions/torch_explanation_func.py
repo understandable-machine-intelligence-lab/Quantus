@@ -10,9 +10,12 @@ from multimethod import multimethod
 from transformers import BertForSequenceClassification
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.functions.lrp.torch_bert_lrp_ali import BertLRPConfig
 from quantus.nlp.functions.lrp.torch_bert_lrp_ali import (
-    BertLRPConfig,
-    BertForSequenceClassificationLRP,
+    BertForSequenceClassificationLRP as BertAli,
+)
+from quantus.nlp.functions.lrp.torch_bert_lrp_chefer import (
+    BertForSequenceClassificationLRP as BertChefer,
 )
 from quantus.nlp.helpers.utils import (
     value_or_default,
@@ -35,7 +38,8 @@ def available_xai_methods() -> Dict:
         "GradXInput": torch_explain_gradient_x_input,
         "IntGrad": torch_explain_integrated_gradients,
         "NoiseGrad++": torch_explain_noise_grad_plus_plus,
-        "LRP": torch_explain_lrp,
+        "LRP-Ali": torch_explain_lrp_ali,
+        "LRP-Chefer": torch_explain_lrp_chefer,
     }
 
 
@@ -218,7 +222,7 @@ def torch_explain_noise_grad_plus_plus(
     pass
 
 
-def torch_explain_lrp(
+def torch_explain_lrp_ali(
     model: TorchTextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
@@ -240,8 +244,8 @@ def torch_explain_lrp(
     hf_config = model.internal_model.config
     modules = list(model.internal_model.modules())
 
-    hidden_size = hf_config["hidden_size"]
-    num_attention_heads = hf_config["num_attention_heads"]
+    hidden_size = hf_config.hidden_size
+    num_attention_heads = hf_config.num_attention_heads
     attention_head_size = int(hidden_size / num_attention_heads)
     all_head_size = num_attention_heads * attention_head_size
 
@@ -252,19 +256,47 @@ def torch_explain_lrp(
         device=model.device,
         hidden_size=hidden_size,
         num_attention_heads=num_attention_heads,
-        layer_norm_eps=hf_config["layer_norm_eps"],
+        layer_norm_eps=hf_config.layer_norm_eps,
         num_classes=modules[-1].out_features,
-        num_attention_blocks=hf_config["num_hidden_layers"],
+        num_attention_blocks=hf_config.num_hidden_layers,
         attention_head_size=attention_head_size,
         all_head_size=all_head_size,
     )
 
-    lrp_model = BertForSequenceClassificationLRP(config, torch_module.bert.embeddings)
+    lrp_model = BertAli(config, torch_module.bert.embeddings)
 
     encoded_input = model.tokenizer.tokenize(x_batch)
     encoded_input = map_dict(encoded_input, model.to_tensor)
 
-    scores = lrp_model.explain(y_batch=y_batch, **encoded_input)
+    scores = lrp_model.explain(y_batch=model.to_tensor(y_batch), **encoded_input)
+    scores = scores.detach().cpu().numpy()
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+def torch_explain_lrp_chefer(
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+) -> List[Explanation]:
+    torch_module = model.internal_model
+    if not isinstance(torch_module, BertForSequenceClassification):
+        raise ValueError(
+            f"Only BeRT models are supported for LRP explanations, but found {type(torch_module)}"
+        )
+    hf_hanle = torch_module.name_or_path
+
+    lrp_model = BertChefer.from_pretrained(hf_hanle)
+
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    encoded_input = map_dict(encoded_input, model.to_tensor)
+
+    lrp_model(**encoded_input)
+
+    scores = lrp_model.relprop()
     scores = scores.detach().cpu().numpy()
 
     input_ids, _ = get_input_ids(x_batch, model)

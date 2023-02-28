@@ -145,7 +145,7 @@ scores = metric(
     x_batch=x_batch,
     y_batch=y_batch,
     device=device,
-    explain_func=quantus.forward_and_explain,
+    explain_func=quantus.explain,
     explain_func_kwargs={"method": "Saliency"}
 )
 ```
@@ -185,7 +185,7 @@ metric.get_params
 Nevertheless, for the purpose of robust evaluation, it makes sense to vary especially those hyperparameters that metrics tend to be
 sensitive to. Generally, hyperparameters for each metric are separated as follows:
 
-* Hyperparameters affecting the metric function itself are set in the `__init__` method of each metric.
+* Hyperparameters affecting the metric function itself are set in the `__init__` method of each metric. 
   Extending the above example of MaxSensitivity, various init hyperparameters can be set as follows:
     ```python
     max_sensitivity = quantus.MaxSensitivity(
@@ -205,7 +205,7 @@ sensitive to. Generally, hyperparameters for each metric are separated as follow
         x_batch=x_batch,
         y_batch=y_batch,
         device=device,
-        explain_func=quantus.forward_and_explain,
+        explain_func=quantus.explain,
         explain_func_kwargs={"method": "Saliency"},
         softmax=False
     )

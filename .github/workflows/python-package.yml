@@ -44,7 +44,7 @@ jobs:
     - name: Test with pytest
       run: |
         export CI=1 # skip MPR test, as they fail with OOM
-        pytest --profile
+        pytest --profile --durations=5
 
     - name: Test importing Quantus
       run: |

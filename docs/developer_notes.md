@@ -31,11 +31,7 @@ A copy is made of CONTRIBUTING.md to docs_dev/CONTRIBUTING.md. To avoid any inco
 #### Not yet implemented
 - `softmax` check's
 - `return_aggregate` behaviour
-- tests for invalid inputs/arguments.
-- `return_nan_when_prediction_changes`
-- NLP tasks beside sentiment analysis
-
-#### TODO
-- LRP-based explanation methods.
-- docstring for metrics
-- Profile tests, speed up CI.
+- Proper handling for invalid inputs/arguments.
+- `return_nan_when_prediction_changes` behaviour.
+- NLP tasks beside sentiment analysis.
+- LRP-based XAI method's for TF.
