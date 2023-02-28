@@ -203,7 +203,7 @@ def explanation_similarity(
     similarity_fn: SimilarityFn,
     padded: bool = True,
     numerical_only: bool = True,
-) -> T:
+) -> np.ndarray | float:
     """Compute similarity between batches of explanations using provided similarity_fn."""
     if not padded:
         raise NotImplementedError
@@ -219,7 +219,7 @@ def explanations_batch_similarity(
     similarity_fn: SimilarityFn,
     padded: bool = True,
     numerical_only: bool = True,
-) -> T:
+) -> np.ndarray:
     """Compute similarity between batches of explanations using provided similarity_fn."""
     return np.asarray(
         [

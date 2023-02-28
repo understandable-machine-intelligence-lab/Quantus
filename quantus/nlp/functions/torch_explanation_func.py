@@ -213,7 +213,7 @@ def torch_explain_noise_grad_plus_plus(
 
 
 @torch_explain_gradient_norm.register
-def _torch_explain_gradient_norm(
+def _(
     model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
@@ -225,7 +225,7 @@ def _torch_explain_gradient_norm(
 
 
 @torch_explain_gradient_norm.register
-def _torch_explain_gradient_norm(
+def _(
     model: TextClassifier, input_embeddings: _TensorLike, y_batch: np.ndarray, **kwargs
 ) -> np.ndarray:
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
@@ -246,7 +246,7 @@ def _torch_explain_gradient_norm(
 
 
 @torch_explain_gradient_x_input.register
-def _torch_explain_gradient_x_input(
+def _(
     model: TextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
@@ -259,7 +259,7 @@ def _torch_explain_gradient_x_input(
 
 
 @torch_explain_gradient_x_input.register
-def _torch_explain_gradient_x_input(
+def _(
     model: TextClassifier, input_embeddings: _TensorLike, y_batch: _TensorLike, **kwargs
 ) -> np.ndarray:
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
@@ -278,7 +278,7 @@ def _torch_explain_gradient_x_input(
 
 
 @torch_explain_integrated_gradients.register
-def _torch_explain_integrated_gradients(
+def _(
     model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
@@ -307,7 +307,7 @@ def _torch_explain_integrated_gradients(
 
 
 @torch_explain_integrated_gradients.register
-def _torch_explain_integrated_gradients(
+def _(
     model: TextClassifier,
     input_embeddings: _TensorLike,
     y_batch: _TensorLike,
@@ -407,7 +407,7 @@ def _torch_explain_integrated_gradients_iterative(
 
 
 @torch_explain_noise_grad_plus_plus.register
-def _torch_explain_noise_grad_plus_plus(
+def _(
     model: TextClassifier,
     x_batch: List[str],
     y_batch: _TensorLike,
@@ -440,7 +440,7 @@ def _torch_explain_noise_grad_plus_plus(
 
 
 @torch_explain_noise_grad_plus_plus.register
-def _torch_explain_noise_grad_plus_plus(
+def _(
     model: TextClassifier,
     input_embeddings: _TensorLike,
     y_batch: _TensorLike,
@@ -479,7 +479,7 @@ def _torch_explain_noise_grad_plus_plus(
         .numpy()
     )
 
-    model.model = og_model
+    model.model = og_model # type: ignore
     return scores
 
 

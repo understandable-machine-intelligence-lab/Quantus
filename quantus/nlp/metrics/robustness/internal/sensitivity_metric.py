@@ -107,7 +107,7 @@ class SensitivityMetric(RobustnessMetric):
                 similarities[instance_id] = np.nan
                 continue
 
-            sensitivities = explanation_similarity(
+            sensitivities = explanation_similarity(  # type: ignore
                 a_batch[instance_id],
                 a_perturbed_perturbed[instance_id],
                 self.similarity_func,

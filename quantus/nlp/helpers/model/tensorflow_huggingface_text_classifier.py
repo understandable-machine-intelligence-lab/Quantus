@@ -101,7 +101,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         pass
 
     @get_hidden_representations.register
-    def get_hidden_representations(self, x_batch: List[str], **kwargs) -> np.ndarray:
+    def _(self, x_batch: List[str], **kwargs) -> np.ndarray:
         encoded_batch = self._tokenizer.tokenize(x_batch)
         hidden_states = self._model(
             **encoded_batch,
@@ -114,7 +114,7 @@ class TFHuggingFaceTextClassifier(TextClassifier):
         return hidden_states
 
     @get_hidden_representations.register
-    def get_hidden_representations(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
+    def _(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
         hidden_states = self._model(
             None,
             inputs_embeds=x_batch,
