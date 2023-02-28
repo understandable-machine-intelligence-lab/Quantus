@@ -32,7 +32,7 @@ A copy is made of CONTRIBUTING.md to docs_dev/CONTRIBUTING.md. To avoid any inco
 - `softmax` check's
 - `return_aggregate` behaviour
 - tests for invalid inputs/arguments.
-- tests for `return_nan_when_prediction_changes`
+- `return_nan_when_prediction_changes`
 - NLP tasks beside sentiment analysis
 
 #### TODO

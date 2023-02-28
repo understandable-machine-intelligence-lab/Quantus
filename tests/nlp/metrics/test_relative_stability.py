@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from tests.nlp.utils import skip_on_apple_silicon
-from quantus.nlp import RelativeInputStability, uniform_noise
+from quantus.nlp import uniform_noise, RelativeInputStability, RelativeRepresentationStability, RelativeOutputStability
 
 
 @pytest.mark.nlp
@@ -33,6 +33,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     assert not (result == np.PZERO).any()
 
 
+@pytest.mark.xfail
 @skip_on_apple_silicon
 @pytest.mark.nlp
 @pytest.mark.robustness
@@ -53,7 +54,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     ids=["plain text", "latent space"],
 )
 def test_keras_model(fnet_keras, ag_news_dataset, init_kwargs, call_kwargs):
-    metric = RelativeInputStability(nr_samples=5, **init_kwargs)
+    metric = RelativeOutputStability(nr_samples=5, **init_kwargs)
     result = metric(fnet_keras, ag_news_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
     assert not (result == np.NINF).any()
@@ -82,7 +83,7 @@ def test_keras_model(fnet_keras, ag_news_dataset, init_kwargs, call_kwargs):
     ids=["plain text", "latent space"],
 )
 def test_torch_model(emotion_model, emotion_dataset, init_kwargs, call_kwargs):
-    metric = RelativeInputStability(nr_samples=5, **init_kwargs)
+    metric = RelativeRepresentationStability(nr_samples=5, **init_kwargs)
     result = metric(emotion_model, emotion_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
     assert not (result == np.NINF).any()

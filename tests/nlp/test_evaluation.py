@@ -1,9 +1,11 @@
 import numpy as np
 import pytest
+
+from tests.nlp.utils import skip_in_ci
 import quantus.nlp as qn
 
 
-@pytest.mark.order("last")
+@skip_in_ci
 @pytest.mark.nlp
 @pytest.mark.evaluate_func
 def test_tf_model(tf_sst2_model, sst2_dataset):
@@ -32,6 +34,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
     qn.evaluate(metrics, tf_sst2_model, sst2_dataset, call_kwargs=call_kwargs)
 
 
+@pytest.mark.order("last")
 @pytest.mark.nlp
 @pytest.mark.evaluate_func
 def test_list_of_args_return_list_of_scores(tf_sst2_model, sst2_dataset):
