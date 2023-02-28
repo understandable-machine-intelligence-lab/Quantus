@@ -73,7 +73,8 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     targets: np.ndarray
              The target lables that should be used in the explanation.
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
+            Pass as regular kwargs when using the stnad-alone function.
 
             xai_lib: string, optional
                 XAI library: captum, tf-explain or zennit.
@@ -81,7 +82,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 XAI method (used with captum and tf-explain libraries).
             attributor: string, optional
                 XAI method (used with zennit).
-            method_kwargs: dictionary, optional
+            xai_lib_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attribution function.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
@@ -89,8 +90,11 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             reduce_axes: tuple
-                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
-                the original dimensions.
+                Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
+                array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
+                (8, 28, 28, -1). Passing "()" will keep the original dimensions.
+            keepdims: boolean
+                Indicated if the reduced axes shall be preserved (True) or removed (False).
 
     Returns
     -------
@@ -140,7 +144,8 @@ def get_explanation(model, inputs, targets, **kwargs):
     targets: np.ndarray
          The target lables that should be used in the explanation.
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
+            Pass as regular kwargs when using the stnad-alone function.
 
             xai_lib: string, optional
                 XAI library: captum, tf-explain or zennit.
@@ -148,7 +153,7 @@ def get_explanation(model, inputs, targets, **kwargs):
                 XAI method (used with captum and tf-explain libraries).
             attributor: string, optional
                 XAI method (used with zennit).
-            method_kwargs: dictionary, optional
+            xai_lib_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attribution function.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
@@ -156,8 +161,11 @@ def get_explanation(model, inputs, targets, **kwargs):
                 Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             reduce_axes: tuple
-                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
-                the original dimensions.
+                Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
+                array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
+                (8, 28, 28, -1). Passing "()" will keep the original dimensions.
+            keepdims: boolean
+                Indicated if the reduced axes shall be preserved (True) or removed (False).
     Returns
     -------
     explanation: np.ndarray
@@ -204,11 +212,12 @@ def generate_tf_explanation(
     targets: np.ndarray
          The target lables that should be used in the explanation.
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
+            Pass as regular kwargs when using the stnad-alone function.
 
             method: string, optional
                 XAI method.
-            method_kwargs: dictionary, optional
+            xai_lib_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attribution function.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
@@ -216,17 +225,30 @@ def generate_tf_explanation(
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             reduce_axes: tuple
-                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
-                the original dimensions.
+                Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
+                array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
+                (8, 28, 28, -1). Passing "()" will keep
+                the original dimensions. 
+            keepdims: boolean
+                Indicated if the reduced axes shall be preserved (True) or removed (False).
     Returns
     -------
     explanation: np.ndarray
          Returns np.ndarray of same shape as inputs.
 
     """
+
+    warnings.warn(
+        f"tf-explain library is being used for XAI attribution calculation. Consult with tf-explain documentation "
+        f"to find out the type of operations applied on the method output, i.e.  normalisation, taking the absolute"
+        f"value, etc.\n",
+        category=UserWarning,
+    )
+
     method = kwargs.get("method", "VanillaGradients")
-    method_kwargs = kwargs.get("method_kwargs", {})
+    xai_lib_kwargs = kwargs.get("xai_lib_kwargs", {})
     reduce_axes = kwargs.get("reduce_axes", ())
+    keepdims = kwargs.get("keepdims", True)
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
         if method == "VanillaGradients":
@@ -264,7 +286,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, **method_kwargs
+                            ([x], None), model, y, **xai_lib_kwargs
                         ),
                         inputs,
                         targets,
@@ -283,7 +305,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, n_steps=n_steps, **method_kwargs
+                            ([x], None), model, y, n_steps=n_steps, **xai_lib_kwargs
                         ),
                         inputs,
                         targets,
@@ -301,7 +323,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, **method_kwargs
+                            ([x], None), model, y, **xai_lib_kwargs
                         ),
                         inputs,
                         targets,
@@ -314,6 +336,9 @@ def generate_tf_explanation(
 
     elif method == "OcclusionSensitivity":
         patch_size = kwargs.get("window", (1, *([4] * (inputs.ndim - 2))))[-1]
+        reduce_axes = kwargs.get("reduce_axes", (-1,))
+        keepdims = kwargs.get("keepdims", False)
+        keep_dim = False
         explainer = tf_explain.core.occlusion_sensitivity.OcclusionSensitivity()
         explanation = (
             np.array(
@@ -324,7 +349,7 @@ def generate_tf_explanation(
                             model,
                             y,
                             patch_size=patch_size,
-                            **method_kwargs,
+                            **xai_lib_kwargs,
                         ),
                         inputs,
                         targets,
@@ -336,8 +361,11 @@ def generate_tf_explanation(
         )
 
     elif method == "GradCAM":
+        reduce_axes = kwargs.get("reduce_axes", (-1,))
+        keepdims = kwargs.get("keepdims", False)
+        keep_dim = False
         if "gc_layer" in kwargs:
-            method_kwargs["layer_name"] = kwargs["gc_layer"]
+            xai_lib_kwargs["layer_name"] = kwargs["gc_layer"]
 
         explainer = tf_explain.core.grad_cam.GradCAM()
         explanation = (
@@ -345,7 +373,7 @@ def generate_tf_explanation(
                 list(
                     map(
                         lambda x, y: explainer.explain(
-                            ([x], None), model, y, **method_kwargs
+                            ([x], None), model, y, **xai_lib_kwargs
                         ),
                         inputs,
                         targets,
@@ -371,7 +399,7 @@ def generate_tf_explanation(
                             y,
                             num_samples=num_samples,
                             noise=noise,
-                            **method_kwargs,
+                            **xai_lib_kwargs,
                         ),
                         inputs,
                         targets,
@@ -396,7 +424,7 @@ def generate_tf_explanation(
         "{} and  {}.".format(len(reduce_axes), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(reduce_axes), "keepdims": True}
+    reduce_axes = {"axis": tuple(reduce_axes), "keepdims": keepdims}
 
     # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
     if (len(tuple(reduce_axes)) == 0) | (explanation.ndim < 3):
@@ -425,20 +453,24 @@ def generate_captum_explanation(
     device: string
         Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
     kwargs: optional
-            Keyword arguments. May include method_kwargs dictionary which includes keyword arguments for a method call.
+            Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
+            Pass as regular kwargs when using the stnad-alone function. May include xai_lib_kwargs dictionary which includes keyword arguments for a method call.
 
             xai_lib: string
                 XAI library: captum, tf-explain or zennit.
             method: string
                 XAI method.
-            method_kwargs: dict
+            xai_lib_kwargs: dict
                 Keyword arguments to be passed to the attribution function.
             channel_first: boolean, optional
                 Indicates of the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             reduce_axes: tuple
-                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
-                the original dimensions.
+                Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
+                array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
+                (8, 28, 28, -1). Passing "()" will keep the original dimensions.
+            keepdims: boolean
+                Indicated if the reduced axes shall be preserved (True) or removed (False).
     Returns
     -------
     explanation: np.ndarray
@@ -461,7 +493,7 @@ def generate_captum_explanation(
         model = wrapped_model.get_softmax_arg_model()
 
     method = kwargs.get("method", "Gradient")
-    method_kwargs = kwargs.get("method_kwargs", {})
+    xai_lib_kwargs = kwargs.get("xai_lib_kwargs", {})
 
     # Set model in evaluate mode.
     model.to(device)
@@ -481,7 +513,7 @@ def generate_captum_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
 
     # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
     if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
@@ -507,7 +539,7 @@ def generate_captum_explanation(
     if method in ["GradientShap", "DeepLift", "DeepLiftShap"]:
         attr_func = eval(method)
         explanation = f_reduce_axes(
-            attr_func(model, **method_kwargs).attribute(
+            attr_func(model, **xai_lib_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
@@ -517,7 +549,7 @@ def generate_captum_explanation(
     elif method == "IntegratedGradients":
         attr_func = eval(method)
         explanation = f_reduce_axes(
-            attr_func(model, **method_kwargs).attribute(
+            attr_func(model, **xai_lib_kwargs).attribute(
                 inputs=inputs,
                 target=targets,
                 baselines=kwargs.get("baseline", torch.zeros_like(inputs)),
@@ -538,12 +570,12 @@ def generate_captum_explanation(
     ]:
         attr_func = eval(method)
         explanation = f_reduce_axes(
-            attr_func(model, **method_kwargs).attribute(inputs=inputs, target=targets)
+            attr_func(model, **xai_lib_kwargs).attribute(inputs=inputs, target=targets)
         )
 
     elif method == "Gradient":
         explanation = f_reduce_axes(
-            Saliency(model, **method_kwargs).attribute(
+            Saliency(model, **xai_lib_kwargs).attribute(
                 inputs=inputs, target=targets, abs=False
             )
         )
@@ -567,24 +599,24 @@ def generate_captum_explanation(
         "LayerGradientXActivation",
     ]:
         if "gc_layer" in kwargs:
-            method_kwargs["layer"] = kwargs["gc_layer"]
+            xai_lib_kwargs["layer"] = kwargs["gc_layer"]
 
-        if "layer" not in method_kwargs:
+        if "layer" not in xai_lib_kwargs:
             raise ValueError(
                 "Specify a convolutional layer name as 'gc_layer' to run GradCam."
             )
 
-        if isinstance(method_kwargs["layer"], str):
-            method_kwargs["layer"] = eval(method_kwargs["layer"])
+        if isinstance(xai_lib_kwargs["layer"], str):
+            xai_lib_kwargs["layer"] = eval(xai_lib_kwargs["layer"])
 
         attr_func = eval(method)
 
         if method != "LayerActivation":
-            explanation = attr_func(model, **method_kwargs).attribute(
+            explanation = attr_func(model, **xai_lib_kwargs).attribute(
                 inputs=inputs, target=targets
             )
         else:
-            explanation = attr_func(model, **method_kwargs).attribute(inputs=inputs)
+            explanation = attr_func(model, **xai_lib_kwargs).attribute(inputs=inputs)
 
         if "interpolate" in kwargs:
             if isinstance(kwargs["interpolate"], tuple):
@@ -676,11 +708,12 @@ def generate_zennit_explanation(
     device: string
         Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
     kwargs: optional
-            Keyword arguments.
+            Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
+            Pass as regular kwargs when using the stnad-alone function.
 
             attributor: string, optional
                 XAI method.
-            method_kwargs: dictionary, optional
+            xai_lib_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attribution function.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
@@ -688,8 +721,11 @@ def generate_zennit_explanation(
                 Indicates if the image dimensions are channel first, or channel last.
                 Inferred from the input shape if None.
             reduce_axes: tuple
-                Indicated the indices of dimensions of the output explanation array to be summed. Passing "()" will keep
-                the original dimensions.
+                Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
+                array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
+                (8, 28, 28, -1). Passing "()" will keep the original dimensions.
+            keepdims: boolean
+                Indicated if the reduced axes shall be preserved (True) or removed (False).
     Returns
     -------
     explanation: np.ndarray
@@ -719,7 +755,7 @@ def generate_zennit_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": True}
+    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
 
     # Get zennit composite, canonizer, attributor and handle canonizer kwargs.
     canonizer = kwargs.get("canonizer", None)

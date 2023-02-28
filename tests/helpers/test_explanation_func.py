@@ -581,7 +581,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_mnist_images"),
             {
                 "method": "LayerGradientXActivation",
-                "method_kwargs": {"layer": "model._modules.get('conv_2')"},
+                "xai_lib_kwargs": {"layer": "model._modules.get('conv_2')"},
                 "interpolate": (28, 28),
                 "interpolate_mode": "nearest",
             },
@@ -603,7 +603,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
                 "method": "LayerGradientXActivation",
-                "method_kwargs": {},
+                "xai_lib_kwargs": {},
                 "interpolate": (100,),
                 "interpolate_mode": "nearest",
             },
@@ -632,7 +632,7 @@ from quantus.functions.normalise_func import normalise_by_max
             {
                 "method": "OcclusionSensitivity",
             },
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_mnist_model_tf"),
@@ -694,7 +694,7 @@ from quantus.functions.normalise_func import normalise_by_max
             lazy_fixture("load_cifar10_model_tf"),
             lazy_fixture("load_cifar10_images"),
             {"method": "OcclusionSensitivity", "reduce_axes": (3,)},
-            {"shape": (8, 32, 32, 1)},
+            {"shape": (8, 32, 32)},
         ),
         (
             lazy_fixture("load_cifar10_model_tf"),
@@ -911,7 +911,7 @@ def test_generate_captum_explanation(
             {
                 "method": "OcclusionSensitivity",
             },
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -959,7 +959,7 @@ def test_generate_captum_explanation(
             {
                 "method": "GradCAM",
             },
-            {"shape": (8, 28, 28, 3)},
+            {"shape": (8, 28, 28)},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
