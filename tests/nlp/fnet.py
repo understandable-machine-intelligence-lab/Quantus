@@ -94,7 +94,7 @@ class FNetAdapter(TensorFlowTextClassifier):
         return token_embeds + position_embeds
 
     @property
-    def tokenizer(self) -> qn.Tokenizer:
+    def tokenizer(self) -> Tokenizer:
         return self._tokenizer
 
     def get_hidden_representations(self, x_batch, **kwargs):
