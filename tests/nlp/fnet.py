@@ -128,6 +128,5 @@ def fnet_adapter() -> FNetAdapter:
     )
 
     model(tokenizer(["hello there"]))
-    # model.load_weights("tests/assets/nlp/weights_fnet_ag_news.keras")
-
+    model.load_weights("tests/assets/nlp/fnet_weights.keras")
     return FNetAdapter(model, TokenizerAdapter(tokenizer))
