@@ -21,5 +21,6 @@ Submodules
    :maxdepth: 4
 
    quantus.nlp.helpers.constants
+   quantus.nlp.helpers.plotting
    quantus.nlp.helpers.types
    quantus.nlp.helpers.utils

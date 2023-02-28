@@ -12,4 +12,4 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   quantus.nlp.metrics.faithfullness.token_flipping
+   quantus.nlp.metrics.faithfullness.token_pruning
