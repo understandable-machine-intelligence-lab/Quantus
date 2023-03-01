@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from quantus.nlp import AvgSensitivity, MaxSensitivity, uniform_noise, gaussian_noise
-from tests.nlp.utils import skip_on_apple_silicon
+from tests.nlp.markers import skip_on_apple_silicon
 
 
 @pytest.mark.nlp

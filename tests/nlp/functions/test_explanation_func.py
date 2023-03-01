@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 import pytest
-from tests.nlp.utils import skip_on_apple_silicon
+from tests.nlp.markers import skip_on_apple_silicon
 from quantus.nlp import explain
 
 

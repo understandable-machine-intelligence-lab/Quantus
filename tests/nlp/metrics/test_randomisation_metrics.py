@@ -1,10 +1,12 @@
 import numpy as np
 import pytest
 from typing import Dict
-from tests.nlp.utils import skip_in_ci, skip_on_apple_silicon
+from tests.markers import skip_on_python_10
+from tests.nlp.markers import skip_in_ci, skip_on_apple_silicon
 from quantus.nlp import RandomLogit, ModelParameterRandomisation
 
 
+@skip_on_python_10
 @pytest.mark.nlp
 @pytest.mark.pytorch_model
 @pytest.mark.randomisation
@@ -30,6 +32,7 @@ def test_random_logit_torch_fnet_model(
     assert not (result == np.PZERO).any()
 
 
+@skip_on_python_10
 @skip_on_apple_silicon
 @pytest.mark.nlp
 @pytest.mark.keras_nlp_model
@@ -56,7 +59,7 @@ def test_random_logit_keras_fnet_model(
     assert not (result == np.PZERO).any()
 
 
-@skip_in_ci
+@skip_on_python_10
 @pytest.mark.nlp
 @pytest.mark.tf_model
 @pytest.mark.randomisation

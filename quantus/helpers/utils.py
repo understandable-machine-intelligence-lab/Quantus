@@ -764,7 +764,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
-
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
@@ -773,7 +772,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
-
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
 
@@ -783,7 +781,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
-
                 # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
@@ -995,3 +992,22 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+def compute_correlation_per_sample(last_results: Dict) -> List:
+    assert isinstance(last_results, dict), (
+        "To compute the average correlation coefficient per sample for "
+        "Model Parameter Randomisation Test, 'last_result' "
+        "must be of type dict."
+    )
+    layer_length = len(last_results[list(last_results.keys())[0]])
+    results: Dict[int, List] = {sample: [] for sample in range(layer_length)}
+
+    for sample in results:
+        for layer in last_results:
+            results[sample].append(float(last_results[layer][sample]))
+        results[sample] = np.mean(results[sample])  # type: ignore
+
+    corr_coeffs = list(results.values())
+
+    return corr_coeffs

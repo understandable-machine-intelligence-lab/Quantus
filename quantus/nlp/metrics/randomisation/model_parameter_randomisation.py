@@ -4,9 +4,7 @@ import numpy as np
 from tqdm.auto import tqdm
 from typing import List, Optional, Dict, Callable, no_type_check
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.randomisation.model_parameter_randomisation import (
-    ModelParameterRandomisation as BaseMPR,
-)
+from quantus.helpers.utils import compute_correlation_per_sample
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
 from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
@@ -131,7 +129,7 @@ class ModelParameterRandomisation(BatchedMetric):
             self.last_results[layer_name] = similarity_scores
 
         if self.return_sample_correlation:
-            return np.asarray(BaseMPR.compute_correlation_per_sample(self.last_results))
+            return np.asarray(compute_correlation_per_sample(self.last_results))
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (

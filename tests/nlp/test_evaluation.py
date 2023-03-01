@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from tests.nlp.utils import skip_in_ci
+from tests.nlp.markers import skip_in_ci
 import quantus.nlp as qn
 
 

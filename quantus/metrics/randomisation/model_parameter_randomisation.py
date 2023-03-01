@@ -23,6 +23,7 @@ from tqdm.auto import tqdm
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.utils import compute_correlation_per_sample
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
@@ -309,7 +310,7 @@ class ModelParameterRandomisation(Metric):
         )
 
         if self.return_sample_correlation:
-            self.last_results = self.compute_correlation_per_sample(self.last_results)
+            self.last_results = compute_correlation_per_sample(self.last_results)
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
@@ -399,25 +400,3 @@ class ModelParameterRandomisation(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-    @staticmethod
-    def compute_correlation_per_sample(
-        last_results: Dict,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-
-        assert isinstance(last_results, dict), (
-            "To compute the average correlation coefficient per sample for "
-            "Model Parameter Randomisation Test, 'last_result' "
-            "must be of type dict."
-        )
-        layer_length = len(last_results[list(last_results.keys())[0]])
-        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
-
-        for sample in results:
-            for layer in last_results:
-                results[sample].append(float(last_results[layer][sample]))
-            results[sample] = np.mean(results[sample])
-
-        corr_coeffs = list(results.values())
-
-        return corr_coeffs

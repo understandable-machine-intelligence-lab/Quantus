@@ -123,7 +123,6 @@ def _pad_array_3d(a: np.ndarray, target_shape: Tuple[int, int, int], pad_value: 
 
 
 def map_explanations(a_batch: List[Explanation], fn: Callable[[T], R]) -> List[R]:
-    """Take absolute value of numerical component of explanations."""
     return [(tokens, fn(scores)) for tokens, scores in a_batch]
 
 
@@ -204,7 +203,7 @@ def explanation_similarity(
     padded: bool = True,
     numerical_only: bool = True,
 ) -> np.ndarray | float:
-    """Compute similarity between batches of explanations using provided similarity_fn."""
+    """Compute similarity between explanations using provided similarity_fn."""
     if not padded:
         raise NotImplementedError
     a_padded, b_padded = pad_ragged_arrays(a[1], b[1])
