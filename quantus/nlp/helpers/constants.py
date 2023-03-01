@@ -90,8 +90,6 @@ AVAILABLE_NUMERICAL_XAI_METHODS = [
     "IntGrad",
     "NoiseGrad",
     "NoiseGrad++",
-    "LRP-Ali",
-    "LRP-Chefer",
 ]
 
 AVAILABLE_XAI_METHODS = list(

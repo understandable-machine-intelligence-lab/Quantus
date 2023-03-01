@@ -6,14 +6,6 @@ quantus.nlp.functions package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   quantus.nlp.functions.lrp
-
 Submodules
 ----------
 

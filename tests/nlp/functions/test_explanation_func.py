@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 import pytest
 from tests.nlp.utils import skip_on_apple_silicon
-from quantus.nlp import explain, TorchHuggingFaceTextClassifier
+from quantus.nlp import explain
 
 
 def unknown_token_baseline_function(_) -> np.ndarray:
@@ -170,35 +170,3 @@ def test_torch_fnet_model(torch_fnet, sst2_dataset, kwargs):
         assert isinstance(tokens, List)
         assert isinstance(scores, np.ndarray)
         assert scores.ndim == 1
-
-
-@pytest.mark.parametrize(
-    "kwargs",
-    [
-        {"method": "LRP-Ali"},
-        {"method": "LRP-Ali", "detach_layernorm": False},
-        {"method": "LRP-Ali", "detach_kq": False},
-        {"method": "LRP-Ali", "detach_mean": False},
-        {"method": "LRP-Chefer"},
-        {"method": "LRP-Chefer", "alpha": 0.01},
-    ],
-    ids=[
-        "Ali",
-        "Ali: detach_layernorm=False",
-        "Ali: detach_kq=False",
-        "Ali: detach_mean=False",
-        "Chefer",
-        "Chefer: alpha=0.01",
-    ],
-)
-def test_bert_lrp_torch(sst2_dataset, kwargs):
-    model = TorchHuggingFaceTextClassifier.from_pretrained(
-        "gchhablani/bert-base-cased-finetuned-sst2"
-    )
-    y_batch = model.predict(sst2_dataset).argmax(axis=-1)
-    a_batch = explain(model, sst2_dataset, y_batch, **kwargs)
-    assert len(a_batch) == len(y_batch)
-    for tokens, scores in a_batch:
-        assert isinstance(tokens, List)
-        assert isinstance(scores, np.ndarray)
-        assert not np.isnan(scores).any()

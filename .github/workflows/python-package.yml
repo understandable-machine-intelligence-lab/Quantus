@@ -45,7 +45,7 @@ jobs:
       run: |
         export CI=1 # skip MPR test, as they fail with OOM
         # Run only tests for changed source files
-        pytest --durations=10 -n auto --picked
+        pytest --durations=10 -n auto
 
     - name: Test importing Quantus
       run: |
