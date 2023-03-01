@@ -37,3 +37,14 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
+
+
+# Alternative, based on: https://pythonprogramming.org/automatically-building-python-package-using-github-actions/.
+#           pip install setuptools wheel twine
+#        - name: Build and publish
+#          env:
+#            TWINE_USERNAME: $
+#            TWINE_PASSWORD: $
+#          run: |
+#            python setup.py sdist bdist_wheel
+#            twine upload dist/*
