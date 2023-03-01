@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Tuple
 from torch import Tensor, device
 
-from quantus.nlp.helpers.utils import value_or_default
+from quantus.nlp.helpers.utils import map_optional
 
 
 @dataclass
@@ -79,16 +79,10 @@ class BertForSequenceClassificationLRP(nn.Module):
             input_shape = inputs_embeds.size()[:-1]
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
-
-        batch_size, seq_length = input_shape
-
-        attention_mask = value_or_default(
+        extended_attention_mask = map_optional(
             attention_mask,
-            lambda: torch.ones((batch_size, seq_length), device=self.device),
+            lambda x: get_extended_attention_mask(x, input_shape).to(self.device),
         )
-        extended_attention_mask = get_extended_attention_mask(
-            attention_mask, input_shape
-        ).to(self.device)
 
         attn_input = hidden_states
 
@@ -191,7 +185,6 @@ class BertSelfAttentionLRP(nn.Module):
         attention_scores = torch.matmul(query_t, key_t.transpose(-1, -2))
 
         if attention_mask is not None:
-            # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
             attention_scores = attention_scores + attention_mask
 
         if self.detach:
@@ -293,7 +286,6 @@ def get_extended_attention_mask(
         # Provided a padding mask of dimensions [batch_size, seq_length]
         # - if the model is a decoder, apply a causal mask in addition to the padding mask
         # - if the model is an encoder, make the mask broadcastable to [batch_size, num_heads, seq_length, seq_length]
-
         extended_attention_mask = (
             ModuleUtilsMixin.create_extended_attention_mask_for_decoder(
                 input_shape, attention_mask

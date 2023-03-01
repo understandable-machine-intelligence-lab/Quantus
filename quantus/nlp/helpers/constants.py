@@ -1,9 +1,6 @@
 from typing import List, Dict
 from quantus.nlp.metrics.robustness.avg_sensitivity import AvgSensitivity
 from quantus.nlp.metrics.robustness.max_sensitivity import MaxSensitivity
-from quantus.nlp.metrics.robustness.local_lipschitz_estimate import (
-    LocalLipschitzEstimate,
-)
 from quantus.nlp.metrics.robustness.relative_input_stability import (
     RelativeInputStability,
 )
@@ -30,7 +27,6 @@ from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 
 AVAILABLE_METRICS = {
     "Robustness": {
-        "Local Lipschitz Estimate": LocalLipschitzEstimate,
         "Max-Sensitivity": MaxSensitivity,
         "Avg-Sensitivity": AvgSensitivity,
         "Relative Input Stability": RelativeInputStability,
@@ -45,7 +41,6 @@ AVAILABLE_METRICS = {
 }
 
 METRICS_SUPPORT_PLAIN_TEXT_PERTURBATION = {
-    "Local Lipschitz Estimate": LocalLipschitzEstimate,
     "Max-Sensitivity": MaxSensitivity,
     "Avg-Sensitivity": AvgSensitivity,
     "Relative Input Stability": RelativeInputStability,
@@ -54,7 +49,6 @@ METRICS_SUPPORT_PLAIN_TEXT_PERTURBATION = {
 }
 
 METRICS_SUPPORT_NUMERICAL_PERTURBATION = {
-    "Local Lipschitz Estimate": LocalLipschitzEstimate,
     "Max-Sensitivity": MaxSensitivity,
     "Avg-Sensitivity": AvgSensitivity,
     "Relative Input Stability": RelativeInputStability,

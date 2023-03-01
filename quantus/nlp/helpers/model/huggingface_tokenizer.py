@@ -3,6 +3,7 @@ import numpy as np
 
 from transformers import PreTrainedTokenizerBase
 from quantus.nlp.helpers.model.tokenizer import Tokenizer
+from quantus.nlp.helpers.utils import add_default_items
 
 
 class HuggingFaceTokenizer(Tokenizer):
@@ -11,8 +12,11 @@ class HuggingFaceTokenizer(Tokenizer):
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         self._tokenizer = tokenizer
 
-    def tokenize(self, text: List[str]) -> Dict[str, np.ndarray]:
-        return self._tokenizer(text, padding="longest", return_tensors="np").data
+    def tokenize(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:
+        kwargs = add_default_items(
+            kwargs, {"padding": "longest", "return_tensors": "np"}
+        )
+        return self._tokenizer(text, **kwargs).data
 
     def convert_ids_to_tokens(self, ids: np.ndarray) -> List[str]:
         return self._tokenizer.convert_ids_to_tokens(ids)

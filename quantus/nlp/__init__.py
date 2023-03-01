@@ -57,9 +57,6 @@ from quantus.nlp.metrics.robustness.relative_output_stability import (
 from quantus.nlp.metrics.robustness.relative_representation_stability import (
     RelativeRepresentationStability,
 )
-from quantus.nlp.metrics.robustness.local_lipschitz_estimate import (
-    LocalLipschitzEstimate,
-)
 from quantus.nlp.metrics.randomisation.model_parameter_randomisation import (
     ModelParameterRandomisation,
 )

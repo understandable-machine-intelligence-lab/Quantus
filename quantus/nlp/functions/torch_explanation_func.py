@@ -15,7 +15,7 @@ from quantus.nlp.functions.lrp.torch_bert_lrp_ali import (
     BertForSequenceClassificationLRP as BertAli,
 )
 from quantus.nlp.functions.lrp.torch_bert_lrp_chefer import (
-    BertForSequenceClassificationLRP as BertChefer,
+    BertForSequenceClassification as BertChefer,
 )
 from quantus.nlp.helpers.utils import (
     value_or_default,
@@ -31,6 +31,8 @@ _BaselineFn = Callable[[_TensorLike], _TensorLike]
 _TextOrVector = Union[List[str], _TensorLike]
 _Scores = Union[List[Explanation], np.ndarray]
 
+# ----------------- "API" --------------------
+
 
 def available_xai_methods() -> Dict:
     return {
@@ -38,6 +40,7 @@ def available_xai_methods() -> Dict:
         "GradXInput": torch_explain_gradient_x_input,
         "IntGrad": torch_explain_integrated_gradients,
         "NoiseGrad++": torch_explain_noise_grad_plus_plus,
+        "NoiseGrad": torch_explain_noise_grad,
         "LRP-Ali": torch_explain_lrp_ali,
         "LRP-Chefer": torch_explain_lrp_chefer,
     }
@@ -56,6 +59,9 @@ def torch_explain(
         )
     explain_fn = method_mapping[method]  # type: ignore
     return explain_fn(*args, **kwargs)
+
+
+# --------- Multiple dispatch stubs, which allos calling XAI methods on plain-text input and embeddings -----------
 
 
 @multimethod
@@ -182,15 +188,56 @@ def torch_explain_integrated_gradients(
 
 
 @multimethod
-def torch_explain_noise_grad_plus_plus(
+def torch_explain_noise_grad(
     model: TorchTextClassifier,
-    x_batch: _TensorLike,
+    x_batch: _TextOrVector,
     y_batch: _TensorLike,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
     init_kwargs: Optional[Dict] = None,
     **kwargs,
-) -> List[Explanation]:
+) -> _Scores:
+    """
+    NoiseGrag is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
+    by adding stochasticity to model's. This method requires noisegrad package,
+    install it with: `pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git'`.
+
+    Parameters
+    ----------
+    model:
+        A model, which is subject to explanation.
+    x_batch:
+        A batch of plain text inputs, which are subjects to explanation.
+    y_batch:
+        A batch of labels, which are subjects to explanation.
+    explain_fn:
+        Baseline explanation function. If string provided must be one of GradNorm, GradXInput, IntGrad.
+        Otherwise, must have `Callable[[TextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
+        Passing additional kwargs is not supported, please use partial application from functools package instead.
+        Default IntGrad.
+    init_kwargs:
+        Kwargs passed to __init__ method of NoiseGrad class.
+
+    Returns
+    -------
+
+    a_batch:
+        List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
+
+    """
+    pass
+
+
+@multimethod
+def torch_explain_noise_grad_plus_plus(
+    model: TorchTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: _TensorLike,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
+) -> _Scores:
     """
     NoiseGrad++ is a state-of-the-art gradient based XAI method, which enhances baseline explanation function
     by adding stochasticity to model's weights and model's inputs. This method requires noisegrad package,
@@ -222,87 +269,43 @@ def torch_explain_noise_grad_plus_plus(
     pass
 
 
+@multimethod
 def torch_explain_lrp_ali(
     model: TorchTextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
+    x_batch: _TextOrVector,
+    y_batch: _TensorLike,
     detach_layernorm: bool = True,
     detach_kq: bool = True,
     detach_mean: bool = True,
-) -> List[Explanation]:
+    **kwargs,
+) -> _Scores:
     """
-    - Verify model is BeRT
-    - Convert to LRP model
-    - Call forward_and_explain
+    LRP is a white-box explanation methods, which propagates output logits back into input space using
+    set of predifined rules. Due to it nature, this method must be implemented specifically for every model
+    architecture. This function only supports BeRT-like models. Implmentation is based on https://github.com/AmeenAli/XAI_Transformers.
+
+    References:
+        - Ameen Ali et.l, "XAI for Transformers: Better Explanations through Conservative Propagation",
+            https://arxiv.org/pdf/2202.07304.pdf
+
+    Parameters
+    ----------
+    model
+    x_batch
+    y_batch
+    detach_layernorm
+    detach_kq
+    detach_mean
+    kwargs
+
+    Returns
+    -------
+
     """
-    torch_module = model.internal_model
-    if not isinstance(torch_module, BertForSequenceClassification):
-        raise ValueError(
-            f"Only BeRT models are supported for LRP explanations, but found {type(torch_module)}"
-        )
-
-    hf_config = model.internal_model.config
-    modules = list(model.internal_model.modules())
-
-    hidden_size = hf_config.hidden_size
-    num_attention_heads = hf_config.num_attention_heads
-    attention_head_size = int(hidden_size / num_attention_heads)
-    all_head_size = num_attention_heads * attention_head_size
-
-    config = BertLRPConfig(
-        detach_mean=detach_mean,
-        detach_kq=detach_kq,
-        detach_layernorm=detach_layernorm,
-        device=model.device,
-        hidden_size=hidden_size,
-        num_attention_heads=num_attention_heads,
-        layer_norm_eps=hf_config.layer_norm_eps,
-        num_classes=modules[-1].out_features,
-        num_attention_blocks=hf_config.num_hidden_layers,
-        attention_head_size=attention_head_size,
-        all_head_size=all_head_size,
-    )
-
-    lrp_model = BertAli(config, torch_module.bert.embeddings)
-
-    encoded_input = model.tokenizer.tokenize(x_batch)
-    encoded_input = map_dict(encoded_input, model.to_tensor)
-
-    scores = lrp_model.explain(y_batch=model.to_tensor(y_batch), **encoded_input)
-    scores = scores.detach().cpu().numpy()
-
-    input_ids, _ = get_input_ids(x_batch, model)
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
+    pass
 
 
-def torch_explain_lrp_chefer(
-    model: TorchTextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
-) -> List[Explanation]:
-    torch_module = model.internal_model
-    if not isinstance(torch_module, BertForSequenceClassification):
-        raise ValueError(
-            f"Only BeRT models are supported for LRP explanations, but found {type(torch_module)}"
-        )
-    hf_hanle = torch_module.name_or_path
-
-    lrp_model = BertChefer.from_pretrained(hf_hanle)
-
-    encoded_input = model.tokenizer.tokenize(x_batch)
-    encoded_input = map_dict(encoded_input, model.to_tensor)
-
-    lrp_model(**encoded_input)
-
-    scores = lrp_model.relprop()
-    scores = scores.detach().cpu().numpy()
-
-    input_ids, _ = get_input_ids(x_batch, model)
-    return [
-        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
-    ]
+# ----------------------- GradNorm -------------------------
 
 
 @torch_explain_gradient_norm.register
@@ -341,6 +344,9 @@ def _(
     return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
 
 
+# ----------------------- GradXInput -------------------------
+
+
 @torch_explain_gradient_x_input.register
 def _(
     model: TorchTextClassifier, x_batch: List[str], y_batch: _TensorLike, **kwargs
@@ -374,6 +380,9 @@ def _(
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
     return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
+
+
+# ----------------------- IntGrad -------------------------
 
 
 @torch_explain_integrated_gradients.register
@@ -505,6 +514,23 @@ def _torch_explain_integrated_gradients_iterative(
     return np.asarray(scores)
 
 
+# ----------------------- NoiseGrad++ -------------------------
+
+
+def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str):
+    if isinstance(explain_fn, Callable):
+        return explain_fn
+
+    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
+        raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
+    method_mapping = available_xai_methods()
+    if explain_fn not in method_mapping:
+        raise ValueError(
+            f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
+        )
+    return method_mapping[explain_fn]
+
+
 @torch_explain_noise_grad_plus_plus.register
 def _(
     model: TorchTextClassifier,
@@ -515,17 +541,7 @@ def _(
     init_kwargs: Optional[Dict] = None,
     **kwargs,
 ) -> List[Explanation]:
-    if isinstance(explain_fn, str):
-        if explain_fn == "NoiseGrad++":
-            raise ValueError(
-                "Can't use NoiseGrad++ as baseline function for NoiseGrad++."
-            )
-        method_mapping = available_xai_methods()
-        if explain_fn not in method_mapping:
-            raise ValueError(
-                f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
-            )
-        explain_fn = method_mapping[explain_fn]
+    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
 
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
@@ -580,3 +596,226 @@ def _(
 
     model.weights = og_weights
     return scores
+
+
+# ----------------------- NoiseGrad -------------------------
+
+
+@torch_explain_noise_grad.register
+def _(
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: _TensorLike,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
+) -> List[Explanation]:
+    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
+
+    scores = torch_explain_noise_grad(
+        model, embeddings, y_batch, explain_fn, init_kwargs, **kwargs
+    )
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+@torch_explain_noise_grad.register
+def _(
+    model: TorchTextClassifier,
+    input_embeddings: _TensorLike,
+    y_batch: _TensorLike,
+    explain_fn: Callable,
+    init_kwargs: Optional[Dict],
+    **kwargs,
+) -> np.ndarray:
+    from noisegrad import NoiseGrad
+
+    device = model.device
+    input_embeddings = torch.tensor(input_embeddings, device=device)
+    y_batch = torch.tensor(y_batch, device=device)
+
+    init_kwargs = value_or_default(init_kwargs, lambda: {})
+    og_weights = model.weights.copy()
+
+    def explanation_fn(
+        module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        model.weights = module.state_dict()
+        # fmt: off
+        np_scores = explain_fn(model, inputs, targets, **kwargs)
+        # fmt: on
+        return torch.tensor(np_scores, device=device)
+
+    ng_pp = NoiseGrad(**init_kwargs)
+    scores = (
+        ng_pp.enhance_explanation(
+            model.internal_model,
+            input_embeddings,
+            y_batch,
+            explanation_fn=explanation_fn,
+        )
+        .detach()
+        .cpu()
+        .numpy()
+    )
+
+    model.weights = og_weights
+    return scores
+
+
+# ------------------- LRP based on https://github.com/AmeenAli/XAI_Transformers -----------------
+
+
+def _verify_is_bert(model: TorchTextClassifier) -> torch.nn.Module:
+    torch_module = model.internal_model
+    if not isinstance(torch_module, BertForSequenceClassification):
+        raise ValueError(
+            f"Only BeRT models are supported for LRP explanations, but found {type(torch_module)}"
+        )
+    return torch_module
+
+
+@torch_explain_lrp_ali.register
+def _(
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: _TensorLike,
+    detach_layernorm: bool = True,
+    detach_kq: bool = True,
+    detach_mean: bool = True,
+    **kwargs,
+) -> List[Explanation]:
+    torch_module = _verify_is_bert(model)
+    hf_config = torch_module.config
+    modules = list(torch_module.modules())
+
+    hidden_size = hf_config.hidden_size
+    num_attention_heads = hf_config.num_attention_heads
+    attention_head_size = int(hidden_size / num_attention_heads)
+    all_head_size = num_attention_heads * attention_head_size
+
+    config = BertLRPConfig(
+        detach_mean=detach_mean,
+        detach_kq=detach_kq,
+        detach_layernorm=detach_layernorm,
+        device=model.device,
+        hidden_size=hidden_size,
+        num_attention_heads=num_attention_heads,
+        layer_norm_eps=hf_config.layer_norm_eps,
+        num_classes=modules[-1].out_features,
+        num_attention_blocks=hf_config.num_hidden_layers,
+        attention_head_size=attention_head_size,
+        all_head_size=all_head_size,
+    )
+
+    lrp_model = BertAli(config, torch_module.bert.embeddings)
+
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    encoded_input = map_dict(encoded_input, model.to_tensor)
+
+    scores = lrp_model.explain(y_batch=model.to_tensor(y_batch), **encoded_input)
+    scores = scores.detach().cpu().numpy()
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]
+
+
+@torch_explain_lrp_ali.register
+def _(
+    model: TorchTextClassifier,
+    x_batch: _TensorLike,
+    y_batch: _TensorLike,
+    detach_layernorm: bool = True,
+    detach_kq: bool = True,
+    detach_mean: bool = True,
+    **kwargs,
+) -> np.ndarray:
+    torch_module = _verify_is_bert(model)
+    hf_config = torch_module.config
+    modules = list(torch_module.modules())
+
+    hidden_size = hf_config.hidden_size
+    num_attention_heads = hf_config.num_attention_heads
+    attention_head_size = int(hidden_size / num_attention_heads)
+    all_head_size = num_attention_heads * attention_head_size
+
+    config = BertLRPConfig(
+        detach_mean=detach_mean,
+        detach_kq=detach_kq,
+        detach_layernorm=detach_layernorm,
+        device=model.device,
+        hidden_size=hidden_size,
+        num_attention_heads=num_attention_heads,
+        layer_norm_eps=hf_config.layer_norm_eps,
+        num_classes=modules[-1].out_features,
+        num_attention_blocks=hf_config.num_hidden_layers,
+        attention_head_size=attention_head_size,
+        all_head_size=all_head_size,
+    )
+
+    lrp_model = BertAli(config, torch_module.bert.embeddings)
+
+    kwargs = map_dict(kwargs, model.to_tensor)
+
+    scores = lrp_model.explain(
+        input_ids=None,
+        inputs_embeds=model.to_tensor(x_batch),
+        y_batch=model.to_tensor(y_batch),
+        **kwargs,
+    )
+    scores = scores.detach().cpu().numpy()
+    return scores
+
+
+# --------- LRP based on https://github.com/hila-chefer/Transformer-Explainability ----------
+
+
+def _generate_full_lrp(
+    model: BertChefer, input_ids: torch.Tensor, y_batch: torch.Tensor, **kwargs
+) -> torch.Tensor:
+    output = model(input_ids=input_ids, **kwargs)[0]
+    if y_batch == None:
+        y_batch = np.argmax(output.cpu().data.numpy(), axis=-1)
+
+    one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
+    one_hot[0, y_batch] = 1
+    one_hot_vector = one_hot
+    one_hot = torch.from_numpy(one_hot).requires_grad_(True)
+    one_hot = torch.sum(one_hot * output)
+
+    model.zero_grad()
+    one_hot.backward(retain_graph=True)
+
+    cam = model.relprop(torch.tensor(one_hot_vector).to(input_ids.device), alpha=1.0)
+    cam = cam.sum(dim=2)
+    cam[:, 0] = 0
+    return cam
+
+
+def torch_explain_lrp_chefer(
+    model: TorchTextClassifier, x_batch: List[str], y_batch: np.ndarray, alpha=1.0
+) -> List[Explanation]:
+    torch_module = _verify_is_bert(model)
+    hf_hanle = torch_module.name_or_path
+
+    lrp_model = BertChefer.from_pretrained(hf_hanle)
+
+    encoded_input = model.tokenizer.tokenize(x_batch)
+    encoded_input = map_dict(encoded_input, model.to_tensor)
+
+    scores = _generate_full_lrp(
+        lrp_model, y_batch=model.to_tensor(y_batch), **encoded_input
+    )
+    scores = scores.detach().cpu().numpy()
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    return [
+        (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
+    ]

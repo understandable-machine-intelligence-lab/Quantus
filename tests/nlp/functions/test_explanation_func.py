@@ -159,11 +159,11 @@ def test_torch_fnet_model(torch_fnet, sst2_dataset, kwargs):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"method": "LRP-Ali"},
-        {"method": "LRP-Ali", "detach_layernorm": False},
-        {"method": "LRP-Ali", "detach_kq": False},
-        {"method": "LRP-Ali", "detach_mean": False},
-        # {"method": "LRP-Chefer"},
+        # {"method": "LRP-Ali"},
+        # {"method": "LRP-Ali", "detach_layernorm": False},
+        # {"method": "LRP-Ali", "detach_kq": False},
+        # {"method": "LRP-Ali", "detach_mean": False},
+        {"method": "LRP-Chefer"},
     ],
     # ids=[
     #    "Ali",

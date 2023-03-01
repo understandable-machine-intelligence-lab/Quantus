@@ -30,11 +30,11 @@ class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier):
         )
 
     @staticmethod
-    def from_pretrained(handle: str) -> TensorFlowHuggingFaceTextClassifier:
+    def from_pretrained(handle: str, **kwargs) -> TensorFlowHuggingFaceTextClassifier:
         """A method, which mainly should be used to instantiate TensorFlow models from HuggingFace Hub."""
         return TensorFlowHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle),
-            TFAutoModelForSequenceClassification.from_pretrained(handle),
+            TFAutoModelForSequenceClassification.from_pretrained(handle, **kwargs),
         )
 
     def embedding_lookup(self, input_ids: np.ndarray, **kwargs) -> tf.Tensor:

@@ -23,4 +23,3 @@ lime>=0.2.0.1
 keras_nlp
 pytest-order
 pytest-xdist
-pytest-profiling

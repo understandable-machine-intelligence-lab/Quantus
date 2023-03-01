@@ -32,14 +32,13 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier):
 
     @staticmethod
     def from_pretrained(
-        handle: str,
-        device: Optional[torch.device] = None,
+        handle: str, device: Optional[torch.device] = None, **kwargs
     ) -> TorchHuggingFaceTextClassifier:
         """A method, which mainly should be used to instantiate Torch models from HuggingFace Hub."""
 
         return TorchHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle, add_prefix_space=True),
-            AutoModelForSequenceClassification.from_pretrained(handle),
+            AutoModelForSequenceClassification.from_pretrained(handle, **kwargs),
             device,
         )
 
