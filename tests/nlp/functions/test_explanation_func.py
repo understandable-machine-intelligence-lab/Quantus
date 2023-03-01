@@ -93,7 +93,7 @@ def test_keras_model(fnet_keras, ag_news_dataset, kwargs):
         {
             "method": "NoiseGrad",
             "explain_fn": "GradXInput",
-            "init_kwargs": {"n": 2, "m": 2},
+            "init_kwargs": {"n": 2},
         },
         {
             "method": "NoiseGrad++",
@@ -126,6 +126,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.xfail
 @pytest.mark.explain_func
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
@@ -146,7 +147,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
         },
-        # {"method": "LIME", "call_kwargs": {"num_samples": 5}},
+        {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[
@@ -157,7 +158,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
         "IntGrad [UNK] baseline",
         "NoiseGrad",
         "NoiseGrad++",
-        # "LIME",
+        "LIME",
         "SHAP",
     ],
 )

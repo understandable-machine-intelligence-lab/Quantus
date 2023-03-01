@@ -21,7 +21,6 @@ Submodules
    :maxdepth: 4
 
    quantus.nlp.metrics.robustness.avg_sensitivity
-   quantus.nlp.metrics.robustness.local_lipschitz_estimate
    quantus.nlp.metrics.robustness.max_sensitivity
    quantus.nlp.metrics.robustness.relative_input_stability
    quantus.nlp.metrics.robustness.relative_output_stability

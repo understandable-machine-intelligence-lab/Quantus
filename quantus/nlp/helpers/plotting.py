@@ -175,15 +175,18 @@ def visualise_explanations_as_html(
     return heatmap_template.replace("{{body}}", spans)
 
 
-def _value_at_index_or_default(list_of_values, index, default):
-    if len(list_of_values) > index:
-        return list_of_values[index]
+def _value_at_index_or_default(values, index, default):
+    if len(values) > index:
+        return values[index]
     else:
         return default
 
 
 def visualise_explanations_as_pyplot(
-    explanations: List[Explanation], labels: Optional[List[str]] = None
+    explanations: List[Explanation],
+    labels: Optional[List[str]] = None,
+    v_len_scale=0.75,
+    h_len_scale=1.25,
 ):
     """
     Plots attributions over a batch of text sequence explanations. This function should be preferred is you need your
@@ -227,16 +230,8 @@ def visualise_explanations_as_pyplot(
         scores_row = scores[i]
         tokens_row = tokens[i]
         for j in range(v_len):
-            score = _value_at_index_or_default(
-                scores_row,
-                j,
-                0.
-            )
-            token = _value_at_index_or_default(
-                tokens_row,
-                j,
-                ""
-            )
+            score = _value_at_index_or_default(scores_row, j, 0.0)
+            token = _value_at_index_or_default(tokens_row, j, "")
             color = color_mapper.to_rgb(score, normalize_to_1=True)
             rect = plt.Rectangle((0, 0), 1, 1, color=color)
             ax[j].add_patch(rect)
@@ -253,3 +248,34 @@ def visualise_explanations_as_pyplot(
     ax.set_yticks([])
     plt.tight_layout()
     plt.show()
+
+
+def plot_token_flipping_experiment(
+    score: np.ndarray, original_prediction: np.ndarray, task: str
+):
+    """
+    AU-MSE - area under the mean squared error (y0−ymt)
+    curve for pruning. Lower is better and indicates that removing less
+    relevant nodes has little effect on the model prediction.
+    """
+    if task not in ("pruning", "activation"):
+        raise ValueError(f"Task must be either pruning or activation, but found {task}")
+
+    if len(score.shape) != 2:
+        raise ValueError(f"Scores must be 2 dimensional.")
+
+    y = np.asarray(list(range(len(score[0])))) + 1
+    y = y / y.max() * 100.0
+    x = mse(
+        np.broadcast_to(original_prediction, (score.shape[1], score.shape[0])).T, score
+    )
+
+    fig, axes = plt.subplots()
+
+    plt.plot(y, x)
+
+    plt.title(f"Token {task} experiment")
+    plt.xlabel("% of tokens flipped")
+    plt.ylabel("$(y_o - y')^2$")
+
+    return fig

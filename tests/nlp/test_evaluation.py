@@ -12,11 +12,10 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
     metrics = {
         "Avg-Sesnitivity": qn.AvgSensitivity(nr_samples=5),
         "Max-Sensitivity": qn.MaxSensitivity(nr_samples=5),
-        "Local Lipschitz Estimate": qn.LocalLipschitzEstimate(nr_samples=5),
         "RIS": qn.RelativeInputStability(nr_samples=5),
         "ROS": qn.RelativeOutputStability(nr_samples=5),
         "RRS": qn.RelativeRepresentationStability(nr_samples=5),
-        # "ModelParameterRandomisation": qn.ModelParameterRandomisation(),
+        "ModelParameterRandomisation": qn.ModelParameterRandomisation(),
         "RandomLogit": qn.RandomLogit(num_classes=2),
         "TokenFlipping": qn.TokenFlipping(),
     }
@@ -25,7 +24,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
         "Max-Sensitivity": {
             "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
         },
-        "Local Lipschitz Estimate": [
+        "RIS": [
             {"explain_func_kwargs": {"method": "GradXInput"}},
             {"explain_func_kwargs": {"method": "IntGrad"}},
         ],

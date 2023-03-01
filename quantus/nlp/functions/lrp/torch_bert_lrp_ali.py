@@ -226,9 +226,11 @@ class BertForSequenceClassificationLRP(nn.Module):
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
 
-        extended_attention_mask = (1.0 - extended_attention_mask)
+        extended_attention_mask = 1.0 - extended_attention_mask
         # TODO don't hardcode f32
-        extended_attention_mask = extended_attention_mask * torch.finfo(torch.float32).min
+        extended_attention_mask = (
+            extended_attention_mask * torch.finfo(torch.float32).min
+        )
         return extended_attention_mask.to(self.device)
 
 
