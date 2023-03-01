@@ -546,7 +546,7 @@ def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str):
 
     if explain_fn in ("NoiseGrad", "NoiseGrad++"):
         raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
-    method_mapping = available_xai_methods()
+    method_mapping = available_explanation_functions()
     if explain_fn not in method_mapping:
         raise ValueError(
             f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
@@ -622,8 +622,8 @@ def _(
 
         model.weights = weights_copy
 
-        explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
-        explanations[_n][_m] = explanation
+        explanation = explain_fn(model, embeddings, y_batch, **kwargs)  # type: ignore
+        explanations[_n] = explanation
 
     scores = np.mean(explanations, axis=0)
 

@@ -912,10 +912,6 @@ class MaxPool2d(nn.MaxPool2d, RelPropSimple):
     pass
 
 
-class LayerNorm(nn.LayerNorm, RelProp):
-    pass
-
-
 class AdaptiveAvgPool2d(nn.AdaptiveAvgPool2d, RelPropSimple):
     pass
 
