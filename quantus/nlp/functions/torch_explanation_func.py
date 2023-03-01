@@ -305,6 +305,17 @@ def torch_explain_lrp_ali(
     pass
 
 
+@multimethod
+def torch_explain_lrp_chefer(
+    model: TorchTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: _TensorLike,
+    alpha: float = 1.0,
+    **kwargs,
+) -> _Scores:
+    pass
+
+
 # ----------------------- GradNorm -------------------------
 
 
@@ -473,9 +484,8 @@ def _torch_explain_integrated_gradients_batched(
     logits = model(interpolated_embeddings, **interpolated_kwargs)
     indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
     logits_for_class = torch.gather(logits, dim=-1, index=indexes)
-    grads = torch.autograd.grad(
-        torch.unbind(logits_for_class), interpolated_embeddings
-    )[0]
+    grads = torch.autograd.grad(torch.unbind(logits_for_class), interpolated_embeddings)
+    grads = grads[0]
     grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
     scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
     return scores.detach().cpu().numpy()
@@ -506,8 +516,8 @@ def _torch_explain_integrated_gradients_iterative(
         logits_for_class = logits[:, y_batch[i]]
         grads = torch.autograd.grad(
             torch.unbind(logits_for_class), interpolated_embeddings
-        )[0]
-        score = torch.trapz(grads, dim=0)
+        )
+        score = torch.trapz(torch.trapz(grads[0], dim=-1), axis=0)
 
         scores.append(score.detach().cpu().numpy())
 
@@ -718,7 +728,9 @@ def _(
     encoded_input = model.tokenizer.tokenize(x_batch)
     encoded_input = map_dict(encoded_input, model.to_tensor)
 
-    scores = lrp_model.explain(y_batch=model.to_tensor(y_batch), **encoded_input)
+    scores = lrp_model.forward_and_explain(
+        y_batch=model.to_tensor(y_batch), **encoded_input
+    )
     scores = scores.detach().cpu().numpy()
 
     input_ids, _ = get_input_ids(x_batch, model)
@@ -764,7 +776,7 @@ def _(
 
     kwargs = map_dict(kwargs, model.to_tensor)
 
-    scores = lrp_model.explain(
+    scores = lrp_model.forward_and_explain(
         input_ids=None,
         inputs_embeds=model.to_tensor(x_batch),
         y_batch=model.to_tensor(y_batch),
@@ -778,7 +790,12 @@ def _(
 
 
 def _generate_full_lrp(
-    model: BertChefer, input_ids: torch.Tensor, y_batch: torch.Tensor, **kwargs
+    model: BertChefer,
+    input_ids: torch.Tensor,
+    y_batch: torch.Tensor,
+    device: torch.device,
+    alpha: float = 1.0,
+    **kwargs,
 ) -> torch.Tensor:
     output = model(input_ids=input_ids, **kwargs)[0]
     if y_batch == None:
@@ -793,14 +810,19 @@ def _generate_full_lrp(
     model.zero_grad()
     one_hot.backward(retain_graph=True)
 
-    cam = model.relprop(torch.tensor(one_hot_vector).to(input_ids.device), alpha=1.0)
+    cam = model.relprop(torch.tensor(one_hot_vector, device=device), alpha=alpha)
     cam = cam.sum(dim=2)
     cam[:, 0] = 0
     return cam
 
 
-def torch_explain_lrp_chefer(
-    model: TorchTextClassifier, x_batch: List[str], y_batch: np.ndarray, alpha=1.0
+@torch_explain_lrp_chefer.register
+def _(
+    model: TorchTextClassifier,
+    x_batch: List[str],
+    y_batch: _TensorLike,
+    alpha: float = 1.0,
+    **kwargs,
 ) -> List[Explanation]:
     torch_module = _verify_is_bert(model)
     hf_hanle = torch_module.name_or_path
@@ -811,7 +833,11 @@ def torch_explain_lrp_chefer(
     encoded_input = map_dict(encoded_input, model.to_tensor)
 
     scores = _generate_full_lrp(
-        lrp_model, y_batch=model.to_tensor(y_batch), **encoded_input
+        lrp_model,
+        y_batch=model.to_tensor(y_batch),
+        alpha=alpha,
+        device=model.device,
+        **encoded_input,
     )
     scores = scores.detach().cpu().numpy()
 
@@ -819,3 +845,30 @@ def torch_explain_lrp_chefer(
     return [
         (model.tokenizer.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)
     ]
+
+
+@torch_explain_lrp_chefer.register
+def _(
+    model: TorchTextClassifier,
+    x_batch: _TensorLike,
+    y_batch: _TensorLike,
+    alpha: float = 1.0,
+    **kwargs,
+) -> np.ndarray:
+    torch_module = _verify_is_bert(model)
+    hf_hanle = torch_module.name_or_path
+
+    lrp_model = BertChefer.from_pretrained(hf_hanle)
+
+    kwargs = map_dict(kwargs, model.to_tensor)
+
+    scores = _generate_full_lrp(
+        lrp_model,
+        input_ids=None,
+        inputs_embeds=model.to_tensor(x_batch),
+        y_batch=model.to_tensor(y_batch),
+        alpha=alpha,
+        **kwargs,
+    )
+    scores = scores.detach().cpu().numpy()
+    return scores

@@ -24,4 +24,4 @@ def test_pyplot_token_prunning():
     scores = np.random.uniform(size=(8, 39))
     logits = np.random.uniform(size=(8,))
     # Just check that it doesn't fail with expected inputs.
-    plot_token_flipping_experiment(scores, logits)
+    plot_token_flipping_experiment(scores, logits, "activation")

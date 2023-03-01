@@ -78,6 +78,7 @@ AVAILABLE_PLAIN_TEXT_XAI_METHODS = [
     "GradNorm",
     "GradXInput",
     "IntGrad",
+    "NoiseGrad",
     "NoiseGrad++",
     "LIME",
     "SHAP",
@@ -87,11 +88,14 @@ AVAILABLE_NUMERICAL_XAI_METHODS = [
     "GradNorm",
     "GradXInput",
     "IntGrad",
+    "NoiseGrad",
     "NoiseGrad++",
+    "LRP-Ali",
+    "LRP-Chefer",
 ]
 
-AVAILABLE_XAI_METHODS = (
-    AVAILABLE_PLAIN_TEXT_XAI_METHODS + AVAILABLE_NUMERICAL_XAI_METHODS
+AVAILABLE_XAI_METHODS = list(
+    set(AVAILABLE_PLAIN_TEXT_XAI_METHODS + AVAILABLE_NUMERICAL_XAI_METHODS)
 )
 
 

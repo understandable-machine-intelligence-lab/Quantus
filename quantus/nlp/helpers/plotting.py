@@ -91,7 +91,8 @@ def visualise_explanations_as_html(
     special_tokens: Optional[List[str]] = None,
 ) -> str:
     """
-    Creates a heatmap visualisation from list of explanations.
+    Creates a heatmap visualisation from list of explanations. This method should be preferred for longer
+    examples. It is rendered correctly in VSCode, PyCharm, Colab, however not in GitHub or JupyterLab.
 
     Parameters
     ----------
@@ -174,11 +175,20 @@ def visualise_explanations_as_html(
     return heatmap_template.replace("{{body}}", spans)
 
 
+def _value_at_index_or_default(list_of_values, index, default):
+    if len(list_of_values) > index:
+        return list_of_values[index]
+    else:
+        return default
+
+
 def visualise_explanations_as_pyplot(
     explanations: List[Explanation], labels: Optional[List[str]] = None
 ):
     """
-    Plots attributions over a batch of text sequence explanations.
+    Plots attributions over a batch of text sequence explanations. This function should be preferred is you need your
+    heatmaps to be correctly displayed in GitHubs preview. For longer inputs (over 15-20) tokens, the cells become
+    smaller, and it could be hard for viewer to see the actual tokens.
 
     References:
         - https://stackoverflow.com/questions/74046734/plot-text-saliency-map-in-jupyter-notebook
@@ -204,7 +214,7 @@ def visualise_explanations_as_pyplot(
     fig, axes = plt.subplots(
         h_len,
         v_len,
-        figsize=(v_len * 0.75, h_len * 1.25),
+        figsize=(v_len * v_len_scale, h_len * h_len_scale),
         gridspec_kw=dict(left=0.0, right=1.0),
     )
     hspace = 1.0 if labels is not None else 0.1
@@ -213,11 +223,24 @@ def visualise_explanations_as_pyplot(
         color_mapper = ColorMapper(np.max(scores[i]), np.min(scores[i]))
         if labels:
             ax[v_len // 2].set_title(labels[i])
+
+        scores_row = scores[i]
+        tokens_row = tokens[i]
         for j in range(v_len):
-            color = color_mapper.to_rgb(scores[i][j], normalize_to_1=True)
+            score = _value_at_index_or_default(
+                scores_row,
+                j,
+                0.
+            )
+            token = _value_at_index_or_default(
+                tokens_row,
+                j,
+                ""
+            )
+            color = color_mapper.to_rgb(score, normalize_to_1=True)
             rect = plt.Rectangle((0, 0), 1, 1, color=color)
             ax[j].add_patch(rect)
-            ax[j].text(0.5, 0.5, tokens[i][j], ha="center", va="center")
+            ax[j].text(0.5, 0.5, token, ha="center", va="center")
             ax[j].set_xlim(0, 1)
             ax[j].set_ylim(0, 1)
             ax[j].axis("off")
@@ -228,24 +251,5 @@ def visualise_explanations_as_pyplot(
         ax.spines[axis].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
-    return fig
-
-
-def plot_token_flipping_experiment(score: np.ndarray, original_prediction: np.ndarray):
-    """
-    AU-MSE - area under the mean squared error (y0−ymt)
-    curve for pruning. Lower is better and indicates that removing less
-    relevant nodes has little effect on the model prediction.
-    """
-    if len(score.shape) != 2:
-        raise ValueError(f"Scores must be 2 dimensional.")
-
-    y = np.asarray(list(range(len(score[0])))) + 1
-    x = mse(
-        np.broadcast_to(original_prediction, (score.shape[1], score.shape[0])).T, score
-    )
-    plt.plot(y, x)
-
-    plt.title("Token Pruning Experiment")
-    plt.xlabel("Number of tokens flipped")
-    plt.ylabel("MSE")
+    plt.tight_layout()
+    plt.show()

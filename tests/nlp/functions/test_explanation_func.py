@@ -76,6 +76,7 @@ def test_keras_model(fnet_keras, ag_news_dataset, kwargs):
     for tokens, scores in a_batch:
         assert isinstance(tokens, List)
         assert isinstance(scores, np.ndarray)
+        assert scores.ndim == 1
 
 
 @pytest.mark.nlp
@@ -90,6 +91,11 @@ def test_keras_model(fnet_keras, ag_news_dataset, kwargs):
         {"method": "IntGrad", "batch_interpolated_inputs": True},
         {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
         {
+            "method": "NoiseGrad",
+            "explain_fn": "GradXInput",
+            "init_kwargs": {"n": 2, "m": 2},
+        },
+        {
             "method": "NoiseGrad++",
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
@@ -103,6 +109,7 @@ def test_keras_model(fnet_keras, ag_news_dataset, kwargs):
         "IntGrad iterative",
         "IntGrad batched",
         "IntGrad [UNK] baseline",
+        "NoiseGrad",
         "NoiseGrad++",
         "LIME",
         "SHAP",
@@ -115,6 +122,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
     for tokens, scores in a_batch:
         assert isinstance(tokens, List)
         assert isinstance(scores, np.ndarray)
+        assert scores.ndim == 1
 
 
 @pytest.mark.nlp
@@ -126,8 +134,13 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
         {"method": "GradNorm"},
         {"method": "GradXInput"},
         {"method": "IntGrad"},
-        {"method": "IntGrad", "batch_interpolated_inputs": False},
+        {"method": "IntGrad", "batch_interpolated_inputs": True},
         {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
+        {
+            "method": "NoiseGrad",
+            "explain_fn": "GradXInput",
+            "init_kwargs": {"n": 2},
+        },
         {
             "method": "NoiseGrad++",
             "explain_fn": "GradXInput",
@@ -142,6 +155,7 @@ def test_torch_emotion_model(emotion_model, emotion_dataset, kwargs):
         "IntGrad iterative",
         "IntGrad batched",
         "IntGrad [UNK] baseline",
+        "NoiseGrad",
         "NoiseGrad++",
         # "LIME",
         "SHAP",
@@ -154,23 +168,27 @@ def test_torch_fnet_model(torch_fnet, sst2_dataset, kwargs):
     for tokens, scores in a_batch:
         assert isinstance(tokens, List)
         assert isinstance(scores, np.ndarray)
+        assert scores.ndim == 1
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [
-        # {"method": "LRP-Ali"},
-        # {"method": "LRP-Ali", "detach_layernorm": False},
-        # {"method": "LRP-Ali", "detach_kq": False},
-        # {"method": "LRP-Ali", "detach_mean": False},
+        {"method": "LRP-Ali"},
+        {"method": "LRP-Ali", "detach_layernorm": False},
+        {"method": "LRP-Ali", "detach_kq": False},
+        {"method": "LRP-Ali", "detach_mean": False},
         {"method": "LRP-Chefer"},
+        {"method": "LRP-Chefer", "alpha": 0.01},
     ],
-    # ids=[
-    #    "Ali",
-    #    "Ali: detach_layernorm=False",
-    #    "Ali: detach_kq=False",
-    #    "Ali: detach_mean",
-    # ],
+    ids=[
+        "Ali",
+        "Ali: detach_layernorm=False",
+        "Ali: detach_kq=False",
+        "Ali: detach_mean=False",
+        "Chefer",
+        "Chefer: alpha=0.01",
+    ],
 )
 def test_bert_lrp_torch(sst2_dataset, kwargs):
     model = TorchHuggingFaceTextClassifier.from_pretrained(
@@ -182,3 +200,4 @@ def test_bert_lrp_torch(sst2_dataset, kwargs):
     for tokens, scores in a_batch:
         assert isinstance(tokens, List)
         assert isinstance(scores, np.ndarray)
+        assert not np.isnan(scores).any()

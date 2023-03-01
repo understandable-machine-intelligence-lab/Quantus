@@ -1,7 +1,7 @@
 """Based on https://github.com/hila-chefer/Transformer-Explainability."""
 
 from __future__ import annotations
-from transformers import BertPreTrainedModel, BertConfig
+from transformers import BertPreTrainedModel
 from transformers.modeling_outputs import (
     SequenceClassifierOutput,
     BaseModelOutputWithPooling,

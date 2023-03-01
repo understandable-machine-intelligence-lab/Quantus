@@ -52,7 +52,7 @@ class BertForSequenceClassificationLRP(nn.Module):
         )
         self.device = config.device
 
-    def explain(
+    def forward(
         self,
         input_ids: Optional[Tensor],
         y_batch: Tensor,
@@ -81,7 +81,69 @@ class BertForSequenceClassificationLRP(nn.Module):
             raise ValueError("You have to specify either input_ids or inputs_embeds")
         extended_attention_mask = map_optional(
             attention_mask,
-            lambda x: get_extended_attention_mask(x, input_shape).to(self.device),
+            lambda x: self.get_extended_attention_mask(x, input_shape).to(self.device),
+        )
+
+        attn_input = hidden_states
+
+        attention_inputs = []
+        attention_inputs_data = []
+
+        for i, attention_block in enumerate(self.attention_layers):
+            # [1, 12, 768] -> [1, 12, 768]
+            attn_inputdata = attn_input.data
+            attn_inputdata.requires_grad_(True)
+
+            attention_inputs_data.append(attn_inputdata)
+            attention_inputs.append(attn_input)
+
+            gamma = gammas if isinstance(gammas, float) else gammas[i]
+            output = attention_block(
+                attn_inputdata, gamma=gamma, attention_mask=extended_attention_mask
+            )
+            attn_input = output
+
+        outputdata = output.data  # noqa
+        outputdata.requires_grad_(True)
+
+        pooled = self.pooler(outputdata)
+
+        pooleddata = pooled.data
+        pooleddata.requires_grad_(True)
+
+        logits = self.classifier(pooleddata)
+
+        return logits
+
+    def forward_and_explain(
+        self,
+        input_ids: Optional[Tensor],
+        y_batch: Tensor,
+        attention_mask: Optional[Tensor] = None,
+        token_type_ids: Optional[Tensor] = None,
+        inputs_embeds: Optional[Tensor] = None,
+        position_ids: Optional[Tensor] = None,
+        gammas: float | List[float] = 0.01,
+    ) -> Tensor:
+        hidden_states = self.embeds(
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+            inputs_embeds=inputs_embeds,
+            position_ids=position_ids,
+        )
+
+        if input_ids is not None and inputs_embeds is not None:
+            raise ValueError(
+                "You cannot specify both input_ids and inputs_embeds at the same time"
+            )
+        elif input_ids is not None:
+            input_shape = input_ids.size()
+        elif inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+        else:
+            raise ValueError("You have to specify either input_ids or inputs_embeds")
+        extended_attention_mask = map_optional(
+            attention_mask, lambda x: self.get_extended_attention_mask(x, input_shape)
         )
 
         attn_input = hidden_states
@@ -134,6 +196,40 @@ class BertForSequenceClassificationLRP(nn.Module):
         R = R_.sum(2).detach()
 
         return R
+
+    def get_extended_attention_mask(
+        self,
+        attention_mask: Tensor,
+        input_shape: Tuple[int],
+    ) -> Tensor:
+        # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
+        # ourselves in which case we just need to make it broadcastable to all heads.
+        if attention_mask.dim() == 3:
+            extended_attention_mask = attention_mask[:, None, :, :]
+        elif attention_mask.dim() == 2:
+            # Provided a padding mask of dimensions [batch_size, seq_length]
+            # - if the model is a decoder, apply a causal mask in addition to the padding mask
+            # - if the model is an encoder, make the mask broadcastable to [batch_size, num_heads, seq_length, seq_length]
+            extended_attention_mask = (
+                ModuleUtilsMixin.create_extended_attention_mask_for_decoder(
+                    input_shape, attention_mask
+                )
+            )
+        else:
+            raise ValueError(
+                f"Wrong shape for input_ids (shape {input_shape}) or attention_mask (shape {attention_mask.shape})"
+            )
+
+        # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+        # masked positions, this operation will create a tensor which is 0.0 for
+        # positions we want to attend and the dtype's smallest value for masked positions.
+        # Since we are adding it to the raw scores before the softmax, this is
+        # effectively the same as removing these entirely.
+
+        extended_attention_mask = (1.0 - extended_attention_mask)
+        # TODO don't hardcode f32
+        extended_attention_mask = extended_attention_mask * torch.finfo(torch.float32).min
+        return extended_attention_mask.to(self.device)
 
 
 class BertSelfAttentionLRP(nn.Module):
@@ -272,37 +368,3 @@ def make_player_layer(layer: nn.Module, gamma: float) -> nn.Module:
     player.weight = torch.nn.Parameter(layer.weight + gamma * layer.weight.clamp(min=0))
     player.bias = torch.nn.Parameter(layer.bias + gamma * layer.bias.clamp(min=0))
     return player
-
-
-def get_extended_attention_mask(
-    attention_mask: Tensor,
-    input_shape: Tuple[int],
-) -> Tensor:
-    # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
-    # ourselves in which case we just need to make it broadcastable to all heads.
-    if attention_mask.dim() == 3:
-        extended_attention_mask = attention_mask[:, None, :, :]
-    elif attention_mask.dim() == 2:
-        # Provided a padding mask of dimensions [batch_size, seq_length]
-        # - if the model is a decoder, apply a causal mask in addition to the padding mask
-        # - if the model is an encoder, make the mask broadcastable to [batch_size, num_heads, seq_length, seq_length]
-        extended_attention_mask = (
-            ModuleUtilsMixin.create_extended_attention_mask_for_decoder(
-                input_shape, attention_mask
-            )
-        )
-    else:
-        raise ValueError(
-            f"Wrong shape for input_ids (shape {input_shape}) or attention_mask (shape {attention_mask.shape})"
-        )
-
-    # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
-    # masked positions, this operation will create a tensor which is 0.0 for
-    # positions we want to attend and the dtype's smallest value for masked positions.
-    # Since we are adding it to the raw scores before the softmax, this is
-    # effectively the same as removing these entirely.
-    extended_attention_mask = extended_attention_mask  # fp16 compatibility
-    extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(
-        torch.float64
-    ).min
-    return extended_attention_mask
