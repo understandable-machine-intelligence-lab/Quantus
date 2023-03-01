@@ -15,6 +15,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
 [![codecov.io](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus/coverage.svg?branch=master)](https://codecov.io/github/understandable-machine-intelligence-lab/Quantus?branch=master)
+[![Downloads](https://static.pepy.tech/badge/quantus)](https://pepy.tech/project/quantus)
 
 _Quantus is currently under active development so carefully note the Quantus release version to ensure reproducibility of your work._
 
