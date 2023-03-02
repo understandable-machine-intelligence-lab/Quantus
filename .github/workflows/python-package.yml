@@ -43,7 +43,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --durations=10 -n auto
+        pytest --durations=10 -s
 
     - name: Test importing Quantus
       run: |

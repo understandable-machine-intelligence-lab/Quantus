@@ -24,7 +24,7 @@ jobs:
 
       - name: Test
         run: |
-          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -n auto
+          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s
       - name: Upload
         uses:  codecov/codecov-action@v3
         with:

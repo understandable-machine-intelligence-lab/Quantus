@@ -518,6 +518,11 @@ def _(
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
+@tf_function
+def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
+    return tf.zeros_like(x, dtype=x_batch.dtype)
+
+
 
 @_explain_integrated_gradients.register
 def _(
@@ -533,7 +538,7 @@ def _(
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     baseline_fn = value_or_default(
-        baseline_fn, lambda: lambda x: tf.zeros_like(x, dtype=x_batch.dtype)
+        baseline_fn, lambda: _zeros_baseline
     )
     interpolated_embeddings = tf.map_fn(
         lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
@@ -796,12 +801,14 @@ def _(
 
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
+            # TODO vectorized map ???
             params_noise = tf.random.normal(params.shape, mean=mean, stddev=std)
             noisy_params = apply_noise(params, params_noise, noise_type)
             weights_copy[index] = noisy_params
 
         model.weights = weights_copy
         for _m in range(m):
+            # TODO vectorized map ???
             inputs_noise = tf.random.normal(x_batch.shape, mean=sg_mean, stddev=sg_std)
             noisy_embeddings = apply_noise(x_batch, inputs_noise, noise_type)
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
