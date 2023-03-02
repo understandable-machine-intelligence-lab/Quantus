@@ -23,41 +23,6 @@ def tf_sst2_model():
 
 
 @pytest.fixture(scope="session")
-def a_tuple_text():
-    a_tuple = np.load("tests/assets/nlp/a_tuple_text.npy")
-    return (
-        (list(a_tuple[0][0]), a_tuple[0][1].astype(float)),
-        (list(a_tuple[1][0]), a_tuple[1][1].astype(float)),
-    )
-
-
-@pytest.fixture(scope="session")
-def a_batch_text():
-    a_batch = np.load("tests/assets/nlp/a_batch_text.npy")
-
-    def map_fn(a):
-        return a[0], a[1].astype(float)
-
-    return list(map(map_fn, a_batch))
-
-
-@pytest.fixture(scope="session")
-def a_tuple_text_ragged_1(a_tuple_text):
-    return (
-        (list(a_tuple_text[0][0])[:37], a_tuple_text[0][1][:37]),
-        (list(a_tuple_text[1][0]), a_tuple_text[1][1]),
-    )
-
-
-@pytest.fixture(scope="session")
-def a_tuple_text_ragged_2(a_tuple_text):
-    return (
-        (list(a_tuple_text[0][0]), a_tuple_text[0][1]),
-        (list(a_tuple_text[1][0][:37]), a_tuple_text[1][1][:37]),
-    )
-
-
-@pytest.fixture(scope="session")
 def torch_sst2_model():
     # This model is interesting because it has not attention mask, but requires type_ids
     return TorchHuggingFaceTextClassifier.from_pretrained(

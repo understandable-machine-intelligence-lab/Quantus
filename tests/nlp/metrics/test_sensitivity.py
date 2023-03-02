@@ -48,7 +48,7 @@ def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs):
 def test_max_sensitivity_torch_fnet(
     torch_sst2_model, sst2_dataset, init_kwargs, call_kwargs
 ):
-    metric = AvgSensitivity(nr_samples=5, **init_kwargs)
+    metric = MaxSensitivity(nr_samples=5, **init_kwargs)
     result = metric(torch_sst2_model, sst2_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
     assert not (result == np.NINF).any()

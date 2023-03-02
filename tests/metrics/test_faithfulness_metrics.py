@@ -293,7 +293,7 @@ def test_faithfulness_correlation(
         ((scores >= expected["min"]) & (scores <= expected["max"]))
     ), "Test failed."
 
-@pytest.mark.xfail
+
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",

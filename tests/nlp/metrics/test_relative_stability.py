@@ -10,14 +10,15 @@ from quantus.nlp import (
 
 
 @pytest.mark.nlp
+@pytest.mark.tf_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
-        # (
-        #    {"normalise": True, "perturb_func": typo_replacement},
-        #    {"explain_func_kwargs": {"method": "GradNorm"}},
-        # ),
+         (
+            {"normalise": True, "perturb_func": typo_replacement},
+            {"explain_func_kwargs": {"method": "GradNorm"}},
+         ),
         (
             {
                 "perturb_func": uniform_noise,
@@ -25,7 +26,7 @@ from quantus.nlp import (
             {"explain_func_kwargs": {"method": "GradNorm"}},
         ),
     ],
-    # ids=["plain text", "latent space"],
+    ids=["plain text", "latent space"],
 )
 def test_ris_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     metric = RelativeInputStability(nr_samples=5, **init_kwargs)
@@ -39,6 +40,7 @@ def test_ris_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.tf_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
@@ -68,6 +70,7 @@ def test_ros_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.tf_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
@@ -97,6 +100,7 @@ def test_rrs_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
+@pytest.mark.pytorch_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
@@ -126,6 +130,7 @@ def test_ris_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 
 @pytest.mark.nlp
+@pytest.mark.pytorch_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
@@ -155,6 +160,7 @@ def test_ros_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 
 @pytest.mark.nlp
+@pytest.mark.pytorch_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",

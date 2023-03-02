@@ -17,6 +17,7 @@ def test_get_hidden_representations_tf(tf_sst2_model, x_batch):
 
 
 @pytest.mark.nlp
+@pytest.mark.pytorch_model
 @pytest.mark.parametrize(
     "x_batch",
     [

@@ -729,7 +729,6 @@ def test_generate_captum_explanation(
             ), "Test failed."
 
 
-@pytest.mark.xfail
 @pytest.mark.explain_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
