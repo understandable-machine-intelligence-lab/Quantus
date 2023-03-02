@@ -3,7 +3,6 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
-from tests.markers import skip_on_python_10
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.similarity_func import correlation_spearman, correlation_pearson
@@ -293,7 +292,6 @@ def test_model_parameter_randomisation(
         ), "Test failed."
 
 
-@skip_on_python_10
 @pytest.mark.randomisation
 @pytest.mark.parametrize(
     "model,data,params,expected",

@@ -13,6 +13,7 @@ from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     get_logits_for_labels,
+    safe_as_array,
 )
 from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
 
@@ -109,7 +110,8 @@ class TokenFlipping(BatchedMetric):
 
         mask_indices_all = np.asarray(mask_indices_all).T
         input_ids, predict_kwargs = get_input_ids(x_batch, model)
-        mask_token_id = model.tokenizer.token_id(self.mask_token)
+        input_ids = safe_as_array(input_ids)
+        mask_token_id = model.token_id(self.mask_token)
         masked_input_ids = np.full_like(np.asarray(input_ids), fill_value=mask_token_id)
 
         for i, mask_indices_batch in enumerate(mask_indices_all):
@@ -145,7 +147,8 @@ class TokenFlipping(BatchedMetric):
 
         mask_indices_all = np.asarray(mask_indices_all).T
         input_ids, predict_kwargs = get_input_ids(x_batch, model)
-        mask_token_id = model.tokenizer.token_id(self.mask_token)
+        input_ids = safe_as_array(input_ids, force=True)
+        mask_token_id = model.token_id(self.mask_token)
 
         for i, mask_indices_batch in enumerate(mask_indices_all):
             for index_in_batch, mask_index in enumerate(mask_indices_batch):
@@ -154,6 +157,6 @@ class TokenFlipping(BatchedMetric):
             embeddings = model.embedding_lookup(input_ids)
             logits = model(embeddings, **predict_kwargs)
             logits = safe_as_array(logits)
-            scores[i] = np.take(logits, y_batch)
+            scores[i] = get_logits_for_labels(logits, y_batch)
 
         return scores

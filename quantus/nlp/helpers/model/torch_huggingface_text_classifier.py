@@ -101,11 +101,16 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         return self.get_hidden_representations(embeddings, **encoded_inputs)
 
     @get_hidden_representations.register
-    def _(self, x_batch: torch.Tensor, **kwargs) -> torch.Tensor:
+    def _(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
+        return self.get_hidden_representations(
+            self.to_tensor(x_batch, dtype=torch.float32), **kwargs
+        )
+
+    @get_hidden_representations.register
+    def _(self, x_batch: torch.Tensor, **kwargs) -> np.ndarray:
         predict_kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
         hidden_states = self._model(
             None, inputs_embeds=x_batch, output_hidden_states=True, **predict_kwargs
         ).hidden_states
-        hidden_states = torch.stack(hidden_states)
-        hidden_states = torch.transpose(hidden_states, 0, 1)
-        return hidden_states
+        hidden_states = np.stack([i.detach().cpu().numpy() for i in hidden_states])
+        return np.moveaxis(hidden_states, 0, 1)

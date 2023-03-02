@@ -82,7 +82,7 @@ def explain_gradient_norm(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_gradient_norm(x_batch, model, y_batch, **kwargs)
+    return _explain_gradient_norm(x_batch, model, y_batch, **kwargs)
 
 
 def explain_gradient_x_input(
@@ -112,7 +112,7 @@ def explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_gradient_x_input(x_batch, model, y_batch, **kwargs)
+    return _explain_gradient_x_input(x_batch, model, y_batch, **kwargs)
 
 
 def explain_integrated_gradients(
@@ -173,7 +173,7 @@ def explain_integrated_gradients(
     >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-    return sd_explain_integrated_gradients(
+    return _explain_integrated_gradients(
         x_batch,
         model,
         y_batch,
@@ -221,7 +221,7 @@ def explain_noise_grad(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_noise_grad(
+    return _explain_noise_grad(
         x_batch,
         model,
         y_batch,
@@ -268,7 +268,7 @@ def explain_noise_grad_plus_plus(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_noise_grad_plus_plus(
+    return _explain_noise_grad_plus_plus(
         x_batch,
         model,
         y_batch,
@@ -282,21 +282,21 @@ def explain_noise_grad_plus_plus(
 
 
 @singledispatch
-def sd_explain_gradient_norm(
+def _explain_gradient_norm(
     x_batch, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_gradient_x_input(
+def _explain_gradient_x_input(
     x_batch, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_integrated_gradients(
+def _explain_integrated_gradients(
     x_batch,
     model: TorchTextClassifier,
     y_batch: np.ndarray,
@@ -310,7 +310,7 @@ def sd_explain_integrated_gradients(
 
 
 @singledispatch
-def sd_explain_noise_grad(
+def _explain_noise_grad(
     x_batch,
     model: TorchTextClassifier,
     y_batch: np.ndarray,
@@ -323,7 +323,7 @@ def sd_explain_noise_grad(
 
 
 @singledispatch
-def sd_explain_noise_grad_plus_plus(
+def _explain_noise_grad_plus_plus(
     x_batch,
     model: TorchTextClassifier,
     y_batch: np.ndarray,
@@ -338,17 +338,22 @@ def sd_explain_noise_grad_plus_plus(
 # ----------------------- GradNorm -------------------------
 
 
-@sd_explain_gradient_norm.register
+@_explain_gradient_norm.register
 def _(
     x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_gradient_norm(input_embeds, model, y_batch, **kwargs)
+    scores = _explain_gradient_norm(input_embeds, model, y_batch, **kwargs)
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_gradient_norm.register
+@_explain_gradient_norm.register
+def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+    return _explain_gradient_norm(model.to_tensor(x_batch), model, *args, **kwargs)
+
+
+@_explain_gradient_norm.register
 def _(
     x_batch: torch.Tensor,
     model: TorchTextClassifier,
@@ -374,18 +379,23 @@ def _(
 # ----------------------- GradXInput -------------------------
 
 
-@sd_explain_gradient_x_input.register
+@_explain_gradient_x_input.register
 def _(
     x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     input_embeds, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_gradient_x_input(input_embeds, model, y_batch, **kwargs)
+    scores = _explain_gradient_x_input(input_embeds, model, y_batch, **kwargs)
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_gradient_x_input.register
+@_explain_gradient_x_input.register
+def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+    return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
+
+
+@_explain_gradient_x_input.register
 def _(
     x_batch: Tensor,
     model: TorchTextClassifier,
@@ -409,7 +419,7 @@ def _(
 # ----------------------- IntGrad -------------------------
 
 
-@sd_explain_integrated_gradients.register
+@_explain_integrated_gradients.register
 def _(
     x_batch: list,
     model: TorchTextClassifier,
@@ -425,7 +435,7 @@ def _(
 
     input_embeds = input_embeds.detach().cpu().numpy()
 
-    scores = sd_explain_integrated_gradients(
+    scores = _explain_integrated_gradients(
         input_embeds,
         model,
         y_batch,
@@ -438,7 +448,14 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_integrated_gradients.register
+@_explain_integrated_gradients.register
+def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+    return _explain_integrated_gradients(
+        model.to_tensor(x_batch), model, *args, **kwargs
+    )
+
+
+@_explain_integrated_gradients.register
 def _(
     x_batch: np.ndarray,
     model: TorchTextClassifier,
@@ -538,94 +555,10 @@ def _torch_explain_integrated_gradients_iterative(
     return np.asarray(scores)
 
 
-# ----------------------- NoiseGrad++ -------------------------
-
-
-def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str):
-    if isinstance(explain_fn, Callable):
-        return explain_fn
-
-    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
-        raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
-    method_mapping = available_xai_methods()
-    if explain_fn not in method_mapping:
-        raise ValueError(
-            f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
-        )
-    return method_mapping[explain_fn]
-
-
-@sd_explain_noise_grad_plus_plus.register
-def _(
-    x_batch: list,
-    model: TorchTextClassifier,
-    y_batch: np.ndarray,
-    *,
-    explain_fn: Union[Callable, str] = "IntGrad",
-    init_kwargs: Optional[Dict] = None,
-    **kwargs,
-) -> List[Explanation]:
-    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
-
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
-
-    embeddings = embeddings.detach().cpu().numpy()
-
-    scores = sd_explain_noise_grad_plus_plus(
-        embeddings, model, y_batch, explain_fn, init_kwargs, **kwargs
-    )
-    return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
-
-
-@sd_explain_noise_grad_plus_plus.register
-def _(
-    x_batch: np.ndarray,
-    model: TorchTextClassifier,
-    y_batch: np.ndarray,
-    explain_fn: Callable,
-    init_kwargs: Optional[Dict],
-    **kwargs,
-) -> np.ndarray:
-    from noisegrad import NoiseGradPlusPlus
-
-    device = model.device
-    x_batch = torch.tensor(x_batch, device=device)
-    y_batch = torch.tensor(y_batch, device=device)
-
-    init_kwargs = value_or_default(init_kwargs, lambda: {})
-    og_weights = model.weights.copy()
-
-    def explanation_fn(
-        module: torch.nn.Module, inputs: Tensor, targets: Tensor
-    ) -> Tensor:
-        model.weights = module.state_dict()
-        # fmt: off
-        np_scores = explain_fn(model, inputs, targets, **kwargs)
-        # fmt: on
-        return Tensor(np_scores, device=device)
-
-    ng_pp = NoiseGradPlusPlus(**init_kwargs)
-    scores = (
-        ng_pp.enhance_explanation(
-            model.internal_model,
-            x_batch,
-            y_batch,
-            explanation_fn=explanation_fn,
-        )
-        .detach()
-        .cpu()
-        .numpy()
-    )
-
-    model.weights = og_weights
-    return scores
-
-
 # ----------------------- NoiseGrad -------------------------
 
 
-@sd_explain_noise_grad.register
+@_explain_noise_grad.register
 def _(
     x_batch: list,
     model: TorchTextClassifier,
@@ -642,13 +575,18 @@ def _(
 
     embeddings = embeddings.detach().cpu().numpy()
 
-    scores = sd_explain_noise_grad(
+    scores = _explain_noise_grad(
         embeddings, model, y_batch, explain_fn, init_kwargs, **kwargs
     )
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_noise_grad.register
+@_explain_noise_grad.register
+def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+    return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
+
+
+@_explain_noise_grad.register
 def _(
     x_batch: np.ndarray,
     model: TorchTextClassifier,
@@ -676,6 +614,95 @@ def _(
         return Tensor(np_scores, device=device)
 
     ng_pp = NoiseGrad(**init_kwargs)
+    scores = (
+        ng_pp.enhance_explanation(
+            model.internal_model,
+            x_batch,
+            y_batch,
+            explanation_fn=explanation_fn,
+        )
+        .detach()
+        .cpu()
+        .numpy()
+    )
+
+    model.weights = og_weights
+    return scores
+
+
+# ----------------------- NoiseGrad++ -------------------------
+
+
+def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str):
+    if isinstance(explain_fn, Callable):
+        return explain_fn
+
+    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
+        raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
+    method_mapping = available_xai_methods()
+    if explain_fn not in method_mapping:
+        raise ValueError(
+            f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
+        )
+    return method_mapping[explain_fn]
+
+
+@_explain_noise_grad_plus_plus.register
+def _(
+    x_batch: list,
+    model: TorchTextClassifier,
+    y_batch: np.ndarray,
+    *,
+    explain_fn: Union[Callable, str] = "IntGrad",
+    init_kwargs: Optional[Dict] = None,
+    **kwargs,
+) -> List[Explanation]:
+    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
+
+    input_ids, _ = get_input_ids(x_batch, model)
+    embeddings, kwargs = get_embeddings(x_batch, model)
+
+    embeddings = embeddings.detach().cpu().numpy()
+
+    scores = _explain_noise_grad_plus_plus(
+        embeddings, model, y_batch, explain_fn, init_kwargs, **kwargs
+    )
+    return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
+
+
+@_explain_noise_grad_plus_plus.register
+def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+    return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
+
+
+@_explain_noise_grad_plus_plus.register
+def _(
+    x_batch: np.ndarray,
+    model: TorchTextClassifier,
+    y_batch: np.ndarray,
+    explain_fn: Callable,
+    init_kwargs: Optional[Dict],
+    **kwargs,
+) -> np.ndarray:
+    from noisegrad import NoiseGradPlusPlus
+
+    device = model.device
+    x_batch = torch.tensor(x_batch, device=device)
+    y_batch = torch.tensor(y_batch, device=device)
+
+    init_kwargs = value_or_default(init_kwargs, lambda: {})
+    og_weights = model.weights.copy()
+
+    def explanation_fn(
+        module: torch.nn.Module, inputs: Tensor, targets: Tensor
+    ) -> Tensor:
+        model.weights = module.state_dict()
+        # fmt: off
+        np_scores = explain_fn(model, inputs, targets, **kwargs)
+        # fmt: on
+        return Tensor(np_scores, device=device)
+
+    ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
         ng_pp.enhance_explanation(
             model.internal_model,

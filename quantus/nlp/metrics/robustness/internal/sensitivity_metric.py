@@ -18,6 +18,7 @@ from quantus.nlp.helpers.utils import (
     get_embeddings,
     determine_perturbation_type,
     flatten,
+    safe_as_array,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 
@@ -56,6 +57,7 @@ class SensitivityMetric(RobustnessMetric):
     ) -> np.ndarray | float:
         batch_size = len(x_batch)
         x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
+        x_batch_embeddings = safe_as_array(x_batch_embeddings)
         scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
         perturbation_type = determine_perturbation_type(self.perturb_func)
 
@@ -113,7 +115,7 @@ class SensitivityMetric(RobustnessMetric):
             )
             numerator = self.norm_numerator(sensitivities)
             denominator = self.norm_denominator(
-                x_batch_embeddings[instance_id].flatten()
+                np.reshape(x_batch_embeddings[instance_id], -1)
             )
 
             similarities[instance_id] = numerator / denominator

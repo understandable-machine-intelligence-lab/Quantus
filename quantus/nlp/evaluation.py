@@ -89,7 +89,7 @@ def evaluate(
     iterator = tqdm(metrics.items(), disable=not verbose, desc="Evaluation...")
 
     for metric_name, metric_instance in iterator:
-        iterator.desc = metric_name
+        iterator.desc = f"Evaluating {metric_name}"
         metric_call_kwargs = call_kwargs[metric_name]
 
         if isinstance(metric_call_kwargs, Dict):

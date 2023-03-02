@@ -99,7 +99,7 @@ def explain_gradient_norm(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_gradient_norm(x_batch, model, y_batch, **kwargs)
+    return _explain_gradient_norm(x_batch, model, y_batch, **kwargs)
 
 
 def explain_gradient_x_input(
@@ -138,7 +138,7 @@ def explain_gradient_x_input(
         List of tuples, where 1st element is tokens and 2nd is the scores assigned to the tokens.
 
     """
-    return sd_explain_gradient_x_input(x_batch, model, y_batch, **kwargs)
+    return _explain_gradient_x_input(x_batch, model, y_batch, **kwargs)
 
 
 def explain_integrated_gradients(
@@ -199,7 +199,7 @@ def explain_integrated_gradients(
     >>> tf_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
     """
-    return sd_explain_integrated_gradients(
+    return _explain_integrated_gradients(
         x_batch,
         model,
         y_batch,
@@ -273,7 +273,7 @@ def explain_noise_grad(
     - Kirill Bykov and Anna Hedström and Shinichi Nakajima and Marina M. -C. Höhne, 2021, NoiseGrad: enhancing explanations by introducing stochasticity to model weights, https://arxiv.org/abs/2106.10185
 
     """
-    return sd_explain_noise_grad(
+    return _explain_noise_grad(
         x_batch,
         model,
         y_batch,
@@ -360,7 +360,7 @@ def explain_noise_grad_plus_plus(
     - Kirill Bykov and Anna Hedström and Shinichi Nakajima and Marina M. -C. Höhne, 2021, NoiseGrad: enhancing explanations by introducing stochasticity to model weights, https://arxiv.org/abs/2106.10185
 
     """
-    return sd_explain_noise_grad_plus_plus(
+    return _explain_noise_grad_plus_plus(
         x_batch,
         model,
         y_batch,
@@ -384,27 +384,27 @@ def explain_noise_grad_plus_plus(
 
 
 @singledispatch
-def sd_explain_gradient_norm(x_batch, *args, **kwargs) -> _Scores:
+def _explain_gradient_norm(x_batch, *args, **kwargs) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_gradient_x_input(x_batch, *args, **kwargs) -> _Scores:
+def _explain_gradient_x_input(x_batch, *args, **kwargs) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_integrated_gradients(x_batch, *args, **kwargs) -> _Scores:
+def _explain_integrated_gradients(x_batch, *args, **kwargs) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_noise_grad(x_batch, *args, **kwargs) -> _Scores:
+def _explain_noise_grad(x_batch, *args, **kwargs) -> _Scores:
     pass
 
 
 @singledispatch
-def sd_explain_noise_grad_plus_plus(
+def _explain_noise_grad_plus_plus(
     x_batch,
     *args,
     **kwargs,
@@ -415,18 +415,22 @@ def sd_explain_noise_grad_plus_plus(
 # ----------------------- GradNorm -------------------------
 
 
-@sd_explain_gradient_norm.register
+@_explain_gradient_norm.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return _explain_gradient_norm(tf.constant(x_batch), *args, **kwargs)
+
+
+@_explain_gradient_norm.register
 def _(
     x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_gradient_norm(embeddings, model, y_batch, **kwargs)
-    # TODO Vectorized map ???
+    scores = _explain_gradient_norm(embeddings, model, y_batch, **kwargs)
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_gradient_norm.register(tf.Tensor)
+@_explain_gradient_norm.register(tf.Tensor)
 @tf_function
 def _(
     x_batch: tf.Tensor,
@@ -446,18 +450,23 @@ def _(
 # ----------------------- GradXInput -------------------------
 
 
-@sd_explain_gradient_x_input.register
+@_explain_gradient_x_input.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return _explain_gradient_x_input(tf.constant(x_batch), *args, **kwargs)
+
+
+@_explain_gradient_x_input.register
 def _(
     x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
+    scores = _explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_gradient_x_input.register(tf.Tensor)
+@_explain_gradient_x_input.register(tf.Tensor)
 @tf_function
 def _(
     x_batch: tf.Tensor,
@@ -479,7 +488,12 @@ def _(
 # ----------------------- IntGrad -------------------------
 
 
-@sd_explain_integrated_gradients.register
+@_explain_integrated_gradients.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return _explain_integrated_gradients(tf.constant(x_batch), *args, **kwargs)
+
+
+@_explain_integrated_gradients.register
 def _(
     x_batch: list,
     model: TensorFlowTextClassifier,
@@ -492,7 +506,7 @@ def _(
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_integrated_gradients(
+    scores = _explain_integrated_gradients(
         embeddings,
         model,
         y_batch,
@@ -505,7 +519,7 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_integrated_gradients.register
+@_explain_integrated_gradients.register
 def _(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
@@ -598,6 +612,11 @@ def _integrated_gradients_iterative(
 # ----------------------- NoiseGrad -------------------------
 
 
+@_explain_noise_grad.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return _explain_noise_grad(tf.constant(x_batch), *args, **kwargs)
+
+
 def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
     if isinstance(explain_fn, Callable):
         return explain_fn
@@ -612,7 +631,7 @@ def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
     return method_mapping[explain_fn]
 
 
-@sd_explain_noise_grad.register
+@_explain_noise_grad.register
 def _(
     x_batch: list,
     model: TensorFlowTextClassifier,
@@ -628,7 +647,7 @@ def _(
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_noise_grad(
+    scores = _explain_noise_grad(
         embeddings,
         model,
         y_batch,
@@ -644,7 +663,7 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_noise_grad.register
+@_explain_noise_grad.register
 def _(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
@@ -690,7 +709,12 @@ def _(
 # ----------------------- NoiseGrad++ -------------------------
 
 
-@sd_explain_noise_grad_plus_plus.register
+@_explain_noise_grad_plus_plus.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return _explain_noise_grad_plus_plus(tf.constant(x_batch), *args, **kwargs)
+
+
+@_explain_noise_grad_plus_plus.register
 def _(
     x_batch: list,
     model: TensorFlowTextClassifier,
@@ -709,7 +733,7 @@ def _(
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = sd_explain_noise_grad_plus_plus(
+    scores = _explain_noise_grad_plus_plus(
         embeddings,
         model,
         y_batch,
@@ -728,7 +752,7 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@sd_explain_noise_grad_plus_plus.register
+@_explain_noise_grad_plus_plus.register
 def _(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
@@ -792,5 +816,5 @@ def _(
     return scores
 
 
-# We need numpy to be defined during module load, but we must not use during runtime
+# We need numpy to be defined during module load, but we must not use it during runtime
 del np

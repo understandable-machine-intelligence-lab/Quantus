@@ -21,6 +21,7 @@ from quantus.nlp.helpers.utils import (
     safe_isinstance,
     add_default_items,
     map_explanations,
+    safe_as_array,
 )
 
 TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TensorFlowHuggingFaceTextClassifier"
@@ -122,17 +123,11 @@ def _is_tf_model(model: TextClassifier):
     )
 
 
-def _as_array(a_batch):
-    def to_np(a):
-        if safe_isinstance(a, "torch.Tensor"):
-            return a.detach().cpu().numpy()
-        else:
-            return np.asarray(a)
-
+def explanation_as_np(a_batch):
     if isinstance(a_batch, List):
-        return map_explanations(a_batch, to_np)
+        return map_explanations(a_batch, safe_as_array)
     else:
-        return to_np(a_batch)
+        return safe_as_array(a_batch)
 
 
 def explain(
@@ -158,10 +153,10 @@ def explain(
 
     if _is_tf_model(model):
         result = tf_explain(model, *args, method=method, **kwargs)
-        return _as_array(result)
+        return explanation_as_np(result)
 
     if _is_torch_model(model):
         result = torch_explain(model, *args, method=method, **kwargs)
-        return _as_array(result)
+        return explanation_as_np(result)
 
     raise ValueError(f"Unable to identify DNN framework of the model.")

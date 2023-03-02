@@ -10,12 +10,10 @@ import copy
 import re
 from importlib import util
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable
-from functools import singledispatch, partial
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
 
-from quantus.config import USE_XLA
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 
@@ -766,6 +764,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
+
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
@@ -774,6 +773,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
+
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
 
@@ -783,6 +783,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
+
                 # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
@@ -1020,12 +1021,3 @@ def off_label_choice(y_batch: Union[np.ndarray, int], num_classes: int) -> Union
         return np.asarray([off_label_choice(i, num_classes) for i in y_batch])
     else:
         return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
-
-
-if util.find_spec("tensorflow"):
-    tf_function = partial(
-        tf.function,
-        reduce_retracing=True,
-        jit_compile=USE_XLA,
-        experimental_follow_type_hints=True,
-    )

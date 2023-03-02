@@ -5,7 +5,6 @@ import numpy as np
 from importlib import util
 from typing import List, Tuple, Callable, TypeVar, Optional, Any, Dict
 from functools import singledispatch
-from quantus.helpers.utils import tf_function
 from quantus.nlp.helpers.types import SimilarityFn
 from quantus.nlp.helpers.types import Explanation, TextClassifier, PerturbationType
 
@@ -331,12 +330,33 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     """
     # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
-    # the hard way again one more time. Same goes for below two.
+    # the hard way again one more time. Same goes for overloaded below ones.
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
+
+
+@singledispatch
+def safe_as_array(a, *, force: bool = False) -> np.ndarray:
+    """
+    Safe means safe from torch complaining about tensors being on other device or attached to graph.
+    So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
+    force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
+    """
+    if force:
+        # np.asarray will create immutable array.
+        return np.array(a)
+    return a
 
 
 if util.find_spec("tensorflow"):
     import tensorflow as tf
+    from functools import partial
+    from quantus.nlp.config import USE_XLA
+
+    tf_function = partial(
+        tf.function,
+        reduce_retracing=True,
+        jit_compile=USE_XLA,
+    )
 
     # Register tensorflow specific implementations.
     # We some of them for gradient-based XAI methods.
@@ -365,7 +385,7 @@ if util.find_spec("tensorflow"):
         delta = target - baseline
         scales = tf.linspace(0, 1, num_steps + 1)[:, tf.newaxis, tf.newaxis]
         scales = tf.cast(scales, dtype=delta.dtype)
-        shape = (num_steps + 1,) + delta.shape
+        shape = tf.convert_to_tensor([num_steps + 1, tf.shape(delta)[0], tf.shape(delta)[1]])
         deltas = scales * tf.broadcast_to(delta, shape)
         interpolated_inputs = baseline + deltas
         return interpolated_inputs
@@ -380,3 +400,7 @@ if util.find_spec("torch"):
     @get_logits_for_labels.register
     def _(logits: Tensor, y_batch: Tensor) -> Tensor:
         return logits[torch.range(0, logits.shape[0] - 1, dtype=torch.int64), y_batch]
+
+    @safe_as_array.register
+    def arr(a: Tensor, **kwargs):
+        return a.detach().cpu().numpy()

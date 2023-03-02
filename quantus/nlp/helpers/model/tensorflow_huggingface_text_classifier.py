@@ -73,7 +73,7 @@ class TensorFlowHuggingFaceTextClassifier(
             **kwargs,
         ).hidden_states
         hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3])
-        return hidden_states
+        return hidden_states.numpy()
 
     @get_hidden_representations.register
     def _(self, x_batch: tf.Tensor, **kwargs) -> tf.Tensor:
@@ -84,7 +84,7 @@ class TensorFlowHuggingFaceTextClassifier(
             output_hidden_states=True,
             **kwargs,
         ).hidden_states
-        hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3])
+        hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3]).numpy()
         return hidden_states
 
     @property

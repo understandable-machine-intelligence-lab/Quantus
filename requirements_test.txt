@@ -7,6 +7,7 @@ pytest-lazy-fixture>=0.6.3
 pytest-mock==3.8.2
 
 tensorflow>=2.11.0
+tensorflow_probability
 tf-explain>=0.3.1
 
 torch>=1.13.1
@@ -20,6 +21,5 @@ datasets>=2.9.0
 shap>=0.41.0
 lime>=0.2.0.1
 
-keras_nlp
 pytest-order
 pytest-xdist

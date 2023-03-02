@@ -12,7 +12,7 @@ from pytest_lazyfixture import lazy_fixture
 )
 def test_get_hidden_representations_tf(tf_sst2_model, x_batch):
     result = tf_sst2_model.get_hidden_representations(x_batch)
-    assert isinstance(result, tf.Tensor)
+    assert isinstance(result, np.ndarray)
     assert len(result.shape) == 4
 
 
@@ -26,4 +26,4 @@ def test_get_hidden_representations_tf(tf_sst2_model, x_batch):
 )
 def test_get_hidden_representations_torch(torch_sst2_model, x_batch):
     result = torch_sst2_model.get_hidden_representations(x_batch)
-    assert isinstance(result, torch.Tensor)
+    assert isinstance(result, np.ndarray)

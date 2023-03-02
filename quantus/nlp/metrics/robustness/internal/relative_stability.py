@@ -6,7 +6,11 @@ from abc import abstractmethod
 
 from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
-from quantus.nlp.helpers.utils import get_embeddings, determine_perturbation_type
+from quantus.nlp.helpers.utils import (
+    get_embeddings,
+    determine_perturbation_type,
+    safe_as_array,
+)
 
 
 class RelativeStability(RobustnessMetric):
@@ -93,6 +97,7 @@ class RelativeStability(RobustnessMetric):
         """Latent-space perturbation."""
         a_batch_numerical = np.asarray([i[1] for i in a_batch])
         x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
+        x_batch_embeddings = safe_as_array(x_batch_embeddings)
 
         # Perturb input.
         # fmt: off

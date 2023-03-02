@@ -1,6 +1,5 @@
 import pytest
 from pytest_lazyfixture import lazy_fixture
-from tests.markers import skip_on_python_10
 from quantus.functions.loss_func import mse
 from quantus.functions.similarity_func import *
 
@@ -230,7 +229,6 @@ def test_cosine(data: np.ndarray, params: dict, expected: Union[float, dict, boo
     assert round(out, 2) == expected, "Test failed."
 
 
-@skip_on_python_10
 @pytest.mark.similar_func
 @pytest.mark.parametrize(
     "data,params,expected",

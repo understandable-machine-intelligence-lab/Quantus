@@ -9,7 +9,7 @@ from quantus.nlp.helpers.types import Explanation, NormaliseFn, PerturbFn
 
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.utils import get_embeddings, pad_ragged_arrays
+from quantus.nlp.helpers.utils import get_embeddings, pad_ragged_arrays, safe_as_array
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.functions.perturb_func import spelling_replacement
 
@@ -89,7 +89,9 @@ class RelativeInputStability(RelativeStability):
         model: TextClassifier,
     ) -> np.ndarray:
         x, _ = get_embeddings(x_batch, model)
+        x = safe_as_array(x)
         xs, _ = get_embeddings(x_batch_perturbed, model)
+        xs = safe_as_array(xs)
         x, xs = pad_ragged_arrays(x, xs)
 
         e_x = np.asarray([i[1] for i in a_batch])

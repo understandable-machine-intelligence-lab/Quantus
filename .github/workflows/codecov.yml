@@ -24,7 +24,6 @@ jobs:
 
       - name: Test
         run: |
-          export CI=1 # skip MPR test, as they fail with OOM
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -n auto
       - name: Upload
         uses:  codecov/codecov-action@v3

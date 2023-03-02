@@ -7,12 +7,9 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from __future__ import annotations
-from importlib import util
-from functools import singledispatch
 import numpy as np
 
 
-@singledispatch
 def fro_norm(a: np.array) -> float:
     """
     Calculate Frobenius norm for an array.
@@ -28,10 +25,9 @@ def fro_norm(a: np.array) -> float:
         The norm.
     """
     assert a.ndim == 1, "Check that 'fro_norm' receives a 1D array."
-    return np.linalg.norm(a, ord=1, axis=0)
+    return np.linalg.norm(a)
 
 
-@singledispatch
 def l2_norm(a: np.array) -> float | np.ndarray:
     """
     Calculate L2 norm for an array.
@@ -48,13 +44,14 @@ def l2_norm(a: np.array) -> float | np.ndarray:
     """
     if a.ndim == 4:
         return np.linalg.norm(np.linalg.norm(a, axis=(-1, -2)), axis=-1)
-    if a.ndim == 3:
+    elif a.ndim == 3:
         return np.linalg.norm(a, axis=(-1, -2))
-    if a.ndim == 2:
+    elif a.ndim == 2:
         return np.linalg.norm(a, axis=-1)
-    if a.ndim == 1:
+    elif a.ndim == 1:
         return np.linalg.norm(a)
-    raise ValueError("This is unexpected.")
+    else:
+        raise ValueError
 
 
 def linf_norm(a: np.array) -> float:
@@ -72,28 +69,4 @@ def linf_norm(a: np.array) -> float:
         The norm.
     """
     assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
-    return np.linalg.norm(a, ord=np.inf, axis=0)
-
-
-if util.find_spec("tensorflow"):
-
-    from quantus.helpers.utils import tf_function
-    import tensorflow as tf
-
-    @l2_norm.register(tf.Tensor)
-    def _(a: tf.Tensor) -> tf.Tensor:
-        ndim = len(tf.shape(a))
-        if ndim == 4:
-            return tf.linalg.norm(tf.linalg.norm(a, axis=(-1, -2)), axis=-1)
-        if ndim == 3:
-            return tf.linalg.norm(a, axis=(-1, -2))
-        if ndim == 2:
-            return tf.linalg.norm(a, axis=-1)
-        if ndim == 1:
-            return tf.linalg.norm(a)
-
-
-    @fro_norm.register(tf.Tensor)
-    @tf_function
-    def _(a: tf.Tensor):
-        return tf.linalg.norm(a, axis=0, ord="for")
+    return np.linalg.norm(a, ord=np.inf)
