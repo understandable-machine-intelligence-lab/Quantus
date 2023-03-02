@@ -1,10 +1,6 @@
-import platform
 import numpy as np
 import pytest
 from datasets import load_dataset
-
-if platform.system() != "Darwin" or platform.processor() != "arm":
-    from tests.nlp.fnet import fnet_adapter
 from quantus.nlp import (
     TensorFlowHuggingFaceTextClassifier,
     TorchHuggingFaceTextClassifier,
@@ -23,19 +19,6 @@ def sst2_dataset():
 def tf_sst2_model():
     return TensorFlowHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
-    )
-
-
-@pytest.fixture(scope="session")
-def emotion_dataset():
-    dataset = load_dataset("SetFit/emotion")["test"]["text"]
-    return dataset[:BATCH_SIZE]
-
-
-@pytest.fixture(scope="session")
-def emotion_model():
-    return TorchHuggingFaceTextClassifier.from_pretrained(
-        "michellejieli/emotion_text_classifier"
     )
 
 
@@ -74,23 +57,9 @@ def a_tuple_text_ragged_2(a_tuple_text):
     )
 
 
-# add_prefix_space=True ???
-
-
 @pytest.fixture(scope="session")
-def torch_fnet():
+def torch_sst2_model():
     # This model is interesting because it has not attention mask, but requires type_ids
     return TorchHuggingFaceTextClassifier.from_pretrained(
         "gchhablani/fnet-base-finetuned-sst2"
     )
-
-
-@pytest.fixture(scope="session")
-def fnet_keras():
-    # This model is interesting because the tokenizer doesn't return dict
-    return fnet_adapter()
-
-
-@pytest.fixture(scope="session")
-def ag_news_dataset():
-    return load_dataset("ag_news")["test"]["text"][:BATCH_SIZE]

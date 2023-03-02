@@ -1,11 +1,9 @@
 import numpy as np
 import pytest
-
-from tests.nlp.markers import skip_in_ci
 import quantus.nlp as qn
 
 
-@skip_in_ci
+@pytest.mark.order("last")
 @pytest.mark.nlp
 @pytest.mark.evaluate_func
 def test_tf_model(tf_sst2_model, sst2_dataset):
