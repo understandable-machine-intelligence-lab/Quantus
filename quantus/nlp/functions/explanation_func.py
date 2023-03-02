@@ -94,8 +94,8 @@ def explain_shap(
     if safe_isinstance(model, (TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass)):
         predict_fn = pipeline(
             "text-classification",
-            model=model.internal_model,
-            tokenizer=model.internal_tokenizer,
+            model=model.internal_model, # type: ignore
+            tokenizer=model.internal_tokenizer, # type: ignore
             top_k=None,
             device=getattr(model, "device", None),
         )

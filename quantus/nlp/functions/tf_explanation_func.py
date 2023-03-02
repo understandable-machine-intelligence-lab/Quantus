@@ -290,7 +290,7 @@ def explain_noise_grad(
 def explain_noise_grad_plus_plus(
     model: TensorFlowTextClassifier,
     x_batch: _TextOrVector,
-    y_batch: p.ndarray,
+    y_batch: np.ndarray,
     *,
     n: int = 10,
     m: int = 10,
@@ -551,8 +551,8 @@ def _(
 @tf_function
 def _integrated_gradients_batched(
     model: TensorFlowTextClassifier,
-    interpolated_embeddings: List[_TF_TensorLike],
-    y_batch: _TF_TensorLike,
+    interpolated_embeddings: List[tf.Tensor],
+    y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
     interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
@@ -619,7 +619,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
     if isinstance(explain_fn, Callable):
-        return explain_fn
+        return explain_fn  # type: ignore
 
     if explain_fn in ("NoiseGrad", "NoiseGrad++"):
         raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
@@ -814,7 +814,3 @@ def _(
     model.weights = original_weights
 
     return scores
-
-
-# We need numpy to be defined during module load, but we must not use it during runtime
-del np

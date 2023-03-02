@@ -60,7 +60,7 @@ class TensorFlowHuggingFaceTextClassifier(
         return self._model.predict(encoded_inputs, verbose=0, **kwargs).logits
 
     @singledispatchmethod
-    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:
+    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:  # type: ignore
         pass
 
     @get_hidden_representations.register

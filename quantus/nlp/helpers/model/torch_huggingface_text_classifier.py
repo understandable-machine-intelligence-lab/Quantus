@@ -77,7 +77,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         return logits.detach().cpu().numpy()
 
     @singledispatchmethod
-    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:
+    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:  # type: ignore
         pass
 
     @property
