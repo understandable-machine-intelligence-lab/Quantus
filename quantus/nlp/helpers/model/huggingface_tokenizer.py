@@ -1,12 +1,14 @@
 from typing import List, Dict
 import numpy as np
 
+from abc import ABC
 from transformers import PreTrainedTokenizerBase
-from quantus.nlp.helpers.model.tokenizer import Tokenizer
 from quantus.nlp.helpers.utils import add_default_items
 
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
-class HuggingFaceTokenizer(Tokenizer):
+
+class HuggingFaceTokenizer(TextClassifier, ABC):
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
@@ -25,3 +27,7 @@ class HuggingFaceTokenizer(Tokenizer):
         return self._tokenizer.encode_plus(
             [token], is_split_into_words=True, add_special_tokens=False
         )["input_ids"][0]
+
+    @property
+    def internal_tokenizer(self):
+        return self._tokenizer

@@ -29,7 +29,6 @@ from quantus.nlp.helpers.plotting import (
 )
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.model.tokenizer import Tokenizer
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from importlib import util
 

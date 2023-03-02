@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Callable, no_type_check
 import numpy as np
 
 from quantus.functions.similarity_func import ssim
+from quantus.helpers.utils import off_label_choice
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, SimilarityFn, NormaliseFn
 from quantus.nlp.metrics.batched_metric import BatchedMetric
@@ -65,8 +66,7 @@ class RandomLogit(BatchedMetric):
         **kwargs,
     ) -> np.ndarray | float:
         np.random.seed(self.seed)
-        y_off = [self.off_label_choice(i) for i in y_batch]
-        y_off = np.asarray(y_off)
+        y_off = off_label_choice(y_batch, self.num_classes)
 
         # Explain against a random class.
         a_perturbed = self.explain_func(
@@ -82,9 +82,3 @@ class RandomLogit(BatchedMetric):
             a_batch, a_perturbed, self.similarity_func
         )
         return np.asarray(scores)
-
-    def off_label_choice(self, y: int) -> int:
-        all_labels = list(range(self.num_classes))
-        del all_labels[y]
-        random.seed(self.seed)
-        return random.choice(all_labels)

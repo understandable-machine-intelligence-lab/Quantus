@@ -11,9 +11,34 @@ class TextClassifier(ABC):
 
     """An interface for model, trained for text-classification task (aka sentiment analysis)."""
 
-    @property
     @abstractmethod
-    def tokenizer(self):
+    def tokenize(self, text: List[str]):
+        """Convert batch of plain-text inputs to vocabulary id's."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def convert_ids_to_tokens(self, ids) -> List[str]:
+        """Convert batch of vocabulary id's batch to batch of plain-text strings."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def token_id(self, token: str) -> int:
+        """Get id of token. This method is required for TokenPruning metric."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def tokenize(self, text: List[str]):
+        """Convert batch of plain-text inputs to vocabulary id's."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def convert_ids_to_tokens(self, ids) -> List[str]:
+        """Convert batch of vocabulary id's batch to batch of plain-text strings."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def token_id(self, token: str) -> int:
+        """Get id of token. This method is required for TokenPruning metric."""
         raise NotImplementedError
 
     @property

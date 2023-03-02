@@ -1,7 +1,13 @@
 from typing import List
 import numpy as np
 import pytest
-from quantus.nlp.helpers.utils import batch_list, pad_ragged_arrays
+import torch
+import tensorflow as tf
+from quantus.nlp.helpers.utils import (
+    batch_list,
+    pad_ragged_arrays,
+    get_logits_for_labels,
+)
 
 
 @pytest.mark.nlp
@@ -50,3 +56,26 @@ def test_pad(a_shape, b_shape):
     b = np.random.uniform(size=b_shape)
     a_padded, b_padded = pad_ragged_arrays(a, b)
     assert a_padded.shape == b_padded.shape
+
+
+logits = np.random.uniform(size=(8, 2))
+y_batch = np.asarray([0, 0, 1, 1, 0, 0, 1, 1])
+expected_logits = np.asarray([i[j] for i, j in zip(logits, y_batch)])
+
+
+@pytest.mark.utils
+@pytest.mark.parametrize(
+    "inputs, labels",
+    [
+        (logits, y_batch),
+        (logits, y_batch),
+        (torch.tensor(logits), torch.tensor(y_batch)),
+    ],
+)
+def test_get_logits_for_labels(inputs, labels):
+    result = get_logits_for_labels(inputs, labels)
+    if isinstance(result, torch.Tensor):
+        result = result.numpy()
+    if isinstance(result, tf.Tensor):
+        result = result.numpy()
+    assert (result == expected_logits).all()

@@ -9,7 +9,7 @@ from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation, NormaliseFn, PerturbFn
 
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability
-from quantus.nlp.helpers.utils import safe_as_array, pad_ragged_arrays
+from quantus.nlp.helpers.utils import pad_ragged_arrays
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.functions.perturb_func import spelling_replacement
 

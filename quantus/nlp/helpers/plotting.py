@@ -254,7 +254,7 @@ def plot_token_flipping_experiment(
     score: np.ndarray, original_prediction: np.ndarray, task: str
 ):
     """
-    AU-MSE - area under the mean squared error (y0−ymt)
+    AU-MSE - area under the mean squared error (y_0 - y_mt)
     curve for pruning. Lower is better and indicates that removing less
     relevant nodes has little effect on the model prediction.
     """

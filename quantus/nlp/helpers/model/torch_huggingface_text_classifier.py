@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Optional
-from multimethod import multimethod
+from typing import List, Optional, Dict
+from functools import singledispatchmethod
 from torch import nn as nn
 from transformers import (
     PreTrainedModel,
@@ -19,16 +19,16 @@ from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 
-class TorchHuggingFaceTextClassifier(TorchTextClassifier):
+class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizerBase,
         model: PreTrainedModel,
         device: Optional[torch.device],
     ):
+        super().__init__(tokenizer)
         self._device = value_or_default(device, lambda: torch.device("cpu"))
         self._model = model.to(self._device)
-        self._tokenizer = HuggingFaceTokenizer(tokenizer)
 
     @staticmethod
     def from_pretrained(
@@ -37,7 +37,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier):
         """A method, which mainly should be used to instantiate Torch models from HuggingFace Hub."""
 
         return TorchHuggingFaceTextClassifier(
-            AutoTokenizer.from_pretrained(handle, add_prefix_space=True),
+            AutoTokenizer.from_pretrained(handle),
             AutoModelForSequenceClassification.from_pretrained(handle, **kwargs),
             device,
         )
@@ -68,45 +68,17 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier):
         kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
         return self._model(None, inputs_embeds=inputs_embeds, **kwargs).logits
 
+    def tokenize(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:
+        return super().tokenize(text, return_tensors="pt", **kwargs)
+
     def predict_on_batch(self, text: List[str]) -> np.ndarray:
-        encoded_inputs = self._tokenizer.tokenize(text)
-        encoded_inputs = map_dict(encoded_inputs, lambda x: self.to_tensor(x))
+        encoded_inputs = self.tokenize(text)
         logits = self._model(**encoded_inputs).logits
         return logits.detach().cpu().numpy()
 
-    @multimethod
+    @singledispatchmethod
     def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:
         pass
-
-    @get_hidden_representations.register
-    def _(self, x_batch: List[str], **kwargs) -> np.ndarray:
-        encoded_inputs = self._tokenizer.tokenize(x_batch)
-        encoded_inputs = map_dict(encoded_inputs, lambda x: self.to_tensor(x))
-        embeddings = self.to_tensor(
-            self.embedding_lookup(encoded_inputs.pop("input_ids")),
-            dtype=self._model.dtype,
-        )
-        return self.get_hidden_representations(embeddings, **encoded_inputs)
-
-    @get_hidden_representations.register
-    def _(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
-        x_batch = self.to_tensor(x_batch, dtype=self._model.dtype)
-        return self.get_hidden_representations(x_batch, **kwargs)
-
-    @get_hidden_representations.register
-    def _(self, x_batch: torch.Tensor, **kwargs) -> np.ndarray:
-        predict_kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
-        hidden_states = self._model(
-            None, inputs_embeds=x_batch, output_hidden_states=True, **predict_kwargs
-        ).hidden_states
-        hidden_states = [i.detach().cpu().numpy() for i in hidden_states]
-        hidden_states = np.asarray(hidden_states)
-        hidden_states = np.moveaxis(hidden_states, 0, 1)
-        return hidden_states
-
-    @property
-    def tokenizer(self):
-        return self._tokenizer
 
     @property
     def internal_model(self) -> nn.Module:
@@ -118,3 +90,22 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier):
 
     def clone(self) -> TorchTextClassifier:
         return self.from_pretrained(self._model.name_or_path, device=self._device)
+
+    @get_hidden_representations.register
+    def _(self, x_batch: list, **kwargs) -> np.ndarray:
+        encoded_inputs = self.tokenize(x_batch)
+        embeddings = self.to_tensor(
+            self.embedding_lookup(encoded_inputs.pop("input_ids")),
+            dtype=self._model.dtype,
+        )
+        return self.get_hidden_representations(embeddings, **encoded_inputs)
+
+    @get_hidden_representations.register
+    def _(self, x_batch: torch.Tensor, **kwargs) -> torch.Tensor:
+        predict_kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
+        hidden_states = self._model(
+            None, inputs_embeds=x_batch, output_hidden_states=True, **predict_kwargs
+        ).hidden_states
+        hidden_states = torch.stack(hidden_states)
+        hidden_states = torch.transpose(hidden_states, 0, 1)
+        return hidden_states

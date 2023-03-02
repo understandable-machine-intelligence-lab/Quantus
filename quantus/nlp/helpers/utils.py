@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import sys
 import numpy as np
+from importlib import util
 from typing import List, Tuple, Callable, TypeVar, Optional, Any, Dict
+from functools import singledispatch
+from quantus.helpers.utils import tf_function
 from quantus.nlp.helpers.types import SimilarityFn
-
 from quantus.nlp.helpers.types import Explanation, TextClassifier, PerturbationType
 
 T = TypeVar("T")
@@ -14,20 +16,22 @@ R = TypeVar("R")
 def get_embeddings(
     x_batch: List[str], model: TextClassifier
 ) -> Tuple[np.ndarray, Dict]:
-    encoded_input = model.tokenizer.tokenize(x_batch)
+    encoded_input = model.tokenize(x_batch)
     if isinstance(encoded_input, Dict):
         input_ids = encoded_input.pop("input_ids")
     else:
         input_ids = encoded_input
 
-    embeddings = safe_as_array(model.embedding_lookup(input_ids))
+    embeddings = model.embedding_lookup(input_ids)
     if isinstance(encoded_input, Dict):
         return embeddings, encoded_input
     return embeddings, {}
 
 
-def get_input_ids(x_batch: List[str], model: TextClassifier) -> Tuple[np.ndarray, Dict]:
-    encoded_input = model.tokenizer.tokenize(x_batch)
+def get_input_ids(
+    x_batch: List[str], model: TextClassifier
+) -> Tuple[Any, Dict[str, Any]]:
+    encoded_input = model.tokenize(x_batch)
     if isinstance(encoded_input, Dict):
         input_ids = encoded_input.pop("input_ids")
     else:
@@ -44,6 +48,7 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     return default_factory()
 
 
+@singledispatch
 def pad_ragged_arrays(
     a: np.ndarray, b: np.ndarray, *, pad_value: float = 0
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -183,19 +188,13 @@ def safe_isinstance(obj: Any, class_path_str: str | List[str] | Tuple) -> bool:
     return False
 
 
-def safe_as_array(arr: T) -> np.ndarray:
-    """Convert Tensorflow or Torch tensors to numpy arrays."""
-    if safe_isinstance(arr, "torch.Tensor"):
-        return arr.detach().cpu().numpy()  # type: ignore
-    return np.asarray(arr)
-
-
 def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
     if val is None:
         return None
     return func(val)
 
 
+@singledispatch
 def explanation_similarity(
     a: Explanation,
     b: Explanation,
@@ -212,6 +211,7 @@ def explanation_similarity(
     return similarity_fn(a_padded, b_padded)
 
 
+@singledispatch
 def explanations_batch_similarity(
     a_batch: List[Explanation],
     b_batch: List[Explanation],
@@ -284,6 +284,7 @@ def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarr
         return arr * noise
 
 
+@singledispatch
 def get_interpolated_inputs(
     baseline: np.ndarray, target: np.ndarray, num_steps: int
 ) -> np.ndarray:
@@ -301,3 +302,78 @@ def get_interpolated_inputs(
     deltas = scales * np.broadcast_to(delta, shape)
     interpolated_inputs = baseline + deltas
     return interpolated_inputs
+
+
+@singledispatch
+def flatten(arr: np.ndarray) -> np.ndarray:
+    return np.reshape(arr, -1)
+
+
+@singledispatch
+def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
+    """
+    Parameters
+    ----------
+    logits:
+        2D array of models (output) logits with shape (batch size, num_classes).
+    y_batch:
+        1D array of labels with shape (batch size,)
+
+    Returns
+    -------
+
+    logits:
+        1D array
+
+    """
+    # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
+    # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
+    # the hard way again one more time. Same goes for below two.
+    return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
+
+
+if util.find_spec("tensorflow"):
+    import tensorflow as tf
+
+    # Register tensorflow specific implementations.
+    # We some of them for gradient-based XAI methods.
+    # Others are there to reduce numpy overhead
+    # as per profile report decent substantial amount of time was spent just converting tensors between frameworks.
+
+    @get_logits_for_labels.register(tf.Tensor)
+    @tf_function
+    def _(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
+        # Matrix with indexes like [ [0,y_0], [1, y_1], ...]
+        indexes = tf.transpose(
+            tf.stack(
+                [
+                    tf.range(tf.shape(logits)[0], dtype=tf.int32),
+                    tf.cast(y_batch, tf.int32),
+                ]
+            ),
+            [1, 0],
+        )
+        return tf.gather_nd(logits, indexes)
+
+    @get_interpolated_inputs.register(tf.Tensor)
+    @tf_function
+    def _(baseline: tf.Tensor, target: tf.Tensor, num_steps: int) -> tf.Tensor:
+        """Gets num_step linearly interpolated inputs from baseline to target."""
+        delta = target - baseline
+        scales = tf.linspace(0, 1, num_steps + 1)[:, tf.newaxis, tf.newaxis]
+        scales = tf.cast(scales, dtype=delta.dtype)
+        shape = (num_steps + 1,) + delta.shape
+        deltas = scales * tf.broadcast_to(delta, shape)
+        interpolated_inputs = baseline + deltas
+        return interpolated_inputs
+
+
+if util.find_spec("torch"):
+    import torch
+    from torch import Tensor
+
+    # Register torch specific implementation. We need if for gradient-based XAI methods.
+
+    @get_logits_for_labels.register
+    def _(logits: Tensor, y_batch: Tensor) -> Tensor:
+        return logits[torch.range(0, logits.shape[0] - 1, dtype=torch.int64), y_batch]

@@ -10,10 +10,12 @@ import copy
 import re
 from importlib import util
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from functools import singledispatch, partial
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
 
+from quantus.config import USE_XLA
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 
@@ -1011,3 +1013,28 @@ def compute_correlation_per_sample(last_results: Dict) -> List:
     corr_coeffs = list(results.values())
 
     return corr_coeffs
+
+
+@singledispatch
+def off_label_choice(y_batch, num_classes: int) -> Union[int, np.ndarray]:
+    raise ValueError("This is unexpected.")
+
+
+@off_label_choice.register
+def _(y_batch: np.ndarray, num_classes: int) -> Union[int, np.ndarray]:
+    return np.apply_along_axis(partial(off_label_choice, num_classes=num_classes) ,y_batch)
+
+
+@off_label_choice.register
+def _(y_batch: int, num_classes: int) -> Union[int, np.ndarray]:
+    return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
+
+
+
+if util.find_spec("tensorflow"):
+    tf_function = partial(
+        tf.function,
+        reduce_retracing=True,
+        jit_compile=USE_XLA,
+        experimental_follow_type_hints=True,
+    )

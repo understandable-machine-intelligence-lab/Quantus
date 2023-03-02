@@ -1,21 +1,23 @@
 import pytest
 import numpy as np
+import tensorflow as tf
 from quantus.nlp import normalize_sum_to_1
 
 
 @pytest.mark.nlp
 @pytest.mark.normalise_func
 @pytest.mark.parametrize(
-    "size",
+    "a_batch",
     [
-        (8,),
-        (8, 32),
+        np.random.default_rng(0).normal(size=8),
+        np.random.default_rng(0).normal(size=(8, 32)),
+        tf.random.normal(shape=(8,)),
+        tf.random.normal(shape=(8, 32)),
     ],
-    ids=["1D", "2D"],
+    ids=["1D", "2D", "1D-TF", "2D-TF"],
 )
-def test_normalise_func(size):
-    x_batch = np.random.default_rng(0).normal(size=size)
-    result = normalize_sum_to_1(x_batch)
+def test_normalise_func(a_batch):
+    result = normalize_sum_to_1(a_batch)
     assert np.allclose(np.sum(np.abs(result), axis=-1), 1.0)
 
 

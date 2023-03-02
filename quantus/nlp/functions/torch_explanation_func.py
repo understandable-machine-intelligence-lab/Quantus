@@ -5,6 +5,7 @@ from typing import List, Callable, Optional, Dict, Union
 
 import numpy as np
 import torch
+from torch import Tensor
 from copy import deepcopy
 from multimethod import multimethod
 from transformers import BertForSequenceClassification
@@ -19,7 +20,7 @@ from quantus.nlp.helpers.utils import (
 )
 
 # Just to save some typing effort
-_TensorLike = Union[torch.Tensor, np.ndarray]
+_TensorLike = Union[Tensor, np.ndarray]
 _BaselineFn = Callable[[_TensorLike], _TensorLike]
 _TextOrVector = Union[List[str], _TensorLike]
 _Scores = Union[List[Explanation], np.ndarray]
@@ -170,7 +171,7 @@ def torch_explain_integrated_gradients(
     Specifying [UNK] token as baseline:
 
     >>> def unknown_token_baseline_function(x):
-        ... return torch.tensor(np.load(...), dtype=torch.float32).to(device) # noqa
+        ... return Tensor(np.load(...), dtype=torch.float32).to(device) # noqa
 
     >>> torch_explain_integrated_gradients(..., ..., ..., baseline_fn=unknown_token_baseline_function) # noqa
 
@@ -287,14 +288,13 @@ def _(
     device = model.device
     dtype = model.internal_model.dtype
 
-    input_embeddings = torch.tensor(
+    input_embeddings = Tensor(
         input_embeddings, requires_grad=True, device=device, dtype=dtype
     )
 
-    kwargs = map_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    kwargs = map_dict(kwargs, lambda x: Tensor(x, device=device))
     logits = model(input_embeddings, **kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    logits_for_class = torch_get_logits_for_labels(logits, model.to_tensor(y_batch))
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
     return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
 
@@ -326,13 +326,12 @@ def _(
 
     device = model.device
     dtype = model.internal_model.dtype
-    input_embeddings = torch.tensor(
+    input_embeddings = Tensor(
         input_embeddings, requires_grad=True, device=device, dtype=dtype
     )
-    kwargs = map_dict(kwargs, lambda x: torch.tensor(x, device=device))
+    kwargs = map_dict(kwargs, lambda x: Tensor(x, device=device))
     logits = model(input_embeddings, **kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    logits_for_class = torch_get_logits_for_labels(logits, model.to_tensor(y_batch))
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
     return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
 
@@ -412,7 +411,7 @@ def _torch_explain_integrated_gradients_batched(
 
     dtype = model.internal_model.dtype
 
-    interpolated_embeddings = torch.tensor(
+    interpolated_embeddings = Tensor(
         interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
     )
     interpolated_embeddings = torch.reshape(
@@ -426,8 +425,7 @@ def _torch_explain_integrated_gradients_batched(
 
     interpolated_kwargs = map_dict(kwargs, pseudo_interpolate)
     logits = model(interpolated_embeddings, **interpolated_kwargs)
-    indexes = torch.reshape(torch.tensor(y_batch, device=device), (len(y_batch), 1))
-    logits_for_class = torch.gather(logits, dim=-1, index=indexes)
+    logits_for_class = torch_get_logits_for_labels(logits, model.to_tensor(y_batch))
     grads = torch.autograd.grad(torch.unbind(logits_for_class), interpolated_embeddings)
     grads = grads[0]
     grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
@@ -447,7 +445,7 @@ def _torch_explain_integrated_gradients_iterative(
     scores = []
 
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
-        interpolated_embeddings = torch.tensor(
+        interpolated_embeddings = Tensor(
             interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
         )
 
@@ -520,20 +518,20 @@ def _(
     from noisegrad import NoiseGradPlusPlus
 
     device = model.device
-    input_embeddings = torch.tensor(input_embeddings, device=device)
-    y_batch = torch.tensor(y_batch, device=device)
+    input_embeddings = Tensor(input_embeddings, device=device)
+    y_batch = Tensor(y_batch, device=device)
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
     og_weights = model.weights.copy()
 
     def explanation_fn(
-        module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+        module: torch.nn.Module, inputs: Tensor, targets: Tensor
+    ) -> Tensor:
         model.weights = module.state_dict()
         # fmt: off
         np_scores = explain_fn(model, inputs, targets, **kwargs)
         # fmt: on
-        return torch.tensor(np_scores, device=device)
+        return Tensor(np_scores, device=device)
 
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
@@ -590,20 +588,20 @@ def _(
     from noisegrad import NoiseGrad
 
     device = model.device
-    input_embeddings = torch.tensor(input_embeddings, device=device)
-    y_batch = torch.tensor(y_batch, device=device)
+    input_embeddings = Tensor(input_embeddings, device=device)
+    y_batch = Tensor(y_batch, device=device)
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
     og_weights = model.weights.copy()
 
     def explanation_fn(
-        module: torch.nn.Module, inputs: torch.Tensor, targets: torch.Tensor
-    ) -> torch.Tensor:
+        module: torch.nn.Module, inputs: Tensor, targets: Tensor
+    ) -> Tensor:
         model.weights = module.state_dict()
         # fmt: off
         np_scores = explain_fn(model, inputs, targets, **kwargs)
         # fmt: on
-        return torch.tensor(np_scores, device=device)
+        return Tensor(np_scores, device=device)
 
     ng_pp = NoiseGrad(**init_kwargs)
     scores = (
@@ -620,5 +618,3 @@ def _(
 
     model.weights = og_weights
     return scores
-
-

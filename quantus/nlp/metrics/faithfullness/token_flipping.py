@@ -10,7 +10,10 @@ from quantus.nlp.helpers.types import Explanation, NormaliseFn
 
 from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import safe_as_array, get_input_ids
+from quantus.nlp.helpers.utils import (
+    get_input_ids,
+    get_logits_for_labels,
+)
 from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
 
 
@@ -100,7 +103,7 @@ class TokenFlipping(BatchedMetric):
         scores = np.full(shape=(num_tokens, batch_size), fill_value=np.NINF)
         mask_indices_all = []
         for a in a_batch:
-            # ascending
+            # descending scores
             token_indices_sorted_by_scores = np.argsort(a[1])[::-1]
             mask_indices_all.append(token_indices_sorted_by_scores)
 
@@ -118,7 +121,7 @@ class TokenFlipping(BatchedMetric):
             embeddings = model.embedding_lookup(masked_input_ids)
             logits = model(embeddings, **predict_kwargs)
             logits = safe_as_array(logits)
-            scores[i] = np.take(logits, y_batch)
+            scores[i] = get_logits_for_labels(logits, y_batch)
 
         return scores
 
@@ -136,7 +139,7 @@ class TokenFlipping(BatchedMetric):
         scores = np.full(shape=(num_tokens, batch_size), fill_value=np.NINF)
         mask_indices_all = []
         for a in a_batch:
-            # descending
+            # ascending scores
             token_indices_sorted_by_scores = np.argsort(a[1])
             mask_indices_all.append(token_indices_sorted_by_scores)
 

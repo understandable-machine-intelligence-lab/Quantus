@@ -14,11 +14,10 @@ from quantus.nlp.helpers.types import (
     NormFn,
 )
 from quantus.nlp.helpers.utils import (
-    safe_as_array,
     explanation_similarity,
     get_embeddings,
-    get_input_ids,
     determine_perturbation_type,
+    flatten,
 )
 from quantus.helpers.warn import warn_perturbation_caused_no_change
 
@@ -167,7 +166,7 @@ class SensitivityMetric(RobustnessMetric):
 
             numerator = self.norm_numerator(sensitivities)
             denominator = self.norm_denominator(
-                x_batch_embeddings[instance_id].flatten()
+                flatten(x_batch_embeddings[instance_id])
             )
 
             similarities[instance_id] = numerator / denominator

@@ -19,7 +19,7 @@ class TorchTextClassifier(TextClassifier):
         modules = [
             layer
             for layer in model_copy.internal_model.named_modules()
-            if (hasattr(layer[1], "reset_parameters"))
+            if (hasattr(layer[1], "reset_parameters") and len(layer.state_dict()) > 0)
         ]
 
         if order == "top_down":

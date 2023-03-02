@@ -12,6 +12,7 @@ import numpy as np
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.utils import off_label_choice
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base import Metric
@@ -250,14 +251,7 @@ class RandomLogit(Metric):
         """
         # Randomly select off-class labels.
         np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
-
+        y_off = np.asarray([off_label_choice(y, self.num_classes)])
         # Explain against a random class.
         a_perturbed = self.explain_func(
             model=model.get_model(),
