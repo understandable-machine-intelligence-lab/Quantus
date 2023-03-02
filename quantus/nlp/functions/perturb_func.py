@@ -80,12 +80,12 @@ if util.find_spec("tensorflow"):
 
     @uniform_noise.register(tf.Tensor)
     @tf_function
-    def _(x_batch: tf.Tensor, seed: int = 42, **kwargs):
+    def _(x_batch: tf.Tensor, seed: int = 42, noise_type: str = "additive", **kwargs):
         noise = tf.random.uniform(shape=x_batch.shape, seed=seed, **kwargs)
-        return apply_noise(x_batch, noise)
+        return apply_noise(x_batch, noise, noise_type)
 
     @gaussian_noise.register(tf.Tensor)
     @tf_function
-    def _(x_batch: tf.Tensor, seed: int = 42, **kwargs):
+    def _(x_batch: tf.Tensor, seed: int = 42, noise_type: str = "additive", **kwargs):
         noise = tf.random.normal(shape=x_batch.shape, seed=seed, **kwargs)
-        return apply_noise(x_batch, noise)
+        return apply_noise(x_batch, noise, noise_type)

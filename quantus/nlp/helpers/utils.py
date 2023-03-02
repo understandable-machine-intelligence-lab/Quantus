@@ -52,7 +52,10 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
 def pad_ragged_arrays(
     a: np.ndarray, b: np.ndarray, *, pad_value: float = 0
 ) -> Tuple[np.ndarray, np.ndarray]:
+    # TODO tf version
     """Pad a or b, such that both are of the same length."""
+    a = np.asarray(a)
+    b = np.asarray(b)
     max_len = max([a.shape, b.shape])
     return (
         _pad_array_right(a, max_len, pad_value),

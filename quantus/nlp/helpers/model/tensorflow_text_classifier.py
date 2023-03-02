@@ -21,7 +21,7 @@ class TensorFlowTextClassifier(TextClassifier):
                 include_self=False, recursive=True
             )
         )
-        layers = list(filter(lambda i: len(original_weights[i]) > 0, layers))
+        layers = list(filter(lambda i: len(i.get_weights()) > 0, layers))
 
         if order == "top_down":
             layers = layers[::-1]

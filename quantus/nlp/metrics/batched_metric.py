@@ -140,15 +140,15 @@ class BatchedMetric(Base):
     ) -> List[Explanation] | np.ndarray:
         if self.normalise:
             normalise_fn = partial(self.normalise_func, **self.normalise_func_kwargs)
-            if not isinstance(a_batch, np.ndarray):
+            if isinstance(a_batch, List):
                 normalise_fn = partial(map_explanations, fn=normalise_fn)
             a_batch = normalise_fn(a_batch)
 
         if self.abs:
-            if isinstance(a_batch, np.ndarray):
-                abs_func = np.abs
-            else:
+            if isinstance(a_batch, List):
                 abs_func = partial(map_explanations, fn=np.abs)
+            else:
+                abs_func = np.abs
             a_batch = abs_func(a_batch)
 
         return a_batch

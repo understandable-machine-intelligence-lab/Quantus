@@ -135,7 +135,7 @@ class SensitivityMetric(RobustnessMetric):
         x_batch_embeddings_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs) # noqa
         # fmt: on
         warn_perturbation_caused_no_change(
-            x_batch_embeddings, x_batch_embeddings_perturbed
+            np.asarray(x_batch_embeddings), np.asarray(x_batch_embeddings_perturbed)
         )
 
         changed_prediction_indices = self.indexes_of_changed_predictions_latent(

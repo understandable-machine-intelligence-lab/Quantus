@@ -67,6 +67,11 @@ class RelativeInputStability(RelativeStability):
         *args,
         **kwargs,
     ):
+        x_batch = np.asarray(x_batch)
+        x_batch_perturbed = np.asarray(x_batch_perturbed)
+        a_batch = np.asarray(a_batch)
+        a_batch_perturbed = np.asarray(a_batch_perturbed)
+
         return relative_input_stability_objective(
             x_batch,
             x_batch_perturbed,

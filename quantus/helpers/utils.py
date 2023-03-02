@@ -9,7 +9,7 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable
 from functools import singledispatch, partial
 
 import numpy as np
@@ -1015,20 +1015,11 @@ def compute_correlation_per_sample(last_results: Dict) -> List:
     return corr_coeffs
 
 
-@singledispatch
-def off_label_choice(y_batch, num_classes: int) -> Union[int, np.ndarray]:
-    raise ValueError("This is unexpected.")
-
-
-@off_label_choice.register
-def _(y_batch: np.ndarray, num_classes: int) -> Union[int, np.ndarray]:
-    return np.apply_along_axis(partial(off_label_choice, num_classes=num_classes) ,y_batch)
-
-
-@off_label_choice.register
-def _(y_batch: int, num_classes: int) -> Union[int, np.ndarray]:
-    return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
-
+def off_label_choice(y_batch: Union[np.ndarray, int], num_classes: int) -> Union[int, np.ndarray]:
+    if isinstance(y_batch, Iterable):
+        return np.asarray([off_label_choice(i, num_classes) for i in y_batch])
+    else:
+        return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
 
 
 if util.find_spec("tensorflow"):

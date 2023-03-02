@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from torch import Tensor
 from copy import deepcopy
-from multimethod import multimethod
 from transformers import BertForSequenceClassification
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.types import Explanation
@@ -56,7 +55,7 @@ def torch_explain(
 # --------- Multiple dispatch stubs, which allos calling XAI methods on plain-text input and embeddings -----------
 
 
-@multimethod
+
 def torch_explain_gradient_norm(
     model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: _TensorLike, **kwargs
 ) -> _Scores:
@@ -379,7 +378,7 @@ def _(
     batch_interpolated_inputs: bool = False,
     **kwargs,
 ) -> np.ndarray:
-    baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
+    baseline_fn = value_or_default(baseline_fn, lambda: lambda x: torch.zeros_like(x))
 
     interpolated_embeddings = []
 

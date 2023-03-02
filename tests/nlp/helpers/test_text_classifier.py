@@ -19,7 +19,8 @@ def test_get_hidden_representations_tf(tf_sst2_model, x_batch):
 @pytest.mark.nlp
 @pytest.mark.parametrize(
     "x_batch",
-    [lazy_fixture("sst2_dataset"), torch.tensor(np.random.uniform(size=(8, 30, 768)))],
+    [lazy_fixture("sst2_dataset"),
+     torch.tensor(np.random.uniform(size=(8, 30, 768)), dtype=torch.float32)],
 )
 def test_get_hidden_representations_torch(emotion_model, x_batch):
     result = emotion_model.get_hidden_representations(x_batch)
