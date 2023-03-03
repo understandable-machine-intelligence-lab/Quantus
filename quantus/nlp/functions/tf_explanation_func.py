@@ -580,10 +580,13 @@ def _integrated_gradients_batched(
         [-1, shape[2], shape[3]],
     )
 
-    @tf_function
+    # @tf_function
     def pseudo_interpolate(x):
-        x = tf.broadcast_to(x, (num_steps + 1, *x.shape))
-        x = tf.reshape(x, (-1, *x.shape[2:]))
+        og_shape = tf.convert_to_tensor(tf.shape(x))
+        new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
+        x = tf.broadcast_to(x, new_shape)
+        flat_shape = tf.concat([tf.constant([-1]), og_shape[1:]], axis=0)
+        x = tf.reshape(x, flat_shape)
         return x
 
     interpolated_kwargs = tf.nest.map_structure(pseudo_interpolate, kwargs)

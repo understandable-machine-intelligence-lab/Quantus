@@ -355,7 +355,7 @@ if util.find_spec("tensorflow"):
 
     tf_function = partial(
         tf.function,
-        # reduce_retracing=True,
+        reduce_retracing=True,
         jit_compile=USE_XLA,
         experimental_autograph_options=tf.autograph.experimental.Feature.ALL,
     )
