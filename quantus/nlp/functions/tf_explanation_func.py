@@ -18,7 +18,6 @@ from quantus.nlp.helpers.utils import (
     get_embeddings,
     get_input_ids,
     get_interpolated_inputs,
-    map_dict,
     # used in graph
     get_logits_for_labels,
     tf_function,
@@ -417,8 +416,7 @@ def _explain_noise_grad_plus_plus(
 # ----------------------- GradNorm -------------------------
 
 
-@_explain_gradient_norm.register(np.ndarray)
-@tf_function
+@_explain_gradient_norm.register
 def _(x_batch: np.ndarray, *args, **kwargs):
     return _explain_gradient_norm(tf.constant(x_batch), *args, **kwargs)
 
@@ -455,7 +453,6 @@ def _(
 
 
 @_explain_gradient_x_input.register(np.ndarray)
-@tf_function
 def _(x_batch: np.ndarray, *args, **kwargs):
     return _explain_gradient_x_input(tf.constant(x_batch), *args, **kwargs)
 
@@ -545,10 +542,10 @@ def _(
 ) -> List[Explanation]:
     if batch_interpolated_inputs:
         return _integrated_gradients_batched(
-            x_batch,
+            as_tensor(x_batch),
             model,
             as_tensor(y_batch),
-            **kwargs,
+            tf.nest.map_structure(lambda i: as_tensor(i), **kwargs),
         )
     else:
         return _integrated_gradients_iterative(
@@ -723,8 +720,6 @@ def _(
 
     tf.random.set_seed(seed)
     original_weights = model.weights.copy()
-    batch_size = x_batch.shape[0]
-    num_tokens = x_batch.shape[1]
 
     explanations_array = tf.TensorArray(
         x_batch.dtype,
@@ -830,8 +825,6 @@ def _(
 
     tf.random.set_seed(seed)
     original_weights = model.weights
-    batch_size = x_batch.shape[0]
-    num_tokens = x_batch.shape[1]
 
     mean = tf.convert_to_tensor(mean)
     std = tf.convert_to_tensor(std)
@@ -848,7 +841,7 @@ def _(
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            weights_copy[index] = apply_noise(params, mean, std, noise_type)
+            weights_copy[index] = apply_noise(as_tensor(params), mean, std, noise_type)
 
         _n = tf.convert_to_tensor(_n)
 

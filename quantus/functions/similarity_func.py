@@ -8,6 +8,7 @@
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
 from typing import Union
+import platform
 
 import numpy as np
 import scipy
@@ -241,8 +242,16 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
+    if int(platform.python_version_tuple()[1]) >= 10:
+        # python 3.10.x
+        max_val = np.max(np.abs(np.concatenate([a, b])))
+        data_range = 1. if max_val <= 1. else 255.
+        ssim_kwargs = {"data_range": data_range}
+    else:
+        ssim_kwargs = {}
+
     return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None)
+        im1=a, im2=b, win_size=kwargs.get("win_size", None), **ssim_kwargs
     )
 
 

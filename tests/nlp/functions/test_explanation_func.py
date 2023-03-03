@@ -72,8 +72,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
         },
-
-        {"method": "LIME", "call_kwargs": {"num_samples": 5}},
+        {"method": "LIME", "num_samples": 5},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[
