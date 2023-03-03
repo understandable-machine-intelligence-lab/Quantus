@@ -13,14 +13,14 @@ from quantus.nlp.helpers.types import (
     Explanation,
 )
 from quantus.nlp.helpers.utils import (
+    # used in python
     value_or_default,
     get_embeddings,
     get_input_ids,
-    apply_noise,
     get_interpolated_inputs,
+    # used in graph
     get_logits_for_labels,
     tf_function,
-    map_dict,
 )
 import numpy as np
 
@@ -427,6 +427,7 @@ def _(
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
     scores = _explain_gradient_norm(embeddings, model, y_batch, **kwargs)
+
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
@@ -462,7 +463,6 @@ def _(
     input_ids, _ = get_input_ids(x_batch, model)
     embeddings, kwargs = get_embeddings(x_batch, model)
     scores = _explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
-
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
@@ -518,10 +518,10 @@ def _(
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
+
 @tf_function
 def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
-    return tf.zeros_like(x, dtype=x_batch.dtype)
-
+    return tf.zeros_like(x, dtype=x.dtype)
 
 
 @_explain_integrated_gradients.register
@@ -537,10 +537,8 @@ def _(
 ) -> np.ndarray:
     """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
-    baseline_fn = value_or_default(
-        baseline_fn, lambda: _zeros_baseline
-    )
-    interpolated_embeddings = tf.map_fn(
+    baseline_fn = value_or_default(baseline_fn, lambda: _zeros_baseline)
+    interpolated_embeddings = tf.vectorized_map(
         lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
     )
     if batch_interpolated_inputs:
@@ -569,13 +567,13 @@ def _integrated_gradients_batched(
     )
 
     @tf_function
-    def pseduo_interpolate(x):
+    def pseudo_interpolate(x):
         x = tf.broadcast_to(x, (num_steps, *x.shape))
         x = tf.reshape(x, (-1, *x.shape[2:]))
         return x
 
-    interpolated_kwargs = tf.nest.map_structure(pseduo_interpolate, kwargs)
-    interpolated_y_batch = pseduo_interpolate(y_batch)
+    interpolated_kwargs = tf.nest.map_structure(pseudo_interpolate, kwargs)
+    interpolated_y_batch = pseudo_interpolate(y_batch)
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
@@ -594,18 +592,19 @@ def _integrated_gradients_iterative(
     **kwargs,
 ) -> np.ndarray:
     scores = []
+    y_batch = tf.constant(y_batch)
 
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
         interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
 
-        interpolated_kwargs = map_dict(
-            {k: v[i] for k, v in kwargs.items()},
+        interpolated_kwargs = tf.nest.map_structure(
             lambda x: tf.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
+            {k: v[i] for k, v in kwargs.items()},
         )
         with tf.GradientTape() as tape:
             tape.watch(interpolated_embeddings)
             logits = model(interpolated_embeddings, **interpolated_kwargs)
-            logits_for_label = tf.gather(logits, axis=-1, indices=y_batch[i])
+            logits_for_label = logits[:, y_batch[i]]
 
         grads = tape.gradient(logits_for_label, interpolated_embeddings)
         score = tfp.math.trapz(tfp.math.trapz(grads, axis=0), axis=-1)
@@ -668,6 +667,16 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
+@tf_function
+def _add_noise(arr, noise):
+    return arr + noise
+
+
+@tf_function
+def _multiply_noise(arr, noise):
+    return arr * noise
+
+
 @_explain_noise_grad.register
 def _(
     x_batch: tf.Tensor,
@@ -687,26 +696,36 @@ def _(
     explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
 
     tf.random.set_seed(seed)
-    original_weights = model.weights
+    original_weights = model.weights.copy()
     batch_size = x_batch.shape[0]
     num_tokens = x_batch.shape[1]
 
-    explanations = []
+    explanations_array = tf.TensorArray(
+        x_batch.dtype,
+        size=n,
+        clear_after_read=True,
+        colocate_with_first_write_call=True,
+    )
+
+    noise_fn = _add_noise if noise_type == "additive" else _multiply_noise
+
+    @tf_function
+    def apply_noise(params: tf.Tensor):
+        params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
+        noisy_params = noise_fn(params, params_noise)
+        return noisy_params
 
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            params_noise = tf.random.normal(params.shape, mean=mean, stddev=std)
-            noisy_params = apply_noise(params, params_noise, noise_type)
-            weights_copy[index] = noisy_params
+            weights_copy[index] = apply_noise(params)
 
         model.weights = weights_copy
 
         explanation = explain_fn(model, x_batch, y_batch, **kwargs)  # type: ignore
-        explanations.append(explanation)
+        explanations_array = explanations_array.write(_n, explanation)
 
-    scores = tf.reduce_mean(tf.stack(explanations), axis=0)
-
+    scores = tf.reduce_mean(explanations_array.stack(), axis=0)
     model.weights = original_weights
     return scores
 
@@ -794,30 +813,44 @@ def _(
     batch_size = x_batch.shape[0]
     num_tokens = x_batch.shape[1]
 
-    explanations = []
+    explanations_array = tf.TensorArray(
+        x_batch.dtype,
+        size=n * m,
+        clear_after_read=True,
+        colocate_with_first_write_call=True,
+    )
+
+    noise_fn = _add_noise if noise_type == "additive" else _multiply_noise
+
+    @tf_function
+    def index_2d_flat(i_0, i_1):
+        return i_1 + i_1 * m
+
+    @tf_function
+    def apply_noise_params(params: tf.Tensor):
+        params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
+        noisy_params = noise_fn(params, params_noise)
+        return noisy_params
+
+    @tf_function
+    def apply_noise_inputs(x: tf.Tensor):
+        x_noise = tf.random.normal(tf.shape(x), mean=sg_mean, stddev=sg_std)
+        noisy_x = noise_fn(x, x_noise)
+        return noisy_x
 
     for _n in range(n):
-        noisy_explanations = []
-
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            # TODO vectorized map ???
-            params_noise = tf.random.normal(params.shape, mean=mean, stddev=std)
-            noisy_params = apply_noise(params, params_noise, noise_type)
-            weights_copy[index] = noisy_params
+            weights_copy[index] = apply_noise_params(params)
 
         model.weights = weights_copy
         for _m in range(m):
-            # TODO vectorized map ???
-            inputs_noise = tf.random.normal(x_batch.shape, mean=sg_mean, stddev=sg_std)
-            noisy_embeddings = apply_noise(x_batch, inputs_noise, noise_type)
+            noisy_embeddings = apply_noise_inputs(x_batch)
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
-            noisy_explanations.append(explanation)
+            explanations_array = explanations_array.write(
+                index_2d_flat(_n, _m), explanation
+            )
 
-        explanations.append(noisy_explanations)
-
-    scores = tf.reduce_mean(explanations, axis=(0, 1))
-
+    scores = tf.reduce_mean(explanations_array.stack(), axis=0)
     model.weights = original_weights
-
     return scores

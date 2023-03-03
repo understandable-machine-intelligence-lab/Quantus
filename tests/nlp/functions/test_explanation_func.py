@@ -1,11 +1,17 @@
 from typing import List
 import numpy as np
 import pytest
+import tensorflow as tf
 from quantus.nlp import explain
+from quantus.nlp.helpers.utils import tf_function
 
 
-def unknown_token_baseline_function(_) -> np.ndarray:
-    return np.load("tests/assets/nlp/unknown_token_embedding.npy")
+unknown_token = np.load("tests/assets/nlp/unknown_token_embedding.npy")
+
+
+@tf_function
+def unk_token_baseline(x):
+    return tf.convert_to_tensor(x)
 
 
 @pytest.mark.nlp
@@ -18,7 +24,7 @@ def unknown_token_baseline_function(_) -> np.ndarray:
         {"method": "GradXInput"},
         {"method": "IntGrad"},
         {"method": "IntGrad", "batch_interpolated_inputs": True},
-        {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
+        {"method": "IntGrad", "baseline_fn": unk_token_baseline},
         {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "LIME", "call_kwargs": {"num_samples": 5}},
@@ -55,7 +61,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "GradXInput"},
         {"method": "IntGrad"},
         {"method": "IntGrad", "batch_interpolated_inputs": True},
-        {"method": "IntGrad", "baseline_fn": unknown_token_baseline_function},
+        {"method": "IntGrad", "baseline_fn": lambda x: unknown_token},
         {
             "method": "NoiseGrad",
             "explain_fn": "GradXInput",

@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Generator, List
 import tensorflow as tf
-from keras.engine.base_layer_utils import TrackableWeightHandler
 import numpy as np
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
@@ -32,6 +31,9 @@ class TensorFlowTextClassifier(TextClassifier):
             weights = layer.get_weights()
             np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
+            # We need to re-trace it.
+            layer.built = False
+            self.internal_model.built = False
             yield layer.name, model_copy
 
     @property
@@ -42,6 +44,8 @@ class TensorFlowTextClassifier(TextClassifier):
     @weights.setter
     def weights(self, weights: List[np.ndarray]):
         self.internal_model.set_weights(weights)
+        # We need to re-trace it.
+        self.internal_model.built = False
 
     @property
     @abstractmethod

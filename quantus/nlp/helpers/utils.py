@@ -385,7 +385,9 @@ if util.find_spec("tensorflow"):
         delta = target - baseline
         scales = tf.linspace(0, 1, num_steps + 1)[:, tf.newaxis, tf.newaxis]
         scales = tf.cast(scales, dtype=delta.dtype)
-        shape = tf.convert_to_tensor([num_steps + 1, tf.shape(delta)[0], tf.shape(delta)[1]])
+        shape = tf.convert_to_tensor(
+            [num_steps + 1, tf.shape(delta)[0], tf.shape(delta)[1]]
+        )
         deltas = scales * tf.broadcast_to(delta, shape)
         interpolated_inputs = baseline + deltas
         return interpolated_inputs

@@ -43,6 +43,7 @@ jobs:
 
     - name: Test with pytest
       run: |
+        export USE_XLA=true
         pytest --durations=10 -s
 
     - name: Test importing Quantus

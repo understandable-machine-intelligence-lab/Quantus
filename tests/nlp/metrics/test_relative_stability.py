@@ -15,10 +15,10 @@ from quantus.nlp import (
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
-         (
+        (
             {"normalise": True, "perturb_func": typo_replacement},
             {"explain_func_kwargs": {"method": "GradNorm"}},
-         ),
+        ),
         (
             {
                 "perturb_func": uniform_noise,
