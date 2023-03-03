@@ -22,8 +22,11 @@ def unk_token_baseline(x):
     [
         {"method": "GradNorm"},
         {"method": "GradXInput"},
+        pytest.param(
+            {"method": "IntGrad", "batch_interpolated_inputs": False},
+            # marks=pytest.mark.xfail,
+        ),
         {"method": "IntGrad"},
-        {"method": "IntGrad", "batch_interpolated_inputs": True},
         {"method": "IntGrad", "baseline_fn": unk_token_baseline},
         {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},

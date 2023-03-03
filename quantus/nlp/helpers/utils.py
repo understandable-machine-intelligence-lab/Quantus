@@ -44,7 +44,8 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
     if value is not None:
         return value
-    return default_factory()
+    else:
+        return default_factory()
 
 
 @singledispatch
@@ -354,8 +355,9 @@ if util.find_spec("tensorflow"):
 
     tf_function = partial(
         tf.function,
-        reduce_retracing=True,
+        # reduce_retracing=True,
         jit_compile=USE_XLA,
+        experimental_autograph_options=tf.autograph.experimental.Feature.ALL,
     )
 
     # Register tensorflow specific implementations.

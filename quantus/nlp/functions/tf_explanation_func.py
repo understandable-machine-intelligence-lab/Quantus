@@ -4,7 +4,7 @@ from __future__ import annotations
 import tensorflow as tf
 import tensorflow_probability as tfp
 from typing import List, Callable, Optional, Dict, Union
-from functools import singledispatch
+from functools import singledispatch, partial
 
 from quantus.nlp.helpers.model.tensorflow_text_classifier import (
     TensorFlowTextClassifier,
@@ -18,6 +18,7 @@ from quantus.nlp.helpers.utils import (
     get_embeddings,
     get_input_ids,
     get_interpolated_inputs,
+    map_dict,
     # used in graph
     get_logits_for_labels,
     tf_function,
@@ -147,7 +148,7 @@ def explain_integrated_gradients(
     y_batch: np.ndarray,
     num_steps: int = 10,
     baseline_fn: Optional[_BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
+    batch_interpolated_inputs: bool = True,
     **kwargs,
 ) -> _Scores:
     """
@@ -204,8 +205,9 @@ def explain_integrated_gradients(
         model,
         y_batch,
         num_steps=num_steps,
-        baseline_fn=baseline_fn,
+        baseline_fn=value_or_default(baseline_fn, lambda: _zeros_baseline),
         batch_interpolated_inputs=batch_interpolated_inputs,
+        **kwargs,
     )
 
 
@@ -415,7 +417,8 @@ def _explain_noise_grad_plus_plus(
 # ----------------------- GradNorm -------------------------
 
 
-@_explain_gradient_norm.register
+@_explain_gradient_norm.register(np.ndarray)
+@tf_function
 def _(x_batch: np.ndarray, *args, **kwargs):
     return _explain_gradient_norm(tf.constant(x_batch), *args, **kwargs)
 
@@ -451,7 +454,8 @@ def _(
 # ----------------------- GradXInput -------------------------
 
 
-@_explain_gradient_x_input.register
+@_explain_gradient_x_input.register(np.ndarray)
+@tf_function
 def _(x_batch: np.ndarray, *args, **kwargs):
     return _explain_gradient_x_input(tf.constant(x_batch), *args, **kwargs)
 
@@ -486,11 +490,19 @@ def _(
 
 
 # ----------------------- IntGrad -------------------------
+@tf_function
+def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
+    return tf.zeros_like(x, dtype=x.dtype)
 
 
-@_explain_integrated_gradients.register
-def _(x_batch: np.ndarray, *args, **kwargs):
-    return _explain_integrated_gradients(tf.constant(x_batch), *args, **kwargs)
+@singledispatch
+def as_tensor(t):
+    return t
+
+
+@as_tensor.register
+def _(t: np.ndarray):
+    return tf.convert_to_tensor(t)
 
 
 @_explain_integrated_gradients.register
@@ -499,29 +511,27 @@ def _(
     model: TensorFlowTextClassifier,
     y_batch: np.ndarray,
     *,
-    num_steps: int = 10,
-    baseline_fn: Optional[_BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
+    batch_interpolated_inputs: bool = True,
     **kwargs,
 ) -> List[Explanation]:
     input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
-    scores = _explain_integrated_gradients(
-        embeddings,
-        model,
-        y_batch,
-        num_steps=num_steps,
-        baseline_fn=baseline_fn,
-        batch_interpolated_inputs=batch_interpolated_inputs,
-        **kwargs,
-    )
+    embeddings, pr_kwargs = get_embeddings(x_batch, model)
+
+    if batch_interpolated_inputs:
+        scores = _integrated_gradients_batched(
+            embeddings, model, as_tensor(y_batch), **kwargs, **pr_kwargs
+        )
+    else:
+        scores = _integrated_gradients_iterative(
+            embeddings, model, y_batch, **kwargs, **pr_kwargs
+        )
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@tf_function
-def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
-    return tf.zeros_like(x, dtype=x.dtype)
+@_explain_integrated_gradients.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return explain_integrated_gradients(as_tensor(x_batch), *args, **kwargs)
 
 
 @_explain_integrated_gradients.register
@@ -530,45 +540,49 @@ def _(
     model: TensorFlowTextClassifier,
     y_batch: np.ndarray,
     *,
-    num_steps: int = 10,
-    baseline_fn: Optional[_BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
+    batch_interpolated_inputs: bool = True,
     **kwargs,
-) -> np.ndarray:
-    """A version of Integrated Gradients explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
-
-    baseline_fn = value_or_default(baseline_fn, lambda: _zeros_baseline)
-    interpolated_embeddings = tf.vectorized_map(
-        lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
-    )
+) -> List[Explanation]:
     if batch_interpolated_inputs:
         return _integrated_gradients_batched(
-            model, interpolated_embeddings, y_batch, **kwargs
+            x_batch,
+            model,
+            as_tensor(y_batch),
+            **kwargs,
         )
     else:
         return _integrated_gradients_iterative(
-            model, interpolated_embeddings, y_batch, **kwargs
+            x_batch,
+            model,
+            y_batch,
+            **kwargs,
         )
 
 
 @tf_function
 def _integrated_gradients_batched(
+    x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
-    interpolated_embeddings: List[tf.Tensor],
-    y_batch: np.ndarray,
+    y_batch: tf.Tensor,
+    num_steps=10,
+    baseline_fn=_zeros_baseline,
     **kwargs,
 ) -> np.ndarray:
-    interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
-    num_steps = interpolated_embeddings.shape[1]  # type: ignore
+    interpolated_embeddings = tf.vectorized_map(
+        lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
+    )
+
+    shape = tf.shape(interpolated_embeddings)
+    batch_size = shape[0]
 
     interpolated_embeddings = tf.reshape(
         tf.cast(interpolated_embeddings, dtype=tf.float32),
-        [-1, *interpolated_embeddings.shape[2:]],  # type: ignore
+        [-1, shape[2], shape[3]],
     )
 
     @tf_function
     def pseudo_interpolate(x):
-        x = tf.broadcast_to(x, (num_steps, *x.shape))
+        x = tf.broadcast_to(x, (num_steps + 1, *x.shape))
         x = tf.reshape(x, (-1, *x.shape[2:]))
         return x
 
@@ -581,19 +595,26 @@ def _integrated_gradients_batched(
         logits_for_label = get_logits_for_labels(logits, interpolated_y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
-    grads = tf.reshape(grads, [len(y_batch), num_steps, *grads.shape[1:]])
+    grads_shape = tf.shape(grads)
+    grads = tf.reshape(
+        grads, [batch_size, num_steps + 1, grads_shape[1], grads_shape[2]]
+    )
     return tfp.math.trapz(tfp.math.trapz(grads, axis=1), axis=-1)
 
 
 def _integrated_gradients_iterative(
+    x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
-    interpolated_embeddings_batch: List[tf.Tensor],
     y_batch: np.ndarray,
+    num_steps=10,
+    baseline_fn=_zeros_baseline,
     **kwargs,
 ) -> np.ndarray:
-    scores = []
-    y_batch = tf.constant(y_batch)
+    interpolated_embeddings_batch = tf.vectorized_map(
+        lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
+    )
 
+    scores = []
     for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
         interpolated_embeddings = tf.convert_to_tensor(interpolated_embeddings)
 

@@ -17,13 +17,13 @@ from quantus.nlp import (
     [
         (
             {"normalise": True, "perturb_func": typo_replacement},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {"explain_func_kwargs": {"method": "IntGrad"}},
         ),
         (
             {
                 "perturb_func": uniform_noise,
             },
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {"explain_func_kwargs": {"method": "IntGrad"}},
         ),
     ],
     ids=["plain text", "latent space"],
@@ -107,7 +107,12 @@ def test_rrs_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     [
         (
             {"normalise": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {
+                "explain_func_kwargs": {
+                    "method": "SHAP",
+                    "call_kwargs": {"max_evals": 5},
+                }
+            },
         ),
         (
             {
@@ -167,7 +172,12 @@ def test_ros_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
     [
         (
             {"normalise": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {
+                "explain_func_kwargs": {
+                    "method": "LIME",
+                    "call_kwargs": {"num_samples": 5},
+                }
+            },
         ),
         (
             {

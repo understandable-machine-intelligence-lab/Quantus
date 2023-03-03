@@ -37,7 +37,7 @@ def test_random_logit_torch_model(
     [
         (
             {"normalise": True, "num_classes": 2},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {"explain_func_kwargs": {"method": "IntGrad"}},
         ),
     ],
 )
@@ -64,7 +64,7 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
         ),
         (
             {"normalise": True, "return_sample_correlation": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {"explain_func_kwargs": {"method": "GradXInput"}},
         ),
     ],
     ids=["raw scores", "sample correlation"],
