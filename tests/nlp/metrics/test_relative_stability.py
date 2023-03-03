@@ -118,7 +118,7 @@ def test_rrs_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
             {
                 "perturb_func": uniform_noise,
             },
-            {"explain_func_kwargs": {"method": "GradNorm"}},
+            {"explain_func_kwargs": {"method": "GradXInput"}},
         ),
     ],
     ids=["plain text", "latent space"],
@@ -174,8 +174,7 @@ def test_ros_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
             {"normalise": True},
             {
                 "explain_func_kwargs": {
-                    "method": "LIME",
-                    "call_kwargs": {"num_samples": 5},
+                    "method": "IntGrad",
                 }
             },
         ),

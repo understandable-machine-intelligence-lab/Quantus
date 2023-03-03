@@ -50,9 +50,11 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
 
 @singledispatch
 def pad_ragged_arrays(
-    a: np.ndarray, b: np.ndarray, *, pad_value: float = 0
+    a: np.ndarray | List[np.ndarray],
+    b: np.ndarray | List[np.ndarray],
+    *,
+    pad_value: float = 0,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    # TODO tf version
     """Pad a or b, such that both are of the same length."""
     a = np.asarray(a)
     b = np.asarray(b)
@@ -61,6 +63,24 @@ def pad_ragged_arrays(
         _pad_array_right(a, max_len, pad_value),
         _pad_array_right(b, max_len, pad_value),
     )
+
+
+@pad_ragged_arrays.register
+def _(a: list, b: list, *, pad_value: float = 0) -> Tuple[np.ndarray, np.ndarray]:
+    inner_shape = np.max(np.concatenate([[i.shape for i in a], [i.shape for i in b]]))
+    a_padded = []
+    b_padded = []
+    for i, j in zip(a, b):
+        pad_len_i = inner_shape - i.shape[0]
+        pad_len_j = inner_shape - j.shape[0]
+
+        i_p = np.pad(i, (0, pad_len_i), constant_values=pad_value)
+        j_p = np.pad(j, (0, pad_len_j), constant_values=pad_value)
+
+        a_padded.append(i_p)
+        b_padded.append(j_p)
+
+    return np.asarray(a_padded), np.asarray(b_padded)
 
 
 def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
@@ -197,7 +217,6 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
     return func(val)
 
 
-@singledispatch
 def explanation_similarity(
     a: Explanation,
     b: Explanation,
@@ -214,7 +233,6 @@ def explanation_similarity(
     return similarity_fn(a_padded, b_padded)
 
 
-@singledispatch
 def explanations_batch_similarity(
     a_batch: List[Explanation],
     b_batch: List[Explanation],
@@ -307,7 +325,6 @@ def get_interpolated_inputs(
     return interpolated_inputs
 
 
-@singledispatch
 def flatten(arr: np.ndarray) -> np.ndarray:
     return np.reshape(arr, -1)
 
@@ -406,5 +423,5 @@ if util.find_spec("torch"):
         return logits[torch.range(0, logits.shape[0] - 1, dtype=torch.int64), y_batch]
 
     @safe_as_array.register
-    def arr(a: Tensor, **kwargs):
+    def arr(a: Tensor, *args, **kwargs):
         return a.detach().cpu().numpy()

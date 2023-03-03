@@ -8,16 +8,25 @@ from quantus.nlp import AvgSensitivity, MaxSensitivity, uniform_noise, gaussian_
 @pytest.mark.tf_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "init_kwargs",
+    "init_kwargs, call_kwargs",
     [
-        {"abs": True},
-        {"perturb_func": gaussian_noise},
+        pytest.param(
+            {"abs": True},
+            {
+                "explain_func_kwargs": {
+                    "method": "LIME",
+                    "call_kwargs": {"num_samples": 5},
+                }
+            },
+            marks=pytest.mark.xfail,
+        ),
+        ({"perturb_func": gaussian_noise}, {}),
     ],
     ids=["plain text", "latent space"],
 )
-def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs):
+def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     metric = AvgSensitivity(nr_samples=5, **init_kwargs)
-    result = metric(tf_sst2_model, sst2_dataset)
+    result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
     assert isinstance(result, np.ndarray)
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()
