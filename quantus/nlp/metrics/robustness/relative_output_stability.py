@@ -40,7 +40,6 @@ class RelativeOutputStability(RelativeStability):
         display_progressbar: bool = False,
         perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
-        eps_min: float = 1e-5,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
         default_plot_func: Optional[Callable] = None,
@@ -57,7 +56,6 @@ class RelativeOutputStability(RelativeStability):
             display_progressbar=display_progressbar,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
-            eps_min=eps_min,
             nr_samples=nr_samples,
             default_plot_func=default_plot_func,
         )
@@ -76,7 +74,7 @@ class RelativeOutputStability(RelativeStability):
         h_xs = model(x_batch_perturbed, **kwargs)
         h_xs = safe_as_array(h_xs)
         return relative_output_stability_objective(
-            h_x, h_xs, a_batch, a_batch_perturbed, eps_min=self._eps_min
+            h_x, h_xs, a_batch, a_batch_perturbed
         )
 
     def compute_objective_plain_text(
@@ -90,10 +88,8 @@ class RelativeOutputStability(RelativeStability):
         h_x = model.predict(x_batch)
         h_xs = model.predict(x_batch_perturbed)
 
-        e_x = np.asarray([i[1] for i in a_batch])
-        e_xs = np.asarray([i[1] for i in a_batch_perturbed])
+        e_x = [i[1] for i in a_batch]
+        e_xs = [i[1] for i in a_batch_perturbed]
 
         e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
-        return relative_output_stability_objective(
-            h_x, h_xs, e_x, e_xs, eps_min=self._eps_min
-        )
+        return relative_output_stability_objective(h_x, h_xs, e_x, e_xs)

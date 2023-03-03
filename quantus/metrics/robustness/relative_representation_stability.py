@@ -86,8 +86,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
-        eps_min: float
-            Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
         layer_names: List[str], optional
             Names of layers, representations of which should be used for RRS computation, default = all.
         layer_indices: List[int], optional
@@ -120,7 +118,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             **kwargs,
         )
         self._nr_samples = nr_samples
-        self._eps_min = eps_min
         if layer_names is not None and layer_indices is not None:
             raise ValueError(
                 "Must provide either layer_names OR layer_indices, not both."
@@ -303,7 +300,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
                 internal_representations_perturbed,
                 a_batch,
                 a_batch_perturbed,
-                eps_min=self._eps_min
             )
             rrs_batch[index] = rrs
             # We're done with this sample if `return_nan_when_prediction_changes`==False.

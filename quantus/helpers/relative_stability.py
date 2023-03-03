@@ -8,7 +8,6 @@ def relative_input_stability_objective(
     xs: np.ndarray,
     e_x: np.ndarray,
     e_xs: np.ndarray,
-    eps_min: float = 1e-6,
 ) -> np.ndarray:
     """
     Computes relative input stability's maximization objective
@@ -23,8 +22,6 @@ def relative_input_stability_objective(
         Explanations for x.
     e_xs: np.ndarray
         Explanations for xs.
-    eps_min: float.
-        Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
 
     Returns
     -------
@@ -32,8 +29,11 @@ def relative_input_stability_objective(
         RIS maximization objective.
     """
 
+    # prevent division by 0
+    eps_min = np.finfo(np.float32).eps
+
     # fmt: off
-    nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
+    nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)
     nominator = l2_norm(nominator)
     # fmt: on
 
@@ -51,7 +51,6 @@ def relative_output_stability_objective(
     h_xs: np.ndarray,
     e_x: np.ndarray,
     e_xs: np.ndarray,
-    eps_min: float = 1e-6,
 ) -> np.ndarray:
     """
     Computes relative output stability's maximization objective
@@ -67,14 +66,15 @@ def relative_output_stability_objective(
         Explanations for x.
     e_xs: np.ndarray
         Explanations for xs.
-    eps_min: float.
-        Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
 
     Returns
     -------
     ros_obj: np.ndarray
         ROS maximization objective.
     """
+
+    # prevent division by 0
+    eps_min = np.finfo(np.float32).eps
 
     # fmt: off
     nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
@@ -92,7 +92,6 @@ def relative_representation_stability_objective(
     l_xs: np.ndarray,
     e_x: np.ndarray,
     e_xs: np.ndarray,
-    eps_min: float = 1e-6,
 ) -> np.ndarray:
     """
     Computes relative representation stabilities maximization objective
@@ -108,14 +107,15 @@ def relative_representation_stability_objective(
         Explanations for x.
     e_xs: np.ndarray
         Explanations for xs.
-    eps_min: float.
-        Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
 
     Returns
     -------
     rrs_obj: np.ndarray
         RRS maximization objective.
     """
+
+    # prevent division by 0
+    eps_min = np.finfo(np.float32).eps
 
     # fmt: off
     nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0

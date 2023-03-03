@@ -44,7 +44,6 @@ class RelativeRepresentationStability(RelativeStability):
         display_progressbar: bool = False,
         perturb_func: PerturbFn = spelling_replacement,
         perturb_func_kwargs: Optional[Dict] = None,
-        eps_min: float = 1e-5,
         nr_samples: int = 50,
         return_nan_when_prediction_changes: bool = False,
         default_plot_func: Optional[Callable] = None,
@@ -61,7 +60,6 @@ class RelativeRepresentationStability(RelativeStability):
             display_progressbar=display_progressbar,
             perturb_func=perturb_func,
             perturb_func_kwargs=perturb_func_kwargs,
-            eps_min=eps_min,
             nr_samples=nr_samples,
             default_plot_func=default_plot_func,
         )
@@ -78,14 +76,12 @@ class RelativeRepresentationStability(RelativeStability):
         l_xs = model.get_hidden_representations(x_batch_perturbed)
         l_x, l_xs = pad_ragged_arrays(l_x, l_xs)
 
-        e_x = np.asarray([i[1] for i in a_batch])
-        e_xs = np.asarray([i[1] for i in a_batch_perturbed])
+        e_x = [i[1] for i in a_batch]
+        e_xs = [i[1] for i in a_batch_perturbed]
 
         e_x, e_xs = pad_ragged_arrays(e_x, e_xs)
 
-        return relative_representation_stability_objective(
-            l_x, l_xs, e_x, e_xs, eps_min=self._eps_min
-        )
+        return relative_representation_stability_objective(l_x, l_xs, e_x, e_xs)
 
     def compute_objective_latent_space(
         self,
@@ -99,5 +95,5 @@ class RelativeRepresentationStability(RelativeStability):
         l_x = model.get_hidden_representations(x_batch, **kwargs)
         l_xs = model.get_hidden_representations(x_batch_perturbed, **kwargs)
         return relative_representation_stability_objective(
-            l_x, l_xs, a_batch, a_batch_perturbed, eps_min=self._eps_min
+            l_x, l_xs, a_batch, a_batch_perturbed
         )

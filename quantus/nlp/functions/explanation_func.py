@@ -52,6 +52,9 @@ def explain_lime(
 
     from lime.lime_text import LimeTextExplainer
 
+    # TODO this library is weird, mb use my own version instead?
+    # The library is not actively maintained
+
     init_kwargs = add_default_items(init_kwargs, {"mask_string": "[MASK]"})
     call_kwargs = add_default_items(call_kwargs, {"top_labels": 1})
     predict_fn = partial(model.predict, batch_size=batch_size)

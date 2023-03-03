@@ -44,7 +44,7 @@ jobs:
     - name: Test with pytest
       run: |
         export USE_XLA=true
-        pytest --durations=10 -s
+        pytest --durations=10 -s -n auto
 
     - name: Test importing Quantus
       run: |

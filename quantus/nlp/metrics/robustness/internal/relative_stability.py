@@ -23,9 +23,8 @@ class RelativeStability(RobustnessMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    def __init__(self, *, eps_min: float, nr_samples: int, **kwargs):
+    def __init__(self, *, nr_samples: int, **kwargs):
         super().__init__(**kwargs)
-        self._eps_min = eps_min
         self.nr_samples = nr_samples
 
     @no_type_check

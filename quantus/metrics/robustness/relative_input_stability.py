@@ -49,7 +49,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
         aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
         return_nan_when_prediction_changes: bool = True,
         **kwargs,
@@ -81,8 +80,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
-        eps_min: float
-            Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
         return_nan_when_prediction_changes: boolean
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
@@ -111,7 +108,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             **kwargs,
         )
         self._nr_samples = nr_samples
-        self._eps_min = eps_min
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         if not self.disable_warnings:
@@ -275,7 +271,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             )
             # Compute maximization's objective.
             ris = relative_input_stability_objective(
-                x_batch, x_perturbed, a_batch, a_batch_perturbed, eps_min=self._eps_min
+                x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
             ris_batch[index] = ris
             # We're done with this sample if `return_nan_when_prediction_changes`==False.

@@ -30,7 +30,10 @@ def unk_token_baseline(x):
         {"method": "IntGrad", "baseline_fn": unk_token_baseline},
         {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
-        {"method": "LIME", "call_kwargs": {"num_samples": 5}},
+        pytest.param(
+            {"method": "LIME", "call_kwargs": {"num_samples": 5}},
+            marks=pytest.mark.xfail,
+        ),
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[

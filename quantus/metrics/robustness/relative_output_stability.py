@@ -52,7 +52,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
         return_nan_when_prediction_changes: bool = True,
         **kwargs,
@@ -84,8 +83,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
-        eps_min: float
-            Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
         return_nan_when_prediction_changes: boolean
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
@@ -114,7 +111,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             **kwargs,
         )
         self._nr_samples = nr_samples
-        self._eps_min = eps_min
         self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         if not self.disable_warnings:
@@ -286,7 +282,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             logits_perturbed = model.predict(x_perturbed)
             # Compute maximization's objective.
             ros = relative_output_stability_objective(
-                logits, logits_perturbed, a_batch, a_batch_perturbed, eps_min=self._eps_min
+                logits, logits_perturbed, a_batch, a_batch_perturbed
             )
             ros_batch[index] = ros
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
