@@ -7,7 +7,7 @@ import numpy as np
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
 
-class TensorFlowTextClassifier(TextClassifier):
+class TensorFlowTextClassifier(TextClassifier, tf.Module):
     def get_random_layer_generator(
         self,
         order: str = "top_down",

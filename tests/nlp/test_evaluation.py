@@ -15,12 +15,14 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
     }
 
     call_kwargs = {
+        "explain_func_kwargs": {"method": "GradXInput"},
+        "batch_size": 8,
         "Max-Sensitivity": {
             "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
         },
         "RIS": [
-            {"explain_func_kwargs": {"method": "GradXInput"}},
-            {"explain_func_kwargs": {"method": "IntGrad"}},
+            {"explain_func_kwargs": {"method": "IntGrad", "num_steps": 5}},
+            {"explain_func_kwargs": {"method": "IntGrad", "num_steps": 7}},
         ],
     }
     # Just check that it doesn't fail with expected inputs.

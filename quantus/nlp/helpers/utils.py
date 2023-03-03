@@ -359,9 +359,6 @@ def safe_as_array(a, *, force: bool = False) -> np.ndarray:
     So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
     force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
     """
-    if force:
-        # np.asarray will create immutable array.
-        return np.array(a)
     return a
 
 
@@ -410,6 +407,13 @@ if util.find_spec("tensorflow"):
         deltas = scales * tf.broadcast_to(delta, shape)
         interpolated_inputs = baseline + deltas
         return interpolated_inputs
+
+    @safe_as_array.register
+    def _(a: tf.Tensor, *, force=False):
+        if force:
+            return np.array(tf.identity(a))
+        else:
+            return a
 
 
 if util.find_spec("torch"):

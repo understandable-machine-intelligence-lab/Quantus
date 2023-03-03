@@ -14,6 +14,7 @@ if util.find_spec("tensorflow"):
 if util.find_spec("torch"):
     from quantus.nlp.functions.torch_explanation_func import torch_explain
 
+from quantus.nlp.functions.lime import explain_lime
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.utils import (
@@ -30,43 +31,6 @@ TF_ModelClass = (
 )
 Torch_HuggingfaceModelClass = "quantus.nlp.helpers.model.torch_huggingface_text_classifier.TorchHuggingFaceTextClassifier"
 Torch_ModelClass = "quantus.nlp.helpers.model.torch_text_classifier.TorchTextClassifier"
-
-
-def explain_lime(
-    model: TextClassifier,
-    x_batch: List[str],
-    y_batch: np.ndarray,
-    *,
-    batch_size: int = 64,
-    init_kwargs: Optional[Dict] = None,
-    call_kwargs: Optional[Dict] = None,
-) -> List[Explanation]:
-    """
-    Generate explanations using LIME method. This method depends on lime pip package.
-
-    References
-    ----------
-        - Marco Túlio Ribeiro et al., 2016, "Why Should I Trust You?": Explaining the Predictions of Any Classifier, https://arxiv.org/pdf/1602.04938.pdf
-        - https://github.com/marcotcr/lime
-    """
-
-    from lime.lime_text import LimeTextExplainer
-
-    # TODO this library is weird, mb use my own version instead?
-    # The library is not actively maintained
-
-    init_kwargs = add_default_items(init_kwargs, {"mask_string": "[MASK]"})
-    call_kwargs = add_default_items(call_kwargs, {"top_labels": 1})
-    predict_fn = partial(model.predict, batch_size=batch_size)
-
-    explainer = LimeTextExplainer(**init_kwargs)
-
-    explanations = []
-    for x, y in zip(x_batch, y_batch):
-        ex = explainer.explain_instance(x, predict_fn, **call_kwargs).as_list(label=y)
-        explanations.append(([i[0] for i in ex], np.asarray([i[1] for i in ex])))
-
-    return explanations
 
 
 def explain_shap(

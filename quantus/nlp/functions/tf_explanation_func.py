@@ -560,6 +560,16 @@ def _(
 
 
 @tf_function
+def pseudo_interpolate(x, num_steps):
+    og_shape = tf.convert_to_tensor(tf.shape(x))
+    new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
+    x = tf.broadcast_to(x, new_shape)
+    flat_shape = tf.concat([tf.constant([-1]), og_shape[1:]], axis=0)
+    x = tf.reshape(x, flat_shape)
+    return x
+
+
+@tf_function
 def _integrated_gradients_batched(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
@@ -580,17 +590,10 @@ def _integrated_gradients_batched(
         [-1, shape[2], shape[3]],
     )
 
-    # @tf_function
-    def pseudo_interpolate(x):
-        og_shape = tf.convert_to_tensor(tf.shape(x))
-        new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
-        x = tf.broadcast_to(x, new_shape)
-        flat_shape = tf.concat([tf.constant([-1]), og_shape[1:]], axis=0)
-        x = tf.reshape(x, flat_shape)
-        return x
-
-    interpolated_kwargs = tf.nest.map_structure(pseudo_interpolate, kwargs)
-    interpolated_y_batch = pseudo_interpolate(y_batch)
+    interpolated_kwargs = tf.nest.map_structure(
+        lambda x: pseudo_interpolate(x, num_steps), kwargs
+    )
+    interpolated_y_batch = pseudo_interpolate(y_batch, num_steps)
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
@@ -692,13 +695,12 @@ def _(
 
 
 @tf_function
-def _add_noise(arr, noise):
-    return arr + noise
-
-
-@tf_function
-def _multiply_noise(arr, noise):
-    return arr * noise
+def apply_noise(params: tf.Tensor, mean, std, noise_type: str):
+    params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
+    if noise_type == "additive":
+        return params + params_noise
+    else:
+        return params * params_noise
 
 
 @_explain_noise_grad.register
@@ -731,18 +733,12 @@ def _(
         colocate_with_first_write_call=True,
     )
 
-    noise_fn = _add_noise if noise_type == "additive" else _multiply_noise
-
-    @tf_function
-    def apply_noise(params: tf.Tensor):
-        params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
-        noisy_params = noise_fn(params, params_noise)
-        return noisy_params
-
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            weights_copy[index] = apply_noise(params)
+            weights_copy[index] = apply_noise(
+                tf.convert_to_tensor(params), std, mean, noise_type
+            )
 
         model.weights = weights_copy
 
@@ -837,6 +833,11 @@ def _(
     batch_size = x_batch.shape[0]
     num_tokens = x_batch.shape[1]
 
+    mean = tf.convert_to_tensor(mean)
+    std = tf.convert_to_tensor(std)
+    sg_mean = tf.convert_to_tensor(sg_mean)
+    sg_std = tf.convert_to_tensor(sg_std)
+
     explanations_array = tf.TensorArray(
         x_batch.dtype,
         size=n * m,
@@ -844,36 +845,20 @@ def _(
         colocate_with_first_write_call=True,
     )
 
-    noise_fn = _add_noise if noise_type == "additive" else _multiply_noise
-
-    @tf_function
-    def index_2d_flat(i_0, i_1):
-        return i_1 + i_1 * m
-
-    @tf_function
-    def apply_noise_params(params: tf.Tensor):
-        params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
-        noisy_params = noise_fn(params, params_noise)
-        return noisy_params
-
-    @tf_function
-    def apply_noise_inputs(x: tf.Tensor):
-        x_noise = tf.random.normal(tf.shape(x), mean=sg_mean, stddev=sg_std)
-        noisy_x = noise_fn(x, x_noise)
-        return noisy_x
-
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            weights_copy[index] = apply_noise_params(params)
+            weights_copy[index] = apply_noise(params, mean, std, noise_type)
+
+        _n = tf.convert_to_tensor(_n)
 
         model.weights = weights_copy
         for _m in range(m):
-            noisy_embeddings = apply_noise_inputs(x_batch)
+            noisy_embeddings = apply_noise(x_batch, sg_mean, sg_std, noise_type)
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
-            explanations_array = explanations_array.write(
-                index_2d_flat(_n, _m), explanation
-            )
+
+            _m = tf.convert_to_tensor(_m)
+            explanations_array = explanations_array.write(_n + _m * m, explanation)
 
     scores = tf.reduce_mean(explanations_array.stack(), axis=0)
     model.weights = original_weights

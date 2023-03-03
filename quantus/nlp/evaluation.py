@@ -72,11 +72,11 @@ def evaluate(
 
     result = {}
     if call_kwargs is not None:
-        for val in call_kwargs.values():
-            if not isinstance(val, (List, Dict)):
-                raise ValueError(
-                    f"Values in call_kwargs must be of type List or Dict, but found {type(val)}"
-                )
+        # for val in call_kwargs.values():
+        #    if not isinstance(val, (List, Dict)):
+        #        raise ValueError(
+        #            f"Values in call_kwargs must be of type List or Dict, but found {type(val)}"
+        #        )
         # Convert regular dict to default dict, so we don't get KeyError.
         call_kwargs_old = call_kwargs.copy()
         call_kwargs = defaultdict(lambda: {})

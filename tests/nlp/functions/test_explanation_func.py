@@ -22,18 +22,12 @@ def unk_token_baseline(x):
     [
         {"method": "GradNorm"},
         {"method": "GradXInput"},
-        pytest.param(
-            {"method": "IntGrad", "batch_interpolated_inputs": False},
-            # marks=pytest.mark.xfail,
-        ),
+        {"method": "IntGrad", "batch_interpolated_inputs": False},
         {"method": "IntGrad"},
         {"method": "IntGrad", "baseline_fn": unk_token_baseline},
         {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
-        pytest.param(
-            {"method": "LIME", "call_kwargs": {"num_samples": 5}},
-            marks=pytest.mark.xfail,
-        ),
+        {"method": "LIME", "num_samples": 5},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[
@@ -78,10 +72,8 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
         },
-        pytest.param(
-            {"method": "LIME", "call_kwargs": {"num_samples": 5}},
-            marks=pytest.mark.xfail,
-        ),
+
+        {"method": "LIME", "call_kwargs": {"num_samples": 5}},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[

@@ -246,7 +246,6 @@ def visualise_explanations_as_pyplot(
         ax.spines[axis].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
-    plt.tight_layout()
     plt.show()
 
 
