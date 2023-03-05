@@ -33,9 +33,6 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
             weights = layer.get_weights()
             np.random.seed(seed=seed + 1)
             layer.set_weights([np.random.permutation(w) for w in weights])
-            # We need to re-trace it.
-            layer.built = False
-            self.unwrap().built = False
             yield layer.name, model_copy
 
     def random_layer_generator_length(self) -> int:
@@ -56,7 +53,6 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
     def weights(self, weights: List[np.ndarray]):
         self.unwrap().set_weights(weights)
         # We need to re-trace it.
-        self.unwrap().built = False
 
     @property
     @abstractmethod
