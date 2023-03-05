@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
-_MetricValue = Union[np.ndarray, float, Dict[str, np.ndarray]]
+_MetricValue = Union[np.ndarray, Dict[str, np.ndarray]]
 _CallKwargs = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
 _PersistFn = Callable[[str, _CallKwargs, _MetricValue], None]
 
