@@ -259,7 +259,7 @@ def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -
     -------
     None
     """
-    if (x.flatten() != x_perturbed.flatten()).any():
+    if (np.reshape(x, -1) != np.reshape(x_perturbed, -1)).any():
         warnings.warn(
             "The settings for perturbing input e.g., 'perturb_func' "
             "didn't cause change in input. "

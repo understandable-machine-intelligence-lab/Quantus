@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+from typing import Callable, Dict, List, Optional
+
 import numpy as np
-from typing import Callable, Optional, Dict
 
 from quantus.functions.norm_func import fro_norm
 from quantus.functions.similarity_func import difference
+from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.types import SimilarityFn, NormaliseFn, NormFn, PerturbFn
 from quantus.nlp.functions.perturb_func import spelling_replacement
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import (
+    ExplainFn,
+    Explanation,
+    NormaliseFn,
+    NormFn,
+    PerturbFn,
+    SimilarityFn,
+)
 from quantus.nlp.metrics.robustness.internal.sensitivity_metric import SensitivityMetric
 
 
@@ -42,9 +52,8 @@ class AvgSensitivity(SensitivityMetric):
         norm_numerator: NormFn = fro_norm,
         norm_denominator: NormFn = fro_norm,
         nr_samples: int = 50,
-        return_nan_when_prediction_changes: bool = False,
-        default_plot_func: Optional[Callable] = None,
     ):
+        # TODO: docstring
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -59,11 +68,30 @@ class AvgSensitivity(SensitivityMetric):
             norm_numerator=norm_numerator,
             norm_denominator=norm_denominator,
             nr_samples=nr_samples,
-            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             similarity_func=similarity_func,
-            default_plot_func=default_plot_func,
+        )
+
+    def __call__(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        *,
+        y_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[List[Explanation] | np.ndarray] = None,
+        explain_func: ExplainFn = explain,
+        explain_func_kwargs: Optional[Dict] = None,
+        batch_size: int = 64,
+    ) -> np.ndarray:
+        # TODO: docstring
+        return super().__call__(
+            model,
+            x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            batch_size=batch_size,
         )
 
     def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
-        agg_fn = np.mean if self.return_nan_when_prediction_changes else np.nanmean
-        return agg_fn(scores, axis=0)
+        return np.nanmean(scores, axis=0)

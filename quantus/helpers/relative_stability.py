@@ -32,17 +32,13 @@ def relative_input_stability_objective(
     # prevent division by 0
     eps_min = np.finfo(np.float32).eps
 
-    # fmt: off
-    nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)
+    nominator = (e_x - e_xs) / (e_x + eps_min)
     nominator = l2_norm(nominator)
-    # fmt: on
 
     denominator = x - xs
-    denominator /= x + (x == 0) * eps_min
-    # fmt: off
-    denominator = l2_norm(denominator)
-    # fmt: on
-    denominator += (denominator == 0) * eps_min
+    denominator /= x + eps_min
+    denominator = l2_norm(denominator) + eps_min
+
     return nominator / denominator
 
 
@@ -76,14 +72,11 @@ def relative_output_stability_objective(
     # prevent division by 0
     eps_min = np.finfo(np.float32).eps
 
-    # fmt: off
-    nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
+    nominator = (e_x - e_xs) / (e_x + eps_min)
     nominator = l2_norm(nominator)
-    # fmt: on
 
     denominator = h_x - h_xs
-    denominator = l2_norm(denominator)
-    denominator += (denominator == 0) * eps_min  # prevent division by 0
+    denominator = l2_norm(denominator) + eps_min
     return nominator / denominator
 
 
@@ -117,12 +110,11 @@ def relative_representation_stability_objective(
     # prevent division by 0
     eps_min = np.finfo(np.float32).eps
 
-    # fmt: off
-    nominator = (e_x - e_xs) / (e_x + (e_x == 0) * eps_min)  # prevent division by 0
+    nominator = (e_x - e_xs) / (e_x + eps_min)
     nominator = l2_norm(nominator)
-    # fmt: on
+
     denominator = l_x - l_xs
-    denominator /= l_x + (l_x == 0) * eps_min  # prevent division by 0
-    denominator = l2_norm(denominator)
-    denominator += (denominator == 0) * eps_min
+    denominator /= (l_x + eps_min)
+    denominator = l2_norm(denominator) + eps_min
+
     return nominator / denominator

@@ -1,10 +1,11 @@
 from typing import List
+
 import numpy as np
 import pytest
 import tensorflow as tf
+
 from quantus.nlp import explain
 from quantus.nlp.helpers.utils import tf_function
-
 
 unknown_token = np.load("tests/assets/nlp/unknown_token_embedding.npy")
 
@@ -25,7 +26,7 @@ def unk_token_baseline(x):
         {"method": "IntGrad", "batch_interpolated_inputs": False},
         {"method": "IntGrad"},
         {"method": "IntGrad", "baseline_fn": unk_token_baseline},
-        {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2, "m": 2},
+        {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2},
         {"method": "NoiseGrad++", "explain_fn": "GradXInput", "n": 2, "m": 2},
         {"method": "LIME", "num_samples": 5},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},

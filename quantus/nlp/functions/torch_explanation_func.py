@@ -1,24 +1,20 @@
 """Explanation functions for Torch models."""
 
 from __future__ import annotations
-from typing import List, Callable, Optional, Dict, Union
+
+from copy import deepcopy
+from functools import singledispatch
+from typing import Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
 from torch import Tensor
-from copy import deepcopy
-from functools import singledispatch
-from transformers import BertForSequenceClassification
+
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.types import Explanation
-from quantus.nlp.helpers.utils import (
-    value_or_default,
-    map_dict,
-    get_embeddings,
-    get_input_ids,
-    get_interpolated_inputs,
-    get_logits_for_labels,
-)
+from quantus.nlp.helpers.utils import get_input_ids, map_dict, value_or_default
+
+__all__ = ["available_xai_methods", "torch_explain"]
 
 # Just to save some typing effort
 _BaselineFn = Callable[[Tensor], Tensor]
@@ -342,8 +338,8 @@ def _explain_noise_grad_plus_plus(
 def _(
     x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    input_embeds = model.embedding_lookup(input_ids)
     scores = _explain_gradient_norm(input_embeds, model, y_batch, **kwargs)
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
@@ -363,7 +359,7 @@ def _(
     """A version of GradientNorm explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device
-    dtype = model.internal_model.dtype
+    dtype = model.unwrap().dtype
 
     input_embeddings = torch.tensor(
         x_batch, requires_grad=True, device=device, dtype=dtype
@@ -383,8 +379,8 @@ def _(
 def _(
     x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    input_embeds = model.embedding_lookup(input_ids)
     scores = _explain_gradient_x_input(input_embeds, model, y_batch, **kwargs)
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
@@ -405,7 +401,7 @@ def _(
     """A version of GradientXInput explainer meant for usage together with latent space perturbations and/or NoiseGrad++ explainer."""
 
     device = model.device
-    dtype = model.internal_model.dtype
+    dtype = model.unwrap().dtype
     input_embeddings = torch.tensor(
         x_batch, requires_grad=True, device=device, dtype=dtype
     )
@@ -430,8 +426,8 @@ def _(
     batch_interpolated_inputs: bool = False,
     **kwargs,
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    input_embeds, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    input_embeds = model.embedding_lookup(input_ids)
 
     input_embeds = input_embeds.detach().cpu().numpy()
 
@@ -496,7 +492,7 @@ def _torch_explain_integrated_gradients_batched(
     batch_size = len(interpolated_embeddings)
     num_steps = len(interpolated_embeddings[0])
 
-    dtype = model.internal_model.dtype
+    dtype = model.unwrap().dtype
 
     interpolated_embeddings = torch.tensor(
         interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
@@ -528,7 +524,7 @@ def _torch_explain_integrated_gradients_iterative(
     y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    dtype = model.internal_model.dtype
+    dtype = model.unwrap().dtype
 
     device = model.device
     scores = []
@@ -570,8 +566,8 @@ def _(
 ) -> List[Explanation]:
     explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
 
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
 
     embeddings = embeddings.detach().cpu().numpy()
 
@@ -616,7 +612,7 @@ def _(
     ng_pp = NoiseGrad(**init_kwargs)
     scores = (
         ng_pp.enhance_explanation(
-            model.internal_model,
+            model.unwrap(),
             x_batch,
             y_batch,
             explanation_fn=explanation_fn,
@@ -659,8 +655,8 @@ def _(
 ) -> List[Explanation]:
     explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
 
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
 
     embeddings = embeddings.detach().cpu().numpy()
 
@@ -705,7 +701,7 @@ def _(
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
         ng_pp.enhance_explanation(
-            model.internal_model,
+            model.unwrap(),
             x_batch,
             y_batch,
             explanation_fn=explanation_fn,
@@ -717,3 +713,29 @@ def _(
 
     model.weights = og_weights
     return scores
+
+
+# -------------- utils ------------------
+
+
+def get_logits_for_labels(logits: Tensor, y_batch: Tensor) -> Tensor:
+    return logits[torch.range(0, logits.shape[0] - 1, dtype=torch.int64), y_batch]
+
+
+def get_interpolated_inputs(
+    baseline: np.ndarray, target: np.ndarray, num_steps: int
+) -> np.ndarray:
+    """Gets num_step linearly interpolated inputs from baseline to target."""
+    if num_steps <= 0:
+        return np.array([])
+    if num_steps == 1:
+        return np.array([baseline, target])
+
+    delta = target - baseline
+    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
+        :, np.newaxis, np.newaxis
+    ]
+    shape = (num_steps + 1,) + delta.shape
+    deltas = scales * np.broadcast_to(delta, shape)
+    interpolated_inputs = baseline + deltas
+    return interpolated_inputs

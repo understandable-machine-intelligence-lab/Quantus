@@ -1,28 +1,24 @@
 """Explanation functions for TensorFlow models."""
 from __future__ import annotations
 
+from functools import partial, singledispatch
+from typing import Callable, Dict, List, Optional, Union
+
+import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
-from typing import List, Callable, Optional, Dict, Union
-from functools import singledispatch, partial
 
 from quantus.nlp.helpers.model.tensorflow_text_classifier import (
     TensorFlowTextClassifier,
 )
-from quantus.nlp.helpers.types import (
-    Explanation,
-)
-from quantus.nlp.helpers.utils import (
-    # used in python
-    value_or_default,
-    get_embeddings,
+from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.helpers.utils import (  # used in python; used in graph
     get_input_ids,
-    get_interpolated_inputs,
-    # used in graph
-    get_logits_for_labels,
     tf_function,
+    value_or_default,
 )
-import numpy as np
+
+__all__ = ["available_xai_methods", "tf_explain"]
 
 
 # Just to save some typing effort
@@ -34,7 +30,7 @@ _NoiseFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 # ----------------- "Entry Point" --------------------
 
 
-def available_explanation_functions() -> Dict[str, Callable]:
+def available_xai_methods() -> Dict[str, Callable]:
     return {
         "GradNorm": explain_gradient_norm,
         "GradXInput": explain_gradient_x_input,
@@ -51,9 +47,9 @@ def tf_explain(
 ) -> _Scores:
     """Execute gradient based explanation method."""
 
-    method_mapping = available_explanation_functions()
+    method_mapping = available_xai_methods()
 
-    if method not in available_explanation_functions():
+    if method not in method_mapping:
         raise ValueError(
             f"Unsupported explanation method: {method}, supported are: {list(method_mapping.keys())}"
         )
@@ -204,7 +200,7 @@ def explain_integrated_gradients(
         model,
         y_batch,
         num_steps=num_steps,
-        baseline_fn=value_or_default(baseline_fn, lambda: _zeros_baseline),
+        baseline_fn=value_or_default(baseline_fn, lambda: zeros_baseline),
         batch_interpolated_inputs=batch_interpolated_inputs,
         **kwargs,
     )
@@ -423,10 +419,10 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 @_explain_gradient_norm.register
 def _(
-    x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_norm(embeddings, model, y_batch, **kwargs)
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
@@ -461,8 +457,8 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 def _(
     x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
@@ -486,20 +482,12 @@ def _(
     return tf.math.reduce_sum(x_batch * grads, axis=-1)
 
 
-# ----------------------- IntGrad -------------------------
-@tf_function
-def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
-    return tf.zeros_like(x, dtype=x.dtype)
+# ----------------------- IntGrad ------------------------
 
 
-@singledispatch
-def as_tensor(t):
-    return t
-
-
-@as_tensor.register
-def _(t: np.ndarray):
-    return tf.convert_to_tensor(t)
+@_explain_integrated_gradients.register
+def _(x_batch: np.ndarray, *args, **kwargs):
+    return explain_integrated_gradients(tf.constant(x_batch), *args, **kwargs)
 
 
 @_explain_integrated_gradients.register
@@ -508,27 +496,36 @@ def _(
     model: TensorFlowTextClassifier,
     y_batch: np.ndarray,
     *,
-    batch_interpolated_inputs: bool = True,
+    batch_interpolated_inputs: bool,
+    num_steps: int,
+    baseline_fn: Optional[_BaselineFn],
     **kwargs,
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, pr_kwargs = get_embeddings(x_batch, model)
+    input_ids, predict_kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
 
     if batch_interpolated_inputs:
         scores = _integrated_gradients_batched(
-            embeddings, model, as_tensor(y_batch), **kwargs, **pr_kwargs
+            embeddings,
+            model,
+            tf.constant(y_batch),
+            num_steps=num_steps,
+            baseline_fn=baseline_fn,
+            **kwargs,
+            **predict_kwargs,
         )
     else:
         scores = _integrated_gradients_iterative(
-            embeddings, model, y_batch, **kwargs, **pr_kwargs
+            embeddings,
+            model,
+            y_batch,
+            num_steps=num_steps,
+            baseline_fn=baseline_fn,
+            **kwargs,
+            **predict_kwargs,
         )
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
-
-
-@_explain_integrated_gradients.register
-def _(x_batch: np.ndarray, *args, **kwargs):
-    return explain_integrated_gradients(as_tensor(x_batch), *args, **kwargs)
 
 
 @_explain_integrated_gradients.register
@@ -542,10 +539,7 @@ def _(
 ) -> List[Explanation]:
     if batch_interpolated_inputs:
         return _integrated_gradients_batched(
-            as_tensor(x_batch),
-            model,
-            as_tensor(y_batch),
-            tf.nest.map_structure(lambda i: as_tensor(i), **kwargs),
+            x_batch, model, tf.constant(y_batch), **kwargs
         )
     else:
         return _integrated_gradients_iterative(
@@ -557,22 +551,12 @@ def _(
 
 
 @tf_function
-def pseudo_interpolate(x, num_steps):
-    og_shape = tf.convert_to_tensor(tf.shape(x))
-    new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
-    x = tf.broadcast_to(x, new_shape)
-    flat_shape = tf.concat([tf.constant([-1]), og_shape[1:]], axis=0)
-    x = tf.reshape(x, flat_shape)
-    return x
-
-
-@tf_function
 def _integrated_gradients_batched(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
     y_batch: tf.Tensor,
-    num_steps=10,
-    baseline_fn=_zeros_baseline,
+    num_steps,
+    baseline_fn,
     **kwargs,
 ) -> np.ndarray:
     interpolated_embeddings = tf.vectorized_map(
@@ -588,7 +572,7 @@ def _integrated_gradients_batched(
     )
 
     interpolated_kwargs = tf.nest.map_structure(
-        lambda x: pseudo_interpolate(x, num_steps), kwargs
+        partial(pseudo_interpolate, num_steps=num_steps), kwargs
     )
     interpolated_y_batch = pseudo_interpolate(y_batch, num_steps)
 
@@ -609,8 +593,8 @@ def _integrated_gradients_iterative(
     x_batch: tf.Tensor,
     model: TensorFlowTextClassifier,
     y_batch: np.ndarray,
-    num_steps=10,
-    baseline_fn=_zeros_baseline,
+    num_steps,
+    baseline_fn,
     **kwargs,
 ) -> np.ndarray:
     interpolated_embeddings_batch = tf.vectorized_map(
@@ -645,20 +629,6 @@ def _(x_batch: np.ndarray, *args, **kwargs):
     return _explain_noise_grad(tf.constant(x_batch), *args, **kwargs)
 
 
-def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
-    if isinstance(explain_fn, Callable):
-        return explain_fn  # type: ignore
-
-    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
-        raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
-    method_mapping = available_explanation_functions()
-    if explain_fn not in method_mapping:
-        raise ValueError(
-            f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
-        )
-    return method_mapping[explain_fn]
-
-
 @_explain_noise_grad.register
 def _(
     x_batch: list,
@@ -671,10 +641,9 @@ def _(
     explain_fn: Union[Callable, str] = "IntGrad",
     noise_type: str = "multiplicative",
     seed: int = 42,
-    **kwargs,
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, predict_kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
     scores = _explain_noise_grad(
         embeddings,
         model,
@@ -685,19 +654,10 @@ def _(
         explain_fn=explain_fn,
         noise_type=noise_type,
         seed=seed,
-        **kwargs,
+        **predict_kwargs,
     )
 
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
-
-
-@tf_function
-def apply_noise(params: tf.Tensor, mean, std, noise_type: str):
-    params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
-    if noise_type == "additive":
-        return params + params_noise
-    else:
-        return params * params_noise
 
 
 @_explain_noise_grad.register
@@ -716,7 +676,7 @@ def _(
 ) -> np.ndarray:
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
-    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
+    explain_fn = get_noise_grad_baseline_explain_fn(explain_fn)
 
     tf.random.set_seed(seed)
     original_weights = model.weights.copy()
@@ -770,8 +730,8 @@ def _(
     seed: int = 42,
     **kwargs,
 ) -> List[Explanation]:
-    input_ids, _ = get_input_ids(x_batch, model)
-    embeddings, kwargs = get_embeddings(x_batch, model)
+    input_ids, kwargs = get_input_ids(x_batch, model)
+    embeddings = model.embedding_lookup(input_ids)
     scores = _explain_noise_grad_plus_plus(
         embeddings,
         model,
@@ -811,7 +771,7 @@ def _(
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
     if isinstance(explain_fn, str):
-        method_mapping = available_explanation_functions()
+        method_mapping = available_xai_methods()
 
         if explain_fn == "NoiseGrad++":
             raise ValueError(
@@ -841,7 +801,9 @@ def _(
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
-            weights_copy[index] = apply_noise(as_tensor(params), mean, std, noise_type)
+            weights_copy[index] = apply_noise(
+                tf.constant(params), mean, std, noise_type
+            )
 
         _n = tf.convert_to_tensor(_n)
 
@@ -856,3 +818,75 @@ def _(
     scores = tf.reduce_mean(explanations_array.stack(), axis=0)
     model.weights = original_weights
     return scores
+
+
+# --------------------- utils ----------------------
+
+
+def get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
+    if isinstance(explain_fn, Callable):
+        return explain_fn  # type: ignore
+
+    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
+        raise ValueError(f"Can't use {explain_fn} as baseline function for NoiseGrad.")
+    method_mapping = available_xai_methods()
+    if explain_fn not in method_mapping:
+        raise ValueError(
+            f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
+        )
+    return method_mapping[explain_fn]
+
+
+@tf_function
+def apply_noise(params: tf.Tensor, mean, std, noise_type: str):
+    params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
+    if noise_type == "additive":
+        return params + params_noise
+    else:
+        return params * params_noise
+
+
+@tf_function
+def get_logits_for_labels(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
+    # Matrix with indexes like [ [0,y_0], [1, y_1], ...]
+    indexes = tf.transpose(
+        tf.stack(
+            [
+                tf.range(tf.shape(logits)[0], dtype=tf.int32),
+                tf.cast(y_batch, tf.int32),
+            ]
+        ),
+        [1, 0],
+    )
+    return tf.gather_nd(logits, indexes)
+
+
+@tf_function
+def get_interpolated_inputs(
+    baseline: tf.Tensor, target: tf.Tensor, num_steps: int
+) -> tf.Tensor:
+    """Gets num_step linearly interpolated inputs from baseline to target."""
+    delta = target - baseline
+    scales = tf.linspace(0, 1, num_steps + 1)[:, tf.newaxis, tf.newaxis]
+    scales = tf.cast(scales, dtype=delta.dtype)
+    shape = tf.convert_to_tensor(
+        [num_steps + 1, tf.shape(delta)[0], tf.shape(delta)[1]]
+    )
+    deltas = scales * tf.broadcast_to(delta, shape)
+    interpolated_inputs = baseline + deltas
+    return interpolated_inputs
+
+
+@tf_function
+def zeros_baseline(x: tf.Tensor) -> tf.Tensor:
+    return tf.zeros_like(x, dtype=x.dtype)
+
+
+@tf_function
+def pseudo_interpolate(x, num_steps):
+    og_shape = tf.convert_to_tensor(tf.shape(x))
+    new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
+    x = tf.broadcast_to(x, new_shape)
+    flat_shape = tf.concat([tf.constant([-1]), og_shape[1:]], axis=0)
+    x = tf.reshape(x, flat_shape)
+    return x

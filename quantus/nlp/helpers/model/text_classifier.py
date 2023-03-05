@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import numpy as np
-from typing import List, TypeVar, Generator, Tuple
 from abc import ABC, abstractmethod
+from typing import Any, Generator, List, Tuple, TypedDict, TypeVar
+
+import numpy as np
 
 T = TypeVar("T")
+R = TypedDict("R", {"input_ids": np.ndarray}, total=False)
 
 
 class TextClassifier(ABC):
@@ -12,12 +14,12 @@ class TextClassifier(ABC):
     """An interface for model, trained for text-classification task (aka sentiment analysis)."""
 
     @abstractmethod
-    def tokenize(self, text: List[str]):
+    def batch_encode(self, text: List[str], **kwargs) -> R:
         """Convert batch of plain-text inputs to vocabulary id's."""
         raise NotImplementedError
 
     @abstractmethod
-    def convert_ids_to_tokens(self, ids) -> List[str]:
+    def convert_ids_to_tokens(self, ids: np.ndarray) -> List[str]:
         """Convert batch of vocabulary id's batch to batch of plain-text strings."""
         raise NotImplementedError
 
@@ -25,6 +27,10 @@ class TextClassifier(ABC):
     def token_id(self, token: str) -> int:
         """Get id of token. This method is required for TokenPruning metric."""
         raise NotImplementedError
+
+    @abstractmethod
+    def batch_decode(self, ids: np.ndarray, **kwargs) -> List[str]:
+        pass
 
     @property
     @abstractmethod
@@ -78,4 +84,9 @@ class TextClassifier(ABC):
         Yields layer name, and new model with this layer perturbed.
         This method is required for Model Parameter Randomisation Metric.
         """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def random_layer_generator_length(self) -> int:
         raise NotImplementedError

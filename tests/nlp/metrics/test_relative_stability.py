@@ -1,11 +1,12 @@
 import numpy as np
 import pytest
+
 from quantus.nlp import (
-    uniform_noise,
     RelativeInputStability,
-    RelativeRepresentationStability,
     RelativeOutputStability,
+    RelativeRepresentationStability,
     typo_replacement,
+    uniform_noise,
 )
 
 

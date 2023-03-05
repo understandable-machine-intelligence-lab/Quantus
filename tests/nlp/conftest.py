@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from datasets import load_dataset
+
 from quantus.nlp import (
     TensorFlowHuggingFaceTextClassifier,
     TorchHuggingFaceTextClassifier,

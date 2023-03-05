@@ -1,11 +1,13 @@
-from typing import List, Dict
-import numpy as np
+from __future__ import annotations
 
 from abc import ABC
+from typing import Dict, List
+
+import numpy as np
 from transformers import PreTrainedTokenizerBase
-from quantus.nlp.helpers.utils import add_default_items
 
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.utils import add_default_items
 
 
 class HuggingFaceTokenizer(TextClassifier, ABC):
@@ -14,10 +16,8 @@ class HuggingFaceTokenizer(TextClassifier, ABC):
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         self._tokenizer = tokenizer
 
-    def tokenize(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:
-        kwargs = add_default_items(
-            kwargs, {"padding": "longest", "return_tensors": "np"}
-        )
+    def batch_encode(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:  # type: ignore
+        kwargs = add_default_items(kwargs, {"padding": "longest"})
         return self._tokenizer(text, **kwargs).data
 
     def convert_ids_to_tokens(self, ids: np.ndarray) -> List[str]:
@@ -28,6 +28,8 @@ class HuggingFaceTokenizer(TextClassifier, ABC):
             [token], is_split_into_words=True, add_special_tokens=False
         )["input_ids"][0]
 
-    @property
-    def internal_tokenizer(self):
+    def batch_decode(self, ids: np.ndarray, **kwargs) -> List[str]:
+        return self._tokenizer.batch_decode(ids, **kwargs)
+
+    def unwrap_tokenizer(self) -> PreTrainedTokenizerBase:
         return self._tokenizer

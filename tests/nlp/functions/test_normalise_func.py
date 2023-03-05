@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+
 from quantus.nlp import normalize_sum_to_1
 
 

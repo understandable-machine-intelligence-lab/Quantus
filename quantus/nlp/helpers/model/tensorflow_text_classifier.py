@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Generator, List
-import tensorflow as tf
+
 import numpy as np
+import tensorflow as tf
+
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
 
@@ -16,7 +18,7 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
         original_weights = self.weights.copy()
         model_copy = self.clone()
         layers = list(
-            model_copy.internal_model._flatten_layers(  # noqa
+            model_copy.unwrap()._flatten_layers(  # noqa
                 include_self=False, recursive=True
             )
         )
@@ -33,23 +35,32 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
             layer.set_weights([np.random.permutation(w) for w in weights])
             # We need to re-trace it.
             layer.built = False
-            self.internal_model.built = False
+            self.unwrap().built = False
             yield layer.name, model_copy
+
+    def random_layer_generator_length(self) -> int:
+        layers = list(
+            self.unwrap()._flatten_layers(  # noqa
+                include_self=False, recursive=True
+            )
+        )
+        layers = list(filter(lambda i: len(i.get_weights()) > 0, layers))
+        return len(layers)
 
     @property
     def weights(self) -> List[np.ndarray]:
         # TODO get weights as tensors??? to avoid copying to CPU?
-        return self.internal_model.get_weights()
+        return self.unwrap().get_weights()
 
     @weights.setter
     def weights(self, weights: List[np.ndarray]):
-        self.internal_model.set_weights(weights)
+        self.unwrap().set_weights(weights)
         # We need to re-trace it.
-        self.internal_model.built = False
+        self.unwrap().built = False
 
     @property
     @abstractmethod
-    def internal_model(self) -> tf.keras.Model:
+    def unwrap(self) -> tf.keras.Model:
         raise NotImplementedError
 
     @abstractmethod

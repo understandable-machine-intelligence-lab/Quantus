@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
 
 

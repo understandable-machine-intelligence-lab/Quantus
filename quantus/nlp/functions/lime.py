@@ -1,16 +1,16 @@
+from __future__ import annotations
+
 import functools
-from typing import Callable, Iterable, Optional, Sequence, List
+from typing import Callable, Iterable, List, Optional, Sequence
+
 import numpy as np
-from sklearn import linear_model
-from sklearn import metrics
+from sklearn import linear_model, metrics
 
-from quantus.nlp.helpers.types import Explanation
-from quantus.nlp.helpers.utils import get_input_ids, safe_as_array
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import Explanation
+from quantus.nlp.helpers.utils import get_input_ids, safe_as_array, value_or_default
 
-
-def exponential_kernel(distance: float, kernel_width: float = 25) -> np.ndarray:
-    return np.sqrt(np.exp(-(distance**2) / kernel_width**2))
+__all__ = ["explain_lime"]
 
 
 def explain_lime(
@@ -23,10 +23,10 @@ def explain_lime(
     seed: int = 42,
     num_samples: int = 1000,
     mask_token: str = "[UNK]",
-    distance_fn: Callable[..., np.ndarray] = functools.partial(
+    distance_fn: Callable = functools.partial(
         metrics.pairwise.pairwise_distances, metric="cosine"
     ),
-    kernel: Callable[..., np.ndarray] = exponential_kernel,
+    kernel: Optional[Callable] = None,
     distance_scale: float = 100.0,
 ) -> List[Explanation]:
     """
@@ -50,6 +50,7 @@ def explain_lime(
     -------
 
     """
+    kernel = value_or_default(kernel, lambda: exponential_kernel)
     a_batch = []
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
 
@@ -78,6 +79,7 @@ def explain_lime(
     return a_batch
 
 
+# ---------------------- internal -----------------------
 def sample_masks(num_samples: int, num_features: int, seed: Optional[int] = None):
     rng = np.random.RandomState(seed)
     positions = np.tile(np.arange(num_features), (num_samples, 1))
@@ -94,3 +96,7 @@ def get_perturbations(
     for mask in masks:
         parts = [t if mask[i] else mask_token for i, t in enumerate(tokens)]
         yield " ".join(parts)
+
+
+def exponential_kernel(distance: float, kernel_width: float = 25) -> np.ndarray:
+    return np.sqrt(np.exp(-(distance**2) / kernel_width**2))

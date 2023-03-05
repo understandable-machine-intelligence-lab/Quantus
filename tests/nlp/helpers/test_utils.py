@@ -1,11 +1,8 @@
 from typing import List
 import numpy as np
 import pytest
-import torch
-import tensorflow as tf
 from quantus.nlp.helpers.utils import (
     batch_list,
-    pad_ragged_arrays,
     get_logits_for_labels,
 )
 
@@ -33,49 +30,12 @@ def test_list_is_divisible():
         assert len(element) == 32
 
 
-@pytest.mark.nlp
-@pytest.mark.utils
-@pytest.mark.parametrize(
-    "a_shape, b_shape",
-    [
-        (5, 5),
-        (5, 7),
-        (7, 5),
-        ((10, 5), (11, 5)),
-        ((11, 5), (10, 5)),
-        ((8, 4), (8, 5)),
-        ((8, 5), (8, 4)),
-        ((8, 39, 5), (8, 40, 5)),
-        ((8, 40, 5), (8, 39, 5)),
-        ((8, 7, 39, 5), (8, 7, 40, 5)),
-        ((8, 7, 40, 5), (8, 7, 39, 5)),
-    ],
-)
-def test_pad(a_shape, b_shape):
-    a = np.random.uniform(size=a_shape)
-    b = np.random.uniform(size=b_shape)
-    a_padded, b_padded = pad_ragged_arrays(a, b)
-    assert a_padded.shape == b_padded.shape
-
-
 logits = np.random.uniform(size=(8, 2))
 y_batch = np.asarray([0, 0, 1, 1, 0, 0, 1, 1])
 expected_logits = np.asarray([i[j] for i, j in zip(logits, y_batch)])
 
 
 @pytest.mark.utils
-@pytest.mark.parametrize(
-    "inputs, labels",
-    [
-        (logits, y_batch),
-        (logits, y_batch),
-        (torch.tensor(logits), torch.tensor(y_batch)),
-    ],
-)
-def test_get_logits_for_labels(inputs, labels):
-    result = get_logits_for_labels(inputs, labels)
-    if isinstance(result, torch.Tensor):
-        result = result.numpy()
-    if isinstance(result, tf.Tensor):
-        result = result.numpy()
+def test_get_logits_for_labels():
+    result = get_logits_for_labels(logits, y_batch)
     assert (result == expected_logits).all()

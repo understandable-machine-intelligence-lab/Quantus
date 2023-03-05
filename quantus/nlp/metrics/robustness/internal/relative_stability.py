@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import List, no_type_check
+from abc import ABC, abstractmethod
+from typing import Dict, List
+
 import numpy as np
-from abc import abstractmethod
 
-from quantus.nlp.helpers.types import PerturbationType, TextClassifier, Explanation
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import ExplainFn, Explanation
+from quantus.nlp.helpers.utils import get_input_ids, get_scores, safe_as_array
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric
-from quantus.nlp.helpers.utils import (
-    get_embeddings,
-    determine_perturbation_type,
-    safe_as_array,
-)
 
 
-class RelativeStability(RobustnessMetric):
+class RelativeStability(RobustnessMetric, ABC):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
 
@@ -23,136 +21,82 @@ class RelativeStability(RobustnessMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    def __init__(self, *, nr_samples: int, **kwargs):
-        super().__init__(**kwargs)
-        self.nr_samples = nr_samples
-
-    @no_type_check
-    def evaluate_batch(
+    def evaluate_step_latent_space_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
-        **kwargs,
-    ) -> np.ndarray | float:
-        batch_size = len(x_batch)
-        scores = np.full((self.nr_samples, batch_size), fill_value=np.NINF)
-
-        perturbation_type = determine_perturbation_type(self.perturb_func)
-        for step_id in range(self.nr_samples):
-            if perturbation_type == PerturbationType.plain_text:
-                scores[step_id] = self._evaluate_step_plain_text_perturbation(
-                    model, x_batch, y_batch, a_batch
-                )
-            if perturbation_type == PerturbationType.latent_space:
-                scores[step_id] = self._evaluate_step_latent_space_pertubation(
-                    model, x_batch, y_batch, a_batch
-                )
-
-        # Compute RIS.
-        result = np.max(scores, axis=0)
-        return result
-
-    def _evaluate_step_plain_text_perturbation(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
-    ) -> np.ndarray | float:
-        # Perturb input.
-        x_perturbed = self.perturb_func(x_batch, **self.perturb_func_kwargs)  # noqa
-        # Generate explanations for perturbed input.
-        # fmt: off
-        a_batch_perturbed = self.explain_func(model, x_perturbed, y_batch, **self.explain_func_kwargs)  # noqa
-        # fmt: on
-        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
-        # Compute maximization's objective.
-        rs = self.compute_objective_plain_text(
-            x_batch, x_perturbed, a_batch, a_batch_perturbed, model
-        )
-        # We're done with this sample if `return_nan_when_prediction_changes`==False.
-        if not self.return_nan_when_prediction_changes:
-            return rs
-
-        # If perturbed input caused change in prediction, then it's RIS=nan.
-        changed_prediction_indices = self.indexes_of_changed_predictions_plain_text(
-            model, x_batch, x_perturbed
-        )
-
-        if len(changed_prediction_indices) != 0:
-            rs[changed_prediction_indices] = np.nan
-
-        return rs
-
-    def _evaluate_step_latent_space_pertubation(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Dict,
     ) -> np.ndarray:
-        """Latent-space perturbation."""
-        a_batch_numerical = np.asarray([i[1] for i in a_batch])
-        x_batch_embeddings, predict_kwargs = get_embeddings(x_batch, model)
-        x_batch_embeddings = safe_as_array(x_batch_embeddings)
-
-        # Perturb input.
+        input_ids, predict_kwargs = get_input_ids(x_batch, model)
+        x_embeddings = model.embedding_lookup(input_ids)
+        x_embeddings = safe_as_array(x_embeddings)
         # fmt: off
-        x_perturbed = self.perturb_func(x_batch_embeddings, **self.perturb_func_kwargs)  # noqa
+        x_perturbed = self.perturb_func(x_embeddings, **self.perturb_func_kwargs)  # noqa
+        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch, explain_func, explain_func_kwargs)
         # fmt: on
-        # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_func(
-            model,
-            x_perturbed,
-            y_batch,
-            **self.explain_func_kwargs,  # noqa
-            **predict_kwargs,  # noqa
-        )
-        a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
+        a_batch_scores = get_scores(a_batch)
         # Compute maximization's objective.
         rs = self.compute_objective_latent_space(
-            x_batch_embeddings,
-            x_perturbed,
-            a_batch_numerical,
-            a_batch_perturbed,  # noqa
             model,
-            **predict_kwargs,
+            x_embeddings,
+            x_perturbed,
+            a_batch_scores,
+            a_batch_perturbed,
+            predict_kwargs,
         )
-        # We're done with this sample if `return_nan_when_prediction_changes`==False.
-        if not self.return_nan_when_prediction_changes:
-            return rs
-
-        # If perturbed input caused change in prediction, then it's RIS=nan.
-        changed_prediction_indices = self.indexes_of_changed_predictions_latent(
-            model, x_batch_embeddings, x_perturbed, **predict_kwargs
-        )
-
-        if len(changed_prediction_indices) != 0:
-            rs[changed_prediction_indices] = np.nan
-
         return rs
 
-    @abstractmethod
-    def compute_objective_latent_space(
+    def evaluate_step_plain_text_noise(
         self,
-        x_batch: np.ndarray,
-        x_batch_perturbed: np.ndarray,
-        a_batch: np.ndarray,
-        a_batch_perturbed: np.ndarray,
         model: TextClassifier,
-        **kwargs,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Dict,
+        x_perturbed: List[str],
     ) -> np.ndarray:
-        raise NotImplementedError  # pragma: not covered
+        """Latent-space perturbation."""
+        # Generate explanations for perturbed input.
+        a_batch_perturbed = self.explain_batch(
+            model, x_perturbed, y_batch, explain_func, explain_func_kwargs
+        )
+
+        # Compute maximization's objective.
+        rs = self.compute_objective_plain_text(
+            model,
+            x_batch,
+            x_perturbed,
+            a_batch,
+            a_batch_perturbed,
+        )
+        return rs
+
+    def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
+        return np.nanmax(scores, axis=0)
 
     @abstractmethod
     def compute_objective_plain_text(
         self,
+        model: TextClassifier,
         x_batch: List[str],
         x_batch_perturbed: List[str],
         a_batch: List[Explanation],
         a_batch_perturbed: List[Explanation],
+    ) -> np.ndarray:
+        raise NotImplementedError  # pragma: not covered
+
+    @abstractmethod
+    def compute_objective_latent_space(
+        self,
         model: TextClassifier,
+        x_batch: np.ndarray,
+        x_batch_perturbed: np.ndarray,
+        a_batch: np.ndarray,
+        a_batch_perturbed: np.ndarray,
+        predict_kwargs: Dict,
     ) -> np.ndarray:
         raise NotImplementedError  # pragma: not covered

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from quantus.functions.loss_func import mse
 from quantus.nlp.helpers.types import Explanation

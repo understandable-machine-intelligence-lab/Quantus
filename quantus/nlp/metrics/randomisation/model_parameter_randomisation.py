@@ -1,20 +1,30 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from functools import partial
+from operator import itemgetter
+from typing import Callable, Dict, List, Optional, no_type_check
+
 import numpy as np
 from tqdm.auto import tqdm
-from typing import List, Optional, Dict, Callable, no_type_check
+
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.helpers.utils import compute_correlation_per_sample
-from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
-from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.metrics.batched_metric import BatchedMetric
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import explanations_batch_similarity
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
+from quantus.nlp.helpers.utils import (
+    batch_list,
+    get_scores,
+    map_dict,
+    map_optional,
+    value_or_default,
+)
+from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
 
-class ModelParameterRandomisation(BatchedMetric):
+class ModelParameterRandomisation(TextClassificationMetric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
 
@@ -46,9 +56,6 @@ class ModelParameterRandomisation(BatchedMetric):
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
-        default_plot_func: Optional[
-            Callable
-        ] = plot_model_parameter_randomisation_experiment,
     ):
         super().__init__(
             abs=abs,
@@ -59,7 +66,6 @@ class ModelParameterRandomisation(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            default_plot_func=default_plot_func,
         )
         self.seed = seed
         self.layer_order = layer_order
@@ -78,77 +84,52 @@ class ModelParameterRandomisation(BatchedMetric):
         explain_func_kwargs: Optional[Dict] = None,
         batch_size: int = 64,
         **kwargs,
-    ) -> Dict[str, np.ndarray] | np.ndarray:
-        data = self.general_preprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            explain_func=explain_func,
-            explain_func_kwargs=explain_func_kwargs,
-            batch_size=batch_size,
-        )
-        model = data["model"]
-        x_batch = data["x_batch"]
-        y_batch = data["y_batch"]
-        a_batch = data["a_batch"]
+    ) -> Dict[str, np.ndarray | float] | np.ndarray:
+        explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
+        x_batch = batch_list(x_batch, batch_size)
+        y_batch = map_optional(y_batch, partial(batch_list, batch_size=batch_size))
+        a_batch = map_optional(a_batch, partial(batch_list, batch_size=batch_size))
 
-        # Results are returned/saved as a dictionary not as a list as in the super-class.
-        self.last_results = {}
-
-        # Get number of iterations from number of layers.
-        n_layers = len(
-            list(
-                model.get_random_layer_generator(
-                    order=self.layer_order, seed=self.seed, **kwargs
-                )
-            )
-        )
+        results = defaultdict(lambda: [])
 
         model_iterator = tqdm(
-            model.get_random_layer_generator(
-                order=self.layer_order, seed=self.seed, **kwargs
-            ),
-            total=n_layers,
+            model.get_random_layer_generator(self.layer_order, self.seed),
+            total=model.random_layer_generator_length,
             disable=not self.display_progressbar,
         )
 
         for layer_name, random_layer_model in model_iterator:
             # Generate an explanation with perturbed model.
-            a_batch_perturbed = self.explain_func(
-                random_layer_model,
-                x_batch,
-                y_batch,
-                **self.explain_func_kwargs,  # noqa
-            )
+            for i, x in enumerate(x_batch):
+                y = map_optional(y_batch, itemgetter(i))
+                a = map_optional(a_batch, itemgetter(i))
+                x, y, a, _ = self.batch_preprocess(
+                    model, x, y, a, explain_func, explain_func_kwargs
+                )
+                similarity_score = self.evaluate_batch(
+                    random_layer_model, x, y, a, explain_func, explain_func_kwargs
+                )
+                results[layer_name].append(similarity_score)
 
-            a_batch_perturbed = self.normalise_a_batch(a_batch_perturbed)
-
-            similarity_scores = self.evaluate_batch(a_batch, a_batch_perturbed)
-            # Save similarity scores in a result dictionary.
-            self.last_results[layer_name] = similarity_scores
+        results = map_dict(results, partial(np.reshape, newshape=-1))
 
         if self.return_sample_correlation:
-            return np.asarray(compute_correlation_per_sample(self.last_results))
+            return np.asarray(compute_correlation_per_sample(results))
 
-        if self.return_aggregate:
-            assert self.return_sample_correlation, (
-                "You must set 'return_average_correlation_per_sample'"
-                " to True in order to compute te aggregate"
-            )
-            self.last_results = [self.aggregate_func(self.last_results)]
-
-        self.all_results.append(self.last_results)
-
-        return self.last_results  # type: ignore
+        return results
 
     @no_type_check
     def evaluate_batch(
         self,
-        a_batch: List[Explanation],
-        a_perturbed: List[Explanation],
-        *args,
-        **kwargs,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[List[Explanation]],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Dict,
     ) -> np.ndarray:
         # Compute distance measure.
-        return explanations_batch_similarity(a_batch, a_perturbed, self.similarity_func)
+        a_batch_perturbed = self.explain_batch(
+            model, x_batch, y_batch, explain_func, explain_func_kwargs
+        )
+        return self.similarity_func(get_scores(a_batch), get_scores(a_batch_perturbed))

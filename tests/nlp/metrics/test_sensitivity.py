@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantus.nlp import AvgSensitivity, MaxSensitivity, uniform_noise, gaussian_noise
+from quantus.nlp import AvgSensitivity, MaxSensitivity, gaussian_noise, uniform_noise
 
 
 @pytest.mark.nlp
@@ -10,15 +10,14 @@ from quantus.nlp import AvgSensitivity, MaxSensitivity, uniform_noise, gaussian_
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
-        pytest.param(
+        (
             {"abs": True},
             {
                 "explain_func_kwargs": {
                     "method": "LIME",
-                    "call_kwargs": {"num_samples": 5},
+                    "num_samples": 5,
                 }
             },
-            marks=pytest.mark.xfail,
         ),
         ({"perturb_func": gaussian_noise}, {}),
     ],
@@ -54,7 +53,7 @@ def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs, call_kwarg
     ],
     ids=["plain text", "latent space"],
 )
-def test_max_sensitivity_torch_fnet(
+def test_max_sensitivity_torch(
     torch_sst2_model, sst2_dataset, init_kwargs, call_kwargs
 ):
     metric = MaxSensitivity(nr_samples=5, **init_kwargs)

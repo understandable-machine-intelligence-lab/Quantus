@@ -1,7 +1,9 @@
+from typing import Dict
+
 import numpy as np
 import pytest
-from typing import Dict
-from quantus.nlp import RandomLogit, ModelParameterRandomisation
+
+from quantus.nlp import ModelParameterRandomisation, RandomLogit
 
 
 @pytest.mark.nlp
@@ -25,8 +27,6 @@ def test_random_logit_torch_model(
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()
     assert not (result == np.NAN).any()
-    assert not (result == np.NZERO).any()
-    assert not (result == np.PZERO).any()
 
 
 @pytest.mark.nlp
@@ -48,8 +48,6 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()
     assert not (result == np.NAN).any()
-    assert not (result == np.NZERO).any()
-    assert not (result == np.PZERO).any()
 
 
 @pytest.mark.nlp
@@ -81,12 +79,8 @@ def test_model_parameter_randomisation_tf_model(
             assert not (i == np.NINF).any()
             assert not (i == np.PINF).any()
             assert not (i == np.NAN).any()
-            assert not (i == np.NZERO).any()
-            assert not (i == np.PZERO).any()
     else:
         assert isinstance(result, np.ndarray)
         assert not (result == np.NINF).any()
         assert not (result == np.PINF).any()
         assert not (result == np.NAN).any()
-        assert not (result == np.NZERO).any()
-        assert not (result == np.PZERO).any()

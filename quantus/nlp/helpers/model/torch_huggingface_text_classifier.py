@@ -1,22 +1,21 @@
 from __future__ import annotations
 
-import numpy as np
-from typing import List, Optional, Dict
 from functools import singledispatchmethod
+from typing import Dict, List, Optional
+
+import numpy as np
+import torch
 from torch import nn as nn
 from transformers import (
-    PreTrainedModel,
-    PreTrainedTokenizerBase,
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
 )
-import torch
-from quantus.nlp.helpers.utils import (
-    value_or_default,
-    map_dict,
-)
-from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
+
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
+from quantus.nlp.helpers.utils import map_dict, value_or_default
 
 
 class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
@@ -68,11 +67,11 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
         return self._model(None, inputs_embeds=inputs_embeds, **kwargs).logits
 
-    def tokenize(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:
-        return super().tokenize(text, return_tensors="pt", **kwargs)
+    def batch_encode(self, text: List[str], **kwargs) -> Dict[str, torch.Tensor]:  # type: ignore
+        return super().batch_encode(text, return_tensors="pt", **kwargs)  # type: ignore
 
-    def predict_on_batch(self, text: List[str]) -> np.ndarray:
-        encoded_inputs = self.tokenize(text)
+    def predict(self, text: List[str], **kwargs) -> np.ndarray:
+        encoded_inputs = self.batch_encode(text)
         logits = self._model(**encoded_inputs).logits
         return logits.detach().cpu().numpy()
 
@@ -80,8 +79,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
     def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:  # type: ignore
         pass
 
-    @property
-    def internal_model(self) -> nn.Module:
+    def unwrap(self) -> nn.Module:
         return self._model
 
     @property
@@ -93,7 +91,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
 
     @get_hidden_representations.register
     def _(self, x_batch: list, **kwargs) -> np.ndarray:
-        encoded_inputs = self.tokenize(x_batch)
+        encoded_inputs = self.batch_encode(x_batch)
         embeddings = self.to_tensor(
             self.embedding_lookup(encoded_inputs.pop("input_ids")),
             dtype=self._model.dtype,

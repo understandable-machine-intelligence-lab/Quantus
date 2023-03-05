@@ -1,12 +1,13 @@
 """Framework-agnostic explanation functions."""
 from __future__ import annotations
 
-import numpy as np
-from typing import Dict, List, Optional
 import warnings
-from transformers import pipeline
 from functools import partial
 from importlib import util
+from typing import Dict, List, Optional
+
+import numpy as np
+from transformers import pipeline
 
 if util.find_spec("tensorflow"):
     from quantus.nlp.functions.tf_explanation_func import tf_explain
@@ -15,15 +16,17 @@ if util.find_spec("torch"):
     from quantus.nlp.functions.torch_explanation_func import torch_explain
 
 from quantus.nlp.functions.lime import explain_lime
-from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
-    value_or_default,
-    safe_isinstance,
     add_default_items,
     map_explanations,
     safe_as_array,
+    safe_isinstance,
+    value_or_default,
 )
+
+__all__ = ["explain"]
 
 TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TensorFlowHuggingFaceTextClassifier"
 TF_ModelClass = (
@@ -61,8 +64,8 @@ def explain_shap(
     if safe_isinstance(model, (TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass)):
         predict_fn = pipeline(
             "text-classification",
-            model=model.internal_model,  # type: ignore
-            tokenizer=model.internal_tokenizer,  # type: ignore
+            model=model.unwrap(),  # type: ignore
+            tokenizer=model.unwrap_tokenizer(),  # type: ignore
             top_k=None,
             device=getattr(model, "device", None),
         )
@@ -76,25 +79,18 @@ def explain_shap(
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
 
 
-def _is_torch_model(model: TextClassifier):
+def is_torch_model(model: TextClassifier):
     if safe_isinstance(model, (Torch_HuggingfaceModelClass, Torch_ModelClass)):
         return True
     return safe_isinstance(getattr(model, "internal_model", None), "torch.nn.Module")
 
 
-def _is_tf_model(model: TextClassifier):
+def is_tf_model(model: TextClassifier):
     if safe_isinstance(model, (TF_HuggingfaceModelClass, TF_ModelClass)):
         return True
     return safe_isinstance(
         getattr(model, "internal_model", None), ("keras.Model", "tensorflow.Module")
     )
-
-
-def explanation_as_np(a_batch):
-    if isinstance(a_batch, List):
-        return map_explanations(a_batch, safe_as_array)
-    else:
-        return safe_as_array(a_batch)
 
 
 def explain(
@@ -118,12 +114,12 @@ def explain(
     if method == "SHAP":
         return explain_shap(model, *args, **kwargs)
 
-    if _is_tf_model(model):
+    if is_tf_model(model):
         result = tf_explain(model, *args, method=method, **kwargs)
-        return explanation_as_np(result)
+        return map_explanations(result, safe_as_array)
 
-    if _is_torch_model(model):
+    if is_torch_model(model):
         result = torch_explain(model, *args, method=method, **kwargs)
-        return explanation_as_np(result)
+        return map_explanations(result, safe_as_array)
 
     raise ValueError(f"Unable to identify DNN framework of the model.")

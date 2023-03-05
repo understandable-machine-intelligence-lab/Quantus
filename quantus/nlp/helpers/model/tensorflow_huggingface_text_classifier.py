@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-import numpy as np
-from typing import List, Dict
 from functools import singledispatchmethod
+from typing import Dict, List
 
+import numpy as np
+import tensorflow as tf
 from transformers import (
-    TFPreTrainedModel,
+    AutoTokenizer,
     PreTrainedTokenizerBase,
     TFAutoModelForSequenceClassification,
-    AutoTokenizer,
+    TFPreTrainedModel,
 )
 from transformers.tf_utils import shape_list
-import tensorflow as tf
+
 from quantus.nlp.config import USE_XLA
+from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.model.tensorflow_text_classifier import (
     TensorFlowTextClassifier,
 )
-
-from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 
 class TensorFlowHuggingFaceTextClassifier(
@@ -42,23 +42,16 @@ class TensorFlowHuggingFaceTextClassifier(
             TFAutoModelForSequenceClassification.from_pretrained(handle, **kwargs),
         )
 
-    def __call__(
-        self,
-        inputs_embeds: tf.Tensor,
-        **kwargs,
-    ) -> tf.Tensor:
+    def __call__(self, inputs_embeds: tf.Tensor, **kwargs) -> tf.Tensor:
         return self._model(
-            None,
-            inputs_embeds=inputs_embeds,
-            training=False,
-            **kwargs,
+            None, inputs_embeds=inputs_embeds, training=False, **kwargs
         ).logits
 
-    def tokenize(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:
-        return super().tokenize(text, return_tensors="tf", **kwargs)
+    def batch_encode(self, text: List[str], **kwargs) -> Dict[str, tf.Tensor]:  # type: ignore
+        return super().batch_encode(text, return_tensors="tf", **kwargs)  # type: ignore
 
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
-        encoded_inputs = self.tokenize(text)
+        encoded_inputs = self.batch_encode(text)
         return self._model.predict(encoded_inputs, verbose=0, **kwargs).logits
 
     @singledispatchmethod
@@ -67,7 +60,7 @@ class TensorFlowHuggingFaceTextClassifier(
 
     @get_hidden_representations.register
     def _(self, x_batch: list, **kwargs) -> tf.Tensor:
-        encoded_batch = self.tokenize(x_batch)
+        encoded_batch = self.batch_encode(x_batch)
         hidden_states = self._model(
             **encoded_batch,
             training=False,
@@ -89,8 +82,7 @@ class TensorFlowHuggingFaceTextClassifier(
         hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3]).numpy()
         return hidden_states
 
-    @property
-    def internal_model(self) -> tf.keras.Model:
+    def unwrap(self) -> tf.keras.Model:
         return self._model
 
     def clone(self) -> TensorFlowTextClassifier:

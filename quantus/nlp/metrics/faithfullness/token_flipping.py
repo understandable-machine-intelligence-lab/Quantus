@@ -1,24 +1,23 @@
 from __future__ import annotations
 
-from typing import List, Optional, Callable, Dict, no_type_check
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
+
 from quantus.helpers.utils import calculate_auc
-
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import Explanation, NormaliseFn
-
-from quantus.nlp.metrics.batched_metric import BatchedMetric
+from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     get_logits_for_labels,
     safe_as_array,
 )
-from quantus.nlp.helpers.plotting import plot_token_flipping_experiment
+from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
 
-class TokenFlipping(BatchedMetric):
+class TokenFlipping(TextClassificationMetric):
     """
     References:
         - https://arxiv.org/abs/2202.07304
@@ -45,8 +44,8 @@ class TokenFlipping(BatchedMetric):
         return_auc_per_sample: bool = False,
         mask_token: str = "[UNK]",
         task: str = "pruning",
-        default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
     ):
+        # TODO: docstring
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -56,7 +55,6 @@ class TokenFlipping(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            default_plot_func=default_plot_func,
         )
         self.return_auc_per_sample = return_auc_per_sample
         self.mask_token = mask_token
@@ -66,21 +64,45 @@ class TokenFlipping(BatchedMetric):
             )
         self.task = task
 
-    @no_type_check
+    def __call__(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        *,
+        y_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[List[Explanation] | np.ndarray] = None,
+        explain_func: ExplainFn = explain,
+        explain_func_kwargs: Optional[Dict] = None,
+        batch_size: int = 64,
+    ) -> np.ndarray:
+        # TODO: docstring
+        scores = super().__call__(
+            model,
+            x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            batch_size=batch_size,
+        )
+        if not self.return_auc_per_sample:
+            scores = np.reshape(scores, (len(x_batch), -1))
+        return scores
+
     def evaluate_batch(
         self,
         model: TextClassifier,
         x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[List[Explanation]],
         *args,
         **kwargs,
     ) -> np.ndarray | float | Dict[str, float]:
         scores = np.asarray([])
         if self.task == "pruning":
-            scores = self._eval_pruning(model, x_batch, y_batch, a_batch)
+            scores = self.eval_pruning(model, x_batch, y_batch, a_batch)
         elif self.task == "activation":
-            scores = self._eval_activation(model, x_batch, y_batch, a_batch)
+            scores = self.eval_activation(model, x_batch, y_batch, a_batch)
 
         # Move batch axis to 0's position.
         scores = scores.T
@@ -90,7 +112,7 @@ class TokenFlipping(BatchedMetric):
 
         return scores
 
-    def _eval_activation(
+    def eval_activation(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -122,12 +144,12 @@ class TokenFlipping(BatchedMetric):
 
             embeddings = model.embedding_lookup(masked_input_ids)
             logits = model(embeddings, **predict_kwargs)
-            logits = safe_as_array(logits)
+            logits = safe_as_array(logits, force=True)
             scores[i] = get_logits_for_labels(logits, y_batch)
 
         return scores
 
-    def _eval_pruning(
+    def eval_pruning(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -156,7 +178,7 @@ class TokenFlipping(BatchedMetric):
 
             embeddings = model.embedding_lookup(input_ids)
             logits = model(embeddings, **predict_kwargs)
-            logits = safe_as_array(logits)
+            logits = safe_as_array(logits, force=True)
             scores[i] = get_logits_for_labels(logits, y_batch)
 
         return scores

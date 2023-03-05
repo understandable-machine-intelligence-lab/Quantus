@@ -1,7 +1,7 @@
 import numpy as np
+import pytest
 import tensorflow as tf
 import torch
-import pytest
 from pytest_lazyfixture import lazy_fixture
 
 

@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import random
-from typing import List, Optional, Dict, Callable, no_type_check
+from typing import Callable, Dict, List, Optional
+
 import numpy as np
 
 from quantus.functions.similarity_func import ssim
 from quantus.helpers.utils import off_label_choice
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import Explanation, SimilarityFn, NormaliseFn
-from quantus.nlp.metrics.batched_metric import BatchedMetric
+from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
-from quantus.nlp.helpers.utils import explanations_batch_similarity
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
+from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
+from quantus.nlp.helpers.utils import get_scores
+from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
 
-class RandomLogit(BatchedMetric):
+class RandomLogit(TextClassificationMetric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
 
@@ -39,8 +40,8 @@ class RandomLogit(BatchedMetric):
         display_progressbar: bool = False,
         similarity_func: SimilarityFn = ssim,
         seed: int = 42,
-        default_plot_func: Optional[Callable] = None,
     ):
+        # TODO: docstring
         super().__init__(
             abs=abs,
             normalise=normalise,
@@ -50,35 +51,47 @@ class RandomLogit(BatchedMetric):
             aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
-            default_plot_func=default_plot_func,
         )
         self.num_classes = num_classes
         self.similarity_func = similarity_func
         self.seed = seed
 
-    @no_type_check
-    def evaluate_batch(
+    def __call__(
         self,
         model: TextClassifier,
-        x_batch: List[str] | np.ndarray,
+        x_batch: List[str],
+        *,
+        y_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[List[Explanation]] = None,
+        explain_func: ExplainFn = explain,
+        explain_func_kwargs: Optional[Dict] = None,
+        batch_size: int = 64,
+    ) -> np.ndarray:
+        return super().__call__(
+            model,
+            x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            batch_size=batch_size,
+        )
+
+    def evaluate_batch(  # type: ignore
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Dict,
         **kwargs,
     ) -> np.ndarray | float:
         np.random.seed(self.seed)
         y_off = off_label_choice(y_batch, self.num_classes)
 
         # Explain against a random class.
-        a_perturbed = self.explain_func(
-            model,
-            x_batch,
-            y_off,
-            **self.explain_func_kwargs,  # noqa
+        a_perturbed = self.explain_batch(
+            model, x_batch, y_off, explain_func, explain_func_kwargs
         )
-
-        # Normalise and take absolute values of the attributions, if True.
-        a_perturbed = self.normalise_a_batch(a_perturbed)
-        scores = explanations_batch_similarity(
-            a_batch, a_perturbed, self.similarity_func
-        )
-        return np.asarray(scores)
+        return self.similarity_func(get_scores(a_batch), get_scores(a_perturbed))

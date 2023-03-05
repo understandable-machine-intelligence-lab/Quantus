@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Dict, Optional, List, Callable, Union, Any
+import gc
+from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 from tqdm.auto import tqdm
-from collections import defaultdict
-import gc
+
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.metrics.batched_metric import BatchedMetric
+from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
 _MetricValue = Union[np.ndarray, float, Dict[str, np.ndarray]]
 _CallKwargs = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
@@ -15,7 +16,7 @@ _PersistFn = Callable[[str, _CallKwargs, _MetricValue], None]
 
 
 def evaluate(
-    metrics: Dict[str, BatchedMetric],
+    metrics: Dict[str, TextClassificationMetric],
     model: TextClassifier,
     x_batch: List[str],
     *,

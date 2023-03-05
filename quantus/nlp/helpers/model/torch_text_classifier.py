@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import torch.nn as nn
-import torch
 from abc import abstractmethod
-from typing import Generator, Dict, List
+from typing import Dict, Generator
+
 import numpy as np
+import torch
+import torch.nn as nn
+
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.utils import batch_list
 
 
 class TorchTextClassifier(TextClassifier):
@@ -18,7 +19,7 @@ class TorchTextClassifier(TextClassifier):
 
         modules = [
             layer
-            for layer in model_copy.internal_model.named_modules()
+            for layer in self.unwrap().named_modules()
             if (hasattr(layer[1], "reset_parameters") and len(layer.state_dict()) > 0)
         ]
 
@@ -33,38 +34,29 @@ class TorchTextClassifier(TextClassifier):
 
             yield module[0], model_copy
 
+    def random_layer_generator_length(self) -> int:
+        modules = [
+            layer
+            for layer in self.unwrap().named_modules()
+            if (hasattr(layer[1], "reset_parameters") and len(layer.state_dict()) > 0)
+        ]
+        return len(modules)
+
     def to_tensor(self, x: torch.Tensor | np.ndarray, **kwargs) -> torch.Tensor:
         if isinstance(x, torch.Tensor):
             return x
         return torch.tensor(x, device=self.device, **kwargs)
 
-    def predict(self, text: List[str], batch_size: int = 64, **kwargs) -> np.ndarray:
-        if len(text) <= batch_size:
-            return self.predict_on_batch(text)
-
-        batched_text = batch_list(text, batch_size)
-        logits = []
-
-        for i in batched_text:
-            logits.append(self.predict_on_batch(i))
-
-        return np.vstack(logits)
-
-    @abstractmethod
-    def predict_on_batch(self, text: List[str]) -> np.ndarray:
-        raise NotImplementedError
-
     @property
     def weights(self) -> Dict[str, torch.Tensor]:
-        return self.internal_model.state_dict()
+        return self.unwrap().state_dict()
 
     @weights.setter
     def weights(self, weights: Dict[str, torch.Tensor]):
-        self.internal_model.load_state_dict(weights)
+        self.unwrap().load_state_dict(weights)
 
-    @property
     @abstractmethod
-    def internal_model(self) -> nn.Module:
+    def unwrap(self) -> nn.Module:
         raise NotImplementedError
 
     @property
