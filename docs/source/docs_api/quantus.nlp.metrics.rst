@@ -22,5 +22,4 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   quantus.nlp.metrics.batched_metric
-   quantus.nlp.metrics.batched_perturbation_metric
+   quantus.nlp.metrics.text_classification_metric

@@ -13,6 +13,7 @@ Submodules
    :maxdepth: 4
 
    quantus.nlp.functions.explanation_func
+   quantus.nlp.functions.lime
    quantus.nlp.functions.normalise_func
    quantus.nlp.functions.perturb_func
    quantus.nlp.functions.tf_explanation_func
