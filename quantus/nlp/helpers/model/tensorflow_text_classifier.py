@@ -35,6 +35,7 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
             layer.set_weights([np.random.permutation(w) for w in weights])
             yield layer.name, model_copy
 
+    @property
     def random_layer_generator_length(self) -> int:
         layers = list(
             self.unwrap()._flatten_layers(  # noqa
@@ -46,13 +47,11 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
 
     @property
     def weights(self) -> List[np.ndarray]:
-        # TODO get weights as tensors??? to avoid copying to CPU?
         return self.unwrap().get_weights()
 
     @weights.setter
     def weights(self, weights: List[np.ndarray]):
         self.unwrap().set_weights(weights)
-        # We need to re-trace it.
 
     @property
     @abstractmethod

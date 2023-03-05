@@ -34,6 +34,7 @@ class TorchTextClassifier(TextClassifier):
 
             yield module[0], model_copy
 
+    @property
     def random_layer_generator_length(self) -> int:
         modules = [
             layer

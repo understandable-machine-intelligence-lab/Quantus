@@ -70,7 +70,7 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
 def test_model_parameter_randomisation_tf_model(
     tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs
 ):
-    metric = ModelParameterRandomisation(**init_kwargs)
+    metric = ModelParameterRandomisation(**init_kwargs, display_progressbar=True)
     result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
     if not init_kwargs.get("return_sample_correlation"):
         assert isinstance(result, Dict)
