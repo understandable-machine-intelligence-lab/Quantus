@@ -81,9 +81,9 @@ class TextClassificationMetric:
             score = self.batch_postprocess(
                 model, x, y, a, explain_func, explain_func_kwargs, score
             )
-            scores_batch.append(score)
+            scores_batch.extend(score)
 
-        return np.reshape(scores_batch, -1)
+        return np.asarray(scores_batch)
 
     def explain_batch(
         self,

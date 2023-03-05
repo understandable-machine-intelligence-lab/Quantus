@@ -38,9 +38,7 @@ class TensorFlowTextClassifier(TextClassifier, tf.Module):
     @property
     def random_layer_generator_length(self) -> int:
         layers = list(
-            self.unwrap()._flatten_layers(  # noqa
-                include_self=False, recursive=True
-            )
+            self.unwrap()._flatten_layers(include_self=False, recursive=True)  # noqa
         )
         layers = list(filter(lambda i: len(i.get_weights()) > 0, layers))
         return len(layers)

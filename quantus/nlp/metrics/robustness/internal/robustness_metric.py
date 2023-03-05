@@ -63,7 +63,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
             model, x_batch, y_batch, explain_func, explain_func_kwargs
         )
 
-        return x_batch, y_batch, a_batch, x_perturbed_batches.tolist() # type: ignore
+        return x_batch, y_batch, a_batch, x_perturbed_batches.tolist()  # type: ignore
 
     def batch_postprocess(
         self,

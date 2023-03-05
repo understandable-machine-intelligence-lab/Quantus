@@ -86,7 +86,7 @@ class RandomLogit(TextClassificationMetric):
         explain_func: ExplainFn,
         explain_func_kwargs: Dict,
         **kwargs,
-    ) -> np.ndarray | float:
+    ) -> np.ndarray:
         np.random.seed(self.seed)
         y_off = off_label_choice(y_batch, self.num_classes)
 
@@ -94,4 +94,6 @@ class RandomLogit(TextClassificationMetric):
         a_perturbed = self.explain_batch(
             model, x_batch, y_off, explain_func, explain_func_kwargs
         )
-        return self.similarity_func(get_scores(a_batch), get_scores(a_perturbed))
+        return np.asarray(
+            [self.similarity_func(get_scores(a_batch), get_scores(a_perturbed))]
+        )
