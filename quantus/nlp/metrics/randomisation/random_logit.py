@@ -4,7 +4,7 @@ from typing import Callable, Dict, List, Optional
 
 import numpy as np
 
-from quantus.functions.similarity_func import ssim
+from quantus.functions.similarity_func import correlation_kendall_tau
 from quantus.helpers.utils import off_label_choice
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
@@ -38,7 +38,7 @@ class RandomLogit(TextClassificationMetric):
         aggregate_func: Optional[Callable] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        similarity_func: SimilarityFn = ssim,
+        similarity_func: SimilarityFn = correlation_kendall_tau,
         seed: int = 42,
     ):
         # TODO: docstring
@@ -94,6 +94,7 @@ class RandomLogit(TextClassificationMetric):
         a_perturbed = self.explain_batch(
             model, x_batch, y_off, explain_func, explain_func_kwargs
         )
-        return np.asarray(
-            [self.similarity_func(get_scores(a_batch), get_scores(a_perturbed))]
+        return self.similarity_func(
+            get_scores(a_batch),
+            get_scores(a_perturbed),
         )

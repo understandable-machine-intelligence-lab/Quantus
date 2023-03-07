@@ -1,10 +1,9 @@
 from typing import List
+
 import numpy as np
 import pytest
-from quantus.nlp.helpers.utils import (
-    batch_list,
-    get_logits_for_labels,
-)
+
+from quantus.nlp.helpers.utils import batch_list, get_logits_for_labels
 
 
 @pytest.mark.nlp

@@ -68,11 +68,14 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2},
         },
-        pytest.param({
-            "method": "NoiseGrad++",
-            "explain_fn": "GradXInput",
-            "init_kwargs": {"n": 2, "m": 2},
-        }, marks=pytest.mark.skip),
+        pytest.param(
+            {
+                "method": "NoiseGrad++",
+                "explain_fn": "GradXInput",
+                "init_kwargs": {"n": 2, "m": 2},
+            },
+            marks=pytest.mark.skip,
+        ),
         {"method": "LIME", "num_samples": 5},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],

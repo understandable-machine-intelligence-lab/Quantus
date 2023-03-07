@@ -1,6 +1,7 @@
 """Explanation functions for Torch models."""
 
 from __future__ import annotations
+
 from functools import singledispatch
 from typing import Callable, Dict, List, Optional, Union
 

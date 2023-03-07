@@ -109,9 +109,9 @@ class ModelParameterRandomisation(TextClassificationMetric):
                 similarity_score = self.evaluate_batch(
                     random_layer_model, x, y, a, explain_func, explain_func_kwargs
                 )
-                results[layer_name].append(similarity_score)
+                results[layer_name].extend(similarity_score)
 
-        results = map_dict(results, partial(np.reshape, newshape=-1))
+        results = map_dict(results, np.asarray)
 
         if self.return_sample_correlation:
             return np.asarray(compute_correlation_per_sample(results))

@@ -9,6 +9,7 @@
 import copy
 import re
 from importlib import util
+from collections import defaultdict
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable
 
 import numpy as np
@@ -1003,8 +1004,7 @@ def compute_correlation_per_sample(last_results: Dict) -> List:
         "Model Parameter Randomisation Test, 'last_result' "
         "must be of type dict."
     )
-    layer_length = len(last_results[list(last_results.keys())[0]])
-    results: Dict[int, List] = {sample: [] for sample in range(layer_length)}
+    results: Dict[int, List] = defaultdict(lambda: [])
 
     for sample in results:
         for layer in last_results:

@@ -57,7 +57,7 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> Union[float, np.ndarray]:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -75,7 +75,14 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return scipy.stats.kendalltau(a, b)[0]
+    if a.ndim != b.ndim:
+        raise ValueError(f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }")
+    if a.ndim == 1:
+        return scipy.stats.kendalltau(a, b)[0]
+    elif a.ndim == 2:
+        return np.asarray([correlation_kendall_tau(a_i, b_i) for a_i, b_i in zip(a, b)])
+    else:
+        raise ValueError()
 
 
 def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:

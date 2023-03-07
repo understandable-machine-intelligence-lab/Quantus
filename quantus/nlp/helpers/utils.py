@@ -23,12 +23,6 @@ def get_input_ids(
     return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
 
-def get_embeddings(
-    x_batch: List[str], model: TextClassifier
-) -> Tuple[Any, Dict[str, Any]]:
-    return model.embedding_lookup(get_input_ids(x_batch, model)[0])
-
-
 def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
     if value is not None:
@@ -51,11 +45,8 @@ def map_explanations(
         return fn(a_batch)  # type: ignore
 
 
-def get_scores(a_batch: List[Explanation] | np.ndarray) -> np.ndarray:
-    if isinstance(a_batch, List):
-        return np.asarray(list(map(itemgetter(1), a_batch)))
-    else:
-        return a_batch
+def get_scores(a_batch: List[Explanation]) -> np.ndarray:
+    return np.asarray(list(map(itemgetter(1), a_batch)))
 
 
 @cached(
@@ -86,7 +77,7 @@ def safe_isinstance(obj: Any, class_path_str: str | Tuple) -> bool:
     elif isinstance(class_path_str, list) or isinstance(class_path_str, tuple):
         class_path_strs = class_path_str  # type: ignore
     else:
-        class_path_strs = [""]
+        raise ValueError
 
     # try each module path in order
     for class_path_str in class_path_strs:
@@ -137,7 +128,7 @@ def add_default_items(
     dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
 ) -> Dict[str, Any]:
     if dictionary is None:
-        return default_items
+        return default_items.copy()
 
     copy = dictionary.copy()
 

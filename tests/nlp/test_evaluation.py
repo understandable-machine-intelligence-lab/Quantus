@@ -9,15 +9,17 @@ import quantus.nlp as qn
 @pytest.mark.evaluate_func
 def test_tf_model(tf_sst2_model, sst2_dataset):
     metrics = {
-        "Avg-Sesnitivity": qn.AvgSensitivity(nr_samples=5),
-        "Max-Sensitivity": qn.MaxSensitivity(nr_samples=5),
-        "RIS": qn.RelativeInputStability(nr_samples=5),
-        "RandomLogit": qn.RandomLogit(num_classes=2),
+        "Avg-Sesnitivity": qn.AvgSensitivity(nr_samples=5, disable_warnings=True),
+        "Max-Sensitivity": qn.MaxSensitivity(nr_samples=5, disable_warnings=True),
+        "RIS": qn.RelativeInputStability(nr_samples=5, disable_warnings=True),
+        "RandomLogit": qn.RandomLogit(num_classes=2, disable_warnings=True),
+        "TokenFlipping": qn.TokenFlipping(disable_warnings=True, abs=True),
+        "MPR": qn.ModelParameterRandomisation(disable_warnings=True),
     }
 
     call_kwargs = {
         "explain_func_kwargs": {"method": "GradXInput"},
-        "batch_size": 8,
+        "batch_size": 6,
         "Max-Sensitivity": {
             "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
         },

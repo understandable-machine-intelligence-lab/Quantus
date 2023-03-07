@@ -11,9 +11,7 @@ PerturbFn = Union[Callable[[List[str]], List[str]], Callable[[np.ndarray], np.nd
 
 ExplainFn = Union[
     Callable[[TextClassifier, List[str], np.ndarray], List[Explanation]],
-    Callable[
-        [TextClassifier, np.ndarray, np.ndarray], np.ndarray
-    ],
+    Callable[[TextClassifier, np.ndarray, np.ndarray], np.ndarray],
 ]
 
 NormaliseFn = Callable[[np.ndarray], np.ndarray]

@@ -54,7 +54,7 @@ def explain_shap(
         - https://github.com/slundberg/shap
     """
 
-    import shap
+    import shap  # noqa
     import shap.maskers
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
@@ -79,20 +79,6 @@ def explain_shap(
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
 
 
-def is_torch_model(model: TextClassifier):
-    if safe_isinstance(model, (Torch_HuggingfaceModelClass, Torch_ModelClass)):
-        return True
-    return safe_isinstance(getattr(model, "internal_model", None), "torch.nn.Module")
-
-
-def is_tf_model(model: TextClassifier):
-    if safe_isinstance(model, (TF_HuggingfaceModelClass, TF_ModelClass)):
-        return True
-    return safe_isinstance(
-        getattr(model, "internal_model", None), ("keras.Model", "tensorflow.Module")
-    )
-
-
 def explain(
     model: TextClassifier,
     *args,
@@ -114,12 +100,12 @@ def explain(
     if method == "SHAP":
         return explain_shap(model, *args, **kwargs)
 
-    if is_tf_model(model):
+    if safe_isinstance(model, (TF_HuggingfaceModelClass, TF_ModelClass)):
         result = tf_explain(model, *args, method=method, **kwargs)
-        return map_explanations(result, safe_as_array)
+        return map_explanations(result, safe_as_array)  # noqa
 
-    if is_torch_model(model):
+    if safe_isinstance(model, (Torch_HuggingfaceModelClass, Torch_ModelClass)):
         result = torch_explain(model, *args, method=method, **kwargs)
-        return map_explanations(result, safe_as_array)
+        return map_explanations(result, safe_as_array)  # noqa
 
     raise ValueError(f"Unable to identify DNN framework of the model.")
