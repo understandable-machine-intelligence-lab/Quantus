@@ -7,6 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
+from __future__ import annotations
 from typing import Union
 import platform
 
@@ -14,8 +15,11 @@ import numpy as np
 import scipy
 import skimage
 
+from quantus.helpers.utils import dispatch_2d
 
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+
+@dispatch_2d
+def correlation_spearman(a: np.array, b: np.array, **kwargs) -> np.ndarray | float:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -36,6 +40,7 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.spearmanr(a, b)[0]
 
 
+@dispatch_2d
 def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
@@ -57,7 +62,8 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> Union[float, np.ndarray]:
+@dispatch_2d
+def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> np.ndarray | float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -75,14 +81,7 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> Union[float, 
     float
         The similarity score.
     """
-    if a.ndim != b.ndim:
-        raise ValueError(f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }")
-    if a.ndim == 1:
-        return scipy.stats.kendalltau(a, b)[0]
-    elif a.ndim == 2:
-        return np.asarray([correlation_kendall_tau(a_i, b_i) for a_i, b_i in zip(a, b)])
-    else:
-        raise ValueError()
+    return scipy.stats.kendalltau(a, b)[0]
 
 
 def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
@@ -262,7 +261,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     )
 
 
-def difference(a: np.array, b: np.array, **kwargs) -> float:
+def difference(a: np.array, b: np.array, **kwargs) -> np.ndarray:
     """
     Calculate the difference between two images (or explanations).
 

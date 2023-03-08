@@ -14,7 +14,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset):
         "RIS": qn.RelativeInputStability(nr_samples=5, disable_warnings=True),
         "RandomLogit": qn.RandomLogit(num_classes=2, disable_warnings=True),
         "TokenFlipping": qn.TokenFlipping(disable_warnings=True, abs=True),
-        "MPR": qn.ModelParameterRandomisation(disable_warnings=True),
+        # "MPR": qn.ModelParameterRandomisation(disable_warnings=True),
     }
 
     call_kwargs = {

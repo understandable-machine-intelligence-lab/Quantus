@@ -9,8 +9,8 @@
 import copy
 import re
 from importlib import util
-from collections import defaultdict
 from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable
+from functools import wraps
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -1004,7 +1004,8 @@ def compute_correlation_per_sample(last_results: Dict) -> List:
         "Model Parameter Randomisation Test, 'last_result' "
         "must be of type dict."
     )
-    results: Dict[int, List] = defaultdict(lambda: [])
+    layer_length = len(last_results[list(last_results.keys())[0]])
+    results: Dict[int, List] = {sample: [] for sample in range(layer_length)}
 
     for sample in results:
         for layer in last_results:
@@ -1021,3 +1022,21 @@ def off_label_choice(y_batch: Union[np.ndarray, int], num_classes: int) -> Union
         return np.asarray([off_label_choice(i, num_classes) for i in y_batch])
     else:
         return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
+
+
+def dispatch_2d(func):
+    @wraps(func)
+    def wrapper(a, b, **kwargs):
+        a = np.asarray(a)
+        b = np.asarray(b)
+
+        if a.ndim != b.ndim:
+            raise ValueError(f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }")
+        if a.ndim == 2:
+            return np.asarray([func(a_i, b_i, **kwargs) for a_i, b_i in zip(a, b)])
+        elif a.ndim == 1:
+            return func(a, b, **kwargs)
+        else:
+            raise ValueError(f"Supported only 1D and 2D inputs, but found: {a.ndim}")
+
+    return wrapper

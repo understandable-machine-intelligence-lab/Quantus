@@ -10,6 +10,19 @@ from __future__ import annotations
 import numpy as np
 
 
+def _ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
+    if a.ndim == 1:
+        return np.linalg.norm(a, ord=l_ord)
+    elif a.ndim == 2:
+        return np.linalg.norm(a, axis=-1, ord=l_ord)
+    elif a.ndim == 3:
+        return np.linalg.norm(a, axis=(-1, -2), ord=l_ord)  # noqa
+    if a.ndim == 4:
+        return np.linalg.norm(np.linalg.norm(a, axis=(-1, -2), ord=l_ord), axis=-1, ord=l_ord) # noqa
+    else:
+        raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
+
+
 def fro_norm(a: np.array) -> float | np.ndarray:
     """
     Calculate Frobenius norm for an array.
@@ -24,14 +37,7 @@ def fro_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    if a.ndim == 1:
-        return np.linalg.norm(a, ord=1)
-    elif a.ndim == 2:
-        return np.linalg.norm(a, axis=-1, ord=1)
-    elif a.ndim == 3:
-        return np.linalg.norm(a, axis=(-1, -2), ord=1) # noqa
-    else:
-        raise ValueError
+    return _ndim_norm(a, 1)
 
 
 def l2_norm(a: np.array) -> float | np.ndarray:
@@ -48,16 +54,8 @@ def l2_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    if a.ndim == 4:
-        return np.linalg.norm(np.linalg.norm(a, axis=(-1, -2)), axis=-1, ord=2) # noqa
-    elif a.ndim == 3:
-        return np.linalg.norm(a, axis=(-1, -2), ord=2) # noqa
-    elif a.ndim == 2:
-        return np.linalg.norm(a, axis=-1, ord=2)
-    elif a.ndim == 1:
-        return np.linalg.norm(a, ord=2)
-    else:
-        raise ValueError
+
+    return _ndim_norm(a, l_ord=2)
 
 
 def linf_norm(a: np.array) -> float:
@@ -74,5 +72,4 @@ def linf_norm(a: np.array) -> float:
     float
         The norm.
     """
-    assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
-    return np.linalg.norm(a, ord=np.inf)
+    return _ndim_norm(a, l_ord=np.inf)

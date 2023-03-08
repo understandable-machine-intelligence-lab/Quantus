@@ -16,6 +16,10 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
+def flatten_list(list_2d: List[List[T]]) -> List[T]:
+    return [item for sublist in list_2d for item in sublist]
+
+
 def get_input_ids(
     x_batch: List[str], model: TextClassifier
 ) -> Tuple[Any, Dict[str, Any]]:
@@ -180,7 +184,7 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     """
     # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
-    # the hard way again one more time. Same goes for overloaded below ones.
+    # the hard way again one more time.
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
 
 
@@ -217,7 +221,6 @@ if util.find_spec("tensorflow"):
 
 
 if util.find_spec("torch"):
-    import torch
     from torch import Tensor
 
     @safe_as_array.register
