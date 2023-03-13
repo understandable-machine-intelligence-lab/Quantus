@@ -22,4 +22,10 @@ shap>=0.41.0
 
 pytest-order
 pytest-xdist
-sentencepiece
+
+nlpaug>=1.1.11
+nltk>=3.8.1
+transformers>=4.26.0
+
+black
+flake8

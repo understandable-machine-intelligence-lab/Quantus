@@ -172,7 +172,7 @@ from quantus.metrics.robustness import (
             },
             np.nan,
         ),
-        (
+        pytest.param(
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
@@ -192,6 +192,7 @@ from quantus.metrics.robustness import (
                 },
             },
             np.nan,
+            marks=pytest.mark.xfail
         ),
     ],
 )

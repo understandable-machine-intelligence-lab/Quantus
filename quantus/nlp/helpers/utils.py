@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from functools import singledispatch
 from importlib import util
 from operator import itemgetter
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
@@ -188,13 +187,21 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
 
 
-@singledispatch
-def safe_as_array(a, *, force: bool = False) -> np.ndarray:
+def safe_as_array(a, force: bool = False) -> np.ndarray:
     """
     Safe means safe from torch complaining about tensors being on other device or attached to graph.
     So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
     force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
     """
+    if safe_isinstance(a, "torch.Tensor"):  # noqa
+        return a.detach().cpu().numpy()
+    if (
+        safe_isinstance(
+            a, ("tensorflow.Tensor", "tensorflow.python.framework.ops.EagerTensor")
+        )
+        and force
+    ):  # noqa
+        return np.array(tf.identity(a))
     return a
 
 
@@ -203,26 +210,10 @@ if util.find_spec("tensorflow"):
 
     import tensorflow as tf
 
-    from quantus.nlp.config import USE_XLA
+    from quantus.nlp.config import config
 
     tf_function = partial(
         tf.function,
         reduce_retracing=True,
-        jit_compile=USE_XLA,
-        experimental_autograph_options=tf.autograph.experimental.Feature.ALL,
+        jit_compile=config.use_xla,
     )
-
-    @safe_as_array.register
-    def _(a: tf.Tensor, *, force=False):
-        if force:
-            return np.array(tf.identity(a))
-        else:
-            return a
-
-
-if util.find_spec("torch"):
-    from torch import Tensor
-
-    @safe_as_array.register
-    def _(a: Tensor, *args, **kwargs):
-        return a.detach().cpu().numpy()

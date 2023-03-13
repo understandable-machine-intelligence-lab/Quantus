@@ -13,7 +13,7 @@ from transformers import (
 )
 from transformers.tf_utils import shape_list
 
-from quantus.nlp.config import USE_XLA
+from quantus.nlp.config import config
 from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.model.tensorflow_text_classifier import (
     TensorFlowTextClassifier,
@@ -26,7 +26,7 @@ class TensorFlowHuggingFaceTextClassifier(
     def __init__(self, tokenizer: PreTrainedTokenizerBase, model: TFPreTrainedModel):
         super().__init__(tokenizer)
         self._model = model
-        self._model._jit_compile = USE_XLA  # noqa
+        self._model._jit_compile = config.use_xla
         self._word_embedding_matrix = tf.convert_to_tensor(
             self._model.get_input_embeddings().weight
         )

@@ -840,7 +840,7 @@ def get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
 @tf_function
 def apply_noise(params: tf.Tensor, mean, std, noise_type: str):
     params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
-    if noise_type == "additive":
+    if tf.math.equal(noise_type, "additive"):
         return params + params_noise
     else:
         return params * params_noise

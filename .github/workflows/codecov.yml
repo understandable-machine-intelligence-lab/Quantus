@@ -18,13 +18,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt -r requirements_test.txt -r requirements_nlp.txt
+          pip install -r requirements.txt -r requirements_test.txt
           # TODO: add to requirements_test.txt after release.
           pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
 
       - name: Test
         run: |
           export USE_XLA=true
+          export TF_XLA_FLAGS="--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
           pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s
       - name: Upload
         uses:  codecov/codecov-action@v3

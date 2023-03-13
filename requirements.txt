@@ -5,3 +5,4 @@ scikit-image>=0.19.3
 scikit-learn>=1.2.1
 scipy>=1.10.0
 tqdm>=4.64.1
+pydantic
