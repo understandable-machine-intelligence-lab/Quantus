@@ -7,15 +7,17 @@ from typing import Callable, Dict, List, Optional, Union
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
+from tensorflow_probability.python.distributions.normal import Normal
 
 from quantus.nlp.helpers.model.tensorflow_text_classifier import (
     TensorFlowTextClassifier,
 )
 from quantus.nlp.helpers.types import Explanation
-from quantus.nlp.helpers.utils import (  # used in python; used in graph
+from quantus.nlp.helpers.utils import (
     get_input_ids,
     tf_function,
     value_or_default,
+    apply_noise
 )
 
 __all__ = ["available_xai_methods", "tf_explain"]
@@ -688,11 +690,14 @@ def _(
         colocate_with_first_write_call=True,
     )
 
+    noise_dist = Normal(mean, std)
+
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
+            params_noise = noise_dist.sample(params.shape)
             weights_copy[index] = apply_noise(
-                tf.convert_to_tensor(params), mean, std, noise_type
+                params, params_noise, noise_type
             )
 
         model.weights = weights_copy
@@ -783,13 +788,11 @@ def _(
             )
         explain_fn = method_mapping[explain_fn]
 
-    tf.random.set_seed(seed)
+    tf.keras.utils.set_random_seed(seed)
     original_weights = model.weights
 
-    mean = tf.convert_to_tensor(mean)
-    std = tf.convert_to_tensor(std)
-    sg_mean = tf.convert_to_tensor(sg_mean)
-    sg_std = tf.convert_to_tensor(sg_std)
+    noise_dist = Normal(mean, std)
+    sd_noise_dist = Normal(sg_mean, sg_std)
 
     explanations_array = tf.TensorArray(
         x_batch.dtype,
@@ -801,15 +804,17 @@ def _(
     for _n in range(n):
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
+            params_noise = noise_dist.sample(params.shape)
             weights_copy[index] = apply_noise(
-                tf.convert_to_tensor(params), mean, std, noise_type
+                params, params_noise, noise_type
             )
 
         _n = tf.convert_to_tensor(_n)
 
         model.weights = weights_copy
         for _m in range(m):
-            noisy_embeddings = apply_noise(x_batch, sg_mean, sg_std, noise_type)
+            embeddings_noise = sd_noise_dist.sample(x_batch.shape)
+            noisy_embeddings = apply_noise(x_batch, embeddings_noise, noise_type)
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
 
             _m = tf.convert_to_tensor(_m)
@@ -835,15 +840,6 @@ def get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
             f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
         )
     return method_mapping[explain_fn]
-
-
-@tf_function
-def apply_noise(params: tf.Tensor, mean, std, noise_type: str):
-    params_noise = tf.random.normal(tf.shape(params), mean=mean, stddev=std)
-    if tf.math.equal(noise_type, "additive"):
-        return params + params_noise
-    else:
-        return params * params_noise
 
 
 @tf_function

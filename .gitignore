@@ -43,3 +43,4 @@ tutorials/invited_talks/
 
 # VS Code project files
 .vscode
+.env

@@ -4,6 +4,8 @@ import numpy as np
 from nlpaug.augmenter.char import KeyboardAug
 from nlpaug.augmenter.word import SpellingAug, SynonymAug
 
+from quantus.nlp.helpers.utils import apply_noise
+
 
 def spelling_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
     """
@@ -68,12 +70,4 @@ def gaussian_noise(
     return _apply_noise(x_batch, noise, noise_type)
 
 
-def _apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
-    if noise_type not in ("additive", "multiplicative"):
-        raise ValueError(
-            f"Unsupported noise_type, supported are: additive, multiplicative."
-        )
-    if noise_type == "additive":
-        return arr + noise
-    if noise_type == "multiplicative":
-        return arr * noise
+
