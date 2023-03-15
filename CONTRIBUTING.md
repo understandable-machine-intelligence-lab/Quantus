@@ -97,16 +97,8 @@ Before creating a PR, double-check that the following tasks are completed:
 
 - Make sure that the latest version of the code from the `main` branch is merged into your working branch.
 - Run `black` to format source code:
-```shell
+```bash
 black quantus/INSERT_YOUR_FILE_NAME.py
-```
-- Run `isort` to sort your imports
-```shell
-isort --profile black quantus/...  
-```
-- Run `vulture` to find unused imports
-```shell
-find . -name "*.py" | xargs vulture | grep "unused import" 
 ```
 - Run `flake8` for quick style checks, e.g.:
 ```bash

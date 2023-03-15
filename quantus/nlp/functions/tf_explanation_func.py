@@ -802,7 +802,7 @@ def _(
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
             weights_copy[index] = apply_noise(
-                tf.constant(params), mean, std, noise_type
+                tf.convert_to_tensor(params), mean, std, noise_type
             )
 
         _n = tf.convert_to_tensor(_n)
