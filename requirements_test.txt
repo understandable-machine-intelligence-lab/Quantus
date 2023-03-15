@@ -29,3 +29,4 @@ transformers>=4.26.0
 
 black
 flake8
+mypy==0.982

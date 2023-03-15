@@ -27,7 +27,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt -r requirements_test.txt
-        pip install mypy==0.982 --upgrade typing-extensions 
         # TODO: add to requirements_test.txt after release.
         pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
     - name: Lint
