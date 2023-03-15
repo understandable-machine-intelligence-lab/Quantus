@@ -59,7 +59,7 @@ def uniform_noise(
 ) -> np.ndarray:
     """Apply uniform noise to arr."""
     noise = np.random.default_rng(seed).uniform(size=x_batch.shape, **kwargs)
-    return _apply_noise(x_batch, noise, noise_type)
+    return apply_noise(x_batch, noise, noise_type)
 
 
 def gaussian_noise(
@@ -67,7 +67,7 @@ def gaussian_noise(
 ) -> np.ndarray:
     """Apply gaussian noise to arr."""
     noise = np.random.default_rng(seed).normal(size=x_batch.shape, **kwargs)
-    return _apply_noise(x_batch, noise, noise_type)
+    return apply_noise(x_batch, noise, noise_type)
 
 
 
