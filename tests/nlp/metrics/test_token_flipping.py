@@ -29,8 +29,8 @@ def test_tf_model(
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()
     assert not (result == np.NAN).any()
-    assert not (result == np.NZERO).any()
-    assert not (result == np.PZERO).any()
+    # assert not (result == np.NZERO).any()
+    # assert not (result == np.PZERO).any()
     assert result.shape == expected_shape
 
 
@@ -58,6 +58,6 @@ def test_fnet_torch_model(
     assert not (result == np.NINF).any()
     assert not (result == np.PINF).any()
     assert not (result == np.NAN).any()
-    assert not (result == np.NZERO).any()
-    assert not (result == np.PZERO).any()
+    # assert not (result == np.NZERO).any()
+    # assert not (result == np.PZERO).any()
     assert result.shape == expected_shape

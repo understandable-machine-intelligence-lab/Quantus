@@ -26,8 +26,6 @@ from quantus.nlp.helpers.utils import (
     value_or_default,
 )
 
-__all__ = ["explain"]
-
 TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tf_hf_text_classifier.TensorFlowHuggingFaceTextClassifier"
 TF_ModelClass = "quantus.nlp.helpers.model.tf_text_classifier.TensorflowTextClassifier"
 Torch_HuggingfaceModelClass = (

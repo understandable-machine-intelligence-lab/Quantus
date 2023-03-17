@@ -18,8 +18,6 @@ from quantus.nlp.helpers.utils import (
     apply_noise,
 )
 
-__all__ = ["available_xai_methods", "tf_explain"]
-
 
 # Just to save some typing effort
 _BaselineFn = Callable[[tf.Tensor], tf.Tensor]
@@ -200,7 +198,7 @@ def explain_integrated_gradients(
         model,
         y_batch,
         num_steps=num_steps,
-        baseline_fn=value_or_default(baseline_fn, lambda: zeros_baseline),
+        baseline_fn=value_or_default(baseline_fn, lambda: _zeros_baseline),
         batch_interpolated_inputs=batch_interpolated_inputs,
         **kwargs,
     )
@@ -418,7 +416,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 
 @_explain_gradient_norm.register
-def _(x_batch: list, model: TextClassifier, y_batch: np.ndarray) -> List[Explanation]:
+def _(x_batch: list, model: TextClassifier, y_batch: np.ndarray):
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_norm(embeddings, model, y_batch, **kwargs)
@@ -437,7 +435,7 @@ def _(
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
         logits = model(x_batch, **kwargs)
-        logits_for_label = get_logits_for_labels(logits, y_batch)
+        logits_for_label = _get_logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
     return tf.linalg.norm(grads, axis=-1)
@@ -454,7 +452,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 @_explain_gradient_x_input.register
 def _(
     x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs
-) -> List[Explanation]:
+):
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
@@ -474,7 +472,7 @@ def _(
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
         logits = model(x_batch, **kwargs)
-        logits_for_label = get_logits_for_labels(logits, y_batch)
+        logits_for_label = _get_logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
     return tf.math.reduce_sum(x_batch * grads, axis=-1)
@@ -498,7 +496,7 @@ def _(
     num_steps: int,
     baseline_fn: Optional[_BaselineFn],
     **kwargs,
-) -> List[Explanation]:
+):
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
 
@@ -534,7 +532,7 @@ def _(
     *,
     batch_interpolated_inputs: bool = True,
     **kwargs,
-) -> List[Explanation]:
+):
     if batch_interpolated_inputs:
         return _integrated_gradients_batched(
             x_batch, model, tf.constant(y_batch), **kwargs
@@ -556,9 +554,9 @@ def _integrated_gradients_batched(
     num_steps,
     baseline_fn,
     **kwargs,
-) -> np.ndarray:
+):
     interpolated_embeddings = tf.vectorized_map(
-        lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
+        lambda i: _get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
     )
 
     shape = tf.shape(interpolated_embeddings)
@@ -570,14 +568,14 @@ def _integrated_gradients_batched(
     )
 
     interpolated_kwargs = tf.nest.map_structure(
-        partial(pseudo_interpolate, num_steps=num_steps), kwargs
+        partial(_pseudo_interpolate, num_steps=num_steps), kwargs
     )
-    interpolated_y_batch = pseudo_interpolate(y_batch, num_steps)
+    interpolated_y_batch = _pseudo_interpolate(y_batch, num_steps)
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
         logits = model(interpolated_embeddings, **interpolated_kwargs)
-        logits_for_label = get_logits_for_labels(logits, interpolated_y_batch)
+        logits_for_label = _get_logits_for_labels(logits, interpolated_y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
     grads_shape = tf.shape(grads)
@@ -596,7 +594,7 @@ def _integrated_gradients_iterative(
     **kwargs,
 ) -> np.ndarray:
     interpolated_embeddings_batch = tf.vectorized_map(
-        lambda i: get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
+        lambda i: _get_interpolated_inputs(baseline_fn(i), i, num_steps), x_batch
     )
 
     scores = []
@@ -639,7 +637,7 @@ def _(
     explain_fn: Union[Callable, str] = "IntGrad",
     noise_type: str = "multiplicative",
     seed: int = 42,
-) -> List[Explanation]:
+):
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_noise_grad(
@@ -674,7 +672,7 @@ def _(
 ) -> np.ndarray:
     """A version of NoiseGrad++ explainer meant for usage with latent space perturbation."""
 
-    explain_fn = get_noise_grad_baseline_explain_fn(explain_fn)
+    explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
 
     tf.random.set_seed(seed)
     original_weights = model.weights.copy()
@@ -728,7 +726,7 @@ def _(
     noise_type: str = "multiplicative",
     seed: int = 42,
     **kwargs,
-) -> List[Explanation]:
+):
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_noise_grad_plus_plus(
@@ -806,7 +804,7 @@ def _(
         model.weights = weights_copy
         for _m in range(m):
             embeddings_noise = sd_noise_dist.sample(x_batch.shape)
-            noisy_embeddings = apply_noise(x_batch, embeddings_noise, noise_type)
+            noisy_embeddings = apply_noise(x_batch, embeddings_noise, noise_type) # noqa
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
 
             _m = tf.convert_to_tensor(_m)
@@ -820,7 +818,7 @@ def _(
 # --------------------- utils ----------------------
 
 
-def get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
+def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
     if isinstance(explain_fn, Callable):
         return explain_fn  # type: ignore
 
@@ -835,7 +833,7 @@ def get_noise_grad_baseline_explain_fn(explain_fn: Callable | str) -> Callable:
 
 
 @tf_function
-def get_logits_for_labels(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
+def _get_logits_for_labels(logits: tf.Tensor, y_batch) -> tf.Tensor:
     # Matrix with indexes like [ [0,y_0], [1, y_1], ...]
     indexes = tf.transpose(
         tf.stack(
@@ -850,7 +848,7 @@ def get_logits_for_labels(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
 
 
 @tf_function
-def get_interpolated_inputs(
+def _get_interpolated_inputs(
     baseline: tf.Tensor, target: tf.Tensor, num_steps: int
 ) -> tf.Tensor:
     """Gets num_step linearly interpolated inputs from baseline to target."""
@@ -866,12 +864,12 @@ def get_interpolated_inputs(
 
 
 @tf_function
-def zeros_baseline(x: tf.Tensor) -> tf.Tensor:
+def _zeros_baseline(x: tf.Tensor) -> tf.Tensor:
     return tf.zeros_like(x, dtype=x.dtype)
 
 
 @tf_function
-def pseudo_interpolate(x, num_steps):
+def _pseudo_interpolate(x, num_steps):
     og_shape = tf.convert_to_tensor(tf.shape(x))
     new_shape = tf.concat([tf.constant([num_steps + 1]), og_shape], axis=0)
     x = tf.broadcast_to(x, new_shape)
