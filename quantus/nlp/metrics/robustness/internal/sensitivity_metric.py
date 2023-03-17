@@ -36,7 +36,7 @@ class SensitivityMetric(RobustnessMetric, ABC):
         self.norm_denominator = norm_denominator
         self.similarity_func = similarity_func
 
-    def evaluate_step_latent_space_noise(
+    def _evaluate_step_latent_space_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -53,7 +53,7 @@ class SensitivityMetric(RobustnessMetric, ABC):
 
         warn_perturbation_caused_no_change(x_embeddings, x_perturbed)
 
-        a_batch_perturbed = self.explain_batch(
+        a_batch_perturbed = self._explain_batch(
             model,
             x_perturbed,
             y_batch,
@@ -74,7 +74,7 @@ class SensitivityMetric(RobustnessMetric, ABC):
 
         return similarities
 
-    def evaluate_step_plain_text_noise(
+    def _evaluate_step_plain_text_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -86,7 +86,7 @@ class SensitivityMetric(RobustnessMetric, ABC):
     ) -> np.ndarray:
         warn_perturbation_caused_no_change(x_batch, x_perturbed)  # noqa
 
-        a_batch_perturbed = self.explain_batch(
+        a_batch_perturbed = self._explain_batch(
             model,
             x_perturbed,
             y_batch,

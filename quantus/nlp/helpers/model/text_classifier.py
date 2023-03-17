@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generator, List, Tuple, TypedDict, TypeVar
+from typing import Generator, List, Tuple, TypedDict, TypeVar
 
 import numpy as np
 
@@ -30,6 +30,7 @@ class TextClassifier(ABC):
 
     @abstractmethod
     def batch_decode(self, ids: np.ndarray, **kwargs) -> List[str]:
+        """Convert vocabulary ids to strings."""
         pass
 
     @property
@@ -89,4 +90,5 @@ class TextClassifier(ABC):
     @property
     @abstractmethod
     def random_layer_generator_length(self) -> int:
+        """The only purpose of this method is to avoid materializing whole generator in memory."""
         raise NotImplementedError

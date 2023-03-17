@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
-
-from quantus.helpers.utils import calculate_auc
+from quantus.functions.loss_func import mse
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
@@ -37,26 +36,41 @@ class TokenFlipping(TextClassificationMetric):
         normalise: bool = False,
         normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
-        return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        return_auc_per_sample: bool = False,
         mask_token: str = "[UNK]",
         task: str = "pruning",
     ):
-        # TODO: docstring
+        """
+
+        Parameters
+        ----------
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call, default={}.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed, default=False.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed, default=False.
+        mask_token:
+            Token which is used to mask inputs.
+        task:
+            Can be either pruning or activation.
+        """
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
         )
-        self.return_auc_per_sample = return_auc_per_sample
         self.mask_token = mask_token
         if task not in ("pruning", "activation"):
             raise ValueError(
@@ -75,7 +89,33 @@ class TokenFlipping(TextClassificationMetric):
         explain_func_kwargs: Optional[Dict] = None,
         batch_size: int = 64,
     ) -> np.ndarray:
-        # TODO: docstring
+        """
+        Parameters
+        ----------
+        model:
+            Torch or tensorflow model that is subject to explanation. Most probably, you will want to use
+            `quantus.nlp.TorchHuggingFaceTextClassifier` or `quantus.nlp.TensorFlowHuggingFaceTextClassifier`,
+            for out-of-the box support for models from Huggingface hub.
+        x_batch:
+            list, which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            Pre-computed attributions i.e., explanations. Token and scores as well as scores only are supported.
+        explain_func:
+            Callable generating attributions.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        batch_size:
+            Indicates size of batches, in which input dataset will be splitted.
+
+        Returns
+        -------
+
+        score:
+            MSE between original logits, and ones for masked inputs.
+
+        """
         scores = super().__call__(
             model,
             x_batch,
@@ -85,11 +125,9 @@ class TokenFlipping(TextClassificationMetric):
             explain_func_kwargs=explain_func_kwargs,
             batch_size=batch_size,
         )
-        if not self.return_auc_per_sample:
-            scores = np.reshape(scores, (len(x_batch), -1))
         return scores
 
-    def evaluate_batch(
+    def _evaluate_batch(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -100,25 +138,24 @@ class TokenFlipping(TextClassificationMetric):
     ) -> np.ndarray | float | Dict[str, float]:
         scores = np.asarray([])
         if self.task == "pruning":
-            scores = self.eval_pruning(model, x_batch, y_batch, a_batch)
+            scores = self._eval_pruning(model, x_batch, y_batch, a_batch)
         elif self.task == "activation":
-            scores = self.eval_activation(model, x_batch, y_batch, a_batch)
+            scores = self._eval_activation(model, x_batch, y_batch, a_batch)
 
         # Move batch axis to 0's position.
         scores = scores.T
-
-        if self.return_auc_per_sample:
-            scores = calculate_auc(scores)
-
         return scores
 
-    def eval_activation(
+    def _eval_activation(
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
     ):
+        og_logits = model.predict(x_batch)
+        og_logits = get_logits_for_labels(og_logits, y_batch)
+
         batch_size = len(a_batch)
         num_tokens = len(a_batch[0][1])
 
@@ -143,19 +180,23 @@ class TokenFlipping(TextClassificationMetric):
                 ][mask_index]
 
             embeddings = model.embedding_lookup(masked_input_ids)
-            logits = model(embeddings, **predict_kwargs)
-            logits = safe_as_array(logits, force=True)
-            scores[i] = get_logits_for_labels(logits, y_batch)
+            masked_logits = model(embeddings, **predict_kwargs)
+            masked_logits = safe_as_array(masked_logits, force=True)
+            masked_logits = get_logits_for_labels(masked_logits, y_batch)
+            scores[i] = mse(og_logits, masked_logits)
 
         return scores
 
-    def eval_pruning(
+    def _eval_pruning(
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
     ):
+        og_logits = model.predict(x_batch)
+        og_logits = get_logits_for_labels(og_logits, y_batch)
+
         batch_size = len(a_batch)
         num_tokens = len(a_batch[0][1])
 
@@ -177,8 +218,9 @@ class TokenFlipping(TextClassificationMetric):
                 input_ids[index_in_batch][mask_index] = mask_token_id
 
             embeddings = model.embedding_lookup(input_ids)
-            logits = model(embeddings, **predict_kwargs)
-            logits = safe_as_array(logits, force=True)
-            scores[i] = get_logits_for_labels(logits, y_batch)
+            masked_logits = model(embeddings, **predict_kwargs)
+            masked_logits = safe_as_array(masked_logits, force=True)
+            masked_logits = get_logits_for_labels(masked_logits, y_batch)
+            scores[i] = mse(og_logits, masked_logits)
 
         return scores

@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import get_input_ids, map_dict, value_or_default
 
@@ -52,7 +52,7 @@ def torch_explain(
 
 
 def explain_gradient_norm(
-    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     """
     A baseline GradientNorm text-classification explainer. GradientNorm explanation algorithm is:
@@ -81,7 +81,7 @@ def explain_gradient_norm(
 
 
 def explain_gradient_x_input(
-    model: TorchTextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
+    model: TextClassifier, x_batch: _TextOrVector, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     """
     A baseline GradientXInput text-classification explainer.GradientXInput explanation algorithm is:
@@ -111,7 +111,7 @@ def explain_gradient_x_input(
 
 
 def explain_integrated_gradients(
-    model: TorchTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -180,7 +180,7 @@ def explain_integrated_gradients(
 
 
 def explain_noise_grad(
-    model: TorchTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -227,7 +227,7 @@ def explain_noise_grad(
 
 
 def explain_noise_grad_plus_plus(
-    model: TorchTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -278,14 +278,14 @@ def explain_noise_grad_plus_plus(
 
 @singledispatch
 def _explain_gradient_norm(
-    x_batch, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch, model: TextClassifier, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     pass
 
 
 @singledispatch
 def _explain_gradient_x_input(
-    x_batch, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch, model: TextClassifier, y_batch: np.ndarray, **kwargs
 ) -> _Scores:
     pass
 
@@ -293,7 +293,7 @@ def _explain_gradient_x_input(
 @singledispatch
 def _explain_integrated_gradients(
     x_batch,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     num_steps: int = 10,
@@ -307,7 +307,7 @@ def _explain_integrated_gradients(
 @singledispatch
 def _explain_noise_grad(
     x_batch,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
@@ -320,7 +320,7 @@ def _explain_noise_grad(
 @singledispatch
 def _explain_noise_grad_plus_plus(
     x_batch,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
@@ -335,7 +335,7 @@ def _explain_noise_grad_plus_plus(
 
 @_explain_gradient_norm.register
 def _(
-    x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     input_embeds = model.embedding_lookup(input_ids)
@@ -344,14 +344,14 @@ def _(
 
 
 @_explain_gradient_norm.register
-def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+def _(x_batch: np.ndarray, model: TextClassifier, *args, **kwargs):
     return _explain_gradient_norm(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_gradient_norm.register
 def _(
     x_batch: torch.Tensor,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
@@ -376,7 +376,7 @@ def _(
 
 @_explain_gradient_x_input.register
 def _(
-    x_batch: list, model: TorchTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     input_embeds = model.embedding_lookup(input_ids)
@@ -386,14 +386,14 @@ def _(
 
 
 @_explain_gradient_x_input.register
-def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+def _(x_batch: np.ndarray, model: TextClassifier, *args, **kwargs):
     return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_gradient_x_input.register
 def _(
     x_batch: Tensor,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
@@ -417,7 +417,7 @@ def _(
 @_explain_integrated_gradients.register
 def _(
     x_batch: list,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     num_steps: int = 10,
@@ -444,7 +444,7 @@ def _(
 
 
 @_explain_integrated_gradients.register
-def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+def _(x_batch: np.ndarray, model: TextClassifier, *args, **kwargs):
     return _explain_integrated_gradients(
         model.to_tensor(x_batch), model, *args, **kwargs
     )
@@ -453,7 +453,7 @@ def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
 @_explain_integrated_gradients.register
 def _(
     x_batch: np.ndarray,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.asarray,
     *,
     num_steps: int = 10,
@@ -481,7 +481,7 @@ def _(
 
 
 def _torch_explain_integrated_gradients_batched(
-    model: TorchTextClassifier,
+    model: TextClassifier,
     interpolated_embeddings: List[np.ndarray],
     y_batch: np.ndarray,
     **kwargs,
@@ -518,7 +518,7 @@ def _torch_explain_integrated_gradients_batched(
 
 
 def _torch_explain_integrated_gradients_iterative(
-    model: TorchTextClassifier,
+    model: TextClassifier,
     interpolated_embeddings_batch: List[np.ndarray],
     y_batch: np.ndarray,
     **kwargs,
@@ -556,7 +556,7 @@ def _torch_explain_integrated_gradients_iterative(
 @_explain_noise_grad.register
 def _(
     x_batch: list,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
@@ -577,14 +577,14 @@ def _(
 
 
 @_explain_noise_grad.register
-def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+def _(x_batch: np.ndarray, model: TextClassifier, *args, **kwargs):
     return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_noise_grad.register
 def _(
     x_batch: np.ndarray,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     explain_fn: Callable,
     init_kwargs: Optional[Dict],
@@ -645,7 +645,7 @@ def _get_noise_grad_baseline_explain_fn(explain_fn: Callable | str):
 @_explain_noise_grad_plus_plus.register
 def _(
     x_batch: list,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     explain_fn: Union[Callable, str] = "IntGrad",
@@ -666,14 +666,14 @@ def _(
 
 
 @_explain_noise_grad_plus_plus.register
-def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
+def _(x_batch: np.ndarray, model: TextClassifier, *args, **kwargs):
     return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_noise_grad_plus_plus.register
 def _(
     x_batch: np.ndarray,
-    model: TorchTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     explain_fn: Callable,
     init_kwargs: Optional[Dict],

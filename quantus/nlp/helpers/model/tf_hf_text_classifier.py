@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from functools import singledispatchmethod
 from typing import Dict, List
 
@@ -14,15 +15,14 @@ from transformers import (
 from transformers.tf_utils import shape_list
 
 from quantus.nlp.config import config
-from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-from quantus.nlp.helpers.model.tensorflow_text_classifier import (
-    TensorFlowTextClassifier,
-)
+from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
+from quantus.nlp.helpers.model.tf_text_classifier import TensorFlowTextClassifier
 
 
-class TensorFlowHuggingFaceTextClassifier(
-    TensorFlowTextClassifier, HuggingFaceTokenizer
-):
+# fmt: off
+class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier, HuggingFaceTokenizer): # noqa
+
+    # fmt: on
     def __init__(self, tokenizer: PreTrainedTokenizerBase, model: TFPreTrainedModel):
         super().__init__(tokenizer)
         self._model = model

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -30,8 +30,6 @@ class RelativeInputStability(RelativeStability):
         normalise: bool = True,
         normalise_func: NormaliseFn = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
-        return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         perturb_func: PerturbFn = spelling_replacement,
@@ -44,8 +42,6 @@ class RelativeInputStability(RelativeStability):
             normalise=normalise,
             normalise_func_kwargs=normalise_func_kwargs,
             normalise_func=normalise_func,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
             perturb_func=perturb_func,
@@ -64,7 +60,35 @@ class RelativeInputStability(RelativeStability):
         explain_func_kwargs: Optional[Dict] = None,
         batch_size: int = 64,
     ) -> np.ndarray:
-        # TODO: docstring
+        """
+
+        Parameters
+        ----------
+        model:
+            Torch or tensorflow model that is subject to explanation. Most probably, you will want to use
+            `quantus.nlp.TorchHuggingFaceTextClassifier` or `quantus.nlp.TensorFlowHuggingFaceTextClassifier`,
+            for out-of-the box support for models from Huggingface hub.
+        x_batch:
+            list, which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            Pre-computed attributions i.e., explanations. Token and scores as well as scores only are supported.
+        explain_func:
+            Callable generating attributions.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        batch_size:
+            Indicates size of batches, in which input dataset will be splitted.
+
+        Returns
+        -------
+
+        score:
+            np.ndarray of scores.
+
+        """
+
         return super().__call__(
             model,
             x_batch,
@@ -75,7 +99,7 @@ class RelativeInputStability(RelativeStability):
             batch_size=batch_size,
         )
 
-    def compute_objective_plain_text(
+    def _compute_objective_plain_text(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -92,7 +116,7 @@ class RelativeInputStability(RelativeStability):
 
         return relative_input_stability_objective(x, x_s, e_x, e_xs)
 
-    def compute_objective_latent_space(
+    def _compute_objective_latent_space(
         self,
         model: TextClassifier,
         x_batch: np.ndarray,

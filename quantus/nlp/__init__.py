@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from importlib import util
-
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.perturb_func import (
     gaussian_noise,
@@ -23,30 +21,29 @@ from quantus.nlp.helpers.constants import (
     available_plain_text_xai_methods,
     available_xai_methods,
 )
-from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.plotting import (
     visualise_explanations_as_html,
     visualise_explanations_as_pyplot,
 )
 
-if util.find_spec("tensorflow"):
-    from quantus.nlp.helpers.model.tensorflow_text_classifier import (
-        TensorFlowTextClassifier,
+try:
+    from quantus.nlp.helpers.model.tf_text_classifier import TensorFlowTextClassifier
+    from quantus.nlp.helpers.model.tf_hf_text_classifier import (
+        TensorFlowHuggingFaceTextClassifier,
     )
 
-    if util.find_spec("transformers"):
-        from quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier import (
-            TensorFlowHuggingFaceTextClassifier,
-        )
+except ModuleNotFoundError:
+    pass
 
-if util.find_spec("torch"):
+try:
     from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
+    from quantus.nlp.helpers.model.torch_hf_text_classifier import (
+        TorchHuggingFaceTextClassifier,
+    )
 
-    if util.find_spec("transformers"):
-        from quantus.nlp.helpers.model.torch_huggingface_text_classifier import (
-            TorchHuggingFaceTextClassifier,
-        )
+except ModuleNotFoundError:
+    pass
 
 from quantus.nlp.evaluation import evaluate
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1

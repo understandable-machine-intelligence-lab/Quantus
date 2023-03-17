@@ -9,15 +9,13 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability.python.distributions.normal import Normal
 
-from quantus.nlp.helpers.model.tensorflow_text_classifier import (
-    TensorFlowTextClassifier,
-)
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     tf_function,
     value_or_default,
-    apply_noise
+    apply_noise,
 )
 
 __all__ = ["available_xai_methods", "tf_explain"]
@@ -63,7 +61,7 @@ def tf_explain(
 
 
 def explain_gradient_norm(
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     **kwargs,
@@ -101,7 +99,7 @@ def explain_gradient_norm(
 
 
 def explain_gradient_x_input(
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     **kwargs,
@@ -140,7 +138,7 @@ def explain_gradient_x_input(
 
 
 def explain_integrated_gradients(
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     num_steps: int = 10,
@@ -209,7 +207,7 @@ def explain_integrated_gradients(
 
 
 def explain_noise_grad(
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -242,7 +240,7 @@ def explain_noise_grad(
         Number of times noise is applied to weights, default=10.
     explain_fn:
         Baseline explanation function. If string provided must be one of GradNorm, GradXInput, IntGrad.
-        Otherwise, must have `Callable[[TensorFlowTensorFlowTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
+        Otherwise, must have `Callable[[TensorFlowTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
         Passing additional kwargs is not supported, please use partial application from functools package instead.
         Default IntGrad.
     noise_type:
@@ -287,7 +285,7 @@ def explain_noise_grad(
 
 
 def explain_noise_grad_plus_plus(
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *,
@@ -329,7 +327,7 @@ def explain_noise_grad_plus_plus(
         Number of times noise is applied to input embeddings, default=10
     explain_fn:
         Baseline explanation function. If string provided must be one of GradNorm, GradXInput, IntGrad.
-        Otherwise, must have `Callable[[TensorFlowTensorFlowTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
+        Otherwise, must have `Callable[[TensorFlowTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
         Passing additional kwargs is not supported, please use partial application from functools package instead.
         Default IntGrad.
     noise_type:
@@ -420,9 +418,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 
 @_explain_gradient_norm.register
-def _(
-    x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray
-) -> List[Explanation]:
+def _(x_batch: list, model: TextClassifier, y_batch: np.ndarray) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_norm(embeddings, model, y_batch, **kwargs)
@@ -434,7 +430,7 @@ def _(
 @tf_function
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
@@ -457,7 +453,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 @_explain_gradient_x_input.register
 def _(
-    x_batch: list, model: TensorFlowTextClassifier, y_batch: np.ndarray, **kwargs
+    x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs
 ) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
@@ -469,7 +465,7 @@ def _(
 @tf_function
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
@@ -495,7 +491,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 @_explain_integrated_gradients.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     batch_interpolated_inputs: bool,
@@ -533,7 +529,7 @@ def _(
 @_explain_integrated_gradients.register
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     batch_interpolated_inputs: bool = True,
@@ -555,7 +551,7 @@ def _(
 @tf_function
 def _integrated_gradients_batched(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: tf.Tensor,
     num_steps,
     baseline_fn,
@@ -593,7 +589,7 @@ def _integrated_gradients_batched(
 
 def _integrated_gradients_iterative(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     num_steps,
     baseline_fn,
@@ -634,7 +630,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 @_explain_noise_grad.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     mean: float = 1.0,
@@ -665,7 +661,7 @@ def _(
 @_explain_noise_grad.register
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     n: int = 10,
@@ -696,9 +692,7 @@ def _(
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
             params_noise = noise_dist.sample(params.shape)
-            weights_copy[index] = apply_noise(
-                params, params_noise, noise_type
-            )
+            weights_copy[index] = apply_noise(params, params_noise, noise_type)
 
         model.weights = weights_copy
 
@@ -721,7 +715,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 @_explain_noise_grad_plus_plus.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     mean: float = 1.0,
@@ -759,7 +753,7 @@ def _(
 @_explain_noise_grad_plus_plus.register
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TextClassifier,
     y_batch: np.ndarray,
     *,
     n: int = 10,
@@ -805,9 +799,7 @@ def _(
         weights_copy = original_weights.copy()
         for index, params in enumerate(weights_copy):
             params_noise = noise_dist.sample(params.shape)
-            weights_copy[index] = apply_noise(
-                params, params_noise, noise_type
-            )
+            weights_copy[index] = apply_noise(params, params_noise, noise_type)
 
         _n = tf.convert_to_tensor(_n)
 

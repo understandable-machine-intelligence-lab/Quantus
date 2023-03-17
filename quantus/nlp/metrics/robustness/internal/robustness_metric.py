@@ -23,7 +23,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
         super().__init__(**kwargs)
         self.nr_samples = nr_samples
 
-    def batch_preprocess(
+    def _batch_preprocess(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -33,7 +33,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
         explain_func_kwargs: Dict,
     ) -> Tuple[List[str], np.ndarray, List[Explanation], Optional[None]]:
         if not is_plain_text_perturbation(self.perturb_func):
-            return super().batch_preprocess(
+            return super()._batch_preprocess(
                 model, x_batch, y_batch, a_batch, explain_func, explain_func_kwargs
             )
 
@@ -59,13 +59,13 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
 
         # We need to pre-compute explanations for padded x_batch
         model.batch_encode = partial(model.batch_encode, add_special_tokens=False)  # type: ignore
-        a_batch = self.explain_batch(
+        a_batch = self._explain_batch(
             model, x_batch, y_batch, explain_func, explain_func_kwargs
         )
 
         return x_batch, y_batch, a_batch, x_perturbed_batches.tolist()  # type: ignore
 
-    def batch_postprocess(
+    def _batch_postprocess(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -77,11 +77,11 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
     ) -> np.ndarray:
         if is_plain_text_perturbation(self.perturb_func):
             model.batch_encode = model.batch_encode.func  # type: ignore
-        return super().batch_postprocess(
+        return super()._batch_postprocess(
             model, x_batch, y_batch, a_batch, explain_func, explain_func_kwargs, score
         )
 
-    def evaluate_batch(  # type: ignore
+    def _evaluate_batch(  # type: ignore
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -96,7 +96,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
 
         for step_id in range(self.nr_samples):
             if is_plain_text_perturbation(self.perturb_func):
-                scores[step_id] = self.evaluate_step_plain_text_noise(
+                scores[step_id] = self._evaluate_step_plain_text_noise(
                     model,
                     x_batch,
                     y_batch,
@@ -106,7 +106,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
                     x_perturbed=custom_batch[step_id],
                 )
             else:
-                scores[step_id] = self.evaluate_step_latent_space_noise(
+                scores[step_id] = self._evaluate_step_latent_space_noise(
                     model,
                     x_batch,
                     y_batch,
@@ -114,10 +114,10 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
                     explain_func,
                     explain_func_kwargs,
                 )
-        return self.aggregate_instances(scores)
+        return self._aggregate_instances(scores)
 
     @abstractmethod
-    def evaluate_step_latent_space_noise(
+    def _evaluate_step_latent_space_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -129,7 +129,7 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
         pass
 
     @abstractmethod
-    def evaluate_step_plain_text_noise(
+    def _evaluate_step_plain_text_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -142,5 +142,5 @@ class RobustnessMetric(BatchedPerturbationMetric, ABC):
         pass
 
     @abstractmethod
-    def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
+    def _aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
         raise NotImplementedError  # pragma: not covered

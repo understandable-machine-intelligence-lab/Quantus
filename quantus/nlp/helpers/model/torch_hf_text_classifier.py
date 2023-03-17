@@ -13,7 +13,7 @@ from transformers import (
     PreTrainedTokenizerBase,
 )
 
-from quantus.nlp.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.utils import map_dict, value_or_default
 
@@ -86,7 +86,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
     def device(self) -> torch.device:
         return self._device
 
-    def clone(self) -> TorchTextClassifier:
+    def clone(self) -> TorchHuggingFaceTextClassifier:
         return self.from_pretrained(self._model.name_or_path, device=self._device)
 
     @get_hidden_representations.register

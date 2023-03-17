@@ -28,11 +28,11 @@ from quantus.nlp.helpers.utils import (
 
 __all__ = ["explain"]
 
-TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tensorflow_huggingface_text_classifier.TensorFlowHuggingFaceTextClassifier"
-TF_ModelClass = (
-    "quantus.nlp.helpers.model.tensorflow_text_classifier.TensorflowTextClassifier"
+TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tf_hf_text_classifier.TensorFlowHuggingFaceTextClassifier"
+TF_ModelClass = "quantus.nlp.helpers.model.tf_text_classifier.TensorflowTextClassifier"
+Torch_HuggingfaceModelClass = (
+    "quantus.nlp.helpers.model.torch_hf_text_classifier.TorchHuggingFaceTextClassifier"
 )
-Torch_HuggingfaceModelClass = "quantus.nlp.helpers.model.torch_huggingface_text_classifier.TorchHuggingFaceTextClassifier"
 Torch_ModelClass = "quantus.nlp.helpers.model.torch_text_classifier.TorchTextClassifier"
 
 

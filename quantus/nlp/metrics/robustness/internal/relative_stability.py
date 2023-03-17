@@ -21,7 +21,7 @@ class RelativeStability(RobustnessMetric, ABC):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    def evaluate_step_latent_space_noise(
+    def _evaluate_step_latent_space_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -35,11 +35,11 @@ class RelativeStability(RobustnessMetric, ABC):
         x_embeddings = safe_as_array(x_embeddings)
         # fmt: off
         x_perturbed = self.perturb_func(x_embeddings, **self.perturb_func_kwargs)  # noqa
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch, explain_func, explain_func_kwargs)
+        a_batch_perturbed = self._explain_batch(model, x_perturbed, y_batch, explain_func, explain_func_kwargs)
         # fmt: on
         a_batch_scores = get_scores(a_batch)
         # Compute maximization's objective.
-        rs = self.compute_objective_latent_space(
+        rs = self._compute_objective_latent_space(
             model,
             x_embeddings,
             x_perturbed,
@@ -49,7 +49,7 @@ class RelativeStability(RobustnessMetric, ABC):
         )
         return rs
 
-    def evaluate_step_plain_text_noise(
+    def _evaluate_step_plain_text_noise(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -61,12 +61,12 @@ class RelativeStability(RobustnessMetric, ABC):
     ) -> np.ndarray:
         """Latent-space perturbation."""
         # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(
+        a_batch_perturbed = self._explain_batch(
             model, x_perturbed, y_batch, explain_func, explain_func_kwargs
         )
 
         # Compute maximization's objective.
-        rs = self.compute_objective_plain_text(
+        rs = self._compute_objective_plain_text(
             model,
             x_batch,
             x_perturbed,
@@ -75,11 +75,11 @@ class RelativeStability(RobustnessMetric, ABC):
         )
         return rs
 
-    def aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
+    def _aggregate_instances(self, scores: np.ndarray) -> np.ndarray:
         return np.nanmax(scores, axis=0)
 
     @abstractmethod
-    def compute_objective_plain_text(
+    def _compute_objective_plain_text(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -90,7 +90,7 @@ class RelativeStability(RobustnessMetric, ABC):
         raise NotImplementedError  # pragma: not covered
 
     @abstractmethod
-    def compute_objective_latent_space(
+    def _compute_objective_latent_space(
         self,
         model: TextClassifier,
         x_batch: np.ndarray,

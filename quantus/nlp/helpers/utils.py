@@ -16,6 +16,7 @@ R = TypeVar("R")
 
 
 def flatten_list(list_2d: List[List[T]]) -> List[T]:
+    """Does the same as np.reshape(..., -1), but work also on ragged vectors."""
     return [item for sublist in list_2d for item in sublist]
 
 
@@ -28,6 +29,7 @@ def get_input_ids(
 
 def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
+    # Default is provided by callable, because otherwise if will force materialization of both values in memory.
     if value is not None:
         return value
     else:
@@ -35,6 +37,7 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
 
 
 def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
+    """Divide list in batches of batch_size, despite the name works also for any Sized and SupportsIndex."""
     indices = list(gen_batches(len(flat_list), batch_size))
     return list(map(lambda i: flat_list[i.start : i.stop], indices))
 
@@ -49,6 +52,8 @@ def map_explanations(
 
 
 def get_scores(a_batch: List[Explanation]) -> np.ndarray:
+    """Get scores out of token + score tuples."""
+    # I was just tired having to type it every time.
     return np.asarray(list(map(itemgetter(1), a_batch)))
 
 
@@ -114,16 +119,21 @@ def safe_isinstance(obj: Any, class_path_str: str | Tuple) -> bool:
 
 
 def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
+    """Apply func to value if not None, otherwise return None."""
     if val is None:
         return None
     return func(val)
 
 
-def map_dict(dictionary: Dict[str, T], func: Callable[[T], R]) -> Dict[str, R]:
+def map_dict(
+    dictionary: Dict[str, T],
+    func: Callable[[T], R],
+    key_mapper: Callable[[str], str] = lambda x: x,
+) -> Dict[str, R]:
+    """Applies func to values in dict. Additionally, if provided can also map keys."""
     result = {}
     for k, v in dictionary.items():
-        result[k] = func(v)
-
+        result[key_mapper(k)] = func(v)
     return result
 
 
@@ -144,6 +154,7 @@ def add_default_items(
 
 @cached(cache={}, key=lambda f: f.__name__)
 def is_plain_text_perturbation(func: Callable) -> bool:
+    """Determine perturbation type based on perturb_func signature."""
     _annotations = func.__annotations__  # noqa
     if "return" in _annotations:
         type_annotation = _annotations["return"]
@@ -188,19 +199,14 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
 
 
 def safe_as_array(a, force: bool = False) -> np.ndarray:
-    """
-    Safe means safe from torch complaining about tensors being on other device or attached to graph.
-    So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
-    force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
-    """
+    # Safe means safe from torch complaining about tensors being on other device or attached to graph.
+    # So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
+    # force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
     if safe_isinstance(a, "torch.Tensor"):  # noqa
         return a.detach().cpu().numpy()
-    if (
-        safe_isinstance(
-            a, ("tensorflow.Tensor", "tensorflow.python.framework.ops.EagerTensor")
-        )
-        and force
-    ):  # noqa
+    # fmt: off
+    if (safe_isinstance(a, ("tensorflow.Tensor", "tensorflow.python.framework.ops.EagerTensor")) and force):  # noqa
+        # fmt: on
         return np.array(tf.identity(a))
     return a
 

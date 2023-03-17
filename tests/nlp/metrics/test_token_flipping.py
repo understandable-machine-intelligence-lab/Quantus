@@ -16,13 +16,8 @@ from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
             {"explain_func_kwargs": {"method": "GradNorm"}},
             (8, 39),
         ),
-        (
-            {"abs": True, "return_auc_per_sample": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8,),
-        ),
     ],
-    ids=["pruning", "activation", "AUC"],
+    ids=["pruning", "activation"],
 )
 def test_tf_model(
     tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs, expected_shape
@@ -51,13 +46,8 @@ def test_tf_model(
             {"explain_func_kwargs": {"method": "GradNorm"}},
             (8, 42),
         ),
-        (
-            {"abs": True, "return_auc_per_sample": True},
-            {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8,),
-        ),
     ],
-    ids=["pruning", "activation", "AUC"],
+    ids=["pruning", "activation"],
 )
 def test_fnet_torch_model(
     torch_sst2_model, sst2_dataset, init_kwargs, call_kwargs, expected_shape

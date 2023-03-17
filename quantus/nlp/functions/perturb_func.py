@@ -68,6 +68,3 @@ def gaussian_noise(
     """Apply gaussian noise to arr."""
     noise = np.random.default_rng(seed).normal(size=x_batch.shape, **kwargs)
     return apply_noise(x_batch, noise, noise_type)
-
-
-

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from functools import partial
 from operator import itemgetter
-from typing import Callable, Dict, List, Optional, no_type_check
+from typing import Dict, List, Optional, no_type_check
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -48,26 +48,47 @@ class ModelParameterRandomisation(TextClassificationMetric):
         normalise: bool = False,
         normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
         normalise_func_kwargs: Optional[Dict] = None,
-        return_aggregate: bool = False,
-        aggregate_func: Optional[Callable] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         similarity_func: SimilarityFn = correlation_spearman,
         layer_order: str = "independent",
-        seed: int = 42,
         return_sample_correlation: bool = False,
     ):
+        """
+
+        Parameters
+        ----------
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call, default={}.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed, default=False.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed, default=False.
+        similarity_func:
+            Similarity function applied to compare explanations generated using original and randomized model.
+        layer_order:
+            Indicated whether the model is randomized cascadingly or independently.
+            Set order=top_down for cascading randomization, set order=independent for independent randomization,
+            default="independent".
+        return_sample_correlation:
+            Indicates whether return one float per sample, representing the average
+            correlation coefficient across the layers for that sample.
+        """
         super().__init__(
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
             normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
             disable_warnings=disable_warnings,
             display_progressbar=display_progressbar,
         )
-        self.seed = seed
         self.layer_order = layer_order
         self.return_sample_correlation = return_sample_correlation
         self.similarity_func = similarity_func
@@ -85,6 +106,34 @@ class ModelParameterRandomisation(TextClassificationMetric):
         batch_size: int = 64,
         **kwargs,
     ) -> Dict[str, np.ndarray | float] | np.ndarray:
+        """
+
+        Parameters
+        ----------
+        model:
+            Torch or tensorflow model that is subject to explanation. Most probably, you will want to use
+            `quantus.nlp.TorchHuggingFaceTextClassifier` or `quantus.nlp.TensorFlowHuggingFaceTextClassifier`,
+            for out-of-the box support for models from Huggingface hub.
+        x_batch:
+            list, which contains the input data that are explained.
+        y_batch:
+            A np.ndarray which contains the output labels that are explained.
+        a_batch:
+            Pre-computed attributions i.e., explanations. Token and scores as well as scores only are supported.
+        explain_func:
+            Callable generating attributions.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        batch_size:
+            Indicates size of batches, in which input dataset will be splitted.
+
+        Returns
+        -------
+
+        score:
+            np.ndarray of scores.
+
+        """
         explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
         x_batch = batch_list(x_batch, batch_size)
         y_batch = map_optional(y_batch, partial(batch_list, batch_size=batch_size))
@@ -93,7 +142,7 @@ class ModelParameterRandomisation(TextClassificationMetric):
         results = defaultdict(lambda: [])
 
         model_iterator = tqdm(
-            model.get_random_layer_generator(self.layer_order, self.seed),
+            model.get_random_layer_generator(self.layer_order),
             total=model.random_layer_generator_length,
             disable=not self.display_progressbar,
         )
@@ -103,10 +152,10 @@ class ModelParameterRandomisation(TextClassificationMetric):
             for i, x in enumerate(x_batch):
                 y = map_optional(y_batch, itemgetter(i))
                 a = map_optional(a_batch, itemgetter(i))
-                x, y, a, _ = self.batch_preprocess(
+                x, y, a, _ = self._batch_preprocess(
                     model, x, y, a, explain_func, explain_func_kwargs
                 )
-                similarity_score = self.evaluate_batch(
+                similarity_score = self._evaluate_batch(
                     random_layer_model, x, y, a, explain_func, explain_func_kwargs
                 )
                 results[layer_name].extend(similarity_score)
@@ -119,7 +168,7 @@ class ModelParameterRandomisation(TextClassificationMetric):
         return results
 
     @no_type_check
-    def evaluate_batch(
+    def _evaluate_batch(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -129,7 +178,7 @@ class ModelParameterRandomisation(TextClassificationMetric):
         explain_func_kwargs: Dict,
     ) -> np.ndarray:
         # Compute distance measure.
-        a_batch_perturbed = self.explain_batch(
+        a_batch_perturbed = self._explain_batch(
             model, x_batch, y_batch, explain_func, explain_func_kwargs
         )
         return self.similarity_func(get_scores(a_batch), get_scores(a_batch_perturbed))

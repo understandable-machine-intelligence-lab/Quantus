@@ -26,8 +26,6 @@ class TextClassificationMetric:
         normalise: bool,
         normalise_func: Optional[Callable],
         normalise_func_kwargs: Optional[Dict],
-        return_aggregate: bool,
-        aggregate_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
     ):
@@ -35,8 +33,6 @@ class TextClassificationMetric:
         self.normalise = normalise
         self.normalise_func = normalise_func
         self.normalise_func_kwargs = value_or_default(normalise_func_kwargs, lambda: {})
-        self.return_aggregate = return_aggregate
-        self.aggregate_func = aggregate_func
         self.disable_warnings = disable_warnings
         self.display_progressbar = display_progressbar
 
@@ -66,10 +62,10 @@ class TextClassificationMetric:
         for i, x in enumerate(pbar):
             y = map_optional(y_batch, itemgetter(i))
             a = map_optional(a_batch, itemgetter(i))
-            x, y, a, custom = self.batch_preprocess(
+            x, y, a, custom = self._batch_preprocess(
                 model, x, y, a, explain_func, explain_func_kwargs
             )
-            score = self.evaluate_batch(
+            score = self._evaluate_batch(
                 model,
                 x,
                 y,
@@ -78,14 +74,14 @@ class TextClassificationMetric:
                 explain_func_kwargs=explain_func_kwargs,
                 custom_batch=custom,
             )
-            score = self.batch_postprocess(
+            score = self._batch_postprocess(
                 model, x, y, a, explain_func, explain_func_kwargs, score
             )
             scores_batch.extend(score)
 
         return np.asarray(scores_batch)
 
-    def explain_batch(
+    def _explain_batch(
         self,
         model: TextClassifier,
         x_batch: List[str] | np.ndarray,
@@ -93,6 +89,7 @@ class TextClassificationMetric:
         explain_func: ExplainFn,
         explain_func_kwargs: Dict,
     ) -> List[Explanation] | np.ndarray:
+        """Not a part of use-facing API."""
         a_batch = explain_func(model, x_batch, y_batch, **explain_func_kwargs)  # type: ignore
 
         if self.normalise:
@@ -105,7 +102,7 @@ class TextClassificationMetric:
 
         return a_batch
 
-    def batch_preprocess(
+    def _batch_preprocess(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -114,18 +111,19 @@ class TextClassificationMetric:
         explain_func: ExplainFn,
         explain_func_kwargs: Dict,
     ) -> Tuple[List[str], np.ndarray, List[Explanation], Optional[None]]:
+        """Not a part of use-facing API."""
         y_batch = value_or_default(
             y_batch, lambda: model.predict(x_batch).argmax(axis=-1)
         )
         a_batch = value_or_default(
             a_batch,
-            lambda: self.explain_batch(
+            lambda: self._explain_batch(
                 model, x_batch, y_batch, explain_func, explain_func_kwargs
             ),
         )
         return x_batch, y_batch, a_batch, None
 
-    def batch_postprocess(
+    def _batch_postprocess(
         self,
         model: TextClassifier,
         x_batch: List[str],
@@ -135,10 +133,11 @@ class TextClassificationMetric:
         explain_func_kwargs: Dict,
         score: np.ndarray,
     ) -> np.ndarray:
+        """Not a part of use-facing API."""
         return score
 
     @abstractmethod
-    def evaluate_batch(
+    def _evaluate_batch(
         self,
         model: TextClassifier,
         x_batch: List[str],
