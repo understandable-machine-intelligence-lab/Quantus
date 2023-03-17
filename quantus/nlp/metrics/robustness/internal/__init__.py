@@ -1,1 +1,1 @@
-"""Not a part of use-facing API."""
+"""Not a part of user-facing API."""

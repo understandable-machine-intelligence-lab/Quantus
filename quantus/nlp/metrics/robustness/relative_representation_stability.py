@@ -1,3 +1,9 @@
+# This file is part of Quantus.
+# Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+# Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+# You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
+# Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional
@@ -46,7 +52,30 @@ class RelativeRepresentationStability(RelativeStability):
         perturb_func_kwargs: Optional[Dict] = None,
         nr_samples: int = 50,
     ):
-        # TODO: docstring
+        """
+
+        Parameters
+        ----------
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution, default=False.
+        normalise: boolean
+            Indicates whether normalise operation is applied on the attribution, default=True.
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+            If normalise_func=None, the default value is used, default=normalise_by_max.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call, default={}.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed, default=False.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed, default=False.
+        perturb_func: callable
+            Input perturbation function. If None, the default value is used, default=spelling_replacement.
+        perturb_func_kwargs: dict
+            Keyword arguments to be passed to perturb_func, default={}.
+        nr_samples: int
+            The number of samples iterated, default=50.
+        """
         super().__init__(
             abs=abs,
             normalise=normalise,
