@@ -7,10 +7,16 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  MKL_NUM_THREADS: 16
+  USE_XLA: true
+  TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+  PYTHONDONTWRITEBYTECODE: 1
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -49,11 +55,14 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: python tests/nlp/download_data.py
 
-      - name: Test with pytest
-        run: pytest --durations=10 -s -v
-        env:
-          USE_XLA: true
-          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+      - name: Run incremental tests
+        run: pytest --inc
+
+      - name: Run fast tests
+        run: pytest --durations=10 -s -v -n 2 -m "not slow"
+
+      - name: Test with pytest slow
+        run: pytest --durations=10 -s -v -m "slow"
 
       - name: Test importing Quantus
         run: |

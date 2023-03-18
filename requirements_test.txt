@@ -20,7 +20,6 @@ pandas>=1.5.3
 datasets>=2.9.0
 shap>=0.41.0
 
-pytest-order
 pytest-xdist
 
 nlpaug>=1.1.11
@@ -32,3 +31,4 @@ flake8
 mypy==0.982
 
 noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
+pytest-instafail

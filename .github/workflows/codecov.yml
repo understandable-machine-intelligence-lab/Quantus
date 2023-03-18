@@ -1,11 +1,19 @@
 name: codecov
+
 on:
   pull_request:
     branches: [ main ]
+
+env:
+  MKL_NUM_THREADS: 16
+  USE_XLA: true
+  TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+  PYTHONDONTWRITEBYTECODE: 1
+
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Fetch
         uses: actions/checkout@master
@@ -31,11 +39,7 @@ jobs:
         run: python tests/nlp/download_data.py
 
       - name: Test
-        run: pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s
-        env:
-          USE_XLA: true
-          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-
+        run: pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s -n 2
 
       - name: Upload
         uses: codecov/codecov-action@v3

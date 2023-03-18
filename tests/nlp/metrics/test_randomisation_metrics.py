@@ -29,6 +29,7 @@ def test_random_logit_torch_model(
     assert not (result == np.NAN).any()
 
 
+@pytest.mark.slow
 @pytest.mark.nlp
 @pytest.mark.tf_model
 @pytest.mark.randomisation

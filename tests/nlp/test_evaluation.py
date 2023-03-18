@@ -7,6 +7,7 @@ import quantus.nlp as qn
 @pytest.mark.order("last")
 @pytest.mark.nlp
 @pytest.mark.evaluate_func
+@pytest.mark.slow
 def test_tf_model(tf_sst2_model, sst2_dataset):
     metrics = {
         "Avg-Sesnitivity": qn.AvgSensitivity(nr_samples=5, disable_warnings=True),
