@@ -341,7 +341,7 @@ class MaxSensitivity(BatchedRobustnessMetric):
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
 
-        max_func = np.max if self._return_nan_when_prediction_changes else np.nanmax
+        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
         return max_func(similarities, axis=1)
 
     def custom_preprocess(

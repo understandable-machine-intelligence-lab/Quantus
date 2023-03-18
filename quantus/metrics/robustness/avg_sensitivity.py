@@ -340,7 +340,7 @@ class AvgSensitivity(BatchedRobustnessMetric):
                 denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
-        mean_func = np.mean if self._return_nan_when_prediction_changes else np.nanmean
+        mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
         return mean_func(similarities, axis=1)
 
     def custom_preprocess(
