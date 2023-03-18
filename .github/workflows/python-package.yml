@@ -14,39 +14,48 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: [ "3.8", "3.9", "3.10" ]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip' # caching pip dependencies
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip' # caching pip dependencies
 
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt -r requirements_test.txt
-        # TODO: add to requirements_test.txt after release.
-        pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
-    - name: Lint
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-        # run mypy
-        mypy quantus
-        # run black
-        black quantus
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements_test.txt
 
-    - name: Test with pytest
-      run: |
-        export USE_XLA=true
-        export TF_XLA_FLAGS="--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-        pytest --durations=10 -s -v  
+      - name: Lint
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          # run mypy
+          mypy quantus
+          # run black
+          black quantus
 
-    - name: Test importing Quantus
-      run: |
-        pip install .
-        python -c "import quantus; import quantus.nlp as qn"
+      - name: Cache models and datasets
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cache/huggingface
+          key: hf-hub-v1
+
+      - name: Download models and datasets
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: python tests/nlp/download_data.py
+
+      - name: Test with pytest
+        run: pytest --durations=10 -s -v
+        env:
+          USE_XLA: true
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+      - name: Test importing Quantus
+        run: |
+          pip install .
+          python -c "import quantus; import quantus.nlp as qn"

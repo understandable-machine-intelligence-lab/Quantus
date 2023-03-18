@@ -17,18 +17,28 @@ jobs:
           cache: 'pip' # caching pip dependencies
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt -r requirements_test.txt
-          # TODO: add to requirements_test.txt after release.
-          pip install 'noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git' --no-deps --ignore-requires-python
+        run: pip install -r requirements.txt -r requirements_test.txt
+
+      - name: Cache models and datasets
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cache/huggingface
+          key: hf-hub-v1
+
+      - name: Download models and datasets
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: python tests/nlp/download_data.py
 
       - name: Test
-        run: |
-          export USE_XLA=true
-          export TF_XLA_FLAGS="--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s
+        run: pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s
+        env:
+          USE_XLA: true
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+
       - name: Upload
-        uses:  codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml, coverage.xml
