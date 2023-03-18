@@ -14,7 +14,7 @@ class LeNet(torch.nn.Module):
     """
 
     def __init__(
-            self,
+        self,
     ):
         super().__init__()
         self.conv_1 = torch.nn.Conv2d(1, 6, 5)
