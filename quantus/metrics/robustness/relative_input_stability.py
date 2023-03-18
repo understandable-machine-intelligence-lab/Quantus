@@ -20,7 +20,9 @@ from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.metrics.robustness.internal.batched_robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.robustness.internal.batched_robustness_metric import (
+    BatchedRobustnessMetric,
+)
 
 
 class RelativeInputStability(BatchedRobustnessMetric):
@@ -292,9 +294,13 @@ class RelativeInputStability(BatchedRobustnessMetric):
             )
 
             # Generate explanation based on perturbed input x.
-            a_batch_perturbed = self.generate_normalised_explanations_batch(model, x_perturbed, y_batch)
+            a_batch_perturbed = self.generate_normalised_explanations_batch(
+                model, x_perturbed, y_batch
+            )
             # If perturbed input caused change in prediction, then it's RIS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
 
             # Compute maximization's objective.
             ris = self.relative_input_stability_objective(
