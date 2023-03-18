@@ -15,10 +15,10 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
-from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.metrics.robustness.internal.batched_robustness_metric import BatchedRobustnessMetric
 
 
-class LocalLipschitzEstimate(BatchedPerturbationMetric):
+class LocalLipschitzEstimate(BatchedRobustnessMetric):
     """
     Implementation of the Local Lipschitz Estimate (or Stability) test by Alvarez-Melis et al., 2018a, 2018b.
 
@@ -128,6 +128,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             **kwargs,
         )
 
@@ -145,7 +146,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         if norm_denominator is None:
             norm_denominator = distance_euclidean
         self.norm_denominator = norm_denominator
-        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -319,22 +319,6 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
-            )
-
-            x_input = model.shape_input(
-                x=x_perturbed,
-                shape=x_batch.shape,
-                channel_first=True,
-                batched=True,
-            )
-
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(
                     x=x_instance,
@@ -342,28 +326,12 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                 )
 
             # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x_input,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed,
-                    **self.normalise_func_kwargs,
-                )
-
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = self.generate_normalised_explanations_batch(model, x_perturbed, y_batch)
+            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-                if (
-                    self.return_nan_when_prediction_changes
-                    and instance_id in changed_prediction_indices
-                ):
+                if instance_id in changed_prediction_indices:
                     similarities[instance_id, step_id] = np.nan
                     continue
 
@@ -376,7 +344,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
                     norm_denominator=self.norm_denominator,
                 )
                 similarities[instance_id, step_id] = similarity
-        max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
+        max_func = np.max if self._return_nan_when_prediction_changes else np.nanmax
         return max_func(similarities, axis=1)
 
     def custom_preprocess(
