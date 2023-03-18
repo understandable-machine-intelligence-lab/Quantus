@@ -151,48 +151,6 @@ from quantus.metrics.robustness import (
             },
             {"min": 0.0, "max": 1.0},
         ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 1.0,
-                    "upper_bound": 255.0,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 1.0,
-                    "upper_bound": 255.0,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
     ],
 )
 def test_max_sensitivity(
@@ -230,10 +188,7 @@ def test_max_sensitivity(
         **call_params,
     )
     if isinstance(expected, float):
-        if np.isnan(expected):
-            assert np.isnan(scores).any(), "Test failed."
-        else:
-            assert all(s == expected for s in scores), "Test failed."
+        assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
@@ -361,50 +316,6 @@ def test_max_sensitivity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "perturb_std": 255,
-                    "perturb_mean": 255,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "perturb_std": 255,
-                    "perturb_mean": 255,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
     ],
 )
 def test_local_lipschitz_estimate(
@@ -442,9 +353,6 @@ def test_local_lipschitz_estimate(
         **call_params,
     )
     if isinstance(expected, float):
-        if np.isnan(expected):
-            assert np.isnan(scores).any(), "Test Failed."
-    else:
         assert scores is not None, "Test failed."
 
 
@@ -551,26 +459,6 @@ def test_local_lipschitz_estimate(
                 },
             },
             {"exception": ValueError},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "nr_steps": 10,
-                    "patch_size": 7,
-                    "disable_warnings": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
         ),
     ],
 )
@@ -622,14 +510,6 @@ def test_continuity(
         **call_params,
     )
     if isinstance(expected, float):
-        if np.isnan(expected):
-            returned_nans = False
-            for score in scores:
-                for k in score:
-                    returned_nans = returned_nans or np.isnan(score[k]).any()
-
-            assert returned_nans, "Expected to see nan's in result."
-    else:
         assert scores is not None, "Test failed."
 
 
@@ -754,48 +634,6 @@ def test_continuity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 1.0,
-                    "upper_bound": 255.0,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 1.0,
-                    "upper_bound": 255.0,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "return_nan_when_prediction_changes": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            np.nan,
-        ),
     ],
 )
 def test_avg_sensitivity(
@@ -833,10 +671,7 @@ def test_avg_sensitivity(
         **call_params,
     )
     if isinstance(expected, float):
-        if np.isnan(expected):
-            assert np.isnan(scores).any(), "Test failed."
-        else:
-            assert all(s == expected for s in scores), "Test failed."
+        assert all(s == expected for s in scores), "Test failed."
     else:
         assert np.all(
             ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
@@ -971,3 +806,79 @@ def test_consistency(
         **call_params,
     )[0]
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
+
+
+def mock_prediction_changed(model):
+    return model
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "metric,model,data,params",
+    [
+        (
+            LocalLipschitzEstimate,
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "perturb_std": 255,
+                "perturb_mean": 255,
+                "nr_samples": 10,
+            },
+        ),
+        (
+            LocalLipschitzEstimate,
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "perturb_std": 255,
+                "perturb_mean": 255,
+                "nr_samples": 10,
+            },
+        ),
+        (
+            AvgSensitivity,
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "lower_bound": 1.0,
+                "upper_bound": 255.0,
+                "nr_samples": 10,
+            },
+        ),
+        (
+            MaxSensitivity,
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "lower_bound": 1.0,
+                "upper_bound": 255.0,
+                "nr_samples": 10,
+            },
+        ),
+        (
+            Continuity,
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "nr_steps": 10,
+                "patch_size": 7,
+            },
+        ),
+    ],
+)
+def test_return_nan_when_prediction_changes(metric, model, data, params):
+    model = mock_prediction_changed(model)
+    metric_instance = metric(
+        **params, disable_warnings=True, return_nan_when_prediction_changes=True
+    )
+    result = metric_instance(
+        model,
+        data["x_batch"],
+        data["y_batch"],
+        explain_func=explain,
+        explain_func_kwargs={
+            "method": "Saliency",
+        },
+    )
+    assert np.isnan(result).all()
