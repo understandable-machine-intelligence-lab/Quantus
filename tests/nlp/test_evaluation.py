@@ -4,7 +4,6 @@ import pytest
 import quantus.nlp as qn
 
 
-@pytest.mark.order("last")
 @pytest.mark.nlp
 @pytest.mark.evaluate_func
 @pytest.mark.slow

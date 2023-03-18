@@ -1,10 +1,15 @@
 coverage>=7.1.0
 flake8>=6.0.0
+black
+mypy==0.982
 
 pytest>=7.2.0
 pytest-cov>=4.0.0
 pytest-lazy-fixture>=0.6.3
 pytest-mock==3.8.2
+pytest-instafail
+pytest-skip-slow
+pytest-xdist
 
 tensorflow>=2.11.0
 tensorflow_probability
@@ -16,19 +21,11 @@ zennit>=0.5.0
 captum>=0.6.0
 
 pandas>=1.5.3
-
 datasets>=2.9.0
-shap>=0.41.0
 
-pytest-xdist
+shap>=0.41.0
+noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
 
 nlpaug>=1.1.11
 nltk>=3.8.1
 transformers>=4.26.0
-
-black
-flake8
-mypy==0.982
-
-noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
-pytest-instafail
