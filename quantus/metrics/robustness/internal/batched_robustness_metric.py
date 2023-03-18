@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from functools import partial
 from abc import ABC
 from typing import List
 import numpy as np
@@ -57,10 +56,12 @@ class BatchedRobustnessMetric(BatchedPerturbationMetric, ABC):
         a_batch: np.ndarray
             A batch of explanations.
         """
-        _explain_func = partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
+        a_batch = self.explain_func(
+            inputs=x_batch,
+            targets=y_batch,
+            model=model.get_model(),
+            **self.explain_func_kwargs
         )
-        a_batch = _explain_func(inputs=x_batch, targets=y_batch)
         if self.normalise:
             a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
         if self.abs:
