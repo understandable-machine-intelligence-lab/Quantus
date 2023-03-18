@@ -63,7 +63,7 @@ jobs:
 
       - name: Test with pytest slow
         # slow tests like MPR can crash runner if run in parallel.
-        run: pytest --durations=10 -s -v -m slow --slow
+        run: pytest -s -v -m slow --slow
 
       - name: Test importing Quantus
         run: |
