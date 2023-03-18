@@ -65,7 +65,7 @@ jobs:
 
       - name: Run slow tests
         # Don't enable pytest-xdist. When run in parrallel, e.g., MPR can crash with OOM.
-        run: pytest -s -v --slow
+        run: pytest -s -v -m slow --slow
 
       - name: Test importing Quantus
         run: |
