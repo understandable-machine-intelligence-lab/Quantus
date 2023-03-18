@@ -44,6 +44,7 @@ def evaluate(
     verbose:
         Indicates whether tqdm progress bar should be displayed.
     call_kwargs:
+        kwargs, which are passed to metrics. Supported options are:
         - keys are metrics' names, and values are
         - Kwargs passed to each metrics' __call__ method. In this case each metric is evaluated once.
         - List of dicts. In this case each metric is evaluated with each entry of list of call_kwargs.

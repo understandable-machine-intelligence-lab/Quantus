@@ -29,6 +29,7 @@ def flatten_list(list_2d: List[List[T]]) -> List[T]:
 def get_input_ids(
     x_batch: List[str], model: TextClassifier
 ) -> Tuple[Any, Dict[str, Any]]:
+    """Do batch encode, unpack input ids and other forward-pass kwargs."""
     encoded_input = model.batch_encode(x_batch)
     return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
@@ -51,6 +52,7 @@ def batch_list(flat_list: List[T], batch_size: int) -> List[List[T]]:
 def map_explanations(
     a_batch: List[Explanation] | np.ndarray, fn: Callable[[T], R]
 ) -> List[R]:
+    """Apply fn to a_batch, supports token-scores tuples as well as raw scores."""
     if isinstance(a_batch, List):
         return [(tokens, fn(scores)) for tokens, scores in a_batch]
     else:
@@ -146,6 +148,7 @@ def map_dict(
 def add_default_items(
     dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
 ) -> Dict[str, Any]:
+    """Add default_items into dictionary if not present."""
     if dictionary is None:
         return default_items.copy()
 
@@ -205,9 +208,26 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
 
 
 def safe_as_array(a, force: bool = False) -> np.ndarray:
-    # Safe means safe from torch complaining about tensors being on other device or attached to graph.
-    # So, The only one type we're really interested is torch.Tensor. It is handled in dedicated function.
-    # force=True will force also conversion of TensorFlow tensors, which in practise often can be used with numpy functions.
+    """
+    Convert DNN frameworks' tensors to numpy arrays. Safe means safe from torch complaining about tensors
+    being on other device or attached to graph. So, the only one type we're really interested is torch.Tensor.
+    In practise, TF tensors can be passed to numpy functions without any issues, so we can avoid overhead of copying them.
+
+    Parameters
+    ----------
+    a:
+        Pytorch or TF tensor.
+    force:
+        If set to true, will force conversion of TF tensors to numpy arrays.
+        This option should be used, when user needs to modify values inside `a`, since TF tensors are read only.
+
+    Returns
+    -------
+    a:
+        np.ndarray or tf.Tensor, a is tf.Tensor and force=False.
+
+    """
+    #
     if safe_isinstance(a, "torch.Tensor"):  # noqa
         return a.detach().cpu().numpy()
     # fmt: off
@@ -232,6 +252,7 @@ if util.find_spec("tensorflow"):
 
 
 def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
+    """Apply `noise` to `arr` based on `noise_type.`"""
     if noise_type not in ("additive", "multiplicative"):
         raise ValueError(
             f"Unsupported noise_type, supported are: additive, multiplicative."

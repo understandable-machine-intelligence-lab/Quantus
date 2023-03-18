@@ -7,6 +7,8 @@
 from pydantic import BaseSettings, Field
 import logging
 
+"""Library-wide configuration, which can be overriden by ENV variables."""
+
 
 class Config(BaseSettings):
     # Use XLA compiler for TF functions, which promises to provide a noticeable speed-up for
@@ -23,6 +25,7 @@ logging.basicConfig(
     level=logging.getLevelName(config.log_level),
 )
 
+# Set PRNG seed manually for reproducibility.
 import numpy as np
 
 np.random.seed(config.prng_seed)
