@@ -20,8 +20,9 @@ def unk_token_baseline(x):
         {"method": "GradNorm"},
         {"method": "GradXInput"},
         {"method": "IntGrad", "batch_interpolated_inputs": False},
-        {"method": "IntGrad"},
-        {"method": "IntGrad", "baseline_fn": unk_token_baseline},
+        # It is not really slow, but rather running it with xdist can crash runner with OOM.
+        pytest.param({"method": "IntGrad"}, marks=pytest.mark.slow),
+        {"method": "IntGrad", "baseline_fn": unk_token_baseline, "batch_interpolated_inputs": False},
         {"method": "NoiseGrad", "explain_fn": "GradXInput", "n": 2},
         {
             "method": "NoiseGrad++",
@@ -67,7 +68,8 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "GradNorm"},
         {"method": "GradXInput"},
         {"method": "IntGrad"},
-        {"method": "IntGrad", "batch_interpolated_inputs": True},
+        # It is not really slow, but rather running it with xdist can crash runner with OOM.
+        pytest.param({"method": "IntGrad", "batch_interpolated_inputs": True}, marks=pytest.mark.slow),
         {"method": "IntGrad", "baseline_fn": unk_token_baseline},
         {
             "method": "NoiseGrad",
