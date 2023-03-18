@@ -2,6 +2,7 @@ from typing import Union, Dict
 from pytest_lazyfixture import lazy_fixture
 import pytest
 import numpy as np
+from pytest_mock import MockerFixture
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.discretise_func import floating_points, rank, sign, top_n_sign
@@ -808,10 +809,6 @@ def test_consistency(
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
 
 
-def mock_prediction_changed(model):
-    return model
-
-
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "metric,model,data,params",
@@ -823,7 +820,6 @@ def mock_prediction_changed(model):
             {
                 "perturb_std": 255,
                 "perturb_mean": 255,
-                "nr_samples": 10,
             },
         ),
         (
@@ -833,7 +829,6 @@ def mock_prediction_changed(model):
             {
                 "perturb_std": 255,
                 "perturb_mean": 255,
-                "nr_samples": 10,
             },
         ),
         (
@@ -843,7 +838,6 @@ def mock_prediction_changed(model):
             {
                 "lower_bound": 1.0,
                 "upper_bound": 255.0,
-                "nr_samples": 10,
             },
         ),
         (
@@ -853,24 +847,18 @@ def mock_prediction_changed(model):
             {
                 "lower_bound": 1.0,
                 "upper_bound": 255.0,
-                "nr_samples": 10,
-            },
-        ),
-        (
-            Continuity,
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "nr_steps": 10,
-                "patch_size": 7,
             },
         ),
     ],
 )
-def test_return_nan_when_prediction_changes(metric, model, data, params):
-    model = mock_prediction_changed(model)
+def test_return_nan_when_prediction_changes(
+    metric, model, data, params, mock_prediction_changed
+):
     metric_instance = metric(
-        **params, disable_warnings=True, return_nan_when_prediction_changes=True
+        **params,
+        disable_warnings=True,
+        nr_samples=10,
+        return_nan_when_prediction_changes=True,
     )
     result = metric_instance(
         model,
@@ -882,3 +870,32 @@ def test_return_nan_when_prediction_changes(metric, model, data, params):
         },
     )
     assert np.isnan(result).all()
+
+
+@pytest.mark.robustness
+def test_return_nan_when_prediction_changes_continuity(
+    load_mnist_model, load_mnist_images, mocker: MockerFixture
+):
+    metric_instance = Continuity(
+        disable_warnings=True,
+        return_nan_when_prediction_changes=True,
+        nr_steps=10,
+        patch_size=7,
+    )
+    mocker.patch.object(metric_instance, "_prediction_changed", lambda *args: True)
+    result = metric_instance(
+        load_mnist_model,
+        load_mnist_images["x_batch"],
+        load_mnist_images["y_batch"],
+        explain_func=explain,
+        explain_func_kwargs={
+            "method": "Saliency",
+        },
+    )
+    for i in result:
+        values = list(i.values())
+        # Last element of scores are output logits.
+        for v in values[:-1]:
+            assert np.isnan(v).any()
+
+    mocker.resetall()

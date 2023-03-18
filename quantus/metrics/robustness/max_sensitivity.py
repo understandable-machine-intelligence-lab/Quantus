@@ -16,7 +16,9 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.similarity_func import difference
-from quantus.metrics.robustness.internal.batched_robustness_metric import BatchedRobustnessMetric
+from quantus.metrics.robustness.internal.batched_robustness_metric import (
+    BatchedRobustnessMetric,
+)
 
 
 class MaxSensitivity(BatchedRobustnessMetric):
@@ -301,7 +303,6 @@ class MaxSensitivity(BatchedRobustnessMetric):
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
         for step_id in range(self.nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
@@ -318,8 +319,12 @@ class MaxSensitivity(BatchedRobustnessMetric):
                 )
 
             # Generate explanation based on perturbed input x.
-            a_perturbed = self.generate_normalised_explanations_batch(model, x_perturbed, y_batch)
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+            a_perturbed = self.generate_normalised_explanations_batch(
+                model, x_perturbed, y_batch
+            )
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
