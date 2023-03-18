@@ -100,6 +100,7 @@ def test_rrs_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
     assert not (result == np.PZERO).any()
 
 
+@pytest.mark.slow
 @pytest.mark.nlp
 @pytest.mark.pytorch_model
 @pytest.mark.robustness
@@ -166,6 +167,7 @@ def test_ros_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 
 @pytest.mark.nlp
+@pytest.mark.slow
 @pytest.mark.pytorch_model
 @pytest.mark.robustness
 @pytest.mark.parametrize(

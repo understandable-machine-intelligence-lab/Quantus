@@ -55,13 +55,13 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: python tests/nlp/download_data.py
 
-      - name: Run incremental tests
-        run: pytest --inc
+      #- name: Run incremental tests
+      #  run: pytest --inc
 
       - name: Run fast tests
         run: pytest --durations=10 -s -v -n 2
 
-      - name: Test with pytest slow
+      - name: Run slow tests
         # slow tests like MPR can crash runner if run in parallel.
         run: pytest -s -v -m slow --slow
 

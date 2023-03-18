@@ -51,6 +51,7 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
     assert not (result == np.NAN).any()
 
 
+@pytest.mark.slow
 @pytest.mark.nlp
 @pytest.mark.tf_model
 @pytest.mark.randomisation
