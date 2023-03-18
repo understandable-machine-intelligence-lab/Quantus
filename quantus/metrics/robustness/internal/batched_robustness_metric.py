@@ -19,7 +19,7 @@ from quantus.metrics.base_batched import BatchedPerturbationMetric
 class BatchedRobustnessMetric(BatchedPerturbationMetric, ABC):
     def __init__(self, *args, return_nan_when_prediction_changes: bool, **kwargs):
         super().__init__(*args, **kwargs)
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
     def changed_prediction_indices(
         self,
@@ -28,7 +28,7 @@ class BatchedRobustnessMetric(BatchedPerturbationMetric, ABC):
         x_perturbed: np.ndarray,
     ) -> List[int]:
         """Get indices of inputs, for which prediction chnaged."""
-        if not self._return_nan_when_prediction_changes:
+        if not self.return_nan_when_prediction_changes:
             return []
 
         predicted_y = model.predict(x_batch).argmax(axis=-1)
