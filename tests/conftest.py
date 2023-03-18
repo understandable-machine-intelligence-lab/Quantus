@@ -197,18 +197,3 @@ def titanic_dataset():
     Y = df_enc["survived"].values
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
-
-
-@pytest.fixture(scope='function', autouse=True)
-def test_log(request):
-    print("STARTED Test '{}'".format(request.node.name))
-
-    def fin():
-        print("COMPLETED Test '{}' \n".format(request.node.name))
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_log():
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
