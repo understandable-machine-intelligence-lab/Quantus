@@ -220,21 +220,15 @@ Let's first load the data and model. In this example, a pre-trained LeNet availa
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
 
 ```python
-import quantus
-from quantus.helpers.model.models import LeNet
 import torch
 import torchvision
 from torchvision import transforms
-  
+
 # Enable GPU.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-model = LeNet()
-if device.type == "cpu":
-    model.load_state_dict(torch.load("tests/assets/mnist", map_location=torch.device('cpu')))
-else: 
-    model.load_state_dict(torch.load("tests/assets/mnist"))
+# Load a pre-trained ResNet18 classification model.
+model = torchvision.models.resnet18(pretrained=True)
 
 # Load datasets and make loaders.
 test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))

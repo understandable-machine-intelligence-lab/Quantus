@@ -9,7 +9,7 @@ import pickle
 from quantus.functions.explanation_func import explain
 from quantus.functions.mosaic_func import mosaic_creation
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.models import LeNetAdaptivePooling
+from tests.models import LeNetAdaptivePooling
 from quantus.metrics.localisation import (
     AttributionLocalisation,
     AUC,

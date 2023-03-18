@@ -6,7 +6,7 @@ from keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from quantus.helpers.model.models import (
+from tests.models import (
     LeNet,
     LeNetTF,
     ConvNet1D,
