@@ -456,9 +456,7 @@ def _(x_batch: np.ndarray, *args, **kwargs):
 
 
 @_explain_gradient_x_input.register
-def _(
-    x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs
-):
+def _(x_batch: list, model: TextClassifier, y_batch: np.ndarray, **kwargs):
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _explain_gradient_x_input(embeddings, model, y_batch, **kwargs)
@@ -810,7 +808,9 @@ def _(
         model.weights = weights_copy
         for _m in range(m):
             embeddings_noise = sd_noise_dist.sample(x_batch.shape)
-            noisy_embeddings = apply_noise(x_batch, embeddings_noise, noise_type) # noqa
+            noisy_embeddings = apply_noise(
+                x_batch, embeddings_noise, noise_type
+            )  # noqa
             explanation = explain_fn(model, noisy_embeddings, y_batch, **kwargs)  # type: ignore
 
             _m = tf.convert_to_tensor(_m)

@@ -206,3 +206,9 @@ def test_log(request):
     def fin():
         print("COMPLETED Test '{}' \n".format(request.node.name))
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_log():
+    import logging
+    logging.basicConfig(level=logging.DEBUG)

@@ -8,7 +8,6 @@ env:
   MKL_NUM_THREADS: 16
   USE_XLA: true
   TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-  PYTHONDONTWRITEBYTECODE: 1
 
 jobs:
   run:
@@ -19,13 +18,21 @@ jobs:
         uses: actions/checkout@master
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.9"
-          cache: 'pip' # caching pip dependencies
+          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements_test.txt
+      - uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: requirements*.txt
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+
+      - run: pip install -r requirements.txt -r requirements_test.txt
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
       - name: Cache models and datasets
         uses: actions/cache@v2
@@ -39,7 +46,7 @@ jobs:
         run: python tests/nlp/download_data.py
 
       - name: Test
-        run: pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -s -n 2
+        run: pytest tests --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
 
       - name: Upload
         uses: codecov/codecov-action@v3

@@ -11,27 +11,34 @@ env:
   MKL_NUM_THREADS: 16
   USE_XLA: true
   TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-  PYTHONDONTWRITEBYTECODE: 1
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         python-version: [ "3.8", "3.9", "3.10" ]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip' # caching pip dependencies
+          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements_test.txt
+      - uses: syphar/restore-virtualenv@v1
+        id: cache-virtualenv
+        with:
+          requirement_files: requirements*.txt
+
+      - uses: syphar/restore-pip-download-cache@v1
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+
+      - run: pip install -r requirements.txt -r requirements_test.txt
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
       - name: Lint
         run: |
@@ -41,8 +48,6 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
           # run mypy
           mypy quantus
-          # run black
-          black quantus
 
       - name: Cache models and datasets
         uses: actions/cache@v2
@@ -55,15 +60,12 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: python tests/nlp/download_data.py
 
-      #- name: Run incremental tests
-      #  run: pytest --inc
-
       - name: Run fast tests
-        run: pytest --durations=10 -s -v -n 2
+        run: pytest --durations=10 -s -v -n auto
 
       - name: Run slow tests
-        # slow tests like MPR can crash runner if run in parallel.
-        run: pytest -s -v -m slow --slow
+        # Don't enable pytest-xdist. When run in parrallel, e.g., MPR can crash with OOM.
+        run: pytest -s -v --slow
 
       - name: Test importing Quantus
         run: |

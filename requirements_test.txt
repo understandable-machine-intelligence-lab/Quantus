@@ -10,7 +10,6 @@ pytest-mock==3.8.2
 pytest-instafail
 pytest-skip-slow
 pytest-xdist
-pytest-incremental
 
 tensorflow>=2.11.0
 tensorflow_probability
