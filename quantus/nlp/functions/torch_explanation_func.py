@@ -16,6 +16,7 @@ import torch
 from torch import Tensor
 
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
+from quantus.nlp.helpers.model.torch_hf_text_classifier import TorchHuggingFaceTextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import get_input_ids, map_dict, value_or_default
 
@@ -296,16 +297,23 @@ def _explain_gradient_x_input(
 
 @singledispatch
 def _explain_integrated_gradients(
-    x_batch,
-    model: TorchTextClassifier,
+    x_batch: List[str],
+    model: TorchHuggingFaceTextClassifier,
     y_batch: np.ndarray,
     *,
     num_steps: int = 10,
-    baseline_fn: Optional[_BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
     **kwargs,
-) -> _Scores:
-    pass
+) -> List[Explanation]:
+
+    from transformers_interpret import SequenceClassificationExplainer
+    cls_explainer = SequenceClassificationExplainer(
+        model.unwrap(),
+        model.unwrap_tokenizer()
+    )
+    a_batch = []
+    for x, y in zip(x_batch, y_batch):
+        word_attributions = cls_explainer(x, y, n_steps=num_steps)
+        a
 
 
 @singledispatch
@@ -454,104 +462,8 @@ def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
     )
 
 
-@_explain_integrated_gradients.register
-def _(
-    x_batch: np.ndarray,
-    model: TorchTextClassifier,
-    y_batch: np.asarray,
-    *,
-    num_steps: int = 10,
-    baseline_fn: Optional[_BaselineFn] = None,
-    batch_interpolated_inputs: bool = False,
-    **kwargs,
-) -> np.ndarray:
-    baseline_fn = value_or_default(baseline_fn, lambda: lambda x: np.zeros_like(x))
-
-    interpolated_embeddings = []
-
-    for i, embeddings_i in enumerate(x_batch):
-        interpolated_embeddings.append(
-            get_interpolated_inputs(baseline_fn(embeddings_i), embeddings_i, num_steps)
-        )
-
-    if batch_interpolated_inputs:
-        return _torch_explain_integrated_gradients_batched(
-            model, interpolated_embeddings, y_batch, **kwargs
-        )
-    else:
-        return _torch_explain_integrated_gradients_iterative(
-            model, interpolated_embeddings, y_batch, **kwargs
-        )
 
 
-def _torch_explain_integrated_gradients_batched(
-    model: TorchTextClassifier,
-    interpolated_embeddings: List[np.ndarray],
-    y_batch: np.ndarray,
-    **kwargs,
-) -> np.ndarray:
-    device = model.device
-
-    batch_size = len(interpolated_embeddings)
-    num_steps = len(interpolated_embeddings[0])
-
-    dtype = model.unwrap().dtype
-
-    interpolated_embeddings = torch.tensor(
-        interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
-    )
-    interpolated_embeddings = torch.reshape(
-        interpolated_embeddings, [-1, *interpolated_embeddings.shape[2:]]  # type: ignore
-    )
-
-    def pseudo_interpolate(x):
-        x = np.broadcast_to(x, (num_steps, *x.shape))
-        x = np.reshape(x, (-1, *x.shape[2:]))
-        return x
-
-    interpolated_kwargs = map_dict(kwargs, pseudo_interpolate)
-    logits = model(interpolated_embeddings, **interpolated_kwargs)
-    logits_for_class = get_logits_for_labels(
-        logits, model.to_tensor(pseudo_interpolate(y_batch))
-    )
-    grads = torch.autograd.grad(torch.unbind(logits_for_class), interpolated_embeddings)
-    grads = grads[0]
-    grads = torch.reshape(grads, [batch_size, num_steps, *grads.shape[1:]])
-    scores = torch.trapz(torch.trapz(grads, dim=-1), dim=1)
-    return scores.detach().cpu().numpy()
-
-
-def _torch_explain_integrated_gradients_iterative(
-    model: TorchTextClassifier,
-    interpolated_embeddings_batch: List[np.ndarray],
-    y_batch: np.ndarray,
-    **kwargs,
-) -> np.ndarray:
-    dtype = model.unwrap().dtype
-
-    device = model.device
-    scores = []
-
-    for i, interpolated_embeddings in enumerate(interpolated_embeddings_batch):
-        interpolated_embeddings = torch.tensor(
-            interpolated_embeddings, requires_grad=True, device=device, dtype=dtype
-        )
-
-        interpolated_kwargs = map_dict(
-            {k: v[i] for k, v in kwargs.items()},
-            lambda x: np.broadcast_to(x, (interpolated_embeddings.shape[0], *x.shape)),
-        )
-
-        logits = model(interpolated_embeddings, **interpolated_kwargs)
-        logits_for_class = logits[:, y_batch[i]]
-        grads = torch.autograd.grad(
-            torch.unbind(logits_for_class), interpolated_embeddings
-        )
-        score = torch.trapz(torch.trapz(grads[0], dim=-1), axis=0)
-
-        scores.append(score.detach().cpu().numpy())
-
-    return np.asarray(scores)
 
 
 # ----------------------- NoiseGrad -------------------------
@@ -582,7 +494,7 @@ def _(
 
 @_explain_noise_grad.register
 def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
-    return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
+    return _explain_noise_grad(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_noise_grad.register
@@ -671,7 +583,7 @@ def _(
 
 @_explain_noise_grad_plus_plus.register
 def _(x_batch: np.ndarray, model: TorchTextClassifier, *args, **kwargs):
-    return _explain_gradient_x_input(model.to_tensor(x_batch), model, *args, **kwargs)
+    return _explain_noise_grad_plus_plus(model.to_tensor(x_batch), model, *args, **kwargs)
 
 
 @_explain_noise_grad_plus_plus.register
@@ -723,22 +635,3 @@ def _(
 
 def get_logits_for_labels(logits: Tensor, y_batch: Tensor) -> Tensor:
     return logits[torch.range(0, logits.shape[0] - 1, dtype=torch.int64), y_batch]
-
-
-def get_interpolated_inputs(
-    baseline: np.ndarray, target: np.ndarray, num_steps: int
-) -> np.ndarray:
-    """Gets num_step linearly interpolated inputs from baseline to target."""
-    if num_steps <= 0:
-        return np.array([])
-    if num_steps == 1:
-        return np.array([baseline, target])
-
-    delta = target - baseline
-    scales = np.linspace(0, 1, num_steps + 1, dtype=np.float32)[
-        :, np.newaxis, np.newaxis
-    ]
-    shape = (num_steps + 1,) + delta.shape
-    deltas = scales * np.broadcast_to(delta, shape)
-    interpolated_inputs = baseline + deltas
-    return interpolated_inputs
