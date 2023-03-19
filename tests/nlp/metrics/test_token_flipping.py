@@ -5,8 +5,6 @@ from quantus.nlp.metrics.faithfullness.token_flipping import TokenFlipping
 
 
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs, expected_shape",
     [
@@ -35,8 +33,6 @@ def test_tf_model(
 
 
 @pytest.mark.nlp
-@pytest.mark.pytorch_model
-@pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs, expected_shape",
     [
@@ -49,7 +45,7 @@ def test_tf_model(
     ],
     ids=["pruning", "activation"],
 )
-def test_fnet_torch_model(
+def test_torch_model(
     torch_sst2_model, sst2_dataset, init_kwargs, call_kwargs, expected_shape
 ):
     metric = TokenFlipping(**init_kwargs)

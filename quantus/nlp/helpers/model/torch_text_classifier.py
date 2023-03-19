@@ -74,3 +74,8 @@ class TorchTextClassifier(TextClassifier):
     @abstractmethod
     def clone(self) -> TorchTextClassifier:
         raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def embeddings_dtype(self):
+        raise NotImplementedError

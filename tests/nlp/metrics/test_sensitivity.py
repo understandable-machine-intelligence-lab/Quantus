@@ -5,8 +5,6 @@ from quantus.nlp import AvgSensitivity, MaxSensitivity, gaussian_noise, uniform_
 
 
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -35,8 +33,6 @@ def test_avg_sensitivity_tf(tf_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 
 @pytest.mark.nlp
-@pytest.mark.pytorch_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [

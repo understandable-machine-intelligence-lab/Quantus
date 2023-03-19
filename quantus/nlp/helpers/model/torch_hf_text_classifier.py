@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from functools import singledispatchmethod
 from typing import Dict, List, Optional
+from functools import lru_cache
 
 import numpy as np
 import torch
@@ -21,7 +22,7 @@ from transformers import (
 
 from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
 from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
-from quantus.nlp.helpers.utils import map_dict, value_or_default
+from quantus.nlp.helpers.utils import map_dict, value_or_default, add_default_items
 
 
 class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
@@ -74,7 +75,8 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         return self._model(None, inputs_embeds=inputs_embeds, **kwargs).logits
 
     def batch_encode(self, text: List[str], **kwargs) -> Dict[str, torch.Tensor]:  # type: ignore
-        return super().batch_encode(text, return_tensors="pt", **kwargs)  # type: ignore
+        kwargs = add_default_items(kwargs, dict(return_tensors="pt"))
+        return super().batch_encode(text, **kwargs)  # type: ignore
 
     def predict(self, text: List[str], **kwargs) -> np.ndarray:
         encoded_inputs = self.batch_encode(text)
@@ -118,3 +120,11 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         ).hidden_states
         hidden_states = np.stack([i.detach().cpu().numpy() for i in hidden_states])
         return np.moveaxis(hidden_states, 0, 1)
+
+    @property
+    def embeddings_dtype(self):
+        @lru_cache(maxsize=None)
+        def _embeddings_dtype():
+            return self.embedding_lookup(np.ones(shape=(1, 1))).dtype
+
+        return _embeddings_dtype()

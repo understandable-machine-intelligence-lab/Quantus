@@ -11,8 +11,6 @@ from quantus.nlp import (
 
 
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -41,8 +39,6 @@ def test_ris_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -71,8 +67,6 @@ def test_ros_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -101,9 +95,6 @@ def test_rrs_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kwargs):
 
 
 @pytest.mark.slow
-@pytest.mark.nlp
-@pytest.mark.pytorch_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -137,8 +128,6 @@ def test_ris_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 
 @pytest.mark.nlp
-@pytest.mark.pytorch_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -168,8 +157,6 @@ def test_ros_torch_model(torch_sst2_model, sst2_dataset, init_kwargs, call_kwarg
 
 @pytest.mark.nlp
 @pytest.mark.slow
-@pytest.mark.pytorch_model
-@pytest.mark.robustness
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [

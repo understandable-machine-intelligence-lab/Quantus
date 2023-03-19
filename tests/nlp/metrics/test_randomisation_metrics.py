@@ -7,8 +7,6 @@ from quantus.nlp import ModelParameterRandomisation, RandomLogit
 
 
 @pytest.mark.nlp
-@pytest.mark.pytorch_model
-@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -30,9 +28,6 @@ def test_random_logit_torch_model(
 
 
 @pytest.mark.slow
-@pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -53,8 +48,6 @@ def test_random_logit_tf_model(tf_sst2_model, sst2_dataset, init_kwargs, call_kw
 
 @pytest.mark.slow
 @pytest.mark.nlp
-@pytest.mark.tf_model
-@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs",
     [
@@ -74,6 +67,41 @@ def test_model_parameter_randomisation_tf_model(
 ):
     metric = ModelParameterRandomisation(**init_kwargs, display_progressbar=True)
     result = metric(tf_sst2_model, sst2_dataset, **call_kwargs)
+    if not init_kwargs.get("return_sample_correlation"):
+        assert isinstance(result, Dict)
+        for i in result.values():
+            assert isinstance(i, np.ndarray)
+            assert not (i == np.NINF).any()
+            assert not (i == np.PINF).any()
+            assert not (i == np.NAN).any()
+    else:
+        assert isinstance(result, np.ndarray)
+        assert not (result == np.NINF).any()
+        assert not (result == np.PINF).any()
+        assert not (result == np.NAN).any()
+
+
+@pytest.mark.slow
+@pytest.mark.nlp
+@pytest.mark.parametrize(
+    "init_kwargs, call_kwargs",
+    [
+        (
+            {"normalise": True},
+            {"explain_func_kwargs": {"method": "GradNorm"}},
+        ),
+        (
+            {"normalise": True, "return_sample_correlation": True},
+            {"explain_func_kwargs": {"method": "GradXInput"}},
+        ),
+    ],
+    ids=["raw scores", "sample correlation"],
+)
+def test_model_parameter_randomisation_torch_model(
+    torch_sst2_model, sst2_dataset, init_kwargs, call_kwargs
+):
+    metric = ModelParameterRandomisation(**init_kwargs, display_progressbar=True)
+    result = metric(torch_sst2_model, sst2_dataset, **call_kwargs)
     if not init_kwargs.get("return_sample_correlation"):
         assert isinstance(result, Dict)
         for i in result.values():

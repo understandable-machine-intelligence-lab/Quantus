@@ -32,6 +32,12 @@ try:
     from quantus.nlp.helpers.model.tf_hf_text_classifier import (
         TensorFlowHuggingFaceTextClassifier,
     )
+    from quantus.nlp.functions.tf_explanation_func import (
+        IntGradConfig,
+        NoiseGradConfig,
+        NoiseGradPlusPlusConfig,
+    )
+    from quantus.nlp.helpers.utils import tf_function
 
 except ModuleNotFoundError:
     pass

@@ -24,7 +24,6 @@ def tf_sst2_model():
 
 @pytest.fixture(scope="session")
 def torch_sst2_model():
-    # This model is interesting because it has not attention mask, but requires type_ids
     return TorchHuggingFaceTextClassifier.from_pretrained(
-        "gchhablani/fnet-base-finetuned-sst2"
+        "distilbert-base-uncased-finetuned-sst-2-english"
     )

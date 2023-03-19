@@ -1,0 +1,6 @@
+tensorflow_probability
+datasets
+shap
+noisegrad @ git+https://github.com/aaarrti/NoiseGrad.git
+transformers
+transformers-interpret

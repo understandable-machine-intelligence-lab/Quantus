@@ -31,7 +31,8 @@ jobs:
       - uses: syphar/restore-pip-download-cache@v1
         if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
-      - run: pip install -r requirements.txt -r requirements_test.txt
+      - name: Install dependecies
+        run: pip install -r requirements.txt -r requirements_test.txt
         if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
       - name: Cache models and datasets
