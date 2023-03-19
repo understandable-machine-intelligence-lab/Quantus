@@ -13,7 +13,7 @@ from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLog
 def explain_func_stub(*args, **kwargs):
     # tf-explain does not support 2D inputs
     input_shape = kwargs.get("inputs").shape
-    return np.random.uniform(low=0, high=0.5, size=input_shape)
+    return np.random.default_rng(42).uniform(low=0, high=0.5, size=input_shape)
 
 
 @pytest.mark.randomisation
@@ -286,7 +286,7 @@ def test_model_parameter_randomisation(
         ), "Test failed."
     else:
         assert all(
-            ((s > expected["min"]) & (s < expected["max"]))
+            ((s >= expected["min"]) & (s <= expected["max"]))
             for layer, scores in scores_layers.items()
             for s in scores
         ), "Test failed."

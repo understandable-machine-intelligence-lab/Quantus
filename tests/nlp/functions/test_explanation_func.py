@@ -35,7 +35,7 @@ def unk_token_baseline(x):
         {
             "method": "NoiseGrad++",
             "config": NoiseGradPlusPlusConfig(
-                n=2, m=2, explain_fn="GradNorm", noise_fn="additive"
+                n=2, m=2, explain_fn="GradNorm", noise_type="additive"
             ),
         },
         {"method": "LIME", "num_samples": 5},

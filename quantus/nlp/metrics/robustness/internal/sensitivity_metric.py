@@ -13,12 +13,12 @@ import numpy as np
 
 from quantus.functions.similarity_func import difference
 from quantus.helpers.warn import warn_perturbation_caused_no_change
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import (
     ExplainFn,
     Explanation,
     NormFn,
     SimilarityFn,
-    TextClassifier,
 )
 from quantus.nlp.helpers.utils import get_input_ids, get_scores, safe_as_array
 from quantus.nlp.metrics.robustness.internal.robustness_metric import RobustnessMetric

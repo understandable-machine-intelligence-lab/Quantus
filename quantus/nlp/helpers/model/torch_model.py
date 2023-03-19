@@ -7,8 +7,9 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Generator
 from functools import lru_cache
+from abc import abstractmethod
 
 import numpy as np
 import torch
@@ -19,20 +20,25 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
+from quantus.helpers.torch_model_randomisation import (
+    get_random_layer_generator,
+    random_layer_generator_length,
+)
 
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
-from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
 from quantus.nlp.helpers.utils import map_dict, value_or_default, add_default_items
 
 
-class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
+class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizerBase,
         model: PreTrainedModel,
         device: Optional[torch.device],
     ):
-        super().__init__(tokenizer)
+        super().__init__()
+        self._tokenizer = tokenizer
         self._device = value_or_default(device, lambda: torch.device("cpu"))
         self._model = model.to(self._device)
 
@@ -48,9 +54,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
             device,
         )
 
-    def embedding_lookup(
-        self, input_ids: torch.Tensor | np.ndarray, **kwargs
-    ) -> torch.Tensor:
+    def embedding_lookup(self, input_ids: torch.Tensor | np.ndarray) -> torch.Tensor:
         input_ids = self.to_tensor(input_ids)
         word_embeddings = self._model.get_input_embeddings()(input_ids)
         seq_length = input_ids.size(1)
@@ -72,7 +76,7 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
     ) -> torch.Tensor:
         inputs_embeds = self.to_tensor(inputs_embeds, dtype=self._model.dtype)
         kwargs = map_dict(kwargs, lambda x: self.to_tensor(x))
-        return self._model(None, inputs_embeds=inputs_embeds, **kwargs).logits
+        return self._model(inputs_embeds=inputs_embeds, **kwargs).logits
 
     def batch_encode(self, text: List[str], **kwargs) -> Dict[str, torch.Tensor]:  # type: ignore
         kwargs = add_default_items(kwargs, dict(return_tensors="pt"))
@@ -84,18 +88,14 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         return logits.detach().cpu().numpy()
 
     @singledispatchmethod
-    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:  # type: ignore
+    def get_hidden_representations(
+        self,
+        x_batch,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs,
+    ) -> np.ndarray:  # type: ignore
         pass
-
-    def unwrap(self) -> nn.Module:
-        return self._model
-
-    @property
-    def device(self) -> torch.device:
-        return self._device
-
-    def clone(self) -> TorchHuggingFaceTextClassifier:
-        return self.from_pretrained(self._model.name_or_path, device=self._device)
 
     @get_hidden_representations.register
     def _(self, x_batch: list, **kwargs) -> np.ndarray:
@@ -121,6 +121,16 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
         hidden_states = np.stack([i.detach().cpu().numpy() for i in hidden_states])
         return np.moveaxis(hidden_states, 0, 1)
 
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator:
+        og_weights = self.weights.copy()
+        generator = get_random_layer_generator(self.unwrap(), order, seed)
+        for name, model in generator:
+            self.weights = model.state_dict()
+            yield name, self
+        self.weights = og_weights
+
     @property
     def embeddings_dtype(self):
         @lru_cache(maxsize=None)
@@ -128,3 +138,31 @@ class TorchHuggingFaceTextClassifier(TorchTextClassifier, HuggingFaceTokenizer):
             return self.embedding_lookup(np.ones(shape=(1, 1))).dtype
 
         return _embeddings_dtype()
+
+    def to_tensor(self, x: torch.Tensor | np.ndarray, **kwargs) -> torch.Tensor:
+        if isinstance(x, torch.Tensor):
+            return x
+        return torch.tensor(x, device=self.device, **kwargs)
+
+    @property
+    def weights(self) -> Dict[str, torch.Tensor]:
+        return self.unwrap().state_dict()
+
+    @weights.setter
+    def weights(self, weights: Dict[str, torch.Tensor]):
+        self.unwrap().load_state_dict(weights)
+
+    @property
+    @abstractmethod
+    def device(self) -> torch.device:
+        raise NotImplementedError
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return random_layer_generator_length(self.unwrap())
+
+    def unwrap_tokenizer(self):
+        return self._tokenizer
+
+    def unwrap(self) -> nn.Module:
+        return self._model

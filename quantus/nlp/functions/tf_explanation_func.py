@@ -14,20 +14,19 @@ import numpy
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability.python.distributions.normal import Normal
-
-from quantus.nlp.helpers.model.tf_text_classifier import TensorFlowTextClassifier
+from quantus.nlp.helpers.model.tf_model import TFHuggingFaceTextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     tf_function,
     value_or_default,
+    apply_noise,
 )
 
 # Just to save some typing effort
 _BaselineFn = Callable[[tf.Tensor], tf.Tensor]
 _TextOrVector = Union[List[str], tf.Tensor]
 _Scores = Union[List[Explanation], tf.Tensor]
-
 
 # ----------------- "Entry Point" --------------------
 
@@ -73,18 +72,17 @@ class NoiseGradConfig(NamedTuple):
     mean: float = 1.0
     std: float = 0.2
     explain_fn: Union[Callable, str] = "IntGrad"
-    noise_fn: Union[Callable, str] = "multiplicative"
+    noise_type: str = "multiplicative"
     seed: int = 42
 
     def resolve_functions(self):
         explain_fn = _resolve_noise_grad_baseline_explain_fn(self.explain_fn)
-        noise_fn = _resolve_noise_function(self.noise_fn)
         return NoiseGradConfig(
             n=self.n,
             mean=self.mean,
             std=self.std,
             explain_fn=explain_fn,
-            noise_fn=noise_fn,
+            noise_type=self.noise_type,
             seed=self.seed,
         )
 
@@ -121,12 +119,11 @@ class NoiseGradPlusPlusConfig(NamedTuple):
     std: float = 0.2
     sg_std: float = 0.4
     explain_fn: Union[Callable, str] = "IntGrad"
-    noise_fn: Union[Callable, str] = "multiplicative"
+    noise_type: str = "multiplicative"
     seed: int = 42
 
     def resolve_functions(self):
         explain_fn = _resolve_noise_grad_baseline_explain_fn(self.explain_fn)
-        noise_fn = _resolve_noise_function(self.noise_fn)
         return NoiseGradPlusPlusConfig(
             n=self.n,
             m=self.m,
@@ -135,7 +132,7 @@ class NoiseGradPlusPlusConfig(NamedTuple):
             std=self.std,
             sg_std=self.sg_std,
             explain_fn=explain_fn,
-            noise_fn=noise_fn,
+            noise_type=self.noise_type,
             seed=self.seed,
         )
 
@@ -192,7 +189,7 @@ def tf_explain(
 
 
 def gradient_norm(
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     **kwargs,
@@ -232,7 +229,7 @@ def gradient_norm(
 
 
 def gradient_x_input(
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     **kwargs,
@@ -273,7 +270,7 @@ def gradient_x_input(
 
 
 def integrated_gradients(
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[IntGradConfig] = None,
@@ -335,7 +332,7 @@ def integrated_gradients(
 
 
 def noise_grad(
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[NoiseGradConfig] = None,
@@ -395,7 +392,7 @@ def noise_grad(
 
 
 def noise_grad_plus_plus(
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[NoiseGradPlusPlusConfig] = None,
@@ -482,7 +479,7 @@ def _noise_grad_plus_plus(x_batch, *args, **kwargs) -> _Scores:
 
 @_gradient_norm.register
 def _(
-    x_batch: list, model: TensorFlowTextClassifier, y_batch: tf.Tensor
+    x_batch: list, model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor
 ) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
@@ -494,7 +491,7 @@ def _(
 @tf_function
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     **kwargs,
 ) -> tf.Tensor:
@@ -512,7 +509,7 @@ def _(
 
 @_gradient_x_input.register
 def _(
-    x_batch: list, model: TensorFlowTextClassifier, y_batch: tf.Tensor, **kwargs
+    x_batch: list, model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs
 ) -> List[Explanation]:
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
@@ -524,7 +521,7 @@ def _(
 @tf_function
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     **kwargs,
 ) -> tf.Tensor:
@@ -543,7 +540,7 @@ def _(
 @_integrated_gradients.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: IntGradConfig,
     **kwargs,
@@ -566,7 +563,7 @@ def _(
 @tf_function
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: IntGradConfig,
     **kwargs,
@@ -592,7 +589,7 @@ def _(
 @tf_function
 def _integrated_gradients_batched(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: IntGradConfig,
     **kwargs,
@@ -631,7 +628,7 @@ def _integrated_gradients_batched(
 @tf_function
 def _integrated_gradients_iterative(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: IntGradConfig,
     **kwargs,
@@ -675,7 +672,7 @@ def _integrated_gradients_iterative(
 @_noise_grad.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: NoiseGradConfig,
 ):
@@ -691,11 +688,10 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@_noise_grad.register(tf.Tensor)
-# @tf_function
+@_noise_grad.register
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: NoiseGradConfig,
     **kwargs,
@@ -711,13 +707,18 @@ def _(
 
     noise_dist = Normal(config.mean, config.std)
 
+    def noise_fn(x):
+        noise = noise_dist.sample(tf.shape(x))
+        return apply_noise(x, noise, config.noise_type)
+
     for n in tf.range(config.n):
         noisy_weights = tf.nest.map_structure(
-            lambda x: config.noise_fn(x, noise_dist), original_weights
+            noise_fn,
+            original_weights,
         )
         model.weights = noisy_weights
 
-        explanation = config.explain_fn(x_batch, model, y_batch, **kwargs)
+        explanation = config.explain_fn(x_batch, model, y_batch, **kwargs)  # type: ignore # noqa
         explanations_array = explanations_array.write(n, explanation)
 
     scores = tf.reduce_mean(explanations_array.stack(), axis=0)
@@ -731,7 +732,7 @@ def _(
 @_noise_grad_plus_plus.register
 def _(
     x_batch: list,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     *,
     config: NoiseGradPlusPlusConfig,
@@ -748,11 +749,10 @@ def _(
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
-@_noise_grad_plus_plus.register(tf.Tensor)
-# @tf_function
+@_noise_grad_plus_plus.register
 def _(
     x_batch: tf.Tensor,
-    model: TensorFlowTextClassifier,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     *,
     config: NoiseGradPlusPlusConfig,
@@ -770,15 +770,21 @@ def _(
         colocate_with_first_write_call=True,
     )
 
+    def noise_fn(x):
+        noise = noise_dist.sample(tf.shape(x))
+        return apply_noise(x, noise, config.noise_type)
+
+    def sg_noise_fn(x):
+        noise = sg_noise_dist.sample(tf.shape(x))
+        return apply_noise(x, noise, config.noise_type)
+
     for n in tf.range(config.n):
-        noisy_weights = tf.nest.map_structure(
-            lambda x: config.noise_fn(x, noise_dist), original_weights
-        )
+        noisy_weights = tf.nest.map_structure(noise_fn, original_weights)
         model.weights = noisy_weights
 
         for m in tf.range(config.m):
-            noisy_embeddings = config.noise_fn(x_batch, sg_noise_dist)
-            explanation = config.explain_fn(noisy_embeddings, model, y_batch, **kwargs)
+            noisy_embeddings = sg_noise_fn(x_batch)
+            explanation = config.explain_fn(noisy_embeddings, model, y_batch, **kwargs)  # type: ignore # noqa
             explanations_array = explanations_array.write(n + m * config.m, explanation)
 
     scores = tf.reduce_mean(explanations_array.stack(), axis=0)
@@ -787,18 +793,6 @@ def _(
 
 
 # --------------------- utils ----------------------
-
-
-@tf_function
-def _add_noise(x, dist: Normal):
-    noise = dist.sample(tf.shape(x))
-    return x + noise
-
-
-@tf_function
-def _multiply_noise(x, dist: Normal):
-    noise = dist.sample(tf.shape(x))
-    return x * noise
 
 
 @tf_function
@@ -860,17 +854,3 @@ def _resolve_noise_grad_baseline_explain_fn(explain_fn):
             f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
         )
     return method_mapping[explain_fn]
-
-
-def _resolve_noise_function(noise_type):
-    if isinstance(noise_type, Callable):
-        return noise_type
-    if noise_type not in ("additive", "multiplicative"):
-        raise ValueError(
-            f"Unsupported noise_type, supported are: additive, multiplicative."
-        )
-
-    if noise_type == "additive":
-        return _add_noise
-    else:
-        return _multiply_noise

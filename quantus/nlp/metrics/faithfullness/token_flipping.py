@@ -13,7 +13,11 @@ from quantus.functions.loss_func import mse
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn
+from quantus.nlp.helpers.types import (
+    ExplainFn,
+    Explanation,
+    NormaliseFn,
+)
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     get_logits_for_labels,

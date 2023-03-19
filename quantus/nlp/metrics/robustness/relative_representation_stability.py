@@ -16,12 +16,12 @@ from quantus.helpers.relative_stability import (
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.functions.perturb_func import spelling_replacement
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import (
     ExplainFn,
     Explanation,
     NormaliseFn,
     PerturbFn,
-    TextClassifier,
 )
 from quantus.nlp.helpers.utils import get_scores
 from quantus.nlp.metrics.robustness.internal.relative_stability import RelativeStability

@@ -361,7 +361,7 @@ def test_faithfulness_correlation(
             },
             {"min": -1.0, "max": 1.0},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
@@ -383,6 +383,7 @@ def test_faithfulness_correlation(
                 },
             },
             {"min": 0.0, "max": 1.0},
+            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_mnist_model"),

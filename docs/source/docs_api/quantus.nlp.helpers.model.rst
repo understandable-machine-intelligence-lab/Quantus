@@ -14,7 +14,5 @@ Submodules
 
    quantus.nlp.helpers.model.hf_tokenizer
    quantus.nlp.helpers.model.text_classifier
-   quantus.nlp.helpers.model.tf_hf_text_classifier
-   quantus.nlp.helpers.model.tf_text_classifier
-   quantus.nlp.helpers.model.torch_hf_text_classifier
-   quantus.nlp.helpers.model.torch_text_classifier
+   quantus.nlp.helpers.model.tf_model
+   quantus.nlp.helpers.model.torch_model

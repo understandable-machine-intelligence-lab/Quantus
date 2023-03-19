@@ -7,11 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  MKL_NUM_THREADS: 16
-  USE_XLA: true
-  TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,33 +24,31 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
-        with:
-          requirement_files: requirements*.txt
-
-      - uses: syphar/restore-pip-download-cache@v1
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-
-      - run: pip install -r requirements.txt -r requirements_test.txt
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+      - name: Install dependencies
+        run: pip install -r requirements/requirements.txt -r requirements/requirements_test.txt
 
       - name: Lint
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 quantus --count --select=E9,F63,F7,F82 --show-source --statistics --exclude nlp
+          
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 quantus --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude nlp
+          
           # run mypy
-          mypy quantus --exclude quatus/nlp
+          mypy quantus --exclude nlp
 
       - name: Run fast tests
         run: pytest -s -v -n 2 -m "not nlp" -m "not slow"
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
       - name: Run slow tests
         run: pytest -s -v -n 2 -m "not nlp" -m "slow"
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
       - name: Test importing Quantus
         run: |
           pip install .
-          python -c "import quantus"
+          python -c "import quantus;quantus.available_metrics()"

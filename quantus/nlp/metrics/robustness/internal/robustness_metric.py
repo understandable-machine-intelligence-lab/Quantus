@@ -12,8 +12,9 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
+
 from quantus.nlp.helpers.types import ExplainFn, Explanation
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     is_plain_text_perturbation,

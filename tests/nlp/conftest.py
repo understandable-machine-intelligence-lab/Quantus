@@ -2,7 +2,7 @@ import pytest
 from datasets import load_dataset
 
 from quantus.nlp import (
-    TensorFlowHuggingFaceTextClassifier,
+    TFHuggingFaceTextClassifier,
     TorchHuggingFaceTextClassifier,
 )
 
@@ -17,7 +17,7 @@ def sst2_dataset():
 
 @pytest.fixture(scope="session")
 def tf_sst2_model():
-    return TensorFlowHuggingFaceTextClassifier.from_pretrained(
+    return TFHuggingFaceTextClassifier.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 

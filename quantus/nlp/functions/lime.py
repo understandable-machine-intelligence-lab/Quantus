@@ -11,7 +11,6 @@ from typing import Callable, Iterable, List, Optional, Sequence
 
 import numpy as np
 from sklearn import linear_model, metrics
-
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import get_input_ids, safe_as_array, value_or_default

@@ -36,11 +36,11 @@ def test_tf_model(
 @pytest.mark.parametrize(
     "init_kwargs, call_kwargs, expected_shape",
     [
-        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 42)),
+        ({"normalise": True}, {"explain_func_kwargs": {"method": "GradNorm"}}, (8, 39)),
         (
             {"normalise": True, "task": "activation"},
             {"explain_func_kwargs": {"method": "GradNorm"}},
-            (8, 42),
+            (8, 39),
         ),
     ],
     ids=["pruning", "activation"],

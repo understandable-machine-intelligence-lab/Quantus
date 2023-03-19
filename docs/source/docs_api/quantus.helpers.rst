@@ -24,5 +24,7 @@ Submodules
    quantus.helpers.constants
    quantus.helpers.plotting
    quantus.helpers.relative_stability
+   quantus.helpers.tf_model_randomisation
+   quantus.helpers.torch_model_randomisation
    quantus.helpers.utils
    quantus.helpers.warn

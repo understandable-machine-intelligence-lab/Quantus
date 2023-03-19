@@ -18,3 +18,4 @@ Submodules
    quantus.nlp.functions.perturb_func
    quantus.nlp.functions.tf_explanation_func
    quantus.nlp.functions.torch_explanation_func
+   quantus.nlp.functions.transorfmers_interpret_adapter

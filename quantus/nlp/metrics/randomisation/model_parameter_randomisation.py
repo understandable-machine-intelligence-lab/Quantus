@@ -19,7 +19,12 @@ from quantus.helpers.utils import compute_correlation_per_sample
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
+from quantus.nlp.helpers.types import (
+    ExplainFn,
+    Explanation,
+    NormaliseFn,
+    SimilarityFn,
+)
 from quantus.nlp.helpers.utils import (
     batch_list,
     get_scores,

@@ -6,8 +6,9 @@
 
 from __future__ import annotations
 
-import sys
-from importlib import util
+from functools import singledispatch
+from functools import partial
+
 from operator import itemgetter
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
@@ -15,6 +16,8 @@ import numpy as np
 from cachetools import cached
 from sklearn.utils import gen_batches
 
+from quantus.helpers.utils import map_dict
+from quantus.nlp.config import config
 from quantus.nlp.helpers.types import Explanation, TextClassifier
 
 T = TypeVar("T")
@@ -65,84 +68,11 @@ def get_scores(a_batch: List[Explanation]) -> np.ndarray:
     return np.asarray(list(map(itemgetter(1), a_batch)))
 
 
-@cached(
-    cache={},
-    key=lambda obj, class_path_str: str(obj.__class__) + "_" + str(class_path_str),
-)
-def safe_isinstance(obj: Any, class_path_str: str | Tuple) -> bool:
-    """
-    Acts as a safe version of isinstance without having to explicitly
-    import packages which may not exist in the users environment.
-
-    Checks if obj is an instance of type specified by class_path_str.
-
-    Parameters
-    ----------
-    obj: Any
-        Some object you want to test against
-    class_path_str: str or list
-        A string or list of strings specifying full class paths
-        Example: `sklearn.ensemble.RandomForestRegressor`
-
-    Returns
-    --------
-    bool: True if isinstance is true and the package exists, False otherwise
-    """
-    if isinstance(class_path_str, str):
-        class_path_strs = [class_path_str]
-    elif isinstance(class_path_str, list) or isinstance(class_path_str, tuple):
-        class_path_strs = class_path_str  # type: ignore
-    else:
-        raise ValueError
-
-    # try each module path in order
-    for class_path_str in class_path_strs:
-        if "." not in class_path_str:
-            raise ValueError(
-                "class_path_str must be a string or list of strings specifying a full \
-                module path to a class. Eg, 'sklearn.ensemble.RandomForestRegressor'"
-            )
-
-        # Splits on last occurence of "."
-        module_name, class_name = class_path_str.rsplit(".", 1)
-
-        # here we don't check further if the model is not imported, since we shouldn't have
-        # an object of that types passed to us if the model the type is from has never been
-        # imported. (and we don't want to import lots of new modules for no reason)
-        if module_name not in sys.modules:
-            continue
-
-        module = sys.modules[module_name]
-
-        # Get class
-        _class = getattr(module, class_name, None)
-
-        if _class is None:
-            continue
-
-        if isinstance(obj, _class):
-            return True
-
-    return False
-
-
 def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
     """Apply func to value if not None, otherwise return None."""
     if val is None:
         return None
     return func(val)
-
-
-def map_dict(
-    dictionary: Dict[str, T],
-    func: Callable[[T], R],
-    key_mapper: Callable[[str], str] = lambda x: x,
-) -> Dict[str, R]:
-    """Applies func to values in dict. Additionally, if provided can also map keys."""
-    result = {}
-    for k, v in dictionary.items():
-        result[key_mapper(k)] = func(v)
-    return result
 
 
 def add_default_items(
@@ -207,6 +137,19 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
 
 
+def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
+    """Apply `noise` to `arr` based on `noise_type.`"""
+    if noise_type not in ("additive", "multiplicative"):
+        raise ValueError(
+            f"Unsupported noise_type, supported are: additive, multiplicative."
+        )
+    if noise_type == "additive":
+        return arr + noise
+    if noise_type == "multiplicative":
+        return arr * noise
+
+
+@singledispatch
 def safe_as_array(a, force: bool = False) -> np.ndarray:
     """
     Convert DNN frameworks' tensors to numpy arrays. Safe means safe from torch complaining about tensors
@@ -228,21 +171,22 @@ def safe_as_array(a, force: bool = False) -> np.ndarray:
 
     """
     #
-    if safe_isinstance(a, "torch.Tensor"):  # noqa
-        return a.detach().cpu().numpy()
-    # fmt: off
-    if (safe_isinstance(a, ("tensorflow.Tensor", "tensorflow.python.framework.ops.EagerTensor")) and force):  # noqa
-        # fmt: on
-        return np.array(tf.identity(a))
     return a
 
 
-if util.find_spec("tensorflow"):
-    from functools import partial
+try:
+    import torch
 
+    @safe_as_array.register
+    def _(a: torch.Tensor, force):
+        return a.detach().cpu().numpy()
+
+except ModuleNotFoundError:
+    pass
+
+
+try:
     import tensorflow as tf
-
-    from quantus.nlp.config import config
 
     tf_function = partial(
         tf.function,
@@ -250,14 +194,10 @@ if util.find_spec("tensorflow"):
         jit_compile=config.use_xla,
     )
 
+    @safe_as_array.register
+    def _(a: tf.Tensor, force):
+        if force:
+            return np.array(tf.identity(a))
 
-def apply_noise(arr: np.ndarray, noise: np.ndarray, noise_type: str) -> np.ndarray:
-    """Apply `noise` to `arr` based on `noise_type.`"""
-    if noise_type not in ("additive", "multiplicative"):
-        raise ValueError(
-            f"Unsupported noise_type, supported are: additive, multiplicative."
-        )
-    if noise_type == "additive":
-        return arr + noise
-    if noise_type == "multiplicative":
-        return arr * noise
+except ModuleNotFoundError:
+    pass

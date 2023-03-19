@@ -7,8 +7,7 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod
-from typing import Dict, List
-
+from typing import Dict, List, Generator
 import numpy as np
 import tensorflow as tf
 from transformers import (
@@ -19,17 +18,19 @@ from transformers import (
 )
 from transformers.tf_utils import shape_list
 
+from quantus.helpers.tf_model_randomisation import (
+    get_random_layer_generator,
+    random_layer_generator_length,
+)
 from quantus.nlp.config import config
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
-from quantus.nlp.helpers.model.tf_text_classifier import TensorFlowTextClassifier
 
 
-# fmt: off
-class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier, HuggingFaceTokenizer): # noqa
-
-    # fmt: on
+class TFHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
     def __init__(self, tokenizer: PreTrainedTokenizerBase, model: TFPreTrainedModel):
-        super().__init__(tokenizer)
+        super().__init__()
+        self._tokenizer = tokenizer
         self._model = model
         self._model._jit_compile = config.use_xla
         self._word_embedding_matrix = tf.convert_to_tensor(
@@ -40,12 +41,21 @@ class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier, HuggingFaceT
         )
 
     @staticmethod
-    def from_pretrained(handle: str, **kwargs) -> TensorFlowHuggingFaceTextClassifier:
+    def from_pretrained(handle: str, **kwargs) -> TFHuggingFaceTextClassifier:
         """A method, which mainly should be used to instantiate TensorFlow models from HuggingFace Hub."""
-        return TensorFlowHuggingFaceTextClassifier(
+        return TFHuggingFaceTextClassifier(
             AutoTokenizer.from_pretrained(handle),
             TFAutoModelForSequenceClassification.from_pretrained(handle, **kwargs),
         )
+
+    def embedding_lookup(self, input_ids: tf.Tensor) -> tf.Tensor:
+        word_embeds = tf.nn.embedding_lookup(self._word_embedding_matrix, input_ids)
+        input_shape = shape_list(word_embeds)[:-1]
+        position_ids = tf.expand_dims(tf.range(start=0, limit=input_shape[-1]), axis=0)
+        positional_embeds = tf.nn.embedding_lookup(
+            self._position_embedding_matrix, position_ids
+        )
+        return word_embeds + positional_embeds
 
     def __call__(self, inputs_embeds: tf.Tensor, **kwargs) -> tf.Tensor:
         return self._model(
@@ -87,17 +97,34 @@ class TensorFlowHuggingFaceTextClassifier(TensorFlowTextClassifier, HuggingFaceT
         hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3]).numpy()
         return hidden_states
 
+    def unwrap_tokenizer(self):
+        return self._tokenizer
+
     def unwrap(self) -> tf.keras.Model:
         return self._model
 
-    def clone(self) -> TensorFlowTextClassifier:
-        return self.from_pretrained(self._model.name_or_path)
+    @property
+    def weights(self) -> List[np.ndarray]:
+        return self.unwrap().get_weights()
 
-    def embedding_lookup(self, input_ids: tf.Tensor, **kwargs) -> tf.Tensor:
-        word_embeds = tf.nn.embedding_lookup(self._word_embedding_matrix, input_ids)
-        input_shape = shape_list(word_embeds)[:-1]
-        position_ids = tf.expand_dims(tf.range(start=0, limit=input_shape[-1]), axis=0)
-        positional_embeds = tf.nn.embedding_lookup(
-            self._position_embedding_matrix, position_ids
+    @weights.setter
+    def weights(self, weights: List[np.ndarray]):
+        self.unwrap().set_weights(weights)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return random_layer_generator_length(self.unwrap(), flatten_layers=True)
+
+    def get_random_layer_generator(
+        self,
+        order: str = "top_down",
+        seed: int = 42,
+    ) -> Generator:
+        og_weights = self.weights
+        generator = get_random_layer_generator(
+            self.unwrap(), order, seed, flatten_layers=True
         )
-        return word_embeds + positional_embeds
+        for name, model in generator:
+            self.weights = model.get_weights()
+            yield name, self
+        self.weights = og_weights

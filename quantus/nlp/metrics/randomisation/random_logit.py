@@ -16,7 +16,12 @@ from quantus.helpers.utils import off_label_choice
 from quantus.nlp.functions.explanation_func import explain
 from quantus.nlp.functions.normalise_func import normalize_sum_to_1
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
-from quantus.nlp.helpers.types import ExplainFn, Explanation, NormaliseFn, SimilarityFn
+from quantus.nlp.helpers.types import (
+    ExplainFn,
+    Explanation,
+    NormaliseFn,
+    SimilarityFn,
+)
 from quantus.nlp.helpers.utils import get_scores
 from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 

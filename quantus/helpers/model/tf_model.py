@@ -20,6 +20,7 @@ from cachetools import cachedmethod, LRUCache
 import operator
 
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.tf_model_randomisation import random_layer_generator_length, get_random_layer_generator
 from quantus.helpers import utils
 
 
@@ -210,25 +211,7 @@ class TensorFlowModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = clone_model(self.model)
-
-        layers = [
-            _layer
-            for _layer in random_layer_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                random_layer_model.set_weights(original_parameters)
-            weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
-            layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, random_layer_model
+        return get_random_layer_generator(self.model, order, seed) # noqa
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
@@ -375,3 +358,7 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return random_layer_generator_length(self.model) # noqa

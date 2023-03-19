@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 from quantus.helpers import utils
+from quantus.helpers.torch_model_randomisation import random_layer_generator_length, get_random_layer_generator
 from quantus.helpers.model.model_interface import ModelInterface
 
 
@@ -157,24 +158,8 @@ class PyTorchModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = deepcopy(self.model)
+        return get_random_layer_generator(self.model, order, seed)
 
-        modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
-        ]
-
-        if order == "top_down":
-            modules = modules[::-1]
-
-        for module in modules:
-            if order == "independent":
-                random_layer_model.load_state_dict(original_parameters)
-            torch.manual_seed(seed=seed + 1)
-            module[1].reset_parameters()
-            yield module[0], random_layer_model
 
     def sample(
         self,
@@ -354,3 +339,7 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return random_layer_generator_length(self.model)

@@ -69,7 +69,7 @@ class TextClassifier(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def embedding_lookup(self, input_ids, **kwargs):
+    def embedding_lookup(self, input_ids):
         """Convert vocabulary ids to model's latent representations"""
         raise NotImplementedError
 

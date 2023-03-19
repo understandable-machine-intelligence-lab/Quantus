@@ -9,8 +9,9 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable, TypeVar, Callable
 from functools import wraps
+import logging
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -24,6 +25,10 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
+
+
+
+log = logging.getLogger(__name__)
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -1040,3 +1045,32 @@ def dispatch_2d(func):
             raise ValueError(f"Supported only 1D and 2D inputs, but found: {a.ndim}")
 
     return wrapper
+
+
+def raise_quietly(func):
+    @wraps(func)
+    def wrapper(a, *args, **kwargs):
+
+        try:
+            return func(a, *args, **kwargs)
+        except RuntimeWarning as w:
+            log.warning(f"{func.__name__} raised {w}, ignoring computation and returning original array `a`.")
+            return a
+
+    return wrapper
+
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+
+def map_dict(
+    dictionary: Dict[str, T],
+    func: Callable[[T], R],
+    key_mapper: Callable[[str], str] = lambda x: x,
+) -> Dict[str, R]:
+    """Applies func to values in dict. Additionally, if provided can also map keys."""
+    result = {}
+    for k, v in dictionary.items():
+        result[key_mapper(k)] = func(v)
+    return result

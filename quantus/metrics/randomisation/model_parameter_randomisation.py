@@ -256,7 +256,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model = data["model"]
+        model: ModelInterface = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]
@@ -265,7 +265,7 @@ class ModelParameterRandomisation(Metric):
         self.last_results = {}
 
         # Get number of iterations from number of layers.
-        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
+        n_layers = model.random_layer_generator_length
 
         model_iterator = tqdm(
             model.get_random_layer_generator(order=self.layer_order, seed=self.seed),

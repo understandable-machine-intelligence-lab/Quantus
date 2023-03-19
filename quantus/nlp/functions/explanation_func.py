@@ -8,36 +8,33 @@
 from __future__ import annotations
 
 import warnings
-from functools import partial
-from importlib import util
 from typing import Dict, List, Optional
 
 import numpy as np
 from transformers import pipeline
+from quantus.nlp.helpers.model.text_classifier import TextClassifier
 
-if util.find_spec("tensorflow"):
+try:
     from quantus.nlp.functions.tf_explanation_func import tf_explain
+    from quantus.nlp.helpers.model.tf_model import TFHuggingFaceTextClassifier
+except ModuleNotFoundError:
+    TFHuggingFaceTextClassifier = None.__class__  # noqa
 
-if util.find_spec("torch"):
+try:
     from quantus.nlp.functions.torch_explanation_func import torch_explain
+    from quantus.nlp.helpers.model.torch_model import TorchHuggingFaceTextClassifier
+except ModuleNotFoundError:
+    TorchHuggingFaceTextClassifier = None.__class__  # noqa
+
 
 from quantus.nlp.functions.lime import explain_lime
-from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
     add_default_items,
     map_explanations,
     safe_as_array,
-    safe_isinstance,
     value_or_default,
 )
-
-TF_HuggingfaceModelClass = "quantus.nlp.helpers.model.tf_hf_text_classifier.TensorFlowHuggingFaceTextClassifier"
-TF_ModelClass = "quantus.nlp.helpers.model.tf_text_classifier.TensorflowTextClassifier"
-Torch_HuggingfaceModelClass = (
-    "quantus.nlp.helpers.model.torch_hf_text_classifier.TorchHuggingFaceTextClassifier"
-)
-Torch_ModelClass = "quantus.nlp.helpers.model.torch_text_classifier.TorchTextClassifier"
 
 
 def explain_shap(
@@ -63,21 +60,15 @@ def explain_shap(
 
     init_kwargs = value_or_default(init_kwargs, lambda: {})
     call_kwargs = add_default_items(call_kwargs, {"silent": True})
-    predict_fn = partial(model.predict, batch_size=batch_size)
 
-    if safe_isinstance(model, (TF_HuggingfaceModelClass, Torch_HuggingfaceModelClass)):
-        predict_fn = pipeline(
-            "text-classification",
-            model=model.unwrap(),  # type: ignore
-            tokenizer=model.unwrap_tokenizer(),  # type: ignore
-            top_k=None,
-            device=getattr(model, "device", None),
-        )
-        explainer = shap.Explainer(predict_fn, **init_kwargs)
-    else:
-        explainer = shap.PartitionExplainer(
-            predict_fn, shap.maskers.Text(), **init_kwargs  # noqa
-        )
+    predict_fn = pipeline(
+        "text-classification",
+        model=model.unwrap(),  # type: ignore
+        tokenizer=model.unwrap_tokenizer(),  # type: ignore
+        top_k=None,
+        device=getattr(model, "device", None),
+    )
+    explainer = shap.Explainer(predict_fn, **init_kwargs)
 
     shapley_values = explainer(x_batch, batch_size=batch_size, **call_kwargs)
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
@@ -104,11 +95,11 @@ def explain(
     if method == "SHAP":
         return explain_shap(model, *args, **kwargs)
 
-    if safe_isinstance(model, (TF_HuggingfaceModelClass, TF_ModelClass)):
+    if isinstance(model, TFHuggingFaceTextClassifier):
         result = tf_explain(model, *args, method=method, **kwargs)
         return map_explanations(result, safe_as_array)  # noqa
 
-    if safe_isinstance(model, (Torch_HuggingfaceModelClass, Torch_ModelClass)):
+    if isinstance(model, TorchHuggingFaceTextClassifier):
         result = torch_explain(model, *args, method=method, **kwargs)
         return map_explanations(result, safe_as_array)  # noqa
 

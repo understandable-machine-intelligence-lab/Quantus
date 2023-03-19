@@ -28,23 +28,21 @@ from quantus.nlp.helpers.plotting import (
 )
 
 try:
-    from quantus.nlp.helpers.model.tf_text_classifier import TensorFlowTextClassifier
-    from quantus.nlp.helpers.model.tf_hf_text_classifier import (
-        TensorFlowHuggingFaceTextClassifier,
+    from quantus.nlp.helpers.model.tf_model import (
+        TFHuggingFaceTextClassifier,
     )
+    from quantus.nlp.helpers.utils import tf_function
     from quantus.nlp.functions.tf_explanation_func import (
         IntGradConfig,
         NoiseGradConfig,
         NoiseGradPlusPlusConfig,
     )
-    from quantus.nlp.helpers.utils import tf_function
 
 except ModuleNotFoundError:
     pass
 
 try:
-    from quantus.nlp.helpers.model.torch_text_classifier import TorchTextClassifier
-    from quantus.nlp.helpers.model.torch_hf_text_classifier import (
+    from quantus.nlp.helpers.model.torch_model import (
         TorchHuggingFaceTextClassifier,
     )
 

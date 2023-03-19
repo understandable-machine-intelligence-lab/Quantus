@@ -162,3 +162,10 @@ class ModelInterface(ABC):
             2D tensor with shape (batch_size, None)
         """
         raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def random_layer_generator_length(self) -> int:
+        """The only purpose of this method is to avoid materializing full generator in memory."""
+        raise NotImplementedError
+
