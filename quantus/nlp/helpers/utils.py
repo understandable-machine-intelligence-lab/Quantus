@@ -15,8 +15,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 import numpy as np
 from cachetools import cached
 from sklearn.utils import gen_batches
-
-from quantus.helpers.utils import map_dict
 from quantus.nlp.config import config
 from quantus.nlp.helpers.types import Explanation, TextClassifier
 
@@ -39,7 +37,7 @@ def get_input_ids(
 
 def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
-    # Default is provided by callable, because otherwise if will force materialization of both values in memory.
+    # Default is provided by callable, because otherwise it will force materialization of both values in memory.
     if value is not None:
         return value
     else:
@@ -178,7 +176,7 @@ try:
     import torch
 
     @safe_as_array.register
-    def _(a: torch.Tensor, force):
+    def _(a: torch.Tensor, force=False):
         return a.detach().cpu().numpy()
 
 except ModuleNotFoundError:
@@ -195,9 +193,10 @@ try:
     )
 
     @safe_as_array.register
-    def _(a: tf.Tensor, force):
+    def _(a: tf.Tensor, force=False):
         if force:
             return np.array(tf.identity(a))
+        return a
 
 except ModuleNotFoundError:
     pass

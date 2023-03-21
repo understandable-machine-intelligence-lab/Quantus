@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, no_type_check
 import numpy as np
 from tqdm.auto import tqdm
 
+from quantus.helpers.utils import map_dict
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.helpers.utils import compute_correlation_per_sample
 from quantus.nlp.functions.explanation_func import explain
@@ -28,7 +29,6 @@ from quantus.nlp.helpers.types import (
 from quantus.nlp.helpers.utils import (
     batch_list,
     get_scores,
-    map_dict,
     map_optional,
     value_or_default,
 )

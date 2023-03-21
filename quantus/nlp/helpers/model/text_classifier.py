@@ -98,3 +98,7 @@ class TextClassifier(ABC):
     def random_layer_generator_length(self) -> int:
         """The only purpose of this method is to avoid materializing whole generator in memory."""
         raise NotImplementedError
+
+    @property
+    def unwrap(self):
+        raise NotImplementedError

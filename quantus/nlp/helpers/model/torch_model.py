@@ -25,9 +25,10 @@ from quantus.helpers.torch_model_randomisation import (
     random_layer_generator_length,
 )
 
+from quantus.helpers.utils import map_dict
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.model.hf_tokenizer import HuggingFaceTokenizer
-from quantus.nlp.helpers.utils import map_dict, value_or_default, add_default_items
+from quantus.nlp.helpers.utils import value_or_default, add_default_items
 
 
 class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
@@ -131,14 +132,6 @@ class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
             yield name, self
         self.weights = og_weights
 
-    @property
-    def embeddings_dtype(self):
-        @lru_cache(maxsize=None)
-        def _embeddings_dtype():
-            return self.embedding_lookup(np.ones(shape=(1, 1))).dtype
-
-        return _embeddings_dtype()
-
     def to_tensor(self, x: torch.Tensor | np.ndarray, **kwargs) -> torch.Tensor:
         if isinstance(x, torch.Tensor):
             return x
@@ -146,16 +139,11 @@ class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
 
     @property
     def weights(self) -> Dict[str, torch.Tensor]:
-        return self.unwrap().state_dict()
+        return self._model.state_dict()
 
     @weights.setter
     def weights(self, weights: Dict[str, torch.Tensor]):
-        self.unwrap().load_state_dict(weights)
-
-    @property
-    @abstractmethod
-    def device(self) -> torch.device:
-        raise NotImplementedError
+        self._model.load_state_dict(weights)
 
     @property
     def random_layer_generator_length(self) -> int:
@@ -166,3 +154,15 @@ class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
 
     def unwrap(self) -> nn.Module:
         return self._model
+
+    @property
+    def device(self):
+        return self._device
+
+    @property
+    def embeddings_dtype(self):
+        @lru_cache(maxsize=None)
+        def _embeddings_dtype():
+            return self.embedding_lookup(np.ones(shape=(1, 1))).dtype
+
+        return _embeddings_dtype()

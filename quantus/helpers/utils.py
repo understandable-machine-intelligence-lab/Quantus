@@ -9,7 +9,18 @@
 import copy
 import re
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List, Iterable, TypeVar, Callable
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    List,
+    Iterable,
+    TypeVar,
+    Callable,
+)
 from functools import wraps
 import logging
 
@@ -25,7 +36,6 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
-
 
 
 log = logging.getLogger(__name__)
@@ -770,7 +780,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
-
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
@@ -779,7 +788,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
-
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
 
@@ -789,7 +797,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
-
                 # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
@@ -1022,11 +1029,15 @@ def compute_correlation_per_sample(last_results: Dict) -> List:
     return corr_coeffs
 
 
-def off_label_choice(y_batch: Union[np.ndarray, int], num_classes: int) -> Union[int, np.ndarray]:
+def off_label_choice(
+    y_batch: Union[np.ndarray, int], num_classes: int
+) -> Union[int, np.ndarray]:
     if isinstance(y_batch, Iterable):
         return np.asarray([off_label_choice(i, num_classes) for i in y_batch])
     else:
-        return np.random.choice([y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch])
+        return np.random.choice(
+            [y_ for y_ in list(np.arange(0, num_classes)) if y_ != y_batch]
+        )
 
 
 def dispatch_2d(func):
@@ -1036,7 +1047,9 @@ def dispatch_2d(func):
         b = np.asarray(b)
 
         if a.ndim != b.ndim:
-            raise ValueError(f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }")
+            raise ValueError(
+                f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }"
+            )
         if a.ndim == 2:
             return np.asarray([func(a_i, b_i, **kwargs) for a_i, b_i in zip(a, b)])
         elif a.ndim == 1:
@@ -1050,11 +1063,12 @@ def dispatch_2d(func):
 def raise_quietly(func):
     @wraps(func)
     def wrapper(a, *args, **kwargs):
-
         try:
             return func(a, *args, **kwargs)
         except RuntimeWarning as w:
-            log.warning(f"{func.__name__} raised {w}, ignoring computation and returning original array `a`.")
+            log.warning(
+                f"{func.__name__} raised {w}, ignoring computation and returning original array `a`."
+            )
             return a
 
     return wrapper

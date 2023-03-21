@@ -168,4 +168,3 @@ class ModelInterface(ABC):
     def random_layer_generator_length(self) -> int:
         """The only purpose of this method is to avoid materializing full generator in memory."""
         raise NotImplementedError
-

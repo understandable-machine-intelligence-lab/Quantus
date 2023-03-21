@@ -20,7 +20,10 @@ from cachetools import cachedmethod, LRUCache
 import operator
 
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.tf_model_randomisation import random_layer_generator_length, get_random_layer_generator
+from quantus.helpers.tf_model_randomisation import (
+    random_layer_generator_length,
+    get_random_layer_generator,
+)
 from quantus.helpers import utils
 
 
@@ -211,7 +214,7 @@ class TensorFlowModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        return get_random_layer_generator(self.model, order, seed) # noqa
+        return get_random_layer_generator(self.model, order, seed)  # noqa
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
@@ -301,7 +304,6 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -361,4 +363,4 @@ class TensorFlowModel(ModelInterface):
 
     @property
     def random_layer_generator_length(self) -> int:
-        return random_layer_generator_length(self.model) # noqa
+        return random_layer_generator_length(self.model)  # noqa

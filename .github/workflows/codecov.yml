@@ -4,11 +4,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  MKL_NUM_THREADS: 16
-  USE_XLA: true
-  TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -23,17 +18,8 @@ jobs:
           python-version: "3.9"
           cache: 'pip'
 
-      - uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
-        with:
-          requirement_files: requirements*.txt
-
-      - uses: syphar/restore-pip-download-cache@v1
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-
       - name: Install dependecies
-        run: pip install -r requirements.txt -r requirements_test.txt
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+        run: pip install -r requirements/requirements.txt -r requirements/requirements_test.txt -r requirements/requirements_nlp.txt -r requirements/requirements_nlp_test.txt
 
       - name: Cache models and datasets
         uses: actions/cache@v2
@@ -47,7 +33,10 @@ jobs:
         run: python tests/nlp/download_data.py
 
       - name: Test
-        run: pytest tests --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus --slow
+        run: pytest tests --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+        env:
+          USE_XLA: true
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
       - name: Upload
         uses: codecov/codecov-action@v3

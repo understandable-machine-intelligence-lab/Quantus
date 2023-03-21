@@ -14,7 +14,11 @@ import numpy as np
 import torch
 
 from quantus.helpers import utils
-from quantus.helpers.torch_model_randomisation import random_layer_generator_length, get_random_layer_generator
+from quantus.helpers.torch_model_randomisation import (
+    random_layer_generator_length,
+    get_random_layer_generator,
+    list_layers,
+)
 from quantus.helpers.model.model_interface import ModelInterface
 
 
@@ -160,7 +164,6 @@ class PyTorchModel(ModelInterface):
         """
         return get_random_layer_generator(self.model, order, seed)
 
-
     def sample(
         self,
         mean: float,
@@ -229,7 +232,6 @@ class PyTorchModel(ModelInterface):
             The resulting model with a shifted first layer.
         """
         with torch.no_grad():
-
             new_model = deepcopy(self.model)
 
             modules = [l for l in new_model.named_modules()]
@@ -256,7 +258,6 @@ class PyTorchModel(ModelInterface):
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -302,15 +303,7 @@ class PyTorchModel(ModelInterface):
                 return True
             return layer_index in positive_layer_indices or layer_name in layer_names
 
-        # skip modules defined by subclassing API.
-        hidden_layers = list(  # type: ignore
-            filter(
-                lambda l: not isinstance(
-                    l[1], (self.model.__class__, torch.nn.Sequential)
-                ),
-                all_layers,
-            )
-        )
+        hidden_layers = list_layers(self.model)
 
         batch_size = x.shape[0]
         hidden_outputs = []

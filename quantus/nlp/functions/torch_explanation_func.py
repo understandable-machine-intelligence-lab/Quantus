@@ -16,11 +16,11 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from quantus.helpers.utils import map_dict
 from quantus.nlp.helpers.model.torch_model import TorchHuggingFaceTextClassifier
 from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
     get_input_ids,
-    map_dict,
     value_or_default,
     get_scores,
 )

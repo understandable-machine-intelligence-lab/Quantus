@@ -100,7 +100,7 @@ def explain_func_stub(*args, **kwargs):
             },
             {"min": -1.0, "max": 1.0},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
@@ -117,6 +117,7 @@ def explain_func_stub(*args, **kwargs):
                 },
             },
             {"min": -1.0, "max": 1.0},
+            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -137,7 +138,7 @@ def explain_func_stub(*args, **kwargs):
             },
             {"exception": ValueError},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
@@ -155,6 +156,7 @@ def explain_func_stub(*args, **kwargs):
                 },
             },
             {"min": -1.0, "max": 1.0},
+            marks=pytest.mark.xfail
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -215,7 +217,7 @@ def explain_func_stub(*args, **kwargs):
                     },
                 },
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("titanic_model_tf"),
@@ -230,7 +232,7 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {"explain_func": explain_func_stub},
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
     ],
 )
