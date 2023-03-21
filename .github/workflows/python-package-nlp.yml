@@ -25,7 +25,7 @@ jobs:
           cache: 'pip'
 
       - name: Install NLP dependencies
-        run: pip install -r requirements/requirements_nlp.txt -r requirements/requirements_nlp_test.txt
+        run: pip install -r requirements.txt -r requirements_test.txt
 
       - name: Lint NLP subpackage
         run: |
