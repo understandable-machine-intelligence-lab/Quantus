@@ -29,13 +29,13 @@ class SensitivityMetric(RobustnessMetric, ABC):
 
     def __init__(
         self,
-        *args,
+        *,
         norm_numerator: NormFn,
         norm_denominator: NormFn,
         similarity_func: SimilarityFn = difference,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
         # Save metric-specific attributes.
         self.norm_numerator = norm_numerator

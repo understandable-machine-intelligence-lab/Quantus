@@ -256,7 +256,7 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
-        model: ModelInterface = data["model"]
+        model: ModelInterface = data["model"] # noqa
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]

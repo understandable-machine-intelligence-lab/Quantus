@@ -13,21 +13,28 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 
-from quantus.nlp.helpers.types import ExplainFn, Explanation
+from quantus.nlp.helpers.types import ExplainFn, Explanation, PerturbFn
 from quantus.nlp.helpers.model.text_classifier import TextClassifier
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     is_plain_text_perturbation,
     value_or_default,
 )
-from quantus.nlp.metrics.robustness.internal.batched_perturbation_metric import (
-    BatchedPerturbationMetric,
-)
+from quantus.nlp.metrics.text_classification_metric import TextClassificationMetric
 
 
-class RobustnessMetric(BatchedPerturbationMetric, ABC):
-    def __init__(self, nr_samples: int, **kwargs):
+class RobustnessMetric(TextClassificationMetric, ABC):
+    def __init__(
+        self,
+        *,
+        perturb_func: PerturbFn,
+        perturb_func_kwargs: Optional[Dict],
+        nr_samples: int,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
+        self.perturb_func = perturb_func
+        self.perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})
         self.nr_samples = nr_samples
 
     def _batch_preprocess(

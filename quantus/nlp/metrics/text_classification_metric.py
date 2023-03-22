@@ -28,6 +28,7 @@ from quantus.nlp.helpers.utils import (
 class TextClassificationMetric:
     def __init__(
         self,
+        *,
         abs: bool,  # noqa
         normalise: bool,
         normalise_func: Optional[Callable],
