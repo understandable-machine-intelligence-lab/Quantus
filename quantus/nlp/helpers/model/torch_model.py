@@ -89,13 +89,7 @@ class TorchHuggingFaceTextClassifier(HuggingFaceTokenizer, TextClassifier):
         return logits.detach().cpu().numpy()
 
     @singledispatchmethod
-    def get_hidden_representations(
-        self,
-        x_batch,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
-    ) -> np.ndarray:  # type: ignore
+    def get_hidden_representations(self, x_batch, **kwargs) -> np.ndarray:  # type: ignore
         pass
 
     @get_hidden_representations.register
