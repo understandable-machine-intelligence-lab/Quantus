@@ -19,7 +19,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependecies
-        run: pip install -r requirements/requirements.txt -r requirements/requirements_test.txt -r requirements/requirements_nlp.txt -r requirements/requirements_nlp_test.txt
+        run: pip install -r requirements.txt -r requirements_test.txt
 
       - name: Cache models and datasets
         uses: actions/cache@v2
