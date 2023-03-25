@@ -3,7 +3,7 @@ Read more here: https://www.sphinx-doc.org/en/master/man/sphinx-apidoc.html and 
 ```bash
 $ cd docs
 $ make clean
-$ sphinx-apidoc -o source/docs_api ../quantus --module-first -f --separate
+$ make rst
 $ make html
 ```
 
