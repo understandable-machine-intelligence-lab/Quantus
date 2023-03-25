@@ -231,7 +231,7 @@ model = torchvision.models.resnet18(pretrained=True)
 
 # Load a batch of inputs and labels to use for XAI evaluation.
 x_batch = torch.load('<path_to_your_data>/x_batch.pt').to(device)
-y_batch = torch.load(f'<path_your_data>/y_batch.pt').to(device)
+y_batch = torch.load('<path_your_data>/y_batch.pt').to(device)
 ```
 </details>
 
