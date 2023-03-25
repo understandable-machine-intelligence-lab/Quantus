@@ -137,6 +137,18 @@ class NoiseGradPlusPlusConfig(NamedTuple):
         )
 
 
+def default_int_grad_config():
+    return IntGradConfig()
+
+
+def default_noise_grad_config():
+    return NoiseGradConfig().resolve_functions()
+
+
+def default_noise_grad_pp_config():
+    return NoiseGradPlusPlusConfig().resolve_functions()
+
+
 def available_xai_methods() -> Dict[str, Callable]:
     return {
         "GradNorm": gradient_norm,
@@ -321,7 +333,6 @@ def integrated_gradients(
     >>> integrated_gradients(..., ..., ..., config=config)
 
     """
-    config = value_or_default(config, lambda: IntGradConfig())
     return _integrated_gradients(
         x_batch,
         model,
@@ -379,9 +390,6 @@ def noise_grad(
 
     """
 
-    config = value_or_default(config, lambda: NoiseGradConfig()).resolve_functions()
-    tf.keras.utils.set_random_seed(config.seed)
-
     return _noise_grad(
         x_batch,
         model,
@@ -432,11 +440,6 @@ def noise_grad_plus_plus(
     - Kirill Bykov and Anna Hedström and Shinichi Nakajima and Marina M. -C. Höhne, 2021, NoiseGrad: enhancing explanations by introducing stochasticity to model weights, https://arxiv.org/abs/2106.10185
 
     """
-
-    config = value_or_default(
-        config, lambda: NoiseGradPlusPlusConfig()
-    ).resolve_functions()
-    tf.keras.utils.set_random_seed(config.seed)
     return _noise_grad_plus_plus(
         x_batch,
         model,
@@ -542,9 +545,10 @@ def _(
     x_batch: list,
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
-    config: IntGradConfig,
+    config: IntGradConfig = None,
     **kwargs,
 ) -> List[Explanation]:
+    config = value_or_default(config, default_int_grad_config)
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
 
@@ -565,9 +569,10 @@ def _(
     x_batch: tf.Tensor,
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
-    config: IntGradConfig,
+    config: IntGradConfig = None,
     **kwargs,
 ):
+    config = value_or_default(config, default_int_grad_config)
     if config.batch_interpolated_inputs:
         return _integrated_gradients_batched(
             x_batch,
@@ -674,8 +679,10 @@ def _(
     x_batch: list,
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
-    config: NoiseGradConfig,
+    config: NoiseGradConfig = None,
 ):
+    config = value_or_default(config, default_noise_grad_config).resolve_functions()
+    tf.random.set_seed(config.seed)
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _noise_grad(
@@ -693,9 +700,12 @@ def _(
     x_batch: tf.Tensor,
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
-    config: NoiseGradConfig,
+    config: NoiseGradConfig = None,
     **kwargs,
 ) -> tf.Tensor:
+    config = value_or_default(config, default_noise_grad_config).resolve_functions()
+    tf.random.set_seed(config.seed)
+
     original_weights = model.weights.copy()
 
     explanations_array = tf.TensorArray(
@@ -735,8 +745,11 @@ def _(
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     *,
-    config: NoiseGradPlusPlusConfig,
+    config: NoiseGradPlusPlusConfig = None,
 ):
+    config = value_or_default(config, default_noise_grad_pp_config).resolve_functions()
+    tf.random.set_seed(config.seed)
+
     input_ids, kwargs = get_input_ids(x_batch, model)
     embeddings = model.embedding_lookup(input_ids)
     scores = _noise_grad_plus_plus(
@@ -755,9 +768,12 @@ def _(
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     *,
-    config: NoiseGradPlusPlusConfig,
+    config: NoiseGradPlusPlusConfig = None,
     **kwargs,
 ) -> tf.Tensor:
+    config = value_or_default(config, default_noise_grad_pp_config).resolve_functions()
+    tf.random.set_seed(config.seed)
+
     original_weights = model.weights.copy()
 
     noise_dist = Normal(config.mean, config.std)
