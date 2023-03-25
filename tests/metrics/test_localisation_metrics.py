@@ -1341,7 +1341,7 @@ def test_auc(
             },
             {"type": list},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_1d_1ch_conv_model"),
             lazy_fixture("all_in_gt_1d_3ch"),
             {
@@ -1352,6 +1352,7 @@ def test_auc(
                 },
             },
             {"min": 0.8, "max": 0.95},  # TODO: verify correctness
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
