@@ -222,16 +222,21 @@ for the purpose of this tutorial is loaded, but generally, you might use any Pyt
 ```python
 import torch
 import torchvision
+import gdown
+from quantus.helpers.torch_utils import choose_hardware_acceleration
 
-# Enable hardware acceleration.
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# Enable hardware acceleration if available.
+device = choose_hardware_acceleration()
 
 # Load a pre-trained ResNet18 classification model.
 model = torchvision.models.resnet18(pretrained=True)
 
+# You could use the sample data prepared by Quantus maintainers to verify your experiments.
+url = 'https://drive.google.com/drive/folders/1KkU4kg8yLZbfIgMNqWdny6LyFEqwvI2P?usp=share_link'
+gdown.download_folder(url, output='/tmp/imagenet_samples', quiet=True, use_cookies=False)
 # Load a batch of inputs and labels to use for XAI evaluation.
-x_batch = torch.load('<path_to_your_data>/x_batch.pt').to(device)
-y_batch = torch.load('<path_your_data>/y_batch.pt').to(device)
+x_batch = torch.load('/tmp/imagenet_samples/x_batch.pt').to(device)
+y_batch = torch.load('/tmp/imagenet_samples/y_batch.pt').to(device)
 ```
 </details>
 
