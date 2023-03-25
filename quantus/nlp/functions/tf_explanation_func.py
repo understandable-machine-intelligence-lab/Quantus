@@ -849,6 +849,9 @@ def _resolve_noise_grad_baseline_explain_fn(explain_fn):
         return explain_fn  # type: ignore
 
     method_mapping = available_noise_grad_xai_methods()
+    if explain_fn in ("NoiseGrad", "NoiseGrad++"):
+        raise ValueError(f"Can't use NoiseGrad as baseline xai method for NoiseGrad.")
+
     if explain_fn not in method_mapping:
         raise ValueError(
             f"Unknown XAI method {explain_fn}, supported are {list(method_mapping.keys())}"
