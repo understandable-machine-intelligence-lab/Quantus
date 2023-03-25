@@ -222,21 +222,16 @@ for the purpose of this tutorial is loaded, but generally, you might use any Pyt
 ```python
 import torch
 import torchvision
-from torchvision import transforms
 
-# Enable GPU.
+# Enable hardware acceleration.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load a pre-trained ResNet18 classification model.
 model = torchvision.models.resnet18(pretrained=True)
 
-# Load datasets and make loaders.
-test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
-
-# Load a batch of inputs and outputs to use for XAI evaluation.
-x_batch, y_batch = iter(test_loader).next()
-x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+# Load a batch of inputs and labels to use for XAI evaluation.
+x_batch = torch.load('<path_to_your_data>/x_batch.pt').to(device)
+y_batch = torch.load(f'<path_your_data>/y_batch.pt').to(device)
 ```
 </details>
 
