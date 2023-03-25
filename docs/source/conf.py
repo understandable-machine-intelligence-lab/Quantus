@@ -35,3 +35,10 @@ html_theme = "sphinx_rtd_theme"
 html_theme_options = {"logo_only": True,}
 html_logo = "assets/quantus_logo 2.png"
 html_static_path = ["", "_static"]
+
+# -- Extension configuration -------------------------------------------------
+
+autodoc_default_options = {
+    'special-members': '__call__, __init__',
+}
+
