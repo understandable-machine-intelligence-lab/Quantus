@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Iterable, List, Optional, Sequence
+from typing import Callable, Iterable, List, Optional, Sequence, NamedTuple
 
 import numpy as np
 from sklearn import linear_model, metrics
@@ -18,21 +18,24 @@ from quantus.nlp.helpers.utils import get_input_ids, safe_as_array, value_or_def
 __all__ = ["explain_lime"]
 
 
+class LimeConfig(NamedTuple):
+    alpha: float = 1.0
+    solver: str = "cholesky"
+    seed: int = 42
+    num_samples: int = 1000
+    mask_token: str = "[UNK]"
+    distance_fn: Callable = functools.partial(
+        metrics.pairwise.pairwise_distances, metric="cosine"
+    )
+    kernel: Optional[Callable] = None
+    distance_scale: float = 100.0
+
+
 def explain_lime(
     model: TextClassifier,
     x_batch: List[str],
     y_batch: np.ndarray,
-    *,
-    alpha: float = 1.0,
-    solver: str = "cholesky",
-    seed: int = 42,
-    num_samples: int = 1000,
-    mask_token: str = "[UNK]",
-    distance_fn: Callable = functools.partial(
-        metrics.pairwise.pairwise_distances, metric="cosine"
-    ),
-    kernel: Optional[Callable] = None,
-    distance_scale: float = 100.0,
+    config: Optional[LimeConfig] = None,
 ) -> List[Explanation]:
     """
     LIME explains classifiers by returning a feature attribution score
@@ -55,28 +58,33 @@ def explain_lime(
     -------
 
     """
-    kernel = value_or_default(kernel, lambda: exponential_kernel)
+    config = value_or_default(config, lambda: LimeConfig())
+    kernel = value_or_default(config.kernel, lambda: exponential_kernel)
     a_batch = []
     input_ids, predict_kwargs = get_input_ids(x_batch, model)
 
     for i, (x, y) in enumerate(zip(x_batch, y_batch)):
         ids = safe_as_array(input_ids[i], force=True)
         tokens = model.convert_ids_to_tokens(ids)
-        masks = sample_masks(num_samples + 1, len(tokens), seed=seed)
-        assert masks.shape[0] == num_samples + 1, "Expected num_samples + 1 masks."
+        masks = sample_masks(config.num_samples + 1, len(tokens), seed=config.seed)
+        assert (
+            masks.shape[0] == config.num_samples + 1
+        ), "Expected num_samples + 1 masks."
         all_true_mask = np.ones_like(masks[0], dtype=np.bool)
         masks[0] = all_true_mask
 
-        perturbations = list(get_perturbations(tokens, masks, mask_token))
+        perturbations = list(get_perturbations(tokens, masks, config.mask_token))
         logits = model.predict(perturbations)
         outputs = logits[:, y]
-        distances = distance_fn(all_true_mask.reshape(1, -1), masks).flatten()
-        distances = distance_scale * distances
+        # fmt: off
+        distances = config.distance_fn(all_true_mask.reshape(1, -1), masks).flatten()  # noqa
+        # fmt: on
+        distances = config.distance_scale * distances
         distances = kernel(distances)
 
         # Fit a linear model for the requested output class.
         local_surrogate_model = linear_model.Ridge(
-            alpha=alpha, solver=solver, random_state=seed
+            alpha=config.alpha, solver=config.solver, random_state=config.seed
         ).fit(masks, outputs, sample_weight=distances)
 
         score = local_surrogate_model.coef_  # noqa

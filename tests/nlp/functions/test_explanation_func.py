@@ -8,6 +8,7 @@ from quantus.nlp import (
     tf_function,
     NoiseGradConfig,
     NoiseGradPlusPlusConfig,
+    LimeConfig
 )
 
 
@@ -37,7 +38,7 @@ def unk_token_baseline(x):
                 n=2, m=2, explain_fn="GradNorm", noise_type="additive"
             ),
         },
-        {"method": "LIME", "num_samples": 5},
+        {"method": "LIME", "config": LimeConfig(num_samples=5)},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[
@@ -79,7 +80,7 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
             "explain_fn": "GradXInput",
             "init_kwargs": {"n": 2, "m": 2},
         },
-        {"method": "LIME", "num_samples": 5},
+        {"method": "LIME", "config": LimeConfig(num_samples=5)},
         {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
     ],
     ids=[

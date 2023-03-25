@@ -75,3 +75,4 @@ from quantus.nlp.metrics.robustness.relative_output_stability import (
 from quantus.nlp.metrics.robustness.relative_representation_stability import (
     RelativeRepresentationStability,
 )
+from quantus.nlp.functions.lime import LimeConfig
