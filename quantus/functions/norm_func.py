@@ -42,7 +42,7 @@ def l2_norm(a: np.array) -> float | np.ndarray:
         The norm.
     """
 
-    return _ndim_norm(a, l_ord=2)
+    return _ndim_norm(a, 2)
 
 
 def linf_norm(a: np.array) -> float | np.ndarray:
@@ -59,19 +59,23 @@ def linf_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    return _ndim_norm(a, l_ord=np.inf)
+    return _ndim_norm(a, np.inf)
 
 
 def _ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
-    if a.ndim == 1:
-        return np.linalg.norm(a, ord=l_ord)
-    elif a.ndim == 2:
-        return np.linalg.norm(a, axis=-1, ord=l_ord)
-    elif a.ndim == 3:
-        return np.linalg.norm(a, axis=(-1, -2), ord=l_ord)  # noqa
-    if a.ndim == 4:
-        return np.linalg.norm(
-            np.linalg.norm(a, axis=(-1, -2), ord=l_ord), axis=-1, ord=l_ord
-        )  # noqa
-    else:
-        raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
+    try:
+        if a.ndim == 1:
+            return np.linalg.norm(a, ord=l_ord)
+        elif a.ndim == 2:
+            return np.linalg.norm(a, axis=-1, ord=l_ord)
+        elif a.ndim == 3:
+            return np.linalg.norm(a, axis=(-1, -2), ord=l_ord)  # noqa
+        if a.ndim == 4:
+            return np.linalg.norm(
+                np.linalg.norm(a, axis=(-1, -2), ord=l_ord), axis=-1, ord=l_ord # noqa
+            )
+        else:
+            raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
+    except np.linalg.LinAlgError:
+        np.save(f"a_ndim_norm_err_l_ord_{l_ord}.npy")
+        raise
