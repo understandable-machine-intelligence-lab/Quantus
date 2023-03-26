@@ -77,5 +77,5 @@ def _ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
         else:
             raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
     except np.linalg.LinAlgError:
-        np.save(f"a_ndim_norm_err_l_ord_{l_ord}.npy")
+        np.save(f"a_ndim_norm_err_l_ord_{l_ord}.npy", a)
         raise
