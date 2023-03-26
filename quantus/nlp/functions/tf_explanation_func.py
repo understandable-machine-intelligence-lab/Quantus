@@ -627,7 +627,7 @@ def _integrated_gradients_batched(
     grads = tf.reshape(
         grads, [batch_size, num_steps + 1, grads_shape[1], grads_shape[2]]
     )
-    return tfp.math.trapz(tfp.math.trapz(grads, axis=1), axis=-1)
+    return tfp.math.trapz(tf.linalg.norm(grads, axis=-1), axis=1)
 
 
 @tf_function
@@ -665,7 +665,7 @@ def _integrated_gradients_iterative(
             logits_for_label = logits[:, y_batch[i]]
 
         grads = tape.gradient(logits_for_label, interpolated_embeddings)
-        score = tfp.math.trapz(tfp.math.trapz(grads, axis=0), axis=-1)
+        score = tfp.math.trapz(tf.linalg.norm(grads, axis=-1), axis=0)
         scores = scores.write(i, score)
 
     return scores.stack()

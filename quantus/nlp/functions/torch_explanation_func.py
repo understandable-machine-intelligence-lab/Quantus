@@ -8,13 +8,14 @@
 
 from __future__ import annotations
 
-from functools import singledispatch
+from functools import singledispatch, partial
 from typing import Callable, Dict, List, Optional, Union
 from operator import itemgetter
 
 import numpy as np
 import torch
 from torch import Tensor
+from captum.attr import IntegratedGradients
 
 from quantus.helpers.utils import map_dict
 from quantus.nlp.helpers.model.torch_model import TorchHuggingFaceTextClassifier
@@ -22,7 +23,6 @@ from quantus.nlp.helpers.types import Explanation
 from quantus.nlp.helpers.utils import (
     get_input_ids,
     value_or_default,
-    get_scores,
 )
 
 # Just to save some typing effort
@@ -32,6 +32,19 @@ _Scores = Union[List[Explanation], np.ndarray]
 
 
 # ----------------- "Entrypoint" --------------------
+
+
+class Config:
+    return_np_arrays: bool = True
+
+    def enable_numpy_conversion(self):
+        self.return_np_arrays = True
+
+    def disable_numpy_conversion(self):
+        self.return_np_arrays = False
+
+
+config = Config()
 
 
 def available_xai_methods() -> Dict:
@@ -144,6 +157,7 @@ def integrated_gradients(
     x_batch: List[str],
     y_batch: Tensor,
     num_steps: int = 10,
+    **kwargs,
 ) -> _Scores:
     """
     This function depends on transformers_interpret library.
@@ -343,7 +357,10 @@ def _(
 
     logits_for_class = _logits_for_labels(logits, y_batch)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
-    return torch.linalg.norm(grads, dim=-1).detach().cpu().numpy()
+    scores = torch.linalg.norm(grads, dim=-1)
+    if config.return_np_arrays:
+        scores = scores.detach().cpu().numpy()
+    return scores
 
 
 # ----------------------- GradXInput -------------------------
@@ -356,7 +373,6 @@ def _(
     input_ids, kwargs = get_input_ids(x_batch, model)
     input_embeds = model.embedding_lookup(input_ids)
     scores = _gradient_x_input(input_embeds, model, y_batch)
-
     return [(model.convert_ids_to_tokens(i), j) for i, j in zip(input_ids, scores)]
 
 
@@ -373,7 +389,10 @@ def _(
     logits = model(input_embeddings, **kwargs)
     logits_for_class = _logits_for_labels(logits, model.to_tensor(y_batch))
     grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
-    return torch.sum(grads * input_embeddings, dim=-1).detach().cpu().numpy()
+    scores = torch.sum(grads * input_embeddings, dim=-1)
+    if config.return_np_arrays:
+        scores = scores.detach().cpu().numpy()
+    return scores
 
 
 # ----------------------- IntGrad -------------------------
@@ -388,7 +407,13 @@ def _(
 ) -> List[Explanation]:
     from quantus.nlp.functions.transorfmers_interpret_adapter import IntGradAdapter
 
-    return IntGradAdapter.explain_batch(model, x_batch, y_batch, num_steps=num_steps)
+    return IntGradAdapter.explain_batch(
+        model,
+        x_batch,
+        y_batch,
+        num_steps=num_steps,
+        return_tensors=not config.return_np_arrays,
+    )
 
 
 @_integrated_gradients.register
@@ -397,14 +422,17 @@ def _(
     model: TorchHuggingFaceTextClassifier,
     y_batch: Tensor,
     num_steps: int,
+    **kwargs,
 ) -> np.ndarray:
-    from quantus.nlp.functions.transorfmers_interpret_adapter import (
-        IntGradLatentAdapter,
+    grads = IntegratedGradients(partial(model.__call__, **kwargs)).attribute(
+        inputs=x_batch, n_steps=num_steps, target=y_batch
     )
 
-    return IntGradLatentAdapter.explain_batch(
-        model, x_batch, y_batch, num_steps=num_steps
-    )
+    scores = torch.linalg.norm(grads, dim=-1)
+
+    if config.return_np_arrays:
+        scores = scores.detach().cpu().numpy()
+    return scores
 
 
 # ----------------------- NoiseGrad -------------------------
@@ -426,12 +454,13 @@ def _(
     baseline_tokens = list(map(itemgetter(0), baseline_tokens))
 
     og_weights = model.weights.copy()
+    config.disable_numpy_conversion()
 
-    def adapter(module, inputs, targets):
+    def adapter(module, inputs, targets) -> torch.Tensor:
         model.weights = module.state_dict()
         a_batch = explain_fn(model, x_batch, targets)
-        base_scores = get_scores(a_batch)
-        return model.to_tensor(base_scores)
+        base_scores = torch.stack([i[1] for i in a_batch])
+        return base_scores  # noqa
 
     ng = NoiseGrad(**init_kwargs)
     scores = (
@@ -446,6 +475,7 @@ def _(
         .numpy()
     )
 
+    config.enable_numpy_conversion()
     model.weights = og_weights
     return list(zip(baseline_tokens, scores))
 
@@ -462,11 +492,12 @@ def _(
     from noisegrad import NoiseGrad
 
     og_weights = model.weights.copy()
+    config.disable_numpy_conversion()
 
     def adapter(module, inputs, targets):
         model.weights = module.state_dict()
         base_scores = explain_fn(model, inputs, targets, **kwargs)
-        return model.to_tensor(base_scores)
+        return base_scores
 
     ng_pp = NoiseGrad(**init_kwargs)
     scores = (
@@ -481,6 +512,7 @@ def _(
         .numpy()
     )
 
+    config.enable_numpy_conversion()
     model.weights = og_weights
     return scores
 
@@ -519,11 +551,12 @@ def _(
 
     og_weights = model.weights.copy()
     explain_fn = _get_noise_grad_baseline_explain_fn(explain_fn)
+    config.disable_numpy_conversion()
 
     def adapter(module, inputs, targets):
         model.weights = module.state_dict()
         base_scores = explain_fn(model, inputs, targets, **kwargs)
-        return model.to_tensor(base_scores)
+        return base_scores
 
     ng_pp = NoiseGradPlusPlus(**init_kwargs)
     scores = (
@@ -537,6 +570,8 @@ def _(
         .cpu()
         .numpy()
     )
+
+    config.enable_numpy_conversion()
 
     model.weights = og_weights
     return scores

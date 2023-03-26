@@ -52,6 +52,7 @@ class IntGradAdapter(SequenceClassificationExplainer):
         x_batch: List[str],
         y_batch: Tensor,
         num_steps: int,
+        return_tensors: bool,
     ) -> List[Explanation]:
         encoded_inputs = model.batch_encode(x_batch)
 
@@ -64,18 +65,8 @@ class IntGradAdapter(SequenceClassificationExplainer):
             a = explainer(x, y, n_steps=num_steps)
             tokens = list(map(itemgetter(0), a))
             scores = np.asarray(list(map(itemgetter(1), a)))
+            if return_tensors:
+                scores = model.to_tensor(scores)
             a_batch.append((tokens, scores))
 
         return a_batch
-
-
-class IntGradLatentAdapter(SequenceClassificationExplainer):
-    @staticmethod
-    def explain_batch(
-        model: TorchHuggingFaceTextClassifier,
-        x_batch: torch.Tensor,
-        y_batch: Tensor,
-        num_steps: int,
-        **kwargs,
-    ) -> np.ndarray:
-        raise NotImplementedError

@@ -8,7 +8,7 @@ from quantus.nlp import (
     tf_function,
     NoiseGradConfig,
     NoiseGradPlusPlusConfig,
-    LimeConfig
+    LimeConfig,
 )
 
 
@@ -72,12 +72,12 @@ def test_tf_model(tf_sst2_model, sst2_dataset, kwargs):
         {"method": "IntGrad"},
         {
             "method": "NoiseGrad",
-            "explain_fn": "GradXInput",
+            "explain_fn": "IntGrad",
             "init_kwargs": {"n": 2},
         },
         {
             "method": "NoiseGrad++",
-            "explain_fn": "GradXInput",
+            "explain_fn": "IntGrad",
             "init_kwargs": {"n": 2, "m": 2},
         },
         {"method": "LIME", "config": LimeConfig(num_samples=5)},
