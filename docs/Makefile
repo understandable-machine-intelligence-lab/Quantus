@@ -20,4 +20,4 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 rst:
-	@sphinx-apidoc -o source/docs_api ../quantus --module-first -f --separate
+	@sphinx-apidoc -o source/docs_api ../quantus --module-first --separate --force
