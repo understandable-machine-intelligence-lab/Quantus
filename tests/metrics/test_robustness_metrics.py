@@ -850,8 +850,8 @@ def test_consistency(
         ),
         (
             MaxSensitivity,
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
             {
                 "lower_bound": 1.0,
                 "upper_bound": 255.0,
