@@ -297,6 +297,7 @@ class Continuity(PerturbationMetric):
         results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
 
         for step in range(self.nr_steps):
+
             # Generate explanation based on perturbed input x.
             dx_step = (step + 1) * self.dx
             x_perturbed = self.perturb_func(
@@ -308,7 +309,12 @@ class Continuity(PerturbationMetric):
             )
             x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
 
-            prediction_changed = self._prediction_changed(model, x, x_input)
+            prediction_changed = (
+                model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
+                != model.predict(x_input).argmax(axis=-1)[0]
+                if self.return_nan_when_prediction_changes
+                else False
+            )
 
             # Generate explanations on perturbed input.
             a_perturbed = self.explain_func(
@@ -440,12 +446,3 @@ class Continuity(PerturbationMetric):
                 for sample in self.last_results.keys()
             ]
         )
-
-    def _prediction_changed(
-        self, model: ModelInterface, x, x_perturbed: np.ndarray
-    ) -> bool:
-        if not self.return_nan_when_prediction_changes:
-            return False
-        og_label = model.predict(np.expand_dims(x, 0)).argmax(axis=-1)[0]
-        perturbed_label = model.predict(x_perturbed).argmax(axis=-1)[0]
-        return og_label == perturbed_label

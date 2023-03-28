@@ -16,16 +16,15 @@ if TYPE_CHECKING:
 
 
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.metrics.robustness.internal.batched_robustness_metric import (
-    BatchedRobustnessMetric,
-)
+from quantus.helpers.utils import expand_attribution_channel
 
 
-class RelativeInputStability(BatchedRobustnessMetric):
+class RelativeInputStability(BatchedPerturbationMetric):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
 
@@ -108,11 +107,11 @@ class RelativeInputStability(BatchedRobustnessMetric):
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
-            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             **kwargs,
         )
         self._nr_samples = nr_samples
         self._eps_min = eps_min
+        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -244,6 +243,33 @@ class RelativeInputStability(BatchedRobustnessMetric):
         denominator += (denominator == 0) * self._eps_min
         return nominator / denominator
 
+    def generate_normalised_explanations_batch(
+        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
+    ) -> np.ndarray:
+        """
+        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
+
+        Parameters
+        ----------
+        x_batch: np.ndarray
+            4D tensor representing batch of input images.
+        y_batch: np.ndarray
+             1D tensor, representing predicted labels for the x_batch.
+        explain_func: callable
+            Function to generate explanations, takes only inputs,targets kwargs.
+
+        Returns
+        -------
+        a_batch: np.ndarray
+            A batch of explanations.
+        """
+        a_batch = explain_func(inputs=x_batch, targets=y_batch)
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+        return expand_attribution_channel(a_batch, x_batch)
+
     def evaluate_batch(
         self,
         model: ModelInterface,
@@ -292,24 +318,29 @@ class RelativeInputStability(BatchedRobustnessMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
-
-            # Generate explanation based on perturbed input x.
+            # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
-                model, x_perturbed, y_batch
+                x_perturbed, y_batch, _explain_func
             )
-            # If perturbed input caused change in prediction, then it's RIS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(
-                model, x_batch, x_perturbed
-            )
-
             # Compute maximization's objective.
             ris = self.relative_input_stability_objective(
                 x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
             ris_batch[index] = ris
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if len(changed_prediction_indices) != 0:
-                ris_batch[index, changed_prediction_indices] = np.nan
+            if not self._return_nan_when_prediction_changes:
+                continue
+
+            # If perturbed input caused change in prediction, then it's RIS=nan.
+            predicted_y = model.predict(x_batch).argmax(axis=-1)
+            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
+            changed_prediction_indices = np.argwhere(
+                predicted_y != predicted_y_perturbed
+            ).reshape(-1)
+
+            if len(changed_prediction_indices) == 0:
+                continue
+            ris_batch[index, changed_prediction_indices] = np.nan
 
         # Compute RIS.
         result = np.max(ris_batch, axis=0)

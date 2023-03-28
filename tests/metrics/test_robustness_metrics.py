@@ -2,7 +2,6 @@ from typing import Union, Dict
 from pytest_lazyfixture import lazy_fixture
 import pytest
 import numpy as np
-from pytest_mock import MockerFixture
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.discretise_func import floating_points, rank, sign, top_n_sign
@@ -841,6 +840,24 @@ def test_consistency(
             },
         ),
         (
+            AvgSensitivity,
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "lower_bound": 1.0,
+                "upper_bound": 255.0,
+            },
+        ),
+        (
+            MaxSensitivity,
+            lazy_fixture("load_1d_3ch_conv_model"),
+            lazy_fixture("almost_uniform_1d_no_abatch"),
+            {
+                "lower_bound": 1.0,
+                "upper_bound": 255.0,
+            },
+        ),
+        (
             MaxSensitivity,
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
@@ -854,6 +871,7 @@ def test_consistency(
 def test_return_nan_when_prediction_changes(
     metric, model, data, params, mock_prediction_changed
 ):
+    # This test case requires different set-up and assertions, so we have it in separate function.
     metric_instance = metric(
         **params,
         disable_warnings=True,
@@ -874,15 +892,15 @@ def test_return_nan_when_prediction_changes(
 
 @pytest.mark.robustness
 def test_return_nan_when_prediction_changes_continuity(
-    load_mnist_model, load_mnist_images, mocker: MockerFixture
+    load_mnist_model, load_mnist_images, mock_prediction_changed
 ):
+    # Continuity returns dict, so we have it in separate function in order to keep assertions readable.
     metric_instance = Continuity(
         disable_warnings=True,
         return_nan_when_prediction_changes=True,
         nr_steps=10,
         patch_size=7,
     )
-    mocker.patch.object(metric_instance, "_prediction_changed", lambda *args: True)
     result = metric_instance(
         load_mnist_model,
         load_mnist_images["x_batch"],
@@ -894,8 +912,6 @@ def test_return_nan_when_prediction_changes_continuity(
     )
     for i in result:
         values = list(i.values())
-        # Last element of scores are output logits.
+        # Last element of scores is output logits, obviously they're not nan.
         for v in values[:-1]:
             assert np.isnan(v).any()
-
-    mocker.resetall()

@@ -6,14 +6,6 @@ quantus.metrics.robustness package
    :undoc-members:
    :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   quantus.metrics.robustness.internal
-
 Submodules
 ----------
 
