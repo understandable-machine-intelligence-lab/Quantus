@@ -218,7 +218,7 @@ The following will give a short introduction to how to get started with Quantus.
 
 Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
-
+This example relies on a model object and data that is can be catched ..... Make sure to have these available at the time of running the example.
 ```python
 import torch
 import torchvision
@@ -232,11 +232,15 @@ device = choose_hardware_acceleration()
 model = torchvision.models.resnet18(pretrained=True)
 
 # You could use the sample data prepared by Quantus maintainers to verify your experiments.
-url = 'https://drive.google.com/drive/folders/1KkU4kg8yLZbfIgMNqWdny6LyFEqwvI2P?usp=share_link'
-gdown.download_folder(url, output='/tmp/imagenet_samples', quiet=True, use_cookies=False)
+gdown.download_folder(
+    "https://drive.google.com/file/d/1xxh1NpXloHdzh5Mb2lFCwWLHaDUHebUP/view?usp=share_link",
+    output='/tmp/quantus', 
+    quiet=True, 
+    use_cookies=False
+)
 # Load a batch of inputs and labels to use for XAI evaluation.
-x_batch = torch.load('/tmp/imagenet_samples/x_batch.pt').to(device)
-y_batch = torch.load('/tmp/imagenet_samples/y_batch.pt').to(device)
+x_batch = torch.load('/tmp/quantus/x_batch.pt').to(device)
+y_batch = torch.load('/tmp/quantus/y_batch.pt').to(device)
 ```
 </details>
 
