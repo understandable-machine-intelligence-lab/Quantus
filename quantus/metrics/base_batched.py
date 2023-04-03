@@ -220,6 +220,21 @@ class BatchedMetric(Metric):
         # Call post-processing.
         self.custom_postprocess(**data)
 
+        if self.return_aggregate:
+            if self.aggregate_func:
+                try:
+                    self.last_results = [self.aggregate_func(self.last_results)]
+                except:
+                    print(
+                        "The aggregation of evaluation scores failed. Check that "
+                        "'aggregate_func' supplied is appropriate for the data "
+                        "in 'last_results'."
+                    )
+            else:
+                raise KeyError(
+                    "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
+                )
+
         # Append content of last results to all results.
         self.all_results.append(self.last_results)
 
