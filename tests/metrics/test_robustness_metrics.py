@@ -151,6 +151,28 @@ from quantus.metrics.robustness import (
             },
             {"min": 0.0, "max": 1.0},
         ),
+(
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "init": {
+                    "lower_bound": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "abs": True,
+                    "normalise": True,
+                    "return_aggregate": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
+                },
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_max_sensitivity(
@@ -306,6 +328,27 @@ def test_max_sensitivity(
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+(
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_std": 0.1,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_aggregate": True,
                 },
                 "call": {
                     "explain_func": explain,
@@ -634,6 +677,27 @@ def test_continuity(
             },
             {"min": 0.0, "max": 1.0},
         ),
+(
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "lower_bound": 0.2,
+                    "nr_samples": 10,
+                    "disable_warnings": True,
+                    "display_progressbar": True,
+                    "return_aggregate": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
     ],
 )
 def test_avg_sensitivity(
@@ -747,6 +811,26 @@ def test_avg_sensitivity(
                     "discretise_func": rank,
                     "disable_warnings": True,
                     "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "Saliency",
+                    },
+                },
+                "a_batch_generate": False,
+            },
+            {"min": 0.0, "max": 1.0},
+        ),
+(
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "init": {
+                    "discretise_func": rank,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                    "return_aggregate": True,
                 },
                 "call": {
                     "explain_func": explain,
