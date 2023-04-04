@@ -231,11 +231,11 @@ def test_relative_representation_stability(
     [RIS_CONSTRUCTOR, ROS_CONSTRUCTOR, RRS_CONSTRUCTOR],
     ids=["RIS", "ROS", "RRS"],
 )
-def test_return_nan(metric, load_mnist_model_tf, load_mnist_images_tf):
+def test_return_nan(metric, load_mnist_model_tf, load_mnist_images_tf, mock_prediction_changed):
     x_batch = load_mnist_images_tf["x_batch"]
     y_batch = predict(load_mnist_model_tf, x_batch)
 
-    rs = metric(perturb_func_kwargs={"upper_bound": 255, "lower_bound": -255})
+    rs = metric()
     result = rs(
         model=load_mnist_model_tf,
         x_batch=x_batch,
