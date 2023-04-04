@@ -185,7 +185,7 @@ def titanic_model_tf(titanic_dataset):
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def titanic_dataset():
     df = pd.read_csv("tutorials/assets/titanic3.csv")
     df = df[["age", "embarked", "fare", "parch", "pclass", "sex", "sibsp", "survived"]]
@@ -193,7 +193,7 @@ def titanic_dataset():
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values
-    Y = df_enc["survived"].values
+    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
+    Y = df_enc["survived"].values.astype(np.int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
