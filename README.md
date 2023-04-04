@@ -229,7 +229,9 @@ from quantus.helpers.torch_utils import choose_hardware_acceleration
 device = choose_hardware_acceleration()
 
 # Load a pre-trained ResNet18 classification model.
-model = torchvision.models.resnet18(pretrained=True)
+model = torchvision.models.resnet18(
+    weights=torchvision.models.resnet.ResNet18_Weights.IMAGENET1K_V1
+).to(device)
 
 # You could use the sample data prepared by Quantus maintainers to verify your experiments.
 gdown.download_folder(
