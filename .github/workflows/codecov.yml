@@ -1,17 +1,25 @@
 name: codecov
-on: [push, pull_request]
+on: [ pull_request, workflow_dispatch ]
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch
-        uses: actions/checkout@master
+      -
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+          cache: 'pip'
+
       - name: Test
         run: |
-          pip install -r requirements_test.txt
-          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+          pip install -r requirements.txt -r requirements_test.txt
+          pytest --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -n auto
+
       - name: Upload
-        uses:  codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml, coverage.xml
