@@ -44,4 +44,4 @@ jobs:
         black quantus
     - name: Test with pytest
       run: |
-        pytest
+        pytest -s -v
