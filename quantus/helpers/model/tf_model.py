@@ -86,13 +86,32 @@ class TensorFlowModel(ModelInterface):
         }
         return predict_kwargs
 
+    @property
+    def _last_layer_is_softmax(self) -> bool:
+        """
+        Checks if the last layer is an instance of tf.keras.layers.Softmax.
+        """
+        last_layer = self.model.layers[-1]
+        return isinstance(last_layer, tf.keras.layers.Softmax)
+
     @cachedmethod(operator.attrgetter("cache"))
-    def _build_model_with_linear_top(self) -> Model:
+    def _get_model_with_linear_top(self) -> Model:
         """
         In a case model has a softmax on top, and we want linear,
         we have to rebuild the model and replace top with linear activation.
+        Softmax can either be a separate last layer, or activation of the
+        last layer.
         Cache the rebuilt model and reuse it during consecutive predict calls.
         """
+
+        if self._last_layer_is_softmax:
+            output_layer = self.model.layers[-2].output
+            new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+            return new_model
+
+        output_activation = self.model.layers[-1].activation
+        if output_activation == activations.linear:
+            return self.model
 
         config = self.model.layers[-1].get_config()
         config["activation"] = activations.linear
@@ -102,6 +121,41 @@ class TensorFlowModel(ModelInterface):
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
         return new_model
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _get_model_with_softmax_top(self) -> Model:
+        """
+        In a case model has a linear activation in the last layer,
+        and we want softmax, we have to rebuild the model and replace top with
+        softmax activation.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
+        """
+
+        if self._last_layer_is_softmax:
+            return self.model
+
+        output_activation = self.model.layers[-1].activation
+        if output_activation == activations.softmax:
+            return self.model
+
+        output_layer = tf.keras.layers.Softmax(axis=-1)(self.model.layers[-1].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+
+        return new_model
+
+    def get_softmax_arg_model(self) -> Model:
+        """
+        Returns model with last layer adjusted accordingly to softmax argument.
+        If the original model has softmax activation in the last layer and softmax=false,
+        the softmax activation is removed.
+        """
+
+        if self.softmax:
+            return self._get_model_with_softmax_top()
+
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
+        return self._get_model_with_linear_top()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -122,20 +176,8 @@ class TensorFlowModel(ModelInterface):
         # Generally, one should always prefer keras predict to __call__.
         # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
         predict_kwargs = self._get_predict_kwargs(**kwargs)
+        predict_model = self.get_softmax_arg_model()
 
-        output_activation = self.model.layers[-1].activation
-        target_activation = activations.softmax if self.softmax else activations.linear
-
-        if output_activation == target_activation:
-            return self.model.predict(x, **predict_kwargs)
-
-        if self.softmax and output_activation == activations.linear:
-            logits = self.model.predict(x, **predict_kwargs)
-            return tf.nn.softmax(logits)
-
-        # In this case model has a softmax on top, and we want linear.
-        # We have to rebuild the model and replace top with linear activation.
-        predict_model = self._build_model_with_linear_top()
         return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(

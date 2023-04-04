@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from quantus.helpers.model.models import (
     LeNet,
     LeNetTF,
+    CifarCNNModel,
     ConvNet1D,
     ConvNet1DTF,
     TitanicSimpleTFModel,
@@ -36,6 +37,14 @@ def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
     model.load_weights("tests/assets/lenet_mnist_weights.keras")
+    return model
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_cifar10_model_tf():
+    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
+    model = CifarCNNModel()
+    model.load_weights("tests/assets/cifar_tf_weights.keras")
     return model
 
 
