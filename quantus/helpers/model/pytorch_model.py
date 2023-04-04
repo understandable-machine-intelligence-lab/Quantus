@@ -9,6 +9,8 @@
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
+from cachetools import cachedmethod, LRUCache
+import operator
 
 import numpy as np
 import torch
@@ -52,6 +54,42 @@ class PyTorchModel(ModelInterface):
             model_predict_kwargs=model_predict_kwargs,
         )
         self.device = device
+        self.cache = LRUCache(100)
+
+    @property
+    def _last_layer_is_softmax(self) -> bool:
+        """
+        Checks if the last layer is an instance of torch.nn.Softmax.
+        """
+        last_layer = list(self.model.children())[-1]
+        return isinstance(last_layer, torch.nn.Softmax)
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _get_model_with_linear_top(self) -> torch.nn:
+        """
+        In a case model has a softmax on top, and we want linear,
+        we have to rebuild the model and replace top with linear activation.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
+        """
+        if not self._last_layer_is_softmax:
+            return self.model
+
+        return torch.nn.Sequential(*(list(self.model.children())[:-1]))
+
+    def get_softmax_arg_model(self) -> torch.nn:
+        """
+        Returns model with last layer adjusted accordingly to softmax argument.
+        If the original model has softmax activation as the last layer and softmax=false,
+        the layer is removed.
+        """
+
+        if self._last_layer_is_softmax and self.softmax is False:
+            return self._get_model_with_linear_top()
+
+        if not self._last_layer_is_softmax and self.softmax is True:
+            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))
+
+        return self.model
 
     def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
         """
@@ -81,9 +119,8 @@ class PyTorchModel(ModelInterface):
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred = self.model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
-            if self.softmax:
-                pred = torch.nn.Softmax(dim=-1)(pred)
+            pred_model = self.get_softmax_arg_model()
+            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
