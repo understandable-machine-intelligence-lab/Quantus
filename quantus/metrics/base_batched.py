@@ -28,11 +28,11 @@ from quantus.helpers.utils import (
     value_or_default,
     map_optional,
     batch_inputs,
-    add_default_items
+    add_default_items,
+    safe_as_array
 )
 from quantus.helpers.utils_nlp import (
     map_explanations,
-    safe_as_array,
     is_plain_text_perturbation,
     is_torch_model
 )

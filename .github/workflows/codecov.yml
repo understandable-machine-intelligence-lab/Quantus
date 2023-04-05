@@ -19,21 +19,9 @@ jobs:
       - name: Install dependecies
         run: pip install -r requirements.txt -r requirements_test.txt
 
-      - name: Cache models and datasets
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: ~/.cache/huggingface
-          key: hf-hub-v1
-
-      - name: Download models and datasets
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: python tests/nlp/download_data.py
-
       - name: Test
-        run: pytest tests --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+        run: pytest tests --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus -n auto
         env:
-          USE_XLA: true
           TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
       - name: Upload

@@ -55,6 +55,17 @@ class TFModelWrapper(ModelWrapper, tf.Module):
 
 
 class TFModelRandomizer(RandomisableModel, TFModelWrapper):
+
+    @staticmethod
+    def list_parameterizable_layers(
+            model: keras.Model, flatten_layers: bool = False
+    ) -> List[tf.keras.layers.Layer]:
+        if flatten_layers:
+            layers = list(model._flatten_layers(include_self=False, recursive=True))
+        else:
+            layers = model.layers
+        return list(filter(lambda i: len(i.get_weights()) > 0, layers))
+
     def get_random_layer_generator(
         self, order: str = "top_down", seed: int = 42, flatten_layers=False
     ):
@@ -114,16 +125,6 @@ class TFNestedModelRandomizer(TFModelRandomizer):
         self, order: str = "top_down", seed: int = 42, **kwargs
     ):
         return super().get_random_layer_generator(order, seed, flatten_layers=True)
-
-    @staticmethod
-    def list_parameterizable_layers(
-        model: keras.Model, flatten_layers: bool = False
-    ) -> List[tf.keras.layers.Layer]:
-        if flatten_layers:
-            layers = list(model._flatten_layers(include_self=False, recursive=True))
-        else:
-            layers = model.layers
-        return list(filter(lambda i: len(i.get_weights()) > 0, layers))
 
 
 class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):

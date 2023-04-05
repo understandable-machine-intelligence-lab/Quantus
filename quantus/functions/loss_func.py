@@ -10,7 +10,7 @@ from typing import Union
 import numpy as np
 
 
-def mse(a: np.ndarray, b: np.ndarray, **kwargs) -> Union[np.ndarray, float]:
+def mse(a: np.ndarray, b: np.ndarray, axis=0, normalise_mse:bool = False, **kwargs) -> Union[np.ndarray, float]:
     """
     Calculate Mean Squared Error between two images (or explanations).
 
@@ -20,10 +20,13 @@ def mse(a: np.ndarray, b: np.ndarray, **kwargs) -> Union[np.ndarray, float]:
              Array to calculate MSE with.
     b: np.ndarray
              Array to calculate MSE with.
-    kwargs: optional
-            Keyword arguments.
-        normalise_mse: boolean
-            Indicates whether to returned a normalised MSE calculation or not.
+    axis: int
+        axis over which mean should be computed.
+    normalise_mse: boolean
+        Indicates whether to returned a normalised MSE calculation or not.
+    kwargs:
+        Unused.
+
 
     Returns
     -------
@@ -31,11 +34,9 @@ def mse(a: np.ndarray, b: np.ndarray, **kwargs) -> Union[np.ndarray, float]:
         Float for single instance, np.ndarray for batch.
     """
 
-    normalise = kwargs.get("normalise_mse", False)
-
-    if normalise:
+    if normalise_mse:
         # Calculate MSE in its polynomial expansion (a-b)^2 = a^2 - 2ab + b^2.
-        return np.average(((a**2) - (2 * (a * b)) + (b**2)), axis=0)
+        return np.average(((a**2) - (2 * (a * b)) + (b**2)), axis=axis)
     # If no need to normalise, return (a-b)^2.
 
-    return np.average(((a - b) ** 2), axis=1)
+    return np.average(((a - b) ** 2), axis=axis)

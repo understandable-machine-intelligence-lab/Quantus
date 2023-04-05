@@ -86,6 +86,8 @@ class TokenFlipping(BatchedMetric):
         )
         if return_aggregate:
             raise ValueError(f"Token Flipping does not support aggregating instances.")
+        if task not in ("pruning", "activation"):
+            raise ValueError(f"Unsupported task, supported are: pruning, activation.")
         self.mask_token = mask_token
         self.task = task
 
@@ -160,15 +162,14 @@ class TokenFlipping(BatchedMetric):
             s_batch=None,
             custom_batch=None,
     ) -> np.ndarray:
-        scores = np.asarray([])
         if self.task == "pruning":
             scores = self._eval_pruning(model, x_batch, y_batch, a_batch)
-        elif self.task == "activation":
+        else:
             scores = self._eval_activation(model, x_batch, y_batch, a_batch)
 
         og_logits = get_logits_for_labels(model.predict(x_batch), y_batch)
 
-        scores = mse(scores, og_logits)
+        scores = mse(scores, og_logits, axis=1)
 
         # Move batch axis to 0's position.
         return scores.T

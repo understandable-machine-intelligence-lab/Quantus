@@ -11,12 +11,6 @@ from typing import List, TypedDict, TypeVar, Tuple, Dict, Any
 
 import numpy as np
 
-from quantus.helpers.model.model_interface import (
-    RandomisableModel,
-    HiddenRepresentationsModel,
-    ModelWrapper,
-)
-
 T = TypeVar("T")
 R = TypedDict("R", {"input_ids": np.ndarray}, total=False)
 
@@ -79,7 +73,7 @@ class TextClassifier(ABC):
         raise NotImplementedError
 
     def get_embeddings(self, x_batch: List[str]) -> Tuple[np.ndarray, Dict]:
-        from quantus.helpers.utils_nlp import safe_as_array
+        from quantus.helpers.utils import safe_as_array
 
         """Do batch encode, unpack input ids, convert to embeddings."""
         input_ids, predict_kwargs = self.tokenizer.get_input_ids(x_batch)
