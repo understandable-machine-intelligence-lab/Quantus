@@ -565,26 +565,21 @@ def plot_token_flipping_experiment(
     fig, axes = plt.subplots()
 
     axes.set(xlabel="% tokens flipped.")
-    axes.set(ylabel="$()$")
+    axes.set(ylabel="$(y_o - y')^2$")
+    axes.set_title(f"Token {task} experiment")
 
-    with plt.style.use(style):
+    with plt.style.context(style):
         for i in score:
             if i.ndim == 2:
                 i = np.mean(i, axis=0)
             num_tokens = len(i)
 
             x = np.arange(0, num_tokens + 1)
-            i = np.concatenate([0.0, i])
+            i = np.concatenate([[0.], i])
 
             axes.plot(i, x, marker="o")
 
         if legend is not None:
             axes.legend(legend)
 
-    plt.plot(y, x)
-
-    plt.title(f"Token {task} experiment")
-    plt.xlabel("% of tokens flipped")
-    plt.ylabel("$(y_o - y')^2$")
-
-    return fig
+    return axes

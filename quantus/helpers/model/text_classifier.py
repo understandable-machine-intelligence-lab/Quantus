@@ -49,7 +49,6 @@ class Tokenizable(ABC):
 
 
 class EmbeddingsCallable(ABC):
-
     @abstractmethod
     def __call__(self, inputs_embeds: T, **kwargs) -> T:
         """

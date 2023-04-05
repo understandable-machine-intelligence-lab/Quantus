@@ -138,6 +138,11 @@ def get_explanation(model, inputs, targets, **kwargs):
          Returns np.ndarray of same shape as inputs.
     """
     xai_lib = kwargs.get("xai_lib", "captum")
+
+    if isinstance(model, TextClassifier):
+        from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
+        return generate_text_classification_explanations(model, inputs, targets, **kwargs)
+
     if isinstance(model, torch.nn.Module):
         if util.find_spec("captum") and util.find_spec("zennit"):
             if xai_lib == "captum":
@@ -156,9 +161,6 @@ def get_explanation(model, inputs, targets, **kwargs):
                 f"Model is of type tf.keras.Model but tf_explain is not installed."
             )
 
-    if isinstance(model, TextClassifier):
-        from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
-        return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
     raise ValueError(
         f"Model needs to be tf.keras.Model or torch.nn.Module but is {type(model)}. "

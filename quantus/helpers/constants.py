@@ -271,12 +271,12 @@ def available_normalisation_functions() -> List[str]:
 
 # ---------------------- NLP --------------------------
 def available_nlp_metrics() -> Dict[str, List[Type]]:
-    result = defaultdict(lambda: {})
+    result = defaultdict(lambda: [])
 
     for k, v in AVAILABLE_METRICS.items():
-        for kk, vv in v:
+        for kk, vv in v.items():
             if "NLP" in vv.data_domain_applicability:
-                result[k][kk] = vv
+                result[k].append(kk)
 
     return dict(result)
 

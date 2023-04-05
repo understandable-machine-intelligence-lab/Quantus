@@ -96,11 +96,9 @@ def evaluate(
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
 
     for method, value in xai_methods.items():
-
         results[method] = {}
 
         if callable(value):
-
             explain_funcs[method] = value
             explain_func = value
 
@@ -120,7 +118,6 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, Dict):
-
             if explain_func_kwargs is not None:
                 warnings.warn(
                     "Passed explain_func_kwargs will be ignored when passing type Dict[str, Dict] as xai_methods."
@@ -140,13 +137,10 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, np.ndarray):
-            explain_funcs[
-                method
-            ] = explain
+            explain_funcs[method] = explain
             a_batch = value
 
         else:
-
             raise TypeError(
                 "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
             )
@@ -154,12 +148,10 @@ def evaluate(
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
 
-        for (metric, metric_func) in metrics.items():
-
+        for metric, metric_func in metrics.items():
             results[method][metric] = {}
 
-            for (call_kwarg_str, call_kwarg) in call_kwargs.items():
-
+            for call_kwarg_str, call_kwarg in call_kwargs.items():
                 if progress:
                     print(
                         f"Evaluating {method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
@@ -260,28 +252,35 @@ def evaluate_nlp(
 
     global_call_kwargs = {k: v for k, v in call_kwargs.items() if k not in metrics}
 
-    iterator = tqdm(metrics.items(), disable=not verbose, desc="Evaluation...")
+    pbar = tqdm(total=len(metrics.keys()), disable=not verbose, desc="Evaluation...")
 
-    for metric_name, metric_instance in iterator:
-        iterator.desc = f"Evaluating {metric_name}"
-        metric_call_kwargs = call_kwargs[metric_name]
+    with pbar as pbar:
+        for metric_name, metric_instance in metrics.items():
+            pbar.desc = f"Evaluating {metric_name}"
+            metric_call_kwargs = call_kwargs[metric_name]
 
-        if isinstance(metric_call_kwargs, Dict):
-            # Metrics kwargs override global ones
-            merged_call_kwargs = {**global_call_kwargs, **metric_call_kwargs}
-            merged_call_kwargs = add_default_items(merged_call_kwargs, {"a_batch": None})
-            scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
-            persist_result(metric_name, merged_call_kwargs, scores)
-            result[metric_name] = scores
-            continue
+            if isinstance(metric_call_kwargs, Dict):
+                # Metrics kwargs override global ones
+                merged_call_kwargs = {**global_call_kwargs, **metric_call_kwargs}
+                merged_call_kwargs = add_default_items(
+                    merged_call_kwargs, {"a_batch": None}
+                )
+                scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
+                persist_result(metric_name, merged_call_kwargs, scores)
+                result[metric_name] = scores
+                pbar.update()
+                continue
 
-        result[metric_name] = []
-        for metric_call_kwarg in metric_call_kwargs:
-            # Metrics kwargs override global ones
-            merged_call_kwargs = {**global_call_kwargs, **metric_call_kwarg}
-            merged_call_kwargs = add_default_items(merged_call_kwargs, {"a_batch": None})
-            scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
-            persist_result(metric_name, merged_call_kwargs, scores)
-            result[metric_name].append(scores)
+            result[metric_name] = []
+            for metric_call_kwarg in metric_call_kwargs:
+                # Metrics kwargs override global ones
+                merged_call_kwargs = {**global_call_kwargs, **metric_call_kwarg}
+                merged_call_kwargs = add_default_items(
+                    merged_call_kwargs, {"a_batch": None}
+                )
+                scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
+                persist_result(metric_name, merged_call_kwargs, scores)
+                result[metric_name].append(scores)
+                pbar.update()
 
     return result

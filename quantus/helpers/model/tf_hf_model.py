@@ -20,10 +20,8 @@ from quantus.helpers.model.model_interface import (
     HiddenRepresentationsModel,
 )
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.model.tf_model import TFModelRandomizer
+from quantus.helpers.model.tf_model import TFNestedModelRandomizer
 from quantus.helpers.tf_utils import is_xla_compatible_model
-
-
 
 
 class TFHuggingFaceTextClassifier(

@@ -523,17 +523,12 @@ def _(
 
 
 @singledispatch
-def _integrated_gradients(x_batch, *args, **kwargs) -> _Scores:
-    pass
-
-
-@_integrated_gradients.register
-def _(
-    x_batch: list,
+def _integrated_gradients(
+    x_batch: List[str],
     model,
     y_batch: tf.Tensor,
     config: IntGradConfig = None,
-    **kwargs,
+    **kwargs
 ) -> List[Explanation]:
     config = value_or_default(config, default_int_grad_config)
     input_ids, predict_kwargs = model.tokenizer.get_input_ids(x_batch)
@@ -544,7 +539,6 @@ def _(
         model,
         y_batch,
         config,
-        **kwargs,
         **predict_kwargs,
     )
     return [
@@ -557,7 +551,7 @@ def _(
     x_batch: tf.Tensor,
     model,
     y_batch: tf.Tensor,
-    config: IntGradConfig,
+    config: Optional[IntGradConfig] = None,
     **kwargs,
 ):
     config = value_or_default(config, lambda: IntGradConfig()).resolve_function()
@@ -625,7 +619,7 @@ def _integrated_gradients_batched(
     grads = tf.reshape(
         grads, [batch_size, num_steps + 1, grads_shape[1], grads_shape[2]]
     )
-    return tfp.math.trapz(tf.linalg.norm(grads, axis=-1), axis=1)
+    return tf.linalg.norm(tfp.math.trapz(grads, axis=1), axis=-1)
 
 
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
@@ -667,7 +661,7 @@ def _integrated_gradients_iterative(
             logits_for_label = logits[:, y_batch[i]]
 
         grads = tape.gradient(logits_for_label, interpolated_embeddings)
-        score = tfp.math.trapz(tf.linalg.norm(grads, axis=-1), axis=0)
+        score = tf.linalg.norm(tfp.math.trapz(grads, axis=0), axis=-1)
         scores = scores.write(i, score)
 
     return scores.stack()
@@ -678,7 +672,7 @@ def _integrated_gradients_iterative(
 
 @singledispatch
 def _noise_grad(
-    x_batch: list, model, y_batch: tf.Tensor, config: NoiseGradConfig = None, **kwargs
+    x_batch: list, model, y_batch: tf.Tensor, config: NoiseGradConfig = None
 ):
     config = value_or_default(config, default_noise_grad_config).resolve_functions()
     tf.random.set_seed(config.seed)
@@ -752,7 +746,7 @@ def _noise_grad_plus_plus(
     model,
     y_batch: tf.Tensor,
     config: NoiseGradPlusPlusConfig = None,
-    **kwargs,
+    **kwargs
 ):
     config = value_or_default(config, default_noise_grad_pp_config).resolve_functions()
     tf.random.set_seed(config.seed)
