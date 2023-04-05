@@ -1,34 +1,39 @@
-"""This module contains the implementation of the Model Parameter Sensitivity metric."""
-
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
+
+from collections import defaultdict
+from operator import itemgetter
+from functools import singledispatchmethod
 from typing import (
     Any,
     Callable,
     Dict,
     List,
-    Optional,
-    Tuple,
-    Union,
-    Collection,
-    Iterable,
+    Optional
 )
+
 import numpy as np
 from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts
+from quantus.helpers import warn
+from quantus.helpers.model.model_interface import ModelInterface, RandomisableModel
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
+from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanations, Explanation
+from quantus.helpers.utils import map_optional
+from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.utils_nlp import get_scores
 
 
-class ModelParameterRandomisation(Metric):
+class ModelParameterRandomisation(BatchedMetric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
 
@@ -48,17 +53,17 @@ class ModelParameterRandomisation(Metric):
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Callable = None,
+        similarity_func: SimilarityFn = None,
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func: Optional[NormaliseFn] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = None,
-        default_plot_func: Optional[Callable] = None,
+        default_plot_func: Optional[Callable] = plot_model_parameter_randomisation_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -148,10 +153,10 @@ class ModelParameterRandomisation(Metric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[Explanations] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,
+        explain_func: Optional[ExplainFn] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
@@ -159,7 +164,7 @@ class ModelParameterRandomisation(Metric):
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
         **kwargs,
-    ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
+    ) -> Dict[str, np.ndarray] | np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -240,7 +245,6 @@ class ModelParameterRandomisation(Metric):
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
-
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -255,115 +259,104 @@ class ModelParameterRandomisation(Metric):
             softmax=softmax,
             device=device,
         )
+        del model
         model = data["model"]
+        if not isinstance(model, RandomisableModel):
+            raise ValueError(f"Custom models need to implement RandomisableModel in order to be used with Model Parameter Randomisation metric.")
+        del x_batch
+        del y_batch
+        del a_batch
+
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
         a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
-        self.last_results = {}
-
-        # Get number of iterations from number of layers.
-        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
+        results_per_layer = defaultdict(lambda: [])
 
         model_iterator = tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
-            total=n_layers,
+            model.get_random_layer_generator(self.layer_order, self.seed),
+            total=model.random_layer_generator_length,
             disable=not self.display_progressbar,
         )
 
         for layer_name, random_layer_model in model_iterator:
 
-            similarity_scores = [None for _ in x_batch]
-
             # Generate an explanation with perturbed model.
-            a_batch_perturbed = self.explain_func(
-                model=random_layer_model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.evaluate_instance(
-                    model=random_layer_model,
-                    x=None,
-                    y=None,
-                    s=None,
-                    a=a_instance,
-                    a_perturbed=a_instance_perturbed,
+            for i, x in enumerate(x_batch):
+                y = map_optional(y_batch, itemgetter(i))
+                a = map_optional(a_batch, itemgetter(i))
+                x, y, a, _ = self.batch_preprocess(
+                    model, x, y, a
                 )
-                similarity_scores[instance_id] = result
+                similarity_score = self.evaluate_batch(
+                    random_layer_model, x, y, a
+                )
+                results_per_layer[layer_name].extend(similarity_score)
 
-            # Save similarity scores in a result dictionary.
-            self.last_results[layer_name] = similarity_scores
-
-        # Call post-processing
-        self.custom_postprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-        )
+        result = dict(results_per_layer)
 
         if self.return_sample_correlation:
-            self.last_results = self.compute_correlation_per_sample()
+            result = self.compute_correlation_per_sample(len(x_batch), result)
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
                 "You must set 'return_average_correlation_per_sample'"
                 " to True in order to compute te aggregat"
             )
-            self.last_results = [self.aggregate_func(self.last_results)]
+            result = [self.aggregate_func(self.last_results)]
 
+        # Save results to instance.
+        self.last_results = result
         self.all_results.append(self.last_results)
-
         return self.last_results
 
-    def evaluate_instance(
+    @singledispatchmethod
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        *args
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Compute similarity for original explanations and explanations generated by randomized model.
 
-        Parameters
-        ----------
-        i: integer
-            The evaluation instance.
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
 
         Returns
         -------
         float
             The evaluation results.
         """
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
-
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
-
+        a_randomized = self.explain_batch(model, x_batch, y_batch)
         # Compute distance measure.
-        return self.similarity_func(a_perturbed.flatten(), a.flatten())
+        return self.similarity_func(a_batch, a_randomized)
+
+    @evaluate_batch.register
+    def _(
+            self,
+            model: TextClassifier,
+            x_batch: List[str],
+            y_batch: np.ndarray,
+            a_batch: List[Explanation],
+            *args
+    ) -> np.ndarray:
+        """
+        Compute similarity for original explanations and explanations generated by randomized model.
+
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        a_randomized = self.explain_batch(model, x_batch, y_batch)
+        # Compute distance measure.
+        return self.similarity_func(
+            get_scores(a_batch),
+            get_scores(a_randomized)
+        )
 
     def custom_preprocess(
         self,
@@ -400,23 +393,27 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
+    @staticmethod
     def compute_correlation_per_sample(
-        self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+        num_samples: int,
+        results_per_layer: Dict[str, np.ndarray]
+    ) -> np.ndarray:
 
-        assert isinstance(self.last_results, dict), (
+        assert isinstance(results_per_layer, Dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
-        layer_length = len(self.last_results[list(self.last_results.keys())[0]])
-        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+        results_per_sample_accumulator = defaultdict(lambda: [])
+        for sample in range(num_samples):
+            for layer in results_per_layer:
+                results_per_sample_accumulator[str(sample)].append(float(results_per_layer[layer][sample]))
 
-        for sample in results:
-            for layer in self.last_results:
-                results[sample].append(float(self.last_results[layer][sample]))
-            results[sample] = np.mean(results[sample])
+        return np.mean(results_per_sample_accumulator, axis=1)
 
-        corr_coeffs = list(results.values())
+    @property
+    def data_domain_applicability(self) -> List[str]:
+        return super().data_domain_applicability + ["NLP"]
 
-        return corr_coeffs
+
+

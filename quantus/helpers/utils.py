@@ -6,16 +6,33 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
 import copy
 import re
+import warnings
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    List,
+    Iterable,
+    TypeVar,
+    Callable,
+)
+from functools import wraps, singledispatch
+import logging
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
+from sklearn.utils import gen_batches
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier
 
 if util.find_spec("torch"):
     import torch
@@ -23,6 +40,17 @@ if util.find_spec("torch"):
 if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
+
+
+try:
+    from transformers import TFPreTrainedModel, PreTrainedModel
+except ModuleNotFoundError:
+    warnings.warn("transformers not installed")
+    TFPreTrainedModel = type(None)
+    PreTrainedModel = type(None)
+
+
+log = logging.getLogger(__name__)
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -335,11 +363,11 @@ def make_channel_last(x: np.array, channel_first=True):
 
 def get_wrapped_model(
     model,
-    channel_first: bool,
-    softmax: bool,
-    device: Optional[str] = None,
+    channel_first: Optional[bool] = None,
+    softmax: Optional[bool] = None,
+    device: Optional[str | torch.device] = None,
     model_predict_kwargs: Optional[Dict[str, Any]] = None,
-) -> ModelInterface:
+) -> Union[ModelInterface, TextClassifier]:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
@@ -361,7 +389,14 @@ def get_wrapped_model(
     model: ModelInterface
         A wrapped ModelInterface model.
     """
+    if isinstance(model, (ModelInterface, TextClassifier)):
+        return model
+
     if util.find_spec("tensorflow"):
+        if isinstance(model, TFPreTrainedModel):
+            from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+            return TFHuggingFaceTextClassifier(model) # noqa
+
         if isinstance(model, tf.keras.Model):
             return TensorFlowModel(
                 model=model,
@@ -371,6 +406,11 @@ def get_wrapped_model(
             )
     if util.find_spec("torch"):
         if isinstance(model, torch.nn.Module):
+
+            if isinstance(model, PreTrainedModel):
+                from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
+                return TorchHuggingFaceTextClassifier(model, device=device) # noqa
+
             return PyTorchModel(
                 model=model,
                 channel_first=channel_first,
@@ -764,7 +804,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
         for start in range(0, len(x_shape) - len(a_shape) + 1)
     ]
     if x_subshapes.count(a_shape) < 1:
-
         # Check that attribution dimensions are (consecutive) subdimensions of inputs
         raise ValueError(
             "Attribution dimensions are not (consecutive) subdimensions of inputs:  "
@@ -773,7 +812,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
-
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
 
@@ -783,7 +821,6 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
-
                 # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
@@ -995,3 +1032,175 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+def dispatch_2d(func: Callable[[np.ndarray, np.ndarray, ...], np.ndarray]):
+    @wraps(func)
+    def wrapper(a, b, **kwargs):
+        a = np.asarray(a)
+        b = np.asarray(b)
+
+        def flatten_over_batch(arr):
+            shape = np.shape(arr)
+            return np.reshape(arr, (shape[0], -1))
+
+        if np.ndim(a) != np.ndim(b):
+            raise ValueError(
+                f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }"
+            )
+
+        if np.ndim(a) > 2:
+            a = flatten_over_batch(a)
+            b = flatten_over_batch(b)
+
+        if np.ndim(a) == 2:
+            return np.asarray([func(i, j, **kwargs) for i, j in zip(a, b)])
+            # return np.vectorize(func, signature="(n,m),(n,m)->(n)")(a, b,  **kwargs)
+        elif np.ndim(a) == 1:
+            return func(a, b, **kwargs)
+
+    return wrapper
+
+
+def raise_quietly(func):
+    @wraps(func)
+    def wrapper(a, *args, **kwargs):
+        try:
+            return func(a, *args, **kwargs)
+        except RuntimeWarning as w:
+            log.warning(
+                f"{func.__name__} raised {w}, ignoring computation and returning original array `a`."
+            )
+            return a
+
+    return wrapper
+
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+
+def map_dict(
+    dictionary: Dict[str, T],
+    func: Callable[[T], R],
+    key_mapper: Callable[[str], str] = lambda x: x,
+) -> Dict[str, R]:
+    """Applies func to values in dict. Additionally, if provided can also map keys."""
+    result = {}
+    for k, v in dictionary.items():
+        result[key_mapper(k)] = func(v)
+    return result
+
+
+def flatten(list_2d: Iterable[Iterable[T]]) -> List[T]:
+    """Does the same as np.reshape(..., -1), but work also on ragged matrices."""
+    return [item for sublist in list_2d for item in sublist]
+
+
+def batch_inputs(flat_list: Iterable[T], batch_size: int) -> List[Iterable[T]]:
+    """Divide list in batches of batch_size, despite the name works also for any Sized and SupportsIndex."""
+    indices = list(gen_batches(len(flat_list), batch_size))
+    return list(map(lambda i: flat_list[i.start:i.stop], indices))
+
+
+def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
+    """Apply func to value if not None, otherwise return None."""
+    if val is None:
+        return None
+    return func(val)
+
+
+def add_default_items(
+    dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Add default_items into dictionary if not present."""
+    if dictionary is None:
+        return default_items.copy()
+
+    copy = dictionary.copy()
+
+    for k, v in default_items.items():
+        if k not in copy:
+            copy[k] = v
+
+    return copy
+
+
+def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
+    """Return value from default_factory() if value is None, otherwise value itself."""
+    # Default is provided by callable, because otherwise it will force materialization of both values in memory.
+    if value is not None:
+        return value
+    else:
+        return default_factory()
+
+
+
+def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
+    """
+    Parameters
+    ----------
+    logits:
+        2D array of models (output) logits with shape (batch size, num_classes).
+    y_batch:
+        1D array of labels with shape (batch size,)
+
+    Returns
+    -------
+
+    logits:
+        1D array
+
+    """
+    # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
+    # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
+    # the hard way again one more time.
+    return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
+
+
+@singledispatch
+def safe_as_array(a, force: bool = False) -> np.ndarray:
+    """
+    Convert DNN frameworks' tensors to numpy arrays. Safe means safe from torch complaining about tensors
+    being on other device or attached to graph. So, the only one type we're really interested is torch.Tensor.
+    In practise, TF tensors can be passed to numpy functions without any issues, so we can avoid overhead of copying them.
+
+    Parameters
+    ----------
+    a:
+        Pytorch or TF tensor.
+    force:
+        If set to true, will force conversion of TF tensors to numpy arrays.
+        This option should be used, when user needs to modify values inside `a`, since TF tensors are read only.
+
+    Returns
+    -------
+    a:
+        np.ndarray or tf.Tensor, a is tf.Tensor and force=False.
+
+    """
+    return a
+
+
+try:
+    import torch
+
+    @safe_as_array.register
+    def _(a: torch.Tensor, force=False):
+        return a.detach().cpu().numpy()
+
+except ModuleNotFoundError:
+    pass
+
+try:
+    import tensorflow as tf
+
+
+    @safe_as_array.register
+    def _(a: tf.Tensor, force=False):
+        if force:
+            return np.array(tf.identity(a))
+        return a
+
+except ModuleNotFoundError:
+    pass

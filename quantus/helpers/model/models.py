@@ -12,7 +12,6 @@ from typing import Tuple
 
 # Import different models depending on which deep learning framework is installed.
 if util.find_spec("torch"):
-
     import torch
     import torch.nn as nn
 
@@ -222,23 +221,5 @@ if util.find_spec("tensorflow"):
                 tf.keras.layers.Dense(12, activation="sigmoid"),
                 tf.keras.layers.Dense(8),
                 tf.keras.layers.Dense(2, activation="softmax"),
-            ]
-        )
-
-    def CifarCNNModel() -> tf.keras.Model:
-        """
-        Source: https://www.tensorflow.org/tutorials/images/cnn
-        """
-
-        return tf.keras.Sequential(
-            [
-                tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
-                tf.keras.layers.MaxPooling2D((2, 2)),
-                tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-                tf.keras.layers.MaxPooling2D((2, 2)),
-                tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-                tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(10),
             ]
         )

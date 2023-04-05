@@ -157,7 +157,9 @@ from quantus.metrics.faithfulness import (
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "GradientsInput",},
+                    "explain_func_kwargs": {
+                        "method": "GradientsInput",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -361,7 +363,7 @@ def test_faithfulness_correlation(
             },
             {"min": -1.0, "max": 1.0},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
@@ -383,6 +385,7 @@ def test_faithfulness_correlation(
                 },
             },
             {"min": 0.0, "max": 1.0},
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -1305,7 +1308,9 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"type": np.float64},

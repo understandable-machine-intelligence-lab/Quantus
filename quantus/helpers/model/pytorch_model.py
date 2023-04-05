@@ -9,17 +9,196 @@
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
-from cachetools import cachedmethod, LRUCache
-import operator
 
 import numpy as np
 import torch
+import torch.nn as nn
 
 from quantus.helpers import utils
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import (
+    ModelInterface,
+    ModelWrapper,
+    RandomisableModel,
+    HiddenRepresentationsModel,
+)
 
 
-class PyTorchModel(ModelInterface):
+class TorchWrapper(ModelWrapper):
+    model: nn.Module
+    device: torch.device
+
+    def get_model(self) -> torch.nn:
+        """
+        Get the original torch model.
+        """
+        return self.model
+
+    def state_dict(self) -> dict:
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
+        return self.model.state_dict()
+
+    def load_state_dict(self, original_parameters):
+        self.model.load_state_dict(original_parameters)
+
+    def to_tensor(self, x, **kwargs) -> torch.Tensor:
+        if isinstance(x, torch.Tensor):
+            return x.to(self.device)
+        return torch.tensor(x, device=self.device, **kwargs)
+
+    @staticmethod
+    def list_layers(model: nn.Module) -> List[Tuple[str, nn.Module]]:
+        def should_not_skip(name: str, module: nn.Module):
+            # skip modules defined by subclassing and sequential API.
+            return not isinstance(module, (model.__class__, nn.Sequential))
+
+        # n is name, m is module.
+        return list(filter(lambda i: should_not_skip(*i), model.named_modules()))
+
+    @property
+    def input_dtype(self):
+        return list(self.model.state_dict().values())[0].dtype
+
+
+class TorchModelRandomizer(RandomisableModel, TorchWrapper):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42, **kwargs
+    ):
+        """
+        In every iteration yields a copy of the model with one additional layer's parameters randomized.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
+
+        Returns
+        -------
+        layer.name, random_layer_model: string, torch.nn
+            The layer name and the model.
+        """
+        from quantus.helpers.utils import map_dict
+
+        original_parameters = self.state_dict().copy()
+
+        modules = self.list_layers(self.model)
+
+        def randomize_params(w):
+            return self.to_tensor(np.random.permutation(w.detach().cpu().numpy()))
+
+        np.random.seed(seed)
+
+        if order == "top_down":
+            modules = modules[::-1]
+
+        for module in modules:
+            if order == "independent":
+                self.load_state_dict(original_parameters)
+            params = module[1].state_dict()
+            params = map_dict(params, randomize_params)
+            module[1].load_state_dict(params)
+            yield module[0], self
+
+        # Restore original weights.
+        self.load_state_dict(original_parameters)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len(self.list_layers(self.model))
+
+
+class TorchHiddenRepresentationsModel(HiddenRepresentationsModel, TorchWrapper):
+    def get_hidden_representations(
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+    ) -> np.ndarray:
+        """
+        Compute the model's internal representation of input x.
+        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
+        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
+        we make the implementation flexible.
+        It is up to the user whether all layers are used, or specific ones should be selected.
+        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            4D tensor, a batch of input datapoints
+        layer_names: List[str]
+            List with names of layers, from which output should be captured.
+        layer_indices: List[int]
+            List with indices of layers, from which output should be captured.
+            Intended to use in case, when layer names are not unique, or unknown.
+
+        Returns
+        -------
+        L: np.ndarray
+            2D tensor with shape (batch_size, None)
+        """
+        all_layers = [*self.model.named_modules()]
+        num_layers = len(all_layers)
+
+        if layer_indices is None:
+            layer_indices = []
+
+        # E.g., user can provide index -1, in order to get only representations of the last layer.
+        # E.g., for 7 layers in total, this would correspond to positive index 6.
+        positive_layer_indices = [
+            i if i >= 0 else num_layers + i for i in layer_indices
+        ]
+
+        if layer_names is None:
+            layer_names = []
+
+        def is_layer_of_interest(layer_index: int, layer_name: str):
+            if layer_names == [] and positive_layer_indices == []:
+                return True
+            return layer_index in positive_layer_indices or layer_name in layer_names
+
+        hidden_layers = self.list_layers(self.model)
+
+        batch_size = x.shape[0]
+        hidden_outputs = []
+
+        # We register forward hook on layers of interest, which just saves the flattened layers' outputs to list.
+        # Then we execute forward pass and stack them in 2D tensor.
+        def hook(module, module_in, module_out):
+            arr = module_out.detach().cpu().numpy()
+            arr = arr.reshape((batch_size, -1))
+            hidden_outputs.append(arr)
+
+        new_hooks = []
+        # Save handles of registered hooks, so we can clean them up later.
+        try:
+            for index, (name, layer) in enumerate(hidden_layers):
+                if is_layer_of_interest(index, name):
+                    handle = layer.register_forward_hook(hook)
+                    new_hooks.append(handle)
+
+            if len(new_hooks) == 0:
+                raise ValueError("No hidden representations were selected.")
+
+            # Execute forward pass.
+            with torch.no_grad():
+                self.model(self.to_tensor(x, dtype=self.input_dtype))
+            return np.hstack(hidden_outputs)
+        except Exception:
+            raise
+        finally:
+            # Cleanup always.
+            [i.remove() for i in new_hooks]
+
+
+class PyTorchModel(
+    ModelInterface, TorchModelRandomizer, TorchHiddenRepresentationsModel
+):
     """Interface for torch models."""
 
     def __init__(
@@ -28,7 +207,7 @@ class PyTorchModel(ModelInterface):
         channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        device: Optional[str] = None,
+        device: Optional[torch.device] = None,
     ):
         """
         Initialisation of PyTorchModel class.
@@ -53,43 +232,8 @@ class PyTorchModel(ModelInterface):
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
-        self.device = device
-        self.cache = LRUCache(100)
-
-    @property
-    def _last_layer_is_softmax(self) -> bool:
-        """
-        Checks if the last layer is an instance of torch.nn.Softmax.
-        """
-        last_layer = list(self.model.children())[-1]
-        return isinstance(last_layer, torch.nn.Softmax)
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_linear_top(self) -> torch.nn:
-        """
-        In a case model has a softmax on top, and we want linear,
-        we have to rebuild the model and replace top with linear activation.
-        Cache the rebuilt model and reuse it during consecutive predict calls.
-        """
-        if not self._last_layer_is_softmax:
-            return self.model
-
-        return torch.nn.Sequential(*(list(self.model.children())[:-1]))
-
-    def get_softmax_arg_model(self) -> torch.nn:
-        """
-        Returns model with last layer adjusted accordingly to softmax argument.
-        If the original model has softmax activation as the last layer and softmax=false,
-        the layer is removed.
-        """
-
-        if self._last_layer_is_softmax and self.softmax is False:
-            return self._get_model_with_linear_top()
-
-        if not self._last_layer_is_softmax and self.softmax is True:
-            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))
-
-        return self.model
+        self.device = utils.value_or_default(device, lambda: torch.device("cpu"))
+        self.model = self.model.to(self.device)
 
     def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
         """
@@ -119,8 +263,11 @@ class PyTorchModel(ModelInterface):
         grad_context = torch.no_grad() if not grad else suppress()
 
         with grad_context:
-            pred_model = self.get_softmax_arg_model()
-            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
+            pred = self.model(
+                self.to_tensor(x, dtype=self.input_dtype), **model_predict_kwargs
+            )
+            if self.softmax:
+                pred = torch.nn.Softmax(dim=-1)(pred)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
@@ -163,55 +310,6 @@ class PyTorchModel(ModelInterface):
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
-
-    def get_model(self) -> torch.nn:
-        """
-        Get the original torch model.
-        """
-        return self.model
-
-    def state_dict(self) -> dict:
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.state_dict()
-
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
-        """
-        In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
-        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
-
-        Parameters
-        ----------
-        order: string
-            The various ways that a model's weights of a layer can be randomised.
-        seed: integer
-            The seed of the random layer generator.
-
-        Returns
-        -------
-        layer.name, random_layer_model: string, torch.nn
-            The layer name and the model.
-        """
-        original_parameters = self.state_dict()
-        random_layer_model = deepcopy(self.model)
-
-        modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
-        ]
-
-        if order == "top_down":
-            modules = modules[::-1]
-
-        for module in modules:
-            if order == "independent":
-                random_layer_model.load_state_dict(original_parameters)
-            torch.manual_seed(seed=seed + 1)
-            module[1].reset_parameters()
-            yield module[0], random_layer_model
 
     def sample(
         self,
@@ -281,7 +379,6 @@ class PyTorchModel(ModelInterface):
             The resulting model with a shifted first layer.
         """
         with torch.no_grad():
-
             new_model = deepcopy(self.model)
 
             modules = [l for l in new_model.named_modules()]
@@ -301,93 +398,3 @@ class PyTorchModel(ModelInterface):
                     )
 
         return new_model
-
-    def get_hidden_representations(
-        self,
-        x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-    ) -> np.ndarray:
-
-        """
-        Compute the model's internal representation of input x.
-        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
-        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
-        we make the implementation flexible.
-        It is up to the user whether all layers are used, or specific ones should be selected.
-        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            4D tensor, a batch of input datapoints
-        layer_names: List[str]
-            List with names of layers, from which output should be captured.
-        layer_indices: List[int]
-            List with indices of layers, from which output should be captured.
-            Intended to use in case, when layer names are not unique, or unknown.
-
-        Returns
-        -------
-        L: np.ndarray
-            2D tensor with shape (batch_size, None)
-        """
-
-        device = self.device if self.device is not None else "cpu"
-        all_layers = [*self.model.named_modules()]
-        num_layers = len(all_layers)
-
-        if layer_indices is None:
-            layer_indices = []
-
-        # E.g., user can provide index -1, in order to get only representations of the last layer.
-        # E.g., for 7 layers in total, this would correspond to positive index 6.
-        positive_layer_indices = [
-            i if i >= 0 else num_layers + i for i in layer_indices
-        ]
-
-        if layer_names is None:
-            layer_names = []
-
-        def is_layer_of_interest(layer_index: int, layer_name: str):
-            if layer_names == [] and positive_layer_indices == []:
-                return True
-            return layer_index in positive_layer_indices or layer_name in layer_names
-
-        # skip modules defined by subclassing API.
-        hidden_layers = list(  # type: ignore
-            filter(
-                lambda l: not isinstance(
-                    l[1], (self.model.__class__, torch.nn.Sequential)
-                ),
-                all_layers,
-            )
-        )
-
-        batch_size = x.shape[0]
-        hidden_outputs = []
-
-        # We register forward hook on layers of interest, which just saves the flattened layers' outputs to list.
-        # Then we execute forward pass and stack them in 2D tensor.
-        def hook(module, module_in, module_out):
-            arr = module_out.cpu().numpy()
-            arr = arr.reshape((batch_size, -1))
-            hidden_outputs.append(arr)
-
-        new_hooks = []
-        # Save handles of registered hooks, so we can clean them up later.
-        for index, (name, layer) in enumerate(hidden_layers):
-            if is_layer_of_interest(index, name):
-                handle = layer.register_forward_hook(hook)
-                new_hooks.append(handle)
-
-        if len(new_hooks) == 0:
-            raise ValueError("No hidden representations were selected.")
-
-        # Execute forward pass.
-        with torch.no_grad():
-            self.model(torch.Tensor(x).to(device))
-
-        # Cleanup.
-        [i.remove() for i in new_hooks]
-        return np.hstack(hidden_outputs)

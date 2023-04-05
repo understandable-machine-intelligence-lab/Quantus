@@ -8,11 +8,12 @@
 
 
 import copy
-import random
-import warnings
-from typing import Any, Callable, Sequence, Tuple, Union, Optional
+from typing import Callable, Sequence, Tuple, Union, Optional, List
+
 import cv2
 import numpy as np
+from nlpaug.augmenter.char import KeyboardAug
+from nlpaug.augmenter.word import SpellingAug, SynonymAug
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
@@ -58,7 +59,7 @@ def perturb_batch(
         ), "arr and indices need same number of batches"
 
     if not inplace:
-        arr = arr.copy()
+        arr = np.copy(arr)
 
     # Run perturbation.
     for i in range(len(arr)):
@@ -229,7 +230,7 @@ def gaussian_noise(
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Add gaussian noise to the input at indices.
 
@@ -265,13 +266,13 @@ def gaussian_noise(
 
 
 def uniform_noise(
-    arr: np.array,
+    arr: np.ndarray,
     indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
     indexed_axes: Sequence[int],
     lower_bound: float = 0.02,
     upper_bound: Union[None, float] = None,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Add noise to the input at indices as sampled uniformly random from [-lower_bound, lower_bound].
     if upper_bound is None, and [lower_bound, upper_bound] otherwise.
@@ -556,3 +557,50 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
          Array unperturbed.
     """
     return arr
+
+
+def spelling_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
+    """
+    Replace k words in each entry of text by alternative spelling.
+
+    Examples
+    --------
+
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> spelling_replacement(x)
+    ... ['uneasy mishmash of stiles and genres.']
+
+    """
+    aug = SpellingAug(aug_max=k, aug_min=k)
+    return aug.augment(x_batch)
+
+
+def synonym_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
+    """
+    Replace k words in each entry of text by synonym.
+
+    Examples
+    --------
+
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> synonym_replacement(x)
+    ... ['nervous mishmash of styles and genres.']
+    """
+    aug = SynonymAug(aug_max=k, aug_min=k)
+    return aug.augment(x_batch)
+
+
+def typo_replacement(x_batch: List[str], k: int = 1, **kwargs) -> List[str]:
+    """
+    Replace k characters in k words in each entry of text mimicking typo.
+
+    Examples
+    --------
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> typo_replacement(x)
+    ... ['uneasy mishmash of xtyles and genres.']
+    """
+    aug = KeyboardAug(
+        aug_char_max=k, aug_char_min=k, aug_word_min=k, aug_word_max=k
+    )
+    return aug.augment(x_batch)

@@ -7,9 +7,9 @@
 
 import inspect
 import re
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection
+from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection, List
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -20,10 +20,9 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 
 
-class Metric:
-    """
-    Implementation of the base Metric class.
-    """
+class EvaluateAble(ABC):
+
+    """A base class for metrics, which can be evaluated in Quantus."""
 
     @asserts.attributes_check
     def __init__(
@@ -100,6 +99,338 @@ class Metric:
 
         self.last_results: Any = []
         self.all_results: Any = []
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: Optional[np.ndarray],
+        channel_first: Optional[bool],
+        explain_func: Optional[Callable],
+        explain_func_kwargs: Optional[Dict],
+        model_predict_kwargs: Optional[Dict],
+        softmax: Optional[bool],
+        device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
+        **kwargs,
+    ) -> Union[int, float, list, dict, Collection[Any], None]:
+        pass
+
+    def general_preprocess(
+        self,
+        model,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: Optional[np.ndarray],
+        channel_first: Optional[bool],
+        explain_func: Callable,
+        explain_func_kwargs: Optional[Dict[str, Any]],
+        model_predict_kwargs: Optional[Dict],
+        softmax: bool,
+        device: Optional[str],
+        custom_batch: Optional[np.ndarray],
+    ) -> Dict[str, Any]:
+        """
+        Prepares all necessary variables for evaluation.
+        Parameters
+        ----------
+
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        explain_func: callable
+            Callable generating attributions.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        device: string
+            Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
+        custom_batch: any
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+        tuple
+            A general preprocess.
+
+        """
+        pass
+
+    def custom_preprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        custom_batch: Optional[np.ndarray],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Implement this method if you need custom preprocessing of data,
+        model alteration or simply for creating/initialising additional
+        attributes or assertions.
+
+        If this method returns a dictionary, the keys (string) will be used as
+        additional arguments for evaluate_instance().
+        If the key ends with `_batch`, this suffix will be removed from the
+        respective argument name when passed to evaluate_instance().
+        If they key corresponds to the arguments `x_batch, y_batch, a_batch, s_batch`,
+        these will be overwritten for passing `x, y, a, s` to `evaluate_instance()`.
+        If this method returns None, no additional keyword arguments will be
+        passed to `evaluate_instance()`.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        custom_batch: any
+            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+        dict, optional
+            A dictionary which holds (optionally additional) preprocessed data to
+           be included when calling `evaluate_instance()`.
+
+
+        Examples
+        --------
+            # Custom Metric definition with additional keyword argument used in evaluate_instance():
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ) -> Dict[str, Any]:
+            >>>     return {'my_new_variable': np.mean(x_batch)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.float,
+            >>> ) -> float:
+
+            # Custom Metric definition with additional keyword argument that ends with `_batch`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ) -> Dict[str, Any]:
+            >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>>     my_new_variable: np.int,
+            >>> ) -> float:
+
+            # Custom Metric definition with transformation of an existing
+            # keyword argument from `evaluate_instance()`
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ) -> Dict[str, Any]:
+            >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ) -> float:
+
+            # Custom Metric definition with None returned in custom_preprocess(),
+            # but with inplace-preprocessing and additional assertion.
+            >>> def custom_preprocess(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x_batch: np.ndarray,
+            >>>     y_batch: Optional[np.ndarray],
+            >>>     a_batch: Optional[np.ndarray],
+            >>>     s_batch: np.ndarray,
+            >>>     custom_batch: Optional[np.ndarray],
+            >>> ) -> None:
+            >>>     if np.any(np.all(a_batch < 0, axis=0)):
+            >>>         raise ValueError("Attributions must not be all negative")
+            >>>
+            >>>     x_batch -= np.mean(x_batch, axis=0)
+            >>>
+            >>>     return None
+            >>>
+            >>> def evaluate_instance(
+            >>>     self,
+            >>>     model: ModelInterface,
+            >>>     x: np.ndarray,
+            >>>     y: Optional[np.ndarray],
+            >>>     a: Optional[np.ndarray],
+            >>>     s: np.ndarray,
+            >>> ) -> float:
+
+        """
+        pass
+
+    def custom_postprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        **kwargs,
+    ) -> Optional[Any]:
+        """
+        Implement this method if you need custom postprocessing of results or
+        additional attributes.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        kwargs: any, optional
+            Additional data which was created in custom_preprocess().
+
+        Returns
+        -------
+        any
+            Can be implemented, optionally by the child class.
+        """
+        pass
+
+    def plot(
+        self,
+        plot_func: Callable,
+        show: bool = True,
+        path_to_save: Union[str, None] = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        """
+        Basic plotting functionality for Metric class.
+        The user provides a plot_func (Callable) that contains the actual plotting logic (but returns None).
+
+        Parameters
+        ----------
+        plot_func: callable
+            A Callable with the actual plotting logic.
+        show: boolean
+            A boolean to state if the plot shall be shown.
+        path_to_save (str):
+            A string that specifies the path to save file.
+        args: optional
+            An optional with additional arguments.
+        kwargs: optional
+            An optional dict with additional arguments.
+
+        Returns
+        -------
+        None
+        """
+        # Get plotting func if not provided.
+        if plot_func is None:
+            plot_func = self.default_plot_func
+
+        # Asserts.
+        asserts.assert_plot_func(plot_func=plot_func)
+
+        # Plot!
+        plot_func(*args, **kwargs)
+
+        if show:
+            plt.show()
+
+        if path_to_save:
+            plt.savefig(fname=path_to_save, dpi=400)
+
+        return None
+
+    def interpret_scores(self) -> None:
+        """
+        Get an interpretation of the scores.
+        """
+        print(self.__init__.__doc__.split(".")[1].split("References")[0])
+
+    @property
+    def get_params(self) -> dict:
+        """
+        List parameters of metric.
+
+        Returns
+        -------
+        dict
+            A dictionary with attributes if not excluded from pre-determined list.
+        """
+        attr_exclude = [
+            "args",
+            "kwargs",
+            "all_results",
+            "last_results",
+            "default_plot_func",
+        ]
+        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+
+    @property
+    def data_domain_applicability(self) -> List[str]:
+        return ["Image", "Time-Series", "Tabular"]
+
+
+class Metric(EvaluateAble):
+    """Implementation of the base single value Metric class."""
 
     def __call__(
         self,
@@ -247,39 +578,6 @@ class Metric:
 
         return self.last_results
 
-    @abstractmethod
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        This method needs to be implemented to use __call__().
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError()
-
     def general_preprocess(
         self,
         model,
@@ -354,7 +652,6 @@ class Metric:
 
         # Wrap the model into an interface.
         if model:
-
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
                 model=model,
@@ -375,7 +672,6 @@ class Metric:
             self.explain_func_kwargs["device"] = device
 
         if a_batch is None:
-
             # Asserts.
             asserts.assert_explain_func(explain_func=self.explain_func)
 
@@ -431,149 +727,6 @@ class Metric:
             data["a_batch"] = np.abs(data["a_batch"])
 
         return data
-
-    def custom_preprocess(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Implement this method if you need custom preprocessing of data,
-        model alteration or simply for creating/initialising additional
-        attributes or assertions.
-
-        If this method returns a dictionary, the keys (string) will be used as
-        additional arguments for evaluate_instance().
-        If the key ends with `_batch`, this suffix will be removed from the
-        respective argument name when passed to evaluate_instance().
-        If they key corresponds to the arguments `x_batch, y_batch, a_batch, s_batch`,
-        these will be overwritten for passing `x, y, a, s` to `evaluate_instance()`.
-        If this method returns None, no additional keyword arguments will be
-        passed to `evaluate_instance()`.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        custom_batch: any
-            Gives flexibility to the inheriting metric to use for evaluation, can hold any variable.
-
-        Returns
-        -------
-        dict, optional
-            A dictionary which holds (optionally additional) preprocessed data to
-           be included when calling `evaluate_instance()`.
-
-
-        Examples
-        --------
-            # Custom Metric definition with additional keyword argument used in evaluate_instance():
-            >>> def custom_preprocess(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
-            >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
-            >>> ) -> Dict[str, Any]:
-            >>>     return {'my_new_variable': np.mean(x_batch)}
-            >>>
-            >>> def evaluate_instance(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
-            >>>     s: np.ndarray,
-            >>>     my_new_variable: np.float,
-            >>> ) -> float:
-
-            # Custom Metric definition with additional keyword argument that ends with `_batch`
-            >>> def custom_preprocess(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
-            >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
-            >>> ) -> Dict[str, Any]:
-            >>>     return {'my_new_variable_batch': np.arange(len(x_batch))}
-            >>>
-            >>> def evaluate_instance(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
-            >>>     s: np.ndarray,
-            >>>     my_new_variable: np.int,
-            >>> ) -> float:
-
-            # Custom Metric definition with transformation of an existing
-            # keyword argument from `evaluate_instance()`
-            >>> def custom_preprocess(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
-            >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
-            >>> ) -> Dict[str, Any]:
-            >>>     return {'x_batch': x_batch - np.mean(x_batch, axis=0)}
-            >>>
-            >>> def evaluate_instance(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
-            >>>     s: np.ndarray,
-            >>> ) -> float:
-
-            # Custom Metric definition with None returned in custom_preprocess(),
-            # but with inplace-preprocessing and additional assertion.
-            >>> def custom_preprocess(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x_batch: np.ndarray,
-            >>>     y_batch: Optional[np.ndarray],
-            >>>     a_batch: Optional[np.ndarray],
-            >>>     s_batch: np.ndarray,
-            >>>     custom_batch: Optional[np.ndarray],
-            >>> ) -> None:
-            >>>     if np.any(np.all(a_batch < 0, axis=0)):
-            >>>         raise ValueError("Attributions must not be all negative")
-            >>>
-            >>>     x_batch -= np.mean(x_batch, axis=0)
-            >>>
-            >>>     return None
-            >>>
-            >>> def evaluate_instance(
-            >>>     self,
-            >>>     model: ModelInterface,
-            >>>     x: np.ndarray,
-            >>>     y: Optional[np.ndarray],
-            >>>     a: Optional[np.ndarray],
-            >>>     s: np.ndarray,
-            >>> ) -> float:
-
-        """
-        pass
 
     def get_instance_iterator(self, data: Dict[str, Any]):
         """
@@ -642,113 +795,38 @@ class Metric:
 
         return iterator
 
-    def custom_postprocess(
+    @abstractmethod
+    def evaluate_instance(
         self,
         model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: np.ndarray,
-        **kwargs,
-    ) -> Optional[Any]:
+        x: np.ndarray,
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+    ) -> Any:
         """
-        Implement this method if you need custom postprocessing of results or
-        additional attributes.
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        This method needs to be implemented to use __call__().
 
         Parameters
         ----------
-        model: torch.nn.Module, tf.keras.Model
-            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
-        x_batch: np.ndarray
-            A np.ndarray which contains the input data that are explained.
-        y_batch: np.ndarray
-            A np.ndarray which contains the output labels that are explained.
-        a_batch: np.ndarray, optional
-            A np.ndarray which contains pre-computed attributions i.e., explanations.
-        s_batch: np.ndarray, optional
-            A np.ndarray which contains segmentation masks that matches the input.
-        kwargs: any, optional
-            Additional data which was created in custom_preprocess().
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
 
         Returns
         -------
-        any
-            Can be implemented, optionally by the child class.
+        Any
         """
-        pass
-
-    def plot(
-        self,
-        plot_func: Callable,
-        show: bool = True,
-        path_to_save: Union[str, None] = None,
-        *args,
-        **kwargs,
-    ) -> None:
-        """
-        Basic plotting functionality for Metric class.
-        The user provides a plot_func (Callable) that contains the actual plotting logic (but returns None).
-
-        Parameters
-        ----------
-        plot_func: callable
-            A Callable with the actual plotting logic.
-        show: boolean
-            A boolean to state if the plot shall be shown.
-        path_to_save (str):
-            A string that specifies the path to save file.
-        args: optional
-            An optional with additional arguments.
-        kwargs: optional
-            An optional dict with additional arguments.
-
-        Returns
-        -------
-        None
-        """
-        # Get plotting func if not provided.
-        if plot_func is None:
-            plot_func = self.default_plot_func
-
-        # Asserts.
-        asserts.assert_plot_func(plot_func=plot_func)
-
-        # Plot!
-        plot_func(*args, **kwargs)
-
-        if show:
-            plt.show()
-
-        if path_to_save:
-            plt.savefig(fname=path_to_save, dpi=400)
-
-        return None
-
-    @property
-    def interpret_scores(self) -> None:
-        """
-        Get an interpretation of the scores.
-        """
-        print(self.__init__.__doc__.split(".")[1].split("References")[0])
-
-    @property
-    def get_params(self) -> dict:
-        """
-        List parameters of metric.
-
-        Returns
-        -------
-        dict
-            A dictionary with attributes if not excluded from pre-determined list.
-        """
-        attr_exclude = [
-            "args",
-            "kwargs",
-            "all_results",
-            "last_results",
-            "default_plot_func",
-        ]
-        return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+        raise NotImplementedError()
 
 
 class PerturbationMetric(Metric):
@@ -828,36 +906,3 @@ class PerturbationMetric(Metric):
         if perturb_func_kwargs is None:
             perturb_func_kwargs = {}
         self.perturb_func_kwargs = perturb_func_kwargs
-
-    @abstractmethod
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        This method needs to be implemented to use __call__().
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError()

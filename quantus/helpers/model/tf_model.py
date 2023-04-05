@@ -1,4 +1,8 @@
-"""This model creates the ModelInterface for Tensorflow."""
+"""
+This model creates the ModelInterface for Tensorflow.
+At first, having separate implementations for each interface may seem like un-necessary obfuscation of code.
+But, it allows for much greater level of customization by user (and NLP model's).
+"""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -9,6 +13,8 @@
 from __future__ import annotations
 
 from typing import Dict, Optional, Tuple, List, Union
+
+import keras
 from keras.layers import Dense
 from keras import activations
 from keras import Model
@@ -19,11 +25,195 @@ from warnings import warn
 from cachetools import cachedmethod, LRUCache
 import operator
 
-from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.model_interface import (
+    ModelInterface,
+    ModelWrapper,
+    RandomisableModel,
+    HiddenRepresentationsModel,
+)
 from quantus.helpers import utils
 
 
-class TensorFlowModel(ModelInterface):
+class TFModelWrapper(ModelWrapper, tf.Module):
+    model: keras.Model
+
+    def get_model(self):
+        """
+        Get the original tf model.
+        """
+        return self.model
+
+    def state_dict(self):
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
+        return self.model.get_weights()
+
+    def load_state_dict(self, original_parameters):
+        """Set model's learnable parameters."""
+        self.model.set_weights(original_parameters)
+
+    @staticmethod
+    def list_parameterizable_layers(
+        model: keras.Model, flatten_layers: bool = False
+    ) -> List[tf.keras.layers.Layer]:
+        if flatten_layers:
+            layers = list(model._flatten_layers(include_self=False, recursive=True))
+        else:
+            layers = model.layers
+        return list(filter(lambda i: len(i.get_weights()) > 0, layers))
+
+
+class TFModelRandomizer(RandomisableModel, TFModelWrapper):
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42, flatten_layers=False
+    ):
+        """
+        In every iteration yields a copy of the model with one additional layer's parameters randomized.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
+        flatten_layers:
+            If set to true, will flatten nested layers.
+
+
+        Returns
+        -------
+        generator:
+            Generator, which in each iteration yields the layer name and the model.
+            After generator is closed, original parameters are restored.
+
+
+        """
+        original_parameters = self.state_dict().copy()
+        layers = self.list_parameterizable_layers(self.model, flatten_layers)
+
+        np.random.seed(seed)
+
+        if order == "top_down":
+            layers = layers[::-1]
+
+        for layer in layers:
+            if order == "independent":
+                self.load_state_dict(original_parameters)
+
+            weights = layer.get_weights()
+            layer.set_weights(tf.nest.map_structure(np.random.permutation, weights))
+            yield layer.name, self
+
+        # Restore original weights.
+        self.load_state_dict(original_parameters)
+
+    @property
+    def random_layer_generator_length(self) -> int:
+        return len(self.list_parameterizable_layers(self.model))
+
+
+class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):
+    @cachedmethod(operator.attrgetter("cache"))
+    def _build_hidden_representation_model(
+        self, layer_names: Tuple, layer_indices: Tuple
+    ) -> Model:
+        """
+        Build a keras model, which outputs the internal representation of layers,
+        specified in layer_names or layer_indices, default all.
+        This requires re-tracing the model, so we cache it to improve metric evaluation time.
+        """
+        if layer_names == () and layer_indices == ():
+            warn(
+                "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
+                "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
+                " from original model. This can be very computationally expensive."
+            )
+
+        def is_layer_of_interest(index: int, name: str) -> bool:
+            if layer_names == () and layer_indices == ():
+                return True
+            return index in layer_indices or name in layer_names
+
+        outputs_of_interest = []
+        for i, layer in enumerate(self.get_model().layers):
+            if is_layer_of_interest(i, layer.name):
+                outputs_of_interest.append(layer.output)
+
+        if len(outputs_of_interest) == 0:
+            raise ValueError("No hidden representations were selected.")
+
+        hidden_representation_model = Model(self.get_model().input, outputs_of_interest)
+        return hidden_representation_model
+
+    def get_hidden_representations(
+        self,
+        x: np.ndarray,
+        layer_names: Optional[List[str]] = None,
+        layer_indices: Optional[List[int]] = None,
+        **kwargs,
+    ) -> np.ndarray:
+        """
+        Compute the model's internal representation of input x.
+        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
+        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
+        we make the implementation flexible.
+        It is up to the user whether all layers are used, or specific ones should be selected.
+        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            4D tensor, a batch of input datapoints
+        layer_names: List[str]
+            List with names of layers, from which output should be captured.
+        layer_indices: List[int]
+            List with indices of layers, from which output should be captured.
+            Intended to use in case, when layer names are not unique, or unknown.
+
+        Returns
+        -------
+        L: np.ndarray
+            2D tensor with shape (batch_size, None)
+        """
+
+        num_layers = len(self.model.layers)
+
+        if layer_indices is None:
+            layer_indices = []
+
+        # E.g., user can provide index -1, in order to get only representations of the last layer.
+        # E.g., for 7 layers in total, this would correspond to positive index 6.
+        positive_layer_indices = [
+            i if i >= 0 else num_layers + i for i in layer_indices
+        ]
+        if layer_names is None:
+            layer_names = []
+
+        # List is not hashable, so we pass names + indices as tuples.
+        hidden_representation_model = self._build_hidden_representation_model(
+            tuple(layer_names), tuple(positive_layer_indices)
+        )
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
+        internal_representation = hidden_representation_model.predict(
+            x, **predict_kwargs
+        )
+        input_batch_size = x.shape[0]
+
+        # If we requested outputs only of 1 layer, keras will already return np.ndarray.
+        # Otherwise, keras returns a List of np.ndarray's.
+        if isinstance(internal_representation, np.ndarray):
+            return internal_representation.reshape((input_batch_size, -1))
+
+        internal_representation = [
+            i.reshape((input_batch_size, -1)) for i in internal_representation
+        ]
+        return np.hstack(internal_representation)
+
+
+class TensorFlowModel(ModelInterface, TFModelRandomizer, TFHiddenRepresentationsModel):
     """Interface for tensorflow models."""
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
@@ -86,32 +276,13 @@ class TensorFlowModel(ModelInterface):
         }
         return predict_kwargs
 
-    @property
-    def _last_layer_is_softmax(self) -> bool:
-        """
-        Checks if the last layer is an instance of tf.keras.layers.Softmax.
-        """
-        last_layer = self.model.layers[-1]
-        return isinstance(last_layer, tf.keras.layers.Softmax)
-
     @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_linear_top(self) -> Model:
+    def _build_model_with_linear_top(self) -> Model:
         """
         In a case model has a softmax on top, and we want linear,
         we have to rebuild the model and replace top with linear activation.
-        Softmax can either be a separate last layer, or activation of the
-        last layer.
         Cache the rebuilt model and reuse it during consecutive predict calls.
         """
-
-        if self._last_layer_is_softmax:
-            output_layer = self.model.layers[-2].output
-            new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-            return new_model
-
-        output_activation = self.model.layers[-1].activation
-        if output_activation == activations.linear:
-            return self.model
 
         config = self.model.layers[-1].get_config()
         config["activation"] = activations.linear
@@ -121,41 +292,6 @@ class TensorFlowModel(ModelInterface):
         new_model = Model(inputs=[self.model.input], outputs=[output_layer])
         new_model.layers[-1].set_weights(weights)
         return new_model
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def _get_model_with_softmax_top(self) -> Model:
-        """
-        In a case model has a linear activation in the last layer,
-        and we want softmax, we have to rebuild the model and replace top with
-        softmax activation.
-        Cache the rebuilt model and reuse it during consecutive predict calls.
-        """
-
-        if self._last_layer_is_softmax:
-            return self.model
-
-        output_activation = self.model.layers[-1].activation
-        if output_activation == activations.softmax:
-            return self.model
-
-        output_layer = tf.keras.layers.Softmax(axis=-1)(self.model.layers[-1].output)
-        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-
-        return new_model
-
-    def get_softmax_arg_model(self) -> Model:
-        """
-        Returns model with last layer adjusted accordingly to softmax argument.
-        If the original model has softmax activation in the last layer and softmax=false,
-        the softmax activation is removed.
-        """
-
-        if self.softmax:
-            return self._get_model_with_softmax_top()
-
-        # In this case model has a softmax on top, and we want linear.
-        # We have to rebuild the model and replace top with linear activation.
-        return self._get_model_with_linear_top()
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -176,8 +312,20 @@ class TensorFlowModel(ModelInterface):
         # Generally, one should always prefer keras predict to __call__.
         # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
         predict_kwargs = self._get_predict_kwargs(**kwargs)
-        predict_model = self.get_softmax_arg_model()
 
+        output_activation = self.model.layers[-1].activation
+        target_activation = activations.softmax if self.softmax else activations.linear
+
+        if output_activation == target_activation:
+            return self.model.predict(x, **predict_kwargs)
+
+        if self.softmax and output_activation == activations.linear:
+            logits = self.model.predict(x, **predict_kwargs)
+            return tf.nn.softmax(logits)
+
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
+        predict_model = self._build_model_with_linear_top()
         return predict_model.predict(x, **predict_kwargs)
 
     def shape_input(
@@ -217,92 +365,6 @@ class TensorFlowModel(ModelInterface):
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
-
-    def get_model(self):
-        """
-        Get the original tf model.
-        """
-        return self.model
-
-    def state_dict(self):
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.get_weights()
-
-    def load_state_dict(self, original_parameters):
-        """Set model's learnable parameters."""
-        self.model.set_weights(original_parameters)
-
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
-        """
-        In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
-        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
-
-        Parameters
-        ----------
-        order: string
-            The various ways that a model's weights of a layer can be randomised.
-        seed: integer
-            The seed of the random layer generator.
-
-        Returns
-        -------
-        layer.name, random_layer_model: string, torch.nn
-            The layer name and the model.
-        """
-        original_parameters = self.state_dict()
-        random_layer_model = clone_model(self.model)
-
-        layers = [
-            _layer
-            for _layer in random_layer_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                random_layer_model.set_weights(original_parameters)
-            weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
-            layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, random_layer_model
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def _build_hidden_representation_model(
-        self, layer_names: Tuple, layer_indices: Tuple
-    ) -> Model:
-        """
-        Build a keras model, which outputs the internal representation of layers,
-        specified in layer_names or layer_indices, default all.
-        This requires re-tracing the model, so we cache it to improve metric evaluation time.
-        """
-        if layer_names == () and layer_indices == ():
-            warn(
-                "quantus.TensorFlowModel.get_hidden_layers_representations(...) received `layer_names`=None and "
-                "`layer_indices`=None. This will force creation of tensorflow.keras.Model with outputs of each layer"
-                " from original model. This can be very computationally expensive."
-            )
-
-        def is_layer_of_interest(index: int, name: str) -> bool:
-            if layer_names == () and layer_indices == ():
-                return True
-            return index in layer_indices or name in layer_names
-
-        outputs_of_interest = []
-        for i, layer in enumerate(self.model.layers):
-            if is_layer_of_interest(i, layer.name):
-                outputs_of_interest.append(layer.output)
-
-        if len(outputs_of_interest) == 0:
-            raise ValueError("No hidden representations were selected.")
-
-        hidden_representation_model = Model(self.model.input, outputs_of_interest)
-        return hidden_representation_model
 
     @cachedmethod(operator.attrgetter("cache"))
     def add_mean_shift_to_first_layer(
@@ -352,68 +414,3 @@ class TensorFlowModel(ModelInterface):
 
         module.set_weights(weights)
         return new_model
-
-    def get_hidden_representations(
-        self,
-        x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
-    ) -> np.ndarray:
-
-        """
-        Compute the model's internal representation of input x.
-        In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
-        As the exact definition of "internal model representation" is left out in the original paper (see: https://arxiv.org/pdf/2203.06877.pdf),
-        we make the implementation flexible.
-        It is up to the user whether all layers are used, or specific ones should be selected.
-        The user can therefore select a layer by providing 'layer_names' (exclusive) or 'layer_indices'.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            4D tensor, a batch of input datapoints
-        layer_names: List[str]
-            List with names of layers, from which output should be captured.
-        layer_indices: List[int]
-            List with indices of layers, from which output should be captured.
-            Intended to use in case, when layer names are not unique, or unknown.
-
-        Returns
-        -------
-        L: np.ndarray
-            2D tensor with shape (batch_size, None)
-        """
-
-        num_layers = len(self.model.layers)
-
-        if layer_indices is None:
-            layer_indices = []
-
-        # E.g., user can provide index -1, in order to get only representations of the last layer.
-        # E.g., for 7 layers in total, this would correspond to positive index 6.
-        positive_layer_indices = [
-            i if i >= 0 else num_layers + i for i in layer_indices
-        ]
-        if layer_names is None:
-            layer_names = []
-
-        # List is not hashable, so we pass names + indices as tuples.
-        hidden_representation_model = self._build_hidden_representation_model(
-            tuple(layer_names), tuple(positive_layer_indices)
-        )
-        predict_kwargs = self._get_predict_kwargs(**kwargs)
-        internal_representation = hidden_representation_model.predict(
-            x, **predict_kwargs
-        )
-        input_batch_size = x.shape[0]
-
-        # If we requested outputs only of 1 layer, keras will already return np.ndarray.
-        # Otherwise, keras returns a List of np.ndarray's.
-        if isinstance(internal_representation, np.ndarray):
-            return internal_representation.reshape((input_batch_size, -1))
-
-        internal_representation = [
-            i.reshape((input_batch_size, -1)) for i in internal_representation
-        ]
-        return np.hstack(internal_representation)

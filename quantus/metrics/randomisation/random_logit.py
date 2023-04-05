@@ -6,18 +6,22 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-import numpy as np
+from __future__ import annotations
 
+from typing import Any, Callable, Dict, List, Optional
+import numpy as np
+from quantus.helpers.types import SimilarityFn, NormaliseFn, Explanations, ExplainFn
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
-from quantus.metrics.base import Metric
+from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.utils_nlp import get_scores
 
 
-class RandomLogit(Metric):
+class RandomLogit(BatchedMetric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
 
@@ -32,12 +36,12 @@ class RandomLogit(Metric):
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Callable = None,
+        similarity_func: SimilarityFn = None,
         num_classes: int = 1000,
         seed: int = 42,
         abs: bool = False,
         normalise: bool = True,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func: Optional[NormaliseFn] = None,
         normalise_func_kwargs: Optional[Dict[str, Any]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
@@ -118,10 +122,10 @@ class RandomLogit(Metric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[Explanations] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,
+        explain_func: Optional[ExplainFn] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
@@ -129,7 +133,7 @@ class RandomLogit(Metric):
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
         **kwargs,
-    ) -> List[float]:
+    ):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -219,61 +223,60 @@ class RandomLogit(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: np.ndarray,
+        a_batch: Explanations,
+        s_batch: np.ndarray = None,
+        custom_batch = None
+    ) -> np.ndarray | float:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
         Parameters
         ----------
         model: ModelInterface
             A ModelInteface that is subject to explanation.
-        x: np.ndarray
+        x_batch: np.ndarray
             The input to be evaluated on an instance-basis.
-        y: np.ndarray
+        y_batch: np.ndarray
             The output to be evaluated on an instance-basis.
-        a: np.ndarray
+        a_batch: np.ndarray
             The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
+        s_batch: np.ndarray
             The segmentation to be evaluated on an instance-basis.
+        custom_batch:
+            Unused.
 
         Returns
         -------
-        float
-            The evaluation results.
+           : np.ndarray
+            The batched evaluation results.
         """
         # Randomly select off-class labels.
         np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
 
+        def off_label_choice(y):
+            return np.random.choice(
+                [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
+            )
+
+        y_off = np.asarray([off_label_choice(y) for y in y_batch])
         # Explain against a random class.
-        a_perturbed = self.explain_func(
-            model=model.get_model(),
-            inputs=np.expand_dims(x, axis=0),
-            targets=y_off,
-            **self.explain_func_kwargs,
-        )
+        a_off = self.explain_batch(model, x_batch, y_off)
 
-        # Normalise and take absolute values of the attributions, if True.
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+        if isinstance(model, TextClassifier):
+            # In case explanation have token in them, drop them.
+            a_batch = get_scores(a_batch)
+            a_off = get_scores(a_off)
 
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
+        batch_size = len(x_batch)
+        a_batch = np.reshape(a_batch, (batch_size, -1))
+        a_off = np.reshape(a_off, (batch_size, -1))
 
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
+        return self.similarity_func(a_batch, a_off)
 
     def custom_preprocess(
         self,
@@ -309,3 +312,7 @@ class RandomLogit(Metric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
+
+    @property
+    def data_domain_applicability(self) -> List[str]:
+        return super().data_domain_applicability + ["NLP"]

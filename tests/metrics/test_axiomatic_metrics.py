@@ -218,6 +218,7 @@ def test_completeness(
     assert scores is not None, "Test failed."
 
 
+@pytest.mark.slow
 @pytest.mark.axiomatic
 @pytest.mark.parametrize(
     "model,data,params,expected",

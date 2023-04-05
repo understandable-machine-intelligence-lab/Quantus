@@ -6,7 +6,9 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 import warnings
-from typing import Union, Callable, Dict, Optional, List
+from typing import Union, Callable, Dict, Optional, List, Any
+from collections import defaultdict
+from tqdm.auto import tqdm
 
 import numpy as np
 
@@ -15,6 +17,8 @@ from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.explanation_func import explain
+from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.utils import add_default_items
 
 
 def evaluate(
@@ -44,6 +48,7 @@ def evaluate(
         and the values are the explain function keyword arguments as a dictionary, or
         3) Dict[str, Callable] where the keys are the name of explanation methods,
         and the values a callable explanation function.
+        4) Callable, in case same explanation function must be used for all metrics.
     model: torch.nn.Module, tf.keras.Model
         A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
     x_batch: np.ndarray
@@ -179,3 +184,105 @@ def evaluate(
                 )
 
     return results
+
+
+_MetricValue = Union[np.ndarray, Dict[str, np.ndarray]]
+_CallKwargs = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+_PersistFn = Callable[[str, _CallKwargs, _MetricValue], None]
+
+
+def evaluate_nlp(
+    metrics: Dict[str, BatchedMetric],
+    model,
+    x_batch: List[str],
+    y_batch: np.ndarray,
+    verbose: bool = True,
+    call_kwargs: Optional[_CallKwargs] = None,
+    persist_callback: Optional[_PersistFn] = None,
+) -> Dict[str, Union[_MetricValue, List[_MetricValue]]]:
+    """
+
+    Parameters
+    ----------
+     metrics:
+        Dict where keys are any unique names, and values are pre-initialised metric instances.
+    model:
+        Model which is evaluated, must be a subclass of `qn.TextClassifer`
+    x_batch:
+        Batch of plain-text inputs for model.
+    verbose:
+        Indicates whether tqdm progress bar should be displayed.
+    call_kwargs:
+        kwargs, which are passed to metrics. Supported options are:
+        - keys are metrics' names, and values are
+        - Kwargs passed to each metrics' __call__ method. In this case each metric is evaluated once.
+        - List of dicts. In this case each metric is evaluated with each entry of list of call_kwargs.
+        - All key, values, where are not in metric names, kwargs are treated as global and passed to each metric.
+        Metrics-specific kwargs will override global ones.
+        Internally, `defaultdict` is used, so there is no need to provide kwargs for metrics,
+            which should be evaluated with default ones.
+    persist_callback:
+        If passed, this function will be called after every metric is evaluated.
+        It will be called with metric name, kwargs passed to __call__ of metric instance, and scores.
+        This can be used to save intermideate results, e.g, in CSV file or database. Since complete evaluation
+        can take long, and loosing intermideate results can be annoying ;(.
+
+
+
+    Returns
+    -------
+
+    scores:
+        Dict, keys are metric names, values are scores, or list of scores for corresponding metric.
+
+    """
+
+    for i in metrics.values():
+        if "NLP" not in i.data_domain_applicability:
+            raise ValueError(f"{i} does not support NLP.")
+
+    def persist_result(name: str, _call_kwargs: _CallKwargs, values: _MetricValue):
+        if persist_callback is not None:
+            persist_callback(name, _call_kwargs, values)
+
+    result = {}
+    if call_kwargs is not None:
+        # for val in call_kwargs.values():
+        #    if not isinstance(val, (List, Dict)):
+        #        raise ValueError(
+        #            f"Values in call_kwargs must be of type List or Dict, but found {type(val)}"
+        #        )
+        # Convert regular dict to default dict, so we don't get KeyError.
+        call_kwargs_old = call_kwargs.copy()
+        call_kwargs = defaultdict(lambda: {})
+        call_kwargs.update(call_kwargs_old)
+    else:
+        call_kwargs = defaultdict(lambda: {})
+
+    global_call_kwargs = {k: v for k, v in call_kwargs.items() if k not in metrics}
+
+    iterator = tqdm(metrics.items(), disable=not verbose, desc="Evaluation...")
+
+    for metric_name, metric_instance in iterator:
+        iterator.desc = f"Evaluating {metric_name}"
+        metric_call_kwargs = call_kwargs[metric_name]
+
+        if isinstance(metric_call_kwargs, Dict):
+            # Metrics kwargs override global ones
+            merged_call_kwargs = {**global_call_kwargs, **metric_call_kwargs}
+            merged_call_kwargs = add_default_items(merged_call_kwargs, {"a_batch": None})
+            scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
+            persist_result(metric_name, merged_call_kwargs, scores)
+            result[metric_name] = scores
+            continue
+
+        result[metric_name] = []
+        for metric_call_kwarg in metric_call_kwargs:
+            # Metrics kwargs override global ones
+            merged_call_kwargs = {**global_call_kwargs, **metric_call_kwarg}
+            merged_call_kwargs = add_default_items(merged_call_kwargs, {"a_batch": None})
+            scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
+            persist_result(metric_name, merged_call_kwargs, scores)
+            result[metric_name].append(scores)
+
+    return result

@@ -3,14 +3,18 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
-from quantus.evaluation import evaluate
-from quantus.functions.explanation_func import explain
 
-from quantus.metrics.complexity import Sparseness
-from quantus.metrics.robustness import MaxSensitivity
+import quantus
+from quantus.evaluation import evaluate, evaluate_nlp
+from quantus.functions.explanation_func import explain
+from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
+
+from quantus.metrics.complexity import Sparseness  # noqa
+from quantus.metrics.robustness import MaxSensitivity  # noqa
 
 
 @pytest.mark.evaluate_func
+@pytest.mark.last
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -119,6 +123,7 @@ def test_evaluate_func(
     data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
+    torch_device,
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
@@ -127,6 +132,7 @@ def test_evaluate_func(
         model=model,
         inputs=x_batch,
         targets=y_batch,
+        device=torch_device,
         **params["explain_func_kwargs"],
     )
 
@@ -167,3 +173,63 @@ def test_evaluate_func(
             ][list(eval(params["call_kwargs"]).keys())[0]]
             <= expected["max"]
         ), "Test failed."
+
+
+@pytest.mark.nlp
+@pytest.mark.last
+@pytest.mark.parametrize(
+    "model, data",
+    [
+        (lazy_fixture("tf_sst2_model"), lazy_fixture("sst2_dataset")),
+        (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
+    ],
+)
+def test_evaluate_nlp(model, data, torch_device):
+    nlp_metrics = {
+        # "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
+        "RandomLogit": quantus.RandomLogit(disable_warnings=True),
+        "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
+        "Avg-Sen": quantus.AvgSensitivity(disable_warnings=True, nr_samples=5, perturb_func=synonym_replacement),
+        "Max-Sen": quantus.MaxSensitivity(disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement),
+        # "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
+        # "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
+        # "RRS": quantus.RelativeRepresentationStability(disable_warnings=True, nr_samples=5)
+    }
+
+    call_kwargs = {
+        "explain_func_kwargs": {"method": "GradXInput"},
+        "batch_size": 8,
+        "Max-Sen": {
+            "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
+        },
+        "Avg-Sen": [
+            {
+                "explain_func_kwargs": {
+                    "method": "IntGrad",
+                }
+            },
+            {
+                "explain_func_kwargs": {
+                    "method": "GradXInput",
+                }
+            },
+        ],
+    }
+
+    scores = evaluate_nlp(
+        nlp_metrics,
+        model,
+        **data,
+        call_kwargs={
+            "device": torch_device,
+            "explain_func": explain,
+            **call_kwargs
+        },
+    )
+
+    result_avg_sen = scores["Avg-Sen"]
+    # CHeck list of args returns list of scores
+    assert isinstance(result_avg_sen, list)
+    assert len(result_avg_sen) == 2
+    assert isinstance(result_avg_sen[0], np.ndarray)
+    assert isinstance(result_avg_sen[1], np.ndarray)

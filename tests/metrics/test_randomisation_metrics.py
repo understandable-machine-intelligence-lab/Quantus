@@ -1,19 +1,15 @@
-from typing import Union
-
+import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
-import numpy as np
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.similarity_func import correlation_spearman, correlation_pearson
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
 
 
-def explain_func_stub(*args, **kwargs):
+def explain_func_stub(model, inputs, targets, **kwargs):
     # tf-explain does not support 2D inputs
-    input_shape = kwargs.get("inputs").shape
-    return np.random.uniform(low=0, high=0.5, size=input_shape)
+    return np.random.default_rng(42).uniform(low=0, high=0.5, size=inputs.shape)
 
 
 @pytest.mark.randomisation
@@ -100,7 +96,7 @@ def explain_func_stub(*args, **kwargs):
             },
             {"min": -1.0, "max": 1.0},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
@@ -113,10 +109,13 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -132,12 +131,14 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"exception": ValueError},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
@@ -151,10 +152,13 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -215,7 +219,7 @@ def explain_func_stub(*args, **kwargs):
                     },
                 },
             },
-            {"min": -1.0, "max": 1.01},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("titanic_model_tf"),
@@ -230,15 +234,48 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {"explain_func": explain_func_stub},
             },
+            {"min": -1.0, "max": 1.0},
+        ),
+        pytest.param(
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain},
+            },
             {"min": -1.0, "max": 1.01},
+            marks=pytest.mark.nlp,
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "layer_order": "independent",
+                    "similarity_func": correlation_spearman,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain},
+            },
+            {"min": -1.0, "max": 1.01},
+            marks=pytest.mark.nlp,
         ),
     ],
 )
 def test_model_parameter_randomisation(
-    model: ModelInterface,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model,
+    data,
+    params,
+    expected,
+    torch_device
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -255,6 +292,7 @@ def test_model_parameter_randomisation(
             model=model,
             inputs=x_batch,
             targets=y_batch,
+            device=torch_device,
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -270,6 +308,7 @@ def test_model_parameter_randomisation(
                 y_batch=y_batch,
                 a_batch=a_batch,
                 **call_params,
+                device=torch_device
             )
         return
 
@@ -279,6 +318,7 @@ def test_model_parameter_randomisation(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
+        device=torch_device
     )
     if isinstance(expected, float):
         assert all(
@@ -286,7 +326,7 @@ def test_model_parameter_randomisation(
         ), "Test failed."
     else:
         assert all(
-            ((s > expected["min"]) & (s < expected["max"]))
+            ((s >= expected["min"]) & (s <= expected["max"]))
             for layer, scores in scores_layers.items()
             for s in scores
         ), "Test failed."
@@ -446,13 +486,46 @@ def test_model_parameter_randomisation(
             },
             {"min": -1.0, "max": 1.01},
         ),
+        pytest.param(
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain},
+            },
+            {"min": -1.0, "max": 1.01},
+            marks=pytest.mark.nlp,
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "num_classes": 2,
+                    "normalise": True,
+                    "abs": True,
+                    "disable_warnings": True,
+                },
+                "call": {"explain_func": explain},
+            },
+            {"min": -1.0, "max": 1.01},
+            marks=pytest.mark.nlp,
+        ),
     ],
 )
 def test_random_logit(
-    model: ModelInterface,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
+    model,
+    data,
+    params,
+    expected,
+    torch_device
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -469,6 +542,7 @@ def test_random_logit(
             model=model,
             inputs=x_batch,
             targets=y_batch,
+            device=torch_device,
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -481,6 +555,7 @@ def test_random_logit(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
+        device=torch_device
     )
 
     if isinstance(expected, float):

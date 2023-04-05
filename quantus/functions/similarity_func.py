@@ -7,14 +7,19 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
+from __future__ import annotations
 from typing import Union
+import platform
 
 import numpy as np
 import scipy
 import skimage
 
+from quantus.helpers.utils import dispatch_2d
 
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+
+@dispatch_2d
+def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -35,7 +40,8 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -56,7 +62,8 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> np.ndarray | float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -77,7 +84,8 @@ def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.kendalltau(a, b)[0]
 
 
-def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Euclidean distance of two images (or explanations).
 
@@ -98,7 +106,8 @@ def distance_euclidean(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.euclidean(u=a, v=b)
 
 
-def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Manhattan distance of two images (or explanations).
 
@@ -119,7 +128,8 @@ def distance_manhattan(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cityblock(u=a, v=b)
 
 
-def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Chebyshev distance of two images (or explanations).
 
@@ -140,13 +150,14 @@ def distance_chebyshev(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.chebyshev(u=a, v=b)
 
 
+@dispatch_2d
 def lipschitz_constant(
     a: np.array,
     b: np.array,
     c: Union[np.array, None],
     d: Union[np.array, None],
     **kwargs
-) -> float:
+) -> float | np.ndarray:
     """
     Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.
 
@@ -181,7 +192,7 @@ def lipschitz_constant(
         return float(d1(a, b) / (d2(a=c, b=d) + eps))
 
 
-def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
+def abs_difference(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate the absolute difference between two images (or explanations).
 
@@ -199,10 +210,11 @@ def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return np.mean(abs(a - b))
+    return np.abs(a - b)
 
 
-def cosine(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def cosine(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Cosine of two images (or explanations).
 
@@ -223,7 +235,8 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, **kwargs) -> float:
+@dispatch_2d
+def ssim(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -241,12 +254,15 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
+    max_val = np.max(np.abs(np.concatenate([a, b])))
+    data_range = 1. if max_val <= 1. else 255.
+
     return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None)
+        im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range
     )
 
 
-def difference(a: np.array, b: np.array, **kwargs) -> float:
+def difference(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     """
     Calculate the difference between two images (or explanations).
 

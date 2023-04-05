@@ -5,40 +5,58 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+from __future__ import annotations
 
-import inspect
-import math
-import re
-from abc import abstractmethod
-from typing import Any, Callable, Dict, Optional, Sequence, Union
+from abc import abstractmethod, ABC
+from functools import singledispatchmethod, partial
+from operator import itemgetter
+from typing import Callable, Dict, Optional, Any
 
 import numpy as np
 from tqdm.auto import tqdm
 
-from quantus.metrics.base import Metric
+from quantus.functions.perturb_func import perturb_batch as perturb_batch_fn
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.types import Explanations, NormaliseFn, ExplainFn, AggregateFn
+from quantus.helpers.utils import (
+    infer_channel_first,
+    make_channel_first,
+    get_wrapped_model,
+    value_or_default,
+    map_optional,
+    batch_inputs,
+    add_default_items
+)
+from quantus.helpers.utils_nlp import (
+    map_explanations,
+    safe_as_array,
+    is_plain_text_perturbation,
+    is_torch_model
+)
+from quantus.metrics.base import EvaluateAble
 
 
-class BatchedMetric(Metric):
+class BatchedMetric(EvaluateAble, ABC):
     """
     Implementation base BatchedMetric class.
     """
 
     @asserts.attributes_check
     def __init__(
-        self,
-        abs: bool,
-        normalise: bool,
-        normalise_func: Optional[Callable],
-        normalise_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: bool,
-        aggregate_func: Optional[Callable],
-        default_plot_func: Optional[Callable],
-        disable_warnings: bool,
-        display_progressbar: bool,
-        **kwargs,
+            self,
+            abs: bool,
+            normalise: bool,
+            normalise_func: Optional[NormaliseFn],
+            normalise_func_kwargs: Optional[Dict[str, Any]],
+            return_aggregate: bool,
+            aggregate_func: Optional[AggregateFn],
+            default_plot_func: Optional[Callable],
+            disable_warnings: bool,
+            display_progressbar: bool,
+            **kwargs,
     ):
         """
         Initialise the BatchedMetric base class.
@@ -92,22 +110,22 @@ class BatchedMetric(Metric):
         )
 
     def __call__(
-        self,
-        model,
-        x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
-        s_batch: Optional[np.ndarray],
-        channel_first: Optional[bool],
-        explain_func: Optional[Callable],
-        explain_func_kwargs: Optional[Dict[str, Any]],
-        model_predict_kwargs: Optional[Dict],
-        softmax: Optional[bool],
-        device: Optional[str] = None,
-        batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
-        **kwargs,
-    ) -> Union[int, float, list, dict, None]:
+            self,
+            model,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[Explanations],
+            channel_first: Optional[bool],
+            explain_func: Optional[ExplainFn],
+            explain_func_kwargs: Optional[Dict[str, Any]],
+            model_predict_kwargs: Optional[Dict],
+            softmax: Optional[bool],
+            device: Optional[str] = None,
+            batch_size: int = 64,
+            custom_batch: Optional[Any] = None,
+            s_batch=None,
+            **kwargs,
+    ) -> np.ndarray:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -192,62 +210,184 @@ class BatchedMetric(Metric):
         warn.check_kwargs(kwargs)
 
         data = self.general_preprocess(
-            model=model,
-            x_batch=x_batch,
-            y_batch=y_batch,
-            a_batch=a_batch,
-            s_batch=s_batch,
-            custom_batch=custom_batch,
-            channel_first=channel_first,
-            explain_func=explain_func,
-            explain_func_kwargs=explain_func_kwargs,
-            model_predict_kwargs=model_predict_kwargs,
-            softmax=softmax,
-            device=device,
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            channel_first,
+            explain_func,
+            explain_func_kwargs,
+            model_predict_kwargs,
+            softmax,
+            device,
+            custom_batch,
+            batch_size,
         )
 
-        # Create generator for generating batches.
-        batch_generator = self.generate_batches(
-            data=data,
-            batch_size=batch_size,
+        # We should not use un-batched version after general preprocess.
+        del x_batch
+        del y_batch
+        del a_batch
+        del s_batch
+        del model
+
+        pbar = tqdm(
+            data["x_batch"],
+            disable=not self.display_progressbar,
         )
 
-        self.last_results = []
-        for data_batch in batch_generator:
-            result = self.evaluate_batch(**data_batch)
-            self.last_results.extend(result)
+        model = data["model"]
+        scores_batch = []
+
+        for i, x in enumerate(pbar):
+            # Get batch from data dict.
+            y = map_optional(data["y_batch"], itemgetter(i))
+            a = map_optional(data["a_batch"], itemgetter(i))
+            s = map_optional(data["s_batch"], itemgetter(i))
+            # custom = map_optional(data["custom_batch"], itemgetter(i))
+            x, y, a, custom_batch = self.batch_preprocess(model, x, y, a)
+            score = self.evaluate_batch(model, x, y, a, s, custom_batch)
+            score = self.batch_postprocess(model, x, y, a, s, score)
+            scores_batch.extend(score)
 
         # Call post-processing.
         self.custom_postprocess(**data)
-
         if self.return_aggregate:
-            if self.aggregate_func:
-                try:
-                    self.last_results = [self.aggregate_func(self.last_results)]
-                except:
-                    print(
-                        "The aggregation of evaluation scores failed. Check that "
-                        "'aggregate_func' supplied is appropriate for the data "
-                        "in 'last_results'."
-                    )
-            else:
-                raise KeyError(
-                    "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
-                )
-
+            scores_batch = self.aggregate_func(scores_batch)
         # Append content of last results to all results.
-        self.all_results.append(self.last_results)
+        scores_batch = np.asarray(scores_batch)
+        self.all_results.append(scores_batch)
+        return scores_batch
 
-        return self.last_results
+    @singledispatchmethod
+    def explain_batch(
+            self, model: ModelInterface, x_batch: np.ndarray, y_batch: np.ndarray, **kwargs
+    ) -> Explanations:
+        a_batch = self.explain_func(
+            model.get_model(), x_batch, y_batch, **self.explain_func_kwargs, **kwargs
+        )
+
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+        if self.abs:
+            a_batch = np.abs(a_batch)
+        return a_batch
+
+    @explain_batch.register
+    def _(
+            self, model: TextClassifier, x_batch, y_batch: np.ndarray, **kwargs
+    ) -> Explanations:
+        a_batch = self.explain_func(
+            model, x_batch, y_batch, **self.explain_func_kwargs, **kwargs
+        )
+        if self.normalise:
+            a_batch = map_explanations(
+                a_batch, partial(self.normalise_func, **self.normalise_func_kwargs)
+            )
+        if self.abs:
+            a_batch = map_explanations(a_batch, np.abs)
+
+        return a_batch
+
+    def general_preprocess(
+            self,
+            model,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: Optional[np.ndarray],
+            channel_first: Optional[bool],
+            explain_func: Callable,
+            explain_func_kwargs: Optional[Dict[str, Any]],
+            model_predict_kwargs: Optional[Dict],
+            softmax: bool,
+            device: Optional[str],
+            custom_batch: Optional[np.ndarray],
+            batch_size: int = 64,
+    ) -> Dict[str, Any]:
+        if isinstance(x_batch, np.ndarray):
+            # Reshape input batch to channel first order:
+            if not isinstance(channel_first, bool):  # None is not a boolean instance.
+                channel_first = infer_channel_first(x_batch)
+            x_batch = make_channel_first(x_batch, channel_first)
+        else:
+            # For NLP we don't need it
+            channel_first = None
+
+        model_wrapper = get_wrapped_model(
+            model,
+            channel_first,
+            softmax,
+            device,
+            model_predict_kwargs,
+        )
+        # Save as attribute, some metrics need it during processing.
+        self.explain_func = explain_func
+        self.explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
+        if is_torch_model(model):
+            self.explain_func_kwargs = add_default_items(self.explain_func_kwargs, {"device": device})
+
+        # Create extra axis for inputs.
+        batch_fn = partial(batch_inputs, batch_size=batch_size)
+        x_batch = batch_fn(x_batch)
+
+        # Batch additional inputs, if present, otherwise keep them as None.
+        # We keep y_batch and a_batch as None to avoid calling model and explain function on whole dataset at once.
+        y_batch = map_optional(y_batch, batch_fn)
+        a_batch = map_optional(a_batch, batch_fn)
+        s_batch = map_optional(s_batch, batch_fn)
+        return {
+            "model": model_wrapper,
+            "x_batch": x_batch,
+            "y_batch": y_batch,
+            "a_batch": a_batch,
+            "s_batch": s_batch,
+            "custom_batch": None,
+        }
+
+    def batch_preprocess(
+            self,
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+    ):
+        # Generate y_batch if not provided.
+        y_batch = value_or_default(
+            y_batch, lambda: model.predict(x_batch).argmax(axis=-1)
+        )
+        # Generate a_batch if not provided.
+        a_batch = value_or_default(
+            a_batch,
+            lambda: self.explain_batch(
+                model,
+                x_batch,
+                y_batch,
+            ),
+        )
+        return x_batch, y_batch, a_batch, None
+
+    def batch_postprocess(
+            self,
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            score,
+    ) -> np.ndarray:
+        return score
 
     @abstractmethod
     def evaluate_batch(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        s_batch: np.ndarray,
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: np.ndarray,
+            a_batch: np.ndarray,
+            s_batch: np.ndarray,
+            custom_batch=None,
     ):
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -266,6 +406,8 @@ class BatchedMetric(Metric):
             The explanation to be evaluated on a batch-basis.
         s_batch: np.ndarray
             The segmentation to be evaluated on a batch-basis.
+        custom_batch:
+
 
         Returns
         -------
@@ -274,132 +416,8 @@ class BatchedMetric(Metric):
         """
         raise NotImplementedError()
 
-    @staticmethod
-    def get_number_of_batches(n_instances: int, batch_size: int) -> int:
-        """
-        Get the number of batches given number of samples/ instances and a batch size.
 
-        Parameters
-        ----------
-        n_instances: int
-            The number of instances.
-        batch_size: int
-            The batch size.
-
-        Returns
-        -------
-        integer
-        """
-        return math.ceil(n_instances / batch_size)
-
-    def generate_batches(
-        self,
-        data: Dict[str, Any],
-        batch_size: int,
-    ):
-        """
-        Creates iterator to iterate over all batched instances in data dictionary.
-        Each iterator output element is a keyword argument dictionary with
-        string keys.
-
-        Each item key in the input data dictionary has to be of type string.
-        - If the item value is not a sequence, the respective item key/value pair
-          will be written to each iterator output dictionary.
-        - If the item value is a sequence and the item key ends with '_batch',
-          a check will be made to make sure length matches number of instances.
-          The values of the batch instances in the sequence will be added to the respective
-          iterator output dictionary with the '_batch' suffix removed.
-        - If the item value is a sequence but doesn't end with '_batch', it will be treated
-          as a simple value and the respective item key/value pair will be
-          written to each iterator output dictionary.
-
-        Parameters
-        ----------
-        data: dict[str, any]
-            The data input dictionary.
-        batch_size: int
-            The batch size to be used.
-
-        Returns
-        -------
-        iterator
-            Each iterator output element is a keyword argument dictionary (string keys).
-
-        """
-        n_instances = len(data["x_batch"])
-
-        single_value_kwargs: Dict[str, Any] = {}
-        batched_value_kwargs: Dict[str, Any] = {}
-
-        for key, value in list(data.items()):
-            # If data-value is not a Sequence or a string, create list of value with length of n_instances.
-            if not isinstance(value, (Sequence, np.ndarray)) or isinstance(value, str):
-                single_value_kwargs[key] = value
-
-            # If data-value is a sequence and ends with '_batch', only check for correct length.
-            elif key.endswith("_batch"):
-                if len(value) != n_instances:
-                    # Sequence has to have correct length.
-                    raise ValueError(
-                        f"'{key}' has incorrect length (expected: {n_instances}, is: {len(value)})"
-                    )
-                else:
-                    batched_value_kwargs[key] = value
-
-            # If data-value is a sequence and doesn't end with '_batch', create
-            # list of repeated sequences with length of n_instances.
-            else:
-                single_value_kwargs[key] = [value for _ in range(n_instances)]
-
-        n_batches = self.get_number_of_batches(
-            n_instances=n_instances, batch_size=batch_size
-        )
-
-        # Create iterator for batch index.
-        iterator = tqdm(
-            range(0, n_batches),
-            total=n_batches,
-            disable=not self.display_progressbar,
-        )
-
-        # Iterate over batch index
-        for batch_idx in iterator:
-            # Calculate instance index for start and end of batch.
-            batch_start = batch_size * batch_idx
-            batch_end = min(batch_size * (batch_idx + 1), n_instances)
-
-            # Create batch dictionary with all specified batch instance values
-            batch = {
-                key: value[batch_start:batch_end]
-                for key, value in batched_value_kwargs.items()
-            }
-
-            # Yield batch dictionary including single value keyword arguments.
-            yield {**batch, **single_value_kwargs}
-
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        **kwargs,
-    ) -> Any:
-        """
-        This method from the parent Metric class needs to be defined to implement this abstract class.
-        However we use evalaute_batch() instead for BatchedMetric.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError(
-            "evaluate_instance() not implemented for BatchedMetric"
-        )
-
-
-class BatchedPerturbationMetric(BatchedMetric):
+class BatchedPerturbationMetric(BatchedMetric, ABC):
     """
     Implementation base BatchedPertubationMetric class.
 
@@ -408,19 +426,21 @@ class BatchedPerturbationMetric(BatchedMetric):
 
     @asserts.attributes_check
     def __init__(
-        self,
-        abs: bool,
-        normalise: bool,
-        normalise_func: Optional[Callable],
-        normalise_func_kwargs: Optional[Dict[str, Any]],
-        perturb_func: Callable,
-        perturb_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: bool,
-        aggregate_func: Optional[Callable],
-        default_plot_func: Optional[Callable],
-        disable_warnings: bool,
-        display_progressbar: bool,
-        **kwargs,
+            self,
+            abs: bool,
+            normalise: bool,
+            normalise_func: Optional[Callable],
+            normalise_func_kwargs: Optional[Dict[str, Any]],
+            perturb_func: Callable,
+            perturb_func_kwargs: Optional[Dict[str, Any]],
+            return_aggregate: bool,
+            aggregate_func: Optional[Callable],
+            default_plot_func: Optional[Callable],
+            disable_warnings: bool,
+            display_progressbar: bool,
+            nr_samples: int = None,
+            return_nan_when_prediction_changes: bool = None,
+            **kwargs,
     ):
         """
         Initialise the PerturbationMetric base class.
@@ -469,63 +489,142 @@ class BatchedPerturbationMetric(BatchedMetric):
 
         # Save perturbation metric attributes.
         self.perturb_func = perturb_func
+        self.perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})
+        self.return_nan_when_prediction_changes = return_nan_when_prediction_changes
+        self.nr_samples = nr_samples
 
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        self.perturb_func_kwargs = perturb_func_kwargs
+    @singledispatchmethod
+    def changed_prediction_indices(self, model, x_batch, x_perturbed, **kwargs):
+        if not self.return_nan_when_prediction_changes:
+            return []
 
-    @abstractmethod
-    def evaluate_batch(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        s_batch: np.ndarray,
-    ) -> np.ndarray:
+        # do we need it ???
+        # x_input = model.shape_input(
+        #    x=x_perturbed,
+        #    shape=x_batch.shape,
+        #    channel_first=True,
+        #    batched=True,
+        # )
+        og_labels = model.predict(x_batch).argmax(axis=-1)
+        perturbed_labels = model.predict(x_perturbed).argmax(axis=-1)
+        return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
+
+    @changed_prediction_indices.register
+    def _(self, model: TextClassifier, x_batch, x_perturbed, **kwargs):
+        if not self.return_nan_when_prediction_changes:
+            return []
+
+        if is_plain_text_perturbation(self.perturb_func):
+            og_logits = model.predict(x_batch)
+            perturbed_logits = model.predict(x_perturbed)
+        else:
+            og_logits = safe_as_array(model(x_batch, **kwargs))
+            perturbed_logits = safe_as_array(model(x_perturbed, **kwargs))
+
+        og_labels = np.argmax(og_logits, axis=-1)
+        perturbed_labels = np.argmax(perturbed_logits, axis=-1)
+
+        return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
+
+    def perturb_batch(self, x_batch: np.ndarray) -> np.ndarray:
+
+        batch_size = x_batch.shape[0]
+        size = np.size(x_batch[0])
+        ndim = np.ndim(x_batch[0])
+
+        return perturb_batch_fn(
+            perturb_func=self.perturb_func,
+            indices=np.tile(np.arange(0, size), (batch_size, 1)),
+            indexed_axes=np.arange(0, ndim),
+            arr=x_batch,
+            **self.perturb_func_kwargs,
+        )
+
+    def custom_preprocess(
+            self,
+            model: ModelInterface,
+            x_batch: np.ndarray,
+            y_batch: Optional[np.ndarray],
+            a_batch: Optional[np.ndarray],
+            s_batch: np.ndarray,
+            custom_batch: Optional[np.ndarray],
+    ) -> None:
         """
-        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
-
-        This method needs to be implemented to use __call__().
+        Implementation of custom_preprocess_batch.
 
         Parameters
         ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
         x_batch: np.ndarray
-            The input to be evaluated on a batch-basis.
+            A np.ndarray which contains the input data that are explained.
         y_batch: np.ndarray
-            The output to be evaluated on a batch-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on a batch-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on a batch-basis.
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        custom_batch: any
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
 
         Returns
         -------
-        np.ndarray
-            The batched evaluation results.
+        None
         """
-        raise NotImplementedError()
+        # Additional explain_func assert, as the one in prepare() won't be
+        # executed when a_batch != None.
+        asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        **kwargs,
-    ) -> Any:
-        """
-        This method from the parent Metric class needs to be defined to implement this abstract class.
-        However we use evalaute_batch() instead for BatchedMetric.
+    def batch_preprocess(
+            self,
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+    ):
+        if "NLP" not in self.data_domain_applicability:
+            return super().batch_preprocess(model, x_batch, y_batch, a_batch)
+        if not is_plain_text_perturbation(self.perturb_func):
+            return super().batch_preprocess(model, x_batch, y_batch, a_batch)
 
-        Parameters
-        ----------
-        kwargs: optional
-            Keyword arguments.
-        """
-        raise NotImplementedError(
-            "evaluate_instance() not implemented for BatchedPerturbationMetric"
+        batch_size = len(x_batch)
+        # For plain text we need to first collect perturbations, then
+        # "pre-tokenize" them, so we end up with sequences all the same length.
+        x_perturbed_batches = [x_batch] + [
+            self.perturb_func(x_batch, **self.perturb_func_kwargs)
+            for _ in range(self.nr_samples)
+        ]
+        x_perturbed_batches = np.reshape(x_perturbed_batches, -1).tolist()
+        x_perturbed_ids, _ = model.tokenizer.get_input_ids(x_perturbed_batches)
+        x_perturbed_batches = model.tokenizer.batch_decode(x_perturbed_ids)
+        x_batch, x_perturbed_batches = (
+            x_perturbed_batches[:batch_size],
+            x_perturbed_batches[batch_size:],
+        )
+        x_perturbed_batches = np.reshape(x_perturbed_batches, (self.nr_samples, -1))
+        x_perturbed_batches = [i.tolist() for i in x_perturbed_batches]
+
+        # Leave padding tokens in.
+        model.tokenizer.batch_encode = partial(
+            model.tokenizer.batch_encode, add_special_tokens=False
+        )
+        x_batch, y_batch, a_batch, _ = super().batch_preprocess(
+            model, x_batch, y_batch, a_batch
+        )
+        return x_batch, y_batch, a_batch, x_perturbed_batches
+
+    def batch_postprocess(
+            self,
+            model,
+            x_batch,
+            y_batch,
+            a_batch,
+            s_batch,
+            score: np.ndarray,
+    ) -> np.ndarray:
+        if isinstance(x_batch[0], str):
+            if is_plain_text_perturbation(self.perturb_func):
+                model.tokenizer.batch_encode = model.tokenizer.batch_encode.func
+        return super().batch_postprocess(
+            model, x_batch, y_batch, a_batch, s_batch, score
         )

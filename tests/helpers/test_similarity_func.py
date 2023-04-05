@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -213,7 +214,7 @@ def test_abs_difference(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
     out = abs_difference(a=data["a"], b=data["b"])
-    assert round(out, 2) == expected, "Test failed."
+    assert np.allclose(np.round(out, 2), expected)
 
 
 @pytest.mark.similar_func
@@ -241,7 +242,7 @@ def test_cosine(data: np.ndarray, params: dict, expected: Union[float, dict, boo
 def test_ssim(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     """Calculate Structural Similarity Index Measure of two images (or explanations)."""
     out = ssim(a=data["a"], b=data["b"])
-    assert round(out, 2) == expected, "Test failed."
+    assert np.allclose(np.round(out, 2), expected)
 
 
 @pytest.mark.similar_func

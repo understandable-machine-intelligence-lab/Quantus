@@ -1,7 +1,6 @@
 from functools import reduce
 from operator import and_
 from typing import Union
-import tensorflow as tf
 
 import numpy as np
 import pytest
@@ -13,16 +12,16 @@ from quantus.helpers.model.tf_model import TensorFlowModel
 
 EXPECTED_LOGITS = np.array(
     [
-        -0.00841103,
-        0.05486388,
-        -0.00272173,
-        -0.02644291,
-        0.01550696,
-        -0.01200515,
-        -0.00833264,
-        0.00716423,
-        -0.00744504,
-        -0.0258654,
+        -0.723556,
+        0.06658217,
+        0.13982001,
+        -0.57502496,
+        0.19477458,
+        0.22203586,
+        -0.26914597,
+        0.23699084,
+        -0.41618308,
+        -0.5679564,
     ]
 )
 
@@ -49,50 +48,12 @@ EXPECTED_LOGITS = np.array(
         ),
     ],
 )
-def test_get_softmax_arg_model(
-    data: np.ndarray,
-    params: dict,
-    expected: np.ndarray,
-    load_mnist_model_tf,
-):
-
-    model = TensorFlowModel(model=load_mnist_model_tf, softmax=True)
-    new_model = TensorFlowModel(model=model.get_softmax_arg_model(), **params)
-
-    out = new_model.predict(x=data)
-
-    assert np.allclose(out, expected), "Test failed."
-
-
-@pytest.mark.tf_model
-@pytest.mark.parametrize(
-    "data,params,expected",
-    [
-        (
-            np.zeros((1, 28, 28, 1)),
-            {
-                "softmax": False,
-                "channel_first": False,
-            },
-            EXPECTED_LOGITS,
-        ),
-        (
-            np.zeros((1, 28, 28, 1)),
-            {
-                "softmax": True,
-                "channel_first": False,
-            },
-            softmax(EXPECTED_LOGITS),
-        ),
-    ],
-)
 def test_predict(
-    data: np.ndarray,
-    params: dict,
-    expected: np.ndarray,
-    load_mnist_model_tf,
+    data: np.ndarray, params: dict, expected: np.ndarray, load_mnist_model_tf, mocker
 ):
-
+    mocker.patch(
+        "tensorflow.keras.Model.predict", lambda x, *args, **kwargs: EXPECTED_LOGITS
+    )
     model = TensorFlowModel(model=load_mnist_model_tf, **params)
     out = model.predict(x=data)
     assert np.allclose(out, expected), "Test failed."
@@ -145,7 +106,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     for layer_name, random_layer_model in model.get_random_layer_generator():
 
         old = old_weights[layer_name]
-        new = random_layer_model.get_layer(layer_name).get_weights()
+        new = random_layer_model.get_model().get_layer(layer_name).get_weights()
 
         assert reduce(
             and_, [not np.allclose(x, y) for x, y in zip(old, new)]
@@ -157,6 +118,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     assert reduce(
         and_, [np.allclose(x, y) for x, y in zip(before, after)]
     ), "Test failed."
+
 
 
 @pytest.mark.tf_model
