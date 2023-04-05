@@ -1,15 +1,11 @@
 from __future__ import annotations
-from typing import List, Callable, TypeVar, Any, Dict, Tuple
+
+from operator import itemgetter
+from typing import List, Callable, TypeVar
 
 import keras
-from cachetools import cached
-from operator import itemgetter
 import numpy as np
-
-from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-from quantus.helpers.utils import safe_as_array
+from cachetools import cached
 from quantus.helpers.types import Explanation, Explanations
 
 T = TypeVar("T")
@@ -17,7 +13,7 @@ R = TypeVar("R")
 
 
 def map_explanations(
-    a_batch: Explanations, fn: Callable[[T], R]
+        a_batch: Explanations, fn: Callable[[T], R]
 ) -> List[R]:
     """Apply fn to a_batch, supports token-scores tuples as well as raw scores."""
     if isinstance(a_batch, List):
@@ -64,10 +60,14 @@ def is_tf_model(model):
     if isinstance(model, keras.Model):
         return True
 
-    if isinstance(model, TFHuggingFaceTextClassifier):
-        return True
+    try:
+        from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+        if isinstance(model, TFHuggingFaceTextClassifier):
+            return True
+    except ModuleNotFoundError:
+        return False
+
     if hasattr(model, "model"):
-        import tensorflow as tf
         return isinstance(model.model, tf.keras.Model)
     return False
 
@@ -79,8 +79,12 @@ def is_torch_model(model):
         return False
     if isinstance(model, nn.Module):
         return True
-    if isinstance(model, TorchHuggingFaceTextClassifier):
-        return True
+    try:
+        from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
+        if isinstance(model, TorchHuggingFaceTextClassifier):
+            return True
+    except ModuleNotFoundError:
+        return False
     if hasattr(model, "model"):
         return isinstance(model.model, nn.Module)
     return False
