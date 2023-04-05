@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from quantus.helpers.model.models import (
     LeNet,
     LeNetTF,
+    CifarCNNModel,
     ConvNet1D,
     ConvNet1DTF,
     TitanicSimpleTFModel,
@@ -43,6 +44,12 @@ def load_mnist_model_tf():
     model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
+@pytest.fixture(scope="session", autouse=True)
+def load_cifar10_model_tf():
+    """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
+    model = CifarCNNModel()
+    model.load_weights("tests/assets/cifar_tf_weights.keras")
+    return model
 
 @pytest.fixture(scope="session")
 def load_1d_1ch_conv_model():
@@ -198,8 +205,8 @@ def titanic_dataset():
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values
-    Y = df_enc["survived"].values
+    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
+    Y = df_enc["survived"].values.astype(np.int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
 

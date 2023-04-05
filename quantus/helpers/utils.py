@@ -812,6 +812,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
             )
         )
     elif x_subshapes.count(a_shape) > 1:
+
         # Check that attribution dimensions are (unique) subdimensions of inputs.
         # Consider potentially expanded dims in attributions.
 
@@ -821,6 +822,7 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
                 for start in range(0, len(np.shape(a_batch)[1:]) - len(a_shape) + 1)
             ]
             if a_subshapes.count(a_shape) == 1:
+
                 # Inferring channel shape.
                 for dim in range(len(np.shape(a_batch)[1:]) + 1):
                     if a_shape == np.shape(a_batch)[1:][dim:]:
@@ -1135,23 +1137,7 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
         return default_factory()
 
 
-
 def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
-    """
-    Parameters
-    ----------
-    logits:
-        2D array of models (output) logits with shape (batch size, num_classes).
-    y_batch:
-        1D array of labels with shape (batch size,)
-
-    Returns
-    -------
-
-    logits:
-        1D array
-
-    """
     # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
     # the hard way again one more time.

@@ -291,7 +291,7 @@ class InputInvariance(BatchedPerturbationMetric):
 
         # Compute the evaluation.
         score = np.all(
-            np.isclose(a_batch, a_shifted),
+            np.isclose(a_batch, a_shifted, atol=1e-04),
             axis=tuple(range(1, a_batch.ndim)),
         )
 

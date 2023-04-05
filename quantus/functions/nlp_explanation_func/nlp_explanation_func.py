@@ -13,8 +13,6 @@ from typing import Dict, List, Optional
 import numpy as np
 from transformers import pipeline
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
 
 from quantus.functions.nlp_explanation_func.lime import explain_lime
 from quantus.helpers.types import Explanation, Explanations
@@ -24,6 +22,16 @@ from quantus.helpers.utils import (
     value_or_default,
 )
 from quantus.helpers.utils_nlp import map_explanations, is_torch_model, is_tf_model
+
+try:
+    from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+except ModuleNotFoundError:
+    TFHuggingFaceTextClassifier = type(None)
+
+try:
+    from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
+except ModuleNotFoundError:
+    TorchHuggingFaceTextClassifier = type(None)
 
 
 def explain_shap(

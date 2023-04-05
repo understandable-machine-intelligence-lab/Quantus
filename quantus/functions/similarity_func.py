@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 from typing import Union
-import platform
 
 import numpy as np
 import scipy
@@ -258,7 +257,10 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     data_range = 1. if max_val <= 1. else 255.
 
     return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range
+        im1=a,
+        im2=b,
+        win_size=kwargs.get("win_size"),
+        data_range=data_range,
     )
 
 

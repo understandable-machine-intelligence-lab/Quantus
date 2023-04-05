@@ -7,17 +7,16 @@
 from __future__ import annotations
 
 from typing import List, Optional, Literal, Callable
-from functools import partial
+
 import numpy as np
 
-from helpers.types import AggregateFn
 from quantus.functions.loss_func import mse
 from quantus.functions.normalise_func import normalize_sum_to_1
 from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.plotting import plot_token_flipping_experiment
 from quantus.helpers.types import NormaliseFn, Explanation, Kwargs, ExplainFn, Any
 from quantus.helpers.utils import safe_as_array, get_logits_for_labels
 from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.plotting import plot_token_flipping_experiment
 
 TaskT = Literal["pruning", "activation"]
 

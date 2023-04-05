@@ -32,6 +32,7 @@ from quantus.helpers.model.model_interface import (
     RandomisableModel,
 )
 from quantus.helpers import utils
+from quantus.helpers.tf_utils import is_xla_compatible_model
 
 
 class TFModelWrapper(ModelWrapper, tf.Module):
@@ -246,11 +247,6 @@ class TensorFlowModel(ModelInterface, TFModelRandomizer, TFHiddenRepresentations
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model.
-        model_predict_kwargs["verbose"] = 0
-
         """
         Initialisation of ModelInterface class.
 
@@ -272,6 +268,11 @@ class TensorFlowModel(ModelInterface, TFModelRandomizer, TFHiddenRepresentations
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
+        self.model._jit_compile = is_xla_compatible_model(self.model)
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
         # get_hidden_representations needs to rebuild and re-trace the model.
         # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
         # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
