@@ -48,7 +48,6 @@ def evaluate(
         and the values are the explain function keyword arguments as a dictionary, or
         3) Dict[str, Callable] where the keys are the name of explanation methods,
         and the values a callable explanation function.
-        4) Callable, in case same explanation function must be used for all metrics.
     model: torch.nn.Module, tf.keras.Model
         A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
     x_batch: np.ndarray

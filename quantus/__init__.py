@@ -5,7 +5,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 # Expose quantus.evaluate to the user.
-from quantus.evaluation import evaluate
+from quantus.evaluation import evaluate, evaluate_nlp
 
 # Expose quantus.explain to the user.
 from quantus.functions.explanation_func import explain

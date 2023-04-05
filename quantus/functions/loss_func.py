@@ -6,11 +6,11 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from __future__ import annotations
+from typing import Union
 import numpy as np
 
 
-def mse(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
+def mse(a: np.ndarray, b: np.ndarray, **kwargs) -> Union[np.ndarray, float]:
     """
     Calculate Mean Squared Error between two images (or explanations).
 
@@ -28,7 +28,7 @@ def mse(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     Returns
     -------
     float:
-        A floating point of MSE.
+        Float for single instance, np.ndarray for batch.
     """
 
     normalise = kwargs.get("normalise_mse", False)
@@ -38,4 +38,4 @@ def mse(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
         return np.average(((a**2) - (2 * (a * b)) + (b**2)), axis=0)
     # If no need to normalise, return (a-b)^2.
 
-    return np.average(((a - b) ** 2), axis=0)
+    return np.average(((a - b) ** 2), axis=1)

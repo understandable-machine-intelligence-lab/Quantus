@@ -15,7 +15,7 @@ from transformers import (
     PreTrainedModel,
 )
 
-from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizable
+from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.model_interface import HiddenRepresentationsModel
 from quantus.helpers.model.pytorch_model import TorchModelRandomizer
 from quantus.helpers.model.text_classifier import TextClassifier
@@ -33,7 +33,7 @@ class TorchHuggingFaceTextClassifier(
     ):
         super().__init__()
         handle = model.config._name_or_path  # noqa
-        self._tokenizer = HuggingFaceTokenizable(handle)
+        self._tokenizer = HuggingFaceTokenizer(handle)
         self.device = value_or_default(device, lambda: torch.device("cpu"))
         self.model = model.to(self.device)
 
@@ -84,5 +84,5 @@ class TorchHuggingFaceTextClassifier(
         return np.moveaxis(hidden_states, 0, 1)
 
     @property
-    def tokenizer(self) -> HuggingFaceTokenizable:
+    def tokenizer(self) -> HuggingFaceTokenizer:
         return self._tokenizer

@@ -48,11 +48,7 @@ class Tokenizable(ABC):
         return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
 
-class TextClassifier(ABC):
-    """
-    An interface for model, trained for text-classification task (aka sentiment analysis).
-    TextClassifier is a model with signature F: List['text'] -> np.ndarray
-    """
+class EmbeddingsCallable(ABC):
 
     @abstractmethod
     def __call__(self, inputs_embeds: T, **kwargs) -> T:
@@ -62,6 +58,13 @@ class TextClassifier(ABC):
         This method must be able to record gradients, as it is used internally by gradient based XAI methods.
         """
         raise NotImplementedError
+
+
+class TextClassifier(ABC):
+    """
+    An interface for model, trained for text-classification task (aka sentiment analysis).
+    TextClassifier is a model with signature F: List['text'] -> np.ndarray
+    """
 
     @abstractmethod
     def predict(self, text: List[str], **kwargs) -> np.ndarray:

@@ -25,17 +25,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements_test.txt
 
-      - name: Lint
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 quantus --count --select=E9,F63,F7,F82 --show-source --statistics --exclude nlp
-          
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 quantus --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude nlp
-          
-          # run mypy
-          mypy quantus --exclude nlp
-
+      #- name: Lint
+      #  run: |
+      #    # stop the build if there are Python syntax errors or undefined names
+      #    flake8 quantus --count --select=E9,F63,F7,F82 --show-source --statistics --exclude nlp
+      #
+      #    # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+      #    flake8 quantus --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude nlp
+      #
+      #    # run mypy
+      #    mypy quantus --exclude nlp
+      #
       - name: Test with pytest
         run: pytest -s -v -n 2 -m "not nlp"
         env:

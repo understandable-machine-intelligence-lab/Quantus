@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def fro_norm(a: np.array) -> float | np.ndarray:
+def fro_norm(a: np.ndarray) -> float | np.ndarray:
     """
     Calculate Frobenius norm for an array.
 
@@ -24,10 +24,10 @@ def fro_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    return _ndim_norm(a, 1)
+    return ndim_norm(a, 1)
 
 
-def l2_norm(a: np.array) -> float | np.ndarray:
+def l2_norm(a: np.ndarray) -> float | np.ndarray:
     """
     Calculate L2 norm for an array.
 
@@ -42,10 +42,10 @@ def l2_norm(a: np.array) -> float | np.ndarray:
         The norm.
     """
 
-    return _ndim_norm(a, 2)
+    return ndim_norm(a, 2)
 
 
-def linf_norm(a: np.array) -> float | np.ndarray:
+def linf_norm(a: np.ndarray) -> float | np.ndarray:
     """
     Calculate L-inf norm for an array.
 
@@ -59,10 +59,11 @@ def linf_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    return _ndim_norm(a, np.inf)
+    return ndim_norm(a, np.inf)
 
 
-def _ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
+def ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
+    """Compute n-dimensional norm of order l_ord."""
     try:
         if a.ndim == 1:
             return np.linalg.norm(a, ord=l_ord)
@@ -77,5 +78,8 @@ def _ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
         else:
             raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
     except np.linalg.LinAlgError:
-        np.save(f"a_ndim_norm_err_l_ord_{l_ord}.npy", a)
+        # This happened once to me while running experiments, could be useful for root-cause investigation.
+        fname = f"a_ndim_norm_err_l_ord_{l_ord}.npy"
+        np.save(fname, a)
+        print(f"Saved invalid input to {fname}")
         raise

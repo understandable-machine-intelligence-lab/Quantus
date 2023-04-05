@@ -411,6 +411,7 @@ class ModelParameterRandomisation(BatchedMetric):
 
         return np.mean(results_per_sample_accumulator, axis=1)
 
+    @classmethod
     @property
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

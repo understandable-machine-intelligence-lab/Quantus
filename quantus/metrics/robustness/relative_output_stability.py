@@ -375,6 +375,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         denominator = l2_norm(denominator) + eps_min
         return nominator / denominator
 
+    @classmethod
     @property
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

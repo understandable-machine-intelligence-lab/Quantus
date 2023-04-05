@@ -252,7 +252,7 @@ def normalise_by_average_second_moment_estimate(
     return a
 
 
-def normalize_sum_to_1(scores: np.ndarray) -> np.ndarray:
+def normalize_sum_to_1(scores: np.ndarray, **kwargs) -> np.ndarray:
     """Makes the absolute values sum to 1."""
     if scores.ndim > 2:
         raise ValueError("Only 2D and 1D inputs are supported.")

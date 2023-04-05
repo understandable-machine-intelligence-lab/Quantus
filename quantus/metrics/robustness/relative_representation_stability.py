@@ -390,6 +390,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
 
         return nominator / denominator
 
+    @classmethod
     @property
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

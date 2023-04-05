@@ -15,7 +15,7 @@ from transformers import (
     TFPreTrainedModel,
 )
 
-from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizable
+from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.model_interface import (
     HiddenRepresentationsModel,
 )
@@ -24,15 +24,6 @@ from quantus.helpers.model.tf_model import TFModelRandomizer
 from quantus.helpers.tf_utils import is_xla_compatible_model
 
 
-class TFNestedModelRandomizer(TFModelRandomizer):
-    @property
-    def random_layer_generator_length(self) -> int:
-        return len(self.list_parameterizable_layers(self.model, flatten_layers=True))
-
-    def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ) -> Generator:
-        return super().get_random_layer_generator(order, seed, flatten_layers=True)
 
 
 class TFHuggingFaceTextClassifier(
@@ -42,7 +33,7 @@ class TFHuggingFaceTextClassifier(
 ):
     def __init__(self, model: TFPreTrainedModel, softmax: bool = None):
         handle = model.config._name_or_path  # noqa
-        self._tokenizer = HuggingFaceTokenizable(handle)
+        self._tokenizer = HuggingFaceTokenizer(handle)
         self.model = model
         self.model._jit_compile = is_xla_compatible_model(self.model)
 

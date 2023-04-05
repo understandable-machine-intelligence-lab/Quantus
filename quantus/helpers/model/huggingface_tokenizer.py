@@ -16,7 +16,7 @@ from quantus.helpers.utils import add_default_items
 from quantus.helpers.model.text_classifier import Tokenizable
 
 
-class HuggingFaceTokenizable(Tokenizable):
+class HuggingFaceTokenizer(Tokenizable):
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
     def __init__(self, handle: str):

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Literal, Callable
-
+from functools import partial
 import numpy as np
 
 from helpers.types import AggregateFn
@@ -17,6 +17,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import NormaliseFn, Explanation, Kwargs, ExplainFn, Any
 from quantus.helpers.utils import safe_as_array, get_logits_for_labels
 from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.plotting import plot_token_flipping_experiment
 
 TaskT = Literal["pruning", "activation"]
 
@@ -41,8 +42,8 @@ class TokenFlipping(BatchedMetric):
             normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
             normalise_func_kwargs: Kwargs = None,
             return_aggregate: bool = False,
-            aggregate_func: AggregateFn = np.mean,
-            default_plot_func: Optional[Callable] = None,
+            aggregate_func=None,
+            default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
             disable_warnings: bool = False,
             display_progressbar: bool = False,
             mask_token: str = "[UNK]",
@@ -83,8 +84,8 @@ class TokenFlipping(BatchedMetric):
             display_progressbar,
             **kwargs,
         )
-        if self.return_aggregate:
-            raise NotImplementedError
+        if return_aggregate:
+            raise ValueError(f"Token Flipping does not support aggregating instances.")
         self.mask_token = mask_token
         self.task = task
 
@@ -165,13 +166,12 @@ class TokenFlipping(BatchedMetric):
         elif self.task == "activation":
             scores = self._eval_activation(model, x_batch, y_batch, a_batch)
 
-        og_logits = np.expand_dims(
-            get_logits_for_labels(model.predict(x_batch), y_batch), 0
-        )
+        og_logits = get_logits_for_labels(model.predict(x_batch), y_batch)
+
         scores = mse(scores, og_logits)
 
         # Move batch axis to 0's position.
-        return scores
+        return scores.T
 
     def _eval_activation(
             self,
@@ -246,6 +246,7 @@ class TokenFlipping(BatchedMetric):
 
         return scores
 
+    @classmethod
     @property
     def data_domain_applicability(self):
         return ["NLP"]

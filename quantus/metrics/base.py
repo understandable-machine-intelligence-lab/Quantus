@@ -424,8 +424,9 @@ class EvaluateAble(ABC):
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
+    @classmethod
     @property
-    def data_domain_applicability(self) -> List[str]:
+    def data_domain_applicability(cls) -> List[str]:
         return ["Image", "Time-Series", "Tabular"]
 
 
