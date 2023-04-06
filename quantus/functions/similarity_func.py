@@ -241,8 +241,14 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
+    max_val = np.max(np.abs(np.concatenate([a, b])))
+    data_range = 1. if max_val <= 1. else 255.
+
     return skimage.metrics.structural_similarity(
-        im1=a, im2=b, win_size=kwargs.get("win_size", None)
+        im1=a,
+        im2=b,
+        win_size=kwargs.get("win_size"),
+        data_range=data_range,
     )
 
 
