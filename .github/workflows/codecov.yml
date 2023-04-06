@@ -6,9 +6,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/setup-tox/
-        with:
-          python-version: ${{ matrix.python-version }}
+      - id: Setup Tox
+        uses: ./.github/actions/setup-tox/
 
       - name: Measure coverage.
         run: tox run -e coverage
