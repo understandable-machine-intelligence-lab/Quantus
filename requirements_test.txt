@@ -13,6 +13,7 @@ pytest-cov
 pytest-lazy-fixture
 pytest-mock
 pytest-xdist
+filelock
 # TensorFlow and co.
 tensorflow>=2.12.0; sys_platform != 'darwin'
 tensorflow_macos>=2.12.0; sys_platform == 'darwin'

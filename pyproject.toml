@@ -119,6 +119,8 @@ test = [
     "pytest-lazy-fixture",
     "pytest-mock",
     "pytest-xdist",
+    "filelock",
+    "tox>=4.4.11",
     "tensorflow>=2.12.0; sys_platform != 'darwin'",
     "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
     "tf-explain",
