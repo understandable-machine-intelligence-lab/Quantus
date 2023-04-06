@@ -19,6 +19,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.utils_nlp import get_scores
+from quantus.helpers.class_property import classproperty
 
 
 class RandomLogit(BatchedMetric):
@@ -313,7 +314,6 @@ class RandomLogit(BatchedMetric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    @classmethod
-    @property
+    @classproperty
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

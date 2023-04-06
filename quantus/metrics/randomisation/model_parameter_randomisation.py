@@ -31,6 +31,7 @@ from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanat
 from quantus.helpers.utils import map_optional
 from quantus.helpers.utils_nlp import get_scores
 from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.class_property import classproperty
 
 LayerOrderT = Literal["independent", "top_down"]
 
@@ -413,8 +414,7 @@ class ModelParameterRandomisation(BatchedMetric):
 
         return np.mean(results_per_sample_accumulator, axis=1)
 
-    @classmethod
-    @property
+    @classproperty
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]
 

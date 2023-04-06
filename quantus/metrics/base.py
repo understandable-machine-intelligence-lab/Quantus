@@ -5,11 +5,10 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
 import re
 from abc import abstractmethod, ABC
-from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection, List
+from typing import Any, Callable, Dict, Sequence, Optional, Union, Collection, List
+
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -18,6 +17,7 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.class_property import classproperty
 
 
 class EvaluateAble(ABC):
@@ -424,9 +424,8 @@ class EvaluateAble(ABC):
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-    @classmethod
-    @property
-    def data_domain_applicability(cls) -> List[str]:
+    @classproperty
+    def data_domain_applicability(self) -> List[str]:
         return ["Image", "Time-Series", "Tabular"]
 
 

@@ -28,6 +28,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
 from quantus.helpers.utils import value_or_default
 from quantus.helpers.utils_nlp import is_plain_text_perturbation, get_scores
+from quantus.helpers.class_property import classproperty
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
@@ -364,7 +365,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
 
         return nominator / denominator
 
-    @classmethod
-    @property
+    @classproperty
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

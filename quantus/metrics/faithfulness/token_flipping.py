@@ -17,6 +17,7 @@ from quantus.helpers.plotting import plot_token_flipping_experiment
 from quantus.helpers.types import NormaliseFn, Explanation, ExplainFn
 from quantus.helpers.utils import safe_as_array, get_logits_for_labels
 from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers.class_property import classproperty
 
 TaskT = Literal["pruning", "activation"]
 
@@ -246,7 +247,6 @@ class TokenFlipping(BatchedMetric):
 
         return scores
 
-    @classmethod
-    @property
-    def data_domain_applicability(self):
+    @classproperty
+    def data_domain_applicability(self) -> List[str]:
         return ["NLP"]

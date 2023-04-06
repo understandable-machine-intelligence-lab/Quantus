@@ -25,6 +25,7 @@ from quantus.helpers.utils_nlp import (
 )
 from quantus.helpers.utils import value_or_default
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.class_property import classproperty
 
 
 class AvgSensitivity(BatchedPerturbationMetric):
@@ -484,7 +485,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    @classmethod
-    @property
+    @classproperty
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]

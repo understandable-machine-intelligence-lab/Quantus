@@ -34,6 +34,7 @@ from quantus.helpers.utils_nlp import (
     get_scores,
 )
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.class_property import classproperty
 
 
 class MaxSensitivity(BatchedPerturbationMetric):
@@ -461,8 +462,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
 
         return similarities
 
-    @classmethod
-    @property
+    @classproperty
     def data_domain_applicability(self) -> List[str]:
         return super().data_domain_applicability + ["NLP"]
 
