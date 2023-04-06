@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 import numpy as np
 import scipy
-from functools import singledispatch, update_wrapper
+from functools import singledispatch, wraps
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
@@ -63,6 +63,7 @@ if util.find_spec("tf_explain"):
 
 def patch_kwargs(func):
 
+    @wraps(func)
     def wrapper(*args, **kwargs):
         # single dispatch requires first positional argument
         # in Quantus it is often passed as keyword, so we patch it onto 0s position.
@@ -70,8 +71,6 @@ def patch_kwargs(func):
             return func(kwargs.pop("model"), *args, **kwargs)
         else:
             return func(*args, **kwargs)
-
-    update_wrapper(wrapper, func)
     return wrapper
 
 
@@ -212,10 +211,6 @@ def get_explanation(model, inputs, targets, **kwargs):
             raise ValueError(
                 f"Model is of type tf.keras.Model but tf_explain is not installed."
             )
-
-    if isinstance(model, TextClassifier):
-        from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
-        return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
     raise ValueError(
         f"Model needs to be tf.keras.Model or torch.nn.Module but is {type(model)}. "

@@ -226,7 +226,7 @@ def test_evaluate_nlp(model, data, torch_device):
     )
 
     result_avg_sen = scores["Avg-Sen"]
-    # CHeck list of args returns list of scores
+    # Check list of args returns list of scores
     assert isinstance(result_avg_sen, list)
     assert len(result_avg_sen) == 2
     assert isinstance(result_avg_sen[0], np.ndarray)
