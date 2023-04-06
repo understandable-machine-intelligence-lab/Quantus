@@ -1,41 +1,39 @@
-matplotlib>=3.6.3
-numpy>=1.23.5
-opencv-python>=4.7.0.68
-scikit-image>=0.19.3
-scikit-learn>=1.2.1
-scipy>=1.10.0
-tqdm>=4.64.1
-pydantic
+# Include install requirements.
+-r requirements.txt
 
-nlpaug>=1.1.11
-nltk>=3.8.1
-transformers>=4.26.1
-tokenizers
-
-coverage
+# Linting.
 flake8
 black
-mypy
+# Pin mypy version due to breaking changes
+mypy==0.982
 
+# testing.
+coverage[toml]
 pytest
 pytest-cov
 pytest-lazy-fixture
 pytest-mock
-pytest-instafail
 pytest-xdist
-pytest-ordering
 
-tensorflow>=2.12.0
+# TensorFlow and co.
+tensorflow>=2.12.0; sys_platform != 'darwin'
+tensorflow_macos >=2.12.0; sys_platform == 'darwin'
 tf-explain
+tensorflow_probability
 
+# Torch and co.
 torch>=1.13.1
-torchvision>=0.14.1
+torchvision>=0.15.1
 zennit>=0.5.0
 captum>=0.6.0
 
 pandas
 
-tensorflow_probability
+# NLP
 datasets
 shap
 noisegrad@ git+https://github.com/aaarrti/NoiseGrad.git
+nltk>=3.8.1
+transformers>=4.26.1
+tokenizers
+
