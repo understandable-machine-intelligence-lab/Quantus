@@ -3,7 +3,7 @@
 
 # Linting.
 flake8
-blac
+black
 # Pin mypy version due to breaking changes
 mypy==0.982
 
