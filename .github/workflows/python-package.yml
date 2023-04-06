@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - id: Setup Tox
+      - name: Setup Tox
         uses: ./.github/actions/setup-tox/
         with:
           python-version: ${{ matrix.python-version }}
