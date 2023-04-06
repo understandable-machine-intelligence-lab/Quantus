@@ -10,6 +10,8 @@ from quantus.helpers.torch_utils import choose_hardware_acceleration
 from quantus.helpers.utils import get_wrapped_model
 
 from sklearn.model_selection import train_test_split
+from functools import wraps
+from filelock import FileLock
 
 from quantus.helpers.model.models import (
     LeNet,
@@ -27,8 +29,38 @@ BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
 
 
+def session_singleton(func):
+    # This decorator will prevent multiple read/write conflicts, when running with multiple workers, e.g.,
+    # here https://github.com/understandable-machine-intelligence-lab/Quantus/actions/runs/4633163312/jobs/8198074567
+    # tox/py310/lib/python3.10/site-packages/keras/datasets/cifar.py:31: FileNotFoundError _ ERROR at setup of
+    # test_explain_func[load_cifar10_model_tf-load_cifar10_images-params79-expected79] _
+    #
+    # Additionally, it can be used to prevent repeated memory intensive instantiations.,
+    # e.g., which can cause OOM for NLP models.
+    @wraps(func)
+    def wrapper(tmp_path_factory, worker_id, *args):
+        if worker_id == "master":
+            # not executing in with multiple workers, just produce the data and let
+            # pytest's fixture caching do its job
+            return func(*args)
+
+        # get the temp directory shared by all workers
+        root_tmp_dir = tmp_path_factory.getbasetemp().parent
+
+        fn = root_tmp_dir / f"{func.__name__}.pickle"
+        with FileLock(str(fn) + ".lock"):
+            if fn.is_file():
+                data = pickle.load(fn)
+            else:
+                data = func(*args)
+                pickle.dump(fn, data, protocol=pickle.HIGHEST_PROTOCOL)
+        return data
+
+    return wrapper
+
+
 @pytest.fixture(scope="session")
-def load_mnist_model():
+def load_mnist_model(tmp_path_factory, worker_id):
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNet()
     model.load_state_dict(
@@ -87,7 +119,7 @@ def load_1d_3ch_conv_model_tf():
     return model
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = (
@@ -99,8 +131,9 @@ def load_mnist_images():
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
+@session_singleton
 @pytest.fixture(scope="session")
-def load_cifar10_images():
+def load_cifar10_images(tmp_path_factory, worker_id):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = cifar10.load_data()
     x_batch = (
@@ -207,8 +240,8 @@ def titanic_dataset():
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
-    Y = df_enc["survived"].values.astype(np.int)
+    X = df_enc.drop(["survived"], axis=1).values.astype(float)
+    Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
 
