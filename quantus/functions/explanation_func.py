@@ -12,17 +12,18 @@ from typing import Optional, Union
 
 import numpy as np
 import scipy
+from functools import singledispatch, update_wrapper
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
-from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.utils import (
     get_baseline_value,
     infer_channel_first,
     make_channel_last,
     get_wrapped_model,
 )
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
 
 
 if util.find_spec("torch"):
@@ -60,6 +61,22 @@ if util.find_spec("tf_explain"):
     import tf_explain
 
 
+def patch_kwargs(func):
+
+    def wrapper(*args, **kwargs):
+        # single dispatch requires first positional argument
+        # in Quantus it is often passed as keyword, so we patch it onto 0s position.
+        if "model" in kwargs:
+            return func(kwargs.pop("model"), *args, **kwargs)
+        else:
+            return func(*args, **kwargs)
+
+    update_wrapper(wrapper, func)
+    return wrapper
+
+
+@patch_kwargs
+@singledispatch
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
@@ -118,8 +135,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 category=UserWarning,
             )
 
-    elif not isinstance(model, TextClassifier) and not __EXTRAS__:
-        # NLP explanations are mostly implemented without 3-rd party libraries.
+    elif not __EXTRAS__:
         raise ImportError(
             "Explanation library not found. Please install Captum or Zennit for torch>=1.2 models "
             "and tf-explain for TensorFlow>=2.0."
@@ -128,6 +144,11 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     explanation = get_explanation(model, inputs, targets, **kwargs)
 
     return explanation
+
+
+@explain.register
+def _(model: TextClassifier, inputs, targets, **kwargs):
+    return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
 
 def get_explanation(model, inputs, targets, **kwargs):
@@ -194,7 +215,7 @@ def get_explanation(model, inputs, targets, **kwargs):
 
     if isinstance(model, TextClassifier):
         from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
-        return generate_text_classification_explanations(model, inputs, targets, method=memoryview, **kwargs)
+        return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
     raise ValueError(
         f"Model needs to be tf.keras.Model or torch.nn.Module but is {type(model)}. "

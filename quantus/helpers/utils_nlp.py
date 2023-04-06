@@ -6,14 +6,17 @@ from typing import List, Callable, TypeVar
 import keras
 import numpy as np
 from cachetools import cached
-from quantus.helpers.types import Explanation, Explanations
+from quantus.helpers.types import Explanation
+from quantus.helpers.torch_utils import is_torch_available
+from quantus.helpers.tf_utils import is_tf_available
+from quantus.helpers.utils import is_transformers_available
 
 T = TypeVar("T")
 R = TypeVar("R")
 
 
 def map_explanations(
-        a_batch: Explanations, fn: Callable[[T], R]
+        a_batch, fn: Callable[[T], R]
 ) -> List[R]:
     """Apply fn to a_batch, supports token-scores tuples as well as raw scores."""
     if isinstance(a_batch, List):
@@ -53,19 +56,17 @@ def is_plain_text_perturbation(func: Callable) -> bool:
 
 
 def is_tf_model(model):
-    try:
-        import tensorflow as tf
-    except ModuleNotFoundError:
+    if not is_tf_available():
         return False
+
+    import tensorflow as tf
     if isinstance(model, keras.Model):
         return True
 
-    try:
+    if is_transformers_available():
         from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
         if isinstance(model, TFHuggingFaceTextClassifier):
             return True
-    except ModuleNotFoundError:
-        return False
 
     if hasattr(model, "model"):
         return isinstance(model.model, tf.keras.Model)
@@ -73,18 +74,18 @@ def is_tf_model(model):
 
 
 def is_torch_model(model):
-    try:
-        import torch.nn as nn
-    except ModuleNotFoundError:
+    if not is_torch_available():
         return False
+    import torch.nn as nn
+
     if isinstance(model, nn.Module):
         return True
-    try:
+
+    if is_transformers_available():
         from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
         if isinstance(model, TorchHuggingFaceTextClassifier):
             return True
-    except ModuleNotFoundError:
-        return False
+
     if hasattr(model, "model"):
         return isinstance(model.model, nn.Module)
     return False

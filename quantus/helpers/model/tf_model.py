@@ -32,12 +32,12 @@ from quantus.helpers.model.model_interface import (
     RandomisableModel,
 )
 from quantus.helpers import utils
-from quantus.helpers.tf_utils import is_xla_compatible_model
+from quantus.helpers.tf_utils import is_xla_compatible_platform
 
 
 class TFModelWrapper(ModelWrapper, tf.Module):
-    model: keras.Model
 
+    model: keras.Model
     def get_model(self):
         """
         Get the original tf model.
@@ -128,7 +128,201 @@ class TFNestedModelRandomizer(TFModelRandomizer):
         return super().get_random_layer_generator(order, seed, flatten_layers=True)
 
 
-class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):
+class TensorFlowModel(ModelInterface, TFModelRandomizer, HiddenRepresentationsModel):
+    """Interface for tensorflow models."""
+
+    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
+    _available_predict_kwargs = [
+        "batch_size",
+        "verbose",
+        "steps",
+        "callbacks",
+        "max_queue_size",
+        "workers",
+        "use_multiprocessing",
+    ]
+
+    def __init__(
+        self,
+        model: Model,
+        channel_first: bool = True,
+        softmax: bool = False,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+    ):
+        """
+        Initialisation of ModelInterface class.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A model this will be wrapped in the ModelInterface:
+        channel_first: boolean, optional
+             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
+        softmax: boolean
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        """
+        super().__init__(
+            model=model,
+            channel_first=channel_first,
+            softmax=softmax,
+            model_predict_kwargs=model_predict_kwargs,
+        )
+        self.model._jit_compile = is_xla_compatible_platform()
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
+        # get_hidden_representations needs to rebuild and re-trace the model.
+        # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
+        # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
+        self.cache = LRUCache(100)
+
+    def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
+        """
+        Use kwargs of predict call if specified, but don't overwrite object attribute.
+        Filter out those, which are supported by Keras API.
+        """
+        all_kwargs = {**self.model_predict_kwargs, **kwargs}
+        predict_kwargs = {
+            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
+        }
+        return predict_kwargs
+
+    @property
+    def _last_layer_is_softmax(self) -> bool:
+        """
+        Checks if the last layer is an instance of tf.keras.layers.Softmax.
+        """
+        last_layer = self.model.layers[-1]
+        return isinstance(last_layer, tf.keras.layers.Softmax)
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _get_model_with_linear_top(self) -> Model:
+        """
+        In a case model has a softmax on top, and we want linear,
+        we have to rebuild the model and replace top with linear activation.
+        Softmax can either be a separate last layer, or activation of the
+        last layer.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
+        """
+
+        if self._last_layer_is_softmax:
+            output_layer = self.model.layers[-2].output
+            new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+            return new_model
+
+        output_activation = self.model.layers[-1].activation
+        if output_activation == activations.linear:
+            return self.model
+
+        config = self.model.layers[-1].get_config()
+        config["activation"] = activations.linear
+        weights = self.model.layers[-1].get_weights()
+
+        output_layer = Dense(**config)(self.model.layers[-2].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+        new_model.layers[-1].set_weights(weights)
+        return new_model
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def _get_model_with_softmax_top(self) -> Model:
+        """
+        In a case model has a linear activation in the last layer,
+        and we want softmax, we have to rebuild the model and replace top with
+        softmax activation.
+        Cache the rebuilt model and reuse it during consecutive predict calls.
+        """
+
+        if self._last_layer_is_softmax:
+            return self.model
+
+        output_activation = self.model.layers[-1].activation
+        if output_activation == activations.softmax:
+            return self.model
+
+        output_layer = tf.keras.layers.Softmax(axis=-1)(self.model.layers[-1].output)
+        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
+
+        return new_model
+
+    def get_softmax_arg_model(self) -> Model:
+        """
+        Returns model with last layer adjusted accordingly to softmax argument.
+        If the original model has softmax activation in the last layer and softmax=false,
+        the softmax activation is removed.
+        """
+
+        if self.softmax:
+            return self._get_model_with_softmax_top()
+
+        # In this case model has a softmax on top, and we want linear.
+        # We have to rebuild the model and replace top with linear activation.
+        return self._get_model_with_linear_top()
+
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Predict on the given input.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            A given input that the wrapped model predicts on.
+        kwargs: optional
+            Keyword arguments passed to tf.keras.Model.predict.
+
+        Returns
+        --------
+        np.ndarray
+            predictions of the same dimension and shape as the input, values in the range [0, 1].
+        """
+        # Generally, one should always prefer keras predict to __call__.
+        # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
+        predict_kwargs = self._get_predict_kwargs(**kwargs)
+        predict_model = self.get_softmax_arg_model()
+
+        return predict_model.predict(x, **predict_kwargs)
+
+    def shape_input(
+        self,
+        x: np.ndarray,
+        shape: Tuple[int, ...],
+        channel_first: Optional[bool] = None,
+        batched: bool = False,
+    ):
+        """
+        Reshape input into model-expected input.
+
+        Parameters
+        ----------
+        x: np.ndarray
+            A given input that is shaped.
+        shape: Tuple[int...]
+            The shape of the input.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        batched: boolean
+            Indicates if the first dimension should be expanded or not, if it is just a single instance.
+
+        Returns
+        -------
+        np.ndarray
+            A reshaped input.
+        """
+        if channel_first is None:
+            channel_first = utils.infer_channel_first(x)
+        # Expand first dimension if this is just a single instance.
+        if not batched:
+            x = x.reshape(1, *shape)
+
+        # Set channel order according to expected input of model.
+        if self.channel_first:
+            return utils.make_channel_first(x, channel_first)
+        return utils.make_channel_last(x, channel_first)
+
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
         self, layer_names: Tuple, layer_indices: Tuple
@@ -151,15 +345,64 @@ class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):
             return index in layer_indices or name in layer_names
 
         outputs_of_interest = []
-        for i, layer in enumerate(self.get_model().layers):
+        for i, layer in enumerate(self.model.layers):
             if is_layer_of_interest(i, layer.name):
                 outputs_of_interest.append(layer.output)
 
         if len(outputs_of_interest) == 0:
             raise ValueError("No hidden representations were selected.")
 
-        hidden_representation_model = Model(self.get_model().input, outputs_of_interest)
+        hidden_representation_model = Model(self.model.input, outputs_of_interest)
         return hidden_representation_model
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def add_mean_shift_to_first_layer(
+        self,
+        input_shift: Union[int, float],
+        shape: tuple,
+    ):
+        """
+        Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
+        the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
+        for Input Invariance metric.
+
+
+        Parameters
+        ----------
+        input_shift: Union[int, float]
+            Shift to be applied.
+        shape: tuple
+            Model input shape, ndim = 4.
+
+        Returns
+        -------
+        random_layer_model: Model
+            The resulting model with a shifted first layer.
+        """
+        original_parameters = self.state_dict()
+        new_model = clone_model(self.model)
+        new_model.set_weights(original_parameters)
+
+        module = new_model.layers[0]
+        tmp_model = Model(
+            inputs=[new_model.input], outputs=[new_model.layers[0].output]
+        )
+
+        delta = np.zeros(shape=shape)
+        delta.fill(input_shift)
+        fw = tmp_model(delta)[0]
+
+        weights = module.get_weights()
+        bias = weights[1]
+
+        for i in range(len(bias)):
+            if self.channel_first:
+                weights[1][i] = 2 * bias[i] - np.unique(fw[i])[0]
+            else:
+                weights[1][i] = 2 * bias[i] - np.unique(fw[..., i])[0]
+
+        module.set_weights(weights)
+        return new_model
 
     def get_hidden_representations(
         self,
@@ -168,6 +411,7 @@ class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
+
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).
@@ -224,206 +468,3 @@ class TFHiddenRepresentationsModel(HiddenRepresentationsModel, TFModelWrapper):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
-
-
-class TensorFlowModel(ModelInterface, TFModelRandomizer, TFHiddenRepresentationsModel):
-    """Interface for tensorflow models."""
-
-    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
-    _available_predict_kwargs = [
-        "batch_size",
-        "verbose",
-        "steps",
-        "callbacks",
-        "max_queue_size",
-        "workers",
-        "use_multiprocessing",
-    ]
-
-    def __init__(
-        self,
-        model: Model,
-        channel_first: bool = True,
-        softmax: bool = False,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
-    ):
-        """
-        Initialisation of ModelInterface class.
-
-        Parameters
-        ----------
-        model: torch.nn.Module, tf.keras.Model
-            A model this will be wrapped in the ModelInterface:
-        channel_first: boolean, optional
-             Indicates of the image dimensions are channel first, or channel last. Inferred from the input shape if None.
-        softmax: boolean
-            Indicates whether to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-        model_predict_kwargs: dict, optional
-            Keyword arguments to be passed to the model's predict method.
-        """
-        super().__init__(
-            model=model,
-            channel_first=channel_first,
-            softmax=softmax,
-            model_predict_kwargs=model_predict_kwargs,
-        )
-        self.model._jit_compile = is_xla_compatible_model(self.model)
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model.
-        model_predict_kwargs["verbose"] = 0
-        # get_hidden_representations needs to rebuild and re-trace the model.
-        # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
-        # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
-        self.cache = LRUCache(100)
-
-    def _get_predict_kwargs(self, **kwargs: Dict[str, ...]) -> Dict[str, ...]:
-        """
-        Use kwargs of predict call if specified, but don't overwrite object attribute.
-        Filter out those, which are supported by Keras API.
-        """
-        all_kwargs = {**self.model_predict_kwargs, **kwargs}
-        predict_kwargs = {
-            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
-        }
-        return predict_kwargs
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def _build_model_with_linear_top(self) -> Model:
-        """
-        In a case model has a softmax on top, and we want linear,
-        we have to rebuild the model and replace top with linear activation.
-        Cache the rebuilt model and reuse it during consecutive predict calls.
-        """
-
-        config = self.model.layers[-1].get_config()
-        config["activation"] = activations.linear
-        weights = self.model.layers[-1].get_weights()
-
-        output_layer = Dense(**config)(self.model.layers[-2].output)
-        new_model = Model(inputs=[self.model.input], outputs=[output_layer])
-        new_model.layers[-1].set_weights(weights)
-        return new_model
-
-    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Predict on the given input.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            A given input that the wrapped model predicts on.
-        kwargs: optional
-            Keyword arguments passed to tf.keras.Model.predict.
-
-        Returns
-        --------
-        np.ndarray
-            predictions of the same dimension and shape as the input, values in the range [0, 1].
-        """
-        # Generally, one should always prefer keras predict to __call__.
-        # Reference: https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call.
-        predict_kwargs = self._get_predict_kwargs(**kwargs)
-
-        output_activation = self.model.layers[-1].activation
-        target_activation = activations.softmax if self.softmax else activations.linear
-
-        if output_activation == target_activation:
-            return self.model.predict(x, **predict_kwargs)
-
-        if self.softmax and output_activation == activations.linear:
-            logits = self.model.predict(x, **predict_kwargs)
-            return tf.nn.softmax(logits)
-
-        # In this case model has a softmax on top, and we want linear.
-        # We have to rebuild the model and replace top with linear activation.
-        predict_model = self._build_model_with_linear_top()
-        return predict_model.predict(x, **predict_kwargs)
-
-    def shape_input(
-        self,
-        x: np.ndarray,
-        shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
-        batched: bool = False,
-    ):
-        """
-        Reshape input into model-expected input.
-
-        Parameters
-        ----------
-        x: np.ndarray
-            A given input that is shaped.
-        shape: Tuple[int...]
-            The shape of the input.
-        channel_first: boolean, optional
-            Indicates of the image dimensions are channel first, or channel last.
-            Inferred from the input shape if None.
-        batched: boolean
-            Indicates if the first dimension should be expanded or not, if it is just a single instance.
-
-        Returns
-        -------
-        np.ndarray
-            A reshaped input.
-        """
-        if channel_first is None:
-            channel_first = utils.infer_channel_first(x)
-        # Expand first dimension if this is just a single instance.
-        if not batched:
-            x = x.reshape(1, *shape)
-
-        # Set channel order according to expected input of model.
-        if self.channel_first:
-            return utils.make_channel_first(x, channel_first)
-        return utils.make_channel_last(x, channel_first)
-
-    @cachedmethod(operator.attrgetter("cache"))
-    def add_mean_shift_to_first_layer(
-        self,
-        input_shift: Union[int, float],
-        shape: tuple,
-    ):
-        """
-        Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update
-        the bias b1 to b2:= b1 - w^T * m (= 2*b1 - (w^T * m + b1)). The operation is necessary
-        for Input Invariance metric.
-
-
-        Parameters
-        ----------
-        input_shift: Union[int, float]
-            Shift to be applied.
-        shape: tuple
-            Model input shape, ndim = 4.
-
-        Returns
-        -------
-        random_layer_model: Model
-            The resulting model with a shifted first layer.
-        """
-        original_parameters = self.state_dict()
-        new_model = clone_model(self.model)
-        new_model.set_weights(original_parameters)
-
-        module = new_model.layers[0]
-        tmp_model = Model(
-            inputs=[new_model.input], outputs=[new_model.layers[0].output]
-        )
-
-        delta = np.zeros(shape=shape)
-        delta.fill(input_shift)
-        fw = tmp_model(delta)[0]
-
-        weights = module.get_weights()
-        bias = weights[1]
-
-        for i in range(len(bias)):
-            if self.channel_first:
-                weights[1][i] = 2 * bias[i] - np.unique(fw[i])[0]
-            else:
-                weights[1][i] = 2 * bias[i] - np.unique(fw[..., i])[0]
-
-        module.set_weights(weights)
-        return new_model

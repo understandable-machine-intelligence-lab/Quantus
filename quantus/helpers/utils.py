@@ -23,7 +23,7 @@ from typing import (
     TypeVar,
     Callable,
 )
-from functools import wraps, singledispatch
+from functools import wraps, singledispatch, lru_cache
 import logging
 
 import numpy as np
@@ -41,7 +41,8 @@ if util.find_spec("tensorflow"):
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
 
-
+from quantus.helpers.torch_utils import is_torch_available
+from quantus.helpers.tf_utils import is_tf_available
 try:
     from transformers import TFPreTrainedModel, PreTrainedModel
 except ModuleNotFoundError:
@@ -1036,48 +1037,6 @@ def calculate_auc(values: np.array, dx: int = 1):
     return np.trapz(np.array(values), dx=dx)
 
 
-def dispatch_2d(func: Callable[[np.ndarray, np.ndarray, ...], np.ndarray]):
-    @wraps(func)
-    def wrapper(a, b, **kwargs):
-        a = np.asarray(a)
-        b = np.asarray(b)
-
-        def flatten_over_batch(arr):
-            shape = np.shape(arr)
-            return np.reshape(arr, (shape[0], -1))
-
-        if np.ndim(a) != np.ndim(b):
-            raise ValueError(
-                f"a and b must have same shapes, but found, {a.shape =}, {b.shape = }"
-            )
-
-        if np.ndim(a) > 2:
-            a = flatten_over_batch(a)
-            b = flatten_over_batch(b)
-
-        if np.ndim(a) == 2:
-            return np.asarray([func(i, j, **kwargs) for i, j in zip(a, b)])
-            # return np.vectorize(func, signature="(n,m),(n,m)->(n)")(a, b,  **kwargs)
-        elif np.ndim(a) == 1:
-            return func(a, b, **kwargs)
-
-    return wrapper
-
-
-def raise_quietly(func):
-    @wraps(func)
-    def wrapper(a, *args, **kwargs):
-        try:
-            return func(a, *args, **kwargs)
-        except RuntimeWarning as w:
-            log.warning(
-                f"{func.__name__} raised {w}, ignoring computation and returning original array `a`."
-            )
-            return a
-
-    return wrapper
-
-
 T = TypeVar("T")
 R = TypeVar("R")
 
@@ -1144,6 +1103,15 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
 
 
+@lru_cache
+def is_transformers_available() -> bool:
+    try:
+        import transformers
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 @singledispatch
 def safe_as_array(a, force: bool = False) -> np.ndarray:
     """
@@ -1168,25 +1136,16 @@ def safe_as_array(a, force: bool = False) -> np.ndarray:
     return a
 
 
-try:
-    import torch
-
+if is_torch_available():
     @safe_as_array.register
     def _(a: torch.Tensor, force=False):
         return a.detach().cpu().numpy()
 
-except ModuleNotFoundError:
-    pass
-
-try:
+if is_tf_available():
     import tensorflow as tf
-
 
     @safe_as_array.register
     def _(a: tf.Tensor, force=False):
         if force:
             return np.array(tf.identity(a))
         return a
-
-except ModuleNotFoundError:
-    pass

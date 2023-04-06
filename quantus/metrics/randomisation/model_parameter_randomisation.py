@@ -7,14 +7,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from operator import itemgetter
 from functools import singledispatchmethod
+from operator import itemgetter
 from typing import (
-    Any,
     Callable,
     Dict,
     List,
-    Optional
+    Optional,
+    Literal
 )
 
 import numpy as np
@@ -27,10 +27,12 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface, RandomisableModel
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
-from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanations, Explanation
+from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanation, AggregateFn
 from quantus.helpers.utils import map_optional
-from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.utils_nlp import get_scores
+from quantus.metrics.base_batched import BatchedMetric
+
+LayerOrderT = Literal["independent", "top_down"]
 
 
 class ModelParameterRandomisation(BatchedMetric):
@@ -54,15 +56,15 @@ class ModelParameterRandomisation(BatchedMetric):
     def __init__(
         self,
         similarity_func: SimilarityFn = None,
-        layer_order: str = "independent",
+        layer_order: LayerOrderT = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[NormaliseFn] = None,
-        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = None,
+        aggregate_func: Optional[AggregateFn] = None,
         default_plot_func: Optional[Callable] = plot_model_parameter_randomisation_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -153,16 +155,16 @@ class ModelParameterRandomisation(BatchedMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[Explanations] = None,
+        a_batch: Optional[List[Explanation] | np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[ExplainFn] = None,
-        explain_func_kwargs: Optional[Dict] = None,
-        model_predict_kwargs: Optional[Dict] = None,
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
+        custom_batch: Optional[...] = None,
         **kwargs,
     ) -> Dict[str, np.ndarray] | np.ndarray | float:
         """

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
-from quantus.helpers.types import SimilarityFn, NormaliseFn, Explanations, ExplainFn
+from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
@@ -122,7 +122,7 @@ class RandomLogit(BatchedMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[Explanations] = None,
+        a_batch: Optional = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: Optional[ExplainFn] = None,
@@ -228,7 +228,7 @@ class RandomLogit(BatchedMetric):
         model: ModelInterface | TextClassifier,
         x_batch: np.ndarray | List[str],
         y_batch: np.ndarray,
-        a_batch: Explanations,
+        a_batch,
         s_batch: np.ndarray = None,
         custom_batch = None
     ) -> np.ndarray | float:

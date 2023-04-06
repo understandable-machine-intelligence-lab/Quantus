@@ -137,6 +137,15 @@ class ModelInterface(ModelWrapper, ABC):
             self.model_predict_kwargs = model_predict_kwargs
 
     @abstractmethod
+    def get_softmax_arg_model(self):
+        """
+        Returns model with last layer adjusted accordingly to softmax argument.
+        If the original model has softmax activation as the last layer and softmax=false,
+        the layer is removed.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def predict(self, x: np.array, **kwargs):
         """
         Predict on the given input.

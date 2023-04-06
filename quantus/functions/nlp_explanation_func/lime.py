@@ -96,7 +96,7 @@ def explain_lime(
 def sample_masks(num_samples: int, num_features: int, seed: Optional[int] = None):
     rng = np.random.RandomState(seed)
     positions = np.tile(np.arange(num_features), (num_samples, 1))
-    permutation_fn = np.vectorize(rng.permutation, signature="(n)->(n)")
+    permutation_fn = np.vectorize(rng.permutation, signature="(n)->(n)", cache=True)
     permutations = permutation_fn(positions)  # A shuffled range of positions.
     num_disabled_features = rng.randint(1, num_features + 1, (num_samples, 1))
     return permutations >= num_disabled_features

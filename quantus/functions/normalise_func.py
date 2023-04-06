@@ -10,10 +10,8 @@ import warnings
 from typing import Optional, Sequence
 
 import numpy as np
-from quantus.helpers.utils import raise_quietly
 
 
-@raise_quietly
 def normalise_by_max(
     a: np.ndarray,
     normalise_axes: Optional[Sequence[int]] = None,

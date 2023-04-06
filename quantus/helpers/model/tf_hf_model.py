@@ -21,7 +21,7 @@ from quantus.helpers.model.model_interface import (
 )
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.model.tf_model import TFNestedModelRandomizer
-from quantus.helpers.tf_utils import is_xla_compatible_model
+from quantus.helpers.tf_utils import is_xla_compatible_platform
 
 
 class TFHuggingFaceTextClassifier(
@@ -33,7 +33,7 @@ class TFHuggingFaceTextClassifier(
         handle = model.config._name_or_path  # noqa
         self._tokenizer = HuggingFaceTokenizer(handle)
         self.model = model
-        self.model._jit_compile = is_xla_compatible_model(self.model)
+        self.model._jit_compile = is_xla_compatible_platform()
 
     def embedding_lookup(self, input_ids) -> tf.Tensor:
         return self.model.get_input_embeddings()(input_ids)

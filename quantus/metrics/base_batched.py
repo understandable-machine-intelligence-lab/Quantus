@@ -20,7 +20,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.types import Explanations, NormaliseFn, ExplainFn, AggregateFn
+from quantus.helpers.types import NormaliseFn, ExplainFn, AggregateFn
 from quantus.helpers.utils import (
     infer_channel_first,
     make_channel_first,
@@ -114,7 +114,7 @@ class BatchedMetric(EvaluateAble, ABC):
             model,
             x_batch: np.ndarray,
             y_batch: Optional[np.ndarray],
-            a_batch: Optional[Explanations],
+            a_batch: Optional,
             channel_first: Optional[bool],
             explain_func: Optional[ExplainFn],
             explain_func_kwargs: Optional[Dict[str, Any]],
@@ -263,7 +263,7 @@ class BatchedMetric(EvaluateAble, ABC):
     @singledispatchmethod
     def explain_batch(
             self, model: ModelInterface, x_batch: np.ndarray, y_batch: np.ndarray, **kwargs
-    ) -> Explanations:
+    ):
         a_batch = self.explain_func(
             model.get_model(), x_batch, y_batch, **self.explain_func_kwargs, **kwargs
         )
@@ -277,7 +277,7 @@ class BatchedMetric(EvaluateAble, ABC):
     @explain_batch.register
     def _(
             self, model: TextClassifier, x_batch, y_batch: np.ndarray, **kwargs
-    ) -> Explanations:
+    ):
         a_batch = self.explain_func(
             model, x_batch, y_batch, **self.explain_func_kwargs, **kwargs
         )

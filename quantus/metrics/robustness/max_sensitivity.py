@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Dict
 
 import numpy as np
 
@@ -21,13 +21,11 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import (
-    Explanations,
     PerturbFn,
     ExplainFn,
     SimilarityFn,
     NormaliseFn,
     NormFn,
-    Kwargs,
     Explanation,
 )
 from quantus.helpers.utils import value_or_default
@@ -62,11 +60,11 @@ class MaxSensitivity(BatchedPerturbationMetric):
         abs: bool = False,
         normalise: bool = False,
         normalise_func: Optional[NormaliseFn] = None,
-        normalise_func_kwargs: Kwargs = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
         perturb_func: PerturbFn = None,
         lower_bound: float = 0.2,
         upper_bound: Optional[float] = None,
-        perturb_func_kwargs: Kwargs = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
         default_plot_func: Optional[Callable] = None,
@@ -174,8 +172,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: ExplainFn = None,
-        explain_func_kwargs: Kwargs = None,
-        model_predict_kwargs: Kwargs = None,
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
@@ -349,7 +347,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
-        a_batch: Explanations,
+        a_batch: List[Explanation],
         s_batch: np.ndarray = None,
         custom_batch=None,
     ) -> np.ndarray:

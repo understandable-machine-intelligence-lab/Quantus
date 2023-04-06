@@ -6,19 +6,14 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple, Protocol, overload, TYPE_CHECKING, Callable, Union, Optional, Dict, Any
+from typing import List, Tuple, Protocol, overload
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 
 Explanation = Tuple[List[str], np.ndarray]
-AggregateFn = Callable[[np.ndarray], float]
-ModelWrapper = Union[ModelInterface, TextClassifier]
-Explanations = Union[np.ndarray, List[Explanation]]
-Kwargs = Optional[Dict[str, Any]]
 
 
 class PerturbFn(Protocol):
@@ -31,7 +26,10 @@ class PerturbFn(Protocol):
 
 class SimilarityFn(Protocol):
 
+    @overload
     def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> np.ndarray: ...
+
+    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> float: ...
 
 
 class NormFn(Protocol):
@@ -53,5 +51,12 @@ class ExplainFn(Protocol):
     @overload
     def __call__(self, model: TextClassifier, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs) -> np.ndarray: ...
 
-    def __call__(self, model: nn.Module | keras.Model, x_batch: ArrayLike, y_batch: ArrayLike,
-                 **kwargs) -> np.ndarray: ...
+    def __call__(self, model, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs) -> np.ndarray: ...
+
+
+class AggregateFn(Protocol):
+
+    @overload
+    def __call__(self, a: ArrayLike, **kwargs) -> float: ...
+
+    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray: ...

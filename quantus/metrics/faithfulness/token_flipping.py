@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Literal, Callable
+from typing import List, Optional, Literal, Callable, Dict
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from quantus.functions.loss_func import mse
 from quantus.functions.normalise_func import normalize_sum_to_1
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.plotting import plot_token_flipping_experiment
-from quantus.helpers.types import NormaliseFn, Explanation, Kwargs, ExplainFn, Any
+from quantus.helpers.types import NormaliseFn, Explanation, ExplainFn
 from quantus.helpers.utils import safe_as_array, get_logits_for_labels
 from quantus.metrics.base_batched import BatchedMetric
 
@@ -39,7 +39,7 @@ class TokenFlipping(BatchedMetric):
             abs: bool = False,
             normalise: bool = False,
             normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
-            normalise_func_kwargs: Kwargs = None,
+            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
             return_aggregate: bool = False,
             aggregate_func=None,
             default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
@@ -97,14 +97,14 @@ class TokenFlipping(BatchedMetric):
             y_batch: Optional[np.ndarray],
             a_batch: Optional[List[Explanation]],
             explain_func: Optional[ExplainFn],
-            explain_func_kwargs: Kwargs = None,
-            model_predict_kwargs: Kwargs = None,
+            explain_func_kwargs: Optional[Dict[str, ...]] = None,
+            model_predict_kwargs: Optional[Dict[str, ...]] = None,
             softmax: Optional[bool] = None,
             s_batch: Optional[np.ndarray] = None,
             channel_first: Optional[bool] = None,
             device: Optional[str] = None,
             batch_size: int = 64,
-            custom_batch: Optional[Any] = None,
+            custom_batch: Optional[...] = None,
             **kwargs,
     ) -> np.ndarray:
         """

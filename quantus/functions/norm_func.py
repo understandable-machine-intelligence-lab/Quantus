@@ -8,9 +8,26 @@
 
 from __future__ import annotations
 import numpy as np
+from functools import wraps
 
 
-def fro_norm(a: np.ndarray) -> float | np.ndarray:
+def vectorize_norm(func):
+
+    vectorized_func = np.vectorize(func, signature="(n)->()", cache=True)
+
+    @wraps(func)
+    def wrapper(a):
+        a = np.asarray(a)
+        if a.ndim == 1:
+            return func(a)
+        if a.ndim > 2:
+            a = np.reshape(a, (a.shape[0], -1))
+        return vectorized_func(a)
+    return wrapper
+
+
+@vectorize_norm
+def fro_norm(a: np.array) -> float:
     """
     Calculate Frobenius norm for an array.
 
@@ -24,10 +41,12 @@ def fro_norm(a: np.ndarray) -> float | np.ndarray:
     float
         The norm.
     """
-    return ndim_norm(a, 1)
+    assert a.ndim == 1, "Check that 'fro_norm' receives a 1D array."
+    return np.linalg.norm(a)
 
 
-def l2_norm(a: np.ndarray) -> float | np.ndarray:
+@vectorize_norm
+def l2_norm(a: np.array) -> float:
     """
     Calculate L2 norm for an array.
 
@@ -41,11 +60,12 @@ def l2_norm(a: np.ndarray) -> float | np.ndarray:
     float
         The norm.
     """
+    assert a.ndim == 1, "Check that 'l2_norm' receives a 1D array."
+    return np.linalg.norm(a, ord=2)
 
-    return ndim_norm(a, 2)
 
-
-def linf_norm(a: np.ndarray) -> float | np.ndarray:
+@vectorize_norm
+def linf_norm(a: np.array) -> float:
     """
     Calculate L-inf norm for an array.
 
@@ -59,27 +79,5 @@ def linf_norm(a: np.ndarray) -> float | np.ndarray:
     float
         The norm.
     """
-    return ndim_norm(a, np.inf)
-
-
-def ndim_norm(a: np.ndarray, l_ord: int) -> float | np.ndarray:
-    """Compute n-dimensional norm of order l_ord."""
-    try:
-        if a.ndim == 1:
-            return np.linalg.norm(a, ord=l_ord)
-        elif a.ndim == 2:
-            return np.linalg.norm(a, axis=-1, ord=l_ord)
-        elif a.ndim == 3:
-            return np.linalg.norm(a, axis=(-1, -2), ord=l_ord)  # noqa
-        if a.ndim == 4:
-            return np.linalg.norm(
-                np.linalg.norm(a, axis=(-1, -2), ord=l_ord), axis=-1, ord=l_ord # noqa
-            )
-        else:
-            raise ValueError(f"Supported are ndim up to 4, but found: {a.ndim}")
-    except np.linalg.LinAlgError:
-        # This happened once to me while running experiments, could be useful for root-cause investigation.
-        fname = f"a_ndim_norm_err_l_ord_{l_ord}.npy"
-        np.save(fname, a)
-        print(f"Saved invalid input to {fname}")
-        raise
+    assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
+    return np.linalg.norm(a, ord=np.inf)

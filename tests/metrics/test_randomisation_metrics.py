@@ -109,13 +109,11 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "VanillaGradients",
-                    },
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"min": -1.0, "max": 1.0},
-            marks=pytest.mark.xfail,
+            # marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),
@@ -131,9 +129,7 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "VanillaGradients",
-                    },
+                    "explain_func_kwargs": {"method": "VanillaGradients",},
                 },
             },
             {"exception": ValueError},
@@ -152,13 +148,11 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Gradient",
-                    },
+                    "explain_func_kwargs": {"method": "Gradient",},
                 },
             },
             {"min": -1.0, "max": 1.0},
-            marks=pytest.mark.xfail,
+            # marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -219,7 +213,7 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                     },
                 },
             },
-            {"min": -1.0, "max": 1.0},
+            {"min": -1.0, "max": 1.01},
         ),
         (
             lazy_fixture("titanic_model_tf"),

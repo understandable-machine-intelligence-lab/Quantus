@@ -8,7 +8,7 @@ from quantus.functions.norm_func import *
 
 @pytest.fixture
 def atts_norm_ones():
-    return np.ones((10))
+    return np.ones(10)
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def test_fro_norm(data: np.ndarray, params: dict, expected: Union[float, dict, b
 )
 def test_linf_norm(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     out = linf_norm(a=data)
-    assert out == expected, "Test failed."
+    assert np.allclose(out, expected)
 
 
 @pytest.mark.norm_func
@@ -51,6 +51,6 @@ def test_linf_norm(data: np.ndarray, params: dict, expected: Union[float, dict, 
         (lazy_fixture("atts_norm_fill"), {}, 11.40175425099138),
     ],
 )
-def test_l2_norm(data: dict, params: dict, expected: Union[float, dict, bool]):
+def test_l2_norm(data, params: dict, expected: Union[float, dict, bool]):
     out = l2_norm(a=data)
-    assert out == expected, "Test failed."
+    assert np.allclose(out, expected)

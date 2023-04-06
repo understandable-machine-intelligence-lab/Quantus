@@ -15,22 +15,24 @@ from transformers import pipeline
 from quantus.helpers.model.text_classifier import TextClassifier
 
 from quantus.functions.nlp_explanation_func.lime import explain_lime
-from quantus.helpers.types import Explanation, Explanations
+from quantus.helpers.types import Explanation
 from quantus.helpers.utils import (
     add_default_items,
     safe_as_array,
     value_or_default,
+    is_tf_available,
+    is_torch_available
 )
 from quantus.helpers.utils_nlp import map_explanations, is_torch_model, is_tf_model
 
-try:
+if is_tf_available():
     from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-except ModuleNotFoundError:
+else:
     TFHuggingFaceTextClassifier = type(None)
 
-try:
+if is_torch_available():
     from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-except ModuleNotFoundError:
+else:
     TorchHuggingFaceTextClassifier = type(None)
 
 
@@ -82,7 +84,7 @@ def generate_text_classification_explanations(
     *args,
     method: Optional[str] = None,
     **kwargs,
-) -> Explanations:
+) -> List[Explanation] | np.ndarray:
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:
@@ -94,6 +96,7 @@ def generate_text_classification_explanations(
         method = "GradNorm"
 
     if "device" in kwargs:
+        # device is saved in model instance.
         kwargs.pop("device")
 
     if method == "LIME":

@@ -9,9 +9,75 @@ from scipy.special import softmax
 
 from quantus.helpers.model.pytorch_model import PyTorchModel
 
+
 @pytest.fixture
 def mock_input_torch_array():
     return {"x": np.zeros((1, 1, 28, 28))}
+
+
+@pytest.mark.pytorch_model
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (
+            lazy_fixture("mock_input_torch_array"),
+            {
+                "softmax": False,
+                "device": "cpu",
+            },
+            np.array(
+                [
+                    -0.44321266,
+                    0.60336196,
+                    0.2091731,
+                    -0.17474744,
+                    -0.03755454,
+                    0.5306321,
+                    -0.3079375,
+                    0.5329694,
+                    -0.41116637,
+                    -0.3060812,
+                ]
+            ),
+        ),
+        (
+            lazy_fixture("mock_input_torch_array"),
+            {
+                "softmax": True,
+                "device": "cpu",
+            },
+            softmax(
+                np.array(
+                    [
+                        -0.44321266,
+                        0.60336196,
+                        0.2091731,
+                        -0.17474744,
+                        -0.03755454,
+                        0.5306321,
+                        -0.3079375,
+                        0.5329694,
+                        -0.41116637,
+                        -0.3060812,
+                    ]
+                ),
+            ),
+        ),
+    ],
+)
+def test_get_softmax_arg_model(
+    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
+):
+    load_mnist_model.eval()
+
+    model = PyTorchModel(load_mnist_model, softmax=True)
+    sm_model = model.get_softmax_arg_model()
+    sm_model.eval()
+    new_model = PyTorchModel(model=sm_model, **params)
+
+    out = new_model.predict(x=data["x"])
+
+    assert np.allclose(out, expected), "Test failed."
 
 
 @pytest.mark.pytorch_model
@@ -158,7 +224,12 @@ def test_get_random_layer_generator(load_mnist_model):
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
     "params",
-    [{}, {"layer_names": ["conv_2"]}, {"layer_indices": [0, 1]}, {"layer_indices": [-1, -2]}],
+    [
+        {},
+        {"layer_names": ["conv_2"]},
+        {"layer_indices": [0, 1]},
+        {"layer_indices": [-1, -2]},
+    ],
     ids=["all layers", "2nd conv", "1st 2 layers", "last 2 layers"],
 )
 def test_get_hidden_layers_output(load_mnist_model, params):

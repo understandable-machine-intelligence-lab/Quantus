@@ -44,12 +44,14 @@ def load_mnist_model_tf():
     model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
-@pytest.fixture(scope="session", autouse=True)
+
+@pytest.fixture(scope="session")
 def load_cifar10_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = CifarCNNModel()
     model.load_weights("tests/assets/cifar_tf_weights.keras")
     return model
+
 
 @pytest.fixture(scope="session")
 def load_1d_1ch_conv_model():
