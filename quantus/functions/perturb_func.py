@@ -24,6 +24,7 @@ from quantus.helpers.utils import (
     get_leftover_shape,
     offset_coordinates,
 )
+from quantus.helpers.nlp_utils import is_nlpaug_available
 
 
 def perturb_batch(
@@ -559,48 +560,49 @@ def no_perturbation(arr: np.array, **kwargs) -> np.array:
     return arr
 
 
-def spelling_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
-    """
-    Replace k words in each entry of text by alternative spelling.
+if is_nlpaug_available():
+    def spelling_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
+        """
+        Replace k words in each entry of text by alternative spelling.
 
-    Examples
-    --------
+        Examples
+        --------
 
-    >>> x = ["uneasy mishmash of styles and genres."]
-    >>> spelling_replacement(x)
-    ... ['uneasy mishmash of stiles and genres.']
+        >>> x = ["uneasy mishmash of styles and genres."]
+        >>> spelling_replacement(x)
+        ... ['uneasy mishmash of stiles and genres.']
 
-    """
-    aug = SpellingAug(aug_max=k, aug_min=k)
-    return aug.augment(x_batch)
-
-
-def synonym_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
-    """
-    Replace k words in each entry of text by synonym.
-
-    Examples
-    --------
-
-    >>> x = ["uneasy mishmash of styles and genres."]
-    >>> synonym_replacement(x)
-    ... ['nervous mishmash of styles and genres.']
-    """
-    aug = SynonymAug(aug_max=k, aug_min=k)
-    return aug.augment(x_batch)
+        """
+        aug = SpellingAug(aug_max=k, aug_min=k)
+        return aug.augment(x_batch)
 
 
-def typo_replacement(x_batch: List[str], k: int = 1, **kwargs) -> List[str]:
-    """
-    Replace k characters in k words in each entry of text mimicking typo.
+    def synonym_replacement(x_batch: List[str], k: int = 3, **kwargs) -> List[str]:
+        """
+        Replace k words in each entry of text by synonym.
 
-    Examples
-    --------
-    >>> x = ["uneasy mishmash of styles and genres."]
-    >>> typo_replacement(x)
-    ... ['uneasy mishmash of xtyles and genres.']
-    """
-    aug = KeyboardAug(
-        aug_char_max=k, aug_char_min=k, aug_word_min=k, aug_word_max=k
-    )
-    return aug.augment(x_batch)
+        Examples
+        --------
+
+        >>> x = ["uneasy mishmash of styles and genres."]
+        >>> synonym_replacement(x)
+        ... ['nervous mishmash of styles and genres.']
+        """
+        aug = SynonymAug(aug_max=k, aug_min=k)
+        return aug.augment(x_batch)
+
+
+    def typo_replacement(x_batch: List[str], k: int = 1, **kwargs) -> List[str]:
+        """
+        Replace k characters in k words in each entry of text mimicking typo.
+
+        Examples
+        --------
+        >>> x = ["uneasy mishmash of styles and genres."]
+        >>> typo_replacement(x)
+        ... ['uneasy mishmash of xtyles and genres.']
+        """
+        aug = KeyboardAug(
+            aug_char_max=k, aug_char_min=k, aug_word_min=k, aug_word_max=k
+        )
+        return aug.augment(x_batch)

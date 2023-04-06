@@ -34,6 +34,7 @@ datasets
 shap
 noisegrad@ git+https://github.com/aaarrti/NoiseGrad.git
 nltk>=3.8.1
+nlpaug
 transformers>=4.26.1
 tokenizers
 
