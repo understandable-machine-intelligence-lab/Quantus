@@ -128,7 +128,7 @@ test = [
     "captum>=0.6.0",
     "pandas",
     "nltk>=3.8.1",
-     "nlpaug",
+    "nlpaug",
     "transformers>=4.26.1",
 ]
 torch = [
@@ -240,7 +240,7 @@ disable_error_code = ["misc", "index", "arg-type"]
 
 # PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
 [tool.pytest.ini_options]
-# addopts = ["-s -v -n auto"]
+addopts = ["-m 'not partial_installation'"]
 markers = [
     "loss_func: loss_func tests.",
     "similar_func: similar_func tests.",

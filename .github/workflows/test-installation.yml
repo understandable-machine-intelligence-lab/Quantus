@@ -1,0 +1,93 @@
+# The main idea of this test is to verify quantus is usable with and without tensorflow,torch,transformers.
+
+name: Test Installation
+
+on: [ push, workflow_dispatch ]
+
+jobs:
+
+  test_tensorflow:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install
+        run: pip install .[tensorflow]
+
+      - name: Test with pytest
+        run: pytest tests/test_partial_installation::test_only_tensorflow_installed -m "partial_installation"
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+  test_torch:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install
+        run: pip install .[torch,captum]
+
+      - name: Test with pytest
+        run: pytest tests/test_partial_installation::test_only_torch_installed  -m "partial_installation"
+
+
+  test_tf_nlp:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install
+        run: pip install .[tensorflow,nlp]
+
+      - name: Test with pytest
+        run: pytest tests/test_partial_installation::test_transformers_with_tensorflow_installed  -m "partial_installation"
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+
+  test_torch_nlp:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install
+        run: pip install .[torch,nlp]
+
+      - name: Test with pytest
+        run: pytest tests/test_partial_installation::test_transformers_with_torch_installed  -m "partial_installation"
