@@ -123,7 +123,6 @@ def test_evaluate_func(
     data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
-    torch_device,
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
@@ -132,7 +131,6 @@ def test_evaluate_func(
         model=model,
         inputs=x_batch,
         targets=y_batch,
-        device=torch_device,
         **params["explain_func_kwargs"],
     )
 

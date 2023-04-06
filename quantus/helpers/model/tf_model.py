@@ -38,6 +38,7 @@ from quantus.helpers.tf_utils import is_xla_compatible_platform
 class TFModelWrapper(ModelWrapper, tf.Module):
 
     model: keras.Model
+
     def get_model(self):
         """
         Get the original tf model.
