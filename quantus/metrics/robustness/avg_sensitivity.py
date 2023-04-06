@@ -19,7 +19,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.types import TextClassifier, Explanation
-from quantus.helpers.utils_nlp import (
+from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
 )

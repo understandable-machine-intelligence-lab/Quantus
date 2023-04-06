@@ -23,7 +23,7 @@ from quantus.helpers.utils import (
     is_tf_available,
     is_torch_available
 )
-from quantus.helpers.utils_nlp import map_explanations, is_torch_model, is_tf_model
+from quantus.helpers.nlp_utils import map_explanations, is_torch_model, is_tf_model
 
 if is_tf_available():
     from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier

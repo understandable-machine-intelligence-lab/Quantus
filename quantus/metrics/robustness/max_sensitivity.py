@@ -29,7 +29,7 @@ from quantus.helpers.types import (
     Explanation,
 )
 from quantus.helpers.utils import value_or_default
-from quantus.helpers.utils_nlp import (
+from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
 )

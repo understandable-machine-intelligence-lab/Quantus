@@ -18,7 +18,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.utils_nlp import get_scores
+from quantus.helpers.nlp_utils import get_scores
 from quantus.helpers.class_property import classproperty
 
 

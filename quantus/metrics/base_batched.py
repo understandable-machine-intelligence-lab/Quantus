@@ -31,7 +31,7 @@ from quantus.helpers.utils import (
     add_default_items,
     safe_as_array
 )
-from quantus.helpers.utils_nlp import (
+from quantus.helpers.nlp_utils import (
     map_explanations,
     is_plain_text_perturbation,
     is_torch_model

@@ -26,7 +26,7 @@ from quantus.functions.normalise_func import normalise_by_average_second_moment_
 from quantus.functions.perturb_func import uniform_noise
 
 from quantus.helpers.utils import get_logits_for_labels, value_or_default, safe_as_array
-from quantus.helpers.utils_nlp import is_plain_text_perturbation, get_scores
+from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 from quantus.functions.norm_func import l2_norm
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation

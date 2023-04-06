@@ -27,7 +27,7 @@ from quantus.functions.norm_func import l2_norm
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
 from quantus.helpers.utils import value_or_default
-from quantus.helpers.utils_nlp import is_plain_text_perturbation, get_scores
+from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 from quantus.helpers.class_property import classproperty
 
 

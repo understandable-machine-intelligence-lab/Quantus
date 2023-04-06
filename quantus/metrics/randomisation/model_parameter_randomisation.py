@@ -29,7 +29,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
 from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanation, AggregateFn
 from quantus.helpers.utils import map_optional
-from quantus.helpers.utils_nlp import get_scores
+from quantus.helpers.nlp_utils import get_scores
 from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.class_property import classproperty
 

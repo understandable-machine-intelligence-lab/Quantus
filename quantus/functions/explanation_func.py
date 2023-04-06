@@ -65,7 +65,7 @@ def patch_kwargs(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # single dispatch requires first positional argument
+        # singledispatch requires first positional argument
         # in Quantus it is often passed as keyword, so we patch it onto 0s position.
         if "model" in kwargs:
             return func(kwargs.pop("model"), *args, **kwargs)
