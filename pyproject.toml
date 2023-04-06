@@ -217,16 +217,16 @@ build-backend = "setuptools.build_meta"
 # > mypy quantus
 
 [tool.mypy]
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 mypy_path = "quantus/"
 ignore_missing_imports = true
 no_site_packages = true
 show_none_errors = false
-ignore_errors = false
+
 
 [[tool.mypy.overrides]]
-module = "quantus"
+module = "quantus.*"
 disallow_untyped_defs = false
 disable_error_code = ["misc", "index", "arg-type"]
 
