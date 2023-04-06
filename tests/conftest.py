@@ -248,8 +248,9 @@ def titanic_dataset():
 
 # ---------------- NLP fixtures ------------------
 
+@session_singleton
 @pytest.fixture(scope="session")
-def sst2_dataset():
+def sst2_dataset(tmp_path_factory, worker_id):
     dataset = load_dataset("sst2")["validation"]
     x_batch = dataset["sentence"][:MINI_BATCH_SIZE]
     y_batch = np.asarray(dataset["label"][:MINI_BATCH_SIZE])
@@ -259,27 +260,31 @@ def sst2_dataset():
     }
 
 
+@session_singleton
 @pytest.fixture(scope="session")
-def tf_sst2_model():
+def tf_sst2_model(tmp_path_factory, worker_id):
     return TFAutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
 
+@session_singleton
 @pytest.fixture(scope="session")
-def tf_sst2_model_wrapper(tf_sst2_model):
+def tf_sst2_model_wrapper(tmp_path_factory, worker_id, tf_sst2_model):
     return get_wrapped_model(tf_sst2_model)
 
 
+@session_singleton
 @pytest.fixture(scope="session")
-def torch_sst2_model():
+def torch_sst2_model(tmp_path_factory, worker_id):
     return AutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
 
+@session_singleton
 @pytest.fixture(scope="session")
-def torch_sst2_model_wrapper(torch_sst2_model, torch_device):
+def torch_sst2_model_wrapper(tmp_path_factory, worker_id, torch_sst2_model, torch_device):
     return get_wrapped_model(torch_sst2_model, device=torch_device)
 
 
