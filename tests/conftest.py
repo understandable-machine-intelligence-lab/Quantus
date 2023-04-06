@@ -25,7 +25,13 @@ MINI_BATCH_SIZE = 8
 
 
 def session_singleton(func):
-    # This decorator will
+    # This decorator will prevent multiple read/write conflicts, when running with multiple workers, e.g.,
+    # here https://github.com/understandable-machine-intelligence-lab/Quantus/actions/runs/4633163312/jobs/8198074567
+    # tox/py310/lib/python3.10/site-packages/keras/datasets/cifar.py:31: FileNotFoundError _ ERROR at setup of
+    # test_explain_func[load_cifar10_model_tf-load_cifar10_images-params79-expected79] _
+    #
+    # Additionally, it can be used to prevent repeated memory intensive instantiations.,
+    # e.g., which can cause OOM for NLP models.
     @wraps(func)
     def wrapper(tmp_path_factory, worker_id, *args):
         if worker_id == "master":
@@ -48,7 +54,6 @@ def session_singleton(func):
     return wrapper
 
 
-@session_singleton
 @pytest.fixture(scope="session")
 def load_mnist_model(tmp_path_factory, worker_id):
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
@@ -121,8 +126,9 @@ def load_mnist_images():
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-@pytest.fixture(scope="session", autouse=True)
-def load_cifar10_images():
+@session_singleton
+@pytest.fixture(scope="session")
+def load_cifar10_images(tmp_path_factory, worker_id):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = cifar10.load_data()
     x_batch = (
@@ -229,7 +235,7 @@ def titanic_dataset():
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
-    Y = df_enc["survived"].values.astype(np.int)
+    X = df_enc.drop(["survived"], axis=1).values.astype(float)
+    Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
