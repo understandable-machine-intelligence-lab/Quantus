@@ -6,16 +6,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+      - uses: ./.github/actions/setup-tox
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: ${{ matrix.python-version }}
 
-      - name: Measure coverage
-        run: |
-          pip install -r requirements_test.txt
-          pytest --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+      - name: Measure coverage.
+        run: tox run -e coverage
         env:
           TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
@@ -24,4 +20,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml, coverage.xml
-
