@@ -233,6 +233,7 @@ mypy_path = "quantus/"
 ignore_missing_imports = true
 no_site_packages = true
 show_none_errors = false
+plugins = ["numpy.typing.mypy_plugin"]
 
 
 [[tool.mypy.overrides]]
