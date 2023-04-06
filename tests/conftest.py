@@ -25,6 +25,7 @@ MINI_BATCH_SIZE = 8
 
 
 def session_singleton(func):
+    # This decorator will
     @wraps(func)
     def wrapper(tmp_path_factory, worker_id, *args):
         if worker_id == "master":
@@ -58,27 +59,24 @@ def load_mnist_model(tmp_path_factory, worker_id):
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_mnist_model_tf(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
     model.load_weights("tests/assets/lenet_mnist_weights.keras")
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_cifar10_model_tf(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_cifar10_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = CifarCNNModel()
     model.load_weights("tests/assets/cifar_tf_weights.keras")
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_1d_1ch_conv_model(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_1d_1ch_conv_model():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1D(n_channels=1, n_classes=10)
     model.eval()
@@ -89,9 +87,8 @@ def load_1d_1ch_conv_model(tmp_path_factory, worker_id):
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_1d_3ch_conv_model(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_1d_3ch_conv_model():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1D(n_channels=3, n_classes=10)
     model.eval()
@@ -102,9 +99,8 @@ def load_1d_3ch_conv_model(tmp_path_factory, worker_id):
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_1d_3ch_conv_model_tf(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_1d_3ch_conv_model_tf():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1DTF(n_channels=3, seq_len=100, n_classes=10)
     # TODO: add trained model weights
@@ -113,9 +109,8 @@ def load_1d_3ch_conv_model_tf(tmp_path_factory, worker_id):
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_mnist_images(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = (
         np.loadtxt("tests/assets/mnist_x")
@@ -126,9 +121,8 @@ def load_mnist_images(tmp_path_factory, worker_id):
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_cifar10_images(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def load_cifar10_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = cifar10.load_data()
     x_batch = (
@@ -140,9 +134,8 @@ def load_cifar10_images(tmp_path_factory, worker_id):
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def load_mnist_images_tf(tmp_path_factory, worker_id, load_mnist_images):
+@pytest.fixture(scope="session", autouse=True)
+def load_mnist_images_tf(load_mnist_images):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
 
     return {
@@ -151,9 +144,8 @@ def load_mnist_images_tf(tmp_path_factory, worker_id, load_mnist_images):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def almost_uniform_1d(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -161,18 +153,16 @@ def almost_uniform_1d(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def almost_uniform_1d_no_abatch_channel_last(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch_channel_last():
     return {
         "x_batch": np.random.randn(10, 100, 3),
         "y_batch": np.random.randint(0, 10, size=10),
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def almost_uniform_1d_no_abatch(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_1d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 3, 100),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -180,9 +170,8 @@ def almost_uniform_1d_no_abatch(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def almost_uniform_2d(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d():
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -190,9 +179,8 @@ def almost_uniform_2d(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def almost_uniform_2d_no_abatch(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def almost_uniform_2d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
         "y_batch": np.random.randint(0, 10, size=10),
@@ -200,9 +188,8 @@ def almost_uniform_2d_no_abatch(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def flat_image_array(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def flat_image_array():
     return {
         "x": np.zeros((1, 3 * 28 * 28)),
         "shape": (3, 28, 28),
@@ -210,9 +197,8 @@ def flat_image_array(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def flat_sequence_array(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def flat_sequence_array():
     return {
         "x": np.zeros((1, 3 * 28)),
         "shape": (3, 28),
@@ -220,33 +206,30 @@ def flat_sequence_array(tmp_path_factory, worker_id):
     }
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def titanic_model_torch(tmp_path_factory, worker_id):
+@pytest.fixture(scope="session", autouse=True)
+def titanic_model_torch():
     model = TitanicSimpleTorchModel()
     model.load_state_dict(torch.load("tests/assets/titanic_model_torch.pickle"))
     return model
 
 
-@session_singleton
-@pytest.fixture(scope="session")
-def titanic_model_tf(tmp_path_factory, worker_id, titanic_dataset):
+@pytest.fixture(scope="session", autouse=True)
+def titanic_model_tf(titanic_dataset):
     model = TitanicSimpleTFModel()
     model(titanic_dataset["x_batch"], training=False)
     model.load_weights("tests/assets/titanic_model_tensorflow.keras")
     return model
 
 
-@session_singleton
 @pytest.fixture(scope="session")
-def titanic_dataset(tmp_path_factory, worker_id):
+def titanic_dataset():
     df = pd.read_csv("tutorials/assets/titanic3.csv")
     df = df[["age", "embarked", "fare", "parch", "pclass", "sex", "sibsp", "survived"]]
     df["age"] = df["age"].fillna(df["age"].mean())
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values.astype(float)
-    Y = df_enc["survived"].values.astype(int)
+    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
+    Y = df_enc["survived"].values.astype(np.int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
