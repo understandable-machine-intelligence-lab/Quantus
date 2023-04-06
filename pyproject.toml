@@ -43,7 +43,7 @@ requires-python = ">=3.8"
 # This is either text indicating the license for the distribution, or a file
 # that contains the license
 # https://packaging.python.org/en/latest/specifications/core-metadata/#license
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 
 # This field adds keywords for your project which will appear on the
 # project page. What does your project relate to?
@@ -57,43 +57,31 @@ keywords = ["explainable ai", "xai", "machine learning", "deep learning"]  # Opt
 # authored the project, and a valid email address corresponding to the name
 # listed.
 authors = [
-  {name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
 ]
 
 # This should be your name or the names of the organization who currently
 # maintains the project, and a valid email address corresponding to the name
 # listed.
 maintainers = [
-  {name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
 ]
 
 # Classifiers help users find your project by categorizing it.
 #
 # For a list of valid classifiers, see https://pypi.org/classifiers/
-classifiers = [  # Optional
-  # How mature is this project? Common values are
-  #   3 - Alpha
-  #   4 - Beta
-  #   5 - Production/Stable
-  #"Development Status :: 3 - Alpha",
-
-  # Indicate who your project is intended for
-  #"Intended Audience :: Developers",
-  #"Topic :: Software Development :: Build Tools",
-
-  # Pick your license as you wish
-  #"License :: OSI Approved :: MIT License",
-
-  # Specify the Python versions you support here. In particular, ensure
-  # that you indicate you support Python 3. These classifiers are *not*
-  # checked by "pip install". See instead "python_requires" below.
-  #"Programming Language :: Python :: 3",
-  #"Programming Language :: Python :: 3.7",
-  #"Programming Language :: Python :: 3.8",
-  #"Programming Language :: Python :: 3.9",
-  #"Programming Language :: Python :: 3.10",
-  #"Programming Language :: Python :: 3.11",
-  #"Programming Language :: Python :: 3 :: Only",
+classifiers = [# Optional
+    # How mature is this project? Common values are
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    "Development Status :: 4 - Beta",
+    # Indicate who your project is intended for
+    "Intended Audience :: Science/Research",
+    # Pick your license as you wish
+    "License :: GNU LESSER GENERAL PUBLIC LICENSE VERSION 3",
+    "Topic :: Scientific :: Explainable Artificial Intelligence",
+    "Topic :: Scientific :: XAI",
 ]
 
 # This field lists other packages that your project depends on to run.
@@ -122,16 +110,17 @@ dependencies = [
 # projects.
 [project.optional-dependencies] # Optional
 test = [
-    "coverage",
+    "coverage[toml]",
     "flake8",
     "black",
-    "mypy",
+    "mypy==0.982",
     "pytest",
     "pytest-cov",
     "pytest-lazy-fixture",
     "pytest-mock",
     "pytest-xdist",
-    "tensorflow>=2.12.0",
+    "tensorflow>=2.12.0; sys_platform != 'darwin'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
     "tf-explain",
     "torch>=1.13.1",
     "torchvision>=0.15.1",
@@ -144,7 +133,8 @@ torch = [
     "torchvision>=0.15.1"
 ]
 tensorflow = [
-    "tensorflow>=2.12.0"
+    "tensorflow>=2.12.0; sys_platform != 'darwin'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"
 ]
 
 captum = [
@@ -153,7 +143,8 @@ captum = [
     "captum>=0.6.0"
 ]
 tf_explain = [
-    "tensorflow>=2.12.0",
+    "tensorflow>=2.12.0; sys_platform != 'darwin'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
     "tf-explain>=0.3.1",
 ]
 zennit = [
@@ -170,7 +161,8 @@ tutorials = [
     "jupyter"
 ]
 full = [
-    "tensorflow>=2.12.0",
+    "tensorflow>=2.12.0; sys_platform != 'darwin'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
     "tf-explain>=0.3.1",
     "torch>=1.13.1",
     "torchvision>=0.15.1",
@@ -216,3 +208,70 @@ packages = ["quantus"]
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+
+# Global options:
+# https://mypy.readthedocs.io/en/stable/config_file.html#config-file-import-discovery-global
+
+# Instructions to run mypy. Go to library root, then run:
+# > mypy quantus
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+mypy_path = "quantus/"
+ignore_missing_imports = true
+no_site_packages = true
+show_none_errors = false
+ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = "quantus"
+disallow_untyped_defs = false
+disable_error_code = ["misc", "index", "arg-type"]
+
+# PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
+[tool.pytest.ini_options]
+markers = [
+    "loss_func: loss_func tests.",
+    "similar_func: similar_func tests.",
+    "perturb_func: perturb_func tests.",
+    "normalise_func: normalise_func tests.",
+    "norm_func: norm_func tests.",
+    "explain_func: explain_func tests.",
+    "evaluate_func: evaluate tests.",
+    "utils: utils tests.",
+    "fixes: fixing tests.",
+    "pytorch_model: pytorch model interface tests.",
+    "tf_model: tensorflow model interface tests.",
+    "randomisation: randomisation metrics tests.",
+    "faithfulness: faithfulness metrics tests.",
+    "robustness: robustness metrics tests.",
+    "localisation: localisation metrics tests.",
+    "complexity: complexity metrics tests.",
+    "axiomatic: axiomatic metrics tests."
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning"
+]
+
+# Coverage configuration, for all options refer to https://coverage.readthedocs.io/en/latest/config.html
+# Note, we need to run python 3.11 or have coverage[toml] installed.
+[tool.coverage.run]
+source = "quantus"
+omit = [
+    "/tutorials/*",
+    "/tests/*",
+    "quantus/metrics/base.py",
+    "quantus/helpers/asserts.py",
+    "quantus/helpers/warn_func.py",
+    "quantus/helpers/model_interface.py",
+    "quantus/helpers/models.py",
+    "quantus/helpers/constants.py",
+    "quantus/helpers/plotting.py"
+]
+
+[tool.coverage.report]
+ignore_errors = true
