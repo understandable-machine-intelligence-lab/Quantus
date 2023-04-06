@@ -20,4 +20,4 @@ runs:
         pip install tox tox-gh-actions
     - name: Setup tox environment
       shell: bash
-      run: tox run -e py --notest
+      run: tox --notest
