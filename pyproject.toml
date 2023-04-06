@@ -17,7 +17,7 @@ name = "quantus"  # Required
 #
 # For a discussion on single-sourcing the version, see
 # https://packaging.python.org/guides/single-sourcing-package-version/
-version = "0.3.4"  # Required
+version = "0.3.5"  # Required
 
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
@@ -232,6 +232,7 @@ disable_error_code = ["misc", "index", "arg-type"]
 
 # PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
 [tool.pytest.ini_options]
+# addopts = ["-s -v -n auto"]
 markers = [
     "loss_func: loss_func tests.",
     "similar_func: similar_func tests.",
@@ -260,7 +261,7 @@ filterwarnings = [
 # Coverage configuration, for all options refer to https://coverage.readthedocs.io/en/latest/config.html
 # Note, we need to run python 3.11 or have coverage[toml] installed.
 [tool.coverage.run]
-source = "quantus"
+source = ["quantus"]
 omit = [
     "/tutorials/*",
     "/tests/*",
