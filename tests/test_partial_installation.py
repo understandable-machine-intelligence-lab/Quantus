@@ -3,7 +3,8 @@ from quantus.helpers.tf_utils import is_tf_available
 from quantus.helpers.torch_utils import is_torch_available
 
 skip_if_tf_and_torch_available = pytest.mark.skipif(
-    is_tf_available() and is_torch_available()
+    is_tf_available() and is_torch_available(),
+    reason="Must have TF (exclusive-)or Torch installed."
 )
 
 
