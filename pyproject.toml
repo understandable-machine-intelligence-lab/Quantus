@@ -110,6 +110,7 @@ dependencies = [
 # projects.
 [project.optional-dependencies] # Optional
 test = [
+    "quantus[tf_explain,captum,zennit]",
     "coverage[toml]",
     "flake8",
     "black",
@@ -119,19 +120,8 @@ test = [
     "pytest-lazy-fixture",
     "pytest-mock",
     "pytest-xdist",
-    "filelock",
     "tox>=4.4.11",
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
-    "tf-explain",
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "zennit>=0.5.0",
-    "captum>=0.6.0",
-    "pandas",
-    "nltk>=3.8.1",
-    "nlpaug",
-    "transformers>=4.26.1",
+    "pandas"
 ]
 torch = [
     "torch>=1.13.1",
@@ -141,46 +131,30 @@ tensorflow = [
     "tensorflow>=2.12.0; sys_platform != 'darwin'",
     "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"
 ]
-
 captum = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
+    "quantus[tensorflow]",
     "captum>=0.6.0"
 ]
 tf_explain = [
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
+    "quantus[tensorflow]",
     "tf-explain>=0.3.1",
 ]
 zennit = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
+    "quantus[torch]",
     "zennit>=0.5.0"
 ]
 tutorials = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "captum>=0.6.0",
+    "quantus[captum]",
     "pandas",
     "xmltodict",
-    "jupyter"
 ]
 nlp = [
     "nltk>=3.8.1",
     "nlpaug",
     "transformers>=4.26.1"
 ]
-full = [
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
-    "tf-explain>=0.3.1",
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "zennit>=0.5.0",
-    "captum>=0.6.0",
-    "pandas",
-    "xmltodict",
-    "jupyter"
+all = [
+    "quantus[all]"
 ]
 
 # List URLs that are relevant to your project
@@ -243,7 +217,7 @@ disable_error_code = ["misc", "index", "arg-type"]
 
 # PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
 [tool.pytest.ini_options]
-#addopts = "-m \"not \"partial_installation\"\""
+# addopts = ["-s -v -n auto"]
 markers = [
     "loss_func: loss_func tests.",
     "similar_func: similar_func tests.",
