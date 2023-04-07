@@ -8,19 +8,16 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from transformers import AutoTokenizer
 import numpy as np
-from quantus.helpers.utils import add_default_items
-
-
+from quantus.helpers.collection_utils import add_default_items
 from quantus.helpers.model.text_classifier import Tokenizable
 
 
 class HuggingFaceTokenizer(Tokenizable):
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
-    def __init__(self, handle: str):
-        self.tokenizer = AutoTokenizer.from_pretrained(handle)
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
 
     def batch_encode(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:  # type: ignore
         kwargs = add_default_items(

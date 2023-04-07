@@ -3,7 +3,8 @@ from typing import List
 import numpy as np
 import pytest
 
-from quantus.helpers.utils import batch_inputs, get_logits_for_labels
+from quantus.helpers.utils import get_logits_for_labels
+from quantus.helpers.collection_utils import batch_inputs
 
 # test utils is already 1k lines long, so I added these tests in separate file.
 

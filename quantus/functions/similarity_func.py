@@ -18,7 +18,6 @@ import skimage
 
 
 def vectorize_similarity(func):
-
     vectorized_func = np.vectorize(func, signature="(n),(n)->()", cache=True)
 
     @wraps(func)
@@ -70,7 +69,7 @@ def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray:
 
 
 @vectorize_similarity
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
+def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -91,7 +90,6 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float | np.ndarra
     return scipy.stats.pearsonr(a, b)[0]
 
 
-@vectorize_similarity
 def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> np.ndarray | float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
@@ -181,7 +179,7 @@ def lipschitz_constant(
     b: np.array,
     c: Union[np.array, None],
     d: Union[np.array, None],
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.
@@ -279,7 +277,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
         The similarity score.
     """
     max_val = np.max(np.abs(np.concatenate([a, b])))
-    data_range = 1. if max_val <= 1. else 255.
+    data_range = 1.0 if max_val <= 1.0 else 255.0
 
     return skimage.metrics.structural_similarity(
         im1=a,

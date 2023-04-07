@@ -16,7 +16,6 @@ def atts_norm_fill():
     return np.array([1, 2, 3, 4, 10])
 
 
-@pytest.mark.xfail
 @pytest.mark.norm_func
 @pytest.mark.parametrize(
     "data,params,expected",
@@ -27,7 +26,7 @@ def atts_norm_fill():
 )
 def test_fro_norm(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     out = fro_norm(a=data)
-    assert out == expected, "Test failed."
+    assert np.allclose(out, expected)
 
 
 @pytest.mark.norm_func

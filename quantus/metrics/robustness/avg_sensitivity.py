@@ -5,6 +5,7 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+from __future__ import annotations
 
 from functools import singledispatchmethod
 from typing import Any, Callable, Dict, List, Optional
@@ -23,9 +24,8 @@ from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
 )
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.class_property import classproperty
 
 
 class AvgSensitivity(BatchedPerturbationMetric):
@@ -41,6 +41,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
         2) Umang Bhatt et al.: "Evaluating and aggregating
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
+
+    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
@@ -171,8 +173,9 @@ class AvgSensitivity(BatchedPerturbationMetric):
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
+        tokenizer=None,
         **kwargs,
-    ) -> List[float]:
+    ) -> np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -260,6 +263,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             batch_size=batch_size,
+            tokenizer=tokenizer,
             **kwargs,
         )
 
@@ -484,7 +488,3 @@ class AvgSensitivity(BatchedPerturbationMetric):
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]

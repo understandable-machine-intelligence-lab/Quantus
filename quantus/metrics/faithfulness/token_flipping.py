@@ -12,12 +12,12 @@ import numpy as np
 
 from quantus.functions.loss_func import mse
 from quantus.functions.normalise_func import normalize_sum_to_1
-from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.plotting import plot_token_flipping_experiment
 from quantus.helpers.types import NormaliseFn, Explanation, ExplainFn
-from quantus.helpers.utils import safe_as_array, get_logits_for_labels
+from quantus.helpers.utils import get_logits_for_labels
+from quantus.helpers.collection_utils import safe_as_array
 from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.class_property import classproperty
 
 TaskT = Literal["pruning", "activation"]
 
@@ -35,6 +35,8 @@ class TokenFlipping(BatchedMetric):
     them with “UNK” tokens, similarly to the ablation experiments of Abnar & Zuidema (2020).
     """
 
+    data_domain_applicability: List[str] = ["NLP"]
+
     def __init__(
             self,
             abs: bool = False,
@@ -48,7 +50,6 @@ class TokenFlipping(BatchedMetric):
             display_progressbar: bool = False,
             mask_token: str = "[UNK]",
             task: TaskT = "pruning",
-            **kwargs,
     ):
         """
 
@@ -73,16 +74,15 @@ class TokenFlipping(BatchedMetric):
             Can be either pruning or activation.
         """
         super().__init__(
-            abs,
-            normalise,
-            normalise_func,
-            normalise_func_kwargs,
-            return_aggregate,
-            aggregate_func,
-            default_plot_func,
-            disable_warnings,
-            display_progressbar,
-            **kwargs,
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
         )
         if return_aggregate:
             raise ValueError(f"Token Flipping does not support aggregating instances.")
@@ -106,6 +106,7 @@ class TokenFlipping(BatchedMetric):
             device: Optional[str] = None,
             batch_size: int = 64,
             custom_batch: Optional[...] = None,
+            tokenizer:Optional[Tokenizable]=None,
             **kwargs,
     ) -> np.ndarray:
         """
@@ -127,6 +128,8 @@ class TokenFlipping(BatchedMetric):
             Keyword arguments to be passed to explain_func on call.
         batch_size:
             Indicates size of batches, in which input dataset will be splitted.
+        tokenizer:
+            Optional custom tokenizer to use for encoding text.
 
         Returns
         -------
@@ -136,7 +139,7 @@ class TokenFlipping(BatchedMetric):
 
         """
 
-        return super().__call__(
+        return super().__call__( # type: ignore
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -150,6 +153,7 @@ class TokenFlipping(BatchedMetric):
             device=device,
             batch_size=batch_size,
             custom_batch=None,
+            tokenizer=tokenizer,
             **kwargs,
         )
 
@@ -246,7 +250,3 @@ class TokenFlipping(BatchedMetric):
             scores[i] = masked_logits
 
         return scores
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return ["NLP"]

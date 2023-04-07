@@ -10,31 +10,52 @@ when dealing with more complicated custom subclassed models.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List, Union
+from typing import Any, Dict, Optional, Tuple, List, Union, TYPE_CHECKING, overload, Generator
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+    import torch
 
 
 class ModelWrapper(ABC):
     """An interface which represents model wrapped in python object."""
 
     @abstractmethod
-    def get_model(self):
+    @overload
+    def get_model(self) -> tf.keras.Model:
         """
         Get the original torch/tf model.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def state_dict(self):
+    def get_model(self) -> torch.nn.Module:
+        """
+        Get the original torch/tf model.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    @overload
+    def state_dict(self) -> List[np.ndarray]:
         """
         Get a dictionary of the model's learnable parameters.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def load_state_dict(self, original_parameters):
+    def state_dict(self) -> Dict[torch, torch.Tensor]:
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_state_dict(self, original_parameters: Dict[str, torch.Tensor] | List[np.ndarray]):
         """Set model's learnable parameters."""
         raise NotImplementedError
 
@@ -47,8 +68,8 @@ class RandomisableModel(ABC):
 
     @abstractmethod
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ):
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[Any, None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,
@@ -102,7 +123,7 @@ class HiddenRepresentationsModel(ABC):
         raise NotImplementedError()
 
 
-class ModelInterface(ModelWrapper, ABC):
+class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel, ABC):
     """Base ModelInterface for torch and tensorflow models."""
 
     def __init__(

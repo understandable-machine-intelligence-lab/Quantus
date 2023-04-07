@@ -6,9 +6,10 @@
 
 from __future__ import annotations
 
-from functools import singledispatchmethod
-from typing import List, Generator, Optional
+from functools import singledispatchmethod, cached_property
+from typing import List, Generator
 
+import keras
 import numpy as np
 import tensorflow as tf
 from transformers import (
@@ -16,44 +17,57 @@ from transformers import (
 )
 
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-from quantus.helpers.model.model_interface import (
-    HiddenRepresentationsModel,
-)
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.model.tf_model import TFNestedModelRandomizer
-from quantus.helpers.tf_utils import is_xla_compatible_platform
+from quantus.helpers.tf_utils import (
+    is_xla_compatible_platform,
+    list_parameterizable_layers,
+    random_layer_generator,
+)
 
 
-class TFHuggingFaceTextClassifier(
-    TextClassifier,
-    TFNestedModelRandomizer,
-    HiddenRepresentationsModel,
-):
-    def __init__(self, model: TFPreTrainedModel, softmax: bool = None):
-        handle = model.config._name_or_path  # noqa
-        self._tokenizer = HuggingFaceTokenizer(handle)
+class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
+    def __init__(self, model: TFPreTrainedModel, tokenizer: HuggingFaceTokenizer):
+        super().__init__()
         self.model = model
+        self.tokenizer = tokenizer
         self.model._jit_compile = is_xla_compatible_platform()
 
-    def embedding_lookup(self, input_ids) -> tf.Tensor:
+    def embedding_lookup(self, input_ids: np.ndarray | tf.Tensor) -> tf.Tensor:
         return self.model.get_input_embeddings()(input_ids)
 
-    def __call__(self, inputs_embeds: tf.Tensor, **kwargs) -> tf.Tensor:
-        return self.model(
-            None, inputs_embeds=inputs_embeds, training=False, **kwargs
-        ).logits
+    @singledispatchmethod
+    def predict(self, x_batch: List[str], batch_size=64, **kwargs) -> np.ndarray:
+        encoded_inputs = self.tokenizer.batch_encode(x_batch, return_tensors="tf")
+        return self.model.predict(encoded_inputs, verbose=0, batch_size=batch_size, **kwargs).logits
 
-    def predict(self, text: List[str], **kwargs) -> np.ndarray:
-        encoded_inputs = self.tokenizer.batch_encode(text, return_tensors="tf")
-        return self.model.predict(encoded_inputs, verbose=0, **kwargs).logits
+    @predict.register
+    def _(self, x_batch: tf.Tensor, batch_size=64, **kwargs) -> tf.Tensor:
+        return self.model(None, inputs_embeds=x_batch, training=False, **kwargs).logits
+
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42) -> Generator[
+        TFHuggingFaceTextClassifier, None, None
+    ]:
+        return random_layer_generator(self, order, seed, flatten_layers=True)
+
+    @cached_property
+    def random_layer_generator_length(self) -> int:
+        return len(list_parameterizable_layers(self.get_model(), flatten_layers=True))
+
+    def get_model(self) -> keras.Model:
+        return self.model
+
+    def state_dict(self) -> List[np.ndarray]:
+        return self.model.get_weights()
+
+    def load_state_dict(self, original_parameters: List[np.ndarray]):
+        self.model.set_weights(original_parameters)
 
     @singledispatchmethod
     def get_hidden_representations(
-        self,
-        x_batch,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
+            self,
+            x_batch: List[str],
+            *args,
+            **kwargs,
     ) -> np.ndarray:
         encoded_batch = self.tokenizer.batch_encode(x_batch)
         hidden_states = self.model(
@@ -67,20 +81,10 @@ class TFHuggingFaceTextClassifier(
 
     @get_hidden_representations.register
     def _(
-        self,
-        x_batch: np.ndarray,
-        *args,
-        **kwargs,
-    ) -> np.ndarray:
-        return self.get_hidden_representations(tf.constant(x_batch), *args, **kwargs)
-
-    @get_hidden_representations.register
-    def _(
-        self,
-        x_batch: tf.Tensor,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
-        **kwargs,
+            self,
+            x_batch: np.ndarray,
+            *args,
+            **kwargs,
     ) -> np.ndarray:
         hidden_states = self.model(
             None,
@@ -91,7 +95,3 @@ class TFHuggingFaceTextClassifier(
         ).hidden_states
         hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3])
         return hidden_states
-
-    @property
-    def tokenizer(self):
-        return self._tokenizer

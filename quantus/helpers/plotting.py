@@ -14,7 +14,7 @@ import numpy as np
 
 from quantus.helpers import warn
 from quantus.helpers.types import Explanation
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 
 if TYPE_CHECKING:
     from quantus.metrics.faithfulness.token_flipping import TaskT

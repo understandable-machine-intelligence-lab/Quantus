@@ -68,7 +68,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {"perturb_func": synonym_replacement},
-                "call": {},
+                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
             },
             marks=[pytest.mark.nlp],
             id="tf_nlp_plain_text",
@@ -81,7 +81,7 @@ sensitivity_tests = pytest.mark.parametrize(
                 "init": {
                     "perturb_func": spelling_replacement,
                 },
-                "call": {},
+                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
             },
             marks=[pytest.mark.nlp],
             id="torch_nlp_plain_text",
@@ -92,7 +92,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {},
-                "call": {},
+                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
             },
             marks=[pytest.mark.nlp],
             id="tf_nlp_latent",
@@ -103,7 +103,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {},
-                "call": {},
+                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
             },
             marks=[pytest.mark.nlp],
             id="torch_nlp_latent",
@@ -114,7 +114,7 @@ sensitivity_tests = pytest.mark.parametrize(
 
 @pytest.mark.robustness
 @sensitivity_tests
-def test_max_sensitivity(model, data, params, torch_device):
+def test_max_sensitivity(model, data, params):
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],

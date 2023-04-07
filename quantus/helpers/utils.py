@@ -7,6 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from __future__ import annotations
+
 import copy
 import re
 import warnings
@@ -19,39 +20,37 @@ from typing import (
     Tuple,
     Union,
     List,
-    Iterable,
-    TypeVar,
-    Callable,
 )
-from functools import wraps, singledispatch, lru_cache
-import logging
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
-from sklearn.utils import gen_batches
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.nlp_utils import is_transformers_available
+from quantus.helpers.tf_utils import is_tf_available
+from quantus.helpers.torch_utils import is_torch_available
 
-if util.find_spec("torch"):
+if is_torch_available():
     import torch
     from quantus.helpers.model.pytorch_model import PyTorchModel
-if util.find_spec("tensorflow"):
+
+
+if is_tf_available():
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
 
-from quantus.helpers.torch_utils import is_torch_available
-from quantus.helpers.tf_utils import is_tf_available
-try:
-    from transformers import TFPreTrainedModel, PreTrainedModel
-except ModuleNotFoundError:
-    warnings.warn("transformers not installed")
-    TFPreTrainedModel = type(None)
-    PreTrainedModel = type(None)
 
+if is_transformers_available():
+    from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+    from transformers import TFPreTrainedModel, PreTrainedModel, PreTrainedTokenizerBase, AutoTokenizer
 
-log = logging.getLogger(__name__)
+    if is_tf_available():
+        from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+
+    if is_torch_available():
+        from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -368,7 +367,7 @@ def get_wrapped_model(
     softmax: Optional[bool] = None,
     device: Optional[str | torch.device] = None,
     model_predict_kwargs: Optional[Dict[str, Any]] = None,
-) -> Union[ModelInterface, TextClassifier]:
+) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
 
@@ -390,14 +389,10 @@ def get_wrapped_model(
     model: ModelInterface
         A wrapped ModelInterface model.
     """
-    if isinstance(model, (ModelInterface, TextClassifier)):
+    if isinstance(model, ModelInterface):
         return model
 
     if util.find_spec("tensorflow"):
-        if isinstance(model, TFPreTrainedModel):
-            from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-            return TFHuggingFaceTextClassifier(model) # noqa
-
         if isinstance(model, tf.keras.Model):
             return TensorFlowModel(
                 model=model,
@@ -407,11 +402,6 @@ def get_wrapped_model(
             )
     if util.find_spec("torch"):
         if isinstance(model, torch.nn.Module):
-
-            if isinstance(model, PreTrainedModel):
-                from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-                return TorchHuggingFaceTextClassifier(model, device=device) # noqa
-
             return PyTorchModel(
                 model=model,
                 channel_first=channel_first,
@@ -420,6 +410,43 @@ def get_wrapped_model(
                 model_predict_kwargs=model_predict_kwargs,
             )
     raise ValueError("Model needs to be tf.keras.Model or torch.nn.Module.")
+
+
+def get_wrapped_text_classifier(
+        model,
+        tokenizer=None,
+        device: Optional[str | torch.device] = None,
+) -> TextClassifier:
+    if isinstance(model, TextClassifier):
+        return model
+
+    if not is_transformers_available():
+        raise ValueError(
+            """
+            Quantus supports text-classification models only from HuggingFace Hub, 
+            but not `transformers installation was found`"
+            """
+        )
+
+    if tokenizer is None:
+        warnings.warn("No `tokenizer` provided, will try to create default one.")
+        handle = model.config._name_or_path  # noqa
+        tokenizer = HuggingFaceTokenizer(AutoTokenizer.from_pretrained(handle))
+    elif not isinstance(tokenizer, Tokenizable):
+        if not isinstance(tokenizer, PreTrainedTokenizerBase):
+            raise ValueError()
+        else:
+            tokenizer = HuggingFaceTokenizer(tokenizer)
+
+    if is_tf_available():
+        if isinstance(model, TFPreTrainedModel):
+            return TFHuggingFaceTextClassifier(model, tokenizer)
+
+    if is_torch_available():
+        if isinstance(model, PreTrainedModel):
+            return TorchHuggingFaceTextClassifier(model, tokenizer, device)
+
+    raise ValueError()
 
 
 def blur_at_indices(
@@ -1037,115 +1064,8 @@ def calculate_auc(values: np.array, dx: int = 1):
     return np.trapz(np.array(values), dx=dx)
 
 
-T = TypeVar("T")
-R = TypeVar("R")
-
-
-def map_dict(
-    dictionary: Dict[str, T],
-    func: Callable[[T], R],
-    key_mapper: Callable[[str], str] = lambda x: x,
-) -> Dict[str, R]:
-    """Applies func to values in dict. Additionally, if provided can also map keys."""
-    result = {}
-    for k, v in dictionary.items():
-        result[key_mapper(k)] = func(v)
-    return result
-
-
-def flatten(list_2d: Iterable[Iterable[T]]) -> List[T]:
-    """Does the same as np.reshape(..., -1), but work also on ragged matrices."""
-    return [item for sublist in list_2d for item in sublist]
-
-
-def batch_inputs(flat_list: Iterable[T], batch_size: int) -> List[Iterable[T]]:
-    """Divide list in batches of batch_size, despite the name works also for any Sized and SupportsIndex."""
-    indices = list(gen_batches(len(flat_list), batch_size))
-    return list(map(lambda i: flat_list[i.start:i.stop], indices))
-
-
-def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
-    """Apply func to value if not None, otherwise return None."""
-    if val is None:
-        return None
-    return func(val)
-
-
-def add_default_items(
-    dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
-) -> Dict[str, Any]:
-    """Add default_items into dictionary if not present."""
-    if dictionary is None:
-        return default_items.copy()
-
-    copy = dictionary.copy()
-
-    for k, v in default_items.items():
-        if k not in copy:
-            copy[k] = v
-
-    return copy
-
-
-def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
-    """Return value from default_factory() if value is None, otherwise value itself."""
-    # Default is provided by callable, because otherwise it will force materialization of both values in memory.
-    if value is not None:
-        return value
-    else:
-        return default_factory()
-
-
 def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
     # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
     # the hard way again one more time.
     return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
-
-
-@lru_cache
-def is_transformers_available() -> bool:
-    try:
-        import transformers
-        return True
-    except ModuleNotFoundError:
-        return False
-
-
-@singledispatch
-def safe_as_array(a, force: bool = False) -> np.ndarray:
-    """
-    Convert DNN frameworks' tensors to numpy arrays. Safe means safe from torch complaining about tensors
-    being on other device or attached to graph. So, the only one type we're really interested is torch.Tensor.
-    In practise, TF tensors can be passed to numpy functions without any issues, so we can avoid overhead of copying them.
-
-    Parameters
-    ----------
-    a:
-        Pytorch or TF tensor.
-    force:
-        If set to true, will force conversion of TF tensors to numpy arrays.
-        This option should be used, when user needs to modify values inside `a`, since TF tensors are read only.
-
-    Returns
-    -------
-    a:
-        np.ndarray or tf.Tensor, a is tf.Tensor and force=False.
-
-    """
-    return a
-
-
-if is_torch_available():
-    @safe_as_array.register
-    def _(a: torch.Tensor, force=False):
-        return a.detach().cpu().numpy()
-
-if is_tf_available():
-    import tensorflow as tf
-
-    @safe_as_array.register
-    def _(a: tf.Tensor, force=False):
-        if force:
-            return np.array(tf.identity(a))
-        return a

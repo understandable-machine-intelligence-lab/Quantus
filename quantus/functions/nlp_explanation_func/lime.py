@@ -13,7 +13,7 @@ import numpy as np
 from sklearn import linear_model, metrics
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 
 __all__ = ["explain_lime"]
 
@@ -73,7 +73,7 @@ def explain_lime(
         all_true_mask = np.ones_like(masks[0], dtype=bool)
         masks[0] = all_true_mask
 
-        perturbations = list(get_perturbations(tokens, masks, config.mask_token))
+        perturbations = get_perturbations(tokens, masks, config.mask_token)
         logits = model.predict(perturbations)
         outputs = logits[:, y]
         # fmt: off
@@ -104,11 +104,13 @@ def sample_masks(num_samples: int, num_features: int, seed: Optional[int] = None
 
 def get_perturbations(
     tokens: Sequence[str], masks: np.ndarray, mask_token: str
-) -> Iterable[str]:
+) -> List[str]:
     """Returns strings with the masked tokens replaced with `mask_token`."""
+    result = []
     for mask in masks:
         parts = [t if mask[i] else mask_token for i, t in enumerate(tokens)]
-        yield " ".join(parts)
+        result.append(" ".join(parts))
+    return result
 
 
 def exponential_kernel(distance: float, kernel_width: float = 25) -> np.ndarray:

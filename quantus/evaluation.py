@@ -18,7 +18,7 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.explanation_func import explain
 from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.utils import add_default_items
+from quantus.helpers.collection_utils import add_default_items
 
 
 def evaluate(
@@ -227,6 +227,10 @@ def evaluate_nlp(
         Dict, keys are metric names, values are scores, or list of scores for corresponding metric.
 
     """
+
+    # TODO:
+    #  - batch inputs
+    #  - generate a_batch, y_batch
 
     for i in metrics.values():
         if "NLP" not in i.data_domain_applicability:

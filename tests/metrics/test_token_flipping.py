@@ -4,30 +4,33 @@ from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
 from quantus.metrics.faithfulness import TokenFlipping
-from quantus.helpers.utils import get_wrapped_model
 
 
 @pytest.mark.nlp
 @pytest.mark.parametrize(
-    "model, init_kwargs",
+    "model,tokenizer,init_kwargs",
     [
-        (lazy_fixture("tf_sst2_model"), {"normalise": True}),
+        (
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_tokenizer"),
+            {"normalise": True},
+        ),
         (
             lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_tokenizer"),
             {"normalise": True, "task": "activation"},
         ),
     ],
     ids=["pruning", "activation"],
 )
-def test_tf_model(model, sst2_dataset, init_kwargs):
-    expected_shape = (
-        get_wrapped_model(model)
-        .tokenizer.batch_encode(sst2_dataset["x_batch"])["input_ids"][0]
-        .shape
-    )
+def test_tf_model(model, tokenizer, sst2_dataset, init_kwargs):
     metric = TokenFlipping(**init_kwargs)
     result = metric(
-        model, **sst2_dataset, a_batch=None, explain_func=explain
+        model,
+        **sst2_dataset,
+        a_batch=None,
+        explain_func=explain,
+        tokenizer=tokenizer
     )
     assert isinstance(result, np.ndarray)
     assert isinstance(result, np.ndarray)
@@ -36,4 +39,4 @@ def test_tf_model(model, sst2_dataset, init_kwargs):
     assert not (result == np.NAN).any()
     # assert not (result == np.NZERO).any()
     # assert not (result == np.PZERO).any()
-    assert result.shape == expected_shape
+    assert result.shape == (29,)

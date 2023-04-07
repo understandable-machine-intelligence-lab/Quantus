@@ -17,11 +17,13 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.functions.nlp_explanation_func.lime import explain_lime
 from quantus.helpers.types import Explanation
 from quantus.helpers.utils import (
+    is_tf_available,
+    is_torch_available
+)
+from quantus.helpers.collection_utils import (
     add_default_items,
     safe_as_array,
     value_or_default,
-    is_tf_available,
-    is_torch_available
 )
 from quantus.helpers.nlp_utils import map_explanations, is_torch_model, is_tf_model
 
@@ -78,6 +80,8 @@ def explain_shap(
     shapley_values = explainer(x_batch, batch_size=batch_size, **call_kwargs)
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
 
+
+# TODO allow padding non-wrapper
 
 def generate_text_classification_explanations(
     model: TextClassifier,

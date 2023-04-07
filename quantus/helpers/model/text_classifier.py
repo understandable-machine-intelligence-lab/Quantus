@@ -7,15 +7,23 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, TypedDict, TypeVar, Tuple, Dict, Any
+from typing import List, TypedDict, Tuple, Dict, Any, overload, TYPE_CHECKING
 
 import numpy as np
 
-T = TypeVar("T")
+from quantus.helpers.collection_utils import safe_as_array
+from quantus.helpers.model.model_interface import RandomisableModel, HiddenRepresentationsModel, ModelWrapper
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+    import torch
+
 R = TypedDict("R", {"input_ids": np.ndarray}, total=False)
 
 
 class Tokenizable(ABC):
+
+
     @abstractmethod
     def batch_encode(self, text: List[str], **kwargs) -> R:
         """Convert batch of plain-text inputs to vocabulary id's."""
@@ -42,48 +50,80 @@ class Tokenizable(ABC):
         return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
 
-class EmbeddingsCallable(ABC):
-    @abstractmethod
-    def __call__(self, inputs_embeds: T, **kwargs) -> T:
-        """
-        Execute forward pass on latent representation for input tokens.
-        This method must return tensors of corresponding DNN framework.
-        This method must be able to record gradients, as it is used internally by gradient based XAI methods.
-        """
-        raise NotImplementedError
-
-
-class TextClassifier(ABC):
+class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper):
     """
     An interface for model, trained for text-classification task (aka sentiment analysis).
     TextClassifier is a model with signature F: List['text'] -> np.ndarray
     """
 
-    @abstractmethod
-    def predict(self, text: List[str], **kwargs) -> np.ndarray:
-        """
-        Execute forward pass with plain text inputs, return logits as np.ndarray.
-        This method must be able to handle huge batches, as it potentially could be called with entire dataset.
-        """
-        raise NotImplementedError
+    tokenizer: Tokenizable
 
-    @abstractmethod
-    def embedding_lookup(self, input_ids):
-        """Convert vocabulary ids to model's latent representations"""
-        raise NotImplementedError
+    def __call__(self, *args, **kwargs):
+        return self.get_model()(*args, **kwargs)
 
-    def get_embeddings(self, x_batch: List[str]) -> Tuple[np.ndarray, Dict]:
-        from quantus.helpers.utils import safe_as_array
-
+    def get_embeddings(self, x_batch: List[str]) -> Tuple[np.ndarray, Dict[str, ...]]:
         """Do batch encode, unpack input ids, convert to embeddings."""
         input_ids, predict_kwargs = self.tokenizer.get_input_ids(x_batch)
         return safe_as_array(self.embedding_lookup(input_ids)), predict_kwargs
 
-    @property
     @abstractmethod
-    def tokenizer(self) -> Tokenizable:
-        pass
+    @overload
+    def embedding_lookup(self, input_ids: tf.Tensor) -> tf.Tensor:
+        """Convert vocabulary ids to model's latent representations"""
+        raise NotImplementedError
 
+    @abstractmethod
+    @overload
+    def embedding_lookup(self, input_ids: torch.Tensor) -> torch.Tensor:
+        """Convert vocabulary ids to model's latent representations"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def embedding_lookup(self, input_ids: np.ndarray) -> np.ndarray:
+        """Convert vocabulary ids to model's latent representations"""
+        raise NotImplementedError
+
+    @abstractmethod
+    @overload
+    def predict(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
+        """Execute forward pass on latent representation for input tokens."""
+        raise NotImplementedError
+
+    @abstractmethod
+    @overload
+    def predict(self, x_batch: tf.Tensor, **kwargs) -> tf.Tensor:
+        """Execute forward pass on latent representation for input tokens."""
+        raise NotImplementedError
+
+    @abstractmethod
+    @overload
+    def predict(self, x_batch: torch.Tensor, **kwargs) -> torch.Tensor:
+        """Execute forward pass on latent representation for input tokens."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def predict(self, x_batch: List[str], batch_size=64, **kwargs) -> np.ndarray:
+        """Execute forward pass with plain text inputs."""
+        raise NotImplementedError
+
+    @abstractmethod
+    @overload
+    def get_hidden_representations(
+            self,
+            x: List[str],
+            *args,
+            **kwargs
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_hidden_representations(
+            self,
+            x: np.ndarray,
+            *args,
+            **kwargs
+    ) -> np.ndarray:
+        raise NotImplementedError
 
 # ---------- QA, NLI, Text Generation, Summarization, NER and more models to follow ----------
 # Or actually no, Quantus is designed for classifiers, so I probably will just show examples of other tasks separately.

@@ -28,13 +28,12 @@ from quantus.helpers.types import (
     NormFn,
     Explanation,
 )
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
 )
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.class_property import classproperty
 
 
 class MaxSensitivity(BatchedPerturbationMetric):
@@ -50,6 +49,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
         2) Umang Bhatt et al.: "Evaluating and aggregating
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
+
+    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
@@ -179,8 +180,9 @@ class MaxSensitivity(BatchedPerturbationMetric):
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
-        **kwargs,
-    ) -> List[float]:
+        tokenizer=None,
+        **kwargs
+    ) -> np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -269,7 +271,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
             device=device,
             model_predict_kwargs=model_predict_kwargs,
             batch_size=batch_size,
-            **kwargs,
+            tokenizer=tokenizer,
+            **kwargs
         )
 
     @singledispatchmethod
@@ -461,8 +464,3 @@ class MaxSensitivity(BatchedPerturbationMetric):
             similarities[instance_id] = sensitivities_norm
 
         return similarities
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]
-

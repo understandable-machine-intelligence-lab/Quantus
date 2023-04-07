@@ -16,8 +16,9 @@ import tensorflow_probability as tfp
 from tensorflow_probability.python.distributions.normal import Normal
 
 from quantus.helpers.types import Explanation
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 from quantus.helpers.tf_utils import is_xla_compatible_platform
+from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
 
 # Just to save some typing effort
 _BaselineFn = Callable[[tf.Tensor], tf.Tensor]
@@ -144,15 +145,15 @@ class NoiseGradPlusPlusConfig(NamedTuple):
         )
 
 
-def default_int_grad_config():
+def default_int_grad_config() -> IntGradConfig:
     return IntGradConfig()
 
 
-def default_noise_grad_config():
+def default_noise_grad_config() -> NoiseGradConfig:
     return NoiseGradConfig().resolve_functions()
 
 
-def default_noise_grad_pp_config():
+def default_noise_grad_pp_config() -> NoiseGradPlusPlusConfig:
     return NoiseGradPlusPlusConfig().resolve_functions()
 
 
@@ -211,7 +212,7 @@ def tf_explain(
 
 
 def gradient_norm(
-    model,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     **kwargs,
@@ -251,7 +252,7 @@ def gradient_norm(
 
 
 def gradient_x_input(
-    model,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     **kwargs,
@@ -292,7 +293,7 @@ def gradient_x_input(
 
 
 def integrated_gradients(
-    model,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[IntGradConfig] = None,
@@ -353,7 +354,7 @@ def integrated_gradients(
 
 
 def noise_grad(
-    model,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[NoiseGradConfig] = None,
@@ -410,7 +411,7 @@ def noise_grad(
 
 
 def noise_grad_plus_plus(
-    model,
+    model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
     config: Optional[NoiseGradPlusPlusConfig] = None,
@@ -463,7 +464,7 @@ def noise_grad_plus_plus(
 
 
 @singledispatch
-def _gradient_norm(x_batch, model, y_batch, **kwargs) -> _Scores:
+def _gradient_norm(x_batch: List[str], model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs) -> _Scores:
     input_ids, kwargs = model.tokenizer.get_input_ids(x_batch)
     embeddings = model.embedding_lookup(input_ids)
     scores = _gradient_norm(embeddings, model, y_batch, **kwargs)
@@ -476,13 +477,13 @@ def _gradient_norm(x_batch, model, y_batch, **kwargs) -> _Scores:
 @tf.function
 def _(
     x_batch: tf.Tensor,
-    model,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     **kwargs,
 ) -> tf.Tensor:
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
-        logits = model(x_batch, **kwargs)
+        logits = model.predict(x_batch, **kwargs)
         logits_for_label = _logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
@@ -506,13 +507,13 @@ def _gradient_x_input(x_batch, model, y_batch, **kwargs) -> _Scores:
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
 def _(
     x_batch: tf.Tensor,
-    model,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     **kwargs,
 ) -> tf.Tensor:
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
-        logits = model(x_batch, **kwargs)
+        logits = model.predict(x_batch, **kwargs)
         logits_for_label = _logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
@@ -578,7 +579,7 @@ def _(
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
 def _integrated_gradients_batched(
     x_batch: tf.Tensor,
-    model,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     num_steps: int,
     baseline_fn: Callable,
@@ -611,7 +612,7 @@ def _integrated_gradients_batched(
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
-        logits = model(interpolated_embeddings, **interpolated_kwargs)
+        logits = model.predict(interpolated_embeddings, **interpolated_kwargs)
         logits_for_label = _logits_for_labels(logits, interpolated_y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
@@ -625,7 +626,7 @@ def _integrated_gradients_batched(
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
 def _integrated_gradients_iterative(
     x_batch: tf.Tensor,
-    model,
+    model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     num_steps: int,
     baseline_fn: Callable,
@@ -657,7 +658,7 @@ def _integrated_gradients_iterative(
         )
         with tf.GradientTape() as tape:
             tape.watch(interpolated_embeddings)
-            logits = model(interpolated_embeddings, **interpolated_kwargs)
+            logits = model.predict(interpolated_embeddings, **interpolated_kwargs)
             logits_for_label = logits[:, y_batch[i]]
 
         grads = tape.gradient(logits_for_label, interpolated_embeddings)
@@ -672,7 +673,7 @@ def _integrated_gradients_iterative(
 
 @singledispatch
 def _noise_grad(
-    x_batch: list, model, y_batch: tf.Tensor, config: NoiseGradConfig = None
+    x_batch: list, model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, config: NoiseGradConfig = None
 ):
     config = value_or_default(config, default_noise_grad_config).resolve_functions()
     tf.random.set_seed(config.seed)

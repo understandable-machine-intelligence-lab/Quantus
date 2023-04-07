@@ -12,124 +12,27 @@ But, it allows for much greater level of customization by user (and NLP model's)
 
 from __future__ import annotations
 
+import operator
 from typing import Dict, Optional, Tuple, List, Union
+from warnings import warn
+from functools import cached_property
 
-import keras
-from keras.layers import Dense
-from keras import activations
-from keras import Model
-from keras.models import clone_model
 import numpy as np
 import tensorflow as tf
-from warnings import warn
 from cachetools import cachedmethod, LRUCache
-import operator
+from keras import Model
+from keras import activations
+from keras.layers import Dense
+from keras.models import clone_model
 
+from quantus.helpers import utils
 from quantus.helpers.model.model_interface import (
     ModelInterface,
-    ModelWrapper,
-    HiddenRepresentationsModel,
-    RandomisableModel,
 )
-from quantus.helpers import utils
-from quantus.helpers.tf_utils import is_xla_compatible_platform
+from quantus.helpers.tf_utils import is_xla_compatible_platform, random_layer_generator, list_parameterizable_layers
 
 
-class TFModelWrapper(ModelWrapper, tf.Module):
-
-    model: keras.Model
-
-    def get_model(self):
-        """
-        Get the original tf model.
-        """
-        return self.model
-
-    def state_dict(self):
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.get_weights()
-
-    def load_state_dict(self, original_parameters):
-        """Set model's learnable parameters."""
-        self.model.set_weights(original_parameters)
-
-
-class TFModelRandomizer(RandomisableModel, TFModelWrapper):
-
-    @staticmethod
-    def list_parameterizable_layers(
-            model: keras.Model, flatten_layers: bool = False
-    ) -> List[tf.keras.layers.Layer]:
-        if flatten_layers:
-            layers = list(model._flatten_layers(include_self=False, recursive=True))
-        else:
-            layers = model.layers
-        return list(filter(lambda i: len(i.get_weights()) > 0, layers))
-
-    def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, flatten_layers=False
-    ):
-        """
-        In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
-        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
-
-        Parameters
-        ----------
-        order: string
-            The various ways that a model's weights of a layer can be randomised.
-        seed: integer
-            The seed of the random layer generator.
-        flatten_layers:
-            If set to true, will flatten nested layers.
-
-
-        Returns
-        -------
-        generator:
-            Generator, which in each iteration yields the layer name and the model.
-            After generator is closed, original parameters are restored.
-
-
-        """
-        original_parameters = self.state_dict().copy()
-        layers = self.list_parameterizable_layers(self.model, flatten_layers)
-
-        np.random.seed(seed)
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                self.load_state_dict(original_parameters)
-
-            weights = layer.get_weights()
-            layer.set_weights(tf.nest.map_structure(np.random.permutation, weights))
-            yield layer.name, self
-
-        # Restore original weights.
-        self.load_state_dict(original_parameters)
-
-    @property
-    def random_layer_generator_length(self) -> int:
-        return len(self.list_parameterizable_layers(self.model))
-
-
-class TFNestedModelRandomizer(TFModelRandomizer):
-    @property
-    def random_layer_generator_length(self) -> int:
-        return len(self.list_parameterizable_layers(self.model, flatten_layers=True))
-
-    def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ):
-        return super().get_random_layer_generator(order, seed, flatten_layers=True)
-
-
-class TensorFlowModel(ModelInterface, TFModelRandomizer, HiddenRepresentationsModel):
+class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
 
     # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
@@ -324,6 +227,42 @@ class TensorFlowModel(ModelInterface, TFModelRandomizer, HiddenRepresentationsMo
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
 
+    def get_model(self):
+        """
+        Get the original tf model.
+        """
+        return self.model
+
+    def state_dict(self):
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
+        return self.model.get_weights()
+
+    def load_state_dict(self, original_parameters):
+        """Set model's learnable parameters."""
+        self.model.set_weights(original_parameters)
+
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+        """
+        In every iteration yields a copy of the model with one additional layer's parameters randomized.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
+
+        Returns
+        -------
+        layer.name, random_layer_model: string, torch.nn
+            The layer name and the model.
+        """
+        return random_layer_generator(self, order, seed, flatten_layers=False)
+
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
         self, layer_names: Tuple, layer_indices: Tuple
@@ -469,3 +408,7 @@ class TensorFlowModel(ModelInterface, TFModelRandomizer, HiddenRepresentationsMo
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+
+    @cached_property
+    def random_layer_generator_length(self) -> int:
+        return len(list_parameterizable_layers(self.get_model(), flatten_layers=False))

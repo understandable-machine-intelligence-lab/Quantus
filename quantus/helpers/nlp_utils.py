@@ -1,19 +1,24 @@
 from __future__ import annotations
 
+from functools import lru_cache
+from importlib import util
 from operator import itemgetter
-from functools import lru_cache, wraps
 from typing import List, Callable, TypeVar
 
 import keras
 import numpy as np
 from cachetools import cached
-from quantus.helpers.types import Explanation
-from quantus.helpers.torch_utils import is_torch_available
+
 from quantus.helpers.tf_utils import is_tf_available
-from quantus.helpers.utils import is_transformers_available
+from quantus.helpers.torch_utils import is_torch_available
+from quantus.helpers.types import Explanation
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+
+def is_transformers_available() -> bool:
+    return util.find_spec("transformers") is not None
 
 
 def map_explanations(

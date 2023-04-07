@@ -26,9 +26,8 @@ from quantus.functions.norm_func import l2_norm
 
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
-from quantus.helpers.class_property import classproperty
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
@@ -40,6 +39,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
     References:
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
+
+    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @attributes_check
     def __init__(
@@ -134,8 +135,9 @@ class RelativeInputStability(BatchedPerturbationMetric):
         softmax: bool = False,
         channel_first: bool = True,
         batch_size: int = 64,
+        tokenizer=None,
         **kwargs,
-    ) -> List[float]:
+    ) -> np.ndarray | float:
         """
         For each image `x`:
          - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
@@ -189,6 +191,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
             batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs
         )
 
     @singledispatchmethod
@@ -364,7 +368,3 @@ class RelativeInputStability(BatchedPerturbationMetric):
         denominator = l2_norm(denominator) + eps_min
 
         return nominator / denominator
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]

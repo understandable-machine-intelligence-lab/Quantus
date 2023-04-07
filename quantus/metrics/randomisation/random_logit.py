@@ -19,7 +19,6 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.nlp_utils import get_scores
-from quantus.helpers.class_property import classproperty
 
 
 class RandomLogit(BatchedMetric):
@@ -33,6 +32,8 @@ class RandomLogit(BatchedMetric):
         1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
         Attributions Fail." ICML (2020): 9046-9057.
     """
+
+    data_domain_applicability: List[str] = BatchedMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
@@ -313,7 +314,3 @@ class RandomLogit(BatchedMetric):
         # Additional explain_func assert, as the one in general_preprocess()
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]

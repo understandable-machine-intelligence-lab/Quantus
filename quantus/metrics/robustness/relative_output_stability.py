@@ -25,12 +25,12 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise
 
-from quantus.helpers.utils import get_logits_for_labels, value_or_default, safe_as_array
+from quantus.helpers.utils import get_logits_for_labels
+from quantus.helpers.collection_utils import value_or_default, safe_as_array
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 from quantus.functions.norm_func import l2_norm
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
-from quantus.helpers.class_property import classproperty
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -46,6 +46,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
     References:
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
+
+    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @attributes_check
     def __init__(
@@ -140,8 +142,9 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         softmax: bool = False,
         channel_first: bool = True,
         batch_size: int = 64,
+        tokenizer=None,
         **kwargs,
-    ) -> List[float]:
+    ) -> np.ndarray | float:
         """
         For each image `x`:
          - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
@@ -198,6 +201,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
             batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs
         )
 
     @singledispatchmethod
@@ -375,8 +380,3 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         denominator = h_x - h_xs
         denominator = l2_norm(denominator) + eps_min
         return nominator / denominator
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]
-

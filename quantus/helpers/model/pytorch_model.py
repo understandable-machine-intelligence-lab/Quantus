@@ -6,118 +6,22 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from __future__ import annotations
 from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
 from cachetools import cachedmethod, LRUCache
 import operator
+from functools import cached_property
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 from quantus.helpers import utils
-from quantus.helpers.model.model_interface import (
-    ModelInterface,
-    ModelWrapper,
-    RandomisableModel,
-    HiddenRepresentationsModel,
-)
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.torch_utils import list_layers, random_layer_generator
 
 
-class TorchWrapper(ModelWrapper):
-    model: nn.Module
-    device: torch.device
-
-    def get_model(self) -> torch.nn:
-        """
-        Get the original torch model.
-        """
-        return self.model
-
-    def state_dict(self) -> dict:
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        return self.model.state_dict()
-
-    def load_state_dict(self, original_parameters):
-        self.model.load_state_dict(original_parameters)
-
-    def to_tensor(self, x, **kwargs) -> torch.Tensor:
-        if isinstance(x, torch.Tensor):
-            return x.to(self.device)
-        return torch.tensor(x, device=self.device, **kwargs)
-
-    @staticmethod
-    def list_layers(model: nn.Module) -> List[Tuple[str, nn.Module]]:
-        def should_not_skip(name: str, module: nn.Module):
-            # skip modules defined by subclassing and sequential API.
-            return not isinstance(module, (model.__class__, nn.Sequential))
-
-        # n is name, m is module.
-        return list(filter(lambda i: should_not_skip(*i), model.named_modules()))
-
-    @property
-    def input_dtype(self):
-        return list(self.model.state_dict().values())[0].dtype
-
-
-class TorchModelRandomizer(RandomisableModel, TorchWrapper):
-    def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42, **kwargs
-    ):
-        """
-        In every iteration yields a copy of the model with one additional layer's parameters randomized.
-        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
-        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
-
-        Parameters
-        ----------
-        order: string
-            The various ways that a model's weights of a layer can be randomised.
-        seed: integer
-            The seed of the random layer generator.
-
-        Returns
-        -------
-        layer.name, random_layer_model: string, torch.nn
-            The layer name and the model.
-        """
-        from quantus.helpers.utils import map_dict
-
-        original_parameters = self.state_dict().copy()
-
-        modules = self.list_layers(self.model)
-
-        def randomize_params(w):
-            return self.to_tensor(np.random.permutation(w.detach().cpu().numpy()))
-
-        np.random.seed(seed)
-
-        if order == "top_down":
-            modules = modules[::-1]
-
-        for module in modules:
-            if order == "independent":
-                self.load_state_dict(original_parameters)
-            params = module[1].state_dict()
-            params = map_dict(params, randomize_params)
-            module[1].load_state_dict(params)
-            yield module[0], self
-
-        # Restore original weights.
-        self.load_state_dict(original_parameters)
-
-    @property
-    def random_layer_generator_length(self) -> int:
-        return len(self.list_layers(self.model))
-
-
-class PyTorchModel(
-    ModelInterface, TorchModelRandomizer, HiddenRepresentationsModel
-):
+class PyTorchModel(ModelInterface):
     """Interface for torch models."""
 
     def __init__(
@@ -126,7 +30,7 @@ class PyTorchModel(
         channel_first: bool = True,
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, Any]] = None,
-        device: Optional[str | torch.device] = None,
+        device: Optional[str] = None,
     ):
         """
         Initialisation of PyTorchModel class.
@@ -151,10 +55,7 @@ class PyTorchModel(
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
-        if isinstance(device, str):
-            device = torch.device(device)
-        self.device = utils.value_or_default(device, lambda: torch.device("cpu"))
-        self.model = self.model.to(self.device)
+        self.device = device
         self.cache = LRUCache(100)
 
     @property
@@ -221,7 +122,7 @@ class PyTorchModel(
 
         with grad_context:
             pred_model = self.get_softmax_arg_model()
-            pred = pred_model(self.to_tensor(x, dtype=self.input_dtype), **model_predict_kwargs)
+            pred = pred_model(torch.Tensor(x).to(self.device), **model_predict_kwargs)
             if pred.requires_grad:
                 return pred.detach().cpu().numpy()
             return pred.cpu().numpy()
@@ -264,6 +165,38 @@ class PyTorchModel(
         if self.channel_first:
             return utils.make_channel_first(x, channel_first)
         raise ValueError("Channel first order expected for a torch model.")
+
+    def get_model(self) -> torch.nn:
+        """
+        Get the original torch model.
+        """
+        return self.model
+
+    def state_dict(self) -> dict:
+        """
+        Get a dictionary of the model's learnable parameters.
+        """
+        return self.model.state_dict()
+
+    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+        """
+        In every iteration yields a copy of the model with one additional layer's parameters randomized.
+        For cascading randomization, set order (str) to 'top_down'. For independent randomization,
+        set it to 'independent'. For bottom-up order, set it to 'bottom_up'.
+
+        Parameters
+        ----------
+        order: string
+            The various ways that a model's weights of a layer can be randomised.
+        seed: integer
+            The seed of the random layer generator.
+
+        Returns
+        -------
+        layer.name, random_layer_model: string, torch.nn
+            The layer name and the model.
+        """
+        return random_layer_generator(self, order, seed)
 
     def sample(
         self,
@@ -443,3 +376,10 @@ class PyTorchModel(
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @cached_property
+    def random_layer_generator_length(self) -> int:
+        return len(list_layers(self.model))
+
+    def load_state_dict(self, original_parameters: Dict[str, torch.Tensor]):
+        self.model.load_state_dict(original_parameters)

@@ -19,8 +19,8 @@ from captum.attr._utils.approximation_methods import approximation_parameters
 from torch import Tensor
 
 from quantus.helpers.types import Explanation
-from quantus.helpers.utils import map_dict
-from quantus.helpers.utils import value_or_default
+from quantus.helpers.collection_utils import map_dict, value_or_default
+from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
 
 # Just to save some typing effort
 _TextOrVector = Union[List[str], Tensor, np.ndarray]
@@ -54,7 +54,7 @@ def available_xai_methods() -> Dict:
 
 
 def torch_explain(
-    model,
+    model: TorchHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: np.ndarray,
     *args,
@@ -70,9 +70,9 @@ def torch_explain(
     explain_fn = method_mapping[method]
 
     if isinstance(x_batch, np.ndarray):
-        x_batch = model.to_tensor(x_batch, requires_grad=True, dtype=model.input_dtype)
+        x_batch = torch.tensor(x_batch, requires_grad=True, dtype=model.input_dtype, device=model.device)
 
-    y_batch = model.to_tensor(y_batch, dtype=torch.int64)
+    y_batch = torch.tensor(y_batch, dtype=torch.int64, device=model.device)
 
     return explain_fn(model, x_batch, y_batch, *args, **kwargs)
 
@@ -300,7 +300,7 @@ def _gradient_norm(
     x_batch: list, model, y_batch: Tensor, **kwargs
 ) -> List[Explanation]:
     input_ids, kwargs = model.tokenizer.get_input_ids(x_batch)
-    input_ids = model.to_tensor(input_ids)
+    input_ids = torch.tensor(input_ids, device=model.device)
     input_embeds = model.embedding_lookup(input_ids)
     scores = _gradient_norm(input_embeds, model, y_batch, **kwargs)
     return [
@@ -315,7 +315,7 @@ def _(
     y_batch: Tensor,
     **kwargs,
 ) -> np.ndarray:
-    logits = model(x_batch, **kwargs)
+    logits = model.predict(x_batch, **kwargs)
     logits_for_class = _logits_for_labels(logits, y_batch)
     grads = torch.autograd.grad(torch.unbind(logits_for_class), x_batch)[0]
 
@@ -348,8 +348,8 @@ def _(
     **kwargs,
 ) -> np.ndarray:
 
-    logits = model(x_batch, **kwargs)
-    logits_for_class = _logits_for_labels(logits, model.to_tensor(y_batch))
+    logits = model.predict(x_batch, **kwargs)
+    logits_for_class = _logits_for_labels(logits, torch.tensor(y_batch, device=model.device))
     grads = torch.autograd.grad(torch.unbind(logits_for_class), x_batch)[0]
     scores = torch.sum(grads * x_batch, dim=-1)
     if config.return_np_arrays:
@@ -387,7 +387,7 @@ def _(
 ) -> np.ndarray:
     def pseudo_interpolate(x):
         if isinstance(x, np.ndarray):
-            x = model.to_tensor(x)
+            x = torch.tensor(x, device=model.device)
         if not isinstance(x, torch.Tensor):
             return x
         old_shape = x.shape

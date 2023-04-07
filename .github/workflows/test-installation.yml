@@ -1,5 +1,5 @@
 # The main idea of this test is to verify quantus is usable with and without tensorflow,torch,transformers.
-
+# Integration test runs in separate workflow, since every test case requires separate isolated environment.
 name: Test Installation
 
 on: [ push, workflow_dispatch ]
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Tox
         uses: ./.github/actions/setup-tox/
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: Test with pytest
         run: tox run -e tf_only
@@ -35,7 +35,7 @@ jobs:
       - name: Setup Tox
         uses: ./.github/actions/setup-tox/
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: Test with pytest
         run: tox run -e tf_nlp
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Tox
         uses: ./.github/actions/setup-tox/
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: Test with pytest
         run: tox run -e torch_only
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Tox
         uses: ./.github/actions/setup-tox/
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: Test with pytest
         run: tox run -e torch_nlp

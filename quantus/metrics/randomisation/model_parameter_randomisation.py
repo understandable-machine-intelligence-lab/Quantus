@@ -28,10 +28,9 @@ from quantus.helpers.model.model_interface import ModelInterface, RandomisableMo
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
 from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanation, AggregateFn
-from quantus.helpers.utils import map_optional
+from quantus.helpers.collection_utils import map_optional
 from quantus.helpers.nlp_utils import get_scores
 from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.class_property import classproperty
 
 LayerOrderT = Literal["independent", "top_down"]
 
@@ -52,6 +51,8 @@ class ModelParameterRandomisation(BatchedMetric):
         1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
         NeurIPS (2018): 9525-9536.
     """
+
+    data_domain_applicability: List[str] = BatchedMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
@@ -413,10 +414,3 @@ class ModelParameterRandomisation(BatchedMetric):
                 results_per_sample_accumulator[str(sample)].append(float(results_per_layer[layer][sample]))
 
         return np.mean(results_per_sample_accumulator, axis=1)
-
-    @classproperty
-    def data_domain_applicability(self) -> List[str]:
-        return super().data_domain_applicability + ["NLP"]
-
-
-
