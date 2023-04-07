@@ -188,6 +188,7 @@ all = [
 packages = [
     "quantus",
     "quantus.functions",
+    "quantus.functions.nlp_explanation_func",
     "quantus.helpers",
     "quantus.helpers.model",
     "quantus.metrics",
