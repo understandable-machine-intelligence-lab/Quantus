@@ -170,7 +170,7 @@ AVAILABLE_XAI_METHODS_NLP = [
 XAI_METHODS_NLP_SUPPORT_EMBEDDINGS = [
     "GradNorm",
     "GradXInput",
-    "IntegratedGradients",
+    "IntGrad",
     "NoiseGrad",
     "NoiseGrad++",
 ]
