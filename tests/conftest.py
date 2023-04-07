@@ -230,6 +230,7 @@ def sst2_dataset():
 @pytest.fixture(scope="session")
 def tf_sst2_model():
     return TFAutoModelForSequenceClassification.from_pretrained(
+        # TODO replace with more lightweight model
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
@@ -242,15 +243,10 @@ def tf_sst2_model_wrapper(tf_sst2_model):
 @pytest.fixture(scope="session")
 def torch_sst2_model():
     return AutoModelForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased-finetuned-sst-2-english"
+        "gchhablani/fnet-base-finetuned-sst2"
     )
 
 
 @pytest.fixture(scope="session")
-def torch_sst2_model_wrapper(torch_sst2_model, torch_device):
-    return get_wrapped_model(torch_sst2_model, device=torch_device)
-
-
-@pytest.fixture(scope="session")
-def torch_device():
-    return choose_hardware_acceleration()
+def torch_sst2_model_wrapper(torch_sst2_model):
+    return get_wrapped_model(torch_sst2_model)

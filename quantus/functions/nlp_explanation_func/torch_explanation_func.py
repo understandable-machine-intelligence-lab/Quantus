@@ -301,7 +301,6 @@ def _gradient_norm(
 ) -> List[Explanation]:
     input_ids, kwargs = model.tokenizer.get_input_ids(x_batch)
     input_ids = model.to_tensor(input_ids)
-
     input_embeds = model.embedding_lookup(input_ids)
     scores = _gradient_norm(input_embeds, model, y_batch, **kwargs)
     return [
@@ -316,11 +315,10 @@ def _(
     y_batch: Tensor,
     **kwargs,
 ) -> np.ndarray:
-    input_embeddings = x_batch.to(model.input_dtype)
-    logits = model(input_embeddings, **kwargs)
-
+    logits = model(x_batch, **kwargs)
     logits_for_class = _logits_for_labels(logits, y_batch)
-    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
+    grads = torch.autograd.grad(torch.unbind(logits_for_class), x_batch)[0]
+
     scores = torch.linalg.norm(grads, dim=-1)
     if config.return_np_arrays:
         scores = scores.detach().cpu().numpy()
@@ -349,12 +347,11 @@ def _(
     y_batch: Tensor,
     **kwargs,
 ) -> np.ndarray:
-    input_embeddings = x_batch.to(model.input_dtype).to(model.device)
 
-    logits = model(input_embeddings, **kwargs)
+    logits = model(x_batch, **kwargs)
     logits_for_class = _logits_for_labels(logits, model.to_tensor(y_batch))
-    grads = torch.autograd.grad(torch.unbind(logits_for_class), input_embeddings)[0]
-    scores = torch.sum(grads * input_embeddings, dim=-1)
+    grads = torch.autograd.grad(torch.unbind(logits_for_class), x_batch)[0]
+    scores = torch.sum(grads * x_batch, dim=-1)
     if config.return_np_arrays:
         scores = scores.detach().cpu().numpy()
     return scores

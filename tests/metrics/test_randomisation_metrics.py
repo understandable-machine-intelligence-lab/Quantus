@@ -269,7 +269,6 @@ def test_model_parameter_randomisation(
     data,
     params,
     expected,
-    torch_device
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -286,7 +285,7 @@ def test_model_parameter_randomisation(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            device=torch_device,
+            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -302,7 +301,7 @@ def test_model_parameter_randomisation(
                 y_batch=y_batch,
                 a_batch=a_batch,
                 **call_params,
-                device=torch_device
+                
             )
         return
 
@@ -312,7 +311,7 @@ def test_model_parameter_randomisation(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
-        device=torch_device
+        
     )
     if isinstance(expected, float):
         assert all(
@@ -519,7 +518,6 @@ def test_random_logit(
     data,
     params,
     expected,
-    torch_device
 ):
     x_batch, y_batch = (
         data["x_batch"],
@@ -536,7 +534,7 @@ def test_random_logit(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            device=torch_device,
+            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -549,7 +547,7 @@ def test_random_logit(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
-        device=torch_device
+        
     )
 
     if isinstance(expected, float):

@@ -182,7 +182,7 @@ def test_evaluate_func(
         (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
     ],
 )
-def test_evaluate_nlp(model, data, torch_device):
+def test_evaluate_nlp(model, data):
     nlp_metrics = {
         # "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
         "RandomLogit": quantus.RandomLogit(disable_warnings=True),
@@ -219,7 +219,6 @@ def test_evaluate_nlp(model, data, torch_device):
         model,
         **data,
         call_kwargs={
-            "device": torch_device,
             "explain_func": explain,
             **call_kwargs
         },

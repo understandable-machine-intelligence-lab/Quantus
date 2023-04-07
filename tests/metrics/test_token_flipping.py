@@ -19,7 +19,7 @@ from quantus.helpers.utils import get_wrapped_model
     ],
     ids=["pruning", "activation"],
 )
-def test_tf_model(model, sst2_dataset, init_kwargs, torch_device):
+def test_tf_model(model, sst2_dataset, init_kwargs):
     expected_shape = (
         get_wrapped_model(model)
         .tokenizer.batch_encode(sst2_dataset["x_batch"])["input_ids"][0]
@@ -27,7 +27,7 @@ def test_tf_model(model, sst2_dataset, init_kwargs, torch_device):
     )
     metric = TokenFlipping(**init_kwargs)
     result = metric(
-        model, **sst2_dataset, a_batch=None, explain_func=explain, device=torch_device
+        model, **sst2_dataset, a_batch=None, explain_func=explain
     )
     assert isinstance(result, np.ndarray)
     assert isinstance(result, np.ndarray)

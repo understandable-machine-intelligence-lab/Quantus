@@ -129,7 +129,7 @@ def test_max_sensitivity(model, data, params, torch_device):
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            device=torch_device,
+            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -145,7 +145,7 @@ def test_max_sensitivity(model, data, params, torch_device):
         a_batch=a_batch,
         explain_func=explain,
         **call_params,
-        device=torch_device,
+        
     )
 
     if init_params.get("return_aggregate", False):
@@ -159,7 +159,7 @@ def test_max_sensitivity(model, data, params, torch_device):
 
 @pytest.mark.robustness
 @sensitivity_tests
-def test_avg_sensitivity(model, data, params, torch_device):
+def test_avg_sensitivity(model, data, params, ):
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
@@ -174,7 +174,7 @@ def test_avg_sensitivity(model, data, params, torch_device):
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            device=torch_device,
+            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -190,7 +190,7 @@ def test_avg_sensitivity(model, data, params, torch_device):
         a_batch=a_batch,
         explain_func=explain,
         **call_params,
-        device=torch_device,
+        
     )
     if init_params.get("return_aggregate", False):
         assert scores.shape == ()
@@ -730,7 +730,7 @@ def test_consistency(
     ],
 )
 def test_return_nan_when_prediction_changes(
-    metric, model, data, init_kwargs, call_kwargs, mock_prediction_changed, torch_device
+    metric, model, data, init_kwargs, call_kwargs, mock_prediction_changed
 ):
     # This test case requires different set-up and assertions, so we have it in separate function.
     metric_instance = metric(
@@ -745,14 +745,14 @@ def test_return_nan_when_prediction_changes(
         data["y_batch"],
         explain_func=explain,
         **call_kwargs,
-        device=torch_device,
+        
     )
     assert np.isnan(result).all()
 
 
 @pytest.mark.robustness
 def test_return_nan_when_prediction_changes_continuity(
-    load_mnist_model, load_mnist_images, mock_prediction_changed, torch_device
+    load_mnist_model, load_mnist_images, mock_prediction_changed
 ):
     # Continuity returns dict, so we have it in separate function in order to keep assertions readable.
     metric_instance = Continuity(
@@ -769,7 +769,7 @@ def test_return_nan_when_prediction_changes_continuity(
         explain_func_kwargs={
             "method": "Saliency",
         },
-        device=torch_device,
+        
     )
     for i in result:
         values = list(i.values())

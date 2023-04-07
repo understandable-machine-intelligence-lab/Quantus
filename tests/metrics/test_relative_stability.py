@@ -102,7 +102,7 @@ relative_stability_tests = pytest.mark.parametrize(
 
 @pytest.mark.robustness
 @relative_stability_tests
-def test_relative_input_stability(model, data, init_kwargs, call_kwargs, torch_device):
+def test_relative_input_stability(model, data, init_kwargs, call_kwargs):
     x_batch = data["x_batch"]
     ris = RIS_CONSTRUCTOR(return_nan_when_prediction_changes=False, **init_kwargs)
     result = ris(
@@ -110,7 +110,7 @@ def test_relative_input_stability(model, data, init_kwargs, call_kwargs, torch_d
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        device=torch_device,
+        
         **call_kwargs,
     )
     result = np.asarray(result)
@@ -123,7 +123,7 @@ def test_relative_input_stability(model, data, init_kwargs, call_kwargs, torch_d
 
 @pytest.mark.robustness
 @relative_stability_tests
-def test_relative_output_stability(model, data, init_kwargs, call_kwargs, torch_device):
+def test_relative_output_stability(model, data, init_kwargs, call_kwargs):
     x_batch = data["x_batch"]
     ris = ROS_CONSTRUCTOR(return_nan_when_prediction_changes=False, **init_kwargs)
 
@@ -132,7 +132,7 @@ def test_relative_output_stability(model, data, init_kwargs, call_kwargs, torch_
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        device=torch_device,
+        
         **call_kwargs,
     )
     result = np.asarray(result)
@@ -155,7 +155,7 @@ def test_relative_representation_stability(
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        device=torch_device,
+        
         **call_kwargs,
     )
     result = np.asarray(result)
