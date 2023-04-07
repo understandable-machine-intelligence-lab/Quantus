@@ -110,6 +110,7 @@ dependencies = [
 # projects.
 [project.optional-dependencies] # Optional
 test = [
+    "quantus[tf_explain,captum,zennit]",
     "coverage[toml]",
     "flake8",
     "black",
@@ -121,13 +122,6 @@ test = [
     "pytest-xdist",
     "filelock",
     "tox>=4.4.11",
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
-    "tf-explain",
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "zennit>=0.5.0",
-    "captum>=0.6.0",
     "pandas"
 ]
 torch = [
@@ -138,41 +132,25 @@ tensorflow = [
     "tensorflow>=2.12.0; sys_platform != 'darwin'",
     "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"
 ]
-
 captum = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
+    "quantus[tensorflow]",
     "captum>=0.6.0"
 ]
 tf_explain = [
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
+    "quantus[tensorflow]",
     "tf-explain>=0.3.1",
 ]
 zennit = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
+    "quantus[torch]",
     "zennit>=0.5.0"
 ]
 tutorials = [
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "captum>=0.6.0",
+    "quantus[captum]",
     "pandas",
     "xmltodict",
-    "jupyter"
 ]
-full = [
-    "tensorflow>=2.12.0; sys_platform != 'darwin'",
-    "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
-    "tf-explain>=0.3.1",
-    "torch>=1.13.1",
-    "torchvision>=0.15.1",
-    "zennit>=0.5.0",
-    "captum>=0.6.0",
-    "pandas",
-    "xmltodict",
-    "jupyter"
+all = [
+    "quantus[all]"
 ]
 
 # List URLs that are relevant to your project
