@@ -243,7 +243,7 @@ disable_error_code = ["misc", "index", "arg-type"]
 
 # PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
 [tool.pytest.ini_options]
-addopts = ["-m 'not partial_installation'"]
+#addopts = "-m \"not \"partial_installation\"\""
 markers = [
     "loss_func: loss_func tests.",
     "similar_func: similar_func tests.",
@@ -261,7 +261,10 @@ markers = [
     "robustness: robustness metrics tests.",
     "localisation: localisation metrics tests.",
     "complexity: complexity metrics tests.",
-    "axiomatic: axiomatic metrics tests."
+    "axiomatic: axiomatic metrics tests.",
+    "nlp: text-classification metrics tests.",
+    "partial_installation: tests with either tensorflow or torch with/or transformers."
+
 ]
 filterwarnings = [
     "error",

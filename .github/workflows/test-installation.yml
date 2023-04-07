@@ -14,17 +14,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
         with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install
-        run: pip install .[tensorflow]
+          python-version: 3.10
 
       - name: Test with pytest
-        run: pytest tests/test_partial_installation::test_only_tensorflow_installed -m "partial_installation"
+        run: tox run -e tf_only
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+  test_tf_nlp:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
+        with:
+          python-version: 3.10
+
+      - name: Test with pytest
+        run: tox run -e tf_nlp
         env:
           TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
@@ -36,40 +50,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
         with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install
-        run: pip install .[torch,captum]
+          python-version: 3.10
 
       - name: Test with pytest
-        run: pytest tests/test_partial_installation::test_only_torch_installed  -m "partial_installation"
-
-
-  test_tf_nlp:
-
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install
-        run: pip install .[tensorflow,nlp]
-
-      - name: Test with pytest
-        run: pytest tests/test_partial_installation::test_transformers_with_tensorflow_installed  -m "partial_installation"
-        env:
-          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+        run: tox run -e torch_only
 
 
   test_torch_nlp:
@@ -80,14 +67,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
         with:
-          python-version: '3.10'
-          cache: 'pip'
-
-      - name: Install
-        run: pip install .[torch,nlp]
+          python-version: 3.10
 
       - name: Test with pytest
-        run: pytest tests/test_partial_installation::test_transformers_with_torch_installed  -m "partial_installation"
+        run: tox run -e torch_nlp
