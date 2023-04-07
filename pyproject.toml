@@ -249,7 +249,7 @@ filterwarnings = [
 # Coverage configuration, for all options refer to https://coverage.readthedocs.io/en/latest/config.html
 # Note, we need to run python 3.11 or have coverage[toml] installed.
 [tool.coverage.run]
-source = ["quantus"]
+source = ["quantus.*"]
 omit = [
     "/tutorials/*",
     "/tests/*",
