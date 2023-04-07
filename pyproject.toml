@@ -185,7 +185,18 @@ all = [
 # If there are data files included in your packages that need to be
 # installed, specify them here.
 #package-data = {"sample" = ["*.dat"]}
-packages = ["quantus"]
+packages = [
+    "quantus",
+    "quantus.functions",
+    "quantus.helpers",
+    "quantus.helpers.model",
+    "quantus.metrics",
+    "quantus.metrics.axiomatic",
+    "quantus.metrics.faithfulness",
+    "quantus.metrics.localisation",
+    "quantus.metrics.randomisation",
+    "quantus.metrics.robustness",
+]
 
 [build-system]
 # These are the assumed default build requirements from pip:
