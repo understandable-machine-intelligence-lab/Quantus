@@ -120,7 +120,6 @@ test = [
     "pytest-lazy-fixture",
     "pytest-mock",
     "pytest-xdist",
-    "filelock",
     "tox>=4.4.11",
     "pandas"
 ]
