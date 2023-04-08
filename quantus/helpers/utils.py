@@ -29,7 +29,7 @@ from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.nlp_utils import is_transformers_available
-from quantus.helpers.tf_utils import is_tf_available
+from quantus.helpers.tf_utils import is_tensorflow_available
 from quantus.helpers.torch_utils import is_torch_available
 
 if is_torch_available():
@@ -37,16 +37,21 @@ if is_torch_available():
     from quantus.helpers.model.pytorch_model import PyTorchModel
 
 
-if is_tf_available():
+if is_tensorflow_available():
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
 
 
 if is_transformers_available():
     from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-    from transformers import TFPreTrainedModel, PreTrainedModel, PreTrainedTokenizerBase, AutoTokenizer
+    from transformers import (
+        TFPreTrainedModel,
+        PreTrainedModel,
+        PreTrainedTokenizerBase,
+        AutoTokenizer,
+    )
 
-    if is_tf_available():
+    if is_tensorflow_available():
         from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
 
     if is_torch_available():
@@ -413,9 +418,11 @@ def get_wrapped_model(
 
 
 def get_wrapped_text_classifier(
-        model,
-        tokenizer=None,
-        device: Optional[str | torch.device] = None,
+    model,
+    softmax: Optional[bool] = None,
+    device: Optional[str | torch.device] = None,
+    model_predict_kwargs: Optional[Dict[str, ...]] = None,
+    tokenizer: Optional[Tokenizable] = None,
 ) -> TextClassifier:
     if isinstance(model, TextClassifier):
         return model
@@ -438,7 +445,7 @@ def get_wrapped_text_classifier(
         else:
             tokenizer = HuggingFaceTokenizer(tokenizer)
 
-    if is_tf_available():
+    if is_tensorflow_available():
         if isinstance(model, TFPreTrainedModel):
             return TFHuggingFaceTextClassifier(model, tokenizer)
 

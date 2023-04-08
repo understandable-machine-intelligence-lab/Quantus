@@ -21,16 +21,12 @@ from quantus.metrics.faithfulness import TokenFlipping
             {"normalise": True, "task": "activation"},
         ),
     ],
-    ids=["pruning", "activation"],
+    ids=["pruning_tf", "activation_torch"],
 )
-def test_tf_model(model, tokenizer, sst2_dataset, init_kwargs):
+def test_token_flipping(model, tokenizer, sst2_dataset, init_kwargs):
     metric = TokenFlipping(**init_kwargs)
     result = metric(
-        model,
-        **sst2_dataset,
-        a_batch=None,
-        explain_func=explain,
-        tokenizer=tokenizer
+        model, **sst2_dataset, a_batch=None, explain_func=explain, tokenizer=tokenizer
     )
     assert isinstance(result, np.ndarray)
     assert isinstance(result, np.ndarray)

@@ -5,6 +5,7 @@ import pytest
 import tensorflow as tf
 
 from quantus.functions.explanation_func import explain
+from quantus.functions.nlp_explanation_func import ShapConfig
 from quantus.functions.nlp_explanation_func.lime import LimeConfig
 from quantus.functions.nlp_explanation_func.tf_explanation_func import (
     IntGradConfig,
@@ -50,7 +51,7 @@ def unk_token_baseline_func() -> Callable:
             ),
         },
         {"method": "LIME", "config": LimeConfig(num_samples=5)},
-        {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
+        {"method": "SHAP", "config": ShapConfig(max_evals=5)},
     ],
     ids=[
         "GradNorm",
@@ -69,7 +70,7 @@ def test_tf_model(tf_sst2_model_wrapper, sst2_dataset, kwargs):
         tf_sst2_model_wrapper,
         inputs=sst2_dataset["x_batch"],
         targets=sst2_dataset["y_batch"],
-        **kwargs
+        **kwargs,
     )
     assert len(a_batch) == 8
     for tokens, scores in a_batch:
@@ -87,16 +88,16 @@ def test_tf_model(tf_sst2_model_wrapper, sst2_dataset, kwargs):
         {"method": "IntGrad"},
         {
             "method": "NoiseGrad",
-            "explain_fn": "IntGrad",
-            "init_kwargs": {"n": 2},
+            "explain_fn": "GradXInput",
+            "config": NoiseGradConfig(n=2),
         },
         {
             "method": "NoiseGrad++",
-            "explain_fn": "IntGrad",
-            "init_kwargs": {"n": 2, "m": 2},
+            "explain_fn": "GradXInput",
+            "config": NoiseGradPlusPlusConfig(n=2, m=2, noise_type="additive"),
         },
         {"method": "LIME", "config": LimeConfig(num_samples=5)},
-        {"method": "SHAP", "call_kwargs": {"max_evals": 5}},
+        {"method": "SHAP", "config": ShapConfig(max_evals=5)},
     ],
     ids=[
         "GradNorm",
@@ -113,7 +114,7 @@ def test_torch_model(torch_sst2_model_wrapper, sst2_dataset, kwargs):
         torch_sst2_model_wrapper,
         inputs=sst2_dataset["x_batch"],
         targets=sst2_dataset["y_batch"],
-        **kwargs
+        **kwargs,
     )
     assert len(a_batch) == 8
     for tokens, scores in a_batch:

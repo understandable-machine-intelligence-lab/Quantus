@@ -12,11 +12,11 @@ from typing import (
     TypeVar,
     Callable,
     Sequence,
-    Union
+    Union,
 )
 from sklearn.utils import gen_batches
 
-from quantus.helpers.tf_utils import is_tf_available
+from quantus.helpers.tf_utils import is_tensorflow_available
 from quantus.helpers.torch_utils import is_torch_available
 
 
@@ -47,14 +47,13 @@ def safe_as_array(a: ArrayLike, force: bool = False) -> np.ndarray:
 if is_torch_available():
     import torch
 
-
     @safe_as_array.register
     def _(a: torch.Tensor, force: bool = False) -> np.ndarray:
         return a.detach().cpu().numpy()
 
-if is_tf_available():
-    import tensorflow as tf
 
+if is_tensorflow_available():
+    import tensorflow as tf
 
     @safe_as_array.register
     def _(a: tf.Tensor, force: bool = False) -> ArrayLike:
@@ -62,19 +61,20 @@ if is_tf_available():
             return np.array(tf.identity(a))
         return a
 
+
 T = TypeVar("T")
 R = TypeVar("R")
 
 
 def map_dict(
-        dictionary: Dict[str, T],
-        func: Callable[[T], R],
-        key_mapper: Callable[[str], str] = lambda x: x,
+    dictionary: Dict[str, T],
+    value_mapper: Callable[[T], R],
+    key_mapper: Callable[[str], str] = lambda x: x,
 ) -> Dict[str, R]:
     """Applies func to values in dict. Additionally, if provided can also map keys."""
     result = {}
     for k, v in dictionary.items():
-        result[key_mapper(k)] = func(v)
+        result[key_mapper(k)] = value_mapper(v)
     return result
 
 
@@ -86,7 +86,7 @@ def flatten(list_2d: Iterable[Iterable[T]]) -> List[T]:
 def batch_inputs(flat_list: Sequence[T], batch_size: int) -> List[Iterable[T]]:
     """Divide list in batches of batch_size, despite the name works also for any Sized and SupportsIndex."""
     indices = list(gen_batches(len(flat_list), batch_size))
-    return list(map(lambda i: flat_list[i.start:i.stop], indices))
+    return list(map(lambda i: flat_list[i.start : i.stop], indices))
 
 
 def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
@@ -97,7 +97,7 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
 
 
 def add_default_items(
-        dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
+    dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Add default_items into dictionary if not present."""
     if dictionary is None:
@@ -119,3 +119,21 @@ def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
         return value
     else:
         return default_factory()
+
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+def filter_dict(
+    dictionary: Dict[K, V],
+    key_filter: Callable[[K], bool] = lambda a: True,
+    value_filter: Callable[[V], bool] = lambda b: True,
+) -> Dict[K, V]:
+    result = {}
+
+    for k, v in dictionary.items():
+        if key_filter(k) and value_filter(v):
+            result[k] = v
+
+    return result

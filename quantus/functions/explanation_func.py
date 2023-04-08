@@ -16,6 +16,7 @@ from functools import singledispatch, wraps
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.utils import (
     get_baseline_value,
     infer_channel_first,
@@ -23,7 +24,9 @@ from quantus.helpers.utils import (
     get_wrapped_model,
 )
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.functions.nlp_explanation_func.nlp_explanation_func import generate_text_classification_explanations
+from quantus.functions.nlp_explanation_func import (
+    generate_text_classification_explanations,
+)
 
 
 if util.find_spec("torch"):
@@ -62,7 +65,6 @@ if util.find_spec("tf_explain"):
 
 
 def patch_kwargs(func):
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         # singledispatch requires first positional argument
@@ -71,6 +73,7 @@ def patch_kwargs(func):
             return func(kwargs.pop("model"), *args, **kwargs)
         else:
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -535,7 +538,10 @@ def generate_captum_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
+    reduce_axes = {
+        "axis": tuple(kwargs.get("reduce_axes", [1])),
+        "keepdims": kwargs.get("keepdims", True),
+    }
 
     # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
     if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
@@ -777,7 +783,10 @@ def generate_zennit_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
+    reduce_axes = {
+        "axis": tuple(kwargs.get("reduce_axes", [1])),
+        "keepdims": kwargs.get("keepdims", True),
+    }
 
     # Get zennit composite, canonizer, attributor and handle canonizer kwargs.
     canonizer = kwargs.get("canonizer", None)

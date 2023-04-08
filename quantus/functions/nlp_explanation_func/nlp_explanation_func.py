@@ -7,35 +7,60 @@
 """Framework-agnostic explanation functions."""
 from __future__ import annotations
 
-import warnings
-from typing import Dict, List, Optional
+import logging
+from importlib import util
+from typing import List, Optional, NamedTuple
 
 import numpy as np
 from transformers import pipeline
-from quantus.helpers.model.text_classifier import TextClassifier
 
 from quantus.functions.nlp_explanation_func.lime import explain_lime
-from quantus.helpers.types import Explanation
-from quantus.helpers.utils import (
-    is_tf_available,
-    is_torch_available
-)
 from quantus.helpers.collection_utils import (
-    add_default_items,
     safe_as_array,
     value_or_default,
 )
-from quantus.helpers.nlp_utils import map_explanations, is_torch_model, is_tf_model
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.nlp_utils import map_explanations, is_transformers_available
+from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_available
+from quantus.helpers.torch_utils import is_torch_available, is_torch_model
+from quantus.helpers.types import Explanation
 
-if is_tf_available():
-    from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-else:
-    TFHuggingFaceTextClassifier = type(None)
+log = logging.getLogger(__name__)
+
+
+if is_tensorflow_available():
+
+    from quantus.functions.nlp_explanation_func.tf_explanation_func import tf_explain
 
 if is_torch_available():
-    from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-else:
-    TorchHuggingFaceTextClassifier = type(None)
+    from quantus.functions.nlp_explanation_func.torch_explanation_func import (
+        torch_explain,
+    )
+
+
+if is_transformers_available():
+    from transformers.utils.hub import PushToHubMixin
+
+
+def is_shap_available() -> bool:
+    return util.find_spec("shap") is not None
+
+
+if is_shap_available():
+    import shap
+
+
+__all__ = ["ShapConfig", "generate_text_classification_explanations"]
+
+
+class ShapConfig(NamedTuple):
+    max_evals: int = 500
+    seed: int = 42
+    batch_size: str | int = 64
+    silent: bool = True
+
+
+# TODO shap is not maintained, get rid of dependecy on it.
 
 
 def explain_shap(
@@ -43,45 +68,47 @@ def explain_shap(
     x_batch: List[str],
     y_batch: np.ndarray,
     *,
-    batch_size: int = 64,
-    init_kwargs: Optional[Dict] = None,
-    call_kwargs: Optional[Dict] = None,
+    config: Optional[ShapConfig] = None,
 ) -> List[Explanation]:
     """
     Generate explanations using shapley values. This method depends on shap pip package.
 
     References
     ----------
-        - Lundberg et al., 2017, A Unified Approach to Interpreting Model Predictions, http://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions
+        - Lundberg et al., 2017, A Unified Approach to Interpreting Model Predictions,
+            https://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions
         - https://github.com/slundberg/shap
     """
 
-    if not isinstance(
-        model, (TorchHuggingFaceTextClassifier, TFHuggingFaceTextClassifier)
+    if not is_shap_available():
+        raise ValueError("SHAP requires `shap` package installation.")
+
+    if not (
+        is_transformers_available() or isinstance(model.get_model(), PushToHubMixin)
     ):
         raise ValueError(
             "SHAP explanations are only supported for models from HuggingFace Hub"
         )
 
-    import shap
-
-    init_kwargs = value_or_default(init_kwargs, lambda: {})
-    call_kwargs = add_default_items(call_kwargs, {"silent": True})
+    config = value_or_default(config, lambda: ShapConfig())
 
     predict_fn = pipeline(
         "text-classification",
         model=model.get_model(),
-        tokenizer=model.tokenizer.unwrap(),
+        tokenizer=model.tokenizer.tokenizer,
         top_k=None,
         device=getattr(model, "device", None),
     )
-    explainer = shap.Explainer(predict_fn, **init_kwargs)
+    explainer = shap.Explainer(predict_fn, seed=config.seed)
 
-    shapley_values = explainer(x_batch, batch_size=batch_size, **call_kwargs)
+    shapley_values = explainer(
+        x_batch,
+        batch_size=config.batch_size,
+        max_evals=config.max_evals,
+        silent=config.silent,
+    )
     return [(i.feature_names, i.values[:, y]) for i, y in zip(shapley_values, y_batch)]
 
-
-# TODO allow padding non-wrapper
 
 def generate_text_classification_explanations(
     model: TextClassifier,
@@ -92,10 +119,9 @@ def generate_text_classification_explanations(
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:
-        warnings.warn(
+        logging.warning(
             f"Using quantus 'explain' function as an explainer without specifying 'method' (string) "
             f"in kwargs will produce a simple 'GradientNorm' explanation.\n",
-            category=UserWarning,
         )
         method = "GradNorm"
 
@@ -108,18 +134,10 @@ def generate_text_classification_explanations(
     if method == "SHAP":
         return explain_shap(model, *args, **kwargs)
 
-    if is_tf_model(model):
-        from quantus.functions.nlp_explanation_func.tf_explanation_func import (
-            tf_explain,
-        )
-
+    if is_tensorflow_model(model):
         return tf_explain(model, *args, method=method, **kwargs)
 
     if is_torch_model(model):
-        from quantus.functions.nlp_explanation_func.torch_explanation_func import (
-            torch_explain,
-        )
-
         result = torch_explain(model, *args, method=method, **kwargs)
         return map_explanations(result, safe_as_array)  # noqa
 

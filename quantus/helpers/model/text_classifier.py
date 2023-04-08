@@ -7,12 +7,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, TypedDict, Tuple, Dict, Any, overload, TYPE_CHECKING
+from typing import List, TypedDict, Tuple, Dict, Any, overload, TYPE_CHECKING, Sequence
 
 import numpy as np
 
 from quantus.helpers.collection_utils import safe_as_array
-from quantus.helpers.model.model_interface import RandomisableModel, HiddenRepresentationsModel, ModelWrapper
+from quantus.helpers.model.model_interface import (
+    RandomisableModel,
+    HiddenRepresentationsModel,
+    ModelWrapper,
+)
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -23,9 +27,24 @@ R = TypedDict("R", {"input_ids": np.ndarray}, total=False)
 
 class Tokenizable(ABC):
 
+    """An interface, which must be implemented in order to use custom tokenizers."""
+
+    def get_input_ids(self, x_batch: List[str]) -> Tuple[Any, Dict[str, Any]]:
+        """Do batch encode, unpack input ids and other forward-pass kwargs."""
+        encoded_input = self.batch_encode(x_batch)
+        return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
     @abstractmethod
-    def batch_encode(self, text: List[str], **kwargs) -> R:
+    def split_into_tokens(self, text: str) -> List[str]:
+        """ "Converts a string in a sequence of tokens, using the tokenizer."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def join_tokens(self, tokens: List[str]) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def batch_encode(self, text: Sequence[str], **kwargs) -> Dict[str, Sequence[int]]:
         """Convert batch of plain-text inputs to vocabulary id's."""
         raise NotImplementedError
 
@@ -40,14 +59,11 @@ class Tokenizable(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def batch_decode(self, ids: np.ndarray, **kwargs) -> List[str]:
+    def batch_decode(
+        self, ids: List[int] | List[List[int]] | np.ndarray, **kwargs
+    ) -> List[str]:
         """Convert vocabulary ids to strings."""
         raise NotImplementedError
-
-    def get_input_ids(self, x_batch: List[str]) -> Tuple[Any, Dict[str, Any]]:
-        """Do batch encode, unpack input ids and other forward-pass kwargs."""
-        encoded_input = self.batch_encode(x_batch)
-        return encoded_input.pop("input_ids"), encoded_input  # type: ignore
 
 
 class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper):
@@ -58,8 +74,8 @@ class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper
 
     tokenizer: Tokenizable
 
-    def __call__(self, *args, **kwargs):
-        return self.get_model()(*args, **kwargs)
+    def __call__(self, *args, **kwargs) -> tf.Tensor | torch.Tensor:
+        return self.get_model()(*args, **kwargs).logits
 
     def get_embeddings(self, x_batch: List[str]) -> Tuple[np.ndarray, Dict[str, ...]]:
         """Do batch encode, unpack input ids, convert to embeddings."""
@@ -102,28 +118,19 @@ class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, x_batch: List[str], batch_size=64, **kwargs) -> np.ndarray:
+    def predict(self, x_batch: List[str], **kwargs) -> np.ndarray:
         """Execute forward pass with plain text inputs."""
         raise NotImplementedError
 
     @abstractmethod
     @overload
-    def get_hidden_representations(
-            self,
-            x: List[str],
-            *args,
-            **kwargs
-    ) -> np.ndarray:
+    def get_hidden_representations(self, x: List[str], *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     @abstractmethod
-    def get_hidden_representations(
-            self,
-            x: np.ndarray,
-            *args,
-            **kwargs
-    ) -> np.ndarray:
+    def get_hidden_representations(self, x: np.ndarray, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
+
 
 # ---------- QA, NLI, Text Generation, Summarization, NER and more models to follow ----------
 # Or actually no, Quantus is designed for classifiers, so I probably will just show examples of other tasks separately.

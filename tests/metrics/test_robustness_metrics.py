@@ -68,7 +68,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {"perturb_func": synonym_replacement},
-                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
+                "call": {},
             },
             marks=[pytest.mark.nlp],
             id="tf_nlp_plain_text",
@@ -81,7 +81,7 @@ sensitivity_tests = pytest.mark.parametrize(
                 "init": {
                     "perturb_func": spelling_replacement,
                 },
-                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
+                "call": {},
             },
             marks=[pytest.mark.nlp],
             id="torch_nlp_plain_text",
@@ -92,7 +92,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {},
-                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
+                "call": {},
             },
             marks=[pytest.mark.nlp],
             id="tf_nlp_latent",
@@ -103,7 +103,7 @@ sensitivity_tests = pytest.mark.parametrize(
             {
                 "a_batch_generate": False,
                 "init": {},
-                "call": {"tokenizer": lazy_fixture("sst2_tokenizer")},
+                "call": {},
             },
             marks=[pytest.mark.nlp],
             id="torch_nlp_latent",
@@ -114,7 +114,7 @@ sensitivity_tests = pytest.mark.parametrize(
 
 @pytest.mark.robustness
 @sensitivity_tests
-def test_max_sensitivity(model, data, params):
+def test_max_sensitivity(model, data, params, sst2_tokenizer):
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
@@ -129,7 +129,6 @@ def test_max_sensitivity(model, data, params):
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -144,8 +143,8 @@ def test_max_sensitivity(model, data, params):
         y_batch=y_batch,
         a_batch=a_batch,
         explain_func=explain,
+        tokenizer=sst2_tokenizer,
         **call_params,
-        
     )
 
     if init_params.get("return_aggregate", False):
@@ -159,7 +158,7 @@ def test_max_sensitivity(model, data, params):
 
 @pytest.mark.robustness
 @sensitivity_tests
-def test_avg_sensitivity(model, data, params, ):
+def test_avg_sensitivity(model, data, params, sst2_tokenizer):
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
@@ -174,7 +173,6 @@ def test_avg_sensitivity(model, data, params, ):
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -189,8 +187,8 @@ def test_avg_sensitivity(model, data, params, ):
         y_batch=y_batch,
         a_batch=a_batch,
         explain_func=explain,
+        tokenizer=sst2_tokenizer,
         **call_params,
-        
     )
     if init_params.get("return_aggregate", False):
         assert scores.shape == ()
@@ -745,7 +743,6 @@ def test_return_nan_when_prediction_changes(
         data["y_batch"],
         explain_func=explain,
         **call_kwargs,
-        
     )
     assert np.isnan(result).all()
 
@@ -769,7 +766,6 @@ def test_return_nan_when_prediction_changes_continuity(
         explain_func_kwargs={
             "method": "Saliency",
         },
-        
     )
     for i in result:
         values = list(i.values())

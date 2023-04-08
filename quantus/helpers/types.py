@@ -6,57 +6,68 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple, Protocol, overload
+from typing import List, Tuple, Protocol, overload, TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from quantus.helpers.model.text_classifier import TextClassifier
+if TYPE_CHECKING:
+    from quantus.helpers.model.text_classifier import TextClassifier
 
 Explanation = Tuple[List[str], np.ndarray]
 
 
 class PerturbFn(Protocol):
-
     @overload
-    def __call__(self, a: List[str], **kwargs) -> List[str]: ...
+    def __call__(self, a: List[str], **kwargs) -> List[str]:
+        ...
 
-    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray: ...
+    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray:
+        ...
 
 
 class SimilarityFn(Protocol):
-
     @overload
-    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> np.ndarray: ...
+    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> np.ndarray:
+        ...
 
-    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> float: ...
+    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> float:
+        ...
 
 
 class NormFn(Protocol):
-
-    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike: ...
+    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike:
+        ...
 
 
 class NormaliseFn(Protocol):
-
-    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike: ...
+    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike:
+        ...
 
 
 class ExplainFn(Protocol):
+    @overload
+    def __call__(
+        self, model: TextClassifier, x_batch: List[str], y_batch: ArrayLike, **kwargs
+    ) -> List[Explanation]:
+        ...
 
     @overload
-    def __call__(self, model: TextClassifier, x_batch: List[str], y_batch: ArrayLike, **kwargs) -> List[
-        Explanation]: ...
+    def __call__(
+        self, model: TextClassifier, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs
+    ) -> np.ndarray:
+        ...
 
-    @overload
-    def __call__(self, model: TextClassifier, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs) -> np.ndarray: ...
-
-    def __call__(self, model, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs) -> np.ndarray: ...
+    def __call__(
+        self, model, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs
+    ) -> np.ndarray:
+        ...
 
 
 class AggregateFn(Protocol):
-
     @overload
-    def __call__(self, a: ArrayLike, **kwargs) -> float: ...
+    def __call__(self, a: ArrayLike, **kwargs) -> float:
+        ...
 
-    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray: ...
+    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray:
+        ...

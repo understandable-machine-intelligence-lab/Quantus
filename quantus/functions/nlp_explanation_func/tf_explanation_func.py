@@ -8,15 +8,16 @@
 from __future__ import annotations
 
 from functools import partial, singledispatch
-from typing import Callable, Dict, List, Optional, Union, NamedTuple
+from typing import Callable, Dict, List, Optional, Union, NamedTuple, Literal
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability.python.distributions.normal import Normal
+from operator import itemgetter
 
 from quantus.helpers.types import Explanation
-from quantus.helpers.collection_utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default, map_dict
 from quantus.helpers.tf_utils import is_xla_compatible_platform
 from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
 
@@ -24,6 +25,7 @@ from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
 _BaselineFn = Callable[[tf.Tensor], tf.Tensor]
 _TextOrVector = Union[List[str], tf.Tensor]
 _Scores = Union[List[Explanation], tf.Tensor]
+NoiseType = Literal["multiplicative", "additive"]
 _USE_XLA = is_xla_compatible_platform()
 
 
@@ -80,7 +82,7 @@ class NoiseGradConfig(NamedTuple):
     mean: float = 1.0
     std: float = 0.2
     explain_fn: Union[Callable, str] = "IntGrad"
-    noise_type: str = "multiplicative"
+    noise_type: NoiseType = "multiplicative"
     seed: int = 42
 
     def resolve_functions(self):
@@ -179,7 +181,9 @@ def available_noise_grad_xai_methods() -> Dict[str, Callable]:
 
 
 def tf_explain(
-    *args,
+    model: TFHuggingFaceTextClassifier,
+    x_batch: _TextOrVector,
+    y_batch: np.ndarray,
     method: str,
     **kwargs,
 ) -> _Scores:
@@ -199,10 +203,10 @@ def tf_explain(
         else:
             return x
 
-    args = tf.nest.map_structure(as_tensor, args)
+    y_batch = as_tensor(y_batch)
     kwargs = tf.nest.map_structure(as_tensor, kwargs)
 
-    return explain_fn(*args, **kwargs)
+    return explain_fn(model, x_batch, y_batch, **kwargs)
 
 
 # ----------------- Quantus-conform API -------------------
@@ -464,7 +468,9 @@ def noise_grad_plus_plus(
 
 
 @singledispatch
-def _gradient_norm(x_batch: List[str], model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs) -> _Scores:
+def _gradient_norm(
+    x_batch: List[str], model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs
+) -> _Scores:
     input_ids, kwargs = model.tokenizer.get_input_ids(x_batch)
     embeddings = model.embedding_lookup(input_ids)
     scores = _gradient_norm(embeddings, model, y_batch, **kwargs)
@@ -474,6 +480,7 @@ def _gradient_norm(x_batch: List[str], model: TFHuggingFaceTextClassifier, y_bat
 
 
 @_gradient_norm.register(tf.Tensor)
+@_gradient_norm.register(np.ndarray)
 @tf.function
 def _(
     x_batch: tf.Tensor,
@@ -483,7 +490,7 @@ def _(
 ) -> tf.Tensor:
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
-        logits = model.predict(x_batch, **kwargs)
+        logits = model(None, inputs_embeds=x_batch, training=False, **kwargs)
         logits_for_label = _logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
@@ -504,6 +511,7 @@ def _gradient_x_input(x_batch, model, y_batch, **kwargs) -> _Scores:
 
 
 @_gradient_x_input.register(tf.Tensor)
+@_gradient_x_input.register(np.ndarray)
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
 def _(
     x_batch: tf.Tensor,
@@ -513,7 +521,7 @@ def _(
 ) -> tf.Tensor:
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
-        logits = model.predict(x_batch, **kwargs)
+        logits = model(None, inputs_embeds=x_batch, training=False, **kwargs)
         logits_for_label = _logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
@@ -529,7 +537,7 @@ def _integrated_gradients(
     model,
     y_batch: tf.Tensor,
     config: IntGradConfig = None,
-    **kwargs
+    **kwargs,
 ) -> List[Explanation]:
     config = value_or_default(config, default_int_grad_config)
     input_ids, predict_kwargs = model.tokenizer.get_input_ids(x_batch)
@@ -548,6 +556,7 @@ def _integrated_gradients(
 
 
 @_integrated_gradients.register(tf.Tensor)
+@_integrated_gradients.register(np.ndarray)
 def _(
     x_batch: tf.Tensor,
     model,
@@ -612,7 +621,12 @@ def _integrated_gradients_batched(
 
     with tf.GradientTape() as tape:
         tape.watch(interpolated_embeddings)
-        logits = model.predict(interpolated_embeddings, **interpolated_kwargs)
+        logits = model(
+            None,
+            inputs_embeds=interpolated_embeddings,
+            training=False,
+            **interpolated_kwargs,
+        )
         logits_for_label = _logits_for_labels(logits, interpolated_y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
@@ -654,11 +668,16 @@ def _integrated_gradients_iterative(
 
         interpolated_kwargs = tf.nest.map_structure(
             lambda x: pseudo_interpolate(x, interpolated_embeddings),
-            {k: v[i] for k, v in kwargs.items()},
+            map_dict(kwargs, itemgetter(i)),
         )
         with tf.GradientTape() as tape:
             tape.watch(interpolated_embeddings)
-            logits = model.predict(interpolated_embeddings, **interpolated_kwargs)
+            logits = model(
+                None,
+                inputs_embeds=interpolated_embeddings,
+                training=False,
+                **interpolated_kwargs,
+            )
             logits_for_label = logits[:, y_batch[i]]
 
         grads = tape.gradient(logits_for_label, interpolated_embeddings)
@@ -673,7 +692,10 @@ def _integrated_gradients_iterative(
 
 @singledispatch
 def _noise_grad(
-    x_batch: list, model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, config: NoiseGradConfig = None
+    x_batch: list,
+    model: TFHuggingFaceTextClassifier,
+    y_batch: tf.Tensor,
+    config: NoiseGradConfig = None,
 ):
     config = value_or_default(config, default_noise_grad_config).resolve_functions()
     tf.random.set_seed(config.seed)
@@ -691,6 +713,7 @@ def _noise_grad(
     ]
 
 
+@_noise_grad.register(np.ndarray)
 @_noise_grad.register
 def _(
     x_batch: tf.Tensor,
@@ -747,7 +770,7 @@ def _noise_grad_plus_plus(
     model,
     y_batch: tf.Tensor,
     config: NoiseGradPlusPlusConfig = None,
-    **kwargs
+    **kwargs,
 ):
     config = value_or_default(config, default_noise_grad_pp_config).resolve_functions()
     tf.random.set_seed(config.seed)
@@ -766,6 +789,7 @@ def _noise_grad_plus_plus(
     ]
 
 
+@_noise_grad_plus_plus.register(np.ndarray)
 @_noise_grad_plus_plus.register
 def _(
     x_batch: tf.Tensor,

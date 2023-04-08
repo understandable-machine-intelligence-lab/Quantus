@@ -7,15 +7,16 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Iterable, List, Optional, Sequence, NamedTuple
+from typing import Callable, List, Optional, Sequence, NamedTuple
 
 import numpy as np
 from sklearn import linear_model, metrics
+
+from quantus.helpers.collection_utils import value_or_default
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
-from quantus.helpers.collection_utils import value_or_default
 
-__all__ = ["explain_lime"]
+__all__ = ["explain_lime", "LimeConfig"]
 
 
 class LimeConfig(NamedTuple):

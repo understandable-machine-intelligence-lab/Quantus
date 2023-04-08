@@ -1,10 +1,3 @@
-"""
-In this suite we test the cases, when user has installed quantus with only tensorflow (exclusive) or torch,
-with or without NLP support. The idea is to catch references on conditional libraries,
-and verify Quantus is useable in all extra-installations variants.
-These tests are automatically skipped, you can run them with, e.g., tox -e tf_only or pytest ... -m "evaluate_func".
-"""
-
 from typing import Union
 
 import pytest
@@ -19,34 +12,8 @@ from quantus.functions.perturb_func import synonym_replacement, spelling_replace
 from quantus.metrics.complexity import Sparseness  # noqa
 from quantus.metrics.robustness import MaxSensitivity  # noqa
 
-from quantus.functions.nlp_explanation_func.lime import LimeConfig
 
-from importlib import util
-
-
-def assert_tf_not_installed():
-    assert util.find_spec("tensorflow") is None
-    assert util.find_spec("keras") is None
-
-
-def assert_nlp_libraries_not_installed():
-    assert util.find_spec("transformers") is None
-    assert util.find_spec("nlpaug") is None
-    assert util.find_spec("nltk") is None
-
-
-def assert_torch_not_installed():
-    assert util.find_spec("torch") is None
-    assert util.find_spec("captum") is None
-
-
-skip_if_torch_and_tf_installed = pytest.mark.skipif(
-    util.find_spec("tensorflow") is not None and util.find_spec("torch") is not None,
-    reason="Integration tests must run only with 1 DNN framework installed.",
-)
-
-
-@skip_if_torch_and_tf_installed
+@pytest.mark.order(-1)
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -107,18 +74,6 @@ skip_if_torch_and_tf_installed = pytest.mark.skipif(
             },
             {"min": 0.0, "max": 1.0},
         ),
-    ],
-)
-def test_evaluate_torch_only(model, data, params, expected):
-    assert_tf_not_installed()
-    assert_nlp_libraries_not_installed()
-
-
-@skip_if_torch_and_tf_installed
-@pytest.mark.evaluate_func
-@pytest.mark.parametrize(
-    "model,data,params,expected",
-    [
         (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
@@ -163,14 +118,12 @@ def test_evaluate_torch_only(model, data, params, expected):
         ),
     ],
 )
-def test_evaluate_tf_only(
+def test_evaluate_func(
     model,
     data: np.ndarray,
     params: dict,
     expected: Union[float, dict, bool],
 ):
-    assert_torch_not_installed()
-    assert_nlp_libraries_not_installed()
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
     call_kwargs = params.get("call_kwargs", {})
@@ -220,10 +173,16 @@ def test_evaluate_tf_only(
         ), "Test failed."
 
 
-@skip_if_torch_and_tf_installed
-@pytest.mark.evaluate_func
-def test_evaluate_nlp_tf(tf_sst2_model, sst2_dataset):
-    assert_torch_not_installed()
+@pytest.mark.order(-2)
+@pytest.mark.last
+@pytest.mark.parametrize(
+    "model, data",
+    [
+        (lazy_fixture("tf_sst2_model"), lazy_fixture("sst2_dataset")),
+        (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
+    ],
+)
+def test_evaluate_nlp(model, data):
     nlp_metrics = {
         # "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
         "RandomLogit": quantus.RandomLogit(disable_warnings=True),
@@ -261,63 +220,12 @@ def test_evaluate_nlp_tf(tf_sst2_model, sst2_dataset):
 
     scores = evaluate_nlp(
         nlp_metrics,
-        tf_sst2_model,
-        **sst2_dataset,
+        model,
+        **data,
         call_kwargs={"explain_func": explain, **call_kwargs},
     )
 
     result_avg_sen = scores["Avg-Sen"]
-    # Check list of args returns list of scores
-    assert isinstance(result_avg_sen, list)
-    assert len(result_avg_sen) == 2
-    assert isinstance(result_avg_sen[0], np.ndarray)
-    assert isinstance(result_avg_sen[1], np.ndarray)
-
-
-@skip_if_torch_and_tf_installed
-@pytest.mark.evaluate_func
-def test_evaluate_nlp_tf(torch_sst2_model, sst2_dataset):
-    assert_tf_not_installed()
-    nlp_metrics = {
-        "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
-        "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
-        "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
-        "RRS": quantus.RelativeRepresentationStability(
-            disable_warnings=True, nr_samples=5
-        ),
-    }
-
-    call_kwargs = {
-        "explain_func_kwargs": {"method": "GradXInput"},
-        "batch_size": 8,
-        "MPR": {
-            "explain_func_kwargs": {
-                "method": "LIME",
-                "call_kwargs": {"config": LimeConfig(num_samples=5)},
-            }
-        },
-        "RIS": [
-            {
-                "explain_func_kwargs": {
-                    "method": "IntGrad",
-                }
-            },
-            {
-                "explain_func_kwargs": {
-                    "method": "GradXInput",
-                }
-            },
-        ],
-    }
-
-    scores = evaluate_nlp(
-        nlp_metrics,
-        torch_sst2_model,
-        **sst2_dataset,
-        call_kwargs={"explain_func": explain, **call_kwargs},
-    )
-
-    result_avg_sen = scores["RIS"]
     # Check list of args returns list of scores
     assert isinstance(result_avg_sen, list)
     assert len(result_avg_sen) == 2

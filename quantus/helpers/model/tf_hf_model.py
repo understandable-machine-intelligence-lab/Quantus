@@ -6,10 +6,11 @@
 
 from __future__ import annotations
 
-from functools import singledispatchmethod, cached_property
-from typing import List, Generator
+from functools import singledispatchmethod, cached_property, partial
+from typing import List, Generator, Optional, Dict
 
 import keras
+from operator import contains
 import numpy as np
 import tensorflow as tf
 from transformers import (
@@ -18,35 +19,56 @@ from transformers import (
 
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.collection_utils import (
+    value_or_default,
+    filter_dict,
+    add_default_items,
+)
 from quantus.helpers.tf_utils import (
     is_xla_compatible_platform,
     list_parameterizable_layers,
     random_layer_generator,
+    supported_keras_engine_predict_kwargs,
 )
 
 
 class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
-    def __init__(self, model: TFPreTrainedModel, tokenizer: HuggingFaceTokenizer):
+    def __init__(
+        self,
+        model: TFPreTrainedModel,
+        tokenizer: HuggingFaceTokenizer,
+        softmax: Optional[bool] = None,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+    ):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
         self.model._jit_compile = is_xla_compatible_platform()
+        model_predict_kwargs = filter_dict(
+            value_or_default(model_predict_kwargs, lambda: {}),
+            key_filter=partial(contains, supported_keras_engine_predict_kwargs()),
+        )
+        model_predict_kwargs = add_default_items(
+            model_predict_kwargs, dict(batch_size=64)
+        )
+        self.model.predict = partial(self.model.predict, **model_predict_kwargs)
 
     def embedding_lookup(self, input_ids: np.ndarray | tf.Tensor) -> tf.Tensor:
         return self.model.get_input_embeddings()(input_ids)
 
     @singledispatchmethod
-    def predict(self, x_batch: List[str], batch_size=64, **kwargs) -> np.ndarray:
+    def predict(self, x_batch: List[str], **kwargs) -> np.ndarray:
         encoded_inputs = self.tokenizer.batch_encode(x_batch, return_tensors="tf")
-        return self.model.predict(encoded_inputs, verbose=0, batch_size=batch_size, **kwargs).logits
+        return self.model.predict(encoded_inputs, verbose=0, **kwargs).logits
 
-    @predict.register
-    def _(self, x_batch: tf.Tensor, batch_size=64, **kwargs) -> tf.Tensor:
+    @predict.register(tf.Tensor)
+    @predict.register(np.ndarray)
+    def _(self, x_batch, **kwargs) -> tf.Tensor:
         return self.model(None, inputs_embeds=x_batch, training=False, **kwargs).logits
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42) -> Generator[
-        TFHuggingFaceTextClassifier, None, None
-    ]:
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[TFHuggingFaceTextClassifier, None, None]:
         return random_layer_generator(self, order, seed, flatten_layers=True)
 
     @cached_property
@@ -64,10 +86,10 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
 
     @singledispatchmethod
     def get_hidden_representations(
-            self,
-            x_batch: List[str],
-            *args,
-            **kwargs,
+        self,
+        x_batch: List[str],
+        *args,
+        **kwargs,
     ) -> np.ndarray:
         encoded_batch = self.tokenizer.batch_encode(x_batch)
         hidden_states = self.model(
@@ -79,12 +101,13 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
         hidden_states = tf.transpose(tf.stack(hidden_states), [1, 0, 2, 3])
         return hidden_states
 
-    @get_hidden_representations.register
+    @get_hidden_representations.register(tf.Tensor)
+    @get_hidden_representations.register(np.ndarray)
     def _(
-            self,
-            x_batch: np.ndarray,
-            *args,
-            **kwargs,
+        self,
+        x_batch,
+        *args,
+        **kwargs,
     ) -> np.ndarray:
         hidden_states = self.model(
             None,

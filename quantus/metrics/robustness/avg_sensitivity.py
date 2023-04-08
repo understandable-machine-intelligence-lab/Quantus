@@ -18,8 +18,9 @@ from quantus.functions.perturb_func import uniform_noise
 from quantus.functions.similarity_func import difference
 from quantus.helpers import asserts
 from quantus.helpers import warn
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.types import TextClassifier, Explanation
+from quantus.helpers.types import Explanation
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
@@ -42,7 +43,9 @@ class AvgSensitivity(BatchedPerturbationMetric):
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
-    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(

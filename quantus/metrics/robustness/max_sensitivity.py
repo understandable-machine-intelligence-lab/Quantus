@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod
-from typing import Any, Callable, List, Optional, Dict
+from typing import Any, Callable, List, Optional, Dict, TYPE_CHECKING
 
 import numpy as np
 
@@ -19,7 +19,7 @@ from quantus.functions.similarity_func import difference
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.types import (
     PerturbFn,
     ExplainFn,
@@ -34,6 +34,10 @@ from quantus.helpers.nlp_utils import (
     get_scores,
 )
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+    import torch
 
 
 class MaxSensitivity(BatchedPerturbationMetric):
@@ -50,7 +54,9 @@ class MaxSensitivity(BatchedPerturbationMetric):
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
-    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
@@ -167,21 +173,21 @@ class MaxSensitivity(BatchedPerturbationMetric):
 
     def __call__(
         self,
-        model,
+        model: torch.nn.Module | tf.keras.Model | ModelInterface | TextClassifier,
         x_batch: np.array | List[str],
         y_batch: np.array,
-        a_batch: Optional[np.ndarray] = None,
+        a_batch: Optional[np.ndarray | List[Explanation]] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
         explain_func: ExplainFn = None,
         explain_func_kwargs: Optional[Dict[str, ...]] = None,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
         softmax: Optional[bool] = False,
-        device: Optional[str] = None,
+        device: Optional[str | torch.device] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
-        tokenizer=None,
-        **kwargs
+        tokenizer: Optional[Tokenizable] = None,
+        **kwargs,
     ) -> np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
@@ -272,7 +278,7 @@ class MaxSensitivity(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             batch_size=batch_size,
             tokenizer=tokenizer,
-            **kwargs
+            **kwargs,
         )
 
     @singledispatchmethod

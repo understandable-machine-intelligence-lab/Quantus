@@ -12,7 +12,17 @@ when dealing with more complicated custom subclassed models.
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, List, Union, TYPE_CHECKING, overload, Generator
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Tuple,
+    List,
+    Union,
+    TYPE_CHECKING,
+    overload,
+    Generator,
+)
 
 import numpy as np
 
@@ -55,7 +65,9 @@ class ModelWrapper(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_state_dict(self, original_parameters: Dict[str, torch.Tensor] | List[np.ndarray]):
+    def load_state_dict(
+        self, original_parameters: Dict[str, torch.Tensor] | List[np.ndarray]
+    ):
         """Set model's learnable parameters."""
         raise NotImplementedError
 

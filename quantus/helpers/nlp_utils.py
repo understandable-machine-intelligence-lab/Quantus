@@ -1,16 +1,13 @@
 from __future__ import annotations
 
+import typing
 from functools import lru_cache
 from importlib import util
 from operator import itemgetter
 from typing import List, Callable, TypeVar
 
-import keras
 import numpy as np
 from cachetools import cached
-
-from quantus.helpers.tf_utils import is_tf_available
-from quantus.helpers.torch_utils import is_torch_available
 from quantus.helpers.types import Explanation
 
 T = TypeVar("T")
@@ -21,9 +18,7 @@ def is_transformers_available() -> bool:
     return util.find_spec("transformers") is not None
 
 
-def map_explanations(
-        a_batch, fn: Callable[[T], R]
-) -> List[R]:
+def map_explanations(a_batch, fn: Callable[[T], R]) -> List[R]:
     """Apply fn to a_batch, supports token-scores tuples as well as raw scores."""
     if isinstance(a_batch, List):
         return [(tokens, fn(scores)) for tokens, scores in a_batch]
@@ -51,56 +46,19 @@ def is_plain_text_perturbation(func: Callable) -> bool:
             f"Please add type annotation to `x_batch` argument or add return type annotation."
         )
 
-    if type_annotation == "numpy.ndarray" or type_annotation == np.ndarray:
-        return False
-    if type_annotation == "typing.List[str]" or type_annotation == List[str]:
-        return True
-
-    raise ValueError(
-        f"Unsupported type annotation for perturbation function: {type_annotation}."
+    return type_annotation in (
+        "typing.List[str]",
+        "List[str]",
+        "list[str]",
+        typing.List[str],
+        List[str],
+        list[str],
     )
 
 
-def is_tf_model(model):
-    if not is_tf_available():
-        return False
-
-    import tensorflow as tf
-    if isinstance(model, keras.Model):
-        return True
-
-    if is_transformers_available():
-        from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
-        if isinstance(model, TFHuggingFaceTextClassifier):
-            return True
-
-    if hasattr(model, "model"):
-        return isinstance(model.model, tf.keras.Model)
-    return False
-
-
-def is_torch_model(model):
-    if not is_torch_available():
-        return False
-    import torch.nn as nn
-
-    if isinstance(model, nn.Module):
-        return True
-
-    if is_transformers_available():
-        from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-        if isinstance(model, TorchHuggingFaceTextClassifier):
-            return True
-
-    if hasattr(model, "model"):
-        return isinstance(model.model, nn.Module)
-    return False
-
-
-@lru_cache
 def is_nlpaug_available() -> bool:
-    try:
-        import nlpaug
-        return True
-    except ModuleNotFoundError:
-        return False
+    return util.find_spec("nlpaug") is not None
+
+
+def is_nltk_available() -> bool:
+    return util.find_spec("nltk") is not None

@@ -47,7 +47,9 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @attributes_check
     def __init__(
@@ -98,9 +100,13 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
 
-        normalise_func = value_or_default(normalise_func, lambda: normalise_by_average_second_moment_estimate)
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
         perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
-        perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {"upper_bound": 0.2})
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
 
         super().__init__(
             abs=abs,
@@ -202,7 +208,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
             tokenizer=tokenizer,
-            **kwargs
+            **kwargs,
         )
 
     @singledispatchmethod
@@ -212,8 +218,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch = None,
-        custom_batch = None,
+        s_batch=None,
+        custom_batch=None,
     ) -> np.ndarray:
         """
         Parameters
@@ -248,14 +254,18 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
             # Execute forward pass on perturbed inputs.
-            logits_perturbed = get_logits_for_labels(model.predict(x_perturbed), y_batch)
+            logits_perturbed = get_logits_for_labels(
+                model.predict(x_perturbed), y_batch
+            )
             # Compute maximization's objective.
             ros = self.relative_output_stability_objective(
                 logits, logits_perturbed, a_batch, a_batch_perturbed
             )
             ros_batch[index] = ros
             # If perturbed input caused change in prediction, then it's ROS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
             if len(changed_prediction_indices) != 0:
                 ros_batch[index, changed_prediction_indices] = np.nan
 
@@ -264,12 +274,13 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         return result
 
     @evaluate_batch.register
-    def _(self,
+    def _(
+        self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
-        s_batch = None,
+        s_batch=None,
         custom_batch: Optional[List[List[str]]] = None,
     ) -> np.ndarray:
 
@@ -280,9 +291,13 @@ class RelativeOutputStability(BatchedPerturbationMetric):
 
         for index in range(self.nr_samples):
             if is_plain_text_perturbation(self.perturb_func):
-                ros_batch[index] = self._eval_step_plain_text(model, x_batch, y_batch, a_batch, logits, custom_batch[index])
+                ros_batch[index] = self._eval_step_plain_text(
+                    model, x_batch, y_batch, a_batch, logits, custom_batch[index]
+                )
             else:
-                ros_batch[index] = self._eval_step_embeddings(model, x_batch, y_batch, a_batch, logits)
+                ros_batch[index] = self._eval_step_embeddings(
+                    model, x_batch, y_batch, a_batch, logits
+                )
 
         # Compute ROS.
         result = np.max(ros_batch, axis=0)
@@ -294,7 +309,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
-        og_logits: np.ndarray
+        og_logits: np.ndarray,
     ) -> np.ndarray:
 
         x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
@@ -302,17 +317,21 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         x_perturbed = self.perturb_batch(x_embeddings)
 
         # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch, **predict_kwargs)
+        a_batch_perturbed = self.explain_batch(
+            model, x_perturbed, y_batch, **predict_kwargs
+        )
         # Execute forward pass on perturbed inputs.
-        logits_perturbed = get_logits_for_labels(safe_as_array(model(x_perturbed, **predict_kwargs), force=True), y_batch)
+        logits_perturbed = get_logits_for_labels(
+            safe_as_array(model.predict(x_perturbed, **predict_kwargs), force=True),
+            y_batch,
+        )
         # Compute maximization's objective.
         ros = self.relative_output_stability_objective(
-            og_logits,
-            logits_perturbed,
-            get_scores(a_batch),
-            a_batch_perturbed
+            og_logits, logits_perturbed, get_scores(a_batch), a_batch_perturbed
         )
-        changed_prediction_indices = self.changed_prediction_indices(model, x_embeddings, x_perturbed, **predict_kwargs)
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_embeddings, x_perturbed, **predict_kwargs
+        )
         if len(changed_prediction_indices) != 0:
             ros[changed_prediction_indices] = np.nan
         return ros
@@ -324,8 +343,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         a_batch: List[Explanation],
         og_logits: np.ndarray,
-        x_perturbed: List[str]
-        ) -> np.ndarray:
+        x_perturbed: List[str],
+    ) -> np.ndarray:
 
         # Generate explanations for perturbed input.
         a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
@@ -336,9 +355,11 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             og_logits,
             logits_perturbed,
             get_scores(a_batch),
-            get_scores(a_batch_perturbed)
+            get_scores(a_batch_perturbed),
         )
-        changes_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+        changes_prediction_indices = self.changed_prediction_indices(
+            model, x_batch, x_perturbed
+        )
         if len(changes_prediction_indices) != 0:
             ros[changes_prediction_indices] = np.nan
         return ros

@@ -13,9 +13,10 @@ But, it allows for much greater level of customization by user (and NLP model's)
 from __future__ import annotations
 
 import operator
+from operator import contains
 from typing import Dict, Optional, Tuple, List, Union
 from warnings import warn
-from functools import cached_property
+from functools import cached_property, partial
 
 import numpy as np
 import tensorflow as tf
@@ -26,25 +27,18 @@ from keras.layers import Dense
 from keras.models import clone_model
 
 from quantus.helpers import utils
-from quantus.helpers.model.model_interface import (
-    ModelInterface,
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.collection_utils import filter_dict
+from quantus.helpers.tf_utils import (
+    is_xla_compatible_platform,
+    random_layer_generator,
+    list_parameterizable_layers,
+    supported_keras_engine_predict_kwargs,
 )
-from quantus.helpers.tf_utils import is_xla_compatible_platform, random_layer_generator, list_parameterizable_layers
 
 
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
-
-    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
-    _available_predict_kwargs = [
-        "batch_size",
-        "verbose",
-        "steps",
-        "callbacks",
-        "max_queue_size",
-        "workers",
-        "use_multiprocessing",
-    ]
 
     def __init__(
         self,
@@ -90,9 +84,10 @@ class TensorFlowModel(ModelInterface):
         Filter out those, which are supported by Keras API.
         """
         all_kwargs = {**self.model_predict_kwargs, **kwargs}
-        predict_kwargs = {
-            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
-        }
+        predict_kwargs = filter_dict(
+            all_kwargs,
+            key_filter=partial(contains, supported_keras_engine_predict_kwargs()),
+        )
         return predict_kwargs
 
     @property
@@ -351,7 +346,6 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).

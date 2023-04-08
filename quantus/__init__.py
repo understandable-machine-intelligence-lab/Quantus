@@ -18,3 +18,10 @@ from quantus.metrics import *
 
 # Expose quantus.helpers.constants to the user.
 from quantus.helpers.constants import *
+
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s:[%(filename)s:%(lineno)s->%(funcName)s()]:%(levelname)s: %(message)s",
+    level=logging.DEBUG,
+)

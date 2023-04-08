@@ -80,3 +80,18 @@ if is_torch_available():
 
         # Restore original weights.
         model_wrapper.load_state_dict(original_parameters)
+
+    def is_torch_model(model):
+        if isinstance(model, nn.Module):
+            return True
+
+        for attr in ("model", "_model"):
+            if hasattr(model, attr) and isinstance(getattr(model, attr), nn.Module):
+                return True
+        return False
+
+else:
+
+    def is_torch_model(model) -> bool:
+        # Torch is not installed, so it is definetelly not a torch model.
+        return False

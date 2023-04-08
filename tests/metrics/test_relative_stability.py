@@ -7,7 +7,11 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
-from quantus.functions.perturb_func import typo_replacement, spelling_replacement, synonym_replacement
+from quantus.functions.perturb_func import (
+    typo_replacement,
+    spelling_replacement,
+    synonym_replacement,
+)
 from quantus.metrics.robustness import (
     RelativeInputStability,
     RelativeOutputStability,
@@ -66,7 +70,7 @@ relative_stability_tests = pytest.mark.parametrize(
             lazy_fixture("tf_sst2_model"),
             lazy_fixture("sst2_dataset"),
             {"perturb_func": typo_replacement},
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
+            {},
             marks=[pytest.mark.slow, pytest.mark.nlp],
             id="tf_nlp_plain_text",
         ),
@@ -76,7 +80,7 @@ relative_stability_tests = pytest.mark.parametrize(
             {
                 "perturb_func": typo_replacement,
             },
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
+            {},
             marks=[pytest.mark.slow, pytest.mark.nlp],
             id="torch_nlp_plain_text",
         ),
@@ -84,7 +88,7 @@ relative_stability_tests = pytest.mark.parametrize(
             lazy_fixture("tf_sst2_model"),
             lazy_fixture("sst2_dataset"),
             {},
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
+            {},
             marks=[pytest.mark.slow, pytest.mark.nlp],
             id="tf_nlp_latent",
         ),
@@ -92,7 +96,7 @@ relative_stability_tests = pytest.mark.parametrize(
             lazy_fixture("torch_sst2_model"),
             lazy_fixture("sst2_dataset"),
             {},
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
+            {},
             marks=[pytest.mark.slow, pytest.mark.nlp],
             id="torch_nlp_latent",
         ),
@@ -102,7 +106,9 @@ relative_stability_tests = pytest.mark.parametrize(
 
 @pytest.mark.robustness
 @relative_stability_tests
-def test_relative_input_stability(model, data, init_kwargs, call_kwargs):
+def test_relative_input_stability(
+    model, data, init_kwargs, call_kwargs, sst2_tokenizer
+):
     x_batch = data["x_batch"]
     ris = RIS_CONSTRUCTOR(return_nan_when_prediction_changes=False, **init_kwargs)
     result = ris(
@@ -110,7 +116,7 @@ def test_relative_input_stability(model, data, init_kwargs, call_kwargs):
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        
+        tokenizer=sst2_tokenizer,
         **call_kwargs,
     )
     result = np.asarray(result)
@@ -123,7 +129,9 @@ def test_relative_input_stability(model, data, init_kwargs, call_kwargs):
 
 @pytest.mark.robustness
 @relative_stability_tests
-def test_relative_output_stability(model, data, init_kwargs, call_kwargs):
+def test_relative_output_stability(
+    model, data, init_kwargs, call_kwargs, sst2_tokenizer
+):
     x_batch = data["x_batch"]
     ris = ROS_CONSTRUCTOR(return_nan_when_prediction_changes=False, **init_kwargs)
 
@@ -132,7 +140,7 @@ def test_relative_output_stability(model, data, init_kwargs, call_kwargs):
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        
+        tokenizer=sst2_tokenizer,
         **call_kwargs,
     )
     result = np.asarray(result)
@@ -146,7 +154,7 @@ def test_relative_output_stability(model, data, init_kwargs, call_kwargs):
 @pytest.mark.robustness
 @relative_stability_tests
 def test_relative_representation_stability(
-    model, data, init_kwargs, call_kwargs
+    model, data, init_kwargs, call_kwargs, sst2_tokenizer
 ):
     x_batch = data["x_batch"]
     ris = RRS_CONSTRUCTOR(return_nan_when_prediction_changes=False, **init_kwargs)
@@ -155,7 +163,7 @@ def test_relative_representation_stability(
         x_batch=x_batch,
         y_batch=data["y_batch"],
         explain_func=explain,
-        
+        tokenizer=sst2_tokenizer,
         **call_kwargs,
     )
     result = np.asarray(result)
@@ -174,47 +182,47 @@ def test_relative_representation_stability(
             RIS_CONSTRUCTOR,
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {}
+            {},
         ),
         (
             ROS_CONSTRUCTOR,
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {}
+            {},
         ),
         (
             RRS_CONSTRUCTOR,
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
-            {}
+            {},
         ),
         # ------- NLP --------
         pytest.param(
             functools.partial(RIS_CONSTRUCTOR, perturb_func=spelling_replacement),
             lazy_fixture("tf_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
-            marks=pytest.mark.nlp
+            {},
+            marks=pytest.mark.nlp,
         ),
         pytest.param(
             functools.partial(ROS_CONSTRUCTOR, perturb_func=spelling_replacement),
             lazy_fixture("tf_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
-            marks=pytest.mark.nlp
+            {},
+            marks=pytest.mark.nlp,
         ),
         pytest.param(
             functools.partial(RRS_CONSTRUCTOR, perturb_func=synonym_replacement),
             lazy_fixture("torch_sst2_model"),
             lazy_fixture("sst2_dataset"),
-            {"tokenizer": lazy_fixture("sst2_tokenizer")},
-            marks=pytest.mark.nlp
+            {},
+            marks=pytest.mark.nlp,
         ),
     ],
     ids=["RIS", "ROS", "RRS", "RIS_nlp", "ROS_nlp", "RRS_nlp"],
 )
 def test_return_nan(
-    metric, model, data, call_kwargs, mock_prediction_changed
+    metric, model, data, call_kwargs, sst2_tokenizer, mock_prediction_changed
 ):
     rs = metric(return_nan_when_prediction_changes=True)
     result = rs(
@@ -222,6 +230,7 @@ def test_return_nan(
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         explain_func=explain,
-        **call_kwargs
+        tokenizer=sst2_tokenizer,
+        **call_kwargs,
     )
     assert np.isnan(result).all()

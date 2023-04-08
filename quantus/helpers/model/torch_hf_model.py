@@ -21,7 +21,6 @@ from quantus.helpers.torch_utils import random_layer_generator, list_layers
 
 
 class TorchHuggingFaceTextClassifier(TextClassifier):
-
     def __init__(
         self,
         model: PreTrainedModel,
@@ -41,7 +40,9 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
     @singledispatchmethod
     def predict(self, x_batch: List[str], **kwargs) -> np.ndarray:
         encoded_inputs = self.tokenizer.batch_encode(x_batch)
-        encoded_inputs = map_dict(encoded_inputs, partial(torch.tensor, device=self.device))
+        encoded_inputs = map_dict(
+            encoded_inputs, partial(torch.tensor, device=self.device)
+        )
         logits = self.model(**encoded_inputs).logits
         return logits.detach().cpu().numpy()
 
@@ -51,13 +52,12 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
 
     @predict.register
     def _(self, x_batch: torch.Tensor, **kwargs) -> torch.Tensor:
-        return self.model(
-            None, inputs_embeds=x_batch, **kwargs
-        ).logits
+        kwargs = map_dict(kwargs, partial(torch.tensor, device=self.device))
+        return self.model(None, inputs_embeds=x_batch, **kwargs).logits
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42) -> Generator[
-        TorchHuggingFaceTextClassifier, None, None
-    ]:
+    def get_random_layer_generator(
+        self, order: str = "top_down", seed: int = 42
+    ) -> Generator[TorchHuggingFaceTextClassifier, None, None]:
         return random_layer_generator(self, order, seed)
 
     @cached_property
@@ -81,14 +81,18 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
 
     @get_hidden_representations.register
     def _(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
+        return self.get_hidden_representations(
+            torch.tensor(x_batch, device=self.device), **kwargs
+        )
 
+    @get_hidden_representations.register
+    def _(self, x_batch: torch.Tensor, **kwargs) -> np.ndarray:
         def map_fn(x):
             if isinstance(x, np.ndarray):
                 return torch.tensor(x, device=self.device)
             else:
                 return x
 
-        x_batch = map_fn(x_batch)
         predict_kwargs = map_dict(kwargs, map_fn)
         hidden_states = self.model(
             None, inputs_embeds=x_batch, output_hidden_states=True, **predict_kwargs

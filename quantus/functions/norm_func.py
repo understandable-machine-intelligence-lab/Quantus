@@ -7,22 +7,34 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from __future__ import annotations
-import numpy as np
+
+import logging
 from functools import wraps
+from typing import Callable
+
+import numpy as np
+
+log = logging.getLogger(__name__)
 
 
-def vectorize_norm(func):
+def vectorize_norm(func: Callable):
 
     vectorized_func = np.vectorize(func, signature="(n)->()", cache=True)
 
     @wraps(func)
-    def wrapper(a):
+    def wrapper(a: np.ndarray) -> np.ndarray:
         a = np.asarray(a)
-        if a.ndim == 1:
+        ndim = np.ndim(a)
+        if ndim == 1:
             return func(a)
-        if a.ndim > 2:
+        if ndim > 2:
             a = np.reshape(a, (a.shape[0], -1))
+            log.warning(
+                f"{func.__name__} received array with { ndim = }, it was reshaped into {a.shape}."
+            )
+
         return vectorized_func(a)
+
     return wrapper
 
 
@@ -61,7 +73,7 @@ def l2_norm(a: np.array) -> float:
         The norm.
     """
     assert a.ndim == 1, "Check that 'l2_norm' receives a 1D array."
-    return np.linalg.norm(a, ord=2)
+    return np.linalg.norm(a)
 
 
 @vectorize_norm

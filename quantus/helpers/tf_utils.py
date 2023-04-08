@@ -4,7 +4,7 @@ from importlib import util
 import numpy as np
 
 
-def is_tf_available() -> bool:
+def is_tensorflow_available() -> bool:
     return util.find_spec("tensorflow") is not None
 
 
@@ -13,7 +13,20 @@ def is_xla_compatible_platform() -> bool:
     return not (platform.system() == "Darwin" and "arm" in platform.processor().lower())
 
 
-if is_tf_available():
+def supported_keras_engine_predict_kwargs() -> List[str]:
+    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
+    return [
+        "batch_size",
+        "verbose",
+        "steps",
+        "callbacks",
+        "max_queue_size",
+        "workers",
+        "use_multiprocessing",
+    ]
+
+
+if is_tensorflow_available():
     import tensorflow as tf
     from tensorflow import keras
 
@@ -36,7 +49,7 @@ if is_tf_available():
         def state_dict(self) -> List[np.ndarray]:
             ...
 
-        def load_state_dict(self, params: List[np.ndarray]) -> None:
+        def load_state_dict(self, params: List[np.ndarray]):
             ...
 
     T = TypeVar("T", bound=TFWrapper, covariant=True)
@@ -61,3 +74,19 @@ if is_tf_available():
             yield layer.name, model_wrapper
         # Restore original weights.
         model_wrapper.load_state_dict(original_parameters)
+
+    def is_tensorflow_model(model):
+        if isinstance(model, keras.Model):
+            return True
+
+        for attr in ("model", "_model"):
+            # Mb we should check all attributes?
+            if hasattr(model, attr) and isinstance(getattr(model, attr), keras.Model):
+                return True
+        return False
+
+else:
+
+    def is_tensorflow_model(model) -> bool:
+        # Since tensorflow is not installed, model can't be tensorflow one.
+        return False

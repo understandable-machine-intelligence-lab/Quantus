@@ -10,7 +10,19 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from functools import singledispatchmethod, partial
 from operator import itemgetter
-from typing import Callable, Dict, Optional, Any, List, TYPE_CHECKING, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    Optional,
+    Any,
+    List,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+    Sequence,
+    TypedDict,
+    TypeVar,
+)
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -20,12 +32,18 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
-from quantus.helpers.types import NormaliseFn, ExplainFn, AggregateFn, Explanation, PerturbFn
+from quantus.helpers.types import (
+    NormaliseFn,
+    ExplainFn,
+    AggregateFn,
+    Explanation,
+    PerturbFn,
+)
 from quantus.helpers.utils import (
     infer_channel_first,
     make_channel_first,
     get_wrapped_model,
-    get_wrapped_text_classifier
+    get_wrapped_text_classifier,
 )
 from quantus.helpers.collection_utils import (
     value_or_default,
@@ -37,13 +55,35 @@ from quantus.helpers.collection_utils import (
 from quantus.helpers.nlp_utils import (
     map_explanations,
     is_plain_text_perturbation,
-    is_torch_model
 )
+from quantus.helpers.tf_utils import is_tensorflow_model
+from quantus.helpers.torch_utils import is_torch_model
 from quantus.metrics.base import EvaluateAble
 
 if TYPE_CHECKING:
     from tensorflow import keras
     import torch.nn as nn
+
+    from transformers import PreTrainedTokenizerBase
+
+    ModelT = Union[keras.Model, nn.Module, ModelInterface, TextClassifier]
+
+MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
+T = TypeVar("T", bound=MetricScores, covariant=True)
+# C stands for custom (batch).
+C = TypeVar("C", bound=MetricScores, covariant=True)
+DataDict = TypedDict(
+    "DataDict",
+    {
+        "model": Union[ModelInterface, TextClassifier],
+        "x_batch": Union[np.ndarray | List[str]],
+        "y_batch": Optional[np.ndarray],
+        "a_batch": Optional[Union[np.ndarray | List[Explanation]]],
+        "s_batch": Optional[np.ndarray],
+        "custom_batch": Optional[C],
+    },
+    total=False,
+)
 
 
 class BatchedMetric(EvaluateAble, ABC):
@@ -53,17 +93,17 @@ class BatchedMetric(EvaluateAble, ABC):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            abs: bool,
-            normalise: bool,
-            normalise_func: Optional[NormaliseFn],
-            normalise_func_kwargs: Optional[Dict[str, Any]],
-            return_aggregate: bool,
-            aggregate_func: Optional[AggregateFn],
-            default_plot_func: Optional[Callable],
-            disable_warnings: bool,
-            display_progressbar: bool,
-            **kwargs,
+        self,
+        abs: bool,
+        normalise: bool,
+        normalise_func: Optional[NormaliseFn],
+        normalise_func_kwargs: Optional[Dict[str, ...]],
+        return_aggregate: bool,
+        aggregate_func: Optional[AggregateFn],
+        default_plot_func: Optional[Callable],
+        disable_warnings: bool,
+        display_progressbar: bool,
+        **kwargs,
     ):
         """
         Initialise the BatchedMetric base class.
@@ -117,23 +157,23 @@ class BatchedMetric(EvaluateAble, ABC):
         )
 
     def __call__(
-            self,
-            model: keras.Model | nn.Module | ModelInterface | TextClassifier,
-            x_batch: np.ndarray | List[str],
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray | List[Explanation]],
-            channel_first: Optional[bool],
-            explain_func: ExplainFn,
-            explain_func_kwargs: Optional[Dict[str, ...]],
-            model_predict_kwargs: Optional[Dict[str, ...]],
-            softmax: Optional[bool],
-            device: Optional[str] = None,
-            batch_size: int = 64,
-            custom_batch: Optional[Any] = None,
-            s_batch: Optional[Any] = None,
-            tokenizer: Optional[Tokenizable] = None,
-            **kwargs,
-    ) -> Any:
+        self,
+        model: ModelT,
+        x_batch: np.ndarray | List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray | List[Explanation]],
+        channel_first: Optional[bool],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Optional[Dict[str, ...]],
+        model_predict_kwargs: Optional[Dict[str, ...]],
+        softmax: Optional[bool],
+        device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[Any] = None,
+        s_batch: Optional[Any] = None,
+        tokenizer: Optional[Tokenizable | PreTrainedTokenizerBase] = None,
+        **kwargs,
+    ) -> MetricScores:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -218,19 +258,19 @@ class BatchedMetric(EvaluateAble, ABC):
         warn.check_kwargs(kwargs)
 
         data = self.general_preprocess(
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            channel_first,
-            explain_func,
-            explain_func_kwargs,
-            model_predict_kwargs,
-            softmax,
-            device,
-            custom_batch,
-            batch_size,
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            model_predict_kwargs=model_predict_kwargs,
+            softmax=softmax,
+            device=device,
+            custom_batch=custom_batch,
+            batch_size=batch_size,
             tokenizer=tokenizer,
         )
 
@@ -271,12 +311,29 @@ class BatchedMetric(EvaluateAble, ABC):
 
     @singledispatchmethod
     def explain_batch(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: np.ndarray,
-            **kwargs
+        self, model: ModelInterface, x_batch: np.ndarray, y_batch: np.ndarray, **kwargs
     ) -> np.ndarray:
+        """
+        Call self.explain_func, normalise and take absolute value, if was configured to during metric initialization.
+
+        Parameters
+        ----------
+        model:
+            DNN model, which is subject to explanation.
+        x_batch:
+            model inputs.
+        y_batch:
+            Target labels.
+        kwargs:
+            Additional kwargs passed to self.explain_func
+
+        Returns
+        -------
+
+        a_batch:
+            List of (normalised absolute) explanations.
+
+        """
         a_batch = self.explain_func(
             model.get_model(), x_batch, y_batch, **self.explain_func_kwargs, **kwargs
         )
@@ -292,7 +349,7 @@ class BatchedMetric(EvaluateAble, ABC):
         model: TextClassifier,
         x_batch: Union[List[str], np.ndarray],
         y_batch: np.ndarray,
-        **kwargs
+        **kwargs,
     ):
         a_batch = self.explain_func(
             model, x_batch, y_batch, **self.explain_func_kwargs, **kwargs
@@ -307,22 +364,27 @@ class BatchedMetric(EvaluateAble, ABC):
         return a_batch
 
     def general_preprocess(
-            self,
-            model: keras.Model | nn.Module | ModelInterface | TextClassifier,
-            x_batch: np.ndarray | List[str],
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray | List[Explanation]],
-            s_batch: Optional[np.ndarray],
-            channel_first: Optional[bool],
-            explain_func: ExplainFn,
-            explain_func_kwargs: Optional[Dict[str, ...]],
-            model_predict_kwargs: Optional[Dict],
-            softmax: bool,
-            device: Optional[str],
-            custom_batch: Optional[np.ndarray],
-            batch_size: int = 64,
-            tokenizer=None
-    ) -> Dict[str, Any]:
+        self,
+        model: ModelT,
+        x_batch: np.ndarray | List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray | List[Explanation]],
+        s_batch: Optional[np.ndarray],
+        channel_first: Optional[bool],
+        explain_func: ExplainFn,
+        explain_func_kwargs: Optional[Dict[str, ...]],
+        model_predict_kwargs: Optional[Dict],
+        softmax: bool,
+        device: Optional[str],
+        custom_batch: Optional[np.ndarray],
+        batch_size: int = 64,
+        tokenizer: Optional[Tokenizable | PreTrainedTokenizerBase] = None,
+    ) -> DataDict:
+        if is_tensorflow_model(model):
+            model_predict_kwargs = value_or_default(model_predict_kwargs, lambda: {})
+            model_predict_kwargs = add_default_items(
+                model_predict_kwargs, dict(batch_size=batch_size, verbose=0)
+            )
 
         if isinstance(x_batch, np.ndarray):
             # Reshape input batch to channel first order:
@@ -338,13 +400,21 @@ class BatchedMetric(EvaluateAble, ABC):
             )
         else:
             # For NLP we don't need it
-            model_wrapper = get_wrapped_text_classifier(model, tokenizer)
+            model_wrapper = get_wrapped_text_classifier(
+                model,
+                softmax,
+                device,
+                model_predict_kwargs,
+                tokenizer,
+            )
 
         # Save as attribute, some metrics need it during processing.
         self.explain_func = explain_func
         self.explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
         if is_torch_model(model):
-            self.explain_func_kwargs = add_default_items(self.explain_func_kwargs, {"device": device})
+            self.explain_func_kwargs = add_default_items(
+                self.explain_func_kwargs, {"device": device}
+            )
 
         # Create extra axis for inputs.
         batch_fn = partial(batch_inputs, batch_size=batch_size)
@@ -365,17 +435,18 @@ class BatchedMetric(EvaluateAble, ABC):
         }
 
     def batch_preprocess(
-            self,
-            model: ModelInterface | TextClassifier,
-            x_batch: np.ndarray | List[str],
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray | List[Explanation]],
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray | List[Explanation]],
     ) -> Tuple[
         np.ndarray | List[str],
         np.ndarray,
-        np.ndarray | List[str],
-        Optional[Any]
+        np.ndarray | List[Explanation],
+        Optional[Any],
     ]:
+        """Generate y_batch, a_batch, custom_batch if were not provided."""
         # Generate y_batch if not provided.
         y_batch = value_or_default(
             y_batch, lambda: model.predict(x_batch).argmax(axis=-1)
@@ -392,26 +463,27 @@ class BatchedMetric(EvaluateAble, ABC):
         return x_batch, y_batch, a_batch, None
 
     def batch_postprocess(
-            self,
-            model: ModelInterface | TextClassifier,
-            x_batch: np.ndarray| List[str],
-            y_batch: np.ndarray,
-            a_batch: np.ndarray | List[Explanation],
-            s_batch: Optional[np.ndarray],
-            score: np.ndarray,
-    ) -> np.ndarray:
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: np.ndarray,
+        a_batch: np.ndarray | List[Explanation],
+        s_batch: Optional[np.ndarray],
+        score: T,
+    ) -> T:
+        """Apply post-processing to batch scores, default noop."""
         return score
 
     @abstractmethod
     def evaluate_batch(
-            self,
-            model: ModelInterface | TextClassifier,
-            x_batch: np.ndarray | List[str],
-            y_batch: np.ndarray,
-            a_batch: np.ndarray | List[Explanation],
-            s_batch: Optional[np.ndarray],
-            custom_batch: Optional[Any] = None,
-    ) -> Any:
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: np.ndarray,
+        a_batch: np.ndarray | List[Explanation],
+        s_batch: Optional[np.ndarray],
+        custom_batch: Optional[Any] = None,
+    ) -> MetricScores:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
 
@@ -449,21 +521,21 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
 
     @asserts.attributes_check
     def __init__(
-            self,
-            abs: bool,
-            normalise: bool,
-            normalise_func: Optional[Callable],
-            normalise_func_kwargs: Optional[Dict[str, ...]],
-            perturb_func: PerturbFn,
-            perturb_func_kwargs: Optional[Dict[str, ...]],
-            return_aggregate: bool,
-            aggregate_func: Optional[AggregateFn],
-            default_plot_func: Optional[Callable],
-            disable_warnings: bool,
-            display_progressbar: bool,
-            nr_samples: int = None,
-            return_nan_when_prediction_changes: bool = None,
-            **kwargs,
+        self,
+        abs: bool,
+        normalise: bool,
+        normalise_func: Optional[Callable],
+        normalise_func_kwargs: Optional[Dict[str, ...]],
+        perturb_func: PerturbFn,
+        perturb_func_kwargs: Optional[Dict[str, ...]],
+        return_aggregate: bool,
+        aggregate_func: Optional[AggregateFn],
+        default_plot_func: Optional[Callable],
+        disable_warnings: bool,
+        display_progressbar: bool,
+        nr_samples: int = None,
+        return_nan_when_prediction_changes: bool = None,
+        **kwargs,
     ):
         """
         Initialise the PerturbationMetric base class.
@@ -517,23 +589,28 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         self.nr_samples = nr_samples
 
     @singledispatchmethod
-    def changed_prediction_indices(self, model, x_batch, x_perturbed, **kwargs):
+    def changed_prediction_indices(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        x_perturbed: np.ndarray,
+        **kwargs,
+    ) -> Sequence[int]:
+        """Predict on x_batch and x_perturbed, return indices of mismatched labels."""
         if not self.return_nan_when_prediction_changes:
             return []
-
-        # do we need it ???
-        # x_input = model.shape_input(
-        #    x=x_perturbed,
-        #    shape=x_batch.shape,
-        #    channel_first=True,
-        #    batched=True,
-        # )
         og_labels = model.predict(x_batch).argmax(axis=-1)
         perturbed_labels = model.predict(x_perturbed).argmax(axis=-1)
         return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
 
     @changed_prediction_indices.register
-    def _(self, model: TextClassifier, x_batch, x_perturbed, **kwargs):
+    def _(
+        self,
+        model: TextClassifier,
+        x_batch: List[str] | np.ndarray,
+        x_perturbed: List[str] | np.ndarray,
+        **kwargs,
+    ) -> Sequence[int]:
         if not self.return_nan_when_prediction_changes:
             return []
 
@@ -550,7 +627,7 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
 
     def perturb_batch(self, x_batch: np.ndarray) -> np.ndarray:
-
+        """Apply self.perturb_fn to batch of images."""
         batch_size = x_batch.shape[0]
         size = np.size(x_batch[0])
         ndim = np.ndim(x_batch[0])
@@ -564,14 +641,14 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         )
 
     def custom_preprocess(
-            self,
-            model: ModelInterface,
-            x_batch: np.ndarray,
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[np.ndarray],
-            s_batch: np.ndarray,
-            custom_batch: Optional[np.ndarray],
-    ) -> None:
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray | List[Explanation]],
+        s_batch: np.ndarray,
+        custom_batch: Optional[Any],
+    ):
         """
         Implementation of custom_preprocess_batch.
 
@@ -599,12 +676,22 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         asserts.assert_explain_func(explain_func=self.explain_func)
 
     def batch_preprocess(
-            self,
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-    ):
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray | List[Explanation]],
+    ) -> Tuple[
+        Union[np.ndarray, List[str]],
+        np.ndarray,
+        Union[np.ndarray, List[Explanation]],
+        Optional[Any],
+    ]:
+        """
+        For text classification + plain-text perturb_func we need to pre-compute
+        perturbations, and then pad all them, so all plain-text sequences have same number of tokens.
+        We also hook into tokenizer.batch_encode to prevent removing of added padded tokens.
+        """
         if "NLP" not in self.data_domain_applicability:
             return super().batch_preprocess(model, x_batch, y_batch, a_batch)
         if not is_plain_text_perturbation(self.perturb_func):
@@ -637,14 +724,18 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         return x_batch, y_batch, a_batch, x_perturbed_batches
 
     def batch_postprocess(
-            self,
-            model,
-            x_batch,
-            y_batch,
-            a_batch,
-            s_batch,
-            score: np.ndarray,
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: np.ndarray,
+        a_batch: np.ndarray | List[Explanation],
+        s_batch: Optional[np.ndarray],
+        score: np.ndarray,
     ) -> np.ndarray:
+        """
+        Since for text classification + plain-text perturb_func we modified tokenizer.batch_encode's behaviour,
+        here we restore the default one.
+        """
         if isinstance(x_batch[0], str):
             if is_plain_text_perturbation(self.perturb_func):
                 model.tokenizer.batch_encode = model.tokenizer.batch_encode.func

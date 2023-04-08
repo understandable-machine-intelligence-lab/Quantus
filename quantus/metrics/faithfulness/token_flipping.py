@@ -38,18 +38,18 @@ class TokenFlipping(BatchedMetric):
     data_domain_applicability: List[str] = ["NLP"]
 
     def __init__(
-            self,
-            abs: bool = False,
-            normalise: bool = False,
-            normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
-            normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-            return_aggregate: bool = False,
-            aggregate_func=None,
-            default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
-            disable_warnings: bool = False,
-            display_progressbar: bool = False,
-            mask_token: str = "[UNK]",
-            task: TaskT = "pruning",
+        self,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func=None,
+        default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        mask_token: str = "[UNK]",
+        task: TaskT = "pruning",
     ):
         """
 
@@ -92,22 +92,22 @@ class TokenFlipping(BatchedMetric):
         self.task = task
 
     def __call__(
-            self,
-            model,
-            x_batch: List[str],
-            y_batch: Optional[np.ndarray],
-            a_batch: Optional[List[Explanation]],
-            explain_func: Optional[ExplainFn],
-            explain_func_kwargs: Optional[Dict[str, ...]] = None,
-            model_predict_kwargs: Optional[Dict[str, ...]] = None,
-            softmax: Optional[bool] = None,
-            s_batch: Optional[np.ndarray] = None,
-            channel_first: Optional[bool] = None,
-            device: Optional[str] = None,
-            batch_size: int = 64,
-            custom_batch: Optional[...] = None,
-            tokenizer:Optional[Tokenizable]=None,
-            **kwargs,
+        self,
+        model,
+        x_batch: List[str],
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[List[Explanation]],
+        explain_func: Optional[ExplainFn],
+        explain_func_kwargs: Optional[Dict[str, ...]] = None,
+        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        softmax: Optional[bool] = None,
+        s_batch: Optional[np.ndarray] = None,
+        channel_first: Optional[bool] = None,
+        device: Optional[str] = None,
+        batch_size: int = 64,
+        custom_batch: Optional[...] = None,
+        tokenizer: Optional[Tokenizable] = None,
+        **kwargs,
     ) -> np.ndarray:
         """
         Parameters
@@ -139,7 +139,7 @@ class TokenFlipping(BatchedMetric):
 
         """
 
-        return super().__call__( # type: ignore
+        return super().__call__(  # type: ignore
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
@@ -158,13 +158,13 @@ class TokenFlipping(BatchedMetric):
         )
 
     def evaluate_batch(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
-            s_batch=None,
-            custom_batch=None,
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        s_batch=None,
+        custom_batch=None,
     ) -> np.ndarray:
         if self.task == "pruning":
             scores = self._eval_pruning(model, x_batch, y_batch, a_batch)
@@ -179,11 +179,11 @@ class TokenFlipping(BatchedMetric):
         return scores.T
 
     def _eval_activation(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
     ):
         batch_size = len(a_batch)
         num_tokens = len(a_batch[0][1])
@@ -209,7 +209,7 @@ class TokenFlipping(BatchedMetric):
                 ][mask_index]
 
             embeddings = model.embedding_lookup(masked_input_ids)
-            masked_logits = model(embeddings, **predict_kwargs)
+            masked_logits = model.predict(embeddings, **predict_kwargs)
             masked_logits = safe_as_array(masked_logits, force=True)
             masked_logits = get_logits_for_labels(masked_logits, y_batch)
             scores[i] = masked_logits
@@ -217,11 +217,11 @@ class TokenFlipping(BatchedMetric):
         return scores
 
     def _eval_pruning(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
     ) -> np.ndarray:
         batch_size = len(a_batch)
         num_tokens = len(a_batch[0][1])
@@ -244,7 +244,7 @@ class TokenFlipping(BatchedMetric):
                 input_ids[index_in_batch][mask_index] = mask_token_id
 
             embeddings = model.embedding_lookup(input_ids)
-            masked_logits = model(embeddings, **predict_kwargs)
+            masked_logits = model.predict(embeddings, **predict_kwargs)
             masked_logits = safe_as_array(masked_logits, force=True)
             masked_logits = get_logits_for_labels(masked_logits, y_batch)
             scores[i] = masked_logits

@@ -5,8 +5,21 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+from __future__ import annotations
 import warnings
-from typing import Union, Callable, Dict, Optional, List, Any
+from typing import (
+    Union,
+    Callable,
+    Dict,
+    Optional,
+    List,
+    Any,
+    TYPE_CHECKING,
+    Protocol,
+    overload,
+    Mapping,
+    Set,
+)
 from collections import defaultdict
 from tqdm.auto import tqdm
 
@@ -20,11 +33,21 @@ from quantus.functions.explanation_func import explain
 from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.collection_utils import add_default_items
 
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.types import Explanation, ExplainFn
+
+
+if TYPE_CHECKING:
+    from tensorflow import keras
+    import torch.nn as nn
+
+    from transformers import PreTrainedTokenizerBase
+
 
 def evaluate(
     metrics: Dict,
     xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
-    model: ModelInterface,
+    model: ModelInterface | nn.Module | keras.Model,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
     s_batch: Union[np.ndarray, None] = None,
@@ -177,57 +200,63 @@ def evaluate(
     return results
 
 
-_MetricValue = Union[np.ndarray, Dict[str, np.ndarray]]
-_CallKwargs = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
-_PersistFn = Callable[[str, _CallKwargs, _MetricValue], None]
+class _PersistFn(Protocol):
+    @overload
+    def __call__(
+        self,
+        metric_name: str,
+        call_kwargs: Dict[str, ...],
+        scores: Dict[str, np.ndarray],
+    ) -> None:
+        ...
+
+    def __call__(
+        self, metric_name: str, call_kwargs: Dict[str, ...], scores: np.ndarray
+    ) -> None:
+        ...
+
+
+"""
+Possible inputs are
+- no pre-computed explanations
+- pre-computed explanations
+Explanations can be 
+- same for every metric
+- list of different variants for every metric
+"""
 
 
 def evaluate_nlp(
-    metrics: Dict[str, BatchedMetric],
-    model,
+    *,
+    metrics: Mapping[str, BatchedMetric],
+    model: keras.Model | nn.Module | TextClassifier,
     x_batch: List[str],
-    y_batch: np.ndarray,
+    y_batch: Optional[np.ndarray] = None,
+    a_batch: Optional[List[Explanation]] = None,
     verbose: bool = True,
-    call_kwargs: Optional[_CallKwargs] = None,
+    call_kwargs: Optional[Mapping[str, ...] | Mapping[str, Mapping[str, ...]]] = None,
+    explain_fn: Optional[ExplainFn] = None,
+    explain_fn_kwargs: Optional[
+        Mapping[str, ...] | Mapping[str, Mapping[str, ...]]
+    ] = None,
     persist_callback: Optional[_PersistFn] = None,
-) -> Dict[str, Union[_MetricValue, List[_MetricValue]]]:
-    """
+    tokenizer: Optional[PreTrainedTokenizerBase | Tokenizable] = None,
+) -> Dict[str, float | np.ndarray | Dict[str, float | np.ndarray]]:
 
-    Parameters
-    ----------
-     metrics:
-        Dict where keys are any unique names, and values are pre-initialised metric instances.
-    model:
-        Model which is evaluated, must be a subclass of `qn.TextClassifer`
-    x_batch:
-        Batch of plain-text inputs for model.
-    verbose:
-        Indicates whether tqdm progress bar should be displayed.
-    call_kwargs:
-        kwargs, which are passed to metrics. Supported options are:
-        - keys are metrics' names, and values are
-        - Kwargs passed to each metrics' __call__ method. In this case each metric is evaluated once.
-        - List of dicts. In this case each metric is evaluated with each entry of list of call_kwargs.
-        - All key, values, where are not in metric names, kwargs are treated as global and passed to each metric.
-        Metrics-specific kwargs will override global ones.
-        Internally, `defaultdict` is used, so there is no need to provide kwargs for metrics,
-            which should be evaluated with default ones.
-    persist_callback:
-        If passed, this function will be called after every metric is evaluated.
-        It will be called with metric name, kwargs passed to __call__ of metric instance, and scores.
-        This can be used to save intermideate results, e.g, in CSV file or database. Since complete evaluation
-        can take long, and loosing intermideate results can be annoying ;(.
-
-
-
-    Returns
-    -------
-
-    scores:
-        Dict, keys are metric names, values are scores, or list of scores for corresponding metric.
-
-    """
-
+    # call_kwargs:
+    #    kwargs, which are passed to metrics. Supported options are:
+    #    - keys are metrics' names, and values are
+    #    - Kwargs passed to each metrics' __call__ method. In this case each metric is evaluated once.
+    #    - List of dicts. In this case each metric is evaluated with each entry of list of call_kwargs.
+    #    - All key, values, where are not in metric names, kwargs are treated as global and passed to each metric.
+    #    Metrics-specific kwargs will override global ones.
+    #    Internally, `defaultdict` is used, so there is no need to provide kwargs for metrics,
+    #        which should be evaluated with default ones.
+    # persist_callback:
+    #    If passed, this function will be called after every metric is evaluated.
+    #    It will be called with metric name, kwargs passed to __call__ of metric instance, and scores.
+    #    This can be used to save intermideate results, e.g, in CSV file or database. Since complete evaluation
+    #    can take long, and loosing intermideate results can be annoying ;(.
     # TODO:
     #  - batch inputs
     #  - generate a_batch, y_batch
@@ -236,9 +265,9 @@ def evaluate_nlp(
         if "NLP" not in i.data_domain_applicability:
             raise ValueError(f"{i} does not support NLP.")
 
-    def persist_result(name: str, _call_kwargs: _CallKwargs, values: _MetricValue):
-        if persist_callback is not None:
-            persist_callback(name, _call_kwargs, values)
+    if x_batch is None or a_batch is None:
+        # need to compute them here to avoid re-computing for every metric
+        pass
 
     result = {}
     if call_kwargs is not None:
@@ -288,3 +317,14 @@ def evaluate_nlp(
                 pbar.update()
 
     return result
+
+
+def _prepare_text_classification_metrics_inputs(
+    model: keras.Model | nn.Module | TextClassifier,
+    metric_names: Set[str],
+    call_kwargs: Mapping[str, Dict[str, ...]],
+    x_batch: List[str],
+    y_batch: Optional[np.ndarray],
+    a_batch: Optional[List[Explanation]],
+):
+    pass

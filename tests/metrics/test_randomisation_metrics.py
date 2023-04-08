@@ -3,7 +3,11 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from quantus.functions.explanation_func import explain
-from quantus.functions.similarity_func import correlation_spearman, correlation_pearson
+from quantus.functions.similarity_func import (
+    correlation_spearman,
+    correlation_pearson,
+    correlation_kendall_tau,
+)
 from quantus.metrics.randomisation import ModelParameterRandomisation, RandomLogit
 
 
@@ -109,7 +113,9 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -129,7 +135,9 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"exception": ValueError},
@@ -148,7 +156,9 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -237,7 +247,7 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 "a_batch_generate": False,
                 "init": {
                     "layer_order": "independent",
-                    "similarity_func": correlation_spearman,
+                    "similarity_func": correlation_kendall_tau,
                     "abs": True,
                     "disable_warnings": True,
                 },
@@ -253,7 +263,7 @@ def explain_func_stub(model, inputs, targets, **kwargs):
                 "a_batch_generate": False,
                 "init": {
                     "layer_order": "independent",
-                    "similarity_func": correlation_spearman,
+                    "similarity_func": correlation_kendall_tau,
                     "abs": True,
                     "disable_warnings": True,
                 },
@@ -285,7 +295,6 @@ def test_model_parameter_randomisation(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -301,7 +310,6 @@ def test_model_parameter_randomisation(
                 y_batch=y_batch,
                 a_batch=a_batch,
                 **call_params,
-                
             )
         return
 
@@ -311,7 +319,6 @@ def test_model_parameter_randomisation(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
-        
     )
     if isinstance(expected, float):
         assert all(
@@ -534,7 +541,6 @@ def test_random_logit(
             model=model,
             inputs=x_batch,
             targets=y_batch,
-            
             **explain_func_kwargs,
         )
     elif "a_batch" in data:
@@ -547,7 +553,6 @@ def test_random_logit(
         y_batch=y_batch,
         a_batch=a_batch,
         **call_params,
-        
     )
 
     if isinstance(expected, float):

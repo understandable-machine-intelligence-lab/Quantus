@@ -10,11 +10,23 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Union
+from typing import Union, Protocol, TypeVar
+import logging
 
 import numpy as np
 import scipy
 import skimage
+
+
+log = logging.getLogger(__name__)
+
+
+class _SupportsSub(Protocol):
+    def __sub__(self, other):
+        ...
+
+
+T = TypeVar("T", bound=_SupportsSub, covariant=True)
 
 
 def vectorize_similarity(func):
@@ -38,6 +50,9 @@ def vectorize_similarity(func):
             return func(a, b)
 
         if np.ndim(a) > 2:
+            log.warning(
+                f"{func.__name__} received array with { a.ndim = }, it was reshaped into {a.shape}."
+            )
             a = flatten_over_batch(a)
             b = flatten_over_batch(b)
 
@@ -47,7 +62,7 @@ def vectorize_similarity(func):
 
 
 @vectorize_similarity
-def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray:
+def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray | float:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -69,7 +84,7 @@ def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray:
 
 
 @vectorize_similarity
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
+def correlation_pearson(a: np.ndarray, b: np.ndarray, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -90,7 +105,10 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> np.ndarray | float:
+@vectorize_similarity
+def correlation_kendall_tau(
+    a: np.ndarray, b: np.ndarray, **kwargs
+) -> np.ndarray | float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -215,7 +233,7 @@ def lipschitz_constant(
         return float(d1(a, b) / (d2(a=c, b=d) + eps))
 
 
-def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
+def abs_difference(a: T, b: T, **kwargs) -> T:
     """
     Calculate the absolute difference between two images (or explanations).
 
@@ -258,7 +276,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
 
 
 @vectorize_similarity
-def ssim(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
+def ssim(a: np.ndarray, b: np.ndarray, **kwargs) -> float | np.ndarray:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -287,7 +305,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
     )
 
 
-def difference(a: np.array, b: np.array, **kwargs) -> float | np.ndarray:
+def difference(a: T, b: T, **kwargs) -> T:
     """
     Calculate the difference between two images (or explanations).
 

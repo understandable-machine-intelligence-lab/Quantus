@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Sequence, Iterable
 
 import numpy as np
 from quantus.helpers.collection_utils import add_default_items
@@ -20,21 +20,22 @@ class HuggingFaceTokenizer(Tokenizable):
         self.tokenizer = tokenizer
 
     def batch_encode(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:  # type: ignore
-        kwargs = add_default_items(
-            kwargs, {"padding": "longest", "return_tensors": "np"}
-        )
+        kwargs = add_default_items(kwargs, dict(padding="longest", return_tensors="np"))
         return self.tokenizer(text, **kwargs).data
 
-    def convert_ids_to_tokens(self, ids: np.ndarray) -> List[str]:
-        return self.tokenizer.convert_ids_to_tokens(ids)
+    def convert_ids_to_tokens(self, ids: Sequence[int]) -> List[str]:
+        return self.tokenizer.convert_ids_to_tokens(list(ids))
 
     def token_id(self, token: str) -> int:
-        return self.tokenizer.encode_plus(
-            [token], is_split_into_words=True, add_special_tokens=False
-        )["input_ids"][0]
+        return self.tokenizer.convert_tokens_to_ids(token)
 
-    def batch_decode(self, ids: np.ndarray, **kwargs) -> List[str]:
+    def batch_decode(
+        self, ids: List[int] | List[List[int]] | np.ndarray, **kwargs
+    ) -> List[str]:
         return self.tokenizer.batch_decode(ids, **kwargs)
 
-    def unwrap(self):
-        return self.tokenizer
+    def split_into_tokens(self, text: str) -> List[str]:
+        return self.tokenizer.tokenize(text)
+
+    def join_tokens(self, tokens: List[str]) -> str:
+        return self.tokenizer.convert_tokens_to_string(tokens)
