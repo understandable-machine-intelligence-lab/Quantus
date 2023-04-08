@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/tox-dev/tox-ini-fmt
+    rev: "1.1.0"
+    hooks:
+      - id: tox-ini-fmt
+        args: [ "-p", "fix_lint,type" ]
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        language_version: python3.10 # Change this with your python version
+        args:
+          - --target-version=py310 # Change this with your python version
