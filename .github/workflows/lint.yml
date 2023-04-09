@@ -31,6 +31,5 @@ jobs:
       - name: Verify black code-style
         uses: psf/black@stable
         with:
-          options: "--check --diff --verbose"
-          src: "."
+          options: "--check --diff --color"
           jupyter: true
