@@ -80,8 +80,8 @@ class NoiseGradConfig(NamedTuple):
 
     n: int = 10
     mean: float = 1.0
-    std: float = 0.2
-    explain_fn: Union[Callable, str] = "IntGrad"
+    std: float = 0.0055
+    explain_fn: Callable | str = "IntGrad"
     noise_type: NoiseType = "multiplicative"
     seed: int = 42
 
@@ -126,9 +126,9 @@ class NoiseGradPlusPlusConfig(NamedTuple):
     m: int = 10
     mean: float = 1.0
     sg_mean: float = 0.0
-    std: float = 0.2
-    sg_std: float = 0.4
-    explain_fn: Union[Callable, str] = "IntGrad"
+    std: float = 0.0055
+    sg_std: float = 0.05
+    explain_fn: Callable | str = "IntGrad"
     noise_type: str = "multiplicative"
     seed: int = 42
 
@@ -159,7 +159,7 @@ def default_noise_grad_pp_config() -> NoiseGradPlusPlusConfig:
     return NoiseGradPlusPlusConfig().resolve_functions()
 
 
-def available_xai_methods() -> Dict[str, Callable]:
+def available_xai_methods() -> dict[str, Callable]:
     return {
         "GradNorm": gradient_norm,
         "GradXInput": gradient_x_input,
@@ -172,7 +172,7 @@ def available_xai_methods() -> Dict[str, Callable]:
 # ----------------- "Entry Point" --------------------
 
 
-def available_noise_grad_xai_methods() -> Dict[str, Callable]:
+def available_noise_grad_xai_methods() -> dict[str, Callable]:
     return {
         "GradNorm": _gradient_norm,
         "GradXInput": _gradient_x_input,
@@ -300,7 +300,7 @@ def integrated_gradients(
     model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
-    config: Optional[IntGradConfig] = None,
+    config: IntGradConfig | None = None,
     **kwargs,
 ) -> _Scores:
     """
@@ -361,7 +361,7 @@ def noise_grad(
     model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
-    config: Optional[NoiseGradConfig] = None,
+    config: NoiseGradConfig | None = None,
     **kwargs,
 ) -> _Scores:
     """
@@ -418,7 +418,7 @@ def noise_grad_plus_plus(
     model: TFHuggingFaceTextClassifier,
     x_batch: _TextOrVector,
     y_batch: tf.Tensor,
-    config: Optional[NoiseGradPlusPlusConfig] = None,
+    config: NoiseGradPlusPlusConfig | None = None,
     **kwargs,
 ) -> _Scores:
     """
@@ -469,7 +469,7 @@ def noise_grad_plus_plus(
 
 @singledispatch
 def _gradient_norm(
-    x_batch: List[str], model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs
+    x_batch: list[str], model: TFHuggingFaceTextClassifier, y_batch: tf.Tensor, **kwargs
 ) -> _Scores:
     input_ids, kwargs = model.tokenizer.get_input_ids(x_batch)
     embeddings = model.embedding_lookup(input_ids)
@@ -533,12 +533,12 @@ def _(
 
 @singledispatch
 def _integrated_gradients(
-    x_batch: List[str],
+    x_batch: list[str],
     model,
     y_batch: tf.Tensor,
     config: IntGradConfig = None,
     **kwargs,
-) -> List[Explanation]:
+) -> list[Explanation]:
     config = value_or_default(config, default_int_grad_config)
     input_ids, predict_kwargs = model.tokenizer.get_input_ids(x_batch)
     embeddings = model.embedding_lookup(input_ids)
@@ -561,7 +561,7 @@ def _(
     x_batch: tf.Tensor,
     model,
     y_batch: tf.Tensor,
-    config: Optional[IntGradConfig] = None,
+    config: IntGradConfig | None = None,
     **kwargs,
 ):
     config = value_or_default(config, lambda: IntGradConfig()).resolve_function()

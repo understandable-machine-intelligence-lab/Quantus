@@ -96,9 +96,9 @@ CallKwargs = TypedDict(
     "CallKwargs",
     dict(
         model=Any,
-        x_batch=np.ndarray | List[str],
+        x_batch=Union[np.ndarray, List[str]],
         y_batch=Optional[np.ndarray],
-        a_batch=Optional[np.ndarray | List[Explanation]],
+        a_batch=Optional[Union[np.ndarray, List[Explanation]]],
         channel_first=Optional[bool],
         explain_func=ExplainFn,
         explain_func_kwargs=Optional[Dict[str, Any]],
