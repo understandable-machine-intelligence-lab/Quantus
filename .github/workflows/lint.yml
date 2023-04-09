@@ -6,7 +6,7 @@ permissions: write-all
 jobs:
   type:
     runs-on: ubuntu-latest
-    name: type
+    name: Type
     steps:
       - name: Check out source repository
         uses: actions/checkout@v3
@@ -19,14 +19,14 @@ jobs:
       - name: Setup tox environment
         run: tox run -e type --notest
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2
+        uses: aaarrti/mypy-github-action@v2.1
         with:
-          checkName: type
+          checkName: Type
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   lint:
     runs-on: ubuntu-latest
-    name: lint
+    name: Lint
     steps:
       - name: Check out source repository
         uses: actions/checkout@v3
@@ -41,6 +41,6 @@ jobs:
       - name: Run flake8
         uses: aaarrti/tox-flake8-lint-action@v1
         with:
-          checkName: lint
+          checkName: Lint
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
