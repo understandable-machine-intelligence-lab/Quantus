@@ -300,7 +300,6 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         # For each test data point, execute a couple of runs.
         for i_ix in range(self.nr_runs):
-
             # Randomly mask by subset size.
             a_ix = np.random.choice(a.shape[0], self.subset_size, replace=False)
             x_perturbed = self.perturb_func(

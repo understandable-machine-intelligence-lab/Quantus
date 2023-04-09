@@ -214,7 +214,6 @@ def test_get_random_layer_generator(load_mnist_model):
     model = PyTorchModel(load_mnist_model, channel_first=True)
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
-
         layer = getattr(model.get_model(), layer_name).parameters()
         new_layer = getattr(random_layer_model.get_model(), layer_name).parameters()
 

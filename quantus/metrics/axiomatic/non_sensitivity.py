@@ -283,14 +283,12 @@ class NonSensitivity(PerturbationMetric):
 
         vars = []
         for i_ix, a_ix in enumerate(a[:: self.features_in_step]):
-
             preds = []
             a_ix = a[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
             ].astype(int)
 
             for _ in range(self.n_samples):
-
                 # Perturb input by indices of attributions.
                 x_perturbed = self.perturb_func(
                     arr=x,

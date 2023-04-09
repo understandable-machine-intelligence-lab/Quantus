@@ -298,7 +298,6 @@ class Selectivity(PerturbationMetric):
             range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
         ]
         for top_left_coords in itertools.product(*axis_iterators):
-
             # Create slice for patch.
             patch_slice = utils.create_patch_slice(
                 patch_size=self.patch_size,
@@ -330,7 +329,6 @@ class Selectivity(PerturbationMetric):
         # Increasingly perturb the input and store the decrease in function value.
         results = np.array([None for _ in range(len(ordered_patches_no_overlap))])
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
-
             # Pad x_perturbed. The mode should depend on the used perturb_func.
             x_perturbed_pad = utils._pad_array(
                 x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes

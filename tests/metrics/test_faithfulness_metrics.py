@@ -157,7 +157,9 @@ from quantus.metrics.faithfulness import (
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "GradientsInput",},
+                    "explain_func_kwargs": {
+                        "method": "GradientsInput",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -290,7 +292,7 @@ def test_faithfulness_correlation(
     )[0]
 
     assert np.all(
-        ((scores >= expected["min"]) & (scores <= expected["max"]))
+        (scores >= expected["min"]) & (scores <= expected["max"])
     ), "Test failed."
 
 
@@ -1305,7 +1307,9 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"type": np.float64},

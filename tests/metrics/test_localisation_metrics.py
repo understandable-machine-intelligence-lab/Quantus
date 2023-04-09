@@ -325,7 +325,11 @@ def load_mnist_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(1, 28, 28))
     model.load_state_dict(
-        torch.load("tests/assets/weights/mnist.pickle", map_location="cpu", pickle_module=pickle)
+        torch.load(
+            "tests/assets/weights/mnist.pickle",
+            map_location="cpu",
+            pickle_module=pickle,
+        )
     )
     return model
 
@@ -350,7 +354,11 @@ def load_cifar10_adaptive_lenet_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetAdaptivePooling(input_shape=(3, 32, 32))
     model.load_state_dict(
-        torch.load("tests/assets/weights/lenet_cifar10.pickle", map_location="cpu", pickle_module=pickle)
+        torch.load(
+            "tests/assets/weights/lenet_cifar10.pickle",
+            map_location="cpu",
+            pickle_module=pickle,
+        )
     )
     return model
 
@@ -1352,7 +1360,7 @@ def test_auc(
                 },
             },
             {"min": 0.8, "max": 0.95},  # TODO: verify correctness
-            marks=pytest.mark.xfail
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),

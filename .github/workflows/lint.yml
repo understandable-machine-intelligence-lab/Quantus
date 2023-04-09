@@ -4,26 +4,6 @@ on: [ pull_request, workflow_dispatch ]
 permissions: write-all
 
 jobs:
-  type:
-    runs-on: ubuntu-latest
-    name: Type
-    steps:
-      - name: Check out source repository
-        uses: actions/checkout@v3
-      - name: Set up Python environment
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install tox-gh
-        run: pip install tox-gh
-      - name: Setup tox environment
-        run: tox run -e type --notest
-      - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.4
-        with:
-          checkName: Type
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   lint:
     runs-on: ubuntu-latest
     name: Lint
@@ -36,11 +16,20 @@ jobs:
           python-version: "3.10"
       - name: Install tox-gh
         run: pip install tox-gh
-      - name: Setup tox environment
-        run: tox run -e lint --notest
       - name: Run flake8
         uses: aaarrti/tox-flake8-lint-action@v2.4
         with:
           checkName: Lint
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run mypy
+        uses: aaarrti/mypy-github-action@v2.4
+        with:
+          checkName: Lint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify black code-style
+        uses: psf/black@stable
+        with:
+          options: "--check --diff --color"
+          jupyter: true

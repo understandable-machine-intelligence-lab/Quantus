@@ -9,13 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from functools import singledispatchmethod
 from operator import itemgetter
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Literal
-)
+from typing import Callable, Dict, List, Optional, Literal
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -27,7 +21,13 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface, RandomisableModel
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
-from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn, Explanation, AggregateFn
+from quantus.helpers.types import (
+    SimilarityFn,
+    NormaliseFn,
+    ExplainFn,
+    Explanation,
+    AggregateFn,
+)
 from quantus.helpers.collection_utils import map_optional
 from quantus.helpers.nlp_utils import get_scores
 from quantus.metrics.base_batched import BatchedMetric
@@ -52,7 +52,9 @@ class ModelParameterRandomisation(BatchedMetric):
         NeurIPS (2018): 9525-9536.
     """
 
-    data_domain_applicability: List[str] = BatchedMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: list[str] = BatchedMetric.data_domain_applicability + [
+        "NLP"
+    ]
 
     @asserts.attributes_check
     def __init__(
@@ -63,11 +65,13 @@ class ModelParameterRandomisation(BatchedMetric):
         return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
-        normalise_func: Optional[NormaliseFn] = None,
-        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        normalise_func: NormaliseFn | None = None,
+        normalise_func_kwargs: dict[str, ...] | None = None,
         return_aggregate: bool = False,
-        aggregate_func: Optional[AggregateFn] = None,
-        default_plot_func: Optional[Callable] = plot_model_parameter_randomisation_experiment,
+        aggregate_func: AggregateFn | None = None,
+        default_plot_func: None | (
+            Callable
+        ) = plot_model_parameter_randomisation_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -157,18 +161,18 @@ class ModelParameterRandomisation(BatchedMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional[List[Explanation] | np.ndarray] = None,
-        s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
-        explain_func: Optional[ExplainFn] = None,
-        explain_func_kwargs: Optional[Dict[str, ...]] = None,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
-        softmax: Optional[bool] = False,
-        device: Optional[str] = None,
+        a_batch: list[Explanation] | np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func: ExplainFn | None = None,
+        explain_func_kwargs: dict[str, ...] | None = None,
+        model_predict_kwargs: dict[str, ...] | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
         batch_size: int = 64,
-        custom_batch: Optional[...] = None,
+        custom_batch: ... | None = None,
         **kwargs,
-    ) -> Dict[str, np.ndarray] | np.ndarray | float:
+    ) -> dict[str, np.ndarray] | np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -266,7 +270,9 @@ class ModelParameterRandomisation(BatchedMetric):
         del model
         model = data["model"]
         if not isinstance(model, RandomisableModel):
-            raise ValueError(f"Custom models need to implement RandomisableModel in order to be used with Model Parameter Randomisation metric.")
+            raise ValueError(
+                f"Custom models need to implement RandomisableModel in order to be used with Model Parameter Randomisation metric."
+            )
         del x_batch
         del y_batch
         del a_batch
@@ -285,17 +291,12 @@ class ModelParameterRandomisation(BatchedMetric):
         )
 
         for layer_name, random_layer_model in model_iterator:
-
             # Generate an explanation with perturbed model.
             for i, x in enumerate(x_batch):
                 y = map_optional(y_batch, itemgetter(i))
                 a = map_optional(a_batch, itemgetter(i))
-                x, y, a, _ = self.batch_preprocess(
-                    model, x, y, a
-                )
-                similarity_score = self.evaluate_batch(
-                    random_layer_model, x, y, a
-                )
+                x, y, a, _ = self.batch_preprocess(model, x, y, a)
+                similarity_score = self.evaluate_batch(random_layer_model, x, y, a)
                 results_per_layer[layer_name].extend(similarity_score)
 
         result = dict(results_per_layer)
@@ -322,7 +323,7 @@ class ModelParameterRandomisation(BatchedMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        *args
+        *args,
     ) -> np.ndarray:
         """
         Compute similarity for original explanations and explanations generated by randomized model.
@@ -339,12 +340,12 @@ class ModelParameterRandomisation(BatchedMetric):
 
     @evaluate_batch.register
     def _(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
-            *args
+        self,
+        model: TextClassifier,
+        x_batch: list[str],
+        y_batch: np.ndarray,
+        a_batch: list[Explanation],
+        *args,
     ) -> np.ndarray:
         """
         Compute similarity for original explanations and explanations generated by randomized model.
@@ -357,19 +358,16 @@ class ModelParameterRandomisation(BatchedMetric):
         """
         a_randomized = self.explain_batch(model, x_batch, y_batch)
         # Compute distance measure.
-        return self.similarity_func(
-            get_scores(a_batch),
-            get_scores(a_randomized)
-        )
+        return self.similarity_func(get_scores(a_batch), get_scores(a_randomized))
 
     def custom_preprocess(
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: np.ndarray | None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
@@ -399,10 +397,8 @@ class ModelParameterRandomisation(BatchedMetric):
 
     @staticmethod
     def compute_correlation_per_sample(
-        num_samples: int,
-        results_per_layer: Dict[str, np.ndarray]
+        num_samples: int, results_per_layer: dict[str, np.ndarray]
     ) -> np.ndarray:
-
         assert isinstance(results_per_layer, Dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
@@ -411,6 +407,8 @@ class ModelParameterRandomisation(BatchedMetric):
         results_per_sample_accumulator = defaultdict(lambda: [])
         for sample in range(num_samples):
             for layer in results_per_layer:
-                results_per_sample_accumulator[str(sample)].append(float(results_per_layer[layer][sample]))
+                results_per_sample_accumulator[str(sample)].append(
+                    float(results_per_layer[layer][sample])
+                )
 
         return np.mean(results_per_sample_accumulator, axis=1)

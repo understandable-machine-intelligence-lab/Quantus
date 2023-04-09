@@ -43,28 +43,28 @@ class AvgSensitivity(BatchedPerturbationMetric):
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
-    data_domain_applicability: List[
+    data_domain_applicability: list[
         str
     ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Optional[Callable] = None,
-        norm_numerator: Optional[Callable] = None,
-        norm_denominator: Optional[Callable] = None,
+        similarity_func: Callable | None = None,
+        norm_numerator: Callable | None = None,
+        norm_denominator: Callable | None = None,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        normalise_func: Callable[[np.ndarray], np.ndarray] | None = None,
+        normalise_func_kwargs: dict[str, Any] | None = None,
         perturb_func: Callable = None,
         lower_bound: float = 0.2,
-        upper_bound: Optional[float] = None,
-        perturb_func_kwargs: Optional[Dict[str, Any]] = None,
+        upper_bound: float | None = None,
+        perturb_func_kwargs: dict[str, Any] | None = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
-        default_plot_func: Optional[Callable] = None,
+        default_plot_func: Callable | None = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         return_nan_when_prediction_changes: bool = False,
@@ -167,16 +167,16 @@ class AvgSensitivity(BatchedPerturbationMetric):
         x_batch: np.array,
         y_batch: np.array,
         explain_func: ExplainFn,
-        a_batch: Optional[np.ndarray] = None,
-        s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
-        explain_func_kwargs: Optional[Dict] = None,
-        model_predict_kwargs: Optional[Dict] = None,
-        softmax: Optional[bool] = False,
-        device: Optional[str] = None,
+        a_batch: np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func_kwargs: dict | None = None,
+        model_predict_kwargs: dict | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
-        tokenizer: Optional[Tokenizable] = None,
+        custom_batch: Any | None = None,
+        tokenizer: Tokenizable | None = None,
         **kwargs,
     ) -> np.ndarray | float:
         """
@@ -341,7 +341,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
     def _(
         self,
         model: TextClassifier,
-        x_batch: List[str],
+        x_batch: list[str],
         y_batch: np.ndarray,
         a_batch,
         s_batch: np.ndarray = None,
@@ -367,10 +367,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
     def _eval_step_nlp_plain_text(
         self,
         model: TextClassifier,
-        x_batch: List[str],
+        x_batch: list[str],
         y_batch: np.ndarray,
-        a_batch: List[Explanation],
-        x_perturbed: List[str],
+        a_batch: list[Explanation],
+        x_perturbed: list[str],
     ) -> np.ndarray:
         batch_size = len(x_batch)
         similarities = np.zeros(shape=batch_size)
@@ -414,9 +414,9 @@ class AvgSensitivity(BatchedPerturbationMetric):
     def _eval_step_nlp_embeddings(
         self,
         model: TextClassifier,
-        x_batch: List[str],
+        x_batch: list[str],
         y_batch: np.ndarray,
-        a_batch: List[Explanation],
+        a_batch: list[Explanation],
     ) -> np.ndarray:
         batch_size = len(x_batch)
         similarities = np.zeros(shape=batch_size)
@@ -461,10 +461,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: np.ndarray | None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.
