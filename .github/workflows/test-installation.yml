@@ -1,0 +1,76 @@
+# The main idea of this test is to verify quantus is usable with and without tensorflow,torch,transformers.
+# Integration test runs in separate workflow, since every test case requires separate isolated environment.
+name: Test Installation
+
+on: [ push, workflow_dispatch ]
+
+jobs:
+
+  test_tensorflow:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
+        with:
+          python-version: '3.10'
+
+      - name: Test with pytest
+        run: tox run -e tf_only
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+  test_tf_nlp:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
+        with:
+          python-version: '3.10'
+
+      - name: Test with pytest
+        run: tox run -e tf_nlp
+        env:
+          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
+
+  test_torch:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
+        with:
+          python-version: '3.10'
+
+      - name: Test with pytest
+        run: tox run -e torch_only
+
+
+  test_torch_nlp:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Tox
+        uses: ./.github/actions/setup-tox/
+        with:
+          python-version: '3.10'
+
+      - name: Test with pytest
+        run: tox run -e torch_nlp

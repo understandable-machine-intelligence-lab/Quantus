@@ -7,14 +7,62 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 # Quantus project URL: https://github.com/understandable-machine-intelligence-lab/Quantus
 
-from typing import Union
+from __future__ import annotations
+
+from functools import wraps
+from typing import Union, Protocol, TypeVar
+import logging
 
 import numpy as np
 import scipy
 import skimage
 
 
-def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
+log = logging.getLogger(__name__)
+
+
+class _SupportsSub(Protocol):
+    def __sub__(self, other):
+        ...
+
+
+T = TypeVar("T", bound=_SupportsSub, covariant=True)
+
+
+def vectorize_similarity(func):
+    vectorized_func = np.vectorize(func, signature="(n),(n)->()", cache=True)
+
+    @wraps(func)
+    def wrapper(a, b):
+        a = np.asarray(a)
+        b = np.asarray(b)
+
+        def flatten_over_batch(arr):
+            shape = np.shape(arr)
+            return np.reshape(arr, (shape[0], -1))
+
+        if np.ndim(a) != np.ndim(b):
+            raise ValueError(
+                f"a and b must have same shapes, but found, {a.shape = }, {b.shape = }"
+            )
+
+        if np.ndim(a) == 1:
+            return func(a, b)
+
+        if np.ndim(a) > 2:
+            log.warning(
+                f"{func.__name__} received array with { a.ndim = }, it was reshaped into {a.shape}."
+            )
+            a = flatten_over_batch(a)
+            b = flatten_over_batch(b)
+
+        return vectorized_func(a, b)
+
+    return wrapper
+
+
+@vectorize_similarity
+def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray | float:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -35,7 +83,8 @@ def correlation_spearman(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.spearmanr(a, b)[0]
 
 
-def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
+@vectorize_similarity
+def correlation_pearson(a: np.ndarray, b: np.ndarray, **kwargs) -> float:
     """
     Calculate Pearson correlation of two images (or explanations).
 
@@ -56,7 +105,10 @@ def correlation_pearson(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.stats.pearsonr(a, b)[0]
 
 
-def correlation_kendall_tau(a: np.array, b: np.array, **kwargs) -> float:
+@vectorize_similarity
+def correlation_kendall_tau(
+    a: np.ndarray, b: np.ndarray, **kwargs
+) -> np.ndarray | float:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -181,7 +233,7 @@ def lipschitz_constant(
         return float(d1(a, b) / (d2(a=c, b=d) + eps))
 
 
-def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
+def abs_difference(a: T, b: T, **kwargs) -> T:
     """
     Calculate the absolute difference between two images (or explanations).
 
@@ -199,7 +251,7 @@ def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    return np.mean(abs(a - b))
+    return np.abs(a - b)
 
 
 def cosine(a: np.array, b: np.array, **kwargs) -> float:
@@ -223,7 +275,8 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
     return scipy.spatial.distance.cosine(u=a, v=b)
 
 
-def ssim(a: np.array, b: np.array, **kwargs) -> float:
+@vectorize_similarity
+def ssim(a: np.ndarray, b: np.ndarray, **kwargs) -> float | np.ndarray:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 
@@ -252,7 +305,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     )
 
 
-def difference(a: np.array, b: np.array, **kwargs) -> float:
+def difference(a: T, b: T, **kwargs) -> T:
     """
     Calculate the difference between two images (or explanations).
 

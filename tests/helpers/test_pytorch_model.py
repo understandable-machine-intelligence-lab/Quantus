@@ -215,7 +215,7 @@ def test_get_random_layer_generator(load_mnist_model):
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
         layer = getattr(model.get_model(), layer_name).parameters()
-        new_layer = getattr(random_layer_model, layer_name).parameters()
+        new_layer = getattr(random_layer_model.get_model(), layer_name).parameters()
 
         assert layer != new_layer, "Test failed."
 

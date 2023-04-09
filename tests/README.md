@@ -1,13 +1,42 @@
 ### How to run tests
 
-Run all tests at once:
+Run all unit tests at once on all available CPU cores:
 
-```pytest```
+```shell
+pytest -n auto
+```
 
 Run a subset of tests with e.g., localisation metrics (see available markers in the pytest.ini files):
 
-```pytest -m localisation -s```
+```shell
+pytest -m localisation -s
+```
 
 Run pytest with coverage:
 
-```pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus```
+```shell
+tox run -r coverage
+```
+
+### Integration tests
+These tests verify, that quantus is usable without all optional dependencies installed.
+
+Run integration tests in isolated environment:
+- base TensorFlow installation
+```shell
+tox -e run tf_only
+```
+- base Torch installation
+```shell
+tox -e run torch_only
+```
+
+- TensorFlow + NLP installation
+```shell
+tox -e run tf_nlp
+```
+
+- Torch + NLP installation
+```shell
+tox -e run torch_nlp
+```

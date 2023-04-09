@@ -5,7 +5,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 # Expose quantus.evaluate to the user.
-from quantus.evaluation import evaluate
+from quantus.evaluation import evaluate, evaluate_nlp
 
 # Expose quantus.explain to the user.
 from quantus.functions.explanation_func import explain
@@ -18,3 +18,10 @@ from quantus.metrics import *
 
 # Expose quantus.helpers.constants to the user.
 from quantus.helpers.constants import *
+
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s:[%(filename)s:%(lineno)s->%(funcName)s()]:%(levelname)s: %(message)s",
+    level=logging.DEBUG,
+)

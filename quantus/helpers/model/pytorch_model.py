@@ -11,12 +11,14 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
 from cachetools import cachedmethod, LRUCache
 import operator
+from functools import cached_property
 
 import numpy as np
 import torch
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.torch_utils import list_layers, random_layer_generator
 
 
 class PyTorchModel(ModelInterface):
@@ -194,24 +196,7 @@ class PyTorchModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = deepcopy(self.model)
-
-        modules = [
-            l
-            for l in random_layer_model.named_modules()
-            if (hasattr(l[1], "reset_parameters"))
-        ]
-
-        if order == "top_down":
-            modules = modules[::-1]
-
-        for module in modules:
-            if order == "independent":
-                random_layer_model.load_state_dict(original_parameters)
-            torch.manual_seed(seed=seed + 1)
-            module[1].reset_parameters()
-            yield module[0], random_layer_model
+        return random_layer_generator(self, order, seed)
 
     def sample(
         self,
@@ -389,3 +374,10 @@ class PyTorchModel(ModelInterface):
         # Cleanup.
         [i.remove() for i in new_hooks]
         return np.hstack(hidden_outputs)
+
+    @cached_property
+    def random_layer_generator_length(self) -> int:
+        return len(list_layers(self.model))
+
+    def load_state_dict(self, original_parameters: Dict[str, torch.Tensor]):
+        self.model.load_state_dict(original_parameters)

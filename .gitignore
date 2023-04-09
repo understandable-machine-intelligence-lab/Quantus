@@ -10,7 +10,6 @@ __pycache__/
 *.jpg
 *.jpeg
 *.png
-*.npy
 *.npz
 *.csv
 *.pth

@@ -12,6 +12,7 @@ from typing import Optional, Union
 
 import numpy as np
 import scipy
+from functools import singledispatch, wraps
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
@@ -21,6 +22,10 @@ from quantus.helpers.utils import (
     infer_channel_first,
     make_channel_last,
     get_wrapped_model,
+)
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.functions.nlp_explanation_func import (
+    generate_text_classification_explanations,
 )
 
 
@@ -59,6 +64,21 @@ if util.find_spec("tf_explain"):
     import tf_explain
 
 
+def patch_kwargs(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # singledispatch requires first positional argument
+        # in Quantus it is often passed as keyword, so we patch it onto 0s position.
+        if "model" in kwargs:
+            return func(kwargs.pop("model"), *args, **kwargs)
+        else:
+            return func(*args, **kwargs)
+
+    return wrapper
+
+
+@patch_kwargs
+@singledispatch
 def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     """
     Explain inputs given a model, targets and an explanation method.
@@ -126,6 +146,11 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     explanation = get_explanation(model, inputs, targets, **kwargs)
 
     return explanation
+
+
+@explain.register
+def _(model: TextClassifier, inputs, targets, **kwargs):
+    return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
 
 def get_explanation(model, inputs, targets, **kwargs):

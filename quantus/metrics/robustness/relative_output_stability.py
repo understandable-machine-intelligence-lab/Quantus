@@ -6,21 +6,31 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List
-import numpy as np
 from functools import partial
+from typing import TYPE_CHECKING, Optional, Callable, Dict, List
+
+import numpy as np
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
+
+
+from functools import singledispatchmethod
 
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
-from quantus.helpers.utils import expand_attribution_channel
+from quantus.functions.perturb_func import uniform_noise
+
+from quantus.helpers.utils import get_logits_for_labels
+from quantus.helpers.collection_utils import value_or_default, safe_as_array
+from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
+from quantus.functions.norm_func import l2_norm
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.types import Explanation
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
@@ -37,6 +47,10 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+
     @attributes_check
     def __init__(
         self,
@@ -51,7 +65,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
-        eps_min: float = 1e-6,
         default_plot_func: Optional[Callable] = None,
         return_nan_when_prediction_changes: bool = True,
         **kwargs,
@@ -83,20 +96,17 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             Indicates whether a tqdm-progress-bar is printed, default=False.
         default_plot_func: callable
             Callable that plots the metrics result.
-        eps_min: float
-            Small constant to prevent division by 0 in relative_stability_objective, default 1e-6.
         return_nan_when_prediction_changes: boolean
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
 
-        if normalise_func is None:
-            normalise_func = normalise_by_average_second_moment_estimate
-
-        if perturb_func is None:
-            perturb_func = uniform_noise
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {"upper_bound": 0.2}
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
+        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
 
         super().__init__(
             abs=abs,
@@ -110,11 +120,10 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             default_plot_func=default_plot_func,
             display_progressbar=display_progressbar,
             disable_warnings=disable_warnings,
+            nr_samples=nr_samples,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             **kwargs,
         )
-        self._nr_samples = nr_samples
-        self._eps_min = eps_min
-        self._return_nan_when_prediction_changes = return_nan_when_prediction_changes
 
         if not self.disable_warnings:
             warn_parameterisation(
@@ -139,8 +148,9 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         softmax: bool = False,
         channel_first: bool = True,
         batch_size: int = 64,
+        tokenizer=None,
         **kwargs,
-    ) -> List[float]:
+    ) -> np.ndarray | float:
         """
         For each image `x`:
          - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
@@ -197,18 +207,173 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             model_predict_kwargs=model_predict_kwargs,
             s_batch=None,
             batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs,
         )
 
-    def relative_output_stability_objective(
+    @singledispatchmethod
+    def evaluate_batch(
         self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch=None,
+        custom_batch=None,
+    ) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        model: tf.keras.Model, torch.nn.Module
+            A torch or tensorflow model that is subject to explanation.
+        x_batch: np.ndarray
+            4D tensor representing batch of input images.
+        y_batch: np.ndarray
+            1D tensor, representing predicted labels for the x_batch.
+        a_batch: np.ndarray, optional
+            4D tensor with pre-computed explanations for the x_batch.
+        s_batch:
+            Unused.
+        custom_batch:
+            Padded perturbed inputs in case of plain-text perturbations for NLP, otherwise unused.
+
+        Returns
+        -------
+        ros: np.ndarray
+            A batch of explanations.
+
+        """
+        # Execute forward pass on provided inputs.
+        logits = get_logits_for_labels(model.predict(x_batch), y_batch)
+        # Prepare output array.
+        ros_batch = np.zeros(shape=[self.nr_samples, x_batch.shape[0]])
+
+        for index in range(self.nr_samples):
+            # Perturb input.
+            x_perturbed = self.perturb_batch(x_batch)
+            # Generate explanations for perturbed input.
+            a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+            # Execute forward pass on perturbed inputs.
+            logits_perturbed = get_logits_for_labels(
+                model.predict(x_perturbed), y_batch
+            )
+            # Compute maximization's objective.
+            ros = self.relative_output_stability_objective(
+                logits, logits_perturbed, a_batch, a_batch_perturbed
+            )
+            ros_batch[index] = ros
+            # If perturbed input caused change in prediction, then it's ROS=nan.
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
+            if len(changed_prediction_indices) != 0:
+                ros_batch[index, changed_prediction_indices] = np.nan
+
+        # Compute ROS.
+        result = np.max(ros_batch, axis=0)
+        return result
+
+    @evaluate_batch.register
+    def _(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        s_batch=None,
+        custom_batch: Optional[List[List[str]]] = None,
+    ) -> np.ndarray:
+
+        # Execute forward pass on provided inputs.
+        logits = get_logits_for_labels(model.predict(x_batch), y_batch)
+        # Prepare output array.
+        ros_batch = np.zeros(shape=[self.nr_samples, len(x_batch)])
+
+        for index in range(self.nr_samples):
+            if is_plain_text_perturbation(self.perturb_func):
+                ros_batch[index] = self._eval_step_plain_text(
+                    model, x_batch, y_batch, a_batch, logits, custom_batch[index]
+                )
+            else:
+                ros_batch[index] = self._eval_step_embeddings(
+                    model, x_batch, y_batch, a_batch, logits
+                )
+
+        # Compute ROS.
+        result = np.max(ros_batch, axis=0)
+        return result
+
+    def _eval_step_embeddings(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        og_logits: np.ndarray,
+    ) -> np.ndarray:
+
+        x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
+        # Perturb input.
+        x_perturbed = self.perturb_batch(x_embeddings)
+
+        # Generate explanations for perturbed input.
+        a_batch_perturbed = self.explain_batch(
+            model, x_perturbed, y_batch, **predict_kwargs
+        )
+        # Execute forward pass on perturbed inputs.
+        logits_perturbed = get_logits_for_labels(
+            safe_as_array(model.predict(x_perturbed, **predict_kwargs), force=True),
+            y_batch,
+        )
+        # Compute maximization's objective.
+        ros = self.relative_output_stability_objective(
+            og_logits, logits_perturbed, get_scores(a_batch), a_batch_perturbed
+        )
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_embeddings, x_perturbed, **predict_kwargs
+        )
+        if len(changed_prediction_indices) != 0:
+            ros[changed_prediction_indices] = np.nan
+        return ros
+
+    def _eval_step_plain_text(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        og_logits: np.ndarray,
+        x_perturbed: List[str],
+    ) -> np.ndarray:
+
+        # Generate explanations for perturbed input.
+        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+        # Execute forward pass on perturbed inputs.
+        logits_perturbed = get_logits_for_labels(model.predict(x_perturbed), y_batch)
+        # Compute maximization's objective.
+        ros = self.relative_output_stability_objective(
+            og_logits,
+            logits_perturbed,
+            get_scores(a_batch),
+            get_scores(a_batch_perturbed),
+        )
+        changes_prediction_indices = self.changed_prediction_indices(
+            model, x_batch, x_perturbed
+        )
+        if len(changes_prediction_indices) != 0:
+            ros[changes_prediction_indices] = np.nan
+        return ros
+
+    @staticmethod
+    def relative_output_stability_objective(
         h_x: np.ndarray,
         h_xs: np.ndarray,
         e_x: np.ndarray,
         e_xs: np.ndarray,
     ) -> np.ndarray:
         """
-        Computes relative output stabilities maximization objective
-        as defined here :ref:`https://arxiv.org/pdf/2203.06877.pdf` by the authors.
+        Computes relative output stability's maximization objective
+         as defined here :ref:`https://arxiv.org/pdf/2203.06877.pdf` by the authors.
 
         Parameters
         ----------
@@ -227,134 +392,12 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             ROS maximization objective.
         """
 
-        num_dim = e_x.ndim
-        if num_dim == 4:
-            norm_function = lambda arr: np.linalg.norm(
-                np.linalg.norm(arr, axis=(-1, -2)), axis=-1
-            )  # noqa
-        elif num_dim == 3:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=(-1, -2))  # noqa
-        elif num_dim == 2:
-            norm_function = lambda arr: np.linalg.norm(arr, axis=-1)
-        else:
-            raise ValueError(
-                "Relative Output Stability only supports 4D, 3D and 2D inputs (batch dimension inclusive)."
-            )
+        # prevent division by 0
+        eps_min = np.finfo(np.float32).eps
 
-        # fmt: off
-        nominator = (e_x - e_xs) / (e_x + (e_x == 0) * self._eps_min)  # prevent division by 0
-        nominator = norm_function(nominator)
-        # fmt: on
+        nominator = (e_x - e_xs) / (e_x + eps_min)
+        nominator = l2_norm(nominator)
 
         denominator = h_x - h_xs
-        denominator = np.linalg.norm(denominator, axis=-1)
-        denominator += (denominator == 0) * self._eps_min  # prevent division by 0
+        denominator = l2_norm(denominator) + eps_min
         return nominator / denominator
-
-    def generate_normalised_explanations_batch(
-        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
-    ) -> np.ndarray:
-        """
-        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
-
-        Parameters
-        ----------
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
-        explain_func: callable
-            Function to generate explanations, takes only inputs,targets kwargs.
-
-        Returns
-        -------
-        a_batch: np.ndarray
-            A batch of explanations.
-        """
-        a_batch = explain_func(inputs=x_batch, targets=y_batch)
-        if self.normalise:
-            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
-        if self.abs:
-            a_batch = np.abs(a_batch)
-        return expand_attribution_channel(a_batch, x_batch)
-
-    def evaluate_batch(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        *args,
-        **kwargs,
-    ) -> np.ndarray:
-        """
-        Parameters
-        ----------
-        model: tf.keras.Model, torch.nn.Module
-            A torch or tensorflow model that is subject to explanation.
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-            1D tensor, representing predicted labels for the x_batch.
-        a_batch: np.ndarray, optional
-            4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
-        kwargs:
-            Unused.
-
-        Returns
-        -------
-        ros: np.ndarray
-            A batch of explanations.
-
-        """
-        batch_size = x_batch.shape[0]
-        _explain_func = partial(
-            self.explain_func, model=model.get_model(), **self.explain_func_kwargs
-        )
-        # Execute forward pass on provided inputs.
-        logits = model.predict(x_batch)
-        # Prepare output array.
-        ros_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
-
-        for index in range(self._nr_samples):
-            # Perturb input.
-            x_perturbed = perturb_batch(
-                perturb_func=self.perturb_func,
-                indices=np.tile(np.arange(0, x_batch[0].size), (batch_size, 1)),
-                indexed_axes=np.arange(0, x_batch[0].ndim),
-                arr=x_batch,
-                **self.perturb_func_kwargs,
-            )
-            # Generate explanations for perturbed input.
-            a_batch_perturbed = self.generate_normalised_explanations_batch(
-                x_perturbed, y_batch, _explain_func
-            )
-            # Execute forward pass on perturbed inputs.
-            logits_perturbed = model.predict(x_perturbed)
-            # Compute maximization's objective.
-            ros = self.relative_output_stability_objective(
-                logits, logits_perturbed, a_batch, a_batch_perturbed
-            )
-            ros_batch[index] = ros
-            # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self._return_nan_when_prediction_changes:
-                continue
-
-            # If perturbed input caused change in prediction, then it's ROS=nan.
-            predicted_y = model.predict(x_batch).argmax(axis=-1)
-            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
-            changed_prediction_indices = np.argwhere(
-                predicted_y != predicted_y_perturbed
-            ).reshape(-1)
-
-            if len(changed_prediction_indices) == 0:
-                continue
-            ros_batch[index, changed_prediction_indices] = np.nan
-
-        # Compute ROS.
-        result = np.max(ros_batch, axis=0)
-        if self.return_aggregate:
-            result = [self.aggregate_func(result)]
-        return result

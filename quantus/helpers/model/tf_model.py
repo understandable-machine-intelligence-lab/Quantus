@@ -1,4 +1,8 @@
-"""This model creates the ModelInterface for Tensorflow."""
+"""
+This model creates the ModelInterface for Tensorflow.
+At first, having separate implementations for each interface may seem like un-necessary obfuscation of code.
+But, it allows for much greater level of customization by user (and NLP model's).
+"""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -8,34 +12,33 @@
 
 from __future__ import annotations
 
+import operator
+from operator import contains
 from typing import Dict, Optional, Tuple, List, Union
-from keras.layers import Dense
-from keras import activations
-from keras import Model
-from keras.models import clone_model
+from warnings import warn
+from functools import cached_property, partial
+
 import numpy as np
 import tensorflow as tf
-from warnings import warn
 from cachetools import cachedmethod, LRUCache
-import operator
+from keras import Model
+from keras import activations
+from keras.layers import Dense
+from keras.models import clone_model
 
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers import utils
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.collection_utils import filter_dict
+from quantus.helpers.tf_utils import (
+    is_xla_compatible_platform,
+    random_layer_generator,
+    list_parameterizable_layers,
+    supported_keras_engine_predict_kwargs,
+)
 
 
 class TensorFlowModel(ModelInterface):
     """Interface for tensorflow models."""
-
-    # All kwargs supported by Keras API https://keras.io/api/models/model_training_apis/.
-    _available_predict_kwargs = [
-        "batch_size",
-        "verbose",
-        "steps",
-        "callbacks",
-        "max_queue_size",
-        "workers",
-        "use_multiprocessing",
-    ]
 
     def __init__(
         self,
@@ -44,11 +47,6 @@ class TensorFlowModel(ModelInterface):
         softmax: bool = False,
         model_predict_kwargs: Optional[Dict[str, ...]] = None,
     ):
-        if model_predict_kwargs is None:
-            model_predict_kwargs = {}
-        # Disable progress bar while running inference on tf.keras.Model.
-        model_predict_kwargs["verbose"] = 0
-
         """
         Initialisation of ModelInterface class.
 
@@ -70,6 +68,11 @@ class TensorFlowModel(ModelInterface):
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
+        self.model._jit_compile = is_xla_compatible_platform()
+        if model_predict_kwargs is None:
+            model_predict_kwargs = {}
+        # Disable progress bar while running inference on tf.keras.Model.
+        model_predict_kwargs["verbose"] = 0
         # get_hidden_representations needs to rebuild and re-trace the model.
         # In the case model has softmax on top, and we need linear activation, predict also needs to re-build the model.
         # This is computationally expensive, so we save the rebuilt model in cache and reuse it for consecutive calls.
@@ -81,9 +84,10 @@ class TensorFlowModel(ModelInterface):
         Filter out those, which are supported by Keras API.
         """
         all_kwargs = {**self.model_predict_kwargs, **kwargs}
-        predict_kwargs = {
-            k: all_kwargs[k] for k in all_kwargs if k in self._available_predict_kwargs
-        }
+        predict_kwargs = filter_dict(
+            all_kwargs,
+            key_filter=partial(contains, supported_keras_engine_predict_kwargs()),
+        )
         return predict_kwargs
 
     @property
@@ -252,25 +256,7 @@ class TensorFlowModel(ModelInterface):
         layer.name, random_layer_model: string, torch.nn
             The layer name and the model.
         """
-        original_parameters = self.state_dict()
-        random_layer_model = clone_model(self.model)
-
-        layers = [
-            _layer
-            for _layer in random_layer_model.layers
-            if len(_layer.get_weights()) > 0
-        ]
-
-        if order == "top_down":
-            layers = layers[::-1]
-
-        for layer in layers:
-            if order == "independent":
-                random_layer_model.set_weights(original_parameters)
-            weights = layer.get_weights()
-            np.random.seed(seed=seed + 1)
-            layer.set_weights([np.random.permutation(w) for w in weights])
-            yield layer.name, random_layer_model
+        return random_layer_generator(self, order, seed, flatten_layers=False)
 
     @cachedmethod(operator.attrgetter("cache"))
     def _build_hidden_representation_model(
@@ -416,3 +402,7 @@ class TensorFlowModel(ModelInterface):
             i.reshape((input_batch_size, -1)) for i in internal_representation
         ]
         return np.hstack(internal_representation)
+
+    @cached_property
+    def random_layer_generator_length(self) -> int:
+        return len(list_parameterizable_layers(self.get_model(), flatten_layers=False))

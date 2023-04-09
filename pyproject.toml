@@ -152,6 +152,11 @@ tutorials = [
     "pandas",
     "xmltodict",
 ]
+nlp = [
+    "nltk>=3.8.1",
+    "nlpaug",
+    "transformers>=4.26.1"
+]
 all = [
     "quantus[tf_explain,zennit,tutorials]"
 ]
@@ -187,6 +192,7 @@ all = [
 packages = [
     "quantus",
     "quantus.functions",
+    "quantus.functions.nlp_explanation_func",
     "quantus.helpers",
     "quantus.helpers.model",
     "quantus.metrics",
@@ -245,7 +251,10 @@ markers = [
     "robustness: robustness metrics tests.",
     "localisation: localisation metrics tests.",
     "complexity: complexity metrics tests.",
-    "axiomatic: axiomatic metrics tests."
+    "axiomatic: axiomatic metrics tests.",
+    "nlp: text-classification metrics tests.",
+    "partial_installation: tests with either tensorflow or torch with/or transformers."
+
 ]
 filterwarnings = [
     "error",
@@ -271,3 +280,7 @@ omit = [
 
 [tool.coverage.report]
 ignore_errors = true
+
+[tool.isort.settings]
+profile = "black"
+known_third_party = ["cachetools", "captum", "cv2", "keras", "matplotlib", "nlpaug", "numpy", "pytest", "pytest_lazyfixture", "pytest_mock", "scipy", "skimage", "sklearn", "tensorflow", "tensorflow_probability", "torch", "tqdm", "transformers", "zennit"]

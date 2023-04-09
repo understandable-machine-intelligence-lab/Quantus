@@ -2,14 +2,19 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+from pytest_mock import MockerFixture
 import numpy as np
-from quantus.evaluation import evaluate
+
+import quantus
+from quantus.evaluation import evaluate, evaluate_nlp
 from quantus.functions.explanation_func import explain
+from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
 
-from quantus.metrics.complexity import Sparseness
-from quantus.metrics.robustness import MaxSensitivity
+from quantus.metrics.complexity import Sparseness  # noqa
+from quantus.metrics.robustness import MaxSensitivity  # noqa
 
 
+@pytest.mark.order(-1)
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -167,3 +172,46 @@ def test_evaluate_func(
             ][list(eval(params["call_kwargs"]).keys())[0]]
             <= expected["max"]
         ), "Test failed."
+
+
+@pytest.mark.order(-2)
+@pytest.mark.last
+@pytest.mark.parametrize(
+    "model, data",
+    [
+        (lazy_fixture("tf_sst2_model"), lazy_fixture("sst2_dataset")),
+        (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
+    ],
+)
+def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
+    nlp_metrics = {
+        "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
+        "RandomLogit": quantus.RandomLogit(disable_warnings=True),
+        "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
+        "Avg-Sen": quantus.AvgSensitivity(
+            disable_warnings=True, nr_samples=5, perturb_func=synonym_replacement
+        ),
+        "Max-Sen": quantus.MaxSensitivity(
+            disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement
+        ),
+        "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
+        "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
+        "RRS": quantus.RelativeRepresentationStability(
+            disable_warnings=True, nr_samples=5
+        ),
+    }
+
+    callback_stub = mocker.stub("callback_stub")
+    scores = evaluate_nlp(
+        metrics=nlp_metrics,
+        model=model,
+        x_batch=data["x_batch"],
+        y_batch=data["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs=dict(method="GradXInput"),
+        persist_callback=callback_stub,
+        verbose=False,
+        tokenizer=sst2_tokenizer,
+    )
+
+    callback_stub.assert_called()

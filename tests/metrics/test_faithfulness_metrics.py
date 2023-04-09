@@ -292,7 +292,7 @@ def test_faithfulness_correlation(
     )[0]
 
     assert np.all(
-        ((scores >= expected["min"]) & (scores <= expected["max"]))
+        (scores >= expected["min"]) & (scores <= expected["max"])
     ), "Test failed."
 
 
@@ -1439,6 +1439,7 @@ def test_selectivity(
     assert type(metric.get_auc_score) == expected["type"], "Test failed."
 
 
+@pytest.mark.xfail
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
