@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
@@ -11,20 +11,22 @@ repos:
       - id: check-toml
       - id: mixed-line-ending
       - id: requirements-txt-fixer
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: forbid-submodules
+      - id: name-tests-test
+      - id: no-commit-to-branch
+
   - repo: https://github.com/tox-dev/tox-ini-fmt
-    rev: "1.1.0"
+    rev: "1.3.0"
     hooks:
       - id: tox-ini-fmt
         args: [ "tox.ini" ]
-  #- repo: https://github.com/pycqa/isort
-  #  rev: 5.11.2
-  #  hooks:
-  #    - id: isort
-  #      name: isort (python)
   - repo: https://github.com/psf/black
-    rev: 22.6.0
+    rev: 23.3.0
     hooks:
       - id: black
-        language_version: python3.10
-        args:
-          - --target-version=py310
+  #- repo: https://github.com/pycqa/isort
+  #  rev: 5.12.0
+  #  hooks:
+  #    - id: isort

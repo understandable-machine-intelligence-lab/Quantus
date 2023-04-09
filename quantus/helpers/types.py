@@ -92,7 +92,6 @@ class ExplainFn(Protocol):
     def __call__(self, model: ModelT, x_batch, y_batch: np.ndarray, **kwargs):
         ...
 
-
 class AggregateFn(Protocol):
     def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
         ...
