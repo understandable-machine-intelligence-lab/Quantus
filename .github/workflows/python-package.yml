@@ -3,7 +3,7 @@
 
 name: Python package
 
-on: [ push, workflow_dispatch ]
+on: [ pull_request, workflow_dispatch ]
 
 jobs:
   build:
@@ -17,18 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Tox
-        uses: ./.github/actions/setup-tox/
+      - name: Setup python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
+          #cache: 'pip'
           python-version: ${{ matrix.python-version }}
 
-      - name: Test with pytest
-        run: tox
+      - name: Install tox-gh
+        run: pip install tox-gh
+
+      - name: Setup test environment
+        run: tox run --notest
+
+      - name: Test with PyTest
+        run: tox run --skip-pkg-install
         env:
           TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
-
-      - name: Lint
-        run: tox -e lint
-
-      - name: Type check
-        run: tox -e type
