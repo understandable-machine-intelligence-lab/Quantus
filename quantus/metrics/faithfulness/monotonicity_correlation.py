@@ -300,7 +300,6 @@ class MonotonicityCorrelation(PerturbationMetric):
         vars = [None for _ in range(n_perturbations)]
 
         for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
             # Perturb input by indices of attributions.
             a_ix = a_indices[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
@@ -309,7 +308,6 @@ class MonotonicityCorrelation(PerturbationMetric):
             y_pred_perturbs = []
 
             for s_ix in range(self.nr_samples):
-
                 x_perturbed = self.perturb_func(
                     arr=x,
                     indices=a_ix,

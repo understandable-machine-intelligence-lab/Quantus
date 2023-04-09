@@ -302,11 +302,9 @@ class Infidelity(PerturbationMetric):
         results = []
 
         for _ in range(self.n_perturb_samples):
-
             sub_results = []
 
             for patch_size in self.perturb_patch_sizes:
-
                 pred_deltas = np.zeros(
                     (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
                 )
@@ -317,9 +315,7 @@ class Infidelity(PerturbationMetric):
                 pad_width = patch_size - 1
 
                 for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
-
                     for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
-
                         # Perturb input patch-wise.
                         x_perturbed_pad = utils._pad_array(
                             x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes

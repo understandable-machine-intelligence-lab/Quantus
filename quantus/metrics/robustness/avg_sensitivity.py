@@ -301,7 +301,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
         similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
 
         for step_id in range(self.nr_samples):
-
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
@@ -352,7 +351,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
-
                 if (
                     self.return_nan_when_prediction_changes
                     and instance_id in changed_prediction_indices

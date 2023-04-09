@@ -300,7 +300,6 @@ class SensitivityN(PerturbationMetric):
         x_perturbed = x.copy()
 
         for i_ix, a_ix in enumerate(a_indices[:: self.features_in_step]):
-
             # Perturb input by indices of attributions.
             a_ix = a_indices[
                 (self.features_in_step * i_ix) : (self.features_in_step * (i_ix + 1))
