@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from functools import partial
 from typing import (
     Union,
@@ -17,13 +16,9 @@ from typing import (
     Optional,
     List,
     TYPE_CHECKING,
-    Protocol,
-    overload,
     Mapping,
-    Any,
     Tuple,
 )
-import logging
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -32,27 +27,22 @@ from quantus.functions.explanation_func import explain
 from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
-from quantus.helpers.nlp_utils import map_explanations
 from quantus.helpers.collection_utils import (
-    add_default_items,
-    filter_dict,
-    query_nested_dict,
     value_or_default,
     batch_inputs,
     flatten,
 )
-from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.nlp_utils import map_explanations
+from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.types import (
     Explanation,
     ExplainFn,
     PersistFn,
     CallKwargs,
-    MetricScores,
 )
 from quantus.metrics.base_batched import BatchedMetric
-
 
 if TYPE_CHECKING:
     from tensorflow import keras

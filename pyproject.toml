@@ -202,8 +202,8 @@ packages = [
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=43.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["flit-core >= 3.4"]
+build-backend = "flit_core.buildapi"
 
 
 # Global options:
@@ -276,3 +276,7 @@ omit = [
 
 [tool.coverage.report]
 ignore_errors = true
+
+[tool.isort.settings]
+profile = "black"
+known_third_party = ["cachetools", "captum", "cv2", "keras", "matplotlib", "nlpaug", "numpy", "pytest", "pytest_lazyfixture", "pytest_mock", "scipy", "skimage", "sklearn", "tensorflow", "tensorflow_probability", "torch", "tqdm", "transformers", "zennit"]

@@ -17,6 +17,7 @@ from typing import (
     TypedDict,
     Union,
     overload,
+    Callable,
 )
 
 import numpy as np
@@ -37,36 +38,29 @@ Explanation = Tuple[List[str], np.ndarray]
 MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
 
 
-class SupportsArray(Protocol):
-    def __array__(self) -> np.ndarray:
-        ...
-
-
 class PerturbFn(Protocol):
     @overload
     def __call__(self, a: List[str], **kwargs) -> List[str]:
         ...
 
     @overload
-    def __call__(self, a: SupportsArray, **kwargs) -> np.ndarray:
+    def __call__(self, a: np.ndarray, **kwargs) -> np.ndarray:
         ...
 
     def __call__(self, a, **kwargs):
         ...
 
 
-class SimilarityFn(Protocol):
-    def __call__(self, a: SupportsArray, b: SupportsArray, **kwargs) -> ArrayLike:
-        ...
+SimilarityFn = Callable[[np.ndarray, np.ndarray], ArrayLike]
 
 
 class NormFn(Protocol):
-    def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
+    def __call__(self, a: np.ndarray, **kwargs) -> ArrayLike:
         ...
 
 
 class NormaliseFn(Protocol):
-    def __call__(self, a: SupportsArray, **kwargs) -> np.ndarray:
+    def __call__(self, a: np.ndarray, **kwargs) -> np.ndarray:
         ...
 
 
@@ -85,7 +79,7 @@ class ExplainFn(Protocol):
 
     @overload
     def __call__(
-        self, model, x_batch: SupportsArray, y_batch: np.ndarray, **kwargs
+        self, model, x_batch: np.ndarray, y_batch: np.ndarray, **kwargs
     ) -> np.ndarray:
         ...
 
@@ -93,30 +87,8 @@ class ExplainFn(Protocol):
         ...
 
 
-class AggregateFn(Protocol):
-    def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
-        ...
-
-
-class PersistFn(Protocol):
-    @overload
-    def __call__(
-        self, metric_name: str, explain_fn_kwargs: Dict[str, ...], scores: np.ndarray
-    ) -> None:
-        ...
-
-    @overload
-    def __call__(
-        self,
-        metric_name: str,
-        explain_fn_kwargs: Dict[str, ...],
-        scores: Dict[str, np.ndarray],
-    ) -> None:
-        ...
-
-    def __call__(self, metric_name, explain_fn_kwargs, scores) -> None:
-        ...
-
+AggregateFn = Callable[[np.ndarray], ArrayLike]
+PersistFn = Callable[[str, Dict[str, ...], np.ndarray | Dict[str, np.ndarray]], None]
 
 CallKwargs = TypedDict(
     "CallKwargs",
