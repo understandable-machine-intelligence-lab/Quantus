@@ -19,7 +19,7 @@ from quantus.helpers.model.models import (
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
 BATCH_SIZE = 124
-MINI_BATCH_SIZE = 8
+MINI_BATCH_SIZE = 10
 
 
 @pytest.fixture(scope="session", autouse=True)
