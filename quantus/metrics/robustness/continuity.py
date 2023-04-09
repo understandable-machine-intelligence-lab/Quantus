@@ -297,7 +297,6 @@ class Continuity(PerturbationMetric):
         results: Dict[int, list] = {k: [] for k in range(self.nr_patches + 1)}
 
         for step in range(self.nr_steps):
-
             # Generate explanation based on perturbed input x.
             dx_step = (step + 1) * self.dx
             x_perturbed = self.perturb_func(

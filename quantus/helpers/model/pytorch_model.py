@@ -281,7 +281,6 @@ class PyTorchModel(ModelInterface):
             The resulting model with a shifted first layer.
         """
         with torch.no_grad():
-
             new_model = deepcopy(self.model)
 
             modules = [l for l in new_model.named_modules()]
@@ -308,7 +307,6 @@ class PyTorchModel(ModelInterface):
         layer_names: Optional[List[str]] = None,
         layer_indices: Optional[List[int]] = None,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).

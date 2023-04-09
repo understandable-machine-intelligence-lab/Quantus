@@ -55,7 +55,6 @@ def test_get_softmax_arg_model(
     expected: np.ndarray,
     load_mnist_model_tf,
 ):
-
     model = TensorFlowModel(model=load_mnist_model_tf, softmax=True)
     new_model = TensorFlowModel(model=model.get_softmax_arg_model(), **params)
 
@@ -92,7 +91,6 @@ def test_predict(
     expected: np.ndarray,
     load_mnist_model_tf,
 ):
-
     model = TensorFlowModel(model=load_mnist_model_tf, **params)
     out = model.predict(x=data)
     assert np.allclose(out, expected), "Test failed."
@@ -143,7 +141,6 @@ def test_get_random_layer_generator(load_mnist_model_tf):
     old_weights = {s.name: s.get_weights() for s in list(tf_model.layers)}
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
-
         old = old_weights[layer_name]
         new = random_layer_model.get_layer(layer_name).get_weights()
 

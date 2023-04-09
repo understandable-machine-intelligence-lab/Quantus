@@ -273,7 +273,6 @@ class ModelParameterRandomisation(Metric):
         )
 
         for layer_name, random_layer_model in model_iterator:
-
             similarity_scores = [None for _ in x_batch]
 
             # Generate an explanation with perturbed model.
@@ -403,7 +402,6 @@ class ModelParameterRandomisation(Metric):
     def compute_correlation_per_sample(
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-
         assert isinstance(self.last_results, dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "

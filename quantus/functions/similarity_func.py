@@ -145,7 +145,7 @@ def lipschitz_constant(
     b: np.array,
     c: Union[np.array, None],
     d: Union[np.array, None],
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Calculate non-negative local Lipschitz abs(||a-b||/||c-d||), where a,b can be f(x) or a(x) and c,d is x.
@@ -242,7 +242,7 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
         The similarity score.
     """
     max_val = np.max(np.abs(np.concatenate([a, b])))
-    data_range = 1. if max_val <= 1. else 255.
+    data_range = 1.0 if max_val <= 1.0 else 255.0
 
     return skimage.metrics.structural_similarity(
         im1=a,
