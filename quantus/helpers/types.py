@@ -7,27 +7,27 @@
 from __future__ import annotations
 
 from typing import (
-    List,
-    Tuple,
-    Protocol,
-    overload,
     TYPE_CHECKING,
-    Union,
-    Dict,
-    TypedDict,
-    Optional,
     Any,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    Union,
+    overload,
 )
 
 import numpy as np
-
-from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
-from quantus.helpers.model.model_interface import ModelInterface
 from numpy.typing import ArrayLike
 
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+
 if TYPE_CHECKING:
-    from tensorflow import keras
     import torch.nn as nn
+    from tensorflow import keras
     from transformers import PreTrainedTokenizerBase
 
     ModelT = Union[keras.Model, nn.Module, ModelInterface, TextClassifier]
@@ -91,6 +91,7 @@ class ExplainFn(Protocol):
 
     def __call__(self, model: ModelT, x_batch, y_batch: np.ndarray, **kwargs):
         ...
+
 
 class AggregateFn(Protocol):
     def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
