@@ -1,6 +1,6 @@
-# Include install requirements.
 -r requirements.txt
 captum>=0.6.0
+noisegrad
 pandas
 pytest
 pytest-lazy-fixture
@@ -8,14 +8,12 @@ pytest-mock
 pytest_ordering
 safetensors
 shap
-# TensorFlow and co.
 tensorflow>=2.12.0; sys_platform != 'darwin'
 tensorflow_macos>=2.12.0; sys_platform == 'darwin'
 tensorflow_probability
 tf-explain
 
-tokenizer
-# Torch and co.
+tokenizers
 torch>=1.13.1
 torchvision>=0.15.1
 transformers

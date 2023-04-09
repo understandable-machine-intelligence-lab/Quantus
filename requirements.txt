@@ -1,6 +1,6 @@
 matplotlib
 nlpaug
-nltk
+nltk >= 3.8.1
 numpy>=1.23.5
 opencv-python>=4.7.0.68
 scikit-image>=0.19.3
