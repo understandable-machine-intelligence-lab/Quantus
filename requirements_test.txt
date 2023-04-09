@@ -1,27 +1,15 @@
 # Include install requirements.
 -r requirements.txt
+captum>=0.6.0
+pandas
 pytest
 pytest-lazy-fixture
 pytest-mock
-pytest-order
 # TensorFlow and co.
 tensorflow>=2.12.0; sys_platform != 'darwin'
-tensorflow-macos>=2.12.0; sys_platform == 'darwin'
+tensorflow_macos>=2.12.0; sys_platform == 'darwin'
 tf-explain
-tensorflow-probability
-
 # Torch and co.
 torch>=1.13.1
 torchvision>=0.15.1
 zennit>=0.5.0
-captum>=0.6.0
-
-# NLP
-noisegrad@ git+https://github.com/aaarrti/NoiseGrad.git
-nltk>=3.8.1
-nlpaug
-transformers>=4.26.1
-tokenizers
-safetensors
-shap>=0.4.1
-

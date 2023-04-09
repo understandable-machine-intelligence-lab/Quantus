@@ -1,36 +1,46 @@
 name: Lint
 
-on:
-  push:
-    paths:
-      - '*.py'
+on: [ pull_request, workflow_dispatch ]
+permissions: write-all
 
 jobs:
-  flake8_py3:
+  type:
     runs-on: ubuntu-latest
+    name: Type
     steps:
-      - name: Setup Python
+      - name: Check out source repository
+        uses: actions/checkout@v3
+      - name: Set up Python environment
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-      - name: Checkout
-        uses: actions/checkout@master
-      - name: Install flake8
-        run: pip install flake8
-      - name: Run flake8
-        uses: suo/flake8-github-action@releases/v1
-        with:
-          checkName: 'flake8_py3'   # NOTE: this needs to be the same as the job name
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          python-version: "3.10"
+      - name: Install tox-gh
+        run: pip install tox-gh
+      - name: Setup tox environment
+        run: tox run -e type --notest
       - name: Run mypy
-        uses: sasanquaneuf/mypy-github-action@releases/v1
+        uses: aaarrti/mypy-github-action@v2.4
         with:
-          checkName: 'mypy'   # NOTE: this needs to be the same as the job name
+          checkName: Type
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Verify black code style
-        uses: psf/black@stable
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v3
+      - name: Set up Python environment
+        uses: actions/setup-python@v4
         with:
-          options: "--check --verbose --diff"
-          jupyter: true
+          python-version: "3.10"
+      - name: Install tox-gh
+        run: pip install tox-gh
+      - name: Setup tox environment
+        run: tox run -e lint --notest
+      - name: Run flake8
+        uses: aaarrti/tox-flake8-lint-action@v2.4
+        with:
+          checkName: Lint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
