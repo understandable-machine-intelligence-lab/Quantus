@@ -3,13 +3,11 @@ from importlib import util
 
 import numpy as np
 import pytest
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # Set seed for reproducibility.
 np.random.seed(42)
-
-# Please, note that all datasets and weights are stored locally,
-# using TensorFlow or HuggingFace datasets (or .from_pretrained(...)) may seem convenient,
-# but it will cost us 2-3 additional minutes on every GitHUb action run.
 
 
 @pytest.fixture(scope="session")
@@ -81,13 +79,6 @@ def flat_sequence_array():
         "shape": (3, 28),
         "channel_first": True,
     }
-
-
-@pytest.fixture(scope="session")
-def titanic_dataset():
-    x_batch = np.load("tests/assets/titanic/x_batch.npy")
-    y_batch = np.load("tests/assets/titanic/y_batch.npy")
-    return {"x_batch": x_batch, "y_batch": y_batch}
 
 
 def sst2_dataset():
@@ -231,12 +222,14 @@ if util.find_spec("transformers"):
     @pytest.fixture(scope="session")
     def torch_sst2_model():
         return DistilBertForSequenceClassification.from_pretrained(
-            "tests/assets/distilbert/"
+            "distilbert-base-uncased-finetuned-sst-2-english"
         )
 
     @pytest.fixture(scope="session")
     def sst2_tokenizer():
-        return DistilBertTokenizer.from_pretrained("tests/assets/distilbert/")
+        return DistilBertTokenizer.from_pretrained(
+            "distilbert-base-uncased-finetuned-sst-2-english"
+        )
 
     @pytest.fixture(scope="session")
     def tf_sst2_model_wrapper(tf_sst2_model, sst2_tokenizer):
@@ -245,3 +238,17 @@ if util.find_spec("transformers"):
     @pytest.fixture(scope="session")
     def torch_sst2_model_wrapper(torch_sst2_model, sst2_tokenizer):
         return get_wrapped_text_classifier(torch_sst2_model, sst2_tokenizer)
+
+
+@pytest.fixture(scope="session")
+def titanic_dataset():
+    df = pd.read_csv("tutorials/assets/titanic3.csv")
+    df = df[["age", "embarked", "fare", "parch", "pclass", "sex", "sibsp", "survived"]]
+    df["age"] = df["age"].fillna(df["age"].mean())
+    df["fare"] = df["fare"].fillna(df["fare"].mean())
+
+    df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
+    X = df_enc.drop(["survived"], axis=1).values.astype(float)
+    Y = df_enc["survived"].values.astype(int)
+    _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
+    return {"x_batch": test_features, "y_batch": test_labels}

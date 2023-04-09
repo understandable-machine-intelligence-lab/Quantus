@@ -1,6 +1,6 @@
 ### How to run tests
 
-Run all unit tests at once on all available CPU cores:
+Run all tests at once:
 
 ```shell
 pytest -n auto
@@ -13,7 +13,6 @@ pytest -m localisation -s
 ```
 
 Run pytest with coverage:
-
 ```shell
 tox run -r coverage
 ```

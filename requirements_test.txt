@@ -2,6 +2,7 @@
 captum>=0.6.0
 noisegrad
 pandas
+pandas
 pytest
 pytest-lazy-fixture
 pytest-mock

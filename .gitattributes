@@ -1,1 +1,0 @@
-tests/assets/distilbert filter=lfs diff=lfs merge=lfs -text
