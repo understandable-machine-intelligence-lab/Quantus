@@ -48,9 +48,7 @@ Make sure to install the latest version of Quantus from the main branch.
 ```bash
 git clone https://github.com/understandable-machine-intelligence-lab/Quantus.git
 cd quantus
-pip install tox
-tox -e dev
-source .tox/dev/bin/activate
+pip install -r requirements_test.txt
 pip install -e .
 ```
 
@@ -71,14 +69,10 @@ To perform the tests, execute the following (make sure pytest is installed):
 pytest
 ```
 
+
 ... optionally, you could split test execution between multiple CPU cores using [pytest-xdist](https://github.com/pytest-dev/pytest-xdist)
 ```bash
 pytest tests -n auto
-```
-
-... verify your changes for different python versions with:
-```bash
-tox run
 ```
 
 ... alternatively, to get additionaly coverage details, run:
