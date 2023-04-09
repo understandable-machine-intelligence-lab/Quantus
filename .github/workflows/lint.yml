@@ -19,7 +19,7 @@ jobs:
       - name: Setup tox environment
         run: tox run -e type --notest
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.2
+        uses: aaarrti/mypy-github-action@v2.4
         with:
           checkName: Type
         env:
@@ -39,7 +39,7 @@ jobs:
       - name: Setup tox environment
         run: tox run -e lint --notest
       - name: Run flake8
-        uses: aaarrti/tox-flake8-lint-action@v2.2
+        uses: aaarrti/tox-flake8-lint-action@v2.4
         with:
           checkName: Lint
         env:
