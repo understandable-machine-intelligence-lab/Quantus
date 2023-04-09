@@ -6,15 +6,40 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple, Protocol, overload, TYPE_CHECKING
+from typing import (
+    List,
+    Tuple,
+    Protocol,
+    overload,
+    TYPE_CHECKING,
+    Union,
+    Dict,
+    TypedDict,
+    Optional,
+    Any,
+)
 
 import numpy as np
+
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.model.model_interface import ModelInterface
 from numpy.typing import ArrayLike
 
 if TYPE_CHECKING:
-    from quantus.helpers.model.text_classifier import TextClassifier
+    from tensorflow import keras
+    import torch.nn as nn
+    from transformers import PreTrainedTokenizerBase
+
+    ModelT = Union[keras.Model, nn.Module, ModelInterface, TextClassifier]
+    TokenizerT = Union[PreTrainedTokenizerBase, Tokenizable]
 
 Explanation = Tuple[List[str], np.ndarray]
+MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
+
+
+class SupportsArray(Protocol):
+    def __array__(self) -> np.ndarray:
+        ...
 
 
 class PerturbFn(Protocol):
@@ -22,52 +47,94 @@ class PerturbFn(Protocol):
     def __call__(self, a: List[str], **kwargs) -> List[str]:
         ...
 
-    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray:
+    @overload
+    def __call__(self, a: SupportsArray, **kwargs) -> np.ndarray:
+        ...
+
+    def __call__(self, a, **kwargs):
         ...
 
 
 class SimilarityFn(Protocol):
-    @overload
-    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> np.ndarray:
-        ...
-
-    def __call__(self, a: ArrayLike, b: ArrayLike, **kwargs) -> float:
+    def __call__(self, a: SupportsArray, b: SupportsArray, **kwargs) -> ArrayLike:
         ...
 
 
 class NormFn(Protocol):
-    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike:
+    def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
         ...
 
 
 class NormaliseFn(Protocol):
-    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike:
+    def __call__(self, a: SupportsArray, **kwargs) -> np.ndarray:
         ...
 
 
 class ExplainFn(Protocol):
     @overload
     def __call__(
-        self, model: TextClassifier, x_batch: List[str], y_batch: ArrayLike, **kwargs
+        self, model: TextClassifier, x_batch: np.ndarray, y_batch: np.ndarray, **kwargs
+    ) -> np.ndarray:
+        ...
+
+    @overload
+    def __call__(
+        self, model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
     ) -> List[Explanation]:
         ...
 
     @overload
     def __call__(
-        self, model: TextClassifier, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs
+        self, model, x_batch: SupportsArray, y_batch: np.ndarray, **kwargs
     ) -> np.ndarray:
         ...
 
-    def __call__(
-        self, model, x_batch: ArrayLike, y_batch: ArrayLike, **kwargs
-    ) -> np.ndarray:
+    def __call__(self, model: ModelT, x_batch, y_batch: np.ndarray, **kwargs):
         ...
 
 
 class AggregateFn(Protocol):
-    @overload
-    def __call__(self, a: ArrayLike, **kwargs) -> float:
+    def __call__(self, a: SupportsArray, **kwargs) -> ArrayLike:
         ...
 
-    def __call__(self, a: ArrayLike, **kwargs) -> np.ndarray:
+
+class PersistFn(Protocol):
+    @overload
+    def __call__(
+        self, metric_name: str, explain_fn_kwargs: Dict[str, ...], scores: np.ndarray
+    ) -> None:
         ...
+
+    @overload
+    def __call__(
+        self,
+        metric_name: str,
+        explain_fn_kwargs: Dict[str, ...],
+        scores: Dict[str, np.ndarray],
+    ) -> None:
+        ...
+
+    def __call__(self, metric_name, explain_fn_kwargs, scores) -> None:
+        ...
+
+
+CallKwargs = TypedDict(
+    "CallKwargs",
+    dict(
+        model=Any,
+        x_batch=np.ndarray | List[str],
+        y_batch=Optional[np.ndarray],
+        a_batch=Optional[np.ndarray | List[Explanation]],
+        channel_first=Optional[bool],
+        explain_func=ExplainFn,
+        explain_func_kwargs=Optional[Dict[str, ...]],
+        model_predict_kwargs=Optional[Dict[str, ...]],
+        softmax=Optional[bool],
+        device=Optional[str],
+        batch_size=int,
+        custom_batch=Optional[Any],
+        s_batch=Optional[Any],
+        tokenizer=Optional[Any],
+    ),
+    total=False,
+)

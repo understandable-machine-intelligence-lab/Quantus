@@ -6,42 +6,59 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
+
 import warnings
+from collections import defaultdict
+from functools import partial
 from typing import (
     Union,
     Callable,
     Dict,
     Optional,
     List,
-    Any,
     TYPE_CHECKING,
     Protocol,
     overload,
     Mapping,
-    Set,
+    Any,
+    Tuple,
 )
-from collections import defaultdict
-from tqdm.auto import tqdm
+import logging
 
 import numpy as np
+from tqdm.auto import tqdm
 
+from quantus.functions.explanation_func import explain
 from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
+from quantus.helpers.nlp_utils import map_explanations
+from quantus.helpers.collection_utils import (
+    add_default_items,
+    filter_dict,
+    query_nested_dict,
+    value_or_default,
+    batch_inputs,
+    flatten,
+)
+from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.explanation_func import explain
-from quantus.metrics.base_batched import BatchedMetric
-from quantus.helpers.collection_utils import add_default_items
-
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
-from quantus.helpers.types import Explanation, ExplainFn
+from quantus.helpers.types import (
+    Explanation,
+    ExplainFn,
+    PersistFn,
+    CallKwargs,
+    MetricScores,
+)
+from quantus.metrics.base_batched import BatchedMetric
 
 
 if TYPE_CHECKING:
     from tensorflow import keras
     import torch.nn as nn
 
-    from transformers import PreTrainedTokenizerBase
+    from quantus.helpers.types import ModelT, TokenizerT
 
 
 def evaluate(
@@ -200,131 +217,120 @@ def evaluate(
     return results
 
 
-class _PersistFn(Protocol):
-    @overload
-    def __call__(
-        self,
-        metric_name: str,
-        call_kwargs: Dict[str, ...],
-        scores: Dict[str, np.ndarray],
-    ) -> None:
-        ...
-
-    def __call__(
-        self, metric_name: str, call_kwargs: Dict[str, ...], scores: np.ndarray
-    ) -> None:
-        ...
-
-
-"""
-Possible inputs are
-- no pre-computed explanations
-- pre-computed explanations
-Explanations can be 
-- same for every metric
-- list of different variants for every metric
-"""
+"""Just cover exactly my use-case. Multiple metrics for exact same explain func, and kwargs."""
 
 
 def evaluate_nlp(
-    *,
     metrics: Mapping[str, BatchedMetric],
-    model: keras.Model | nn.Module | TextClassifier,
+    model: ModelT,
     x_batch: List[str],
-    y_batch: Optional[np.ndarray] = None,
-    a_batch: Optional[List[Explanation]] = None,
+    explain_func: Optional[ExplainFn],
+    explain_func_kwargs: Optional[Dict[str, ...]] = None,
+    batch_size: int = 64,
+    tokenizer: Optional[TokenizerT] = None,
     verbose: bool = True,
-    call_kwargs: Optional[Mapping[str, ...] | Mapping[str, Mapping[str, ...]]] = None,
-    explain_fn: Optional[ExplainFn] = None,
-    explain_fn_kwargs: Optional[
-        Mapping[str, ...] | Mapping[str, Mapping[str, ...]]
-    ] = None,
-    persist_callback: Optional[_PersistFn] = None,
-    tokenizer: Optional[PreTrainedTokenizerBase | Tokenizable] = None,
-) -> Dict[str, float | np.ndarray | Dict[str, float | np.ndarray]]:
-
-    # call_kwargs:
-    #    kwargs, which are passed to metrics. Supported options are:
-    #    - keys are metrics' names, and values are
-    #    - Kwargs passed to each metrics' __call__ method. In this case each metric is evaluated once.
-    #    - List of dicts. In this case each metric is evaluated with each entry of list of call_kwargs.
-    #    - All key, values, where are not in metric names, kwargs are treated as global and passed to each metric.
-    #    Metrics-specific kwargs will override global ones.
-    #    Internally, `defaultdict` is used, so there is no need to provide kwargs for metrics,
-    #        which should be evaluated with default ones.
-    # persist_callback:
-    #    If passed, this function will be called after every metric is evaluated.
-    #    It will be called with metric name, kwargs passed to __call__ of metric instance, and scores.
-    #    This can be used to save intermideate results, e.g, in CSV file or database. Since complete evaluation
-    #    can take long, and loosing intermideate results can be annoying ;(.
-    # TODO:
-    #  - batch inputs
-    #  - generate a_batch, y_batch
+    persist_callback: Optional[PersistFn] = None,
+) -> Dict[str, np.ndarray | Dict[str, np.ndarray]]:
 
     for i in metrics.values():
         if "NLP" not in i.data_domain_applicability:
             raise ValueError(f"{i} does not support NLP.")
 
-    if x_batch is None or a_batch is None:
-        # need to compute them here to avoid re-computing for every metric
-        pass
-
-    result = {}
-    if call_kwargs is not None:
-        # for val in call_kwargs.values():
-        #    if not isinstance(val, (List, Dict)):
-        #        raise ValueError(
-        #            f"Values in call_kwargs must be of type List or Dict, but found {type(val)}"
-        #        )
-        # Convert regular dict to default dict, so we don't get KeyError.
-        call_kwargs_old = call_kwargs.copy()
-        call_kwargs = defaultdict(lambda: {})
-        call_kwargs.update(call_kwargs_old)
-    else:
-        call_kwargs = defaultdict(lambda: {})
-
-    global_call_kwargs = {k: v for k, v in call_kwargs.items() if k not in metrics}
+    (
+        model,
+        y_batch,
+        a_batch,
+        metric_wise_a_batch,
+    ) = prepare_text_classification_metrics_inputs(
+        metrics=metrics,
+        model=model,
+        x_batch=x_batch,
+        explain_func=explain_func,
+        explain_func_kwargs=explain_func_kwargs,
+        batch_size=batch_size,
+        tokenizer=tokenizer,
+    )
 
     pbar = tqdm(total=len(metrics.keys()), disable=not verbose, desc="Evaluation...")
+
+    result = {}
 
     with pbar as pbar:
         for metric_name, metric_instance in metrics.items():
             pbar.desc = f"Evaluating {metric_name}"
-            metric_call_kwargs = call_kwargs[metric_name]
+            if metric_name in metric_wise_a_batch:
 
-            if isinstance(metric_call_kwargs, Dict):
-                # Metrics kwargs override global ones
-                merged_call_kwargs = {**global_call_kwargs, **metric_call_kwargs}
-                merged_call_kwargs = add_default_items(
-                    merged_call_kwargs, {"a_batch": None}
-                )
-                scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
-                persist_result(metric_name, merged_call_kwargs, scores)
-                result[metric_name] = scores
-                pbar.update()
-                continue
+                a_batch_for_metric = metric_wise_a_batch[metric_name]
+            else:
+                a_batch_for_metric = a_batch
 
-            result[metric_name] = []
-            for metric_call_kwarg in metric_call_kwargs:
-                # Metrics kwargs override global ones
-                merged_call_kwargs = {**global_call_kwargs, **metric_call_kwarg}
-                merged_call_kwargs = add_default_items(
-                    merged_call_kwargs, {"a_batch": None}
-                )
-                scores = metric_instance(model, x_batch, y_batch, **merged_call_kwargs)
-                persist_result(metric_name, merged_call_kwargs, scores)
-                result[metric_name].append(scores)
-                pbar.update()
+            scores = metric_instance(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch_for_metric,
+                explain_func=explain_func,
+                explain_func_kwargs=explain_func_kwargs,
+                batch_size=batch_size,
+                channel_first=None,
+                model_predict_kwargs=None,
+                softmax=None,
+            )
+            result[metric_name] = scores
+
+            if persist_callback is not None:
+                persist_callback(metric_name, explain_func_kwargs, scores)
+            pbar.update()
 
     return result
 
 
-def _prepare_text_classification_metrics_inputs(
-    model: keras.Model | nn.Module | TextClassifier,
-    metric_names: Set[str],
-    call_kwargs: Mapping[str, Dict[str, ...]],
+def prepare_text_classification_metrics_inputs(
+    metrics: Mapping[str, BatchedMetric],
+    model: ModelT,
     x_batch: List[str],
-    y_batch: Optional[np.ndarray],
-    a_batch: Optional[List[Explanation]],
-):
-    pass
+    explain_func: Optional[ExplainFn],
+    explain_func_kwargs: Optional[Dict[str, ...]],
+    batch_size: int,
+    tokenizer,
+) -> Tuple[TextClassifier, np.ndarray, List[Explanation], Dict[str, CallKwargs]]:
+
+    if is_tensorflow_model(model):
+        model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
+    else:
+        model_predict_kwargs = dict()
+
+    model_wrapper = utils.get_wrapped_text_classifier(
+        model=model, model_predict_kwargs=model_predict_kwargs, tokenizer=tokenizer
+    )
+
+    y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
+    explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
+
+    x_batches = batch_inputs(x_batch, batch_size)
+    y_batches = batch_inputs(y_batch, batch_size)
+
+    a_batches = []
+    for x, y in zip(x_batches, y_batches):
+        a = explain_func(model_wrapper, x, y, **explain_func_kwargs)
+        a_batches.append(a)
+
+    a_batch = flatten(a_batches)
+
+    metric_wise_a_batch = {}
+    for name, metric in metrics.items():
+        a_batch_for_metric = None
+
+        if metric.normalise:
+            a_batch_for_metric = map_explanations(
+                a_batch, partial(metric.normalise_func, **metric.normalise_func_kwargs)
+            )
+        if metric.abs:
+            a_batch_for_metric = map_explanations(
+                value_or_default(a_batch_for_metric, lambda: a_batch), np.abs
+            )
+
+        if a_batch_for_metric is not None:
+            metric_wise_a_batch[name] = a_batch_for_metric
+
+    return model_wrapper, y_batch, a_batch, metric_wise_a_batch

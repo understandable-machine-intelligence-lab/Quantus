@@ -82,53 +82,57 @@ class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper
         input_ids, predict_kwargs = self.tokenizer.get_input_ids(x_batch)
         return safe_as_array(self.embedding_lookup(input_ids)), predict_kwargs
 
-    @abstractmethod
     @overload
     def embedding_lookup(self, input_ids: tf.Tensor) -> tf.Tensor:
         """Convert vocabulary ids to model's latent representations"""
         raise NotImplementedError
 
-    @abstractmethod
     @overload
     def embedding_lookup(self, input_ids: torch.Tensor) -> torch.Tensor:
         """Convert vocabulary ids to model's latent representations"""
         raise NotImplementedError
 
-    @abstractmethod
+    @overload
     def embedding_lookup(self, input_ids: np.ndarray) -> np.ndarray:
         """Convert vocabulary ids to model's latent representations"""
         raise NotImplementedError
 
     @abstractmethod
+    def embedding_lookup(self, input_ids) -> np.ndarray:
+        """Convert vocabulary ids to model's latent representations"""
+        raise NotImplementedError
+
     @overload
     def predict(self, x_batch: np.ndarray, **kwargs) -> np.ndarray:
-        """Execute forward pass on latent representation for input tokens."""
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     @overload
     def predict(self, x_batch: tf.Tensor, **kwargs) -> tf.Tensor:
-        """Execute forward pass on latent representation for input tokens."""
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     @overload
     def predict(self, x_batch: torch.Tensor, **kwargs) -> torch.Tensor:
-        """Execute forward pass on latent representation for input tokens."""
-        raise NotImplementedError
+        ...
+
+    @overload
+    def predict(self, x_batch: List[str], **kwargs) -> np.ndarray:
+        ...
 
     @abstractmethod
-    def predict(self, x_batch: List[str], **kwargs) -> np.ndarray:
+    def predict(self, x_batch, **kwargs) -> np.ndarray:
         """Execute forward pass with plain text inputs."""
         raise NotImplementedError
 
-    @abstractmethod
     @overload
     def get_hidden_representations(self, x: List[str], *args, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+        ...
+
+    @overload
+    def get_hidden_representations(self, x: np.ndarray, *args, **kwargs) -> np.ndarray:
+        ...
 
     @abstractmethod
-    def get_hidden_representations(self, x: np.ndarray, *args, **kwargs) -> np.ndarray:
+    def get_hidden_representations(self, x, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
 

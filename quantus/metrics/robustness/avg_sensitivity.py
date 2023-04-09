@@ -20,7 +20,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.types import Explanation
+from quantus.helpers.types import Explanation, ExplainFn
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
@@ -166,17 +166,17 @@ class AvgSensitivity(BatchedPerturbationMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
+        explain_func: ExplainFn,
         a_batch: Optional[np.ndarray] = None,
         s_batch: Optional[np.ndarray] = None,
         channel_first: Optional[bool] = None,
-        explain_func: Optional[Callable] = None,
         explain_func_kwargs: Optional[Dict] = None,
         model_predict_kwargs: Optional[Dict] = None,
         softmax: Optional[bool] = False,
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
-        tokenizer=None,
+        tokenizer: Optional[Tokenizable] = None,
         **kwargs,
     ) -> np.ndarray | float:
         """

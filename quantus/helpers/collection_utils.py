@@ -13,6 +13,7 @@ from typing import (
     Callable,
     Sequence,
     Union,
+    Mapping,
 )
 from sklearn.utils import gen_batches
 
@@ -137,3 +138,16 @@ def filter_dict(
             result[k] = v
 
     return result
+
+
+def query_nested_dict(key: str, dictionary: Mapping[str, ...]) -> Optional[Any]:
+    if key in dictionary:
+        return dictionary[key]
+
+    for value in dictionary.values():
+        if isinstance(value, Mapping):
+            result = query_nested_dict(key, value)
+
+            if result is not None:
+                return result
+    return None

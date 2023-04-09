@@ -38,6 +38,7 @@ from quantus.helpers.types import (
     AggregateFn,
     Explanation,
     PerturbFn,
+    MetricScores,
 )
 from quantus.helpers.utils import (
     infer_channel_first,
@@ -61,14 +62,9 @@ from quantus.helpers.torch_utils import is_torch_model
 from quantus.metrics.base import EvaluateAble
 
 if TYPE_CHECKING:
-    from tensorflow import keras
-    import torch.nn as nn
+    from quantus.helpers.types import ModelT, TokenizerT
 
-    from transformers import PreTrainedTokenizerBase
 
-    ModelT = Union[keras.Model, nn.Module, ModelInterface, TextClassifier]
-
-MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
 T = TypeVar("T", bound=MetricScores, covariant=True)
 # C stands for custom (batch).
 C = TypeVar("C", bound=MetricScores, covariant=True)
@@ -171,7 +167,7 @@ class BatchedMetric(EvaluateAble, ABC):
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
         s_batch: Optional[Any] = None,
-        tokenizer: Optional[Tokenizable | PreTrainedTokenizerBase] = None,
+        tokenizer: Optional[TokenizerT] = None,
         **kwargs,
     ) -> MetricScores:
         """
@@ -273,7 +269,6 @@ class BatchedMetric(EvaluateAble, ABC):
             batch_size=batch_size,
             tokenizer=tokenizer,
         )
-
         # We should not use un-batched version after general preprocess.
         del x_batch
         del y_batch
@@ -294,6 +289,7 @@ class BatchedMetric(EvaluateAble, ABC):
             y = map_optional(data["y_batch"], itemgetter(i))
             a = map_optional(data["a_batch"], itemgetter(i))
             s = map_optional(data["s_batch"], itemgetter(i))
+            # TODO clarify what is custom batch
             # custom = map_optional(data["custom_batch"], itemgetter(i))
             x, y, a, custom_batch = self.batch_preprocess(model, x, y, a)
             score = self.evaluate_batch(model, x, y, a, s, custom_batch)
@@ -378,7 +374,7 @@ class BatchedMetric(EvaluateAble, ABC):
         device: Optional[str],
         custom_batch: Optional[np.ndarray],
         batch_size: int = 64,
-        tokenizer: Optional[Tokenizable | PreTrainedTokenizerBase] = None,
+        tokenizer: Optional[TokenizerT] = None,
     ) -> DataDict:
         if is_tensorflow_model(model):
             model_predict_kwargs = value_or_default(model_predict_kwargs, lambda: {})
@@ -451,15 +447,14 @@ class BatchedMetric(EvaluateAble, ABC):
         y_batch = value_or_default(
             y_batch, lambda: model.predict(x_batch).argmax(axis=-1)
         )
-        # Generate a_batch if not provided.
-        a_batch = value_or_default(
-            a_batch,
-            lambda: self.explain_batch(
+        if a_batch is None:
+            # Generate a_batch if not provided.
+            a_batch = self.explain_batch(
                 model,
                 x_batch,
                 y_batch,
-            ),
-        )
+            )
+        # TODO is there any way to find out if provide a_batch is normalised and absolute???
         return x_batch, y_batch, a_batch, None
 
     def batch_postprocess(

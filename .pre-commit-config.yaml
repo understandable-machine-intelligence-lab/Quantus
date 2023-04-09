@@ -5,11 +5,22 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: debug-statements
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-toml
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
   - repo: https://github.com/tox-dev/tox-ini-fmt
     rev: "1.1.0"
     hooks:
       - id: tox-ini-fmt
         args: [ "tox.ini" ]
+  #- repo: https://github.com/pycqa/isort
+  #  rev: 5.11.2
+  #  hooks:
+  #    - id: isort
+  #      name: isort (python)
   - repo: https://github.com/psf/black
     rev: 22.6.0
     hooks:
