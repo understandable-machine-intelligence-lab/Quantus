@@ -1439,7 +1439,6 @@ def test_selectivity(
     assert type(metric.get_auc_score) == expected["type"], "Test failed."
 
 
-@pytest.mark.xfail
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",

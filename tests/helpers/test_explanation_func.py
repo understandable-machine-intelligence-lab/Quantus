@@ -6,7 +6,6 @@ from zennit import torchvision as ztv
 
 from quantus.functions.explanation_func import *
 from quantus.functions.normalise_func import normalise_by_max
-from quantus.helpers.model.model_interface import ModelInterface
 
 
 @pytest.mark.explain_func

@@ -50,6 +50,6 @@ def test_linf_norm(data: np.ndarray, params: dict, expected: Union[float, dict, 
         (lazy_fixture("atts_norm_fill"), {}, 11.40175425099138),
     ],
 )
-def test_l2_norm(data, params: dict, expected: Union[float, dict, bool]):
+def test_l2_norm(data: dict, params: dict, expected: Union[float, dict, bool]):
     out = l2_norm(a=data)
     assert np.allclose(out, expected)

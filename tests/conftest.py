@@ -216,7 +216,7 @@ if util.find_spec("transformers"):
     @pytest.fixture(scope="session")
     def tf_sst2_model():
         return TFDistilBertForSequenceClassification.from_pretrained(
-            "tests/assets/distilbert/"
+            "distilbert-base-uncased-finetuned-sst-2-english"
         )
 
     @pytest.fixture(scope="session")
