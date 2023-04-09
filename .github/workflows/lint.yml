@@ -19,7 +19,7 @@ jobs:
       - name: Setup tox environment
         run: tox run -e type --notest
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.1
+        uses: aaarrti/mypy-github-action@v2.2
         with:
           checkName: Type
         env:
