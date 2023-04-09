@@ -39,7 +39,7 @@ jobs:
       - name: Setup tox environment
         run: tox run -e lint --notest
       - name: Run flake8
-        uses: aaarrti/tox-flake8-lint-action@v1
+        uses: aaarrti/tox-flake8-lint-action@v2.2
         with:
           checkName: Lint
         env:
