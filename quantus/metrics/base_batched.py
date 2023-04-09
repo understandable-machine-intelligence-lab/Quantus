@@ -7,58 +7,54 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-from abc import abstractmethod, ABC
-from functools import singledispatchmethod, partial
+from abc import ABC, abstractmethod
+from functools import partial, singledispatchmethod
 from operator import itemgetter
 from typing import (
+    TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
-    Optional,
-    Any,
     List,
-    TYPE_CHECKING,
-    Tuple,
-    Union,
+    Optional,
     Sequence,
+    Tuple,
     TypedDict,
     TypeVar,
+    Union,
 )
 
 import numpy as np
 from tqdm.auto import tqdm
 
 from quantus.functions.perturb_func import perturb_batch as perturb_batch_fn
-from quantus.helpers import asserts
-from quantus.helpers import warn
+from quantus.helpers import asserts, warn
+from quantus.helpers.collection_utils import (
+    add_default_items,
+    batch_inputs,
+    map_optional,
+    safe_as_array,
+    value_or_default,
+)
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
-from quantus.helpers.types import (
-    NormaliseFn,
-    ExplainFn,
-    AggregateFn,
-    Explanation,
-    PerturbFn,
-    MetricScores,
-)
-from quantus.helpers.utils import (
-    infer_channel_first,
-    make_channel_first,
-    get_wrapped_model,
-    get_wrapped_text_classifier,
-)
-from quantus.helpers.collection_utils import (
-    value_or_default,
-    map_optional,
-    batch_inputs,
-    add_default_items,
-    safe_as_array,
-)
-from quantus.helpers.nlp_utils import (
-    map_explanations,
-    is_plain_text_perturbation,
-)
+from quantus.helpers.nlp_utils import is_plain_text_perturbation, map_explanations
 from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.torch_utils import is_torch_model
+from quantus.helpers.types import (
+    AggregateFn,
+    ExplainFn,
+    Explanation,
+    MetricScores,
+    NormaliseFn,
+    PerturbFn,
+)
+from quantus.helpers.utils import (
+    get_wrapped_model,
+    get_wrapped_text_classifier,
+    infer_channel_first,
+    make_channel_first,
+)
 from quantus.metrics.base import EvaluateAble
 
 if TYPE_CHECKING:
@@ -252,6 +248,8 @@ class BatchedMetric(EvaluateAble, ABC):
         # Run deprecation warnings.
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
+
+        x = 1
 
         data = self.general_preprocess(
             model=model,
