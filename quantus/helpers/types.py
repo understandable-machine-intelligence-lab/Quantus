@@ -40,7 +40,7 @@ MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
 
 class PerturbFn(Protocol):
     @overload
-    def __call__(self, a: List[str], **kwargs) -> List[str]:
+    def __call__(self, a: list[str], **kwargs) -> list[str]:
         ...
 
     @overload
@@ -73,8 +73,8 @@ class ExplainFn(Protocol):
 
     @overload
     def __call__(
-        self, model: TextClassifier, x_batch: List[str], y_batch: np.ndarray, **kwargs
-    ) -> List[Explanation]:
+        self, model: TextClassifier, x_batch: list[str], y_batch: np.ndarray, **kwargs
+    ) -> list[Explanation]:
         ...
 
     @overload
@@ -88,7 +88,9 @@ class ExplainFn(Protocol):
 
 
 AggregateFn = Callable[[np.ndarray], ArrayLike]
-PersistFn = Callable[[str, Dict[str, ...], np.ndarray | Dict[str, np.ndarray]], None]
+PersistFn = Callable[
+    [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
+]
 
 CallKwargs = TypedDict(
     "CallKwargs",
@@ -99,8 +101,8 @@ CallKwargs = TypedDict(
         a_batch=Optional[np.ndarray | List[Explanation]],
         channel_first=Optional[bool],
         explain_func=ExplainFn,
-        explain_func_kwargs=Optional[Dict[str, ...]],
-        model_predict_kwargs=Optional[Dict[str, ...]],
+        explain_func_kwargs=Optional[Dict[str, Any]],
+        model_predict_kwargs=Optional[Dict[str, Any]],
         softmax=Optional[bool],
         device=Optional[str],
         batch_size=int,

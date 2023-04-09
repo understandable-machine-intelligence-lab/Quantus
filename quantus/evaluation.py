@@ -52,18 +52,18 @@ if TYPE_CHECKING:
 
 
 def evaluate(
-    metrics: Dict,
-    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
+    metrics: dict,
+    xai_methods: dict[str, Callable] | dict[str, dict] | dict[str, np.ndarray],
     model: ModelInterface | nn.Module | keras.Model,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    s_batch: Union[np.ndarray, None] = None,
+    s_batch: np.ndarray | None = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Optional[dict] = None,
-    call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    explain_func_kwargs: dict | None = None,
+    call_kwargs: dict | dict[str, dict] = None,
     **kwargs,
-) -> Optional[dict]:
+) -> dict | None:
     """
     A method to evaluate some explanation methods given some metrics.
 
@@ -119,8 +119,8 @@ def evaluate(
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
-    results: Dict[str, dict] = {}
-    explain_funcs: Dict[str, Callable] = {}
+    results: dict[str, dict] = {}
+    explain_funcs: dict[str, Callable] = {}
 
     if not isinstance(xai_methods, dict):
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
@@ -207,21 +207,19 @@ def evaluate(
     return results
 
 
-"""Just cover exactly my use-case. Multiple metrics for exact same explain func, and kwargs."""
-
-
 def evaluate_nlp(
+    *,
     metrics: Mapping[str, BatchedMetric],
     model: ModelT,
-    x_batch: List[str],
-    explain_func: Optional[ExplainFn],
-    explain_func_kwargs: Optional[Dict[str, ...]] = None,
+    x_batch: list[str],
+    y_batch: np.ndarray | None,
+    explain_func: ExplainFn | None,
+    explain_func_kwargs: dict[str, ...] | None = None,
     batch_size: int = 64,
-    tokenizer: Optional[TokenizerT] = None,
+    tokenizer: TokenizerT | None = None,
     verbose: bool = True,
-    persist_callback: Optional[PersistFn] = None,
-) -> Dict[str, np.ndarray | Dict[str, np.ndarray]]:
-
+    persist_callback: PersistFn | None = None,
+) -> dict[str, np.ndarray | dict[str, np.ndarray]]:
     for i in metrics.values():
         if "NLP" not in i.data_domain_applicability:
             raise ValueError(f"{i} does not support NLP.")
@@ -235,6 +233,7 @@ def evaluate_nlp(
         metrics=metrics,
         model=model,
         x_batch=x_batch,
+        y_batch=y_batch,
         explain_func=explain_func,
         explain_func_kwargs=explain_func_kwargs,
         batch_size=batch_size,
@@ -249,7 +248,6 @@ def evaluate_nlp(
         for metric_name, metric_instance in metrics.items():
             pbar.desc = f"Evaluating {metric_name}"
             if metric_name in metric_wise_a_batch:
-
                 a_batch_for_metric = metric_wise_a_batch[metric_name]
             else:
                 a_batch_for_metric = a_batch
@@ -278,13 +276,13 @@ def evaluate_nlp(
 def prepare_text_classification_metrics_inputs(
     metrics: Mapping[str, BatchedMetric],
     model: ModelT,
-    x_batch: List[str],
-    explain_func: Optional[ExplainFn],
-    explain_func_kwargs: Optional[Dict[str, ...]],
+    x_batch: list[str],
+    y_batch: np.ndarray | None,
+    explain_func: ExplainFn | None,
+    explain_func_kwargs: dict[str, ...] | None,
     batch_size: int,
     tokenizer,
-) -> Tuple[TextClassifier, np.ndarray, List[Explanation], Dict[str, CallKwargs]]:
-
+) -> tuple[TextClassifier, np.ndarray, list[Explanation], dict[str, CallKwargs]]:
     if is_tensorflow_model(model):
         model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
     else:
@@ -293,8 +291,8 @@ def prepare_text_classification_metrics_inputs(
     model_wrapper = utils.get_wrapped_text_classifier(
         model=model, model_predict_kwargs=model_predict_kwargs, tokenizer=tokenizer
     )
-
-    y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
+    if y_batch is None:
+        y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
     explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
 
     x_batches = batch_inputs(x_batch, batch_size)

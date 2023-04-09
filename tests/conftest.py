@@ -3,13 +3,9 @@ from importlib import util
 
 import numpy as np
 import pytest
-import torch
-
-from quantus.helpers.utils import get_wrapped_text_classifier
 
 # Set seed for reproducibility.
 np.random.seed(42)
-
 
 # Please, note that all datasets and weights are stored locally,
 # using TensorFlow or HuggingFace datasets (or .from_pretrained(...)) may seem convenient,
@@ -140,6 +136,7 @@ if util.find_spec("tensorflow"):
 
 
 if util.find_spec("torch"):
+    import torch
     from quantus.helpers.model.models import (
         LeNet,
         ConvNet1D,
@@ -218,19 +215,24 @@ def sst2_dataset():
 
 
 if util.find_spec("transformers"):
+    from quantus.helpers.utils import get_wrapped_text_classifier
     from transformers import (
         TFDistilBertForSequenceClassification,
         DistilBertForSequenceClassification,
-        DistilBertTokenizer
+        DistilBertTokenizer,
     )
 
     @pytest.fixture(scope="session")
     def tf_sst2_model():
-        return TFDistilBertForSequenceClassification.from_pretrained("tests/assets/distilbert/")
+        return TFDistilBertForSequenceClassification.from_pretrained(
+            "tests/assets/distilbert/"
+        )
 
     @pytest.fixture(scope="session")
     def torch_sst2_model():
-        return DistilBertForSequenceClassification.from_pretrained("tests/assets/distilbert/")
+        return DistilBertForSequenceClassification.from_pretrained(
+            "tests/assets/distilbert/"
+        )
 
     @pytest.fixture(scope="session")
     def sst2_tokenizer():

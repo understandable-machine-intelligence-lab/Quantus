@@ -2,6 +2,7 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+from pytest_mock import MockerFixture
 import numpy as np
 
 import quantus
@@ -182,9 +183,9 @@ def test_evaluate_func(
         (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
     ],
 )
-def test_evaluate_nlp(model, data):
+def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
     nlp_metrics = {
-        # "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
+        "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
         "RandomLogit": quantus.RandomLogit(disable_warnings=True),
         "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
         "Avg-Sen": quantus.AvgSensitivity(
@@ -193,41 +194,24 @@ def test_evaluate_nlp(model, data):
         "Max-Sen": quantus.MaxSensitivity(
             disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement
         ),
-        # "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
-        # "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
-        # "RRS": quantus.RelativeRepresentationStability(disable_warnings=True, nr_samples=5)
+        "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
+        "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
+        "RRS": quantus.RelativeRepresentationStability(
+            disable_warnings=True, nr_samples=5
+        ),
     }
 
-    call_kwargs = {
-        "explain_func_kwargs": {"method": "GradXInput"},
-        "batch_size": 8,
-        "Max-Sen": {
-            "explain_func_kwargs": {"method": "SHAP", "call_kwargs": {"max_evals": 5}}
-        },
-        "Avg-Sen": [
-            {
-                "explain_func_kwargs": {
-                    "method": "IntGrad",
-                }
-            },
-            {
-                "explain_func_kwargs": {
-                    "method": "GradXInput",
-                }
-            },
-        ],
-    }
-
+    callback_stub = mocker.stub("callback_stub")
     scores = evaluate_nlp(
-        nlp_metrics,
-        model,
-        **data,
-        call_kwargs={"explain_func": explain, **call_kwargs},
+        metrics=nlp_metrics,
+        model=model,
+        x_batch=data["x_batch"],
+        y_batch=data["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs=dict(method="GradXInput"),
+        persist_callback=callback_stub,
+        verbose=False,
+        tokenizer=sst2_tokenizer,
     )
 
-    result_avg_sen = scores["Avg-Sen"]
-    # Check list of args returns list of scores
-    assert isinstance(result_avg_sen, list)
-    assert len(result_avg_sen) == 2
-    assert isinstance(result_avg_sen[0], np.ndarray)
-    assert isinstance(result_avg_sen[1], np.ndarray)
+    callback_stub.assert_called()

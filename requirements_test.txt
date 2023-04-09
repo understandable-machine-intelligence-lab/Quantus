@@ -5,11 +5,18 @@ pandas
 pytest
 pytest-lazy-fixture
 pytest-mock
+pytest_ordering
+safetensors
+shap
 # TensorFlow and co.
 tensorflow>=2.12.0; sys_platform != 'darwin'
 tensorflow_macos>=2.12.0; sys_platform == 'darwin'
+tensorflow_probability
 tf-explain
+
+tokenizer
 # Torch and co.
 torch>=1.13.1
 torchvision>=0.15.1
+transformers
 zennit>=0.5.0
