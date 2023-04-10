@@ -341,7 +341,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
     def _(
         self,
         model: TextClassifier,
-        x_batch: list[str],
+        x_batch: List[str],
         y_batch: np.ndarray,
         a_batch,
         s_batch: np.ndarray = None,

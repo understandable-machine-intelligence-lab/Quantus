@@ -7,6 +7,7 @@ pytest
 pytest-lazy-fixture
 pytest-mock
 pytest_ordering
+pytest_xdist
 safetensors
 shap
 tensorflow>=2.12.0; sys_platform != 'darwin'

@@ -52,7 +52,7 @@ def is_plain_text_perturbation(func: Callable) -> bool:
         "list[str]",
         typing.List[str],
         List[str],
-        list[str],
+        # list[str],
     )
 
 

@@ -1,6 +1,7 @@
 import platform
-from typing import List, Generator, Protocol, TypeVar
 from importlib import util
+from typing import List, Generator, Protocol, TypeVar
+
 import numpy as np
 
 

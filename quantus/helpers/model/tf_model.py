@@ -18,6 +18,7 @@ from typing import Dict, Optional, Tuple, List, Union
 from warnings import warn
 from functools import cached_property, partial
 
+import keras
 import numpy as np
 import tensorflow as tf
 from cachetools import cachedmethod, LRUCache
@@ -28,7 +29,7 @@ from keras.models import clone_model
 
 from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.collection_utils import filter_dict
+from quantus.helpers.collection_utils import filter_dict, add_default_items
 from quantus.helpers.tf_utils import (
     is_xla_compatible_platform,
     random_layer_generator,
@@ -88,6 +89,7 @@ class TensorFlowModel(ModelInterface):
             all_kwargs,
             key_filter=partial(contains, supported_keras_engine_predict_kwargs()),
         )
+        predict_kwargs = add_default_items(predict_kwargs, dict(verbose=0))
         return predict_kwargs
 
     @property
@@ -222,7 +224,7 @@ class TensorFlowModel(ModelInterface):
             return utils.make_channel_first(x, channel_first)
         return utils.make_channel_last(x, channel_first)
 
-    def get_model(self):
+    def get_model(self) -> keras.Model:
         """
         Get the original tf model.
         """
