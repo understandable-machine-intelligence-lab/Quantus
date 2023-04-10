@@ -264,8 +264,6 @@ markers = [
     "complexity: complexity metrics tests.",
     "axiomatic: axiomatic metrics tests.",
     "nlp: text-classification metrics tests.",
-    "installation: tests installation with either tensorflow or torch with/or transformers."
-
 ]
 filterwarnings = [
     "error",

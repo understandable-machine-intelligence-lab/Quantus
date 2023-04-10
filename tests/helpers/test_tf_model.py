@@ -1,6 +1,7 @@
 from functools import reduce
 from operator import and_
 from typing import Union
+import tensorflow as tf
 
 import numpy as np
 import pytest
