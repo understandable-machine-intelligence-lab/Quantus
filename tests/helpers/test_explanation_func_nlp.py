@@ -5,9 +5,9 @@ import pytest
 import tensorflow as tf
 
 from quantus.functions.explanation_func import explain
-from quantus.functions.nlp_explanation_func import ShapConfig
-from quantus.functions.nlp_explanation_func.lime import LimeConfig
-from quantus.functions.nlp_explanation_func.tf_explanation_func import (
+from quantus.functions.nlp.explanation_func import ShapConfig
+from quantus.functions.nlp.lime import LimeConfig
+from quantus.functions.nlp.tf_explanation_func import (
     IntGradConfig,
     NoiseGradConfig,
     NoiseGradPlusPlusConfig,

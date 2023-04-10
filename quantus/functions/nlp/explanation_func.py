@@ -14,7 +14,7 @@ from typing import NamedTuple
 import numpy as np
 from transformers import pipeline
 
-from quantus.functions.nlp_explanation_func.lime import explain_lime
+from quantus.functions.nlp.lime import explain_lime
 from quantus.helpers.collection_utils import (
     safe_as_array,
     value_or_default,
@@ -29,10 +29,10 @@ log = logging.getLogger(__name__)
 
 
 if is_tensorflow_available():
-    from quantus.functions.nlp_explanation_func.tf_explanation_func import tf_explain
+    from quantus.functions.nlp.tf_explanation_func import tf_explain
 
 if is_torch_available():
-    from quantus.functions.nlp_explanation_func.torch_explanation_func import (
+    from quantus.functions.nlp.torch_explanation_func import (
         torch_explain,
     )
 
