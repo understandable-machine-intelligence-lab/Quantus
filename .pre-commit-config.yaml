@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-ast
+      - id: check-toml
+      - id: requirements-txt-fixer
+      - id: check-docstring-first
+      - id: no-commit-to-branch
+  - repo: https://github.com/tox-dev/tox-ini-fmt
+    rev: "1.3.0"
+    hooks:
+      - id: tox-ini-fmt
+        args: [ "tox.ini" ]
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+  - repo: https://github.com/asottile/blacken-docs
+    rev: 1.13.0
+    hooks:
+      - id: blacken-docs
+  # It can break singledispatch functions https://github.com/asottile/pyupgrade/issues/814
+  # Before the issue is resolved run it can not be included in pre commit workflow.
+  #- repo: https://github.com/asottile/pyupgrade
+  #  rev: v3.3.1
+  #  hooks:
+  #    - id: pyupgrade
+  #      args: ["--py38-plus"]

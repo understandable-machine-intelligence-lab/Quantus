@@ -6,23 +6,56 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+from __future__ import annotations
+
 import copy
 import re
+import warnings
 from importlib import util
-from typing import Any, Dict, Optional, Sequence, Tuple, Union, List
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    List,
+)
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
 
 from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.nlp_utils import is_transformers_available
+from quantus.helpers.tf_utils import is_tensorflow_available
+from quantus.helpers.torch_utils import is_torch_available
 
-if util.find_spec("torch"):
+if is_torch_available():
     import torch
     from quantus.helpers.model.pytorch_model import PyTorchModel
-if util.find_spec("tensorflow"):
+
+
+if is_tensorflow_available():
     import tensorflow as tf
     from quantus.helpers.model.tf_model import TensorFlowModel
+
+
+if is_transformers_available():
+    from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+    from transformers import (
+        TFPreTrainedModel,
+        PreTrainedModel,
+        PreTrainedTokenizerBase,
+        AutoTokenizer,
+    )
+
+    if is_tensorflow_available():
+        from quantus.helpers.model.tf_hf_model import TFHuggingFaceTextClassifier
+
+    if is_torch_available():
+        from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
 
 
 def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.ndarray:
@@ -61,10 +94,10 @@ def get_superpixel_segments(img: np.ndarray, segmentation_method: str) -> np.nda
 
 
 def get_baseline_value(
-    value: Union[float, int, str, np.array],
+    value: float | int | str | np.array,
     arr: np.ndarray,
-    return_shape: Tuple,
-    patch: Optional[np.ndarray] = None,
+    return_shape: tuple,
+    patch: np.ndarray | None = None,
     **kwargs,
 ) -> np.array:
     """
@@ -126,7 +159,7 @@ def get_baseline_value(
 
 
 def get_baseline_dict(
-    arr: np.ndarray, patch: Optional[np.ndarray] = None, **kwargs
+    arr: np.ndarray, patch: np.ndarray | None = None, **kwargs
 ) -> dict:
     """
     Make a dictionary of baseline approaches depending on the input x (or patch of input).
@@ -184,7 +217,7 @@ def get_name(name: str):
     return " ".join(re.sub(r"([A-Z])", r" \1", name).split())
 
 
-def get_features_in_step(max_steps_per_input: int, input_shape: Tuple[int, ...]):
+def get_features_in_step(max_steps_per_input: int, input_shape: tuple[int, ...]):
     """
     Get the number of features in the iteration.
 
@@ -335,10 +368,10 @@ def make_channel_last(x: np.array, channel_first=True):
 
 def get_wrapped_model(
     model,
-    channel_first: bool,
-    softmax: bool,
-    device: Optional[str] = None,
-    model_predict_kwargs: Optional[Dict[str, Any]] = None,
+    channel_first: bool | None = None,
+    softmax: bool | None = None,
+    device: str | torch.device | None = None,
+    model_predict_kwargs: dict[str, Any] | None = None,
 ) -> ModelInterface:
     """
     Identifies the type of a model object and wraps the model in an appropriate interface.
@@ -361,6 +394,9 @@ def get_wrapped_model(
     model: ModelInterface
         A wrapped ModelInterface model.
     """
+    if isinstance(model, ModelInterface):
+        return model
+
     if util.find_spec("tensorflow"):
         if isinstance(model, tf.keras.Model):
             return TensorFlowModel(
@@ -381,10 +417,49 @@ def get_wrapped_model(
     raise ValueError("Model needs to be tf.keras.Model or torch.nn.Module.")
 
 
+def get_wrapped_text_classifier(
+    model,
+    softmax: bool | None = None,
+    device: str | torch.device | None = None,
+    model_predict_kwargs: dict[str, ...] | None = None,
+    tokenizer: Tokenizable | None = None,
+) -> TextClassifier:
+    if isinstance(model, TextClassifier):
+        return model
+
+    if not is_transformers_available():
+        raise ValueError(
+            """
+            Quantus supports text-classification models only from HuggingFace Hub,
+            but not `transformers installation was found`"
+            """
+        )
+
+    if tokenizer is None:
+        warnings.warn("No `tokenizer` provided, will try to create default one.")
+        handle = model.config._name_or_path  # noqa
+        tokenizer = HuggingFaceTokenizer(AutoTokenizer.from_pretrained(handle))
+    elif not isinstance(tokenizer, Tokenizable):
+        if not isinstance(tokenizer, PreTrainedTokenizerBase):
+            raise ValueError()
+        else:
+            tokenizer = HuggingFaceTokenizer(tokenizer)
+
+    if is_tensorflow_available():
+        if isinstance(model, TFPreTrainedModel):
+            return TFHuggingFaceTextClassifier(model, tokenizer)
+
+    if is_torch_available():
+        if isinstance(model, PreTrainedModel):
+            return TorchHuggingFaceTextClassifier(model, tokenizer, device)
+
+    raise ValueError()
+
+
 def blur_at_indices(
     arr: np.array,
     kernel: np.array,
-    indices: Union[int, Sequence[int], Tuple[np.array], Tuple[slice, ...]],
+    indices: int | Sequence[int] | tuple[np.array] | tuple[slice, ...],
     indexed_axes: Sequence[int],
 ) -> np.array:
     """
@@ -423,7 +498,7 @@ def blur_at_indices(
     # Handle indices
     indices = expand_indices(arr, indices, indexed_axes)
     none_slices = []
-    array_indices: Union[list, np.ndarray] = []
+    array_indices: list | np.ndarray = []
     for i, idx in enumerate(indices):
         if isinstance(idx, slice) and idx == slice(None):
             none_slices.append(idx)
@@ -431,7 +506,7 @@ def blur_at_indices(
             pad_left = kernel.shape[[p for p in indexed_axes].index(i)] // 2
             array_indices.append(idx + pad_left)
         else:
-            raise ValueError("Invalid indices {}".format(indices))
+            raise ValueError(f"Invalid indices {indices}")
     array_indices = np.array(array_indices)
 
     # Expand kernel dimensions
@@ -473,8 +548,8 @@ def blur_at_indices(
 
 
 def create_patch_slice(
-    patch_size: Union[int, Sequence[int]], coords: Sequence[int]
-) -> Tuple[slice, ...]:
+    patch_size: int | Sequence[int], coords: Sequence[int]
+) -> tuple[slice, ...]:
     """
     Create a patch slice from patch size and coordinates.
 
@@ -521,7 +596,7 @@ def create_patch_slice(
 
 
 def get_nr_patches(
-    patch_size: Union[int, Sequence[int]], shape: Tuple[int, ...], overlap: bool = False
+    patch_size: int | Sequence[int], shape: tuple[int, ...], overlap: bool = False
 ) -> int:
     """
     Get number of patches for given shape.
@@ -561,7 +636,7 @@ def get_nr_patches(
 
 def _pad_array(
     arr: np.array,
-    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]], List[Tuple[int, int]]],
+    pad_width: int | Sequence[int] | Sequence[tuple[int]] | list[tuple[int, int]],
     mode: str,
     padded_axes: Sequence[int],
 ) -> np.array:
@@ -597,7 +672,7 @@ def _pad_array(
             if isinstance(p, tuple):
                 assert len(p) == 2, "Elements in pad_width need to have length 2"
 
-    pad_width_list: List[Union[Tuple[int], Tuple[int, int]]] = []
+    pad_width_list: list[tuple[int] | tuple[int, int]] = []
 
     for ax in range(arr.ndim):
         if ax not in padded_axes:
@@ -621,7 +696,7 @@ def _pad_array(
 
 def _unpad_array(
     arr: np.array,
-    pad_width: Union[int, Sequence[int], Sequence[Tuple[int]], List[Tuple[int, int]]],
+    pad_width: int | Sequence[int] | Sequence[tuple[int]] | list[tuple[int, int]],
     padded_axes: Sequence[int],
 ):
     """
@@ -818,11 +893,11 @@ def infer_attribution_axes(a_batch: np.ndarray, x_batch: np.ndarray) -> Sequence
 
 def expand_indices(
     arr: np.array,
-    indices: Union[
-        int, Sequence[int], Tuple[np.array], Tuple[slice, ...]
-    ],  # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
+    indices: (
+        int | Sequence[int] | tuple[np.array] | tuple[slice, ...]
+    ),  # Alt. Union[int, Sequence[int], Tuple[Any], Tuple[Any], Tuple[slice]]
     indexed_axes: Sequence[int],
-) -> Tuple:
+) -> tuple:
     """
     Expands indices to fit array shape. Returns expanded indices.
         --> if indices are a sequence of ints, they are interpreted as indices to the flattened arr,
@@ -852,7 +927,7 @@ def expand_indices(
 
     # Handle indices.
     if isinstance(indices, int):
-        expanded_indices: Union[np.ndarray, tuple, list] = [indices]
+        expanded_indices: np.ndarray | tuple | list = [indices]
     else:
         expanded_indices = []
         for i, idx in enumerate(indices):
@@ -917,7 +992,7 @@ def expand_indices(
     return tuple(expanded_indices)
 
 
-def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
+def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> tuple:
     """
     Gets the shape of the arr dimensions not included in axes.
 
@@ -943,7 +1018,7 @@ def get_leftover_shape(arr: np.array, axes: Sequence[int]) -> Tuple:
 
 
 def offset_coordinates(
-    indices: Union[list, Sequence[int], Tuple[Any]], offset: tuple, img_shape: tuple
+    indices: list | Sequence[int] | tuple[Any], offset: tuple, img_shape: tuple
 ):
     """
     Checks if offset coordinates are within the image frame.
@@ -992,3 +1067,10 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
+    # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
+    # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
+    # the hard way again one more time.
+    return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]

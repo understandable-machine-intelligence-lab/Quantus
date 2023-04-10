@@ -136,7 +136,7 @@ tensorflow = [
     "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"
 ]
 captum = [
-    "quantus[tensorflow]",
+    "quantus[torch]",
     "captum>=0.6.0"
 ]
 tf_explain = [
@@ -151,6 +151,22 @@ tutorials = [
     "quantus[captum]",
     "pandas",
     "xmltodict",
+]
+nlp = [
+    "nltk>=3.8.1",
+    "nlpaug",
+]
+transformes = [
+    "transformers>=4.26.1"
+]
+shap = ["shap"]
+torch_nlp_explain = [
+    "quantus[captum]",
+    "noisegrad"
+]
+tf_nlp_explain = [
+    "quantus[tensorflow]",
+    "tensorflow_probability"
 ]
 all = [
     "quantus[tf_explain,zennit,tutorials]"
@@ -187,6 +203,7 @@ all = [
 packages = [
     "quantus",
     "quantus.functions",
+    "quantus.functions.nlp_explanation_func",
     "quantus.helpers",
     "quantus.helpers.model",
     "quantus.metrics",
@@ -245,7 +262,8 @@ markers = [
     "robustness: robustness metrics tests.",
     "localisation: localisation metrics tests.",
     "complexity: complexity metrics tests.",
-    "axiomatic: axiomatic metrics tests."
+    "axiomatic: axiomatic metrics tests.",
+    "nlp: text-classification metrics tests.",
 ]
 filterwarnings = [
     "error",

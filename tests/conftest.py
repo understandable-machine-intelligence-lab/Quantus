@@ -1,10 +1,17 @@
-import pytest
 import pickle
-import torch
+
 import numpy as np
-from keras.datasets import cifar10
 import pandas as pd
+import pytest
+import tensorflow as tf
+import torch
+from keras.datasets import cifar10
 from sklearn.model_selection import train_test_split
+from transformers import (
+    TFDistilBertForSequenceClassification,
+    DistilBertForSequenceClassification,
+    DistilBertTokenizer,
+)
 
 from quantus.helpers.model.models import (
     LeNet,
@@ -15,14 +22,20 @@ from quantus.helpers.model.models import (
     TitanicSimpleTFModel,
     TitanicSimpleTorchModel,
 )
+from quantus.helpers.utils import get_wrapped_text_classifier
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
 BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
 
+# Set seed for reproducibility.
+np.random.seed(42)
+tf.random.set_seed(42)
+torch.random.manual_seed(42)
 
-@pytest.fixture(scope="session", autouse=True)
+
+@pytest.fixture(scope="session")
 def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNet()
@@ -32,7 +45,7 @@ def load_mnist_model():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_mnist_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = LeNetTF()
@@ -40,7 +53,7 @@ def load_mnist_model_tf():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_cifar10_model_tf():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
     model = CifarCNNModel()
@@ -48,7 +61,7 @@ def load_cifar10_model_tf():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_1d_1ch_conv_model():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1D(n_channels=1, n_classes=10)
@@ -60,7 +73,7 @@ def load_1d_1ch_conv_model():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_1d_3ch_conv_model():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1D(n_channels=3, n_classes=10)
@@ -72,7 +85,7 @@ def load_1d_3ch_conv_model():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_1d_3ch_conv_model_tf():
     """Load a pre-trained 1d-convolutional classification model (architecture at quantus/helpers/models)."""
     model = ConvNet1DTF(n_channels=3, seq_len=100, n_classes=10)
@@ -82,7 +95,7 @@ def load_1d_3ch_conv_model_tf():
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_mnist_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     x_batch = (
@@ -94,7 +107,7 @@ def load_mnist_images():
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_cifar10_images():
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
     (x_train, y_train), (_, _) = cifar10.load_data()
@@ -107,7 +120,7 @@ def load_cifar10_images():
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def load_mnist_images_tf(load_mnist_images):
     """Load a batch of MNIST digits: inputs and outputs to use for testing."""
 
@@ -117,7 +130,7 @@ def load_mnist_images_tf(load_mnist_images):
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def almost_uniform_1d():
     return {
         "x_batch": np.random.randn(10, 3, 100),
@@ -126,7 +139,7 @@ def almost_uniform_1d():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def almost_uniform_1d_no_abatch_channel_last():
     return {
         "x_batch": np.random.randn(10, 100, 3),
@@ -134,7 +147,7 @@ def almost_uniform_1d_no_abatch_channel_last():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def almost_uniform_1d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 3, 100),
@@ -143,7 +156,7 @@ def almost_uniform_1d_no_abatch():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def almost_uniform_2d():
     return {
         "x_batch": np.random.randn(10, 3, 224, 224),
@@ -152,7 +165,7 @@ def almost_uniform_2d():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def almost_uniform_2d_no_abatch():
     return {
         "x_batch": np.random.randn(10, 1, 28, 28),
@@ -161,7 +174,7 @@ def almost_uniform_2d_no_abatch():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def flat_image_array():
     return {
         "x": np.zeros((1, 3 * 28 * 28)),
@@ -170,7 +183,7 @@ def flat_image_array():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def flat_sequence_array():
     return {
         "x": np.zeros((1, 3 * 28)),
@@ -179,14 +192,14 @@ def flat_sequence_array():
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def titanic_model_torch():
     model = TitanicSimpleTorchModel()
     model.load_state_dict(torch.load("tests/assets/titanic_model_torch.pickle"))
     return model
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def titanic_model_tf(titanic_dataset):
     model = TitanicSimpleTFModel()
     model(titanic_dataset["x_batch"], training=False)
@@ -206,3 +219,44 @@ def titanic_dataset():
     Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}
+
+
+# ---------------- NLP fixtures ------------------
+
+
+@pytest.fixture(scope="session")
+def sst2_dataset():
+    x_batch = np.load("tests/assets/sst2/x_batch.npy").tolist()
+    y_batch = np.load("tests/assets/sst2/y_batch.npy")
+    return {"x_batch": x_batch, "y_batch": y_batch}
+
+
+@pytest.fixture(scope="session")
+def tf_sst2_model():
+    return TFDistilBertForSequenceClassification.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
+    )
+
+
+@pytest.fixture(scope="session")
+def torch_sst2_model():
+    return DistilBertForSequenceClassification.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
+    )
+
+
+@pytest.fixture(scope="session")
+def sst2_tokenizer():
+    return DistilBertTokenizer.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
+    )
+
+
+@pytest.fixture(scope="session")
+def tf_sst2_model_wrapper(tf_sst2_model, sst2_tokenizer):
+    return get_wrapped_text_classifier(tf_sst2_model, sst2_tokenizer)
+
+
+@pytest.fixture(scope="session")
+def torch_sst2_model_wrapper(torch_sst2_model, sst2_tokenizer):
+    return get_wrapped_text_classifier(torch_sst2_model, sst2_tokenizer)

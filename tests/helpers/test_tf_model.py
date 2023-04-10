@@ -142,7 +142,7 @@ def test_get_random_layer_generator(load_mnist_model_tf):
 
     for layer_name, random_layer_model in model.get_random_layer_generator():
         old = old_weights[layer_name]
-        new = random_layer_model.get_layer(layer_name).get_weights()
+        new = random_layer_model.get_model().get_layer(layer_name).get_weights()
 
         assert reduce(
             and_, [not np.allclose(x, y) for x, y in zip(old, new)]

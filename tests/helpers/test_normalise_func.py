@@ -400,3 +400,25 @@ def test_normalise_by_average_second_moment_estimate(
 ):
     out = normalise_by_average_second_moment_estimate(a=data, **params)
     assert np.all(out == expected), f"Test failed. (expected: {expected}, is: {out})"
+
+
+@pytest.mark.normalise_func
+@pytest.mark.parametrize(
+    "a_batch",
+    [
+        np.random.default_rng(0).normal(size=8),
+        np.random.default_rng(0).normal(size=(8, 32)),
+    ],
+    ids=["1D", "2D"],
+)
+def test_normalise_func(a_batch):
+    result = normalize_sum_to_1(a_batch)
+    assert np.allclose(np.sum(np.abs(result), axis=-1), 1.0)
+
+
+@pytest.mark.normalise_func
+def test_invalid_input_shape():
+    x_batch = np.random.default_rng(0).normal(size=(8, 32, 32))
+    with pytest.raises(ValueError):
+        normalize_sum_to_1(x_batch)
+

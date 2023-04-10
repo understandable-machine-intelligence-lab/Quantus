@@ -5,31 +5,60 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+from __future__ import annotations
+
 import warnings
-from typing import Union, Callable, Dict, Optional, List
+from functools import partial
+from typing import (
+    Union,
+    Callable,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+    Mapping,
+)
 
 import numpy as np
+from tqdm.auto import tqdm
 
+from quantus.functions.explanation_func import explain
 from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
+from quantus.helpers.collection_utils import (
+    value_or_default,
+    batch_inputs,
+    flatten,
+)
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions.explanation_func import explain
+from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.nlp_utils import map_explanations
+from quantus.helpers.tf_utils import is_tensorflow_model
+from quantus.helpers.types import (
+    Explanation,
+    ExplainFn,
+    PersistFn,
+    CallKwargs,
+)
+from quantus.metrics.base_batched import BatchedMetric
+
+if TYPE_CHECKING:
+    from quantus.helpers.types import ModelT, TokenizerT
 
 
 def evaluate(
-    metrics: Dict,
-    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
+    metrics: dict,
+    xai_methods: dict[str, Callable] | dict[str, dict] | dict[str, np.ndarray],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    s_batch: Union[np.ndarray, None] = None,
+    s_batch: np.ndarray | None = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Optional[dict] = None,
-    call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    explain_func_kwargs: dict | None = None,
+    call_kwargs: dict | dict[str, dict] = None,
     **kwargs,
-) -> Optional[dict]:
+) -> dict | None:
     """
     A method to evaluate some explanation methods given some metrics.
 
@@ -85,8 +114,8 @@ def evaluate(
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
-    results: Dict[str, dict] = {}
-    explain_funcs: Dict[str, Callable] = {}
+    results: dict[str, dict] = {}
+    explain_funcs: dict[str, Callable] = {}
 
     if not isinstance(xai_methods, dict):
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
@@ -171,3 +200,120 @@ def evaluate(
                 )
 
     return results
+
+
+def evaluate_nlp(
+    *,
+    metrics: Mapping[str, BatchedMetric],
+    model: ModelT,
+    x_batch: list[str],
+    y_batch: np.ndarray | None,
+    explain_func: ExplainFn | None,
+    explain_func_kwargs: dict[str, ...] | None = None,
+    batch_size: int = 64,
+    tokenizer: TokenizerT | None = None,
+    verbose: bool = True,
+    persist_callback: PersistFn | None = None,
+) -> dict[str, np.ndarray | dict[str, np.ndarray]]:
+    for i in metrics.values():
+        if "NLP" not in i.data_domain_applicability:
+            raise ValueError(f"{i} does not support NLP.")
+
+    (
+        model,
+        y_batch,
+        a_batch,
+        metric_wise_a_batch,
+    ) = prepare_text_classification_metrics_inputs(
+        metrics=metrics,
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        explain_func=explain_func,
+        explain_func_kwargs=explain_func_kwargs,
+        batch_size=batch_size,
+        tokenizer=tokenizer,
+    )
+
+    pbar = tqdm(total=len(metrics.keys()), disable=not verbose, desc="Evaluation...")
+
+    result = {}
+
+    with pbar as pbar:
+        for metric_name, metric_instance in metrics.items():
+            pbar.desc = f"Evaluating {metric_name}"
+            if metric_name in metric_wise_a_batch:
+                a_batch_for_metric = metric_wise_a_batch[metric_name]
+            else:
+                a_batch_for_metric = a_batch
+
+            scores = metric_instance(
+                model=model,
+                x_batch=x_batch,
+                y_batch=y_batch,
+                a_batch=a_batch_for_metric,
+                explain_func=explain_func,
+                explain_func_kwargs=explain_func_kwargs,
+                batch_size=batch_size,
+                channel_first=None,
+                model_predict_kwargs=None,
+                softmax=None,
+            )
+            result[metric_name] = scores
+
+            if persist_callback is not None:
+                persist_callback(metric_name, explain_func_kwargs, scores)
+            pbar.update()
+
+    return result
+
+
+def prepare_text_classification_metrics_inputs(
+    metrics: Mapping[str, BatchedMetric],
+    model: ModelT,
+    x_batch: list[str],
+    y_batch: np.ndarray | None,
+    explain_func: ExplainFn | None,
+    explain_func_kwargs: dict[str, ...] | None,
+    batch_size: int,
+    tokenizer,
+) -> tuple[TextClassifier, np.ndarray, list[Explanation], dict[str, CallKwargs]]:
+    if is_tensorflow_model(model):
+        model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
+    else:
+        model_predict_kwargs = dict()
+
+    model_wrapper = utils.get_wrapped_text_classifier(
+        model=model, model_predict_kwargs=model_predict_kwargs, tokenizer=tokenizer
+    )
+    if y_batch is None:
+        y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
+    explain_func_kwargs = value_or_default(explain_func_kwargs, lambda: {})
+
+    x_batches = batch_inputs(x_batch, batch_size)
+    y_batches = batch_inputs(y_batch, batch_size)
+
+    a_batches = []
+    for x, y in zip(x_batches, y_batches):
+        a = explain_func(model_wrapper, x, y, **explain_func_kwargs)
+        a_batches.append(a)
+
+    a_batch = flatten(a_batches)
+
+    metric_wise_a_batch = {}
+    for name, metric in metrics.items():
+        a_batch_for_metric = None
+
+        if metric.normalise:
+            a_batch_for_metric = map_explanations(
+                a_batch, partial(metric.normalise_func, **metric.normalise_func_kwargs)
+            )
+        if metric.abs:
+            a_batch_for_metric = map_explanations(
+                value_or_default(a_batch_for_metric, lambda: a_batch), np.abs
+            )
+
+        if a_batch_for_metric is not None:
+            metric_wise_a_batch[name] = a_batch_for_metric
+
+    return model_wrapper, y_batch, a_batch, metric_wise_a_batch

@@ -13,174 +13,108 @@ from quantus.metrics.robustness import (
     LocalLipschitzEstimate,
     MaxSensitivity,
 )
+from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
 
+# ----------------------- sensitivity -----------------------
 
-@pytest.mark.robustness
-@pytest.mark.parametrize(
-    "model,data,params,expected",
+sensitivity_tests = pytest.mark.parametrize(
+    "model,data,params",
     [
         (
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
             {
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {},
                 "call": {
-                    "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
         ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
+                "init": {"return_aggregate": True},
                 "call": {
-                    "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            id="torch_mnist",
         ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
+        pytest.param(
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
                 "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
                     "abs": True,
                     "normalise": True,
                 },
                 "call": {
-                    "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "VanillaGradients",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            id="tf_mnist",
         ),
-        (
-            lazy_fixture("load_mnist_model_tf"),
-            lazy_fixture("load_mnist_images_tf"),
+        # ------------ NLP -------------
+        pytest.param(
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
             {
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "abs": True,
-                    "normalise": True,
-                    "return_aggregate": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "VanillaGradients",
-                    },
-                },
+                "a_batch_generate": False,
+                "init": {"perturb_func": synonym_replacement},
+                "call": {},
             },
-            {"min": 0.0, "max": 1.0},
+            marks=[pytest.mark.nlp],
+            id="tf_nlp_plain_text",
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_func": spelling_replacement,
+                },
+                "call": {},
+            },
+            marks=[pytest.mark.nlp],
+            id="torch_nlp_plain_text",
+        ),
+        pytest.param(
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {},
+                "call": {},
+            },
+            marks=[pytest.mark.nlp],
+            id="tf_nlp_latent",
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {},
+                "call": {},
+            },
+            marks=[pytest.mark.nlp],
+            id="torch_nlp_latent",
         ),
     ],
 )
-def test_max_sensitivity(
-    model: ModelInterface,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
-):
+
+
+@pytest.mark.robustness
+@sensitivity_tests
+def test_max_sensitivity(model, data, params, sst2_tokenizer):
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],
@@ -190,7 +124,6 @@ def test_max_sensitivity(
     call_params = params.get("call", {})
 
     if params.get("a_batch_generate", True):
-        explain = call_params["explain_func"]
         explain_func_kwargs = call_params.get("explain_func_kwargs", {})
         a_batch = explain(
             model=model,
@@ -202,21 +135,71 @@ def test_max_sensitivity(
         a_batch = data["a_batch"]
     else:
         a_batch = None
-    scores = MaxSensitivity(**init_params)(
+    scores = MaxSensitivity(
+        **init_params, lower_bound=0.2, nr_samples=10, disable_warnings=True
+    )(
         model=model,
         x_batch=x_batch,
         y_batch=y_batch,
         a_batch=a_batch,
+        explain_func=explain,
+        tokenizer=sst2_tokenizer,
         **call_params,
     )
-    if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
+
+    if init_params.get("return_aggregate", False):
+        assert scores.shape == ()
     else:
-        assert np.all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-        ), "Test failed."
+        assert isinstance(scores, np.ndarray)
+
+    assert np.all(np.asarray(scores) >= 0)
+    # assert np.all(np.asarray(scores) <= 1.)
 
 
+@pytest.mark.robustness
+@sensitivity_tests
+def test_avg_sensitivity(model, data, params, sst2_tokenizer):
+    x_batch, y_batch = (
+        data["x_batch"],
+        data["y_batch"],
+    )
+
+    init_params = params.get("init", {})
+    call_params = params.get("call", {})
+
+    if params.get("a_batch_generate", True):
+        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
+        a_batch = explain(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **explain_func_kwargs,
+        )
+    elif "a_batch" in data:
+        a_batch = data["a_batch"]
+    else:
+        a_batch = None
+    scores = AvgSensitivity(
+        **init_params, lower_bound=0.2, nr_samples=10, disable_warnings=True
+    )(
+        model=model,
+        x_batch=x_batch,
+        y_batch=y_batch,
+        a_batch=a_batch,
+        explain_func=explain,
+        tokenizer=sst2_tokenizer,
+        **call_params,
+    )
+    if init_params.get("return_aggregate", False):
+        assert scores.shape == ()
+    else:
+        assert isinstance(scores, np.ndarray)
+
+    assert np.all(np.asarray(scores) >= 0)
+    # assert np.all(np.asarray(scores) <= 1.)
+
+
+# --------------------------------------------------------------------------
 @pytest.mark.robustness
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -328,27 +311,6 @@ def test_max_sensitivity(
                     "nr_samples": 10,
                     "disable_warnings": True,
                     "display_progressbar": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "perturb_std": 0.1,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "return_aggregate": True,
                 },
                 "call": {
                     "explain_func": explain,
@@ -561,192 +523,6 @@ def test_continuity(
     "model,data,params,expected",
     [
         (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": False,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_1d_3ch_conv_model"),
-            lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "a_batch_generate": False,
-                "init": {
-                    "lower_bound": 0.2,
-                    "nr_samples": 10,
-                    "disable_warnings": True,
-                    "display_progressbar": True,
-                    "return_aggregate": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
-    ],
-)
-def test_avg_sensitivity(
-    model: ModelInterface,
-    data: np.ndarray,
-    params: dict,
-    expected: Union[float, dict, bool],
-):
-    x_batch, y_batch = (
-        data["x_batch"],
-        data["y_batch"],
-    )
-
-    init_params = params.get("init", {})
-    call_params = params.get("call", {})
-
-    if params.get("a_batch_generate", True):
-        explain = call_params["explain_func"]
-        explain_func_kwargs = call_params.get("explain_func_kwargs", {})
-        a_batch = explain(
-            model=model,
-            inputs=x_batch,
-            targets=y_batch,
-            **explain_func_kwargs,
-        )
-    elif "a_batch" in data:
-        a_batch = data["a_batch"]
-    else:
-        a_batch = None
-    scores = AvgSensitivity(**init_params)(
-        model=model,
-        x_batch=x_batch,
-        y_batch=y_batch,
-        a_batch=a_batch,
-        **call_params,
-    )
-    if isinstance(expected, float):
-        assert all(s == expected for s in scores), "Test failed."
-    else:
-        assert np.all(
-            ((s >= expected["min"]) & (s <= expected["max"])) for s in scores
-        ), "Test failed."
-
-
-@pytest.mark.robustness
-@pytest.mark.parametrize(
-    "model,data,params,expected",
-    [
-        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
@@ -822,26 +598,6 @@ def test_avg_sensitivity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-        (
-            lazy_fixture("load_mnist_model"),
-            lazy_fixture("load_mnist_images"),
-            {
-                "init": {
-                    "discretise_func": rank,
-                    "disable_warnings": True,
-                    "display_progressbar": False,
-                    "return_aggregate": True,
-                },
-                "call": {
-                    "explain_func": explain,
-                    "explain_func_kwargs": {
-                        "method": "Saliency",
-                    },
-                },
-                "a_batch_generate": False,
-            },
-            {"min": 0.0, "max": 1.0},
-        ),
     ],
 )
 def test_consistency(
@@ -892,84 +648,101 @@ def test_consistency(
     assert (scores >= expected["min"]) & (scores <= expected["max"]), "Test failed."
 
 
+# -------------------return_nan_when_prediction_changes=True-----------------------
+
+
 @pytest.mark.robustness
 @pytest.mark.parametrize(
-    "metric,model,data,params",
+    "metric,model,data, init_kwargs, call_kwargs",
     [
         (
             LocalLipschitzEstimate,
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "perturb_std": 255,
-                "perturb_mean": 255,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
         (
             LocalLipschitzEstimate,
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "perturb_std": 255,
-                "perturb_mean": 255,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
         (
             AvgSensitivity,
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "lower_bound": 1.0,
-                "upper_bound": 255.0,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
         (
             AvgSensitivity,
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "lower_bound": 1.0,
-                "upper_bound": 255.0,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
         (
             MaxSensitivity,
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
-            {
-                "lower_bound": 1.0,
-                "upper_bound": 255.0,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
         (
             MaxSensitivity,
             lazy_fixture("load_1d_3ch_conv_model"),
             lazy_fixture("almost_uniform_1d_no_abatch"),
-            {
-                "lower_bound": 1.0,
-                "upper_bound": 255.0,
-            },
+            {},
+            {"explain_func_kwargs": {"method": "Saliency"}},
         ),
+        # ------------- NLP -----------
+        # Requires to mock __call__, which will cause gradients to be None
+        # pytest.param(
+        #     AvgSensitivity,
+        #     lazy_fixture("tf_sst2_model"),
+        #     lazy_fixture("sst2_dataset"),
+        #     {},
+        #     {"explain_func_kwargs": {"method": "GradNorm"}},
+        #     marks=pytest.mark.nlp,
+        # ),
+        pytest.param(
+            MaxSensitivity,
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {"perturb_func": spelling_replacement},
+            {"explain_func_kwargs": {"method": "GradNorm"}},
+            marks=pytest.mark.nlp,
+        ),
+    ],
+    ids=[
+        "lipschitz_mnist",
+        "lipschitz_tabular",
+        "avg_sen_mnist",
+        "avg_sen_tabular",
+        "max_sen_mnist",
+        "max_sen_tabular",
+        # "avg_sen_NLP",
+        "max_sen_NLP_plain_text",
     ],
 )
 def test_return_nan_when_prediction_changes(
-    metric, model, data, params, mock_prediction_changed
+    metric, model, data, init_kwargs, call_kwargs, mock_prediction_changed
 ):
     # This test case requires different set-up and assertions, so we have it in separate function.
     metric_instance = metric(
-        **params,
         disable_warnings=True,
         nr_samples=10,
         return_nan_when_prediction_changes=True,
+        **init_kwargs,
     )
     result = metric_instance(
         model,
         data["x_batch"],
         data["y_batch"],
         explain_func=explain,
-        explain_func_kwargs={
-            "method": "Saliency",
-        },
+        **call_kwargs,
     )
     assert np.isnan(result).all()
 

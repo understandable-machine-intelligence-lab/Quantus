@@ -7,7 +7,8 @@ similarity-, normalisation- functions and explanation methods in Quantus."""
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import List, Dict
+from typing import List, Dict, Type
+from collections import defaultdict
 
 from quantus.functions.loss_func import *
 from quantus.functions.normalise_func import *
@@ -30,6 +31,7 @@ AVAILABLE_METRICS = {
         "ROAD": ROAD,
         "Infidelity": Infidelity,
         "Sufficiency": Sufficiency,
+        "TokenFlipping": TokenFlipping,
     },
     "Robustness": {
         "Continuity Test": Continuity,
@@ -100,6 +102,7 @@ AVAILABLE_NORMALISATION_FUNCTIONS = {
     "normalise_by_negative": normalise_by_negative,
     "normalise_by_max": normalise_by_max,
     "denormalise": denormalise,
+    "normalise_sum_to_1": normalize_sum_to_1,
 }
 
 
@@ -151,6 +154,37 @@ DEPRECATED_XAI_METHODS_TF = {
 }
 
 
+# ---------------------- NLP --------------------------
+
+
+AVAILABLE_XAI_METHODS_NLP = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
+    "LIME",
+    "SHAP",
+]
+
+XAI_METHODS_NLP_SUPPORT_EMBEDDINGS = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
+]
+
+
+AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS = {
+    "spelling_replacement": spelling_replacement,
+    "typo_replacement": typo_replacement,
+    "synonym_replacement": synonym_replacement,
+}
+
+# -----------------------------------------------------
+
+
 def available_categories() -> List[str]:
     """
     Retrieve the available metric categories in Quantus.
@@ -184,7 +218,7 @@ def available_methods_tf_explain() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_XAI_METHODS_TF]
+    return AVAILABLE_XAI_METHODS_TF
 
 
 def available_methods_captum() -> List[str]:
@@ -196,7 +230,7 @@ def available_methods_captum() -> List[str]:
     List[str]
         With the available explanation methods in Quantus.
     """
-    return [c for c in AVAILABLE_XAI_METHODS_CAPTUM]
+    return AVAILABLE_XAI_METHODS_CAPTUM
 
 
 def available_perturbation_functions() -> List[str]:
@@ -233,3 +267,34 @@ def available_normalisation_functions() -> List[str]:
         With the available normalisation functions in Quantus.
     """
     return [c for c in AVAILABLE_NORMALISATION_FUNCTIONS.keys()]
+
+
+# ---------------------- NLP --------------------------
+def available_nlp_metrics() -> Dict[str, List[Type]]:
+    result = defaultdict(lambda: [])
+
+    for k, v in AVAILABLE_METRICS.items():
+        for kk, vv in v.items():
+            if "NLP" in vv.data_domain_applicability:
+                result[k].append(kk)
+
+    return dict(result)
+
+
+def available_nlp_xai_methods_tf() -> List[str]:
+    return AVAILABLE_XAI_METHODS_NLP
+
+
+def available_nlp_xai_methods_torch() -> List[str]:
+    return AVAILABLE_XAI_METHODS_NLP
+
+
+def xai_methods_nlp_support_embeddings() -> List[str]:
+    return XAI_METHODS_NLP_SUPPORT_EMBEDDINGS
+
+
+def available_plain_text_perturbation_functions() -> List[str]:
+    return list(AVAILABLE_PLAIN_TEXT_PERTURBATION_FUNCTIONS.keys())
+
+
+# -----------------------------------------------------
