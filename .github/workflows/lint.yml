@@ -17,11 +17,7 @@ jobs:
       - name: Install tox-gh
         run: pip install tox-gh
       - name: Run flake8
-        uses: aaarrti/tox-flake8-lint-action@v2.4
-        with:
-          checkName: Lint
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tox run -e lint
       - name: Run mypy
         uses: aaarrti/mypy-github-action@v2.4
         with:
