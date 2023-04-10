@@ -19,7 +19,7 @@ jobs:
       - name: Run flake8
         run: tox run -e lint
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.8
+        uses: aaarrti/mypy-github-action@v2.9
         with:
           checkName: Lint
         env:
