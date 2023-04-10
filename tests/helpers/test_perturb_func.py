@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
@@ -139,7 +140,7 @@ def input_uniform_mnist():
     ],
 )
 def test_baseline_replacement_by_indices(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+    data: np.ndarray, params: dict, expected: float | dict | bool
 ):
     # Output
     out = baseline_replacement_by_indices(arr=data, **params)
@@ -240,7 +241,7 @@ def test_baseline_replacement_by_indices(
     ],
 )
 def test_baseline_replacement_by_shift(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+    data: np.ndarray, params: dict, expected: float | dict | bool
 ):
     # Output
     out = baseline_replacement_by_shift(arr=data, **params)
@@ -314,7 +315,7 @@ def test_baseline_replacement_by_shift(
     ],
 )
 def test_baseline_replacement_by_blur(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+    data: np.ndarray, params: dict, expected: float | dict | bool
 ):
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
@@ -371,9 +372,7 @@ def test_baseline_replacement_by_blur(
         ),
     ],
 )
-def test_gaussian_noise(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_gaussian_noise(data: np.ndarray, params: dict, expected: float | dict | bool):
     out = gaussian_noise(arr=data, **params)
     assert any(out.flatten()[0] != out.flatten()), "Test failed."
     assert any(out.flatten() != data.flatten()) == expected, "Test failed."
@@ -412,9 +411,7 @@ def test_gaussian_noise(
         ),
     ],
 )
-def test_uniform_noise(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_uniform_noise(data: np.ndarray, params: dict, expected: float | dict | bool):
     out = uniform_noise(arr=data, **params)
     assert any(out.flatten()[0] != out.flatten()), "Test failed."
     assert any(out.flatten() != data.flatten()) == expected, "Test failed."
@@ -431,7 +428,7 @@ def test_uniform_noise(
         ),
     ],
 )
-def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
+def test_rotation(data: dict, params: dict, expected: float | dict | bool):
     out = rotation(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
 
@@ -448,7 +445,7 @@ def test_rotation(data: dict, params: dict, expected: Union[float, dict, bool]):
     ],
 )
 def test_translation_x_direction(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+    data: np.ndarray, params: dict, expected: float | dict | bool
 ):
     out = translation_x_direction(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
@@ -466,7 +463,7 @@ def test_translation_x_direction(
     ],
 )
 def test_translation_y_direction(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
+    data: np.ndarray, params: dict, expected: float | dict | bool
 ):
     out = translation_y_direction(arr=data, **params)
     assert np.any(out != data) == expected, "Test failed."
@@ -483,8 +480,6 @@ def test_translation_y_direction(
         ),
     ],
 )
-def test_no_perturbation(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_no_perturbation(data: np.ndarray, params: dict, expected: float | dict | bool):
     out = no_perturbation(arr=data, **params)
     assert (out == data).all() == expected, "Test failed."
