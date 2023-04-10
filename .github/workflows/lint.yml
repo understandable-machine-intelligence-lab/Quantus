@@ -1,7 +1,7 @@
 name: Lint
 
 on: [ pull_request, workflow_dispatch ]
-permissions: write-all
+permissions: checks:write
 
 jobs:
   lint:
@@ -19,7 +19,7 @@ jobs:
       - name: Run flake8
         run: tox run -e lint
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.5
+        uses: aaarrti/mypy-github-action@v2.6
         with:
           checkName: Lint
         env:

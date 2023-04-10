@@ -9,14 +9,7 @@ from __future__ import annotations
 
 import warnings
 from functools import partial
-from typing import (
-    Union,
-    Callable,
-    Dict,
-    Optional,
-    TYPE_CHECKING,
-    Mapping,
-)
+from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -34,12 +27,8 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations
 from quantus.helpers.tf_utils import is_tensorflow_model
-from quantus.helpers.types import (
-    Explanation,
-    ExplainFn,
-    PersistFn,
-    CallKwargs,
-)
+from quantus.helpers.types import Explanation, ExplainFn, PersistFn
+from quantus.metrics.base import EvaluateAble
 from quantus.metrics.base_batched import BatchedMetric
 
 if TYPE_CHECKING:
@@ -47,18 +36,20 @@ if TYPE_CHECKING:
 
 
 def evaluate(
-    metrics: dict,
-    xai_methods: dict[str, Callable] | dict[str, dict] | dict[str, np.ndarray],
+    metrics: Mapping[str, EvaluateAble],
+    xai_methods: Mapping[str, Callable]
+    | Mapping[str, Dict[str, ...]]
+    | Mapping[str, np.ndarray],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
     s_batch: np.ndarray | None = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: dict | None = None,
-    call_kwargs: dict | dict[str, dict] = None,
+    explain_func_kwargs: Mapping[str, ...] | None = None,
+    call_kwargs: Mapping[str, ...] | Mapping[str, Mapping[str, ...]] = None,
     **kwargs,
-) -> dict | None:
+) -> Dict[str, ...] | None:
     """
     A method to evaluate some explanation methods given some metrics.
 
@@ -114,8 +105,8 @@ def evaluate(
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
-    results: dict[str, dict] = {}
-    explain_funcs: dict[str, Callable] = {}
+    results: Dict[str, dict] = {}
+    explain_funcs: Dict[str, Callable] = {}
 
     if not isinstance(xai_methods, dict):
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
@@ -206,15 +197,15 @@ def evaluate_nlp(
     *,
     metrics: Mapping[str, BatchedMetric],
     model: ModelT,
-    x_batch: list[str],
+    x_batch: List[str],
     y_batch: np.ndarray | None,
     explain_func: ExplainFn | None,
-    explain_func_kwargs: dict[str, ...] | None = None,
+    explain_func_kwargs: Dict[str, ...] | None = None,
     batch_size: int = 64,
     tokenizer: TokenizerT | None = None,
     verbose: bool = True,
     persist_callback: PersistFn | None = None,
-) -> dict[str, np.ndarray | dict[str, np.ndarray]]:
+) -> Dict[str, np.ndarray | Dict[str, np.ndarray]]:
     for i in metrics.values():
         if "NLP" not in i.data_domain_applicability:
             raise ValueError(f"{i} does not support NLP.")
@@ -271,13 +262,13 @@ def evaluate_nlp(
 def prepare_text_classification_metrics_inputs(
     metrics: Mapping[str, BatchedMetric],
     model: ModelT,
-    x_batch: list[str],
+    x_batch: List[str],
     y_batch: np.ndarray | None,
     explain_func: ExplainFn | None,
-    explain_func_kwargs: dict[str, ...] | None,
+    explain_func_kwargs: Mapping[str, ...] | None,
     batch_size: int,
     tokenizer,
-) -> tuple[TextClassifier, np.ndarray, list[Explanation], dict[str, CallKwargs]]:
+) -> Tuple[TextClassifier, np.ndarray, List[Explanation], Dict[str, List[Explanation]]]:
     if is_tensorflow_model(model):
         model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
     else:

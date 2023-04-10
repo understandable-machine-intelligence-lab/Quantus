@@ -11,13 +11,12 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Protocol,
     Tuple,
-    TypedDict,
     Union,
     overload,
     Callable,
+    runtime_checkable,
 )
 
 import numpy as np
@@ -36,8 +35,14 @@ if TYPE_CHECKING:
 
 Explanation = Tuple[List[str], np.ndarray]
 MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
+AggregateFn = Callable[[np.ndarray], ArrayLike]
+SimilarityFn = Callable[[np.ndarray, np.ndarray], ArrayLike]
+PersistFn = Callable[
+    [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
+]
 
 
+@runtime_checkable
 class PerturbFn(Protocol):
     @overload
     def __call__(self, a: list[str], **kwargs) -> list[str]:
@@ -51,19 +56,19 @@ class PerturbFn(Protocol):
         ...
 
 
-SimilarityFn = Callable[[np.ndarray, np.ndarray], ArrayLike]
-
-
+@runtime_checkable
 class NormFn(Protocol):
     def __call__(self, a: np.ndarray, **kwargs) -> ArrayLike:
         ...
 
 
+@runtime_checkable
 class NormaliseFn(Protocol):
     def __call__(self, a: np.ndarray, **kwargs) -> np.ndarray:
         ...
 
 
+@runtime_checkable
 class ExplainFn(Protocol):
     @overload
     def __call__(
@@ -85,30 +90,3 @@ class ExplainFn(Protocol):
 
     def __call__(self, model: ModelT, x_batch, y_batch: np.ndarray, **kwargs):
         ...
-
-
-AggregateFn = Callable[[np.ndarray], ArrayLike]
-PersistFn = Callable[
-    [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
-]
-
-CallKwargs = TypedDict(
-    "CallKwargs",
-    dict(
-        model=Any,
-        x_batch=Union[np.ndarray, List[str]],
-        y_batch=Optional[np.ndarray],
-        a_batch=Optional[Union[np.ndarray, List[Explanation]]],
-        channel_first=Optional[bool],
-        explain_func=ExplainFn,
-        explain_func_kwargs=Optional[Dict[str, Any]],
-        model_predict_kwargs=Optional[Dict[str, Any]],
-        softmax=Optional[bool],
-        device=Optional[str],
-        batch_size=int,
-        custom_batch=Optional[Any],
-        s_batch=Optional[Any],
-        tokenizer=Optional[Any],
-    ),
-    total=False,
-)

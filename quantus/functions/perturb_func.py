@@ -8,8 +8,8 @@
 from __future__ import annotations
 
 import copy
-from typing import Callable, Sequence, Tuple, Union, Optional, List, TYPE_CHECKING
 from operator import attrgetter
+from typing import Sequence, TYPE_CHECKING, TypeVar, List, Tuple
 
 import cv2
 import numpy as np
@@ -18,6 +18,9 @@ from nlpaug.augmenter.word import SpellingAug, SynonymAug
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
+from quantus.helpers.collection_utils import map_optional
+from quantus.helpers.nlp_utils import is_nlpaug_available
+from quantus.helpers.types import PerturbFn
 from quantus.helpers.utils import (
     get_baseline_value,
     blur_at_indices,
@@ -25,20 +28,21 @@ from quantus.helpers.utils import (
     get_leftover_shape,
     offset_coordinates,
 )
-from quantus.helpers.nlp_utils import is_nlpaug_available
-from quantus.helpers.collection_utils import map_optional
 
 if TYPE_CHECKING:
     from quantus.helpers.model.text_classifier import Tokenizable
 
 
+T = TypeVar("T")
+
+
 def perturb_batch(
-    perturb_func: Callable,
+    perturb_func: PerturbFn,
     arr: np.ndarray,
-    indices: Optional[np.ndarray] = None,
+    indices: np.ndarray | None = None,
     inplace: bool = False,
     **kwargs,
-) -> Union[np.ndarray, None]:
+) -> np.ndarray | None:
     """
     Use a perturb function and make perturbation on the full batch.
 
@@ -81,12 +85,12 @@ def perturb_batch(
 
 
 def baseline_replacement_by_indices(
-    arr: np.array,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    arr: np.ndarray,
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.ndarray]],
     indexed_axes: Sequence[int],
-    perturb_baseline: Union[float, int, str, np.array],
+    perturb_baseline: float | int | str | np.ndarray,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Replace indices in an array by a given baseline.
 
@@ -126,12 +130,12 @@ def baseline_replacement_by_indices(
 
 
 def baseline_replacement_by_shift(
-    arr: np.array,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    arr: np.ndarray,
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.ndarray]],
     indexed_axes: Sequence[int],
-    input_shift: Union[float, int, str, np.array],
+    input_shift: float | int | str | np.ndarray,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Shift values at indices in an image.
 
@@ -181,12 +185,12 @@ def baseline_replacement_by_shift(
 
 
 def baseline_replacement_by_blur(
-    arr: np.array,
-    indices: Tuple[np.array],
+    arr: np.ndarray,
+    indices: Tuple[np.ndarray],
     indexed_axes: Sequence[int],
-    blur_kernel_size: Union[int, Sequence[int]] = 15,
+    blur_kernel_size: int | Sequence[int] = 15,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Replace array at indices by a blurred version, performed via convolution.
 
@@ -230,8 +234,8 @@ def baseline_replacement_by_blur(
 
 
 def gaussian_noise(
-    arr: np.array,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    arr: np.ndarray,
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.ndarray]],
     indexed_axes: Sequence[int],
     perturb_mean: float = 0.0,
     perturb_std: float = 0.01,
@@ -273,10 +277,10 @@ def gaussian_noise(
 
 def uniform_noise(
     arr: np.ndarray,
-    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.array]],
+    indices: Tuple[slice, ...],  # Alt. Union[int, Sequence[int], Tuple[np.ndarray]],
     indexed_axes: Sequence[int],
     lower_bound: float = 0.02,
-    upper_bound: Union[None, float] = None,
+    upper_bound: None | float = None,
     **kwargs,
 ) -> np.ndarray:
     """
@@ -322,7 +326,7 @@ def uniform_noise(
     return arr_perturbed
 
 
-def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
+def rotation(arr: np.ndarray, perturb_angle: float = 10, **kwargs) -> np.ndarray:
     """
      Rotate array by some given angle, assumes image type data and channel first layout.
 
@@ -362,11 +366,11 @@ def rotation(arr: np.array, perturb_angle: float = 10, **kwargs) -> np.array:
 
 
 def translation_x_direction(
-    arr: np.array,
-    perturb_baseline: Union[float, int, str, np.array],
+    arr: np.ndarray,
+    perturb_baseline: float | int | str | np.ndarray,
     perturb_dx: int = 10,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
      Translate array by some given value in the x-direction, assumes image type data and channel first layout.
 
@@ -410,11 +414,11 @@ def translation_x_direction(
 
 
 def translation_y_direction(
-    arr: np.array,
-    perturb_baseline: Union[float, int, str, np.array],
+    arr: np.ndarray,
+    perturb_baseline: float | int | str | np.ndarray,
     perturb_dy: int = 10,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
      Translate array by some given value in the y-direction, assumes image type data and channel first layout.
 
@@ -458,11 +462,11 @@ def translation_y_direction(
 
 
 def noisy_linear_imputation(
-    arr: np.array,
-    indices: Union[Sequence[int], Tuple[np.array]],
+    arr: np.ndarray,
+    indices: Sequence[int] | Tuple[np.ndarray],
     noise: float = 0.01,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     """
     Calculates noisy linear imputation for the given array and a list of indices indicating
     which elements are not included in the mask.
@@ -546,7 +550,7 @@ def noisy_linear_imputation(
     return arr_flat_copy.reshape(*arr.shape)
 
 
-def no_perturbation(arr: np.array, **kwargs) -> np.array:
+def no_perturbation(arr: T, **kwargs) -> T:
     """
     Apply no perturbation to input.
 
@@ -570,7 +574,7 @@ if is_nlpaug_available():
     def spelling_replacement(
         x_batch: List[str],
         k: int = 3,
-        tokenizer: Optional[Tokenizable] = None,
+        tokenizer: Tokenizable | None = None,
         **kwargs,
     ) -> List[str]:
         """
@@ -595,7 +599,7 @@ if is_nlpaug_available():
     def synonym_replacement(
         x_batch: List[str],
         k: int = 3,
-        tokenizer: Optional[Tokenizable] = None,
+        tokenizer: Tokenizable | None = None,
         **kwargs,
     ) -> List[str]:
         """
@@ -619,7 +623,7 @@ if is_nlpaug_available():
     def typo_replacement(
         x_batch: List[str],
         k: int = 3,
-        tokenizer: Optional[Tokenizable] = None,
+        tokenizer: Tokenizable | None = None,
         **kwargs,
     ) -> List[str]:
         """
