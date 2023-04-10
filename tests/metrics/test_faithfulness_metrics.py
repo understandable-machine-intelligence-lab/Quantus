@@ -292,7 +292,7 @@ def test_faithfulness_correlation(
     )[0]
 
     assert np.all(
-        (scores >= expected["min"]) & (scores <= expected["max"])
+        ((scores >= expected["min"]) & (scores <= expected["max"]))
     ), "Test failed."
 
 
