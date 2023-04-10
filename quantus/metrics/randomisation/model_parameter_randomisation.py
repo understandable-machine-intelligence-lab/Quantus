@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from functools import singledispatchmethod
 from operator import itemgetter
-from typing import Callable, Dict, List, Optional, Literal
+from typing import Callable, Dict, List, Literal
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -18,8 +18,10 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface, RandomisableModel
+from quantus.helpers.collection_utils import map_optional, map_dict
+from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.nlp_utils import get_scores
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
 from quantus.helpers.types import (
     SimilarityFn,
@@ -28,8 +30,6 @@ from quantus.helpers.types import (
     Explanation,
     AggregateFn,
 )
-from quantus.helpers.collection_utils import map_optional, map_dict, flatten
-from quantus.helpers.nlp_utils import get_scores
 from quantus.metrics.base_batched import BatchedMetric
 
 LayerOrderT = Literal["independent", "top_down"]
@@ -337,9 +337,9 @@ class ModelParameterRandomisation(BatchedMetric):
     def _(
         self,
         model: TextClassifier,
-        x_batch: list[str],
+        x_batch: List[str],
         y_batch: np.ndarray,
-        a_batch: list[Explanation],
+        a_batch: List[Explanation],
         *args,
     ) -> np.ndarray:
         """
