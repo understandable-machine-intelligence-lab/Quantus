@@ -1,15 +1,14 @@
-from typing import Union
+from typing import Union, Dict
 
+import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 from pytest_mock import MockerFixture
-import numpy as np
 
 import quantus
 from quantus.evaluation import evaluate, evaluate_nlp
 from quantus.functions.explanation_func import explain
 from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
-
 from quantus.metrics.complexity import Sparseness  # noqa
 from quantus.metrics.robustness import MaxSensitivity  # noqa
 
@@ -174,19 +173,41 @@ def test_evaluate_func(
         ), "Test failed."
 
 
+@pytest.fixture
+def sst2_2_ragged_batches(sst2_dataset):
+    # In real life we will have multiple batches, and it is very unlikely the dataset will be divisible
+    # by batch size, so we simulate this case for this test.
+    ds_1 = sst2_dataset.copy()
+    ds_2 = sst2_dataset.copy()
+    return {
+        "x_batch": ds_1["x_batch"] + ds_2["x_batch"][:4],
+        "y_batch": np.concatenate([ds_1["y_batch"], ds_2["y_batch"][:4]]),
+    }
+
+
+def assert_is_valid_score(scores):
+    assert isinstance(scores, np.ndarray)
+    assert scores.dtype == np.floating
+    assert scores.ndim == 1
+    assert not np.isnan(scores).any()
+
+
 @pytest.mark.order(-2)
 @pytest.mark.last
 @pytest.mark.parametrize(
-    "model, data",
+    "model",
     [
-        (lazy_fixture("tf_sst2_model"), lazy_fixture("sst2_dataset")),
-        (lazy_fixture("torch_sst2_model"), lazy_fixture("sst2_dataset")),
+        lazy_fixture("tf_sst2_model"),
+        lazy_fixture("torch_sst2_model"),
     ],
+    ids=["TF_model", "torch_model"],
 )
-def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
+def test_evaluate_nlp(
+    model, sst2_2_ragged_batches, sst2_tokenizer, mocker: MockerFixture
+):
     nlp_metrics = {
         "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
-        "RandomLogit": quantus.RandomLogit(disable_warnings=True),
+        "RandomLogit": quantus.RandomLogit(disable_warnings=True, num_classes=2),
         "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
         "Avg-Sen": quantus.AvgSensitivity(
             disable_warnings=True, nr_samples=5, perturb_func=synonym_replacement
@@ -194,10 +215,20 @@ def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
         "Max-Sen": quantus.MaxSensitivity(
             disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement
         ),
-        "RIS": quantus.RelativeInputStability(disable_warnings=True, nr_samples=5),
-        "ROS": quantus.RelativeOutputStability(disable_warnings=True, nr_samples=5),
+        "RIS": quantus.RelativeInputStability(
+            disable_warnings=True,
+            nr_samples=5,
+            return_nan_when_prediction_changes=False,
+        ),
+        "ROS": quantus.RelativeOutputStability(
+            disable_warnings=True,
+            nr_samples=5,
+            return_nan_when_prediction_changes=False,
+        ),
         "RRS": quantus.RelativeRepresentationStability(
-            disable_warnings=True, nr_samples=5
+            disable_warnings=True,
+            nr_samples=5,
+            return_nan_when_prediction_changes=False,
         ),
     }
 
@@ -205,8 +236,8 @@ def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
     scores = evaluate_nlp(
         metrics=nlp_metrics,
         model=model,
-        x_batch=data["x_batch"],
-        y_batch=data["y_batch"],
+        x_batch=sst2_2_ragged_batches["x_batch"],
+        y_batch=sst2_2_ragged_batches["y_batch"],
         explain_func=quantus.explain,
         explain_func_kwargs=dict(method="GradXInput"),
         persist_callback=callback_stub,
@@ -214,4 +245,22 @@ def test_evaluate_nlp(model, data, sst2_tokenizer, mocker: MockerFixture):
         tokenizer=sst2_tokenizer,
     )
 
-    callback_stub.assert_called()
+    assert callback_stub.call_count == 8
+    for k in nlp_metrics:
+        assert k in scores
+
+    for k in nlp_metrics.keys():
+        assert k in scores
+
+    assert isinstance(scores["MPR"], Dict)
+    for v in scores["MPR"].values():
+        assert_is_valid_score(v)
+
+    scores.pop("MPR")
+
+    token_flip_scores = scores.pop("TokenFlip")
+
+    assert_is_valid_score(token_flip_scores)
+
+    for v in scores.values():
+        assert_is_valid_score(v)

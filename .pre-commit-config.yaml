@@ -5,12 +5,10 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-      #- id: check-added-large-files
       - id: check-ast
       - id: check-toml
       - id: requirements-txt-fixer
       - id: check-docstring-first
-      #- id: name-tests-test
       - id: no-commit-to-branch
   - repo: https://github.com/tox-dev/tox-ini-fmt
     rev: "1.3.0"
@@ -25,8 +23,10 @@ repos:
     rev: 1.13.0
     hooks:
       - id: blacken-docs
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-      - id: pyupgrade
-        args: ["--py38-plus"]
+  # It can break singledispatch functions https://github.com/asottile/pyupgrade/issues/814
+  # Before the issue is resolved run it can not be included in pre commit workflow.
+  #- repo: https://github.com/asottile/pyupgrade
+  #  rev: v3.3.1
+  #  hooks:
+  #    - id: pyupgrade
+  #      args: ["--py38-plus"]

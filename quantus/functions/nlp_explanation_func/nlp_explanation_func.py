@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from importlib import util
-from typing import List, Optional, NamedTuple
+from typing import NamedTuple
 
 import numpy as np
 from transformers import pipeline
@@ -45,6 +45,11 @@ def is_shap_available() -> bool:
     return util.find_spec("shap") is not None
 
 
+if is_shap_available():
+    # TODO shap is not maintained, get rid of dependecy on it.
+    import shap
+
+
 __all__ = ["ShapConfig", "generate_text_classification_explanations"]
 
 
@@ -53,9 +58,6 @@ class ShapConfig(NamedTuple):
     seed: int = 42
     batch_size: str | int = 64
     silent: bool = True
-
-
-# TODO shap is not maintained, get rid of dependecy on it.
 
 
 def explain_shap(

@@ -28,7 +28,7 @@ from quantus.helpers.types import (
     Explanation,
     AggregateFn,
 )
-from quantus.helpers.collection_utils import map_optional
+from quantus.helpers.collection_utils import map_optional, map_dict, flatten
 from quantus.helpers.nlp_utils import get_scores
 from quantus.metrics.base_batched import BatchedMetric
 
@@ -69,9 +69,8 @@ class ModelParameterRandomisation(BatchedMetric):
         normalise_func_kwargs: dict[str, ...] | None = None,
         return_aggregate: bool = False,
         aggregate_func: AggregateFn | None = None,
-        default_plot_func: None | (
-            Callable
-        ) = plot_model_parameter_randomisation_experiment,
+        default_plot_func: None
+        | (Callable) = plot_model_parameter_randomisation_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -269,10 +268,6 @@ class ModelParameterRandomisation(BatchedMetric):
         )
         del model
         model = data["model"]
-        if not isinstance(model, RandomisableModel):
-            raise ValueError(
-                f"Custom models need to implement RandomisableModel in order to be used with Model Parameter Randomisation metric."
-            )
         del x_batch
         del y_batch
         del a_batch
@@ -290,7 +285,7 @@ class ModelParameterRandomisation(BatchedMetric):
             disable=not self.display_progressbar,
         )
 
-        for layer_name, random_layer_model in model_iterator:
+        for layer_name, random_layer_model in model_iterator:  # noqa
             # Generate an explanation with perturbed model.
             for i, x in enumerate(x_batch):
                 y = map_optional(y_batch, itemgetter(i))
@@ -299,7 +294,7 @@ class ModelParameterRandomisation(BatchedMetric):
                 similarity_score = self.evaluate_batch(random_layer_model, x, y, a)
                 results_per_layer[layer_name].extend(similarity_score)
 
-        result = dict(results_per_layer)
+        result = map_dict(results_per_layer, np.asarray)
 
         if self.return_sample_correlation:
             result = self.compute_correlation_per_sample(len(x_batch), result)

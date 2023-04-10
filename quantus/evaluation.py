@@ -14,10 +14,8 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    List,
     TYPE_CHECKING,
     Mapping,
-    Tuple,
 )
 
 import numpy as np
@@ -45,16 +43,13 @@ from quantus.helpers.types import (
 from quantus.metrics.base_batched import BatchedMetric
 
 if TYPE_CHECKING:
-    from tensorflow import keras
-    import torch.nn as nn
-
     from quantus.helpers.types import ModelT, TokenizerT
 
 
 def evaluate(
     metrics: dict,
     xai_methods: dict[str, Callable] | dict[str, dict] | dict[str, np.ndarray],
-    model: ModelInterface | nn.Module | keras.Model,
+    model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
     s_batch: np.ndarray | None = None,

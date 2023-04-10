@@ -14,11 +14,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     List,
-    Optional,
     Sequence,
-    Tuple,
     TypedDict,
     TypeVar,
     Union,
@@ -33,11 +30,11 @@ from quantus.helpers.collection_utils import (
     add_default_items,
     batch_inputs,
     map_optional,
-    safe_as_array,
     value_or_default,
+    safe_as_array,
 )
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, map_explanations
 from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.torch_utils import is_torch_model
@@ -160,6 +157,7 @@ class BatchedMetric(EvaluateAble, ABC):
         batch_size: int = 64,
         custom_batch: Any | None = None,
         s_batch: Any | None = None,
+        #
         tokenizer: TokenizerT | None = None,
         **kwargs,
     ) -> MetricScores:
@@ -338,7 +336,7 @@ class BatchedMetric(EvaluateAble, ABC):
     def _(
         self,
         model: TextClassifier,
-        x_batch: list[str] | np.ndarray,
+        x_batch: Union[List[str], np.ndarray],
         y_batch: np.ndarray,
         **kwargs,
     ):
@@ -588,8 +586,8 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         """Predict on x_batch and x_perturbed, return indices of mismatched labels."""
         if not self.return_nan_when_prediction_changes:
             return []
-        og_labels = model.predict(x_batch).argmax(axis=-1)
-        perturbed_labels = model.predict(x_perturbed).argmax(axis=-1)
+        og_labels = np.argmax(safe_as_array(model.predict(x_batch)), axis=-1)
+        perturbed_labels = np.argmax(safe_as_array(model.predict(x_perturbed)), axis=-1)
         return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
 
     def perturb_batch(self, x_batch: np.ndarray) -> np.ndarray:
@@ -685,7 +683,7 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
             model.tokenizer.batch_encode, add_special_tokens=False
         )
         x_batch, y_batch, a_batch, _ = super().batch_preprocess(
-            model, x_batch, y_batch, a_batch
+            model, x_batch, y_batch, None
         )
         return x_batch, y_batch, a_batch, x_perturbed_batches
 
