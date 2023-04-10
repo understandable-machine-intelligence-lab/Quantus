@@ -24,7 +24,7 @@ from quantus.helpers.utils import (
     get_wrapped_model,
 )
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.functions.nlp_explanation_func import (
+from quantus.functions.nlp.explanation_func import (
     generate_text_classification_explanations,
 )
 
