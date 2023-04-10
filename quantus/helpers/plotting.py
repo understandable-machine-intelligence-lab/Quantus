@@ -7,17 +7,14 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-from typing import List, Union, Dict, Any, Optional, Tuple, TYPE_CHECKING
+from typing import List, Union, Dict, Any, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from quantus.helpers import warn
-from quantus.helpers.types import Explanation
+from quantus.helpers.types import Explanation, FlipTask
 from quantus.helpers.collection_utils import value_or_default
-
-if TYPE_CHECKING:
-    from quantus.metrics.faithfulness.token_flipping import TaskT
 
 
 def plot_pixel_flipping_experiment(
@@ -551,13 +548,10 @@ def visualise_explanations_as_pyplot(
 
 def plot_token_flipping_experiment(
     score: np.ndarray | List[np.ndarray],
-    task: TaskT = "pruning",
-    legend: Optional[List[str]] = None,
-    style: Optional[Dict] = None,
-):
-    if task not in ("pruning", "activation"):
-        raise ValueError(f"Task must be either pruning or activation, but found {task}")
-
+    task: FlipTask = "pruning",
+    legend: List[str] | None = None,
+    style: Dict[str, ...] | None = None,
+) -> plt.Axes:
     if isinstance(score, np.ndarray):
         score = [score]
 
@@ -575,7 +569,7 @@ def plot_token_flipping_experiment(
             num_tokens = len(i)
 
             x = np.arange(0, num_tokens + 1)
-            i = np.concatenate([[0.], i])
+            i = np.concatenate([[0.0], i])
 
             axes.plot(i, x, marker="o")
 

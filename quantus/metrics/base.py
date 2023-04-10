@@ -17,11 +17,13 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.types import DataDomain
 
 
 class EvaluateAble(ABC):
     """A base class for metrics, which can be evaluated in Quantus."""
-    data_domain_applicability: List[str] = ["Image", "Time-Series", "Tabular"]
+
+    data_domain_applicability: List[DataDomain] = ["Image", "Time-Series", "Tabular"]
 
     @asserts.attributes_check
     def __init__(
@@ -422,6 +424,7 @@ class EvaluateAble(ABC):
             "default_plot_func",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+
 
 class Metric(EvaluateAble):
     """Implementation of the base single value Metric class."""

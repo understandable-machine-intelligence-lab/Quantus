@@ -10,8 +10,6 @@ from abc import ABC, abstractmethod
 from typing import List, TypedDict, Tuple, Dict, Any, overload, TYPE_CHECKING, Sequence
 
 import numpy as np
-
-from quantus.helpers.collection_utils import safe_as_array
 from quantus.helpers.model.model_interface import (
     RandomisableModel,
     HiddenRepresentationsModel,
@@ -22,11 +20,12 @@ if TYPE_CHECKING:
     import tensorflow as tf
     import torch
 
-R = TypedDict("R", {"input_ids": np.ndarray}, total=False)
+
+class EncodedTokens(TypedDict, total=False):
+    input_ids: np.ndarray
 
 
 class Tokenizable(ABC):
-
     """An interface, which must be implemented in order to use custom tokenizers."""
 
     def get_input_ids(self, x_batch: List[str]) -> Tuple[Any, Dict[str, Any]]:
@@ -60,7 +59,7 @@ class Tokenizable(ABC):
 
     @abstractmethod
     def batch_decode(
-        self, ids: List[int] | List[List[int]] | np.ndarray, **kwargs
+        self, ids: Sequence[int] | Sequence[Sequence[int]] | np.ndarray, **kwargs
     ) -> List[str]:
         """Convert vocabulary ids to strings."""
         raise NotImplementedError
@@ -79,6 +78,8 @@ class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper
 
     def get_embeddings(self, x_batch: List[str]) -> Tuple[np.ndarray, Dict[str, ...]]:
         """Do batch encode, unpack input ids, convert to embeddings."""
+        from quantus.helpers.collection_utils import safe_as_array
+
         input_ids, predict_kwargs = self.tokenizer.get_input_ids(x_batch)
         return safe_as_array(self.embedding_lookup(input_ids)), predict_kwargs
 

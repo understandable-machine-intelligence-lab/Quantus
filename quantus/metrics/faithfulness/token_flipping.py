@@ -6,20 +6,24 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Literal, Callable, Dict
+from typing import List, Callable, Dict
 
 import numpy as np
 
 from quantus.functions.loss_func import mse
 from quantus.functions.normalise_func import normalize_sum_to_1
+from quantus.helpers.collection_utils import safe_as_array
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.plotting import plot_token_flipping_experiment
-from quantus.helpers.types import NormaliseFn, Explanation, ExplainFn
+from quantus.helpers.types import (
+    NormaliseFn,
+    Explanation,
+    ExplainFn,
+    FlipTask,
+    DataDomain,
+)
 from quantus.helpers.utils import get_logits_for_labels
-from quantus.helpers.collection_utils import safe_as_array
 from quantus.metrics.base_batched import BatchedMetric
-
-TaskT = Literal["pruning", "activation"]
 
 
 class TokenFlipping(BatchedMetric):
@@ -35,21 +39,21 @@ class TokenFlipping(BatchedMetric):
     them with “UNK” tokens, similarly to the ablation experiments of Abnar & Zuidema (2020).
     """
 
-    data_domain_applicability: List[str] = ["NLP"]
+    data_domain_applicability: List[DataDomain] = ["NLP"]
 
     def __init__(
         self,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[NormaliseFn] = normalize_sum_to_1,
-        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        normalise_func: NormaliseFn | None = normalize_sum_to_1,
+        normalise_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
         aggregate_func=None,
-        default_plot_func: Optional[Callable] = plot_token_flipping_experiment,
+        default_plot_func: Callable | None = plot_token_flipping_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         mask_token: str = "[UNK]",
-        task: TaskT = "pruning",
+        task: FlipTask = "pruning",
     ):
         """
 
@@ -95,18 +99,18 @@ class TokenFlipping(BatchedMetric):
         self,
         model,
         x_batch: List[str],
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[List[Explanation]],
-        explain_func: Optional[ExplainFn],
-        explain_func_kwargs: Optional[Dict[str, ...]] = None,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
-        softmax: Optional[bool] = None,
-        s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
-        device: Optional[str] = None,
+        y_batch: np.ndarray | None,
+        a_batch: List[Explanation] | None,
+        explain_func: ExplainFn | None,
+        explain_func_kwargs: Dict[str, ...] | None = None,
+        model_predict_kwargs: Dict[str, ...] | None = None,
+        softmax: bool | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        device: str | None = None,
         batch_size: int = 64,
-        custom_batch: Optional[...] = None,
-        tokenizer: Optional[Tokenizable] = None,
+        custom_batch: ... | None = None,
+        tokenizer: Tokenizable | None = None,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -198,7 +202,6 @@ class TokenFlipping(BatchedMetric):
 
         mask_indices_all = np.asarray(mask_indices_all).T
         input_ids, predict_kwargs = model.tokenizer.get_input_ids(x_batch)
-        input_ids = safe_as_array(input_ids)
         mask_token_id = model.tokenizer.token_id(self.mask_token)
         masked_input_ids = np.full_like(np.asarray(input_ids), fill_value=mask_token_id)
 
@@ -236,7 +239,6 @@ class TokenFlipping(BatchedMetric):
 
         mask_indices_all = np.asarray(mask_indices_all).T
         input_ids, predict_kwargs = model.tokenizer.get_input_ids(x_batch)
-        input_ids = safe_as_array(input_ids, force=True)
         mask_token_id = model.tokenizer.token_id(self.mask_token)
 
         for i, mask_indices_batch in enumerate(mask_indices_all):

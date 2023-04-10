@@ -6,9 +6,11 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Iterable
+from typing import Dict, List, Sequence
 
 import numpy as np
+from transformers import PreTrainedTokenizerBase
+
 from quantus.helpers.collection_utils import add_default_items
 from quantus.helpers.model.text_classifier import Tokenizable
 
@@ -16,7 +18,7 @@ from quantus.helpers.model.text_classifier import Tokenizable
 class HuggingFaceTokenizer(Tokenizable):
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer: PreTrainedTokenizerBase):
         self.tokenizer = tokenizer
 
     def batch_encode(self, text: List[str], **kwargs) -> Dict[str, np.ndarray]:  # type: ignore
@@ -30,7 +32,7 @@ class HuggingFaceTokenizer(Tokenizable):
         return self.tokenizer.convert_tokens_to_ids(token)
 
     def batch_decode(
-        self, ids: List[int] | List[List[int]] | np.ndarray, **kwargs
+        self, ids: Sequence[int] | Sequence[Sequence[int]] | np.ndarray, **kwargs
     ) -> List[str]:
         return self.tokenizer.batch_decode(ids, **kwargs)
 

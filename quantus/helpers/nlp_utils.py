@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import typing
-from functools import lru_cache
 from importlib import util
 from operator import itemgetter
-from typing import List, Callable, TypeVar
+from typing import List, Callable, TypeVar, Tuple, overload
 
 import numpy as np
 from cachetools import cached
+from numpy.typing import ArrayLike
+
 from quantus.helpers.types import Explanation
 
 T = TypeVar("T")
@@ -18,9 +19,18 @@ def is_transformers_available() -> bool:
     return util.find_spec("transformers") is not None
 
 
-def map_explanations(a_batch, fn: Callable[[T], R]) -> List[R]:
+@overload
+def map_explanations(
+    a_batch: ArrayLike, fn: Callable[[ArrayLike], ArrayLike]
+) -> List[ArrayLike]:
+    ...
+
+
+def map_explanations(
+    a_batch: List[Explanation], fn: Callable[[np.ndarray], np.ndarray]
+) -> List[Explanation]:
     """Apply fn to a_batch, supports token-scores tuples as well as raw scores."""
-    if isinstance(a_batch, List):
+    if isinstance(a_batch[0], Tuple):
         return [(tokens, fn(scores)) for tokens, scores in a_batch]
     else:
         return fn(a_batch)  # type: ignore

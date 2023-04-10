@@ -11,63 +11,35 @@ when dealing with more complicated custom subclassed models.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Tuple,
-    List,
-    Union,
-    TYPE_CHECKING,
-    overload,
-    Generator,
-)
+from typing import Any, Dict, Sequence, Tuple, List, Union, Generator, TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
-    import tensorflow as tf
-    import torch
+    from quantus.helpers.types import LayerOrderT
 
 
 class ModelWrapper(ABC):
     """An interface which represents model wrapped in python object."""
 
     @abstractmethod
-    @overload
-    def get_model(self) -> tf.keras.Model:
+    def get_model(self):
         """
         Get the original torch/tf model.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_model(self) -> torch.nn.Module:
-        """
-        Get the original torch/tf model.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    @overload
-    def state_dict(self) -> List[np.ndarray]:
+    def state_dict(self):
         """
         Get a dictionary of the model's learnable parameters.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def state_dict(self) -> Dict[torch, torch.Tensor]:
-        """
-        Get a dictionary of the model's learnable parameters.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def load_state_dict(
-        self, original_parameters: Dict[str, torch.Tensor] | List[np.ndarray]
-    ):
+    def load_state_dict(self, original_parameters):
         """Set model's learnable parameters."""
         raise NotImplementedError
 
@@ -80,7 +52,7 @@ class RandomisableModel(ABC):
 
     @abstractmethod
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
+        self, order: LayerOrderT = "top_down", seed: int = 42
     ) -> Generator[Any, None, None]:
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
@@ -106,8 +78,8 @@ class HiddenRepresentationsModel(ABC):
     def get_hidden_representations(
         self,
         x: np.ndarray,
-        layer_names: Optional[List[str]] = None,
-        layer_indices: Optional[List[int]] = None,
+        layer_names: List[str] | None = None,
+        layer_indices: List[int] | None = None,
     ) -> np.ndarray:
         """
         Compute the model's internal representation of input x.
@@ -132,7 +104,7 @@ class HiddenRepresentationsModel(ABC):
         L: np.ndarray
             2D tensor with shape (batch_size, None)
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel, ABC):
@@ -143,7 +115,7 @@ class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel
         model,
         channel_first: bool = True,
         softmax: bool = False,
-        model_predict_kwargs: Optional[Dict[str, Any]] = None,
+        model_predict_kwargs: Dict[str, Any] | None = None,
     ):
         """
         Initialisation of ModelInterface class.
@@ -179,7 +151,7 @@ class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, x: np.array, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs):
         """
         Predict on the given input.
 
@@ -195,9 +167,9 @@ class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel
     @abstractmethod
     def shape_input(
         self,
-        x: np.array,
+        x: np.ndarray,
         shape: Tuple[int, ...],
-        channel_first: Optional[bool] = None,
+        channel_first: bool | None = None,
         batched: bool = False,
     ):
         """
@@ -218,8 +190,8 @@ class ModelInterface(ModelWrapper, RandomisableModel, HiddenRepresentationsModel
     @abstractmethod
     def add_mean_shift_to_first_layer(
         self,
-        input_shift: Union[int, float],
-        shape: tuple,
+        input_shift: int | float,
+        shape: Sequence[int],
     ):
         """
         Consider the first layer neuron before non-linearity: z = w^T * x1 + b1. We update

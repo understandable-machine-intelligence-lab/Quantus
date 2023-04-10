@@ -3,6 +3,8 @@ from typing import TypeVar, Tuple, List, Protocol, Dict, Generator
 
 import numpy as np
 
+from quantus.helpers.types import LayerOrderT
+
 
 def is_torch_available() -> bool:
     return util.find_spec("torch") is not None
@@ -49,10 +51,9 @@ if is_torch_available():
 
     def random_layer_generator(
         model_wrapper: T,
-        order: str = "top_down",
+        order: LayerOrderT = "top_down",
         seed: int = 42,
     ) -> Generator[T, None, None]:
-
         from quantus.helpers.collection_utils import map_dict
 
         original_parameters = model_wrapper.state_dict().copy()
@@ -93,5 +94,5 @@ if is_torch_available():
 else:
 
     def is_torch_model(model) -> bool:
-        # Torch is not installed, so it is definetelly not a torch model.
+        # Torch is not installed, so it is definitely not a torch model.
         return False

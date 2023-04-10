@@ -17,6 +17,7 @@ from typing import (
     overload,
     Callable,
     runtime_checkable,
+    Literal,
 )
 
 import numpy as np
@@ -40,6 +41,9 @@ SimilarityFn = Callable[[np.ndarray, np.ndarray], ArrayLike]
 PersistFn = Callable[
     [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
 ]
+DataDomain = Literal["Image", "Time-Series", "Tabular", "NLP"]
+FlipTask = Literal["pruning", "activation"]
+LayerOrderT = Literal["independent", "top_down"]
 
 
 @runtime_checkable

@@ -1,20 +1,18 @@
 from __future__ import annotations
-from functools import singledispatch
 
-import numpy as np
-from numpy.typing import ArrayLike
+from functools import singledispatch
 from typing import (
     Any,
     Dict,
-    Optional,
     List,
     Iterable,
     TypeVar,
     Callable,
     Sequence,
-    Union,
-    Mapping,
 )
+
+import numpy as np
+from numpy.typing import ArrayLike
 from sklearn.utils import gen_batches
 
 from quantus.helpers.tf_utils import is_tensorflow_available
@@ -57,14 +55,15 @@ if is_tensorflow_available():
     import tensorflow as tf
 
     @safe_as_array.register
-    def _(a: tf.Tensor, force: bool = False) -> ArrayLike:
+    def _(a: tf.Tensor, force: bool = False) -> np.ndarray:
         if force:
             return np.array(tf.identity(a))
-        return a
+        return a  # noqa
 
 
 T = TypeVar("T")
 R = TypeVar("R")
+S = TypeVar("S", bound=Sequence, covariant=True)
 
 
 def map_dict(
@@ -84,13 +83,13 @@ def flatten(list_2d: Iterable[Iterable[T]]) -> List[T]:
     return [item for sublist in list_2d for item in sublist]
 
 
-def batch_inputs(flat_list: Sequence[T], batch_size: int) -> List[Iterable[T]]:
+def batch_inputs(flat_list: S[T], batch_size: int) -> List[S[T]]:
     """Divide list in batches of batch_size, despite the name works also for any Sized and SupportsIndex."""
     indices = list(gen_batches(len(flat_list), batch_size))
     return list(map(lambda i: flat_list[i.start : i.stop], indices))
 
 
-def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
+def map_optional(val: T | None, func: Callable[[T], R]) -> R | None:
     """Apply func to value if not None, otherwise return None."""
     if val is None:
         return None
@@ -98,7 +97,7 @@ def map_optional(val: Optional[T], func: Callable[[T], R]) -> Optional[R]:
 
 
 def add_default_items(
-    dictionary: Optional[Dict[str, Any]], default_items: Dict[str, Any]
+    dictionary: Dict[str, ...] | None, default_items: Dict[str, ...]
 ) -> Dict[str, Any]:
     """Add default_items into dictionary if not present."""
     if dictionary is None:
@@ -113,7 +112,7 @@ def add_default_items(
     return copy
 
 
-def value_or_default(value: Optional[T], default_factory: Callable[[], T]) -> T:
+def value_or_default(value: T | None, default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
     # Default is provided by callable, because otherwise it will force materialization of both values in memory.
     if value is not None:
@@ -138,16 +137,3 @@ def filter_dict(
             result[k] = v
 
     return result
-
-
-def query_nested_dict(key: str, dictionary: Mapping[str, ...]) -> Optional[Any]:
-    if key in dictionary:
-        return dictionary[key]
-
-    for value in dictionary.values():
-        if isinstance(value, Mapping):
-            result = query_nested_dict(key, value)
-
-            if result is not None:
-                return result
-    return None

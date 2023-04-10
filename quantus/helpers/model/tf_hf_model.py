@@ -7,29 +7,28 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod, cached_property, partial
-from typing import List, Generator, Optional, Dict
+from operator import contains
+from typing import List, Generator, Dict
 
 import keras
-from operator import contains
 import numpy as np
 import tensorflow as tf
-from transformers import (
-    TFPreTrainedModel,
-)
+from transformers import TFPreTrainedModel
 
-from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.collection_utils import (
     value_or_default,
     filter_dict,
     add_default_items,
 )
+from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.tf_utils import (
     is_xla_compatible_platform,
     list_parameterizable_layers,
     random_layer_generator,
     supported_keras_engine_predict_kwargs,
 )
+from quantus.helpers.types import LayerOrderT
 
 
 class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
@@ -37,8 +36,8 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
         self,
         model: TFPreTrainedModel,
         tokenizer: HuggingFaceTokenizer,
-        softmax: Optional[bool] = None,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
+        softmax: bool | None = None,
+        model_predict_kwargs: Dict[str, ...] | None = None,
     ):
         super().__init__()
         self.model = model
@@ -63,11 +62,11 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
 
     @predict.register(tf.Tensor)
     @predict.register(np.ndarray)
-    def _(self, x_batch, **kwargs) -> tf.Tensor:
+    def _(self, x_batch: tf.Tensor | np.ndarray, **kwargs) -> tf.Tensor:
         return self.model(None, inputs_embeds=x_batch, training=False, **kwargs).logits
 
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
+        self, order: LayerOrderT = "top_down", seed: int = 42
     ) -> Generator[TFHuggingFaceTextClassifier, None, None]:
         return random_layer_generator(self, order, seed, flatten_layers=True)
 
@@ -105,7 +104,7 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
     @get_hidden_representations.register(np.ndarray)
     def _(
         self,
-        x_batch,
+        x_batch: tf.Tensor | np.ndarray,
         *args,
         **kwargs,
     ) -> np.ndarray:

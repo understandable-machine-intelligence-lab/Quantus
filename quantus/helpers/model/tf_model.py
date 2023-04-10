@@ -28,6 +28,7 @@ from keras.layers import Dense
 from keras.models import clone_model
 
 from quantus.helpers import utils
+from quantus.helpers.types import LayerOrderT
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.collection_utils import filter_dict, add_default_items
 from quantus.helpers.tf_utils import (
@@ -240,7 +241,9 @@ class TensorFlowModel(ModelInterface):
         """Set model's learnable parameters."""
         self.model.set_weights(original_parameters)
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: LayerOrderT = "top_down", seed: int = 42
+    ):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,

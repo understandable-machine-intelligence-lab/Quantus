@@ -7,17 +7,18 @@
 from __future__ import annotations
 
 from functools import singledispatchmethod, partial, cached_property
-from typing import List, Optional, Generator, Dict
+from typing import List, Generator, Dict
 
 import numpy as np
 import torch
 import torch.nn as nn
 from transformers import PreTrainedModel
 
+from quantus.helpers.collection_utils import map_dict, value_or_default
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.collection_utils import map_dict, value_or_default
 from quantus.helpers.torch_utils import random_layer_generator, list_layers
+from quantus.helpers.types import LayerOrderT
 
 
 class TorchHuggingFaceTextClassifier(TextClassifier):
@@ -25,7 +26,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         self,
         model: PreTrainedModel,
         tokenizer: HuggingFaceTokenizer,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ):
         super().__init__()
         self.tokenizer = tokenizer
@@ -56,7 +57,7 @@ class TorchHuggingFaceTextClassifier(TextClassifier):
         return self.model(None, inputs_embeds=x_batch, **kwargs).logits
 
     def get_random_layer_generator(
-        self, order: str = "top_down", seed: int = 42
+        self, order: LayerOrderT = "top_down", seed: int = 42
     ) -> Generator[TorchHuggingFaceTextClassifier, None, None]:
         return random_layer_generator(self, order, seed)
 

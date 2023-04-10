@@ -17,6 +17,7 @@ import numpy as np
 import torch
 
 from quantus.helpers import utils
+from quantus.helpers.types import LayerOrderT
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.torch_utils import list_layers, random_layer_generator
 
@@ -178,7 +179,9 @@ class PyTorchModel(ModelInterface):
         """
         return self.model.state_dict()
 
-    def get_random_layer_generator(self, order: str = "top_down", seed: int = 42):
+    def get_random_layer_generator(
+        self, order: LayerOrderT = "top_down", seed: int = 42
+    ):
         """
         In every iteration yields a copy of the model with one additional layer's parameters randomized.
         For cascading randomization, set order (str) to 'top_down'. For independent randomization,

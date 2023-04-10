@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from functools import singledispatchmethod
 from operator import itemgetter
-from typing import Callable, Dict, List, Literal
+from typing import Callable, Dict, List
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -29,10 +29,10 @@ from quantus.helpers.types import (
     ExplainFn,
     Explanation,
     AggregateFn,
+    DataDomain,
+    LayerOrderT,
 )
 from quantus.metrics.base_batched import BatchedMetric
-
-LayerOrderT = Literal["independent", "top_down"]
 
 
 class ModelParameterRandomisation(BatchedMetric):
@@ -52,25 +52,25 @@ class ModelParameterRandomisation(BatchedMetric):
         NeurIPS (2018): 9525-9536.
     """
 
-    data_domain_applicability: list[str] = BatchedMetric.data_domain_applicability + [
-        "NLP"
-    ]
+    data_domain_applicability: List[
+        DataDomain
+    ] = BatchedMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: SimilarityFn = None,
+        similarity_func: SimilarityFn = correlation_spearman,
         layer_order: LayerOrderT = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: NormaliseFn | None = None,
-        normalise_func_kwargs: dict[str, ...] | None = None,
+        normalise_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
         aggregate_func: AggregateFn | None = None,
-        default_plot_func: None
-        | (Callable) = plot_model_parameter_randomisation_experiment,
+        default_plot_func: Callable[[...], None]
+        | None = plot_model_parameter_randomisation_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -127,10 +127,6 @@ class ModelParameterRandomisation(BatchedMetric):
             disable_warnings=disable_warnings,
             **kwargs,
         )
-
-        # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = correlation_spearman
         self.similarity_func = similarity_func
         self.layer_order = layer_order
         self.seed = seed
@@ -160,18 +156,18 @@ class ModelParameterRandomisation(BatchedMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: list[Explanation] | np.ndarray | None = None,
+        a_batch: List[Explanation] | np.ndarray | None = None,
         s_batch: np.ndarray | None = None,
         channel_first: bool | None = None,
         explain_func: ExplainFn | None = None,
-        explain_func_kwargs: dict[str, ...] | None = None,
-        model_predict_kwargs: dict[str, ...] | None = None,
+        explain_func_kwargs: Dict[str, ...] | None = None,
+        model_predict_kwargs: Dict[str, ...] | None = None,
         softmax: bool | None = False,
         device: str | None = None,
         batch_size: int = 64,
         custom_batch: ... | None = None,
         **kwargs,
-    ) -> dict[str, np.ndarray] | np.ndarray | float:
+    ) -> Dict[str, np.ndarray] | np.ndarray | float:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes instance-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -392,7 +388,7 @@ class ModelParameterRandomisation(BatchedMetric):
 
     @staticmethod
     def compute_correlation_per_sample(
-        num_samples: int, results_per_layer: dict[str, np.ndarray]
+        num_samples: int, results_per_layer: Dict[str, np.ndarray]
     ) -> np.ndarray:
         assert isinstance(results_per_layer, Dict), (
             "To compute the average correlation coefficient per sample for "
