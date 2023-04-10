@@ -360,7 +360,6 @@ class TensorFlowModel(ModelInterface):
         layer_indices: Optional[List[int]] = None,
         **kwargs,
     ) -> np.ndarray:
-
         """
         Compute the model's internal representation of input x.
         In practice, this means, executing a forward pass and then, capturing the output of layers (of interest).

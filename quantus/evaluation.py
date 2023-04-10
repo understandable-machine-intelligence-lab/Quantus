@@ -92,11 +92,9 @@ def evaluate(
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
 
     for method, value in xai_methods.items():
-
         results[method] = {}
 
         if callable(value):
-
             explain_funcs[method] = value
             explain_func = value
 
@@ -116,7 +114,6 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, Dict):
-
             if explain_func_kwargs is not None:
                 warnings.warn(
                     "Passed explain_func_kwargs will be ignored when passing type Dict[str, Dict] as xai_methods."
@@ -136,13 +133,10 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, np.ndarray):
-            explain_funcs[
-                method
-            ] = explain
+            explain_funcs[method] = explain
             a_batch = value
 
         else:
-
             raise TypeError(
                 "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
             )
@@ -150,12 +144,10 @@ def evaluate(
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
 
-        for (metric, metric_func) in metrics.items():
-
+        for metric, metric_func in metrics.items():
             results[method][metric] = {}
 
-            for (call_kwarg_str, call_kwarg) in call_kwargs.items():
-
+            for call_kwarg_str, call_kwarg in call_kwargs.items():
                 if progress:
                     print(
                         f"Evaluating {method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."

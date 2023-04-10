@@ -354,7 +354,6 @@ class Metric:
 
         # Wrap the model into an interface.
         if model:
-
             # Use attribute value if not passed explicitly.
             model = utils.get_wrapped_model(
                 model=model,
@@ -375,7 +374,6 @@ class Metric:
             self.explain_func_kwargs["device"] = device
 
         if a_batch is None:
-
             # Asserts.
             asserts.assert_explain_func(explain_func=self.explain_func)
 
