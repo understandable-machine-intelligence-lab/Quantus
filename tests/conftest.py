@@ -1,12 +1,17 @@
-import pytest
 import pickle
-import torch
+
 import numpy as np
-from keras.datasets import cifar10
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import pytest
 import tensorflow as tf
 import torch
+from keras.datasets import cifar10
+from sklearn.model_selection import train_test_split
+from transformers import (
+    TFDistilBertForSequenceClassification,
+    DistilBertForSequenceClassification,
+    DistilBertTokenizer,
+)
 
 from quantus.helpers.model.models import (
     LeNet,
@@ -17,12 +22,12 @@ from quantus.helpers.model.models import (
     TitanicSimpleTFModel,
     TitanicSimpleTorchModel,
 )
+from quantus.helpers.utils import get_wrapped_text_classifier
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
 BATCH_SIZE = 124
 MINI_BATCH_SIZE = 8
-
 
 # Set seed for reproducibility.
 np.random.seed(42)
@@ -226,36 +231,32 @@ def sst2_dataset():
     return {"x_batch": x_batch, "y_batch": y_batch}
 
 
-if util.find_spec("transformers"):
-    from quantus.helpers.utils import get_wrapped_text_classifier
-    from transformers import (
-        TFDistilBertForSequenceClassification,
-        DistilBertForSequenceClassification,
-        DistilBertTokenizer,
+@pytest.fixture(scope="session")
+def tf_sst2_model():
+    return TFDistilBertForSequenceClassification.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
     )
 
-    @pytest.fixture(scope="session")
-    def tf_sst2_model():
-        return TFDistilBertForSequenceClassification.from_pretrained(
-            "distilbert-base-uncased-finetuned-sst-2-english"
-        )
 
-    @pytest.fixture(scope="session")
-    def torch_sst2_model():
-        return DistilBertForSequenceClassification.from_pretrained(
-            "distilbert-base-uncased-finetuned-sst-2-english"
-        )
+@pytest.fixture(scope="session")
+def torch_sst2_model():
+    return DistilBertForSequenceClassification.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
+    )
 
-    @pytest.fixture(scope="session")
-    def sst2_tokenizer():
-        return DistilBertTokenizer.from_pretrained(
-            "distilbert-base-uncased-finetuned-sst-2-english"
-        )
 
-    @pytest.fixture(scope="session")
-    def tf_sst2_model_wrapper(tf_sst2_model, sst2_tokenizer):
-        return get_wrapped_text_classifier(tf_sst2_model, sst2_tokenizer)
+@pytest.fixture(scope="session")
+def sst2_tokenizer():
+    return DistilBertTokenizer.from_pretrained(
+        "distilbert-base-uncased-finetuned-sst-2-english"
+    )
 
-    @pytest.fixture(scope="session")
-    def torch_sst2_model_wrapper(torch_sst2_model, sst2_tokenizer):
-        return get_wrapped_text_classifier(torch_sst2_model, sst2_tokenizer)
+
+@pytest.fixture(scope="session")
+def tf_sst2_model_wrapper(tf_sst2_model, sst2_tokenizer):
+    return get_wrapped_text_classifier(tf_sst2_model, sst2_tokenizer)
+
+
+@pytest.fixture(scope="session")
+def torch_sst2_model_wrapper(torch_sst2_model, sst2_tokenizer):
+    return get_wrapped_text_classifier(torch_sst2_model, sst2_tokenizer)

@@ -491,7 +491,7 @@ def _(
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
         logits = model(None, inputs_embeds=x_batch, training=False, **kwargs)
-        logits_for_label = _logits_for_labels(logits, y_batch)
+        logits_for_label = logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
     return tf.linalg.norm(grads, axis=-1)
@@ -522,7 +522,7 @@ def _(
     with tf.GradientTape() as tape:
         tape.watch(x_batch)
         logits = model(None, inputs_embeds=x_batch, training=False, **kwargs)
-        logits_for_label = _logits_for_labels(logits, y_batch)
+        logits_for_label = logits_for_labels(logits, y_batch)
 
     grads = tape.gradient(logits_for_label, x_batch)
     return tf.math.reduce_sum(x_batch * grads, axis=-1)
@@ -627,7 +627,7 @@ def _integrated_gradients_batched(
             training=False,
             **interpolated_kwargs,
         )
-        logits_for_label = _logits_for_labels(logits, interpolated_y_batch)
+        logits_for_label = logits_for_labels(logits, interpolated_y_batch)
 
     grads = tape.gradient(logits_for_label, interpolated_embeddings)
     grads_shape = tf.shape(grads)
@@ -846,7 +846,7 @@ def _(
 
 
 @tf.function(reduce_retracing=True, jit_compile=_USE_XLA)
-def _logits_for_labels(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
+def logits_for_labels(logits: tf.Tensor, y_batch: tf.Tensor) -> tf.Tensor:
     # Matrix with indexes like [ [0,y_0], [1, y_1], ...]
     indexes = tf.transpose(
         tf.stack(

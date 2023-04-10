@@ -29,7 +29,6 @@ log = logging.getLogger(__name__)
 
 
 if is_tensorflow_available():
-
     from quantus.functions.nlp_explanation_func.tf_explanation_func import tf_explain
 
 if is_torch_available():
@@ -44,10 +43,6 @@ if is_transformers_available():
 
 def is_shap_available() -> bool:
     return util.find_spec("shap") is not None
-
-
-if is_shap_available():
-    import shap
 
 
 __all__ = ["ShapConfig", "generate_text_classification_explanations"]
@@ -65,11 +60,11 @@ class ShapConfig(NamedTuple):
 
 def explain_shap(
     model: TextClassifier,
-    x_batch: List[str],
+    x_batch: list[str],
     y_batch: np.ndarray,
     *,
-    config: Optional[ShapConfig] = None,
-) -> List[Explanation]:
+    config: ShapConfig | None = None,
+) -> list[Explanation]:
     """
     Generate explanations using shapley values. This method depends on shap pip package.
 
@@ -113,9 +108,9 @@ def explain_shap(
 def generate_text_classification_explanations(
     model: TextClassifier,
     *args,
-    method: Optional[str] = None,
+    method: str | None = None,
     **kwargs,
-) -> List[Explanation] | np.ndarray:
+) -> list[Explanation] | np.ndarray:
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:
