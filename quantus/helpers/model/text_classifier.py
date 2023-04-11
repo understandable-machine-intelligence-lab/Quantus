@@ -7,7 +7,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, TypedDict, Tuple, Dict, Any, overload, TYPE_CHECKING, Sequence
+from typing import (
+    List,
+    TypedDict,
+    Tuple,
+    Dict,
+    Any,
+    overload,
+    TYPE_CHECKING,
+    Sequence,
+    Protocol,
+    runtime_checkable,
+)
 
 import numpy as np
 from quantus.helpers.model.model_interface import (
@@ -63,6 +74,16 @@ class Tokenizable(ABC):
     ) -> List[str]:
         """Convert vocabulary ids to strings."""
         raise NotImplementedError
+
+
+@runtime_checkable
+class EmbeddingCallable(Protocol):
+    # In order to use with built-in gradient-based xai methods,
+    # model must conform to this duck type.
+    def __call__(
+        self, input_ids: None, inputs_embeds: tf.Tensor | torch.Tensor, **kwargs
+    ) -> tf.Tensor | torch.Tensor:
+        ...
 
 
 class TextClassifier(HiddenRepresentationsModel, RandomisableModel, ModelWrapper):

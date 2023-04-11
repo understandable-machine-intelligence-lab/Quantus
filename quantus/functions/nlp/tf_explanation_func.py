@@ -713,8 +713,8 @@ def _noise_grad(
     ]
 
 
+@_noise_grad.register(tf.Tensor)
 @_noise_grad.register(np.ndarray)
-@_noise_grad.register
 def _(
     x_batch: tf.Tensor,
     model,

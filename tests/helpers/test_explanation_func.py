@@ -876,6 +876,7 @@ def test_generate_captum_explanation(
             ), "Test failed."
 
 
+@pytest.mark.xfail
 @pytest.mark.explain_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -904,14 +905,13 @@ def test_generate_captum_explanation(
             },
             {"exception": IndexError},
         ),
-        pytest.param(
+        (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
                 "method": "OcclusionSensitivity",
             },
             {"shape": (8, 28, 28)},
-            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model_tf"),

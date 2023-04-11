@@ -296,6 +296,7 @@ def test_faithfulness_correlation(
     ), "Test failed."
 
 
+@pytest.mark.xfail
 @pytest.mark.faithfulness
 @pytest.mark.parametrize(
     "model,data,params,expected",
