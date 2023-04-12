@@ -246,7 +246,7 @@ def deprecation_warnings(kwargs: dict) -> None:
 
 def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -> None:
     """
-    Warn that perturbation applied to input caused change so that input and perturbed input is not the same.
+    Warn that perturbation applied to input caused no change so that input and perturbed input is the same.
 
     Parameters
     ----------
@@ -259,7 +259,7 @@ def warn_perturbation_caused_no_change(x: np.ndarray, x_perturbed: np.ndarray) -
     -------
     None
     """
-    if (x.flatten() != x_perturbed.flatten()).any():
+    if np.allclose(x, x_perturbed, equal_nan=True):
         warnings.warn(
             "The settings for perturbing input e.g., 'perturb_func' "
             "didn't cause change in input. "
