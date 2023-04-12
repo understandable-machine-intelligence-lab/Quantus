@@ -418,8 +418,8 @@ class MaxSensitivity(BatchedPerturbationMetric):
                 continue
 
             sensitivities = self.similarity_func(
-                a=np.reshape(a_batch[instance_id], -1),
-                b=np.reshape(a_perturbed[instance_id], -1),
+                np.reshape(a_batch[instance_id], -1),
+                np.reshape(a_perturbed[instance_id], -1),
             )
             numerator = self.norm_numerator(a=sensitivities)
             denominator = self.norm_denominator(

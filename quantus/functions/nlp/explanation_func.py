@@ -29,7 +29,23 @@ log = logging.getLogger(__name__)
 
 
 if is_tensorflow_available():
-    from quantus.functions.nlp.tf_explanation_func import tf_explain
+    from transformers_gradients.text_classification.explanation_func import (
+        gradient_norm,
+        gradient_x_input,
+        integrated_gradients,
+        noise_grad,
+        noise_grad_plus_plus,
+    )
+    from transformers_gradients.model_wrapper import ModelWrapper, TokenizerWrapper
+
+    tf_explain_mapping = {
+        "GradNorm": gradient_norm,
+        "GradXInput": gradient_x_input,
+        "IntGrad": integrated_gradients,
+        "NoiseGrad": noise_grad,
+        "NoiseGrad++": noise_grad_plus_plus,
+    }
+
 
 if is_torch_available():
     from quantus.functions.nlp.torch_explanation_func import (
@@ -132,7 +148,15 @@ def generate_text_classification_explanations(
         return explain_shap(model, *args, **kwargs)
 
     if is_tensorflow_model(model):
-        return tf_explain(model, *args, method=method, **kwargs)
+        if method not in tf_explain_mapping:
+            raise ValueError(
+                f"Unsupported explanation function, supported are {list(tf_explain_mapping.keys())}"
+            )
+
+        model_w = ModelWrapper(model.get_model())
+        tokenizer_w = TokenizerWrapper(model.tokenizer.tokenizer)
+        fn = tf_explain_mapping[method]
+        return fn(model_w, *args, tokenizer_w, **kwargs)
 
     if is_torch_model(model):
         result = torch_explain(model, *args, method=method, **kwargs)

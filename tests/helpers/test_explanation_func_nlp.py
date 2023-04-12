@@ -4,14 +4,14 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from quantus.functions.explanation_func import explain
-from quantus.functions.nlp.explanation_func import ShapConfig
-from quantus.functions.nlp.lime import LimeConfig
-from quantus.functions.nlp.tf_explanation_func import (
+from transformers_gradients.config import (
     IntGradConfig,
     NoiseGradConfig,
     NoiseGradPlusPlusConfig,
 )
+from quantus.functions.explanation_func import explain
+from quantus.functions.nlp.explanation_func import ShapConfig
+from quantus.functions.nlp.lime import LimeConfig
 from quantus.helpers.tf_utils import is_xla_compatible_platform
 
 
@@ -47,7 +47,7 @@ def unk_token_baseline_func() -> Callable:
         {
             "method": "NoiseGrad++",
             "config": NoiseGradPlusPlusConfig(
-                n=2, m=2, explain_fn="GradNorm", noise_type="additive"
+                n=2, m=2, explain_fn="GradNorm", noise_fn=lambda a, b: a + b
             ),
         },
         {"method": "LIME", "config": LimeConfig(num_samples=5)},
@@ -94,7 +94,7 @@ def test_tf_model(tf_sst2_model_wrapper, sst2_dataset, kwargs):
         {
             "method": "NoiseGrad++",
             "explain_fn": "GradXInput",
-            "config": NoiseGradPlusPlusConfig(n=2, m=2, noise_type="additive"),
+            "config": NoiseGradPlusPlusConfig(n=2, m=2),
         },
         {"method": "LIME", "config": LimeConfig(num_samples=5)},
         {"method": "SHAP", "config": ShapConfig(max_evals=5)},
