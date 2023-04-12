@@ -6,7 +6,7 @@ from pytest_lazyfixture import lazy_fixture
 from pytest_mock import MockerFixture
 
 import quantus
-from quantus.evaluation import evaluate, evaluate_nlp
+from quantus.evaluation import evaluate, evaluate_text_classification
 from quantus.functions.explanation_func import explain
 from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
 from quantus.metrics.complexity import Sparseness  # noqa
@@ -233,7 +233,7 @@ def test_evaluate_nlp(
     }
 
     callback_stub = mocker.stub("callback_stub")
-    scores = evaluate_nlp(
+    scores = evaluate_text_classification(
         metrics=nlp_metrics,
         model=model,
         x_batch=sst2_2_ragged_batches["x_batch"],

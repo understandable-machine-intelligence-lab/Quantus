@@ -10,7 +10,13 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
-from quantus.helpers.types import SimilarityFn, NormaliseFn, ExplainFn
+from quantus.helpers.types import (
+    SimilarityFn,
+    NormaliseFn,
+    ExplainFn,
+    DataDomain,
+    Explanation,
+)
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
@@ -33,21 +39,23 @@ class RandomLogit(BatchedMetric):
         Attributions Fail." ICML (2020): 9046-9057.
     """
 
-    data_domain_applicability: List[str] = BatchedMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        DataDomain
+    ] = BatchedMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: SimilarityFn = None,
+        similarity_func: SimilarityFn = ssim,
         num_classes: int = 1000,
         seed: int = 42,
         abs: bool = False,
         normalise: bool = True,
-        normalise_func: Optional[NormaliseFn] = None,
-        normalise_func_kwargs: Optional[Dict[str, Any]] = None,
+        normalise_func: NormaliseFn = normalise_by_max,
+        normalise_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
         aggregate_func: Callable = np.mean,
-        default_plot_func: Optional[Callable] = None,
+        default_plot_func: Callable[[...], None] | None = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         **kwargs,
@@ -84,8 +92,6 @@ class RandomLogit(BatchedMetric):
         kwargs: optional
             Keyword arguments.
         """
-        if normalise_func is None:
-            normalise_func = normalise_by_max
 
         super().__init__(
             abs=abs,
@@ -101,8 +107,6 @@ class RandomLogit(BatchedMetric):
         )
 
         # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = ssim
         self.similarity_func = similarity_func
         self.num_classes = num_classes
         self.seed = seed
@@ -124,16 +128,16 @@ class RandomLogit(BatchedMetric):
         model,
         x_batch: np.array,
         y_batch: np.array,
-        a_batch: Optional = None,
-        s_batch: Optional[np.ndarray] = None,
-        channel_first: Optional[bool] = None,
-        explain_func: Optional[ExplainFn] = None,
-        explain_func_kwargs: Optional[Dict] = None,
-        model_predict_kwargs: Optional[Dict] = None,
-        softmax: Optional[bool] = False,
-        device: Optional[str] = None,
+        a_batch: np.ndarray | List[Explanation] | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func: ExplainFn = None,
+        explain_func_kwargs: Dict[str, ...] | None = None,
+        model_predict_kwargs: Dict[str, ...] | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
         batch_size: int = 64,
-        custom_batch: Optional[Any] = None,
+        custom_batch: Any | None = None,
         **kwargs,
     ):
         """
@@ -230,9 +234,9 @@ class RandomLogit(BatchedMetric):
         model: ModelInterface | TextClassifier,
         x_batch: np.ndarray | List[str],
         y_batch: np.ndarray,
-        a_batch,
+        a_batch: np.ndarray | List[Explanation],
         s_batch: np.ndarray = None,
-        custom_batch = None
+        custom_batch=None,
     ) -> np.ndarray | float:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.
@@ -284,10 +288,10 @@ class RandomLogit(BatchedMetric):
         self,
         model: ModelInterface,
         x_batch: np.ndarray,
-        y_batch: Optional[np.ndarray],
-        a_batch: Optional[np.ndarray],
+        y_batch: np.ndarray | None,
+        a_batch: np.ndarray | None,
         s_batch: np.ndarray,
-        custom_batch: Optional[np.ndarray],
+        custom_batch: np.ndarray | None,
     ) -> None:
         """
         Implementation of custom_preprocess_batch.

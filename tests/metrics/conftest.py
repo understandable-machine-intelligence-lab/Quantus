@@ -5,7 +5,6 @@ from pytest_mock import MockerFixture
 predict_functions = (
     "quantus.helpers.model.tf_model.TensorFlowModel.predict",
     "quantus.helpers.model.pytorch_model.PyTorchModel.predict",
-
     "quantus.helpers.model.tf_hf_model.TFHuggingFaceTextClassifier.predict",
     "quantus.helpers.model.torch_hf_model.TorchHuggingFaceTextClassifier.predict",
 )

@@ -283,7 +283,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         s_batch=None,
         custom_batch: Optional[List[List[str]]] = None,
     ) -> np.ndarray:
-
         # Execute forward pass on provided inputs.
         logits = get_logits_for_labels(model.predict(x_batch), y_batch)
         # Prepare output array.
@@ -311,7 +310,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         a_batch: List[Explanation],
         og_logits: np.ndarray,
     ) -> np.ndarray:
-
         x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
         # Perturb input.
         x_perturbed = self.perturb_batch(x_embeddings)
@@ -345,7 +343,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         og_logits: np.ndarray,
         x_perturbed: List[str],
     ) -> np.ndarray:
-
         # Generate explanations for perturbed input.
         a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
         # Execute forward pass on perturbed inputs.

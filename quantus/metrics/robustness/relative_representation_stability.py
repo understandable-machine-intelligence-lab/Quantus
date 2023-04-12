@@ -16,7 +16,10 @@ if TYPE_CHECKING:
     import torch
 
 
-from quantus.helpers.model.model_interface import ModelInterface, HiddenRepresentationsModel
+from quantus.helpers.model.model_interface import (
+    ModelInterface,
+    HiddenRepresentationsModel,
+)
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
@@ -28,6 +31,7 @@ from quantus.functions.norm_func import l2_norm
 from quantus.helpers.types import Explanation
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
+
 
 class RelativeRepresentationStability(BatchedPerturbationMetric):
     """
@@ -42,7 +46,9 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @attributes_check
     def __init__(
@@ -99,9 +105,13 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
 
-        normalise_func = value_or_default(normalise_func, lambda: normalise_by_average_second_moment_estimate)
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
         perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
-        perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {"upper_bound": 0.2})
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
 
         super().__init__(
             abs=abs,
@@ -208,7 +218,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
             tokenizer=tokenizer,
-            **kwargs
+            **kwargs,
         )
 
     @singledispatchmethod
@@ -218,8 +228,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch = None,
-        custom_batch = None,
+        s_batch=None,
+        custom_batch=None,
     ) -> np.ndarray:
         """
         Parameters
@@ -270,7 +280,9 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             rrs_batch[index] = rrs
 
             # If perturbed input caused change in prediction, then it's RRS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+            changed_prediction_indices = self.changed_prediction_indices(
+                model, x_batch, x_perturbed
+            )
 
             if len(changed_prediction_indices) != 0:
                 rrs_batch[index, changed_prediction_indices] = np.nan
@@ -281,13 +293,13 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
 
     @evaluate_batch.register
     def _(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
-            s_batch=None,
-            custom_batch=None,
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        s_batch=None,
+        custom_batch=None,
     ) -> np.ndarray:
         ris_batch = np.zeros(shape=[self.nr_samples, len(x_batch)])
         for index in range(self.nr_samples):
@@ -305,16 +317,17 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         return result
 
     def _eval_step_nlp_plain_text(
-            self,
-            model: TextClassifier,
-            x_batch: List[str],
-            y_batch: np.ndarray,
-            a_batch: List[Explanation],
-            x_perturbed: List[str],
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
+        x_perturbed: List[str],
     ) -> np.ndarray:
-
         internal_representations = model.get_hidden_representations(x_batch)
-        internal_representations_perturbed = model.get_hidden_representations(x_perturbed)
+        internal_representations_perturbed = model.get_hidden_representations(
+            x_perturbed
+        )
 
         a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
         rrs = self.relative_representation_stability_objective(
@@ -323,7 +336,9 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             get_scores(a_batch),
             get_scores(a_batch_perturbed),
         )
-        changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_batch, x_perturbed
+        )
         if len(changed_prediction_indices) != 0:
             rrs[changed_prediction_indices] = np.nan
         return rrs
@@ -335,31 +350,38 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         a_batch: List[Explanation],
     ) -> np.ndarray:
-
         x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
         x_perturbed = self.perturb_batch(x_embeddings)
 
-        internal_representations = model.get_hidden_representations(x_embeddings, **predict_kwargs)
-        internal_representations_perturbed = model.get_hidden_representations(x_perturbed, **predict_kwargs)
+        internal_representations = model.get_hidden_representations(
+            x_embeddings, **predict_kwargs
+        )
+        internal_representations_perturbed = model.get_hidden_representations(
+            x_perturbed, **predict_kwargs
+        )
 
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch, **predict_kwargs)
+        a_batch_perturbed = self.explain_batch(
+            model, x_perturbed, y_batch, **predict_kwargs
+        )
         rrs = self.relative_representation_stability_objective(
             internal_representations,
             internal_representations_perturbed,
             get_scores(a_batch),
             a_batch_perturbed,
         )
-        changed_prediction_indices = self.changed_prediction_indices(model, x_embeddings, x_perturbed, **predict_kwargs)
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_embeddings, x_perturbed, **predict_kwargs
+        )
         if len(changed_prediction_indices) != 0:
             rrs[changed_prediction_indices] = np.nan
         return rrs
 
     @staticmethod
     def relative_representation_stability_objective(
-            l_x: np.ndarray,
-            l_xs: np.ndarray,
-            e_x: np.ndarray,
-            e_xs: np.ndarray,
+        l_x: np.ndarray,
+        l_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
     ) -> np.ndarray:
         """
         Computes relative representation stabilities maximization objective
@@ -389,7 +411,7 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         nominator = l2_norm(nominator)
 
         denominator = l_x - l_xs
-        denominator /= (l_x + eps_min)
+        denominator /= l_x + eps_min
         denominator = l2_norm(denominator) + eps_min
 
         return nominator / denominator

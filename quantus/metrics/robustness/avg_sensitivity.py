@@ -20,7 +20,15 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.types import Explanation, ExplainFn
+from quantus.helpers.types import (
+    Explanation,
+    ExplainFn,
+    NormaliseFn,
+    PerturbFn,
+    AggregateFn,
+    SimilarityFn,
+    NormFn,
+)
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
@@ -50,20 +58,20 @@ class AvgSensitivity(BatchedPerturbationMetric):
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Callable | None = None,
-        norm_numerator: Callable | None = None,
-        norm_denominator: Callable | None = None,
+        similarity_func: SimilarityFn = difference,
+        norm_numerator: SimilarityFn = fro_norm,
+        norm_denominator: NormFn = fro_norm,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Callable[[np.ndarray], np.ndarray] | None = None,
+        normalise_func: NormaliseFn = normalise_by_max,
         normalise_func_kwargs: dict[str, Any] | None = None,
-        perturb_func: Callable = None,
+        perturb_func: PerturbFn = uniform_noise,
         lower_bound: float = 0.2,
         upper_bound: float | None = None,
-        perturb_func_kwargs: dict[str, Any] | None = None,
+        perturb_func_kwargs: dict[str, ...] | None = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
+        aggregate_func: Agg = np.mean,
         default_plot_func: Callable | None = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
@@ -138,10 +146,6 @@ class AvgSensitivity(BatchedPerturbationMetric):
             return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             **kwargs,
         )
-
-        self.similarity_func = value_or_default(similarity_func, lambda: difference)
-        self.norm_numerator = value_or_default(norm_numerator, lambda: fro_norm)
-        self.norm_denominator = value_or_default(norm_denominator, lambda: fro_norm)
 
         # Asserts and warnings.
         if not self.disable_warnings:

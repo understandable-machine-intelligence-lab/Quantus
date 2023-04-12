@@ -40,7 +40,9 @@ class RelativeInputStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    data_domain_applicability: List[str] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
+    data_domain_applicability: List[
+        str
+    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @attributes_check
     def __init__(
@@ -91,9 +93,13 @@ class RelativeInputStability(BatchedPerturbationMetric):
             When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
         """
 
-        normalise_func = value_or_default(normalise_func, lambda: normalise_by_average_second_moment_estimate)
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
         perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
-        perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {"upper_bound": 0.2})
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
 
         super().__init__(
             abs=abs,
@@ -192,7 +198,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
             s_batch=None,
             batch_size=batch_size,
             tokenizer=tokenizer,
-            **kwargs
+            **kwargs,
         )
 
     @singledispatchmethod

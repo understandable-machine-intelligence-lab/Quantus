@@ -193,7 +193,7 @@ def evaluate(
     return results
 
 
-def evaluate_nlp(
+def evaluate_text_classification(
     *,
     metrics: Mapping[str, BatchedMetric],
     model: ModelT,

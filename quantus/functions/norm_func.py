@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 def vectorize_norm(func: Callable):
-
     vectorized_func = np.vectorize(func, signature="(n)->()", cache=True)
 
     @wraps(func)

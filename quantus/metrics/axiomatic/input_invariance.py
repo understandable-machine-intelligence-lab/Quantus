@@ -230,7 +230,7 @@ class InputInvariance(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         a_batch: np.ndarray,
         s_batch: np.ndarray,
-        custom_batch=None
+        custom_batch=None,
     ) -> np.ndarray:
         """
         Evaluates model and attributes on a single data batch and returns the batched evaluation result.

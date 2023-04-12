@@ -36,3 +36,7 @@ def test_token_flipping(model, tokenizer, sst2_dataset, init_kwargs):
     # assert not (result == np.NZERO).any()
     # assert not (result == np.PZERO).any()
     assert result.shape == (29,)
+
+
+def test_2_batches():
+    pytest.fail("Not Implemented")
