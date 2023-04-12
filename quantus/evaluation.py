@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import warnings
 from functools import partial
-from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Tuple
+from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Tuple, Optional, Union
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -36,20 +36,18 @@ if TYPE_CHECKING:
 
 
 def evaluate(
-    metrics: Mapping[str, EvaluateAble],
-    xai_methods: Mapping[str, Callable]
-    | Mapping[str, Dict[str, ...]]
-    | Mapping[str, np.ndarray],
+    metrics: Dict,
+    xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
     model: ModelInterface,
     x_batch: np.ndarray,
     y_batch: np.ndarray,
-    s_batch: np.ndarray | None = None,
+    s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
     progress: bool = False,
-    explain_func_kwargs: Mapping[str, ...] | None = None,
-    call_kwargs: Mapping[str, ...] | Mapping[str, Mapping[str, ...]] = None,
+    explain_func_kwargs: Optional[dict] = None,
+    call_kwargs: Union[Dict, Dict[str, Dict]] = None,
     **kwargs,
-) -> Dict[str, ...] | None:
+) -> Optional[dict]:
     """
     A method to evaluate some explanation methods given some metrics.
 

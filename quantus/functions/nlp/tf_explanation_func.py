@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from functools import partial, singledispatch
 from typing import Callable, Dict, List, Optional, Union, NamedTuple, Literal
+from operator import itemgetter
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability.python.distributions.normal import Normal
-from operator import itemgetter
+from keras import backend
 
 from quantus.helpers.types import Explanation
 from quantus.helpers.collection_utils import value_or_default, map_dict
@@ -692,10 +693,11 @@ def _integrated_gradients_iterative(
 
 @singledispatch
 def _noise_grad(
-    x_batch: list,
+    x_batch: List[str],
     model: TFHuggingFaceTextClassifier,
     y_batch: tf.Tensor,
     config: NoiseGradConfig = None,
+    **kwargs,
 ):
     config = value_or_default(config, default_noise_grad_config).resolve_functions()
     tf.random.set_seed(config.seed)

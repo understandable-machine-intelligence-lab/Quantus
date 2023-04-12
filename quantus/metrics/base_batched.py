@@ -65,9 +65,9 @@ C = TypeVar("C", bound=MetricScores, covariant=True)
 
 class DataDict(TypedDict, total=False):
     model: ModelInterface | TextClassifier
-    x_batch: np.ndarray | list[str]
+    x_batch: np.ndarray | List[str]
     y_batch: np.ndarray | None
-    a_batch: np.ndarray | list[Explanation] | None
+    a_batch: np.ndarray | List[Explanation] | None
     s_batch: np.ndarray | None
     custom_batch: C | None
 
@@ -83,7 +83,7 @@ class BatchedMetric(EvaluateAble, ABC):
         abs: bool,
         normalise: bool,
         normalise_func: NormaliseFn | None,
-        normalise_func_kwargs: dict[str, ...] | None,
+        normalise_func_kwargs: Dict[str, ...] | None,
         return_aggregate: bool,
         aggregate_func: AggregateFn | None,
         default_plot_func: Callable | None,
@@ -145,13 +145,13 @@ class BatchedMetric(EvaluateAble, ABC):
     def __call__(
         self,
         model: ModelT,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray | None,
-        a_batch: np.ndarray | list[Explanation] | None,
+        a_batch: np.ndarray | List[Explanation] | None,
         channel_first: bool | None,
         explain_func: ExplainFn,
-        explain_func_kwargs: dict[str, ...] | None,
-        model_predict_kwargs: dict[str, ...] | None,
+        explain_func_kwargs: Dict[str, ...] | None,
+        model_predict_kwargs: Dict[str, ...] | None,
         softmax: bool | None,
         device: str | None = None,
         batch_size: int = 64,
@@ -355,13 +355,13 @@ class BatchedMetric(EvaluateAble, ABC):
     def general_preprocess(
         self,
         model: ModelT,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray | None,
-        a_batch: np.ndarray | list[Explanation] | None,
+        a_batch: np.ndarray | List[Explanation] | None,
         s_batch: np.ndarray | None,
         channel_first: bool | None,
         explain_func: ExplainFn,
-        explain_func_kwargs: dict[str, ...] | None,
+        explain_func_kwargs: Dict[str, ...] | None,
         model_predict_kwargs: dict | None,
         softmax: bool,
         device: str | None,
@@ -426,13 +426,13 @@ class BatchedMetric(EvaluateAble, ABC):
     def batch_preprocess(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray | None,
-        a_batch: np.ndarray | list[Explanation] | None,
-    ) -> tuple[
-        np.ndarray | list[str],
+        a_batch: np.ndarray | List[Explanation] | None,
+    ) -> Tuple[
+        np.ndarray | List[str],
         np.ndarray,
-        np.ndarray | list[Explanation],
+        np.ndarray | List[Explanation],
         Any | None,
     ]:
         """Generate y_batch, a_batch, custom_batch if were not provided."""
@@ -453,9 +453,9 @@ class BatchedMetric(EvaluateAble, ABC):
     def batch_postprocess(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray,
-        a_batch: np.ndarray | list[Explanation],
+        a_batch: np.ndarray | List[Explanation],
         s_batch: np.ndarray | None,
         score: T,
     ) -> T:
@@ -466,9 +466,9 @@ class BatchedMetric(EvaluateAble, ABC):
     def evaluate_batch(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray,
-        a_batch: np.ndarray | list[Explanation],
+        a_batch: np.ndarray | List[Explanation],
         s_batch: np.ndarray | None,
         custom_batch: Any | None = None,
     ) -> MetricScores:
@@ -513,9 +513,9 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
         abs: bool,
         normalise: bool,
         normalise_func: Callable | None,
-        normalise_func_kwargs: dict[str, ...] | None,
+        normalise_func_kwargs: Dict[str, ...] | None,
         perturb_func: PerturbFn,
-        perturb_func_kwargs: dict[str, ...] | None,
+        perturb_func_kwargs: Dict[str, ...] | None,
         return_aggregate: bool,
         aggregate_func: AggregateFn | None,
         default_plot_func: Callable | None,
@@ -578,16 +578,18 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
 
     def changed_prediction_indices(
         self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        x_perturbed: np.ndarray,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        x_perturbed: np.ndarray | List[str],
         **kwargs,
     ) -> Sequence[int]:
         """Predict on x_batch and x_perturbed, return indices of mismatched labels."""
         if not self.return_nan_when_prediction_changes:
             return []
-        og_labels = np.argmax(safe_as_array(model.predict(x_batch)), axis=-1)
-        perturbed_labels = np.argmax(safe_as_array(model.predict(x_perturbed)), axis=-1)
+        og_labels = np.argmax(safe_as_array(model.predict(x_batch, **kwargs)), axis=-1)
+        perturbed_labels = np.argmax(
+            safe_as_array(model.predict(x_perturbed, **kwargs)), axis=-1
+        )
         return np.reshape(np.argwhere(og_labels != perturbed_labels), -1)
 
     def perturb_batch(self, x_batch: np.ndarray) -> np.ndarray:
@@ -607,9 +609,9 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
     def custom_preprocess(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray | None,
-        a_batch: np.ndarray | list[Explanation] | None,
+        a_batch: np.ndarray | List[Explanation] | None,
         s_batch: np.ndarray,
         custom_batch: Any | None,
     ):
@@ -642,13 +644,13 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
     def batch_preprocess(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray | None,
-        a_batch: np.ndarray | list[Explanation] | None,
-    ) -> tuple[
-        np.ndarray | list[str],
+        a_batch: np.ndarray | List[Explanation] | None,
+    ) -> Tuple[
+        np.ndarray | List[str],
         np.ndarray,
-        np.ndarray | list[Explanation],
+        np.ndarray | List[Explanation],
         Any | None,
     ]:
         """
@@ -690,9 +692,9 @@ class BatchedPerturbationMetric(BatchedMetric, ABC):
     def batch_postprocess(
         self,
         model: ModelInterface | TextClassifier,
-        x_batch: np.ndarray | list[str],
+        x_batch: np.ndarray | List[str],
         y_batch: np.ndarray,
-        a_batch: np.ndarray | list[Explanation],
+        a_batch: np.ndarray | List[Explanation],
         s_batch: np.ndarray | None,
         score: np.ndarray,
     ) -> np.ndarray:

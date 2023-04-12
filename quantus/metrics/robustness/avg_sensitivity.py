@@ -28,12 +28,13 @@ from quantus.helpers.types import (
     AggregateFn,
     SimilarityFn,
     NormFn,
+    DataDomain,
 )
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
 )
-from quantus.helpers.collection_utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default, add_default_items
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 
 
@@ -51,28 +52,28 @@ class AvgSensitivity(BatchedPerturbationMetric):
         feature-based model explanations."  IJCAI (2020): 3016-3022.
     """
 
-    data_domain_applicability: list[
-        str
+    data_domain_applicability: List[
+        DataDomain
     ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
         self,
         similarity_func: SimilarityFn = difference,
-        norm_numerator: SimilarityFn = fro_norm,
+        norm_numerator: NormFn = fro_norm,
         norm_denominator: NormFn = fro_norm,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,
         normalise_func: NormaliseFn = normalise_by_max,
-        normalise_func_kwargs: dict[str, Any] | None = None,
+        normalise_func_kwargs: Dict[str, Any] | None = None,
         perturb_func: PerturbFn = uniform_noise,
         lower_bound: float = 0.2,
         upper_bound: float | None = None,
-        perturb_func_kwargs: dict[str, ...] | None = None,
+        perturb_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
-        aggregate_func: Agg = np.mean,
-        default_plot_func: Callable | None = None,
+        aggregate_func: AggregateFn = np.mean,
+        default_plot_func: Callable[[...], None] | None = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         return_nan_when_prediction_changes: bool = False,
@@ -123,12 +124,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-
-        normalise_func = value_or_default(normalise_func, lambda: normalise_by_max)
-        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
         perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})
-        perturb_func_kwargs["lower_bound"] = lower_bound
-        perturb_func_kwargs["upper_bound"] = upper_bound
+        perturb_func_kwargs = add_default_items(
+            perturb_func_kwargs, dict(lower_bound=lower_bound, upper_bound=upper_bound)
+        )
 
         super().__init__(
             abs=abs,
@@ -146,6 +145,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
             return_nan_when_prediction_changes=return_nan_when_prediction_changes,
             **kwargs,
         )
+
+        self.similarity_func = similarity_func
+        self.norm_numerator = norm_numerator
+        self.norm_denominator = norm_denominator
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -331,10 +334,10 @@ class AvgSensitivity(BatchedPerturbationMetric):
                     continue
 
                 sensitivities = self.similarity_func(
-                    a=a_batch[instance_id].flatten(),
-                    b=a_perturbed[instance_id].flatten(),
+                    a_batch[instance_id].flatten(),
+                    a_perturbed[instance_id].flatten(),
                 )
-                numerator = self.norm_numerator(a=sensitivities)
+                numerator = self.norm_numerator(sensitivities)
                 denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
@@ -449,8 +452,8 @@ class AvgSensitivity(BatchedPerturbationMetric):
                 continue
 
             sensitivities = self.similarity_func(
-                a=np.reshape(a_batch[instance_id], -1),
-                b=np.reshape(a_perturbed[instance_id], -1),
+                np.reshape(a_batch[instance_id], -1),
+                np.reshape(a_perturbed[instance_id], -1),
             )
             numerator = self.norm_numerator(sensitivities)
             denominator = self.norm_denominator(

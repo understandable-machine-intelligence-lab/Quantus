@@ -62,7 +62,7 @@ class PerturbFn(Protocol):
 
 @runtime_checkable
 class NormFn(Protocol):
-    def __call__(self, a: np.ndarray, **kwargs) -> ArrayLike:
+    def __call__(self, a: ArrayLike, **kwargs) -> ArrayLike:
         ...
 
 

@@ -27,8 +27,10 @@ from quantus.helpers.types import (
     NormaliseFn,
     NormFn,
     Explanation,
+    DataDomain,
+    AggregateFn,
 )
-from quantus.helpers.collection_utils import value_or_default
+from quantus.helpers.collection_utils import value_or_default, add_default_items
 from quantus.helpers.nlp_utils import (
     is_plain_text_perturbation,
     get_scores,
@@ -55,27 +57,27 @@ class MaxSensitivity(BatchedPerturbationMetric):
     """
 
     data_domain_applicability: List[
-        str
+        DataDomain
     ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
 
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Optional[SimilarityFn] = None,
-        norm_numerator: Optional[NormFn] = None,
-        norm_denominator: Optional[NormFn] = None,
+        similarity_func: SimilarityFn = difference,
+        norm_numerator: NormFn = fro_norm,
+        norm_denominator: NormFn = fro_norm,
         nr_samples: int = 200,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: Optional[NormaliseFn] = None,
-        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
-        perturb_func: PerturbFn = None,
+        normalise_func: NormaliseFn = normalise_by_max,
+        normalise_func_kwargs: Dict[str, ...] | None = None,
+        perturb_func: PerturbFn = uniform_noise,
         lower_bound: float = 0.2,
-        upper_bound: Optional[float] = None,
-        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        upper_bound: float | None = None,
+        perturb_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
-        aggregate_func: Callable = np.mean,
-        default_plot_func: Optional[Callable] = None,
+        aggregate_func: AggregateFn = np.mean,
+        default_plot_func: Callable[[...], None] | None = None,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         return_nan_when_prediction_changes: bool = False,
@@ -126,11 +128,10 @@ class MaxSensitivity(BatchedPerturbationMetric):
         kwargs: optional
             Keyword arguments.
         """
-        normalise_func = value_or_default(normalise_func, lambda: normalise_by_max)
-        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
         perturb_func_kwargs = value_or_default(perturb_func_kwargs, lambda: {})
-        perturb_func_kwargs["lower_bound"] = lower_bound
-        perturb_func_kwargs["upper_bound"] = upper_bound
+        perturb_func_kwargs = add_default_items(
+            perturb_func_kwargs, dict(lower_bound=lower_bound, upper_bound=upper_bound)
+        )
 
         super().__init__(
             abs=abs,
@@ -170,6 +171,10 @@ class MaxSensitivity(BatchedPerturbationMetric):
                 ),
             )
             warn.warn_noise_zero(noise=lower_bound)
+
+        self.similarity_func = similarity_func
+        self.norm_numerator = norm_numerator
+        self.norm_denominator = norm_denominator
 
     def __call__(
         self,
