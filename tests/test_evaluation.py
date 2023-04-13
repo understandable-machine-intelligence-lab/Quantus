@@ -193,7 +193,7 @@ def assert_is_valid_score(scores):
 
 
 @pytest.mark.order(-2)
-@pytest.mark.last
+@pytest.mark.nlp
 @pytest.mark.parametrize(
     "model",
     [

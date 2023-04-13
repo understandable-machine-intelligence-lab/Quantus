@@ -42,3 +42,7 @@ tutorials/invited_talks/
 
 # Tox isolated environmet
 .tox
+
+
+logs
+.vscode

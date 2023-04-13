@@ -9,26 +9,26 @@ from __future__ import annotations
 
 import logging
 from importlib import util
-from typing import NamedTuple
+from typing import NamedTuple, List
 
+from functools import wraps
 import numpy as np
 from transformers import pipeline
 
 from quantus.functions.nlp.lime import explain_lime
-from quantus.helpers.collection_utils import (
-    safe_as_array,
-    value_or_default,
-)
-from quantus.helpers.model.text_classifier import TextClassifier
+from quantus.helpers.collection_utils import safe_as_array, value_or_default
+from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.nlp_utils import map_explanations, is_transformers_available
 from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_available
 from quantus.helpers.torch_utils import is_torch_available, is_torch_model
 from quantus.helpers.types import Explanation
 
+
 log = logging.getLogger(__name__)
 
 
 if is_tensorflow_available():
+    import tensorflow as tf
     from transformers_gradients.text_classification.explanation_func import (
         gradient_norm,
         gradient_x_input,
@@ -36,7 +36,12 @@ if is_tensorflow_available():
         noise_grad,
         noise_grad_plus_plus,
     )
-    from transformers_gradients.model_wrapper import ModelWrapper, TokenizerWrapper
+
+    def as_tensor(arr):
+        if isinstance(arr, np.ndarray):
+            return tf.constant(arr)
+        else:
+            return arr
 
     tf_explain_mapping = {
         "GradNorm": gradient_norm,
@@ -46,12 +51,10 @@ if is_tensorflow_available():
         "NoiseGrad++": noise_grad_plus_plus,
     }
 
-
 if is_torch_available():
     from quantus.functions.nlp.torch_explanation_func import (
         torch_explain,
     )
-
 
 if is_transformers_available():
     from transformers.utils.hub import PushToHubMixin
@@ -62,9 +65,7 @@ def is_shap_available() -> bool:
 
 
 if is_shap_available():
-    # TODO shap is not maintained, get rid of dependecy on it.
     import shap
-
 
 __all__ = ["ShapConfig", "generate_text_classification_explanations"]
 
@@ -125,14 +126,15 @@ def explain_shap(
 
 def generate_text_classification_explanations(
     model: TextClassifier,
-    *args,
+    x_batch: List[str] | np.ndarray,
+    y_batch: np.ndarray,
     method: str | None = None,
     **kwargs,
 ) -> list[Explanation] | np.ndarray:
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:
-        logging.warning(
+        log.warning(
             f"Using quantus 'explain' function as an explainer without specifying 'method' (string) "
             f"in kwargs will produce a simple 'GradientNorm' explanation.\n",
         )
@@ -143,9 +145,9 @@ def generate_text_classification_explanations(
         kwargs.pop("device")
 
     if method == "LIME":
-        return explain_lime(model, *args, **kwargs)
+        return explain_lime(model, x_batch, y_batch, **kwargs)
     if method == "SHAP":
-        return explain_shap(model, *args, **kwargs)
+        return explain_shap(model, x_batch, y_batch, **kwargs)
 
     if is_tensorflow_model(model):
         if method not in tf_explain_mapping:
@@ -153,13 +155,17 @@ def generate_text_classification_explanations(
                 f"Unsupported explanation function, supported are {list(tf_explain_mapping.keys())}"
             )
 
-        model_w = ModelWrapper(model.get_model())
-        tokenizer_w = TokenizerWrapper(model.tokenizer.tokenizer)
         fn = tf_explain_mapping[method]
-        return fn(model_w, *args, tokenizer_w, **kwargs)
+        return fn(
+            model.get_model(),
+            as_tensor(x_batch),
+            as_tensor(y_batch),
+            tokenizer=model.tokenizer.tokenizer,
+            **kwargs,
+        )
 
     if is_torch_model(model):
-        result = torch_explain(model, *args, method=method, **kwargs)
+        result = torch_explain(model, x_batch, y_batch, method=method, **kwargs)
         return map_explanations(result, safe_as_array)  # noqa
 
     raise ValueError(f"Unable to identify DNN framework of the model.")

@@ -18,6 +18,8 @@ from quantus.helpers.model.text_classifier import Tokenizable
 class HuggingFaceTokenizer(Tokenizable):
     """A wrapper around HuggingFace's hub tokenizers, which encapsulates common functionality used in Quantus."""
 
+    tokenizer: PreTrainedTokenizerBase
+
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
         self.tokenizer = tokenizer
 

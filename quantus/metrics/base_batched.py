@@ -19,6 +19,8 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    Tuple,
+    Dict,
 )
 
 import numpy as np

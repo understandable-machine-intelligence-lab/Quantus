@@ -320,16 +320,13 @@ def test_model_parameter_randomisation(
         a_batch=a_batch,
         **call_params,
     )
-    if isinstance(expected, float):
-        assert all(
-            s == expected for layer, scores in scores_layers.items() for s in scores
-        ), "Test failed."
-    else:
-        assert all(
-            ((s >= expected["min"]) & (s <= expected["max"]))
-            for layer, scores in scores_layers.items()
-            for s in scores
-        ), "Test failed."
+
+    for score in scores_layers.values():
+        if isinstance(expected, float):
+            assert np.allclose(score, expected)
+        else:
+            assert np.greater_equal(score, expected["min"]).all()
+            assert np.less_equal(score, expected["max"]).all()
 
 
 @pytest.mark.randomisation

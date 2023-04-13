@@ -35,6 +35,18 @@ tf.random.set_seed(42)
 torch.random.manual_seed(42)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def profile():
+    options = tf.profiler.experimental.ProfilerOptions(
+        host_tracer_level=3, python_tracer_level=1, device_tracer_level=1
+    )
+    tf.profiler.experimental.start("logs", options=options)
+
+    yield
+
+    tf.profiler.experimental.stop()
+
+
 @pytest.fixture(scope="session")
 def load_mnist_model():
     """Load a pre-trained LeNet classification model (architecture at quantus/helpers/models)."""
