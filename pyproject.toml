@@ -115,17 +115,22 @@ dependencies = [
 [project.optional-dependencies] # Optional
 test = [
     "quantus[tf_explain,captum,zennit]",
-    "coverage[toml]",
-    "flake8",
-    "black",
-    "mypy==0.982",
     "pytest",
-    "pytest-cov",
     "pytest-lazy-fixture",
     "pytest-mock",
     "pytest-xdist",
     "tox>=4.4.11",
     "pandas"
+]
+lint = [
+    "flake8",
+    "black",
+    "mypy==0.982",
+]
+coverage = [
+    "quantus[test]",
+    "coverage[toml]",
+    "pytest-cov",
 ]
 torch = [
     "torch>=1.13.1",
