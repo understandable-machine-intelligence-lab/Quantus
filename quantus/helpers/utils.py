@@ -1073,4 +1073,4 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     # Yes, this is a one-liner, yes this could be done in for-loop, but I've spent 2.5 hours debugging why
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
     # the hard way again one more time.
-    return logits[np.asarray(list(range(y_batch.shape[0]))), y_batch]
+    return np.asarray(logits)[np.arange(y_batch.shape[0]), y_batch]

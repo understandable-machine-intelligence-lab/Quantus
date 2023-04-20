@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-from typing import List, Union, Dict, Any, Optional, Tuple
+from typing import List, Union, Dict, Any, Optional, Tuple, Mapping, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -208,8 +208,8 @@ def plot_sensitivity_n_experiment(
 
 
 def plot_model_parameter_randomisation_experiment(
-    results: Dict[str, dict],
-    methods=None,
+    results: Mapping[str, Mapping[str, Sequence[float]]],
+    methods: Sequence[str] | None = None,
     *args,
     **kwargs,
 ) -> None:

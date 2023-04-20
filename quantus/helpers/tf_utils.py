@@ -86,6 +86,10 @@ if is_tensorflow_available():
                 return True
         return False
 
+    def as_tensor(arr):
+        if isinstance(arr, np.ndarray):
+            return tf.convert_to_tensor(arr)
+
 else:
 
     def is_tensorflow_model(model) -> bool:

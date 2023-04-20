@@ -12,8 +12,11 @@ from quantus.functions.perturb_func import synonym_replacement, spelling_replace
 from quantus.metrics.complexity import Sparseness  # noqa
 from quantus.metrics.robustness import MaxSensitivity  # noqa
 
+from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
+from quantus.helpers.model.tensor_rt_model import TensorRTModel
 
-@pytest.mark.order(-1)
+
+@pytest.mark.order(-3)
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -264,3 +267,47 @@ def test_evaluate_nlp(
 
     for v in scores.values():
         assert_is_valid_score(v)
+
+
+@pytest.fixture
+def sst2_saved_model(tf_sst2_model, sst2_tokenizer):
+    return TensorRTModel(
+        tf_sst2_model,
+        HuggingFaceTokenizer(sst2_tokenizer),
+        fallback_to_saved_model=True,
+    )
+
+
+@pytest.mark.order(-1)
+@pytest.mark.nlp
+def test_evaluate_saved_model(sst2_saved_model, sst2_dataset):
+    nlp_metrics = {
+        "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
+        "RandomLogit": quantus.RandomLogit(disable_warnings=True, num_classes=2),
+        "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
+        "Avg-Sen": quantus.AvgSensitivity(
+            disable_warnings=True, nr_samples=5, perturb_func=synonym_replacement
+        ),
+        "Max-Sen": quantus.MaxSensitivity(
+            disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement
+        ),
+        "RIS": quantus.RelativeInputStability(
+            disable_warnings=True,
+            nr_samples=5,
+            return_nan_when_prediction_changes=False,
+        ),
+        "RRS": quantus.RelativeRepresentationStability(
+            disable_warnings=True,
+            nr_samples=5,
+            return_nan_when_prediction_changes=False,
+        ),
+    }
+    scores = evaluate_text_classification(
+        metrics=nlp_metrics,
+        model=sst2_saved_model,
+        x_batch=sst2_dataset["x_batch"],
+        y_batch=sst2_dataset["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs=dict(method="GradXInput"),
+        verbose=False,
+    )

@@ -11,44 +11,42 @@ import logging
 from importlib import util
 from typing import NamedTuple, List
 
-from functools import wraps
 import numpy as np
 from transformers import pipeline
 
 from quantus.functions.nlp.lime import explain_lime
 from quantus.helpers.collection_utils import safe_as_array, value_or_default
-from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations, is_transformers_available
 from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_available
 from quantus.helpers.torch_utils import is_torch_available, is_torch_model
 from quantus.helpers.types import Explanation
 
+try:
+    from quantus.helpers.model.tensor_rt_model import TensorRTModel
+except Exception:
+    TensorRTModel = type(None)
 
 log = logging.getLogger(__name__)
 
-
 if is_tensorflow_available():
-    import tensorflow as tf
-    from transformers_gradients.text_classification.explanation_func import (
-        gradient_norm,
-        gradient_x_input,
-        integrated_gradients,
-        noise_grad,
-        noise_grad_plus_plus,
-    )
-
-    def as_tensor(arr):
-        if isinstance(arr, np.ndarray):
-            return tf.constant(arr)
-        else:
-            return arr
+    from transformers_gradients.text_classification import huggingface, tensor_rt
 
     tf_explain_mapping = {
-        "GradNorm": gradient_norm,
-        "GradXInput": gradient_x_input,
-        "IntGrad": integrated_gradients,
-        "NoiseGrad": noise_grad,
-        "NoiseGrad++": noise_grad_plus_plus,
+        "huggingface": {
+            "GradNorm": huggingface.gradient_norm,
+            "GradXInput": huggingface.gradient_x_input,
+            "IntGrad": huggingface.integrated_gradients,
+            "NoiseGrad": huggingface.noise_grad,
+            "NoiseGrad++": huggingface.noise_grad_plus_plus,
+        },
+        "tensor_rt": {
+            "GradNorm": tensor_rt.gradient_norm,
+            "GradXInput": tensor_rt.gradient_x_input,
+            "IntGrad": tensor_rt.integrated_gradients,
+            "NoiseGrad": tensor_rt.noise_grad,
+            "NoiseGrad++": tensor_rt.noise_grad_plus_plus,
+        },
     }
 
 if is_torch_available():
@@ -149,18 +147,52 @@ def generate_text_classification_explanations(
     if method == "SHAP":
         return explain_shap(model, x_batch, y_batch, **kwargs)
 
-    if is_tensorflow_model(model):
-        if method not in tf_explain_mapping:
-            raise ValueError(
-                f"Unsupported explanation function, supported are {list(tf_explain_mapping.keys())}"
+    if is_tensorflow_model(model) or isinstance(model, TensorRTModel):
+        if "attention_mask" in kwargs:
+            attention_mask = kwargs.pop("attention_mask")
+        else:
+            attention_mask = None
+
+        if isinstance(x_batch[0], str):
+            tokenizer = model.tokenizer.tokenizer
+        else:
+            tokenizer = None
+
+        if isinstance(model, TensorRTModel):
+            if method not in tf_explain_mapping["tensor_rt"]:
+                raise ValueError(
+                    f"Unsupported explanation function, supported are {list(tf_explain_mapping['tensor_rt'].keys())}"
+                )
+
+            def embed_func(bla, ids):
+                return model.embedding_lookup(ids)
+
+            model_func = model.embeddings_model
+            fn = tf_explain_mapping["tensor_rt"][method]
+
+            return fn(
+                model_func,
+                x_batch,
+                y_batch,
+                attention_mask,
+                tokenizer=tokenizer,
+                embeddings_lookup_fn=embed_func,
+                **kwargs,
             )
 
-        fn = tf_explain_mapping[method]
+        if method not in tf_explain_mapping["huggingface"]:
+            raise ValueError(
+                f"Unsupported explanation function, supported are {list(tf_explain_mapping['huggingface'].keys())}"
+            )
+
+        fn = tf_explain_mapping["huggingface"][method]
+
         return fn(
             model.get_model(),
-            as_tensor(x_batch),
-            as_tensor(y_batch),
-            tokenizer=model.tokenizer.tokenizer,
+            x_batch,
+            y_batch,
+            attention_mask,
+            tokenizer=tokenizer,
             **kwargs,
         )
 
