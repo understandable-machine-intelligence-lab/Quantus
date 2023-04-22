@@ -6,7 +6,7 @@ from keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from tests.models import (
+from tests.sample_models import (
     LeNet,
     LeNetTF,
     CifarCNNModel,

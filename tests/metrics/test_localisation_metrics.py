@@ -9,7 +9,6 @@ import pickle
 from quantus.functions.explanation_func import explain
 from quantus.functions.mosaic_func import mosaic_creation
 from quantus.helpers.model.model_interface import ModelInterface
-from tests.models import LeNetAdaptivePooling
 from quantus.metrics.localisation import (
     AttributionLocalisation,
     AUC,
@@ -19,6 +18,7 @@ from quantus.metrics.localisation import (
     RelevanceRankAccuracy,
     TopKIntersection,
 )
+from tests.sample_models import LeNetAdaptivePooling
 
 
 @pytest.fixture

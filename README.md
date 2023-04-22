@@ -214,31 +214,48 @@ The following will give a short introduction to how to get started with Quantus.
 
 Let's first load the data and model. In this example, a pre-trained LeNet available from Quantus 
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
-This example relies on a model object and data that is can be catched ..... Make sure to have these available at the time of running the example.
+
 ```python
+from collections import OrderedDict
+import urllib.request
 import torch
-import torchvision
-import gdown
-from quantus.helpers.torch_utils import choose_hardware_acceleration
 
-# Enable hardware acceleration if available.
-device = choose_hardware_acceleration()
-
-# Load a pre-trained ResNet18 classification model.
-model = torchvision.models.resnet18(
-    weights=torchvision.models.resnet.ResNet18_Weights.IMAGENET1K_V1
-).to(device)
-
-# You could use the sample data prepared by Quantus maintainers to verify your experiments.
-gdown.download_folder(
-    "https://drive.google.com/file/d/1xxh1NpXloHdzh5Mb2lFCwWLHaDUHebUP/view?usp=share_link",
-    output='/tmp/quantus', 
-    quiet=True, 
-    use_cookies=False
+# Download model weights and batch of sample data.
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist",
+   "/tmp/lenet_mnist_weights.pickle"
 )
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_x",
+   "/tmp/mnist_x_batch.pt"
+)
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_y",
+   "/tmp/mnist_y_batch.pt"
+)
+# Enable GPU if available.
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Define LeNet model.
+model = torch.nn.Sequential(OrderedDict([
+   ("conv_1", torch.nn.Conv2d(1, 6, 5)),
+   ("relu_1", torch.nn.ReLU(),),
+   ("max_pool_1", torch.nn.MaxPool2d(2, 2),),
+   ("conv_2", torch.nn.Conv2d(6, 16, 5)),
+   ("relu_2", torch.nn.ReLU(),),
+   ("max_pool_2", torch.nn.MaxPool2d(2, 2),),
+   ("flatten", torch.nn.Flatten(),),
+   ("fc_1", torch.nn.Linear(256, 120)),
+   ("relu_3", torch.nn.ReLU(),),
+   ("fc_2", torch.nn.Linear(120, 84),),
+   ("relu_4", torch.nn.ReLU(),),
+   ("fc_3", torch.nn.Linear(84, 10),),
+]))
+# Load weights.
+model.load_state_dict(torch.load("/tmp/lenet_mnist_weights.pickle", map_location=device))
 # Load a batch of inputs and labels to use for XAI evaluation.
-x_batch = torch.load('/tmp/quantus/x_batch.pt').to(device)
-y_batch = torch.load('/tmp/quantus/y_batch.pt').to(device)
+x_batch = torch.load('/tmp/mnist_x_batch.pt').to(device)
+y_batch = torch.load('/tmp/mnist_y_batch.pt').to(device)
 ```
 </details>
 
