@@ -14,7 +14,6 @@ from typing import NamedTuple, List
 import numpy as np
 from transformers import pipeline
 
-from quantus.functions.nlp.lime import explain_lime
 from quantus.helpers.collection_utils import safe_as_array, value_or_default
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations, is_transformers_available
@@ -22,31 +21,18 @@ from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_availabl
 from quantus.helpers.torch_utils import is_torch_available, is_torch_model
 from quantus.helpers.types import Explanation
 
-try:
-    from quantus.helpers.model.tensor_rt_model import TensorRTModel
-except Exception:
-    TensorRTModel = type(None)
-
 log = logging.getLogger(__name__)
 
 if is_tensorflow_available():
-    from transformers_gradients.text_classification import huggingface, tensor_rt
+    from transformers_gradients import text_classification
 
     tf_explain_mapping = {
-        "huggingface": {
-            "GradNorm": huggingface.gradient_norm,
-            "GradXInput": huggingface.gradient_x_input,
-            "IntGrad": huggingface.integrated_gradients,
-            "NoiseGrad": huggingface.noise_grad,
-            "NoiseGrad++": huggingface.noise_grad_plus_plus,
-        },
-        "tensor_rt": {
-            "GradNorm": tensor_rt.gradient_norm,
-            "GradXInput": tensor_rt.gradient_x_input,
-            "IntGrad": tensor_rt.integrated_gradients,
-            "NoiseGrad": tensor_rt.noise_grad,
-            "NoiseGrad++": tensor_rt.noise_grad_plus_plus,
-        },
+        "GradNorm": text_classification.gradient_norm,
+        "GradXInput": text_classification.gradient_x_input,
+        "IntGrad": text_classification.integrated_gradients,
+        "NoiseGrad": text_classification.noise_grad,
+        "NoiseGrad++": text_classification.noise_grad_plus_plus,
+        "LIME": text_classification.lime,
     }
 
 if is_torch_available():
@@ -142,12 +128,10 @@ def generate_text_classification_explanations(
         # device is saved in model instance.
         kwargs.pop("device")
 
-    if method == "LIME":
-        return explain_lime(model, x_batch, y_batch, **kwargs)
     if method == "SHAP":
         return explain_shap(model, x_batch, y_batch, **kwargs)
 
-    if is_tensorflow_model(model) or isinstance(model, TensorRTModel):
+    if is_tensorflow_model(model):
         if "attention_mask" in kwargs:
             attention_mask = kwargs.pop("attention_mask")
         else:
@@ -158,34 +142,7 @@ def generate_text_classification_explanations(
         else:
             tokenizer = None
 
-        if isinstance(model, TensorRTModel):
-            if method not in tf_explain_mapping["tensor_rt"]:
-                raise ValueError(
-                    f"Unsupported explanation function, supported are {list(tf_explain_mapping['tensor_rt'].keys())}"
-                )
-
-            def embed_func(bla, ids):
-                return model.embedding_lookup(ids)
-
-            model_func = model.embeddings_model
-            fn = tf_explain_mapping["tensor_rt"][method]
-
-            return fn(
-                model_func,
-                x_batch,
-                y_batch,
-                attention_mask,
-                tokenizer=tokenizer,
-                embeddings_lookup_fn=embed_func,
-                **kwargs,
-            )
-
-        if method not in tf_explain_mapping["huggingface"]:
-            raise ValueError(
-                f"Unsupported explanation function, supported are {list(tf_explain_mapping['huggingface'].keys())}"
-            )
-
-        fn = tf_explain_mapping["huggingface"][method]
+        fn = tf_explain_mapping[method]
 
         return fn(
             model.get_model(),

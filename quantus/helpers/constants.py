@@ -157,13 +157,22 @@ DEPRECATED_XAI_METHODS_TF = {
 # ---------------------- NLP --------------------------
 
 
-AVAILABLE_XAI_METHODS_NLP = [
+AVAILABLE_TF_XAI_METHODS_NLP = [
     "GradNorm",
     "GradXInput",
     "IntGrad",
     "NoiseGrad",
     "NoiseGrad++",
     "LIME",
+    "SHAP",
+]
+
+AVAILABLE_TORCH_XAI_METHODS_NLP = [
+    "GradNorm",
+    "GradXInput",
+    "IntGrad",
+    "NoiseGrad",
+    "NoiseGrad++",
     "SHAP",
 ]
 
@@ -282,11 +291,11 @@ def available_nlp_metrics() -> Dict[str, List[Type]]:
 
 
 def available_nlp_xai_methods_tf() -> List[str]:
-    return AVAILABLE_XAI_METHODS_NLP
+    return AVAILABLE_TF_XAI_METHODS_NLP
 
 
 def available_nlp_xai_methods_torch() -> List[str]:
-    return AVAILABLE_XAI_METHODS_NLP
+    return AVAILABLE_TORCH_XAI_METHODS_NLP
 
 
 def xai_methods_nlp_support_embeddings() -> List[str]:

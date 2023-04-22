@@ -29,6 +29,21 @@ class _SupportsSub(Protocol):
 T = TypeVar("T", bound=_SupportsSub, covariant=True)
 
 
+__all__ = [
+    "ssim",
+    "correlation_spearman",
+    "correlation_kendall_tau",
+    "correlation_pearson",
+    "cosine",
+    "difference",
+    "distance_chebyshev",
+    "distance_euclidean",
+    "distance_manhattan",
+    "abs_difference",
+    "lipschitz_constant",
+]
+
+
 def vectorize_similarity(func):
     vectorized_func = np.vectorize(func, signature="(n),(n)->()", cache=True)
 

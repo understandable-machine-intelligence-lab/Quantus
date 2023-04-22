@@ -10,6 +10,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import ArrayLike
 
+__all__ = ["mse"]
+
 
 def mse(
     a: ArrayLike, b: ArrayLike, axis: int = 0, normalise_mse: bool = False

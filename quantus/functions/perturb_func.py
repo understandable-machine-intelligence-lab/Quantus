@@ -35,6 +35,23 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+__all__ = [
+    "perturb_batch",
+    "no_perturbation",
+    "uniform_noise",
+    "baseline_replacement_by_blur",
+    "baseline_replacement_by_indices",
+    "baseline_replacement_by_shift",
+    "translation_x_direction",
+    "translation_y_direction",
+    "rotation",
+    "gaussian_noise",
+    "noisy_linear_imputation",
+    "spelling_replacement",
+    "typo_replacement",
+    "synonym_replacement",
+]
+
 
 def perturb_batch(
     perturb_func: PerturbFn,
@@ -642,3 +659,14 @@ if is_nlpaug_available():
             reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
         )
         return aug.augment(x_batch)
+
+else:
+
+    def spelling_replacement(*args, **kwargs):
+        raise NotImplementedError
+
+    def synonym_replacement(*args, **kwargs):
+        raise NotImplementedError
+
+    def typo_replacement(*args, **kwargs):
+        raise NotImplementedError

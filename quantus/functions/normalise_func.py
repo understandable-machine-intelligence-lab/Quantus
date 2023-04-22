@@ -11,6 +11,14 @@ from typing import Optional, Sequence
 
 import numpy as np
 
+__all__ = [
+    "normalise_by_max",
+    "normalise_by_negative",
+    "denormalise",
+    "normalize_sum_to_1",
+    "normalise_by_average_second_moment_estimate",
+]
+
 
 def normalise_by_max(
     a: np.ndarray,
