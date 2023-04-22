@@ -28,10 +28,6 @@ _Quantus is currently under active development so carefully note the Quantus rel
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/) and [tf-explain](https://tf-explain.readthedocs.io/en/latest/))
 - New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
-- Latest metrics additions:
-    - <b>Relative Input Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Agarwal, et. al., 2022)</a>
-    - <b>Relative Output Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf">  (Agarwal, et. al., 2022)</a>
-    - <b>Relative Representation Stability</b><a href="https://arxiv.org/pdf/2203.06877.pdf"> (Agarwal, et. al., 2022)</a>
 
 See [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) for the latest release(s).
 
