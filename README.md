@@ -219,7 +219,6 @@ for the purpose of this tutorial is loaded, but generally, you might use any Pyt
 from collections import OrderedDict
 import urllib.request
 import torch
-
 # Download model weights and batch of sample data.
 urllib.request.urlretrieve(
    "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist",
@@ -235,7 +234,6 @@ urllib.request.urlretrieve(
 )
 # Enable GPU if available.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 # Define LeNet model.
 model = torch.nn.Sequential(OrderedDict([
    ("conv_1", torch.nn.Conv2d(1, 6, 5)),
