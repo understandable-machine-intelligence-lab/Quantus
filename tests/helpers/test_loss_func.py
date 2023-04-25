@@ -2,6 +2,7 @@ from typing import Union
 
 import pytest
 from pytest_lazyfixture import lazy_fixture
+import numpy as np
 
 from quantus.functions.loss_func import *
 

@@ -8,7 +8,7 @@
 
 import warnings
 from importlib import util
-from typing import Optional, Union
+from typing import Optional, List
 
 import numpy as np
 import scipy
@@ -16,13 +16,13 @@ from functools import singledispatch, wraps
 
 from quantus.helpers import constants
 from quantus.helpers import __EXTRAS__
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.utils import (
     get_baseline_value,
     infer_channel_first,
     make_channel_last,
     get_wrapped_model,
 )
+from quantus.helpers.types import Explanation
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.functions.nlp.explanation_func import (
     generate_text_classification_explanations,
@@ -33,25 +33,25 @@ if util.find_spec("torch"):
     import torch
 if util.find_spec("captum"):
     from captum.attr import (
-        GradientShap,
-        IntegratedGradients,
-        InputXGradient,
+        GradientShap,  # noqa
+        IntegratedGradients,  # noqa
+        InputXGradient,  # noqa
         Saliency,
         Occlusion,
-        FeatureAblation,
+        FeatureAblation,  # noqa
         LayerGradCam,
-        DeepLift,
-        DeepLiftShap,
-        GuidedGradCam,
-        Deconvolution,
-        FeaturePermutation,
-        Lime,
-        KernelShap,
-        LRP,
-        LayerConductance,
-        LayerActivation,
-        InternalInfluence,
-        LayerGradientXActivation,
+        DeepLift,  # noqa
+        DeepLiftShap,  # noqa
+        GuidedGradCam,  # noqa
+        Deconvolution,  # noqa
+        FeaturePermutation,  # noqa
+        Lime,  # noqa
+        KernelShap,  # noqa
+        LRP,  # noqa
+        LayerConductance,  # noqa
+        LayerActivation,  # noqa
+        InternalInfluence,  # noqa
+        LayerGradientXActivation,  # noqa
     )
 if util.find_spec("zennit"):
     from zennit import canonizers as zcanon
@@ -65,10 +65,14 @@ if util.find_spec("tf_explain"):
 
 
 def patch_kwargs(func):
+    """
+    We use singledispatch to call NLP specific implementation based on model type.
+    Singledispatch requires first positional argument, but
+    in Quantus it is often passed as keyword, so we patch it onto 0s position.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # singledispatch requires first positional argument
-        # in Quantus it is often passed as keyword, so we patch it onto 0s position.
         if "model" in kwargs:
             return func(kwargs.pop("model"), *args, **kwargs)
         else:
@@ -148,8 +152,10 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
     return explanation
 
 
-@explain.register
-def _(model: TextClassifier, inputs, targets, **kwargs):
+@explain.register  # noqa
+def _(
+    model: TextClassifier, inputs: List[str] | np.ndarray, targets: np.ndarray, **kwargs
+) -> List[Explanation] | np.ndarray:
     return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
 

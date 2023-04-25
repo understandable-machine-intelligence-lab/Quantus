@@ -10,15 +10,11 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Union, Protocol, TypeVar
-import logging
+from typing import Union, Protocol, TypeVar, Callable
 
 import numpy as np
 import scipy
 import skimage
-
-
-log = logging.getLogger(__name__)
 
 
 class _SupportsSub(Protocol):
@@ -44,17 +40,16 @@ __all__ = [
 ]
 
 
-def vectorize_similarity(func):
+def vectorize_similarity(
+    func: Callable[[np.ndarray, np.ndarray], float]
+) -> Callable[[np.ndarray, np.ndarray], float | np.ndarray]:
+    """Decorator, which allows calling similarity_func on 1D and 2D inputs."""
     vectorized_func = np.vectorize(func, signature="(n),(n)->()", cache=True)
 
     @wraps(func)
-    def wrapper(a, b):
+    def wrapper(a: np.ndarray, b: np.ndarray):
         a = np.asarray(a)
         b = np.asarray(b)
-
-        def flatten_over_batch(arr):
-            shape = np.shape(arr)
-            return np.reshape(arr, (shape[0], -1))
 
         if np.ndim(a) != np.ndim(b):
             raise ValueError(
@@ -65,11 +60,9 @@ def vectorize_similarity(func):
             return func(a, b)
 
         if np.ndim(a) > 2:
-            log.warning(
-                f"{func.__name__} received array with { a.ndim = }, it was reshaped into {a.shape}."
+            raise ValueError(
+                f"{func.__name__} supports only 1D and 2D inputs, but found {a.ndim = }, {b.ndim = }."
             )
-            a = flatten_over_batch(a)
-            b = flatten_over_batch(b)
 
         return vectorized_func(a, b)
 
@@ -77,7 +70,7 @@ def vectorize_similarity(func):
 
 
 @vectorize_similarity
-def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray | float:
+def correlation_spearman(a: np.ndarray, b: np.ndarray, **kwargs) -> float:
     """
     Calculate Spearman rank of two images (or explanations).
 
@@ -121,9 +114,7 @@ def correlation_pearson(a: np.ndarray, b: np.ndarray, **kwargs) -> float:
 
 
 @vectorize_similarity
-def correlation_kendall_tau(
-    a: np.ndarray, b: np.ndarray, **kwargs
-) -> np.ndarray | float:
+def correlation_kendall_tau(a: np.ndarray, b: np.ndarray, **kwargs) -> np.ndarray:
     """
     Calculate Kendall Tau correlation of two images (or explanations).
 
@@ -291,7 +282,7 @@ def cosine(a: np.array, b: np.array, **kwargs) -> float:
 
 
 @vectorize_similarity
-def ssim(a: np.ndarray, b: np.ndarray, **kwargs) -> float | np.ndarray:
+def ssim(a: np.ndarray, b: np.ndarray, **kwargs) -> float:
     """
     Calculate Structural Similarity Index Measure of two images (or explanations).
 

@@ -13,10 +13,9 @@ from quantus.metrics.complexity import Sparseness  # noqa
 from quantus.metrics.robustness import MaxSensitivity  # noqa
 
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
-from quantus.helpers.model.tensor_rt_model import TensorRTModel
 
 
-@pytest.mark.order(-3)
+@pytest.mark.last
 @pytest.mark.evaluate_func
 @pytest.mark.parametrize(
     "model,data,params,expected",
@@ -195,7 +194,7 @@ def assert_is_valid_score(scores):
     assert not np.isnan(scores).any()
 
 
-@pytest.mark.order(-2)
+@pytest.mark.last
 @pytest.mark.nlp
 @pytest.mark.parametrize(
     "model",

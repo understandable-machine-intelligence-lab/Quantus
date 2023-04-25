@@ -2,14 +2,14 @@ from typing import List
 
 import numpy as np
 import pytest
-from transformers_gradients.config import (
+from transformers_gradients.types import (
     NoiseGradConfig,
     NoiseGradPlusPlusConfig,
 )
 
 from quantus.functions.explanation_func import explain
 from quantus.functions.nlp.explanation_func import ShapConfig
-from quantus.functions.nlp.lime import LimeConfig
+from quantus.functions.nlp.torch_explanation_func import LimeConfig
 
 
 @pytest.mark.nlp

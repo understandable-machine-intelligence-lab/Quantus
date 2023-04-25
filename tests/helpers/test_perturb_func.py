@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pytest
 from pytest_lazyfixture import lazy_fixture
+import numpy as np
 
 from quantus.helpers import utils
 from quantus.functions.perturb_func import *

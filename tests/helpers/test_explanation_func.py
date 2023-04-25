@@ -745,10 +745,10 @@ from quantus.functions.normalise_func import normalise_by_max
     ],
 )
 def test_explain_func(
-    model: ModelInterface,
+    model,
     data: np.ndarray,
     params: dict,
-    expected: Union[float, dict, bool],
+    expected,
 ):
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
     if "exception" in expected:
@@ -839,10 +839,10 @@ def test_explain_func(
     ],
 )
 def test_generate_captum_explanation(
-    model: ModelInterface,
+    model,
     data: np.ndarray,
     params: dict,
-    expected: Union[float, dict, bool],
+    expected,
 ):
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
 
@@ -982,10 +982,10 @@ def test_generate_captum_explanation(
     ],
 )
 def test_generate_tf_explanation(
-    model: ModelInterface,
+    model,
     data: np.ndarray,
     params: dict,
-    expected: Union[float, dict, bool],
+    expected,
 ):
     x_batch, y_batch = (data["x_batch"], data["y_batch"])
 
@@ -1058,10 +1058,10 @@ def test_generate_tf_explanation(
     ],
 )
 def test_get_explanation(
-    model: ModelInterface,
+    model,
     data: np.ndarray,
     params: dict,
-    expected: Union[float, dict, bool],
+    expected,
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
 

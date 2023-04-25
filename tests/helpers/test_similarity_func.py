@@ -1,6 +1,7 @@
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
+import numpy as np
 from quantus.functions.loss_func import mse
 from quantus.functions.similarity_func import *
 
@@ -65,9 +66,7 @@ def atts_ssim_diff():
         (lazy_fixture("atts_inverse"), {}, -1),
     ],
 )
-def test_correlation_spearman(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_correlation_spearman(data: np.ndarray, params: dict, expected):
     out = correlation_spearman(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -83,9 +82,7 @@ def test_correlation_spearman(
         (lazy_fixture("atts_inverse"), {}, -1),
     ],
 )
-def test_correlation_pearson(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_correlation_pearson(data: np.ndarray, params: dict, expected):
     out = correlation_pearson(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -101,9 +98,7 @@ def test_correlation_pearson(
         (lazy_fixture("atts_inverse"), {}, -1),
     ],
 )
-def test_correlation_kendall_tau(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_correlation_kendall_tau(data: np.ndarray, params: dict, expected):
     out = correlation_kendall_tau(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -117,9 +112,7 @@ def test_correlation_kendall_tau(
         (lazy_fixture("atts_half"), {}, 1.73),
     ],
 )
-def test_distance_euclidean(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_distance_euclidean(data: np.ndarray, params: dict, expected):
     out = distance_euclidean(a=data["a"], b=data["b"])
     print(out)
     assert round(out, 2) == expected, "Test failed."
@@ -134,9 +127,7 @@ def test_distance_euclidean(
         (lazy_fixture("atts_half"), {}, 3.0),
     ],
 )
-def test_distance_manhattan(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_distance_manhattan(data: np.ndarray, params: dict, expected):
     out = distance_manhattan(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -150,9 +141,7 @@ def test_distance_manhattan(
         (lazy_fixture("atts_half"), {}, 3.0),
     ],
 )
-def test_distance_chebyshev(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_distance_chebyshev(data: np.ndarray, params: dict, expected):
     out = distance_chebyshev(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -162,9 +151,7 @@ def test_distance_chebyshev(
     "data,params,expected",
     [(lazy_fixture("atts_same"), {}, 0.0), (lazy_fixture("atts_diff"), {}, 1.0)],
 )
-def test_distance_chebyshev(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_distance_chebyshev(data: np.ndarray, params: dict, expected):
     out = distance_chebyshev(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -191,9 +178,7 @@ def test_distance_chebyshev(
         ),
     ],
 )
-def test_lipschitz_constant(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_lipschitz_constant(data: np.ndarray, params: dict, expected):
     out = lipschitz_constant(
         a=data["a"], b=data["b"], c=data["c"], d=data["d"], **params
     )
@@ -209,9 +194,7 @@ def test_lipschitz_constant(
         (lazy_fixture("atts_half"), {}, 1.0),
     ],
 )
-def test_abs_difference(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool]
-):
+def test_abs_difference(data: np.ndarray, params: dict, expected):
     out = abs_difference(a=data["a"], b=data["b"])
     assert np.allclose(np.round(out, 2), expected)
 
@@ -225,7 +208,7 @@ def test_abs_difference(
         (lazy_fixture("atts_half"), {}, 0.42),
     ],
 )
-def test_cosine(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_cosine(data: np.ndarray, params: dict, expected):
     out = cosine(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -238,7 +221,7 @@ def test_cosine(data: np.ndarray, params: dict, expected: Union[float, dict, boo
         (lazy_fixture("atts_ssim_diff"), {}, 0.0),
     ],
 )
-def test_ssim(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_ssim(data: np.ndarray, params: dict, expected):
     """Calculate Structural Similarity Index Measure of two images (or explanations)."""
     out = ssim(a=data["a"], b=data["b"])
     assert np.allclose(np.round(out, 2), expected)
@@ -253,7 +236,7 @@ def test_ssim(data: np.ndarray, params: dict, expected: Union[float, dict, bool]
         (lazy_fixture("atts_half"), {}, 1.0),
     ],
 )
-def test_mse(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_mse(data: np.ndarray, params: dict, expected):
     out = mse(a=data["a"], b=data["b"])
     assert round(out, 2) == expected, "Test failed."
 
@@ -267,6 +250,6 @@ def test_mse(data: np.ndarray, params: dict, expected: Union[float, dict, bool])
         (lazy_fixture("atts_half"), {}, np.array([-1, 1, -1])),
     ],
 )
-def test_difference(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
+def test_difference(data: np.ndarray, params: dict, expected):
     out = difference(a=data["a"], b=data["b"])
     assert all(out == expected), "Test failed."

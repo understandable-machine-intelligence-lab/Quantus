@@ -1074,3 +1074,14 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     # my scores do not look like expected, so let this be separate function, so I don't have to figure it out
     # the hard way again one more time.
     return np.asarray(logits)[np.arange(y_batch.shape[0]), y_batch]
+
+
+def flatten_over_axis(
+    arr: np.ndarray, axis_to_keep: Sequence[int] | int | None = None
+) -> np.ndarray:
+    """Apply np.reshape(-1) keeping axis at indexes axis_to_keep unchanged."""
+    if axis_to_keep is None:
+        return np.reshape(arr, -1)
+    axis_to_keep = sorted(tuple(axis_to_keep))
+    new_shape = (*np.take(np.shape(arr), axis_to_keep), -1)
+    return np.reshape(arr, new_shape)

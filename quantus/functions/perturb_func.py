@@ -13,8 +13,6 @@ from typing import Sequence, TYPE_CHECKING, TypeVar, List, Tuple
 
 import cv2
 import numpy as np
-from nlpaug.augmenter.char import KeyboardAug
-from nlpaug.augmenter.word import SpellingAug, SynonymAug
 from scipy.sparse import lil_matrix, csc_matrix
 from scipy.sparse.linalg import spsolve
 
@@ -586,25 +584,26 @@ def no_perturbation(arr: T, **kwargs) -> T:
     return arr
 
 
-if is_nlpaug_available():
+def spelling_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k words in each entry of text by alternative spelling.
 
-    def spelling_replacement(
-        x_batch: List[str],
-        k: int = 3,
-        tokenizer: Tokenizable | None = None,
-        **kwargs,
-    ) -> List[str]:
-        """
-        Replace k words in each entry of text by alternative spelling.
+    Examples
+    --------
 
-        Examples
-        --------
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> spelling_replacement(x)
+    ... ['uneasy mishmash of stiles and genres.']
 
-        >>> x = ["uneasy mishmash of styles and genres."]
-        >>> spelling_replacement(x)
-        ... ['uneasy mishmash of stiles and genres.']
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.word import SpellingAug
 
-        """
         aug = SpellingAug(
             aug_max=k,
             aug_min=k,
@@ -612,23 +611,29 @@ if is_nlpaug_available():
             reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
         )
         return aug.augment(x_batch)
+    else:
+        raise NotImplementedError
 
-    def synonym_replacement(
-        x_batch: List[str],
-        k: int = 3,
-        tokenizer: Tokenizable | None = None,
-        **kwargs,
-    ) -> List[str]:
-        """
-        Replace k words in each entry of text by synonym.
 
-        Examples
-        --------
+def synonym_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k words in each entry of text by synonym.
 
-        >>> x = ["uneasy mishmash of styles and genres."]
-        >>> synonym_replacement(x)
-        ... ['nervous mishmash of styles and genres.']
-        """
+    Examples
+    --------
+
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> synonym_replacement(x)
+    ... ['nervous mishmash of styles and genres.']
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.word import SynonymAug
+
         aug = SynonymAug(
             aug_max=k,
             aug_min=k,
@@ -636,22 +641,28 @@ if is_nlpaug_available():
             reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
         )
         return aug.augment(x_batch)
+    else:
+        raise NotImplementedError
 
-    def typo_replacement(
-        x_batch: List[str],
-        k: int = 3,
-        tokenizer: Tokenizable | None = None,
-        **kwargs,
-    ) -> List[str]:
-        """
-        Replace k characters in k words in each entry of text mimicking typo.
 
-        Examples
-        --------
-        >>> x = ["uneasy mishmash of styles and genres."]
-        >>> typo_replacement(x)
-        ... ['uneasy mishmash of xtyles and genres.']
-        """
+def typo_replacement(
+    x_batch: List[str],
+    k: int = 3,
+    tokenizer: Tokenizable | None = None,
+    **kwargs,
+) -> List[str]:
+    """
+    Replace k characters in k words in each entry of text mimicking typo.
+
+    Examples
+    --------
+    >>> x = ["uneasy mishmash of styles and genres."]
+    >>> typo_replacement(x)
+    ... ['uneasy mishmash of xtyles and genres.']
+    """
+    if is_nlpaug_available():
+        from nlpaug.augmenter.char import KeyboardAug
+
         aug = KeyboardAug(
             aug_word_min=k,
             aug_word_max=k,
@@ -659,14 +670,5 @@ if is_nlpaug_available():
             reverse_tokenizer=map_optional(tokenizer, attrgetter("join_tokens")),
         )
         return aug.augment(x_batch)
-
-else:
-
-    def spelling_replacement(*args, **kwargs):
-        raise NotImplementedError
-
-    def synonym_replacement(*args, **kwargs):
-        raise NotImplementedError
-
-    def typo_replacement(*args, **kwargs):
+    else:
         raise NotImplementedError

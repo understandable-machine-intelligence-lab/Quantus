@@ -7,7 +7,7 @@
 """Framework-agnostic explanation functions."""
 from __future__ import annotations
 
-import logging
+import warnings
 from importlib import util
 from typing import NamedTuple, List
 
@@ -21,7 +21,6 @@ from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_availabl
 from quantus.helpers.torch_utils import is_torch_available, is_torch_model
 from quantus.helpers.types import Explanation
 
-log = logging.getLogger(__name__)
 
 if is_tensorflow_available():
     from transformers_gradients import text_classification
@@ -34,11 +33,24 @@ if is_tensorflow_available():
         "NoiseGrad++": text_classification.noise_grad_plus_plus,
         "LIME": text_classification.lime,
     }
+else:
+    tf_explain_mapping = {}
+
 
 if is_torch_available():
-    from quantus.functions.nlp.torch_explanation_func import (
-        torch_explain,
-    )
+    from quantus.functions.nlp import torch_explanation_func
+
+    torch_explain_mapping = {
+        "GradNorm": torch_explanation_func.gradient_norm,
+        "GradXInput": torch_explanation_func.gradient_x_input,
+        "IntGrad": torch_explanation_func.integrated_gradients,
+        "NoiseGrad": torch_explanation_func.noise_grad,
+        "NoiseGrad++": torch_explanation_func.noise_grad_plus_plus,
+        "LIME": torch_explanation_func.explain_lime,
+    }
+else:
+    torch_explain_mapping = {}
+
 
 if is_transformers_available():
     from transformers.utils.hub import PushToHubMixin
@@ -118,29 +130,20 @@ def generate_text_classification_explanations(
     """A main 'entrypoint' for calling all text-classification explanation functions available in Quantus."""
 
     if method is None:
-        log.warning(
+        warnings.warn(
             f"Using quantus 'explain' function as an explainer without specifying 'method' (string) "
             f"in kwargs will produce a simple 'GradientNorm' explanation.\n",
         )
         method = "GradNorm"
 
-    if "device" in kwargs:
-        # device is saved in model instance.
-        kwargs.pop("device")
-
     if method == "SHAP":
         return explain_shap(model, x_batch, y_batch, **kwargs)
 
     if is_tensorflow_model(model):
-        if "attention_mask" in kwargs:
-            attention_mask = kwargs.pop("attention_mask")
-        else:
-            attention_mask = None
-
-        if isinstance(x_batch[0], str):
-            tokenizer = model.tokenizer.tokenizer
-        else:
-            tokenizer = None
+        if method not in tf_explain_mapping:
+            raise ValueError(
+                f"Unsupported explanation method: {method}, supported are: {list(tf_explain_mapping.keys())}"
+            )
 
         fn = tf_explain_mapping[method]
 
@@ -148,13 +151,17 @@ def generate_text_classification_explanations(
             model.get_model(),
             x_batch,
             y_batch,
-            attention_mask,
-            tokenizer=tokenizer,
             **kwargs,
         )
 
     if is_torch_model(model):
-        result = torch_explain(model, x_batch, y_batch, method=method, **kwargs)
+        if method not in torch_explain_mapping:
+            raise ValueError(
+                f"Unsupported explanation method: {method}, supported are: {list(torch_explain_mapping.keys())}"
+            )
+
+        fn = torch_explain_mapping[method]
+        result = fn(model, x_batch, y_batch, **kwargs)
         return map_explanations(result, safe_as_array)  # noqa
 
     raise ValueError(f"Unable to identify DNN framework of the model.")

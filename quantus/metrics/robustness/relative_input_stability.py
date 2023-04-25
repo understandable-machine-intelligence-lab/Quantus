@@ -24,6 +24,7 @@ from quantus.functions.normalise_func import normalise_by_average_second_moment_
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.norm_func import l2_norm
 
+from quantus.helpers.utils import flatten_over_axis
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
 from quantus.helpers.collection_utils import value_or_default
@@ -297,8 +298,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch_perturbed_embeddings, _ = model.get_embeddings(x_perturbed)
         # Compute maximization's objective.
         ris_batch = self.relative_input_stability_objective(
-            x_batch_embeddings,
-            x_batch_perturbed_embeddings,
+            flatten_over_axis(x_batch_embeddings, (0, 1)),
+            flatten_over_axis(x_batch_perturbed_embeddings, (0, 1)),
             get_scores(a_batch),
             get_scores(a_batch_perturbed),
         )

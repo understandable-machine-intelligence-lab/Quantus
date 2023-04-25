@@ -115,10 +115,10 @@ def add_default_items(
 def value_or_default(value: T | None, default_factory: Callable[[], T]) -> T:
     """Return value from default_factory() if value is None, otherwise value itself."""
     # Default is provided by callable, because otherwise it will force materialization of both values in memory.
-    if value is not None:
-        return value
-    else:
+    if value is None:
         return default_factory()
+    else:
+        return value
 
 
 K = TypeVar("K")

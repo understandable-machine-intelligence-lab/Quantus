@@ -174,6 +174,7 @@ AVAILABLE_TORCH_XAI_METHODS_NLP = [
     "NoiseGrad",
     "NoiseGrad++",
     "SHAP",
+    "LIME",
 ]
 
 XAI_METHODS_NLP_SUPPORT_EMBEDDINGS = [
