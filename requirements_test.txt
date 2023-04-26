@@ -5,7 +5,7 @@ flake8>=4.0.1
 pytest>=6.2.5
 pytest-cov>=3.0.0
 pytest-lazy-fixture>=0.6.3
-tensorflow>=2.6.2, !=2.11.*
+tensorflow>=2.12.0
 termcolor>=1.1.0
 tf-explain>=0.3.1
 torch>=1.10.1
