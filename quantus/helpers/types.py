@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 Explanation = Tuple[List[str], np.ndarray]
 MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
 AggregateFn = Callable[[np.ndarray], ArrayLike]
-SimilarityFn = Callable[[np.ndarray, np.ndarray], ArrayLike]
+SimilarityFn = Callable[[np.ndarray, np.ndarray], float | np.ndarray]
 PersistFn = Callable[
     [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
 ]

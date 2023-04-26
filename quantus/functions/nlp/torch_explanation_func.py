@@ -397,7 +397,7 @@ def noise_grad_plus_plus(
     y_batch: Tensor,
     *,
     explain_fn: BaselineExplainFn = "IntGrad",
-    ng_pp_config: NoiseGradPlusPlusConfig | None = None,
+    config: NoiseGradPlusPlusConfig | None = None,
     **kwargs,
 ) -> Tensor:
     """
@@ -418,7 +418,7 @@ def noise_grad_plus_plus(
         Otherwise, must have `Callable[[HuggingFaceTextClassifier, np.ndarray, np.ndarray, Optional[np.ndarray]], np.ndarray]` signature.
         Passing additional kwargs is not supported, please use partial application from functools package instead.
         Default IntGrad.
-    ng_pp_config:
+    config:
         Config passed to __init__ method of NoiseGrad class.
 
     Returns
@@ -440,7 +440,7 @@ def noise_grad_plus_plus(
         base_scores = explain_fn(model, inputs, targets, **kwargs)
         return base_scores
 
-    ng_pp = NoiseGradPlusPlus(ng_pp_config)
+    ng_pp = NoiseGradPlusPlus(config)
     scores = (
         ng_pp.enhance_explanation(
             model.get_model(),
@@ -471,7 +471,7 @@ def _noise_grad(
     y_batch: Tensor,
     *,
     explain_fn: BaselineExplainFn,
-    ng_config: NoiseGradConfig | None = None,
+    config: NoiseGradConfig | None = None,
     **kwargs,
 ) -> list[Explanation]:
     explain_fn = resolve_noise_grad_baseline_explain_fn(explain_fn)
@@ -489,7 +489,7 @@ def _noise_grad(
         base_scores = torch.stack([i[1] for i in a_batch])
         return base_scores  # noqa
 
-    ng = NoiseGrad(ng_config)
+    ng = NoiseGrad(config)
     scores = (
         ng.enhance_explanation(
             model.get_model(),
@@ -515,7 +515,7 @@ def _(
     model: TorchHuggingFaceTextClassifier,
     y_batch: Tensor,
     explain_fn: BaselineExplainFn,
-    ng_config: NoiseGradConfig | None = None,
+    config: NoiseGradConfig | None = None,
     **kwargs,
 ) -> np.ndarray:
     og_weights = model.state_dict().copy()
@@ -529,7 +529,7 @@ def _(
         base_scores = explain_fn(model, inputs, targets, **kwargs)
         return base_scores
 
-    ng_pp = NoiseGrad(ng_config)
+    ng_pp = NoiseGrad(config)
     scores = (
         ng_pp.enhance_explanation(
             model.get_model(),

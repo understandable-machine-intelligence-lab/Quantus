@@ -1083,5 +1083,7 @@ def flatten_over_axis(
     if axis_to_keep is None:
         return np.reshape(arr, -1)
     axis_to_keep = sorted(tuple(axis_to_keep))
+    if np.ndim(arr) <= len(axis_to_keep):
+        return arr
     new_shape = (*np.take(np.shape(arr), axis_to_keep), -1)
     return np.reshape(arr, new_shape)

@@ -494,7 +494,12 @@ def test_model_parameter_randomisation(
                     "abs": True,
                     "disable_warnings": True,
                 },
-                "call": {"explain_func": explain},
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "tokenizer": lazy_fixture("sst2_tokenizer")
+                    },
+                },
             },
             {"min": -1.0, "max": 1.01},
             marks=pytest.mark.nlp,
@@ -523,6 +528,14 @@ def test_random_logit(
     params,
     expected,
 ):
+    if (
+        "explain_func_kwargs" in params["call"]
+        and "tokenizer" in params["call"]["explain_func_kwargs"]
+    ):
+        params["call"]["explain_func_kwargs_tokenizer"] = pytest.get_fixture_value(
+            params["call"]["explain_func_kwargs"]
+        )
+
     x_batch, y_batch = (
         data["x_batch"],
         data["y_batch"],

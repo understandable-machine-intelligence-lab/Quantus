@@ -6,6 +6,7 @@ from operator import itemgetter
 from typing import List, Callable, TypeVar, Tuple, overload
 
 import numpy as np
+from numpy.typing import ArrayLike
 from cachetools import cached
 from numpy.typing import ArrayLike
 
@@ -36,10 +37,13 @@ def map_explanations(
         return fn(a_batch)  # type: ignore
 
 
-def get_scores(a_batch: List[Explanation]) -> np.ndarray:
+def get_scores(a_batch: List[Explanation] | np.ndarray) -> np.ndarray:
     """Get scores out of token + score tuples."""
     # I was just tired having to type it every time.
-    return np.asarray(list(map(itemgetter(1), a_batch)))
+    if isinstance(a_batch[0], Tuple):
+        return np.asarray(list(map(itemgetter(1), a_batch)))
+    else:
+        return a_batch
 
 
 @cached(cache={}, key=lambda f: f.__name__)
