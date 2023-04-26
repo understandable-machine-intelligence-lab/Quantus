@@ -85,6 +85,6 @@ pip install "quantus[full]"
 The package requirements are as follows:
 ```
 python>=3.8.0
-pytorch>=1.10.1
-tensorflow==2.6.2
+torch>=1.13.1
+tensorflow>=2.12.0
 ```

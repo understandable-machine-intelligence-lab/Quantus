@@ -197,8 +197,8 @@ For a more in-depth guide on how to install Quantus, please read more [here](htt
 The package requirements are as follows:
 ```
 python>=3.8.0
-pytorch>=1.10.1
-TensorFlow==2.6.2
+torch>=1.13.1
+tensorflow>=2.12.0
 ```
 
 ## Getting started
