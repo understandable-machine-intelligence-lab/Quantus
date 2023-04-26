@@ -5,19 +5,13 @@
 
 import importlib
 from setuptools import setup, find_packages
-from sys import version_info
+from importlib.metadata import version
 from importlib import util
 
-# Interpret the version of a package depending on if python>=3.8 vs python<3.8:
-# Read: https://stackoverflow.com/questions/20180543/how-to-check-version-of-python-modules?rq=1.
-if version_info[1] <= 7:
-    import pkg_resources
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
 
-    def version(s: str):
-        return pkg_resources.get_distribution(s).version
-
-else:
-    from importlib.metadata import version
+print(required)
 
 # Define extras.
 EXTRAS = {}
@@ -55,16 +49,7 @@ setup(
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    install_requires=[
-        "matplotlib>=3.3.4",
-        "numpy>=1.19.5",
-        "opencv-python>=4.5.5.62",
-        #"protobuf~=3.19.0",
-        "scikit-image>=0.20.0",
-        "scikit-learn>=0.24.2",
-        "scipy>=1.7.3",
-        "tqdm>=4.62.3",
-    ],
+    install_requires=required,
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
     author="Anna Hedstrom",
