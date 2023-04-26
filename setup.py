@@ -11,15 +11,18 @@ from importlib import util
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
+with open('requirements_tests.txt') as f:
+    required_tests = f.read().splitlines()
+
 # Define extras.
 EXTRAS = {}
 EXTRAS["torch"] = (
-    ["torch==1.10.1", "torchvision==0.11.2"]
+    ["torch>=1.13.1", "torchvision>=0.15.1"]
     if not (util.find_spec("torch") and version("torch") >= "1.2")
     else []
 )
 EXTRAS["tensorflow"] = (
-    ["tensorflow==2.12.0"]
+    ["tensorflow>=2.12.0; sys_platform != 'darwin'", "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"]
     if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0")
     else []
 )
@@ -34,16 +37,13 @@ EXTRAS["tf-explain"] = (
 EXTRAS["zennit"] = (
     (EXTRAS["torch"] + ["zennit==0.5.1"]) if not util.find_spec("zennit") else []
 )
-EXTRAS["tutorials"] = (
-    EXTRAS["torch"] + EXTRAS["captum"] + ["pandas", "xmltodict", "tensorflow-datasets"]
-)
-EXTRAS["tests"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
-EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+EXTRAS["tests"] = required_tests
+EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
 setup(
     name="quantus",
-    version="0.3.5",
+    version="0.4.0",
     description="A metrics toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
