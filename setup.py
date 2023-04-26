@@ -11,8 +11,6 @@ from importlib import util
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
-print(required)
-
 # Define extras.
 EXTRAS = {}
 EXTRAS["torch"] = (
@@ -21,7 +19,7 @@ EXTRAS["torch"] = (
     else []
 )
 EXTRAS["tensorflow"] = (
-    ["tensorflow==2.6.2"]
+    ["tensorflow==2.12.0"]
     if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0")
     else []
 )
