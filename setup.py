@@ -11,7 +11,7 @@ from importlib import util
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
-with open('requirements_tests.txt') as f:
+with open('requirements_test.txt') as f:
     required_tests = f.read().splitlines()
 
 # Define extras.
