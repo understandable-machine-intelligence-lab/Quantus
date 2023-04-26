@@ -32,7 +32,7 @@ EXTRAS["tensorflow"] = (
     else []
 )
 EXTRAS["captum"] = (
-    (EXTRAS["torch"] + ["captum==0.4.1"]) if not util.find_spec("captum") else []
+    (EXTRAS["torch"] + ["captum==0.6.0"]) if not util.find_spec("captum") else []
 )
 EXTRAS["tf-explain"] = (
     (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"])
@@ -40,7 +40,7 @@ EXTRAS["tf-explain"] = (
     else []
 )
 EXTRAS["zennit"] = (
-    (EXTRAS["torch"] + ["zennit==0.4.5"]) if not util.find_spec("zennit") else []
+    (EXTRAS["torch"] + ["zennit==0.5.1"]) if not util.find_spec("zennit") else []
 )
 EXTRAS["tutorials"] = (
     EXTRAS["torch"] + EXTRAS["captum"] + ["pandas", "xmltodict", "tensorflow-datasets"]
@@ -59,8 +59,8 @@ setup(
         "matplotlib>=3.3.4",
         "numpy>=1.19.5",
         "opencv-python>=4.5.5.62",
-        "protobuf~=3.19.0",
-        "scikit-image>=0.19.1",
+        #"protobuf~=3.19.0",
+        "scikit-image>=0.20.0",
         "scikit-learn>=0.24.2",
         "scipy>=1.7.3",
         "tqdm>=4.62.3",
