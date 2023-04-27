@@ -198,12 +198,12 @@ class evaluate_text_classification(object):
         x_batch: List[str],
         y_batch: np.ndarray | None,
         explain_func: ExplainFn,
-        explain_func_kwargs: Mapping[str, Dict[str, ...]],
+        explain_func_kwargs: Dict[str, Dict[str, ...]] | List[Dict[str, ...]],
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
         persist_callback: PersistFn | None = None,
-    ) -> Dict[str, np.ndarray | float | Dict[str, ...]]:
+    ):
         """One metric, different hyper parameters."""
 
         if "NLP" not in metric.data_domain_applicability:
@@ -220,26 +220,46 @@ class evaluate_text_classification(object):
         if y_batch is None:
             y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
 
-        result = {}
-        pbar = tqdm(
-            explain_func_kwargs.items(), disable=not verbose, desc="Evaluation..."
-        )
-        for k, v in pbar:  # noqa
-            scores = metric(
-                model=model_wrapper,
-                x_batch=x_batch,
-                y_batch=y_batch,
-                # No pre-computed a-batch since it is expected to differ for every next XAI method.
-                a_batch=None,
-                explain_func=explain_func,
-                explain_func_kwargs=v,
-            )  # noqa
+        if isinstance(explain_func_kwargs, Dict):
+            result = {}
+            pbar = tqdm(
+                explain_func_kwargs.items(), disable=not verbose, desc="Evaluation..."
+            )
+            for k, v in pbar:  # noqa
+                scores = metric(
+                    model=model_wrapper,
+                    x_batch=x_batch,
+                    y_batch=y_batch,
+                    # No pre-computed a-batch since it is expected to differ for every next XAI method.
+                    a_batch=None,
+                    explain_func=explain_func,
+                    explain_func_kwargs=v,
+                )  # noqa
 
-            if persist_callback is not None:
-                persist_callback(k, v, scores)
+                if persist_callback is not None:
+                    persist_callback(k, v, scores)
 
-            result[k] = scores
-        return result
+                result[k] = scores
+            return result
+        else:
+            result = []
+            pbar = tqdm(explain_func_kwargs, disable=not verbose, desc="Evaluation...")
+            for v in pbar:  # noqa
+                scores = metric(
+                    model=model_wrapper,
+                    x_batch=x_batch,
+                    y_batch=y_batch,
+                    # No pre-computed a-batch since it is expected to differ for every next XAI method.
+                    a_batch=None,
+                    explain_func=explain_func,
+                    explain_func_kwargs=v,
+                )  # noqa
+
+                if persist_callback is not None:
+                    persist_callback(None, v, scores)
+
+                result.append(scores)
+            return result
 
     @staticmethod
     def on_multiple_metrics(
