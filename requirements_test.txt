@@ -17,10 +17,10 @@ tensorflow_macos>=2.12.0; sys_platform == 'darwin'
 
 # Torch.
 torch>=1.13.1; sys_platform != 'linux'
-torch>=1.13.1,<2.0.0; sys_platform == 'linux', python_version <= '3.10'
-torch>=2.0.0; sys_platform == 'linux', python_version >= '3.11'
+torch>=1.13.1,<2.0.0; sys_platform == 'linux' and python_version <= '3.10'
+torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'
 
 # Torchvision.
 torchvision>=0.15.1; sys_platform != 'linux'
-torchvision>=0.14.0,<0.15.1; sys_platform == 'linux', python_version <= '3.10'
-torchvision>=0.15.1; sys_platform == 'linux', python_version >= '3.11'
+torchvision>=0.14.0,<0.15.1; sys_platform == 'linux' and python_version <= '3.10'
+torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'

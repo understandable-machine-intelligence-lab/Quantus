@@ -35,15 +35,15 @@ EXTRAS["tensorflow"] = (
     else []
 )
 EXTRAS["captum"] = (
-    (EXTRAS["torch"] + ["captum==0.6.0"]) if not util.find_spec("captum") else []
+    (EXTRAS["torch"] + ["captum>=0.6.0"]) if not util.find_spec("captum") else []
 )
 EXTRAS["tf-explain"] = (
-    (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"])
+    (EXTRAS["tensorflow"] + ["tf-explain>=0.3.1"])
     if not util.find_spec("tf-explain")
     else []
 )
 EXTRAS["zennit"] = (
-    (EXTRAS["torch"] + ["zennit==0.5.1"]) if not util.find_spec("zennit") else []
+    (EXTRAS["torch"] + ["zennit>=0.5.1"]) if not util.find_spec("zennit") else []
 )
 EXTRAS["tests"] = required + required_tests[1:]
 EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
