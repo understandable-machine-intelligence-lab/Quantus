@@ -18,7 +18,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers.utils import flatten_over_axis
+from quantus.helpers.utils import flatten_over_batch
 from quantus.helpers.collection_utils import map_optional, map_dict
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
@@ -318,8 +318,8 @@ class ModelParameterRandomisation(BatchedMetric):
         a_batch = get_scores(a_batch)
         a_randomized = get_scores(a_randomized)
         # Make 2D.
-        a_batch = flatten_over_axis(a_batch, axis_to_keep=(0, 1))
-        a_randomized = flatten_over_axis(a_randomized, axis_to_keep=(0, 1))
+        a_batch = flatten_over_batch(a_batch)
+        a_randomized = flatten_over_batch(a_randomized)
         # Compute distance measure.
         return self.similarity_func(a_batch, a_randomized)
 

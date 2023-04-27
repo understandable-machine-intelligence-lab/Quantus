@@ -28,6 +28,7 @@ from quantus.functions.perturb_func import uniform_noise
 from quantus.helpers.collection_utils import value_or_default
 from quantus.functions.norm_func import l2_norm
 
+from quantus.helpers.utils import flatten_over_batch
 from quantus.helpers.types import Explanation
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
@@ -215,7 +216,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             softmax=softmax,
             channel_first=channel_first,
             model_predict_kwargs=model_predict_kwargs,
-            s_batch=None,
             batch_size=batch_size,
             tokenizer=tokenizer,
             **kwargs,
@@ -272,8 +272,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             )
             # Compute maximization's objective.
             rrs = self.relative_representation_stability_objective(
-                internal_representations,
-                internal_representations_perturbed,
+                flatten_over_batch(internal_representations),
+                flatten_over_batch(internal_representations_perturbed),
                 a_batch,
                 a_batch_perturbed,
             )
@@ -331,8 +331,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
 
         a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
         rrs = self.relative_representation_stability_objective(
-            internal_representations,
-            internal_representations_perturbed,
+            flatten_over_batch(internal_representations),
+            flatten_over_batch(internal_representations_perturbed),
             get_scores(a_batch),
             get_scores(a_batch_perturbed),
         )
@@ -364,8 +364,8 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
             model, x_perturbed, y_batch, **predict_kwargs
         )
         rrs = self.relative_representation_stability_objective(
-            internal_representations,
-            internal_representations_perturbed,
+            flatten_over_batch(internal_representations),
+            flatten_over_batch(internal_representations_perturbed),
             get_scores(a_batch),
             a_batch_perturbed,
         )

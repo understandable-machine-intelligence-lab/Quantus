@@ -159,10 +159,9 @@ class BatchedMetric(EvaluateAble, ABC):
         batch_size: int = 64,
         custom_batch: Any | None = None,
         s_batch: Any | None = None,
-        #
         tokenizer: TokenizerT | None = None,
         **kwargs,
-    ) -> MetricScores:
+    ):
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -279,7 +278,7 @@ class BatchedMetric(EvaluateAble, ABC):
         model = data["model"]
         scores_batch = []
 
-        for i, x in enumerate(pbar):
+        for i, x in enumerate(pbar):  # noqa
             # Get batch from data dict.
             y = map_optional(data["y_batch"], itemgetter(i))
             a = map_optional(data["a_batch"], itemgetter(i))
@@ -294,10 +293,9 @@ class BatchedMetric(EvaluateAble, ABC):
         # Call post-processing.
         self.custom_postprocess(**data)
         if self.return_aggregate:
-            scores_batch = self.aggregate_func(scores_batch)
+            return self.aggregate_func(scores_batch)
         # Append content of last results to all results.
         scores_batch = np.asarray(scores_batch)
-        self.all_results.append(scores_batch)
         return scores_batch
 
     @singledispatchmethod

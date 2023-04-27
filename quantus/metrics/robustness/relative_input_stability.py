@@ -24,7 +24,7 @@ from quantus.functions.normalise_func import normalise_by_average_second_moment_
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.norm_func import l2_norm
 
-from quantus.helpers.utils import flatten_over_axis
+from quantus.helpers.utils import flatten_over_batch
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.types import Explanation
 from quantus.helpers.collection_utils import value_or_default
@@ -298,8 +298,8 @@ class RelativeInputStability(BatchedPerturbationMetric):
         x_batch_perturbed_embeddings, _ = model.get_embeddings(x_perturbed)
         # Compute maximization's objective.
         ris_batch = self.relative_input_stability_objective(
-            flatten_over_axis(x_batch_embeddings, (0, 1)),
-            flatten_over_axis(x_batch_perturbed_embeddings, (0, 1)),
+            flatten_over_batch(x_batch_embeddings),
+            flatten_over_batch(x_batch_perturbed_embeddings),
             get_scores(a_batch),
             get_scores(a_batch_perturbed),
         )
@@ -326,7 +326,10 @@ class RelativeInputStability(BatchedPerturbationMetric):
         a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
         # Compute maximization's objective.
         ris_batch = self.relative_input_stability_objective(
-            x_embeddings, x_perturbed, get_scores(a_batch), a_batch_perturbed
+            flatten_over_batch(x_embeddings),
+            flatten_over_batch(x_perturbed),
+            get_scores(a_batch),
+            a_batch_perturbed,
         )
         # If perturbed input caused change in prediction, then it's RIS=nan.
         changed_prediction_indices = self.changed_prediction_indices(

@@ -151,6 +151,7 @@ def generate_text_classification_explanations(
             model.get_model(),
             x_batch,
             y_batch,
+            tokenizer=model.tokenizer.tokenizer,
             **kwargs,
         )
 

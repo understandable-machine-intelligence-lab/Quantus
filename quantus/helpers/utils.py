@@ -1076,14 +1076,8 @@ def get_logits_for_labels(logits: np.ndarray, y_batch: np.ndarray) -> np.ndarray
     return np.asarray(logits)[np.arange(y_batch.shape[0]), y_batch]
 
 
-def flatten_over_axis(
-    arr: np.ndarray, axis_to_keep: Sequence[int] | int | None = None
-) -> np.ndarray:
-    """Apply np.reshape(-1) keeping axis at indexes axis_to_keep unchanged."""
-    if axis_to_keep is None:
-        return np.reshape(arr, -1)
-    axis_to_keep = sorted(tuple(axis_to_keep))
-    if np.ndim(arr) <= len(axis_to_keep):
-        return arr
-    new_shape = (*np.take(np.shape(arr), axis_to_keep), -1)
+def flatten_over_batch(arr: np.ndarray) -> np.ndarray:
+    """Apply np.reshape(-1) keeping batch axis unchanged."""
+    batch_size = len(arr)
+    new_shape = (batch_size, -1)
     return np.reshape(arr, new_shape)

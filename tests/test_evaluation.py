@@ -1,5 +1,5 @@
 from typing import Union, Dict
-
+from itertools import combinations
 import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
@@ -11,8 +11,6 @@ from quantus.functions.explanation_func import explain
 from quantus.functions.perturb_func import synonym_replacement, spelling_replacement
 from quantus.metrics.complexity import Sparseness  # noqa
 from quantus.metrics.robustness import MaxSensitivity  # noqa
-
-from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 
 
 @pytest.mark.last
@@ -204,30 +202,16 @@ def assert_is_valid_score(scores):
     ],
     ids=["TF_model", "torch_model"],
 )
-def test_evaluate_nlp(
+def test_evaluate_multi_metric(
     model, sst2_2_ragged_batches, sst2_tokenizer, mocker: MockerFixture
 ):
     nlp_metrics = {
-        "MPR": quantus.ModelParameterRandomisation(disable_warnings=True),
-        "RandomLogit": quantus.RandomLogit(disable_warnings=True, num_classes=2),
-        "TokenFlip": quantus.TokenFlipping(disable_warnings=True),
-        "Avg-Sen": quantus.AvgSensitivity(
-            disable_warnings=True, nr_samples=5, perturb_func=synonym_replacement
-        ),
-        "Max-Sen": quantus.MaxSensitivity(
-            disable_warnings=True, nr_samples=5, perturb_func=spelling_replacement
-        ),
-        "RIS": quantus.RelativeInputStability(
+        "RIS Plain Text": quantus.RelativeInputStability(
             disable_warnings=True,
             nr_samples=5,
             return_nan_when_prediction_changes=False,
         ),
-        "ROS": quantus.RelativeOutputStability(
-            disable_warnings=True,
-            nr_samples=5,
-            return_nan_when_prediction_changes=False,
-        ),
-        "RRS": quantus.RelativeRepresentationStability(
+        "RIS Embeddings": quantus.RelativeInputStability(
             disable_warnings=True,
             nr_samples=5,
             return_nan_when_prediction_changes=False,
@@ -235,7 +219,7 @@ def test_evaluate_nlp(
     }
 
     callback_stub = mocker.stub("callback_stub")
-    scores = evaluate_text_classification(
+    scores = evaluate_text_classification.on_multiple_metrics(
         metrics=nlp_metrics,
         model=model,
         x_batch=sst2_2_ragged_batches["x_batch"],
@@ -247,22 +231,52 @@ def test_evaluate_nlp(
         tokenizer=sst2_tokenizer,
     )
 
-    assert callback_stub.call_count == 8
+    assert callback_stub.call_count == 2
     for k in nlp_metrics:
         assert k in scores
 
-    for k in nlp_metrics.keys():
-        assert k in scores
-
-    assert isinstance(scores["MPR"], Dict)
-    for v in scores["MPR"].values():
-        assert_is_valid_score(v)
-
-    scores.pop("MPR")
-
-    token_flip_scores = scores.pop("TokenFlip")
-
-    assert_is_valid_score(token_flip_scores)
-
     for v in scores.values():
         assert_is_valid_score(v)
+
+
+@pytest.mark.last
+@pytest.mark.nlp
+@pytest.mark.parametrize(
+    "model",
+    [
+        lazy_fixture("tf_sst2_model"),
+        lazy_fixture("torch_sst2_model"),
+    ],
+    ids=["TF_model", "torch_model"],
+)
+def test_evaluate_nlp_compare_xai_methods(model, sst2_2_ragged_batches, sst2_tokenizer):
+    metric = quantus.RelativeRepresentationStability(
+        disable_warnings=True,
+        nr_samples=5,
+        return_nan_when_prediction_changes=False,
+        perturb_func=quantus.spelling_replacement,
+        perturb_func_kwargs=dict(k=5),
+        return_aggregate=True,
+    )
+    scores = evaluate_text_classification.varying_explain_func_kwargs(
+        metric=metric,
+        model=model,
+        tokenizer=sst2_tokenizer,
+        x_batch=sst2_2_ragged_batches["x_batch"],
+        y_batch=sst2_2_ragged_batches["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs={
+            "GradNorm": {"method": "GradNorm"},
+            "GradXInput": {"method": "GradXInput"},
+            "IntGrad": {"method": "IntGrad"},
+        },
+    )
+
+    xai_methods = ("GradNorm", "GradXInput", "IntGrad")
+
+    for i in xai_methods:
+        assert i in scores
+        assert isinstance(scores[i], float)
+
+    for i, j in combinations(xai_methods, 2):
+        assert not np.isclose(scores[i], scores[j])
