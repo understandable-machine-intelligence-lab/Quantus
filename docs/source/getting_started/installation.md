@@ -88,3 +88,4 @@ python>=3.7.0
 torch>=1.11.0
 tensorflow>=2.5.0
 ```
+Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …). See `requirements_test.txt` to retrieve the exact versions of [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org).
