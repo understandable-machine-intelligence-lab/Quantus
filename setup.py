@@ -8,22 +8,29 @@ from setuptools import setup, find_packages
 from importlib.metadata import version
 from importlib import util
 
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     required = f.read().splitlines()
 
-with open('requirements_test.txt') as f:
+with open("requirements_test.txt") as f:
     required_tests = f.read().splitlines()
 
 # Define extras.
 EXTRAS = {}
 EXTRAS["torch"] = (
-    ["torch>=1.13.1", "torchvision>=0.15.1"]
-    if not (util.find_spec("torch") and version("torch") >= "1.2")
+    [
+        "torch>=1.13.1,<2.0.0; sys_platform == 'linux'",
+        "torch>=1.13.1; sys_platform != 'linux'",
+        "torchvision>=0.15.1"
+     ]
+    if not (util.find_spec("torch"))
     else []
 )
 EXTRAS["tensorflow"] = (
-    ["tensorflow>=2.12.0; sys_platform != 'darwin'", "tensorflow_macos>=2.12.0; sys_platform == 'darwin'"]
-    if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0")
+    [
+        "tensorflow>=2.12.0; sys_platform != 'darwin'",
+        "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
+    ]
+    if not (util.find_spec("tensorflow"))
     else []
 )
 EXTRAS["captum"] = (
@@ -37,7 +44,7 @@ EXTRAS["tf-explain"] = (
 EXTRAS["zennit"] = (
     (EXTRAS["torch"] + ["zennit==0.5.1"]) if not util.find_spec("zennit") else []
 )
-EXTRAS["tests"] = required_tests
+EXTRAS["tests"] = required + required_tests[1:]
 EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
