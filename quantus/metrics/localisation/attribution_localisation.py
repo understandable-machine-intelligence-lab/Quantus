@@ -20,7 +20,7 @@ class AttributionLocalisation(Metric):
     """
     Implementation of the Attribution Localization by Kohlbrenner et al., 2020.
 
-    The Attribution Localization implements the ratio of positive attributions within the target to the overall
+    Attribution Localization implements the ratio of positive attributions within the target to the overall
     attribution. High scores are desired, as it means, that the positively attributed pixels belong to the
     targeted object class.
 
