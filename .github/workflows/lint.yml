@@ -19,11 +19,13 @@ jobs:
       - name: Run flake8
         run: tox run -e lint
       - name: Run mypy
-        uses: aaarrti/mypy-github-action@v2.4
-        with:
-          checkName: Lint
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # I found a bug in the action, so it is disabled for now.
+        # uses: aaarrti/mypy-github-action@v2.4
+        # with:
+        #  checkName: Lint
+        #env:
+        #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tox run -e mypy
       - name: Verify black code-style
         uses: psf/black@stable
         with:
