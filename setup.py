@@ -52,7 +52,7 @@ EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 setup(
     name="quantus",
     version="0.4.0",
-    description="A metrics toolkit to evaluate neural network explanations.",
+    description="A toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     install_requires=required,
