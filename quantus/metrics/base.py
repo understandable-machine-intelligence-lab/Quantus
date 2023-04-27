@@ -679,7 +679,7 @@ class Metric:
 
     def plot(
         self,
-        plot_func: Callable,
+        plot_func: Optional[Callable] = None,
         show: bool = True,
         path_to_save: Union[str, None] = None,
         *args,
@@ -692,7 +692,7 @@ class Metric:
         Parameters
         ----------
         plot_func: callable
-            A Callable with the actual plotting logic.
+            A Callable with the actual plotting logic. Default set to None, which implies default_plot_func is set.
         show: boolean
             A boolean to state if the plot shall be shown.
         path_to_save (str):
