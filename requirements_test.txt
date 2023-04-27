@@ -3,8 +3,6 @@ captum>=0.6.0
 coverage>=7.2.3
 flake8<=4.0.1; python_version == '3.7'
 flake8>=6.0.0; python_version > '3.7'
-keras<=2.3.1; python_version == '3.7'
-keras>=2.12.0; python_version > '3.7'
 pandas<=1.3.3; python_version == '3.7'
 pandas>=2.0.1; python_version > '3.7'
 
