@@ -18,9 +18,10 @@ with open("requirements_test.txt") as f:
 EXTRAS = {}
 EXTRAS["torch"] = (
     [
-        "torch>=1.13.1,<2.0.0; sys_platform == 'linux'",
         "torch>=1.13.1; sys_platform != 'linux'",
-        "torchvision>=0.15.1"
+        "torch>=1.13.1,<2.0.0; sys_platform == 'linux'",
+        "torchvision>=0.15.1; sys_platform != 'linux'",
+        "torchvision>=1.14.0,<0.15.1; sys_platform == 'linux'",
      ]
     if not (util.find_spec("torch"))
     else []

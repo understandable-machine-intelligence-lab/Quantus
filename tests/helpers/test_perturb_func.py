@@ -60,7 +60,7 @@ def input_uniform_mnist():
     return np.random.uniform(0, 0.1, size=(1, 28, 28))
 
 
-@pytest.mark.fixed
+@pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
     [
@@ -161,7 +161,7 @@ def test_baseline_replacement_by_indices(
         ), f"Test failed.{out}"
 
 
-@pytest.mark.fixed
+@pytest.mark.perturb_func
 @pytest.mark.parametrize(
     "data,params,expected",
     [

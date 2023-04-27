@@ -292,7 +292,7 @@ def test_model_parameter_randomisation(
         ), "Test failed."
 
 
-@pytest.mark.fix
+@pytest.mark.randomisation
 @pytest.mark.parametrize(
     "model,data,params,expected",
     [
@@ -492,7 +492,6 @@ def test_random_logit(
         a_batch=a_batch,
         **call_params,
     )
-    print("scores!!", scores)
 
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
