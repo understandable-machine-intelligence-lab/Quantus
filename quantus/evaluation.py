@@ -193,6 +193,59 @@ def evaluate(
 
 class evaluate_text_classification(SimpleNamespace):
     @staticmethod
+    def varying_explain_func_kwargs_on_multiple_metrics(
+        metric: Mapping[str, BatchedMetric],
+        model: ModelT,
+        x_batch: List[str],
+        y_batch: np.ndarray | None,
+        explain_func: ExplainFn,
+        explain_func_kwargs: Dict[str, Dict[str, ...]] | List[Dict[str, ...]],
+        batch_size: int = 64,
+        tokenizer: TokenizerT | None = None,
+        verbose: bool = True,
+        persist_callback: PersistFn | None = None,
+    ):
+        if isinstance(explain_func_kwargs, Dict):
+            result = {}
+            pbar = tqdm(
+                explain_func_kwargs.items(), disable=not verbose, desc="Evaluation..."
+            )
+            for k, v in pbar:  # noqa
+                pbar.set_description(f"Evaluating {k}")
+                scores = evaluate_text_classification.on_multiple_metrics(
+                    metric,
+                    model,
+                    x_batch,
+                    y_batch,
+                    explain_func,
+                    v,
+                    batch_size,
+                    tokenizer,
+                    False,
+                    persist_callback,
+                )
+                result[k] = scores
+
+        else:
+            pbar = tqdm(explain_func_kwargs, disable=not verbose, desc="Evaluation...")
+            result = [
+                evaluate_text_classification.on_multiple_metrics(
+                    metric,
+                    model,
+                    x_batch,
+                    y_batch,
+                    explain_func,
+                    v,
+                    batch_size,
+                    tokenizer,
+                    False,
+                    persist_callback,
+                )
+                for v in pbar  # noqa
+            ]
+        return result
+
+    @staticmethod
     def varying_explain_func_kwargs(
         metric: BatchedMetric,
         model: ModelT,
@@ -227,6 +280,7 @@ class evaluate_text_classification(SimpleNamespace):
                 explain_func_kwargs.items(), disable=not verbose, desc="Evaluation..."
             )
             for k, v in pbar:  # noqa
+                pbar.set_description(f"Evaluating {k}")
                 scores = metric(
                     model=model_wrapper,
                     x_batch=x_batch,
@@ -264,7 +318,6 @@ class evaluate_text_classification(SimpleNamespace):
 
     @staticmethod
     def on_multiple_metrics(
-        *,
         metrics: Mapping[str, BatchedMetric],
         model: ModelT,
         x_batch: List[str],
@@ -305,6 +358,7 @@ class evaluate_text_classification(SimpleNamespace):
 
         with pbar as pbar:
             for metric_name, metric_instance in metrics.items():
+                pbar.set_description(f"Evaluating {metric_name}")
                 pbar.desc = f"Evaluating {metric_name}"
                 if metric_name in metric_wise_a_batch:
                     a_batch_for_metric = metric_wise_a_batch[metric_name]
