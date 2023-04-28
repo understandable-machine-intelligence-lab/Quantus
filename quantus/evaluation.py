@@ -205,6 +205,17 @@ class evaluate_text_classification(SimpleNamespace):
         verbose: bool = True,
         persist_callback: PersistFn | None = None,
     ):
+        if is_tensorflow_model(model):
+            model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
+        else:
+            model_predict_kwargs = dict()
+
+        model_wrapper = utils.get_wrapped_text_classifier(
+            model=model, model_predict_kwargs=model_predict_kwargs, tokenizer=tokenizer
+        )
+        if y_batch is None:
+            y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
+
         if isinstance(explain_func_kwargs, Dict):
             result = {}
             pbar = tqdm(
@@ -214,7 +225,7 @@ class evaluate_text_classification(SimpleNamespace):
                 pbar.set_description(f"Evaluating {k}")
                 scores = evaluate_text_classification.on_multiple_metrics(
                     metric,
-                    model,
+                    model_wrapper,
                     x_batch,
                     y_batch,
                     explain_func,
@@ -231,7 +242,7 @@ class evaluate_text_classification(SimpleNamespace):
             result = [
                 evaluate_text_classification.on_multiple_metrics(
                     metric,
-                    model,
+                    model_wrapper,
                     x_batch,
                     y_batch,
                     explain_func,
