@@ -5,7 +5,7 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
-
+from __future__ import annotations
 import warnings
 from importlib import util
 from typing import Optional, List
@@ -153,9 +153,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
 
 
 @explain.register  # noqa
-def _(
-    model: TextClassifier, inputs: List[str] | np.ndarray, targets: np.ndarray, **kwargs
-) -> List[Explanation] | np.ndarray:
+def _(model: TextClassifier, inputs, targets, **kwargs) -> List[Explanation]:
     return generate_text_classification_explanations(model, inputs, targets, **kwargs)
 
 
