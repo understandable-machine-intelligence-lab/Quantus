@@ -43,7 +43,7 @@ EXTRAS["tf-explain"] = (
 EXTRAS["zennit"] = (
     (EXTRAS["torch"] + ["zennit>=0.5.1"]) if not util.find_spec("zennit") else []
 )
-EXTRAS["tests"] = required + required_tests[1:]
+EXTRAS["tests"] = [r for r in required if r != ""] + [r for r in required_tests[1:] if r != ""]
 EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
@@ -62,6 +62,6 @@ setup(
     license="GNU LESSER GENERAL PUBLIC LICENSE VERSION 3",
     packages=find_packages(),
     zip_safe=False,
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     include_package_data=True,
 )
