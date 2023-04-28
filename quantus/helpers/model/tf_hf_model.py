@@ -28,7 +28,7 @@ from quantus.helpers.tf_utils import (
     random_layer_generator,
     supported_keras_engine_predict_kwargs,
 )
-from quantus.helpers.types import LayerOrderT
+from quantus.helpers.q_types import LayerOrderT
 
 
 class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):

@@ -3,7 +3,7 @@ from typing import TypeVar, Tuple, List, Protocol, Dict, Generator
 
 import numpy as np
 
-from quantus.helpers.types import LayerOrderT
+from quantus.helpers.q_types import LayerOrderT
 
 
 def is_torch_available() -> bool:

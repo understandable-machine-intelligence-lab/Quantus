@@ -4,6 +4,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+# The source file is named q_types to avoid clash with builtin types
 from __future__ import annotations
 
 from typing import (

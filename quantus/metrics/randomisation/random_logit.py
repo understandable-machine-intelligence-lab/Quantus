@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
-from quantus.helpers.types import (
+from quantus.helpers.q_types import (
     SimilarityFn,
     NormaliseFn,
     ExplainFn,

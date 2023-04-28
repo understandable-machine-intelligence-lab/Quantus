@@ -40,7 +40,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, map_explanations
 from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.helpers.torch_utils import is_torch_model
-from quantus.helpers.types import (
+from quantus.helpers.q_types import (
     AggregateFn,
     ExplainFn,
     Explanation,
@@ -57,7 +57,7 @@ from quantus.helpers.utils import (
 from quantus.metrics.base import EvaluateAble
 
 if TYPE_CHECKING:
-    from quantus.helpers.types import ModelT, TokenizerT
+    from quantus.helpers.q_types import ModelT, TokenizerT
 
 
 T = TypeVar("T", bound=MetricScores, covariant=True)

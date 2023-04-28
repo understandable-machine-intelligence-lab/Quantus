@@ -18,7 +18,7 @@ from quantus.helpers.collection_utils import map_dict, value_or_default
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.torch_utils import random_layer_generator, list_layers
-from quantus.helpers.types import LayerOrderT
+from quantus.helpers.q_types import LayerOrderT
 
 
 class TorchHuggingFaceTextClassifier(TextClassifier):

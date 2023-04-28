@@ -30,7 +30,7 @@ from quantus.helpers.collection_utils import value_or_default, safe_as_array
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 from quantus.functions.norm_func import l2_norm
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):

@@ -28,7 +28,7 @@ from keras.layers import Dense
 from keras.models import clone_model
 
 from quantus.helpers import utils
-from quantus.helpers.types import LayerOrderT
+from quantus.helpers.q_types import LayerOrderT
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.collection_utils import filter_dict, add_default_items
 from quantus.helpers.tf_utils import (

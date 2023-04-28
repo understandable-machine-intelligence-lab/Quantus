@@ -32,7 +32,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 from quantus.helpers.collection_utils import map_dict, value_or_default
 from quantus.helpers.model.torch_hf_model import TorchHuggingFaceTextClassifier
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 
 if util.find_spec("noisegrad"):
     from noisegrad.noisegrad import (

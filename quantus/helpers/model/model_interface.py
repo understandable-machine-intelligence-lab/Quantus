@@ -18,7 +18,7 @@ from typing import Any, Dict, Sequence, Tuple, List, Union, Generator, TYPE_CHEC
 import numpy as np
 
 if TYPE_CHECKING:
-    from quantus.helpers.types import LayerOrderT
+    from quantus.helpers.q_types import LayerOrderT
 
 
 class ModelWrapper(ABC):

@@ -17,7 +17,7 @@ import numpy as np
 import torch
 
 from quantus.helpers import utils
-from quantus.helpers.types import LayerOrderT
+from quantus.helpers.q_types import LayerOrderT
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.torch_utils import list_layers, random_layer_generator
 

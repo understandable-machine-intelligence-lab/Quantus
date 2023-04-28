@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from quantus.helpers import warn
-from quantus.helpers.types import Explanation, FlipTask
+from quantus.helpers.q_types import Explanation, FlipTask
 from quantus.helpers.collection_utils import value_or_default
 
 

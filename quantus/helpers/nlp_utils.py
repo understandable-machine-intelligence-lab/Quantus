@@ -10,7 +10,7 @@ from numpy.typing import ArrayLike
 from cachetools import cached
 from numpy.typing import ArrayLike
 
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 
 T = TypeVar("T")
 R = TypeVar("R")

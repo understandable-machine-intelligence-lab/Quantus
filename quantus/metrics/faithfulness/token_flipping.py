@@ -15,7 +15,7 @@ from quantus.functions.normalise_func import normalize_sum_to_1
 from quantus.helpers.collection_utils import safe_as_array
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.plotting import plot_token_flipping_experiment
-from quantus.helpers.types import (
+from quantus.helpers.q_types import (
     NormaliseFn,
     Explanation,
     ExplainFn,

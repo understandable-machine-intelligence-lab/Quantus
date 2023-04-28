@@ -20,7 +20,7 @@ from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
-from quantus.helpers.types import (
+from quantus.helpers.q_types import (
     PerturbFn,
     ExplainFn,
     SimilarityFn,

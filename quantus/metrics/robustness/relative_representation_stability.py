@@ -29,7 +29,7 @@ from quantus.helpers.collection_utils import value_or_default
 from quantus.functions.norm_func import l2_norm
 
 from quantus.helpers.utils import flatten_over_batch
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 

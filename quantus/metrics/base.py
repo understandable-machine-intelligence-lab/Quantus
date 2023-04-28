@@ -17,7 +17,7 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.types import DataDomain
+from quantus.helpers.q_types import DataDomain
 
 
 class EvaluateAble(ABC):

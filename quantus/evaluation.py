@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import warnings
 from functools import partial
+from types import SimpleNamespace
 from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Tuple, Optional, Union
 
 import numpy as np
@@ -27,11 +28,11 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations
 from quantus.helpers.tf_utils import is_tensorflow_model
-from quantus.helpers.types import Explanation, ExplainFn, PersistFn
+from quantus.helpers.q_types import Explanation, ExplainFn, PersistFn
 from quantus.metrics.base_batched import BatchedMetric
 
 if TYPE_CHECKING:
-    from quantus.helpers.types import ModelT, TokenizerT
+    from quantus.helpers.q_types import ModelT, TokenizerT
 
 
 def evaluate(
@@ -190,7 +191,7 @@ def evaluate(
     return results
 
 
-class evaluate_text_classification(object):
+class evaluate_text_classification(SimpleNamespace):
     @staticmethod
     def varying_explain_func_kwargs(
         metric: BatchedMetric,

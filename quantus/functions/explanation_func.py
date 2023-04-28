@@ -22,7 +22,7 @@ from quantus.helpers.utils import (
     make_channel_last,
     get_wrapped_model,
 )
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.functions.nlp.explanation_func import (
     generate_text_classification_explanations,

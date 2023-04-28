@@ -19,7 +19,7 @@ from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations, is_transformers_available
 from quantus.helpers.tf_utils import is_tensorflow_model, is_tensorflow_available
 from quantus.helpers.torch_utils import is_torch_available, is_torch_model
-from quantus.helpers.types import Explanation
+from quantus.helpers.q_types import Explanation
 
 
 if is_tensorflow_available():

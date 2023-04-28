@@ -24,7 +24,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import get_scores
 from quantus.helpers.plotting import plot_model_parameter_randomisation_experiment
-from quantus.helpers.types import (
+from quantus.helpers.q_types import (
     SimilarityFn,
     NormaliseFn,
     ExplainFn,

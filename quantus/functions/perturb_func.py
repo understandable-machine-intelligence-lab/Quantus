@@ -18,7 +18,7 @@ from scipy.sparse.linalg import spsolve
 
 from quantus.helpers.collection_utils import map_optional
 from quantus.helpers.nlp_utils import is_nlpaug_available
-from quantus.helpers.types import PerturbFn
+from quantus.helpers.q_types import PerturbFn
 from quantus.helpers.utils import (
     get_baseline_value,
     blur_at_indices,
