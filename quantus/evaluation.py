@@ -300,6 +300,7 @@ class evaluate_text_classification(SimpleNamespace):
                     a_batch=None,
                     explain_func=explain_func,
                     explain_func_kwargs=v,
+                    batch_size=batch_size,
                 )  # noqa
 
                 if persist_callback is not None:
@@ -319,6 +320,7 @@ class evaluate_text_classification(SimpleNamespace):
                     a_batch=None,
                     explain_func=explain_func,
                     explain_func_kwargs=v,
+                    batch_size=batch_size,
                 )  # noqa
 
                 if persist_callback is not None:
