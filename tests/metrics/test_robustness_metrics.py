@@ -62,32 +62,47 @@ sensitivity_tests = pytest.mark.parametrize(
             id="tf_mnist",
         ),
         # ------------ NLP -------------
-        # pytest.param(
-        #    lazy_fixture("tf_sst2_model"),
-        #    lazy_fixture("sst2_dataset"),
-        #    {
-        #        "a_batch_generate": False,
-        #        "init": {"perturb_func": synonym_replacement},
-        #        "call": {},
-        #    },
-        #    marks=[pytest.mark.nlp],
-        #    id="tf_nlp_plain_text",
-        # ),
-        # pytest.param(
-        #    lazy_fixture("torch_sst2_model"),
-        #    lazy_fixture("sst2_dataset"),
-        #    {
-        #        "a_batch_generate": False,
-        #        "init": {
-        #            "perturb_func": spelling_replacement,
-        #        },
-        #        "call": {},
-        #    },
-        #    marks=[pytest.mark.nlp],
-        #    id="torch_nlp_plain_text",
-        # ),
         pytest.param(
             lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {"perturb_func": synonym_replacement},
+                "call": {
+                    "explain_func_kwargs": {"method": "NoiseGrad", "config": {"n": 2}}
+                },
+            },
+            marks=[pytest.mark.nlp],
+            id="tf_nlp_plain_text",
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {
+                    "perturb_func": spelling_replacement,
+                },
+                "call": {},
+            },
+            marks=[pytest.mark.nlp],
+            id="torch_nlp_plain_text",
+        ),
+        pytest.param(
+            lazy_fixture("tf_sst2_model"),
+            lazy_fixture("sst2_dataset"),
+            {
+                "a_batch_generate": False,
+                "init": {},
+                "call": {
+                    "explain_func_kwargs": {"method": "NoiseGrad", "config": {"n": 2}}
+                },
+            },
+            marks=[pytest.mark.nlp],
+            id="tf_nlp_latent",
+        ),
+        pytest.param(
+            lazy_fixture("torch_sst2_model"),
             lazy_fixture("sst2_dataset"),
             {
                 "a_batch_generate": False,
@@ -95,19 +110,8 @@ sensitivity_tests = pytest.mark.parametrize(
                 "call": {},
             },
             marks=[pytest.mark.nlp],
-            id="tf_nlp_latent",
+            id="torch_nlp_latent",
         ),
-        # pytest.param(
-        #    lazy_fixture("torch_sst2_model"),
-        #    lazy_fixture("sst2_dataset"),
-        #    {
-        #        "a_batch_generate": False,
-        #        "init": {},
-        #        "call": {},
-        #    },
-        #    marks=[pytest.mark.nlp],
-        #    id="torch_nlp_latent",
-        # ),
     ],
 )
 

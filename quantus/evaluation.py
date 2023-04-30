@@ -10,7 +10,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 from types import SimpleNamespace
-from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Tuple, Optional, Union
+from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Optional, Union
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -25,10 +25,9 @@ from quantus.helpers.collection_utils import (
     flatten,
 )
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import map_explanations
+from quantus.helpers.q_types import ExplainFn, PersistFn
 from quantus.helpers.tf_utils import is_tensorflow_model
-from quantus.helpers.q_types import Explanation, ExplainFn, PersistFn
 from quantus.metrics.base_batched import BatchedMetric
 
 if TYPE_CHECKING:
@@ -194,7 +193,7 @@ def evaluate(
 class evaluate_text_classification(SimpleNamespace):
     @staticmethod
     def varying_explain_func_kwargs_on_multiple_metrics(
-        metric: Mapping[str, BatchedMetric],
+        metrics: Mapping[str, BatchedMetric],
         model: ModelT,
         x_batch: List[str],
         y_batch: np.ndarray | None,
@@ -216,45 +215,53 @@ class evaluate_text_classification(SimpleNamespace):
         if y_batch is None:
             y_batch = model_wrapper.predict(x_batch).argmax(axis=-1)
 
-        if isinstance(explain_func_kwargs, Dict):
-            result = {}
-            pbar = tqdm(
-                explain_func_kwargs.items(), disable=not verbose, desc="Evaluation..."
-            )
-            for k, v in pbar:  # noqa
-                pbar.set_description(f"Evaluating {k}")
-                scores = evaluate_text_classification.on_multiple_metrics(
-                    metric,
-                    model_wrapper,
-                    x_batch,
-                    y_batch,
-                    explain_func,
-                    v,
-                    batch_size,
-                    tokenizer,
-                    False,
-                    persist_callback,
-                )
-                result[k] = scores
+        pbar = tqdm(
+            total=len(explain_func_kwargs) * len(metrics),
+            disable=not verbose,
+            desc="Evaluation...",
+        )
 
-        else:
-            pbar = tqdm(explain_func_kwargs, disable=not verbose, desc="Evaluation...")
-            result = [
-                evaluate_text_classification.on_multiple_metrics(
-                    metric,
-                    model_wrapper,
-                    x_batch,
-                    y_batch,
-                    explain_func,
-                    v,
-                    batch_size,
-                    tokenizer,
-                    False,
-                    persist_callback,
+        with pbar as pbar:
+            if isinstance(explain_func_kwargs, Dict):
+                result = {}
+                for k, v in explain_func_kwargs.items():
+                    pbar.set_description(f"Evaluating {k}")
+                    scores = evaluate_text_classification.on_multiple_metrics(
+                        metrics,
+                        model_wrapper,
+                        x_batch,
+                        y_batch,
+                        explain_func,
+                        v,
+                        batch_size,
+                        tokenizer,
+                        False,
+                        persist_callback,
+                        pbar=pbar,
+                    )
+                    result[k] = scores
+
+            else:
+                pbar = tqdm(
+                    explain_func_kwargs, disable=not verbose, desc="Evaluation..."
                 )
-                for v in pbar  # noqa
-            ]
-        return result
+                result = [
+                    evaluate_text_classification.on_multiple_metrics(
+                        metrics,
+                        model_wrapper,
+                        x_batch,
+                        y_batch,
+                        explain_func,
+                        v,
+                        batch_size,
+                        tokenizer,
+                        False,
+                        persist_callback,
+                        pbar=pbar,
+                    )
+                    for v in explain_func_kwargs
+                ]
+            return result
 
     @staticmethod
     def varying_explain_func_kwargs(
@@ -341,6 +348,7 @@ class evaluate_text_classification(SimpleNamespace):
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
         persist_callback: PersistFn | None = None,
+        pbar=None,
     ) -> Dict[str, np.ndarray | Dict[str, np.ndarray]]:
         """Evaluate set of metrics for a single set of explanation_func hyper parameters."""
         for i in metrics.values():
@@ -363,8 +371,11 @@ class evaluate_text_classification(SimpleNamespace):
             tokenizer=tokenizer,
         )
 
-        pbar = tqdm(
-            total=len(metrics.keys()), disable=not verbose, desc="Evaluation..."
+        pbar = value_or_default(
+            pbar,
+            lambda: tqdm(
+                total=len(metrics.keys()), disable=not verbose, desc="Evaluation..."
+            ),
         )
 
         result = {}
