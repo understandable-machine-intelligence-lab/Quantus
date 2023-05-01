@@ -7,6 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
+import warnings
 from functools import partial, wraps
 from types import SimpleNamespace
 from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Optional, Union, Any
@@ -15,7 +16,6 @@ import numpy as np
 from tqdm.auto import tqdm
 
 import quantus
-import warnings
 from quantus.functions.explanation_func import explain
 from quantus.helpers import asserts
 from quantus.helpers import utils
@@ -230,8 +230,6 @@ def evaluate(
 
 
 class evaluate_text_classification(SimpleNamespace):
-    from quantus.helpers import nlp_utils
-
     @staticmethod
     @suggest_combined_metrics
     def varying_explain_func_kwargs_on_multiple_metrics(

@@ -6,29 +6,26 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable, Dict, List
-import numpy as np
 from functools import partial
+from typing import TYPE_CHECKING, Optional, Callable, Dict
+
+import numpy as np
 
 if TYPE_CHECKING:
-    import tensorflow as tf
-    import torch
+    pass
 
-from functools import singledispatchmethod
-
+from quantus.helpers import collection_utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
-from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import uniform_noise, perturb_batch
+from quantus.functions.perturb_func import uniform_noise
 from quantus.functions.norm_func import l2_norm
 
-from quantus.helpers.utils import flatten_over_batch
+from quantus.helpers.utils import get_logits_for_labels
 from quantus.helpers.model.text_classifier import TextClassifier
-from quantus.helpers.q_types import Explanation
-from quantus.helpers.collection_utils import value_or_default
-from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
+from quantus.helpers.collection_utils import value_or_default, safe_as_array
+from quantus.helpers.nlp_utils import get_scores
 
 INIT_DOCSTRING = """
         Parameters
@@ -103,7 +100,7 @@ CALL_DOCSTRING = """
         """
 
 
-class RelativeStability(BatchedPerturbationMetric):
+class RelativeInputStability(BatchedPerturbationMetric):
     """
     Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
 
@@ -113,11 +110,6 @@ class RelativeStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
-    data_domain_applicability: List[
-        str
-    ] = BatchedPerturbationMetric.data_domain_applicability + ["NLP"]
-
-    @attributes_check
     def __init__(
         self,
         nr_samples: int = 200,
@@ -170,210 +162,60 @@ class RelativeStability(BatchedPerturbationMetric):
                 citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
             )
 
-    def __call__(  # type: ignore
+    def __call__(
         self,
-        model: tf.keras.Model | torch.nn.Module,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        model_predict_kwargs: Optional[Dict[str, ...]] = None,
-        explain_func: Optional[Callable] = None,
-        explain_func_kwargs: Optional[Dict[str, ...]] = None,
-        a_batch: Optional[np.ndarray] = None,
-        device: Optional[str] = None,
-        softmax: bool = False,
-        channel_first: bool = True,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        explain_func,
+        a_batch: np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func_kwargs: dict | None = None,
+        model_predict_kwargs: dict | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
         batch_size: int = 64,
+        custom_batch=None,
         tokenizer=None,
         **kwargs,
-    ) -> np.ndarray | float:
+    ) -> dict[str, np.ndarray | float]:
         return super().__call__(
             model=model,
             x_batch=x_batch,
             y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
             explain_func=explain_func,
             explain_func_kwargs=explain_func_kwargs,
-            a_batch=a_batch,
-            device=device,
             softmax=softmax,
-            channel_first=channel_first,
+            device=device,
             model_predict_kwargs=model_predict_kwargs,
-            s_batch=None,
             batch_size=batch_size,
             tokenizer=tokenizer,
             **kwargs,
         )
 
-    @singledispatchmethod
-    def evaluate_batch(
+    def evaluate_sample(
         self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
+        model: TextClassifier | ModelInterface,
+        x_batch,
+        x_perturbed,
+        a_batch,
+        a_perturbed,
         *args,
         **kwargs,
-    ) -> np.ndarray:
-        """
-        Parameters
-        ----------
-        model: tf.keras.Model, torch.nn.Module
-            A torch or tensorflow model that is subject to explanation.
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-            1D tensor, representing predicted labels for the x_batch.
-        a_batch: np.ndarray, optional
-            4D tensor with pre-computed explanations for the x_batch.
-        args:
-            Unused.
-        kwargs:
-            Unused.
+    ):
+        if isinstance(x_batch[0], str):
+            x_batch, _ = model.get_embeddings(x_batch)
 
-        Returns
-        -------
-        ris: np.ndarray
-            The batched evaluation results.
+        if isinstance(x_perturbed[0], str):
+            x_perturbed, _ = model.get_embeddings(x_perturbed)
 
-        """
-        # Prepare output array.
-        ris_batch = np.zeros(shape=[self.nr_samples, x_batch.shape[0]])
-        for index in range(self.nr_samples):
-            # Perturb input.
-            x_perturbed = self.perturb_batch(x_batch)
-            # Generate explanations for perturbed input.
-            a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-            # Compute maximization's objective.
-            ris = self.compute_maximization_objective(
-                x_batch, x_perturbed, a_batch, a_batch_perturbed
-            )
-            ris_batch[index] = ris
-            # If perturbed input caused change in prediction, then it's RIS=nan.
-            changed_prediction_indices = self.changed_prediction_indices(
-                model, x_batch, x_perturbed
-            )
-            if len(changed_prediction_indices) == 0:
-                continue
-            ris_batch[index, changed_prediction_indices] = np.nan
-
-        # Compute RIS.
-        result = np.max(ris_batch, axis=0)
-        return result
-
-    @evaluate_batch.register
-    def _(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
-        s_batch=None,
-        custom_batch=None,
-    ) -> np.ndarray:
-        ris_batch = np.zeros(shape=[self.nr_samples, len(x_batch)])
-        for index in range(self.nr_samples):
-            if is_plain_text_perturbation(self.perturb_func):
-                ris_batch[index] = self._eval_step_nlp_plain_text(
-                    model, x_batch, y_batch, a_batch, custom_batch[index]
-                )
-            else:
-                ris_batch[index] = self._eval_step_nlp_embeddings(
-                    model, x_batch, y_batch, a_batch
-                )
-
-        # Compute RIS.
-        result = np.max(ris_batch, axis=0)
-        return result
-
-    def _eval_step_nlp_plain_text(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
-        x_perturbed: List[str],
-    ) -> np.ndarray:
-        # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-
-        x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-        x_batch_perturbed_embeddings, _ = model.get_embeddings(x_perturbed)
-        # Compute maximization's objective.
-        ris_batch = self.compute_maximization_objective(
-            flatten_over_batch(x_batch_embeddings),
-            flatten_over_batch(x_batch_perturbed_embeddings),
-            get_scores(a_batch),
-            get_scores(a_batch_perturbed),
-        )
-        # If perturbed input caused change in prediction, then it's RIS=nan.
-        changed_prediction_indices = self.changed_prediction_indices(
-            model, x_batch, x_perturbed
-        )
-        if len(changed_prediction_indices) != 0:
-            ris_batch[changed_prediction_indices] = np.nan
-
-        return ris_batch
-
-    def _eval_step_nlp_embeddings(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
-    ) -> np.ndarray:
-        x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-        x_perturbed = self.perturb_batch(x_embeddings)
-
-        # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-        # Compute maximization's objective.
-        ris_batch = self.compute_maximization_objective(
-            flatten_over_batch(x_embeddings),
-            flatten_over_batch(x_perturbed),
-            get_scores(a_batch),
-            a_batch_perturbed,
-        )
-        # If perturbed input caused change in prediction, then it's RIS=nan.
-        changed_prediction_indices = self.changed_prediction_indices(
-            model, x_batch, x_perturbed
-        )
-        if len(changed_prediction_indices) != 0:
-            ris_batch[changed_prediction_indices] = np.nan
-
-        return ris_batch
-
-    @staticmethod
-    def compute_maximization_objective(
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        raise NotImplementedError
-
-    @staticmethod
-    def maximize_objective(self, scores):
-        return np.max(scores, axis=0)
-
-
-class RelativeInputStability(RelativeStability):
-    """
-    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
-
-    :math:`RIS(x, x', e_x, e_x') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
-
-    References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
-    """
-
-    @staticmethod
-    def compute_maximization_objective(
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
         return RelativeInputStability.relative_input_stability_objective(
-            x, xs, e_x, e_xs
+            x_batch, x_perturbed, get_scores(a_batch), get_scores(a_perturbed)
         )
 
     @staticmethod
@@ -415,8 +257,11 @@ class RelativeInputStability(RelativeStability):
 
         return nominator / denominator
 
+    def reduce_samples(self, scores):
+        return np.max(scores, axis=0)
 
-class RelativeOutputStability(RelativeStability):
+
+class RelativeOutputStability(BatchedPerturbationMetric):
     """
     Relative Output Stability leverages the stability of an explanation with respect
     to the change in the output logits
@@ -430,20 +275,107 @@ class RelativeOutputStability(RelativeStability):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    @staticmethod
-    def compute_maximization_objective(
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        logits_perturbed = get_logits_for_labels(
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        explain_func,
+        a_batch: np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func_kwargs: dict | None = None,
+        model_predict_kwargs: dict | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
+        batch_size: int = 64,
+        custom_batch=None,
+        tokenizer=None,
+        **kwargs,
+    ) -> dict[str, np.ndarray | float]:
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs,
+        )
+
+    def __init__(
+        self,
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        return_nan_when_prediction_changes: bool = True,
+        **kwargs,
+    ):
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
+        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            nr_samples=nr_samples,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
+            **kwargs,
+        )
+
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
+                    "number of times perturbations are sampled 'nr_samples'"
+                ),
+                citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
+            )
+
+    def evaluate_sample(
+        self, model, x_batch, x_perturbed, a_batch, a_perturbed, y_batch, predict_kwargs
+    ):
+        h_x = get_logits_for_labels(
+            safe_as_array(model.predict(x_batch, **predict_kwargs), force=True), y_batch
+        )
+        h_xs = get_logits_for_labels(
             safe_as_array(model.predict(x_perturbed, **predict_kwargs), force=True),
             y_batch,
         )
-        # Compute maximization's objective.
-        ros = self.relative_output_stability_objective(
-            og_logits, logits_perturbed, get_scores(a_batch), a_batch_perturbed
+
+        return RelativeOutputStability.relative_output_stability_objective(
+            h_x, h_xs, get_scores(a_batch), get_scores(a_perturbed)
         )
 
     @staticmethod
@@ -484,6 +416,9 @@ class RelativeOutputStability(RelativeStability):
         denominator = l2_norm(denominator) + eps_min
         return nominator / denominator
 
+    def reduce_samples(self, scores):
+        return np.max(scores, axis=0)
+
 
 class RelativeRepresentationStability(BatchedPerturbationMetric):
     """
@@ -498,14 +433,105 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
         1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
     """
 
-    @staticmethod
-    def compute_maximization_objective(
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        pass
+    def __init__(
+        self,
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        return_nan_when_prediction_changes: bool = True,
+        **kwargs,
+    ):
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
+        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
+        )
+
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            nr_samples=nr_samples,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
+            **kwargs,
+        )
+
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
+                    "number of times perturbations are sampled 'nr_samples'"
+                ),
+                citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
+            )
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        explain_func,
+        a_batch: np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func_kwargs: dict | None = None,
+        model_predict_kwargs: dict | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
+        batch_size: int = 64,
+        custom_batch=None,
+        tokenizer=None,
+        **kwargs,
+    ) -> dict[str, np.ndarray | float]:
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs,
+        )
+
+    def evaluate_sample(
+        self, model, x_batch, x_perturbed, a_batch, a_perturbed, y_batch, predict_kwargs
+    ):
+        l_x = model.get_hidden_representations(x_batch, **predict_kwargs)
+        l_xs = model.get_hidden_representations(x_perturbed, **predict_kwargs)
+
+        return (
+            RelativeRepresentationStability.relative_representation_stability_objective(
+                l_x, l_xs, get_scores(a_batch), get_scores(a_perturbed)
+            )
+        )
 
     @staticmethod
     def relative_representation_stability_objective(
@@ -547,25 +573,137 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
 
         return nominator / denominator
 
+    def reduce_samples(self, scores):
+        return np.max(scores, axis=0)
 
-class CombinedRelativeStability(RelativeStability):
 
+class CombinedRelativeStability(BatchedPerturbationMetric):
     """Computes 3 metrics with computational cost of 1."""
 
-    @staticmethod
-    def compute_maximization_objective(
-        x: np.ndarray,
-        xs: np.ndarray,
-        e_x: np.ndarray,
-        e_xs: np.ndarray,
-    ) -> np.ndarray:
-        ris = RelativeInputStability.compute_maximization_objective(x, xs, e_x, e_xs)
-        ros = RelativeOutputStability.compute_maximization_objective(x, xs, e_x, e_xs)
-        rrs = RelativeRepresentationStability.compute_maximization_objective(
-            x, xs, e_x, e_xs
+    def __init__(
+        self,
+        nr_samples: int = 200,
+        abs: bool = False,
+        normalise: bool = False,
+        normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        normalise_func_kwargs: Optional[Dict[str, ...]] = None,
+        perturb_func: Callable = None,
+        perturb_func_kwargs: Optional[Dict[str, ...]] = None,
+        return_aggregate: bool = False,
+        aggregate_func: Optional[Callable[[np.ndarray], np.float]] = np.mean,
+        disable_warnings: bool = False,
+        display_progressbar: bool = False,
+        default_plot_func: Optional[Callable] = None,
+        return_nan_when_prediction_changes: bool = True,
+        **kwargs,
+    ):
+        normalise_func = value_or_default(
+            normalise_func, lambda: normalise_by_average_second_moment_estimate
+        )
+        perturb_func = value_or_default(perturb_func, lambda: uniform_noise)
+        perturb_func_kwargs = value_or_default(
+            perturb_func_kwargs, lambda: {"upper_bound": 0.2}
         )
 
-    def maximize_objective(
-        self, scores: dict[str, np.ndarray]
-    ) -> dict[str, np.ndarray]:
-        pass
+        super().__init__(
+            abs=abs,
+            normalise=normalise,
+            normalise_func=normalise_func,
+            normalise_func_kwargs=normalise_func_kwargs,
+            perturb_func=perturb_func,
+            perturb_func_kwargs=perturb_func_kwargs,
+            return_aggregate=return_aggregate,
+            aggregate_func=aggregate_func,
+            default_plot_func=default_plot_func,
+            display_progressbar=display_progressbar,
+            disable_warnings=disable_warnings,
+            nr_samples=nr_samples,
+            return_nan_when_prediction_changes=return_nan_when_prediction_changes,
+            **kwargs,
+        )
+
+        if not self.disable_warnings:
+            warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "function used to generate perturbations 'perturb_func' and parameters passed to it 'perturb_func_kwargs'"
+                    "number of times perturbations are sampled 'nr_samples'"
+                ),
+                citation='Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations." https://arxiv.org/pdf/2203.06877.pdf',
+            )
+
+    def __call__(
+        self,
+        model,
+        x_batch: np.array,
+        y_batch: np.array,
+        explain_func,
+        a_batch: np.ndarray | None = None,
+        s_batch: np.ndarray | None = None,
+        channel_first: bool | None = None,
+        explain_func_kwargs: dict | None = None,
+        model_predict_kwargs: dict | None = None,
+        softmax: bool | None = False,
+        device: str | None = None,
+        batch_size: int = 64,
+        custom_batch=None,
+        tokenizer=None,
+        **kwargs,
+    ) -> dict[str, np.ndarray | float]:
+        return super().__call__(
+            model=model,
+            x_batch=x_batch,
+            y_batch=y_batch,
+            a_batch=a_batch,
+            s_batch=s_batch,
+            custom_batch=None,
+            channel_first=channel_first,
+            explain_func=explain_func,
+            explain_func_kwargs=explain_func_kwargs,
+            softmax=softmax,
+            device=device,
+            model_predict_kwargs=model_predict_kwargs,
+            batch_size=batch_size,
+            tokenizer=tokenizer,
+            **kwargs,
+        )
+
+    def evaluate_sample(
+        self, model, x_batch, x_perturbed, a_batch, a_perturbed, y_batch, predict_kwargs
+    ):
+        h_x = get_logits_for_labels(
+            safe_as_array(model.predict(x_batch, **predict_kwargs), force=True), y_batch
+        )
+        h_xs = get_logits_for_labels(
+            safe_as_array(model.predict(x_perturbed, **predict_kwargs), force=True),
+            y_batch,
+        )
+
+        l_x = model.get_hidden_representations(x_batch, **predict_kwargs)
+        l_xs = model.get_hidden_representations(x_perturbed, **predict_kwargs)
+
+        if isinstance(x_batch[0], str):
+            x_batch, _ = model.get_embeddings(x_batch)
+
+        if isinstance(x_perturbed[0], str):
+            x_perturbed, _ = model.get_embeddings(x_perturbed)
+
+        a_batch = get_scores(a_batch)
+        a_perturbed = get_scores(a_perturbed)
+        ris = RelativeInputStability.relative_input_stability_objective(
+            x_batch, x_perturbed, a_batch, a_perturbed
+        )
+        ros = RelativeOutputStability.relative_output_stability_objective(
+            h_x, h_xs, a_batch, a_perturbed
+        )
+        rrs = (
+            RelativeRepresentationStability.relative_representation_stability_objective(
+                l_x, l_xs, a_batch, a_perturbed
+            )
+        )
+
+        return dict(ris=ris, ros=ros, rrs=rrs)
+
+    def reduce_samples(self, scores):
+        scores_combined = collection_utils.join_dict(scores)
+        return collection_utils.map_dict(scores_combined, partial(np.max, axis=0))

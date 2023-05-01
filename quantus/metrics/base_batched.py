@@ -60,7 +60,6 @@ from quantus.metrics.base import EvaluateAble
 if TYPE_CHECKING:
     from quantus.helpers.q_types import ModelT, TokenizerT
 
-
 T = TypeVar("T", bound=MetricScores, covariant=True)
 # C stands for custom (batch).
 C = TypeVar("C", bound=MetricScores, covariant=True)
@@ -706,3 +705,57 @@ class BatchedPerturbationMetric(BatchedMetric):
         return super().batch_postprocess(
             model, x_batch, y_batch, a_batch, s_batch, score
         )
+
+    def evaluate_batch(
+        self,
+        model: ModelInterface | TextClassifier,
+        x_batch: np.ndarray | List[str],
+        y_batch: np.ndarray,
+        a_batch,
+        s_batch: np.ndarray = None,
+        custom_batch=None,
+    ) -> np.ndarray:
+        similarities = []
+
+        for step_id in range(self.nr_samples):
+            if isinstance(model, TextClassifier):
+                if is_plain_text_perturbation(self.perturb_func):
+                    x_perturbed = custom_batch[step_id]
+                    # Generate explanation based on perturbed input x.
+                    a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+                    x_batch_embeddings, _ = model.get_embeddings(x_batch)
+                    predict_kwargs = {}
+                else:
+                    x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
+                    x_perturbed = self.perturb_batch(x_batch_embeddings)
+                    # Generate explanation based on perturbed input x.
+                    a_perturbed = self.explain_batch(
+                        model, x_perturbed, y_batch, **predict_kwargs
+                    )
+            else:
+                x_perturbed = self.perturb_batch(x_batch)
+                a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+                predict_kwargs = {}
+
+            similarities.append(
+                self.evaluate_sample(
+                    model,
+                    x_batch,
+                    x_perturbed,
+                    a_batch,
+                    a_perturbed,
+                    y_batch,
+                    predict_kwargs,
+                )
+            )
+        return self.reduce_samples(similarities)
+
+    @abstractmethod
+    def evaluate_sample(
+        self, model, x_batch, x_perturbed, a_batch, a_perturbed, y_batch, predict_kwargs
+    ):
+        raise NotImplementedError
+
+    @abstractmethod
+    def reduce_samples(self, scores: Sequence[R]) -> R:
+        raise NotImplementedError

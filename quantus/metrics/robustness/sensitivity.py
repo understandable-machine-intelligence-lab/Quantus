@@ -7,8 +7,6 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-from abc import abstractmethod
-from functools import singledispatchmethod
 from typing import Any, Callable, Dict, List
 
 import numpy as np
@@ -19,9 +17,8 @@ from quantus.functions.perturb_func import uniform_noise
 from quantus.functions.similarity_func import difference
 from quantus.helpers import asserts, warn, collection_utils, utils, nlp_utils
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
+from quantus.helpers.model.text_classifier import Tokenizable
 from quantus.helpers.q_types import (
-    Explanation,
     ExplainFn,
     NormaliseFn,
     PerturbFn,
@@ -261,116 +258,25 @@ class Sensitivity(BatchedPerturbationMetric):
             **kwargs,
         )
 
-    @singledispatchmethod
-    def evaluate_batch(
-        self,
-        model: ModelInterface,
-        x_batch: np.ndarray,
-        y_batch: np.ndarray,
-        a_batch: np.ndarray,
-        s_batch: np.ndarray,
-        custom_batch=None,
-    ) -> np.ndarray:
-        """
-        Evaluates model and attributes on a single data batch and returns the batched evaluation result.
+    def evaluate_sample(
+        self, model, x_batch, x_perturbed, a_batch, a_perturbed, *args, **kwargs
+    ):
+        if isinstance(x_batch[0], str):
+            x_batch, _ = model.get_embeddings(x_batch)
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x_batch: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y_batch: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a_batch: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s_batch: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
+        if isinstance(x_perturbed[0], str):
+            x_perturbed, _ = model.get_embeddings(x_perturbed)
 
-        Returns
-        -------
-           : np.ndarray
-            The batched evaluation results.
-        """
-        batch_size = x_batch.shape[0]
-        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
+        a_batch = nlp_utils.get_scores(a_batch)
+        a_perturbed = nlp_utils.get_scores(a_perturbed)
 
-        for step_id in range(self.nr_samples):
-            # Perturb input.
-            x_perturbed = self.perturb_batch(x_batch)
-            changed_prediction_indices = self.changed_prediction_indices(
-                model, x_batch, x_perturbed
-            )
-
-            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-                warn.warn_perturbation_caused_no_change(
-                    x=x_instance,
-                    x_perturbed=x_instance_perturbed,
-                )
-
-            # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_batch(model, x_batch, y_batch)
-
-            # Measure similarity for each instance separately.
-            sensitivities = self.similarity_func(
-                utils.flatten_over_axis(a_batch, (0, 1)),
-                utils.flatten_over_axis(a_perturbed, (0, 1)),
-            )
-            numerator = self.norm_numerator(sensitivities)
-            denominator = self.norm_denominator(utils.flatten_over_batch(x_batch))
-            sensitivities_norm = numerator / denominator
-            similarities[step_id] = sensitivities_norm
-
-            for i in changed_prediction_indices:
-                similarities[step_id, i] = np.nan
-
-        return self.reduce_similarities(similarities)
-
-    @evaluate_batch.register
-    def _(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch,
-        s_batch: np.ndarray = None,
-        custom_batch=None,
-    ) -> np.ndarray:
-        batch_size = len(x_batch)
-        similarities = np.zeros((batch_size, self.nr_samples))
-        is_plain_text = nlp_utils.is_plain_text_perturbation(self.perturb_func)
-
-        for step_id in range(self.nr_samples):
-            if is_plain_text:
-                x_perturbed = custom_batch[step_id]
-                # Generate explanation based on perturbed input x.
-                a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-                x_batch_embeddings, _ = model.get_embeddings(x_batch)
-            else:
-                x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-                x_perturbed = self.perturb_batch(x_batch_embeddings)
-                # Generate explanation based on perturbed input x.
-                a_perturbed = self.explain_batch(
-                    model, x_perturbed, y_batch, **predict_kwargs
-                )
-
-            # for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-            #    warn.warn_perturbation_caused_no_change(
-            #        x=x_instance,
-            #        x_perturbed=x_instance_perturbed,
-            #    )
-
-            sensitivities = self.similarity_func(
-                utils.flatten_over_axis(a_batch, (0, 1)),
-                utils.flatten_over_axis(a_perturbed, (0, 1)),
-            )
-            numerator = self.norm_numerator(sensitivities)
-            denominator = self.norm_denominator(
-                utils.flatten_over_batch(x_batch_embeddings)
-            )
-            similarities_i = numerator / denominator
-            similarities[:, step_id] = similarities_i
-        return self.reduce_similarities(similarities)
+        sensitivities = self.similarity_func(
+            utils.flatten_over_axis(a_batch, (0, 1)),
+            utils.flatten_over_axis(a_perturbed, (0, 1)),
+        )
+        numerator = self.norm_numerator(sensitivities)
+        denominator = self.norm_denominator(utils.flatten_over_batch(x_batch))
+        return numerator / denominator
 
     def custom_preprocess(
         self,
@@ -384,10 +290,6 @@ class Sensitivity(BatchedPerturbationMetric):
         # Additional explain_func assert, as the one in prepare() won't be
         # executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
-
-    @abstractmethod
-    def reduce_similarities(self, similarities: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
 
 
 @utils.add_docstrings(CLS_DOCSTRING.format(name="Max-Sensitivity"))
@@ -468,9 +370,9 @@ class MaxSensitivity(Sensitivity):
             **kwargs,
         )
 
-    def reduce_similarities(self, similarities: np.ndarray) -> np.ndarray:
+    def reduce_samples(self, similarities: np.ndarray) -> np.ndarray:
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        return max_func(similarities, axis=1)
+        return max_func(similarities, axis=0)
 
 
 @utils.add_docstrings(CLS_DOCSTRING.format(name="Max-Sensitivity"))
@@ -550,9 +452,9 @@ class AvgSensitivity(Sensitivity):
             **kwargs,
         )
 
-    def reduce_similarities(self, similarities: np.ndarray) -> np.ndarray:
+    def reduce_samples(self, similarities: np.ndarray) -> np.ndarray:
         mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
-        return mean_func(similarities, axis=1)
+        return mean_func(similarities, axis=0)
 
 
 class AvgAndMaxSensitivity(Sensitivity):
@@ -639,19 +541,15 @@ class AvgAndMaxSensitivity(Sensitivity):
             **kwargs,
         )
 
-    def reduce_similarities(self, similarities: np.ndarray) -> dict[str, np.ndarray]:
+    def reduce_samples(self, similarities: np.ndarray) -> dict[str, np.ndarray]:
         mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
         max_func = np.max if self.return_nan_when_prediction_changes else np.nanmax
-        avg = mean_func(similarities, axis=1)
-        _max = max_func(similarities, axis=1)
+        avg = mean_func(similarities, axis=0)
+        _max = max_func(similarities, axis=0)
         return dict(avg=avg, max=_max)
 
     @staticmethod
     def join_batches(
         score_batches: List[dict[str, np.ndarray]]
     ) -> dict[str, np.ndarray]:
-        scores = {"avg": [], "max": []}
-        for s in score_batches:
-            scores["avg"].extend(s["avg"])
-            scores["max"].extend(s["max"])
-        return collection_utils.map_dict(scores, np.asarray)
+        return collection_utils.join_dict(score_batches)

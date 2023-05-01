@@ -5,6 +5,7 @@ from transformers_gradients import update_config
 from transformers_gradients.assertions import assert_numerics
 
 import quantus
+from quantus.metrics.robustness.robustness_metric_chain import RobustnessMetricChain
 
 
 def tf_fro_norm(arr):
@@ -99,23 +100,64 @@ def test_relative_stability(
         sst2_dataset["x_batch"],
         sst2_dataset["y_batch"],
         explain_func=quantus.explain,
-        explain_func_kwargs=dict(method="NoiseGrad", config=dict(n=2)),
         tokenizer=sst2_tokenizer,
+        a_batch=None,
+        model_predict_kwargs=None,
+        channel_first=None,
+        softmax=None,
     )
 
     assert isinstance(scores, dict)
-    ris = scores["ris"]
-    ros = scores["ros"]
-    rrs = scores["rrs"]
+    for k in ("ris", "ros", "rrs"):
+        values = scores[k]
 
-    tf.debugging.assert_rank(ris, 1)
-    tf.debugging.assert_rank(ros, 1)
-    tf.debugging.assert_rank(rrs, 1)
+        tf.debugging.assert_rank(values, 1)
+        assert len(values) == len(sst2_dataset["x_batch"])
+        assert_numerics(values)
+        assert tf.reduce_all(values != 0)
 
-    assert len(ris) == len(sst2_dataset["x_batch"])
-    assert len(ros) == len(sst2_dataset["y_batch"])
-    assert len(rrs) == len(sst2_dataset["y_batch"])
 
-    assert_numerics(ris)
-    assert_numerics(ros)
-    assert_numerics(rrs)
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "perturb_func, perturb_func_kwargs",
+    [(quantus.spelling_replacement, dict(k=3)), (quantus.gaussian_noise, {})],
+    ids=["spelling_replacement", "gaussian_noise"],
+)
+def test_metric_chain(
+    tf_sst2_model,
+    sst2_tokenizer,
+    sst2_dataset,
+    return_scores_only,
+    perturb_func,
+    perturb_func_kwargs,
+):
+    metric_chain = RobustnessMetricChain(
+        dict(
+            RIS=quantus.RelativeInputStability,
+            ROS=quantus.RelativeOutputStability,
+            RRS=quantus.RelativeRepresentationStability,
+            AS=quantus.AvgSensitivity,
+            MS=quantus.MaxSensitivity,
+        )
+    )
+
+    scores = metric_chain(
+        tf_sst2_model,
+        sst2_dataset["x_batch"],
+        sst2_dataset["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs=dict(method="NoiseGrad", config=dict(n=2)),
+        tokenizer=sst2_tokenizer,
+        a_batch=None,
+        model_predict_kwargs=None,
+        channel_first=None,
+        softmax=None,
+    )
+
+    assert isinstance(scores, dict)
+    for k in ("RIS", "ROS", "RRS", "AS", "MS"):
+        values = scores[k]
+
+        tf.debugging.assert_rank(values, 1)
+        assert len(values) == len(sst2_dataset["x_batch"])
+        assert_numerics(values)
