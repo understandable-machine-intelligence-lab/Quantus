@@ -11,7 +11,6 @@ from typing import List, Callable, Dict
 import numpy as np
 
 from quantus.functions.loss_func import mse
-from quantus.functions.normalise_func import normalize_sum_to_1
 from quantus.helpers.collection_utils import safe_as_array
 from quantus.helpers.model.text_classifier import TextClassifier, Tokenizable
 from quantus.helpers.plotting import plot_token_flipping_experiment
@@ -45,11 +44,11 @@ class TokenFlipping(BatchedMetric):
         self,
         abs: bool = False,
         normalise: bool = False,
-        normalise_func: NormaliseFn | None = normalize_sum_to_1,
+        normalise_func: NormaliseFn | None = None,
         normalise_func_kwargs: Dict[str, ...] | None = None,
         return_aggregate: bool = False,
         aggregate_func=None,
-        default_plot_func: Callable | None = plot_token_flipping_experiment,
+        default_plot_func: Callable = plot_token_flipping_experiment,
         disable_warnings: bool = False,
         display_progressbar: bool = False,
         mask_token: str = "[UNK]",

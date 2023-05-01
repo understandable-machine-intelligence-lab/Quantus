@@ -1,4 +1,3 @@
-import platform
 from importlib import util
 from typing import List, Generator, Protocol, TypeVar
 
@@ -7,11 +6,6 @@ import numpy as np
 
 def is_tensorflow_available() -> bool:
     return util.find_spec("tensorflow") is not None
-
-
-def is_xla_compatible_platform() -> bool:
-    """Determine if host is xla-compatible."""
-    return not (platform.system() == "Darwin" and "arm" in platform.processor().lower())
 
 
 def supported_keras_engine_predict_kwargs() -> List[str]:
@@ -30,10 +24,6 @@ def supported_keras_engine_predict_kwargs() -> List[str]:
 if is_tensorflow_available():
     import tensorflow as tf
     from tensorflow import keras
-
-    @tf.function(reduce_retracing=True, jit_compile=is_xla_compatible_platform())
-    def ndim(x):
-        return tf.size(tf.shape(x))
 
     def list_parameterizable_layers(
         model: keras.Model, flatten_layers: bool = False

@@ -31,6 +31,7 @@ if is_tensorflow_available():
         "IntGrad": text_classification.integrated_gradients,
         "NoiseGrad": text_classification.noise_grad,
         "NoiseGrad++": text_classification.noise_grad_plus_plus,
+        "FusionGrad": text_classification.noise_grad_plus_plus,
         "LIME": text_classification.lime,
     }
 else:
@@ -46,6 +47,7 @@ if is_torch_available():
         "IntGrad": torch_explanation_func.integrated_gradients,
         "NoiseGrad": torch_explanation_func.noise_grad,
         "NoiseGrad++": torch_explanation_func.noise_grad_plus_plus,
+        "FusionGrad": torch_explanation_func.noise_grad_plus_plus,
         "LIME": torch_explanation_func.explain_lime,
     }
 else:
@@ -147,13 +149,16 @@ def generate_text_classification_explanations(
 
         fn = tf_explain_mapping[method]
 
-        return fn(
+        explanations = fn(
             model.get_model(),
             x_batch,
             y_batch,
             tokenizer=model.tokenizer.tokenizer,
             **kwargs,
         )
+        if isinstance(explanations, List):
+            explanations = [(i.tokens, i.scores) for i in explanations]
+        return explanations
 
     if is_torch_model(model):
         if method not in torch_explain_mapping:

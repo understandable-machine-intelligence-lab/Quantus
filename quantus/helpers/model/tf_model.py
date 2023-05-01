@@ -32,7 +32,6 @@ from quantus.helpers.q_types import LayerOrderT
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.collection_utils import filter_dict, add_default_items
 from quantus.helpers.tf_utils import (
-    is_xla_compatible_platform,
     random_layer_generator,
     list_parameterizable_layers,
     supported_keras_engine_predict_kwargs,
@@ -70,7 +69,6 @@ class TensorFlowModel(ModelInterface):
             softmax=softmax,
             model_predict_kwargs=model_predict_kwargs,
         )
-        self.model._jit_compile = is_xla_compatible_platform()
         if model_predict_kwargs is None:
             model_predict_kwargs = {}
         # Disable progress bar while running inference on tf.keras.Model.

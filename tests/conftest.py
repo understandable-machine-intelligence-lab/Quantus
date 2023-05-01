@@ -1,5 +1,6 @@
 import pickle
 
+import keras.mixed_precision
 import numpy as np
 import pandas as pd
 import pytest
@@ -23,6 +24,10 @@ from quantus.helpers.model.models import (
     TitanicSimpleTorchModel,
 )
 from quantus.helpers.utils import get_wrapped_text_classifier
+from transformers_gradients.utils import (
+    is_xla_compatible_platform,
+    is_mixed_precision_supported_device,
+)
 
 CIFAR_IMAGE_SIZE = 32
 MNIST_IMAGE_SIZE = 28
@@ -33,18 +38,6 @@ MINI_BATCH_SIZE = 8
 np.random.seed(42)
 tf.random.set_seed(42)
 torch.random.manual_seed(42)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def profile():
-    options = tf.profiler.experimental.ProfilerOptions(
-        host_tracer_level=3, python_tracer_level=1, device_tracer_level=1
-    )
-    tf.profiler.experimental.start("logs", options=options)
-
-    yield
-
-    tf.profiler.experimental.stop()
 
 
 @pytest.fixture(scope="session")
@@ -245,9 +238,14 @@ def sst2_dataset():
 
 @pytest.fixture(scope="session")
 def tf_sst2_model():
-    return TFDistilBertForSequenceClassification.from_pretrained(
+    model = TFDistilBertForSequenceClassification.from_pretrained(
         "distilbert-base-uncased-finetuned-sst-2-english"
     )
+    model.jit_compile = is_xla_compatible_platform()
+    model.__call__ = tf.function(
+        model.__call__, reduce_retracing=True, jit_compile=is_xla_compatible_platform()
+    )
+    return model
 
 
 @pytest.fixture(scope="session")
@@ -272,3 +270,12 @@ def tf_sst2_model_wrapper(tf_sst2_model, sst2_tokenizer):
 @pytest.fixture(scope="session")
 def torch_sst2_model_wrapper(torch_sst2_model, sst2_tokenizer):
     return get_wrapped_text_classifier(torch_sst2_model, sst2_tokenizer)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tf_setup():
+    if is_xla_compatible_platform():
+        tf.config.optimizer.set_jit("autoclustering")
+
+    if is_mixed_precision_supported_device():
+        keras.mixed_precision.set_global_policy("mixed_float16")

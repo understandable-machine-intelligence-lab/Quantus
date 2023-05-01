@@ -23,7 +23,6 @@ from quantus.helpers.collection_utils import (
 from quantus.helpers.model.huggingface_tokenizer import HuggingFaceTokenizer
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.tf_utils import (
-    is_xla_compatible_platform,
     list_parameterizable_layers,
     random_layer_generator,
     supported_keras_engine_predict_kwargs,
@@ -42,7 +41,10 @@ class TFHuggingFaceTextClassifier(TextClassifier, tf.Module):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
-        self.model._jit_compile = is_xla_compatible_platform()
+
+        from transformers_gradients import is_xla_compatible_platform
+
+        self.model.jit_compile = is_xla_compatible_platform()
         model_predict_kwargs = filter_dict(
             value_or_default(model_predict_kwargs, lambda: {}),
             key_filter=partial(contains, supported_keras_engine_predict_kwargs()),

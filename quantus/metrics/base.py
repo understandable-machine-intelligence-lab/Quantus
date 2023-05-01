@@ -7,7 +7,17 @@
 
 import re
 from abc import abstractmethod, ABC
-from typing import Any, Callable, Dict, Sequence, Optional, Union, Collection, List
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Sequence,
+    Optional,
+    Union,
+    Collection,
+    List,
+    Generic,
+)
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -8,36 +8,20 @@
 
 from __future__ import annotations
 
-
-from functools import wraps
-from typing import Callable
-
 import numpy as np
 
 
-def vectorize_norm(
-    func: Callable[[np.ndarray], float]
-) -> Callable[[np.ndarray], np.ndarray | float]:
-    """Decorator, which allow calling norm_functions on 1D and 2D inputs."""
-    vectorized_func = np.vectorize(func, signature="(n)->()", cache=True)
-
-    @wraps(func)
-    def wrapper(a):
-        a = np.asarray(a)
-        ndim = np.ndim(a)
-        if ndim == 1:
-            return func(a)
-        if ndim > 2:
-            raise ValueError(
-                f"{func.__name__} supports only 1d and 2D inputs, but {a.ndim = }."
-            )
-
-        return vectorized_func(a)
-
-    return wrapper
+def get_norm_axis(arr):
+    ndim = np.ndim(arr)
+    if ndim == 1:
+        return None
+    if ndim == 2:
+        return 1
+    raise ValueError(
+        f"Norm functions expect 1D or 2D inputs, but found: {np.ndim(arr)}"
+    )
 
 
-@vectorize_norm
 def fro_norm(a: np.ndarray) -> float:
     """
     Calculate Frobenius norm for an array.
@@ -52,11 +36,27 @@ def fro_norm(a: np.ndarray) -> float:
     float
         The norm.
     """
-    assert a.ndim == 1, "Check that 'fro_norm' receives a 1D array."
-    return np.linalg.norm(a)
+    # As per numpy docs
+    # =====  ============================  ==========================
+    # ord    norm for matrices             norm for vectors
+    # =====  ============================  ==========================
+    # None   Frobenius norm                2-norm
+    # 'fro'  Frobenius norm                --
+    # =====  ============================  ==========================
+    # Frobenius norm is defined only for matrices.
+
+    ndim = np.ndim(a)
+    if ndim == 2:
+        axis = None
+    elif ndim == 3:
+        axis = 0
+    else:
+        raise ValueError(
+            f"Frobenius norm is defined only for matrices, so expected array to be 2D or 3D, but found: {ndim}D"
+        )
+    return np.linalg.norm(a, axis=axis, ord="fro")
 
 
-@vectorize_norm
 def l2_norm(a: np.ndarray) -> float:
     """
     Calculate L2 norm for an array.
@@ -71,11 +71,17 @@ def l2_norm(a: np.ndarray) -> float:
     float
         The norm.
     """
-    assert a.ndim == 1, "Check that 'l2_norm' receives a 1D array."
-    return np.linalg.norm(a)
+    # As per numpy docs
+    # =====  ============================  ==========================
+    # ord    norm for matrices             norm for vectors
+    # =====  ============================  ==========================
+    # None   Frobenius norm                2-norm
+    # =====  ============================  ==========================
+    # We ensure we have a batch of flat vectors, or just one vector.
+    axis = get_norm_axis(a)
+    return np.linalg.norm(a, axis=axis)
 
 
-@vectorize_norm
 def linf_norm(a: np.array) -> float | np.ndarray:
     """
     Calculate L-inf norm for an array.
@@ -90,5 +96,5 @@ def linf_norm(a: np.array) -> float | np.ndarray:
     float
         The norm.
     """
-    assert a.ndim == 1, "Check that 'linf_norm' receives a 1D array."
-    return np.linalg.norm(a, ord=np.inf)
+    axis = get_norm_axis(a)
+    return np.linalg.norm(a, ord=np.inf, axis=axis)

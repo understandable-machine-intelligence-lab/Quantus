@@ -6,15 +6,13 @@
 
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING, Optional, Callable, Dict, List
-
 import numpy as np
+from functools import partial
 
 if TYPE_CHECKING:
     import tensorflow as tf
     import torch
-
 
 from functools import singledispatchmethod
 
@@ -23,28 +21,24 @@ from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
 from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import uniform_noise
-
-from quantus.helpers.utils import get_logits_for_labels
-from quantus.helpers.collection_utils import value_or_default, safe_as_array
-from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
+from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.functions.norm_func import l2_norm
+
+from quantus.helpers.utils import flatten_over_batch
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.q_types import Explanation
+from quantus.helpers.collection_utils import value_or_default
+from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 
 
-class RelativeOutputStability(BatchedPerturbationMetric):
+class RelativeStability(BatchedPerturbationMetric):
     """
-    Relative Output Stability leverages the stability of an explanation with respect
-    to the change in the output logits
+    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
 
-    :math:`ROS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_x'}{e_x}||_p}{max (||h(x) - h(x')||_p, \epsilon_{min})}`,
-
-    where `h(x)` and `h(x')` are the output logits for `x` and `x'` respectively
-
+    :math:`RIS(x, x', e_x, e_x') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
 
     References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
     """
 
     data_domain_applicability: List[
@@ -155,7 +149,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         For each image `x`:
          - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
          - Compute explanations `e_x` and `e_xs`.
-         - Compute relative input output objective, find max value with respect to `xs`.
+         - Compute relative input stability objective, find max value with respect to `xs`.
          - In practise we just use `max` over a finite `xs_batch`.
 
         Parameters
@@ -188,11 +182,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             not used, deprecated
         Returns
         -------
-        relative output stability: float, np.ndarray
+        relative input stability: float, np.ndarray
             float in case `return_aggregate=True`, otherwise np.ndarray of floats
-
-
-
         """
         return super().__call__(
             model=model,
@@ -218,8 +209,8 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         x_batch: np.ndarray,
         y_batch: np.ndarray,
         a_batch: np.ndarray,
-        s_batch=None,
-        custom_batch=None,
+        *args,
+        **kwargs,
     ) -> np.ndarray:
         """
         Parameters
@@ -232,45 +223,39 @@ class RelativeOutputStability(BatchedPerturbationMetric):
             1D tensor, representing predicted labels for the x_batch.
         a_batch: np.ndarray, optional
             4D tensor with pre-computed explanations for the x_batch.
-        s_batch:
+        args:
             Unused.
-        custom_batch:
-            Padded perturbed inputs in case of plain-text perturbations for NLP, otherwise unused.
+        kwargs:
+            Unused.
 
         Returns
         -------
-        ros: np.ndarray
-            A batch of explanations.
+        ris: np.ndarray
+            The batched evaluation results.
 
         """
-        # Execute forward pass on provided inputs.
-        logits = get_logits_for_labels(model.predict(x_batch), y_batch)
         # Prepare output array.
-        ros_batch = np.zeros(shape=[self.nr_samples, x_batch.shape[0]])
-
+        ris_batch = np.zeros(shape=[self.nr_samples, x_batch.shape[0]])
         for index in range(self.nr_samples):
             # Perturb input.
             x_perturbed = self.perturb_batch(x_batch)
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-            # Execute forward pass on perturbed inputs.
-            logits_perturbed = get_logits_for_labels(
-                model.predict(x_perturbed), y_batch
-            )
             # Compute maximization's objective.
-            ros = self.relative_output_stability_objective(
-                logits, logits_perturbed, a_batch, a_batch_perturbed
+            ris = self.compute_maximization_objective(
+                x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
-            ros_batch[index] = ros
-            # If perturbed input caused change in prediction, then it's ROS=nan.
+            ris_batch[index] = ris
+            # If perturbed input caused change in prediction, then it's RIS=nan.
             changed_prediction_indices = self.changed_prediction_indices(
                 model, x_batch, x_perturbed
             )
-            if len(changed_prediction_indices) != 0:
-                ros_batch[index, changed_prediction_indices] = np.nan
+            if len(changed_prediction_indices) == 0:
+                continue
+            ris_batch[index, changed_prediction_indices] = np.nan
 
-        # Compute ROS.
-        result = np.max(ros_batch, axis=0)
+        # Compute RIS.
+        result = np.max(ris_batch, axis=0)
         return result
 
     @evaluate_batch.register
@@ -281,44 +266,176 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         y_batch: np.ndarray,
         a_batch: List[Explanation],
         s_batch=None,
-        custom_batch: Optional[List[List[str]]] = None,
+        custom_batch=None,
     ) -> np.ndarray:
-        # Execute forward pass on provided inputs.
-        logits = get_logits_for_labels(model.predict(x_batch), y_batch)
-        # Prepare output array.
-        ros_batch = np.zeros(shape=[self.nr_samples, len(x_batch)])
-
+        ris_batch = np.zeros(shape=[self.nr_samples, len(x_batch)])
         for index in range(self.nr_samples):
             if is_plain_text_perturbation(self.perturb_func):
-                ros_batch[index] = self._eval_step_plain_text(
-                    model, x_batch, y_batch, a_batch, logits, custom_batch[index]
+                ris_batch[index] = self._eval_step_nlp_plain_text(
+                    model, x_batch, y_batch, a_batch, custom_batch[index]
                 )
             else:
-                ros_batch[index] = self._eval_step_embeddings(
-                    model, x_batch, y_batch, a_batch, logits
+                ris_batch[index] = self._eval_step_nlp_embeddings(
+                    model, x_batch, y_batch, a_batch
                 )
 
-        # Compute ROS.
-        result = np.max(ros_batch, axis=0)
+        # Compute RIS.
+        result = np.max(ris_batch, axis=0)
         return result
 
-    def _eval_step_embeddings(
+    def _eval_step_nlp_plain_text(
         self,
         model: TextClassifier,
         x_batch: List[str],
         y_batch: np.ndarray,
         a_batch: List[Explanation],
-        og_logits: np.ndarray,
+        x_perturbed: List[str],
+    ) -> np.ndarray:
+        # Generate explanations for perturbed input.
+        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+
+        x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
+        x_batch_perturbed_embeddings, _ = model.get_embeddings(x_perturbed)
+        # Compute maximization's objective.
+        ris_batch = self.compute_maximization_objective(
+            flatten_over_batch(x_batch_embeddings),
+            flatten_over_batch(x_batch_perturbed_embeddings),
+            get_scores(a_batch),
+            get_scores(a_batch_perturbed),
+        )
+        # If perturbed input caused change in prediction, then it's RIS=nan.
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_batch, x_perturbed
+        )
+        if len(changed_prediction_indices) != 0:
+            ris_batch[changed_prediction_indices] = np.nan
+
+        return ris_batch
+
+    def _eval_step_nlp_embeddings(
+        self,
+        model: TextClassifier,
+        x_batch: List[str],
+        y_batch: np.ndarray,
+        a_batch: List[Explanation],
     ) -> np.ndarray:
         x_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-        # Perturb input.
         x_perturbed = self.perturb_batch(x_embeddings)
 
         # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(
-            model, x_perturbed, y_batch, **predict_kwargs
+        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+        # Compute maximization's objective.
+        ris_batch = self.compute_maximization_objective(
+            flatten_over_batch(x_embeddings),
+            flatten_over_batch(x_perturbed),
+            get_scores(a_batch),
+            a_batch_perturbed,
         )
-        # Execute forward pass on perturbed inputs.
+        # If perturbed input caused change in prediction, then it's RIS=nan.
+        changed_prediction_indices = self.changed_prediction_indices(
+            model, x_batch, x_perturbed
+        )
+        if len(changed_prediction_indices) != 0:
+            ris_batch[changed_prediction_indices] = np.nan
+
+        return ris_batch
+
+    @staticmethod
+    def compute_maximization_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        raise NotImplementedError
+
+    @staticmethod
+    def maximize_objective(self, scores):
+        return np.max(scores, axis=0)
+
+
+class RelativeInputStability(RelativeStability):
+    """
+    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
+
+    :math:`RIS(x, x', e_x, e_x') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
+
+    References:
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
+    """
+
+    @staticmethod
+    def compute_maximization_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        return RelativeInputStability.relative_input_stability_objective(
+            x, xs, e_x, e_xs
+        )
+
+    @staticmethod
+    def relative_input_stability_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Computes relative input stability's maximization objective
+         as defined here :ref:`https://arxiv.org/pdf/2203.06877.pdf` by the authors.
+        Parameters
+        ----------
+        x: np.ndarray
+            Batch of images.
+        xs: np.ndarray
+            Batch of perturbed images.
+        e_x: np.ndarray
+            Explanations for x.
+        e_xs: np.ndarray
+            Explanations for xs.
+
+        Returns
+        -------
+        ris_obj: np.ndarray
+            RIS maximization objective.
+        """
+
+        # prevent division by 0
+        eps_min = np.finfo(np.float32).eps
+
+        nominator = (e_x - e_xs) / (e_x + eps_min)
+        nominator = l2_norm(nominator)
+
+        denominator = x - xs
+        denominator /= x + eps_min
+        denominator = l2_norm(denominator) + eps_min
+
+        return nominator / denominator
+
+
+class RelativeOutputStability(RelativeStability):
+    """
+    Relative Output Stability leverages the stability of an explanation with respect
+    to the change in the output logits
+
+    :math:`ROS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_x'}{e_x}||_p}{max (||h(x) - h(x')||_p, \epsilon_{min})}`,
+
+    where `h(x)` and `h(x')` are the output logits for `x` and `x'` respectively
+
+
+    References:
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
+    """
+
+    @staticmethod
+    def compute_maximization_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
         logits_perturbed = get_logits_for_labels(
             safe_as_array(model.predict(x_perturbed, **predict_kwargs), force=True),
             y_batch,
@@ -327,39 +444,6 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         ros = self.relative_output_stability_objective(
             og_logits, logits_perturbed, get_scores(a_batch), a_batch_perturbed
         )
-        changed_prediction_indices = self.changed_prediction_indices(
-            model, x_embeddings, x_perturbed, **predict_kwargs
-        )
-        if len(changed_prediction_indices) != 0:
-            ros[changed_prediction_indices] = np.nan
-        return ros
-
-    def _eval_step_plain_text(
-        self,
-        model: TextClassifier,
-        x_batch: List[str],
-        y_batch: np.ndarray,
-        a_batch: List[Explanation],
-        og_logits: np.ndarray,
-        x_perturbed: List[str],
-    ) -> np.ndarray:
-        # Generate explanations for perturbed input.
-        a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-        # Execute forward pass on perturbed inputs.
-        logits_perturbed = get_logits_for_labels(model.predict(x_perturbed), y_batch)
-        # Compute maximization's objective.
-        ros = self.relative_output_stability_objective(
-            og_logits,
-            logits_perturbed,
-            get_scores(a_batch),
-            get_scores(a_batch_perturbed),
-        )
-        changes_prediction_indices = self.changed_prediction_indices(
-            model, x_batch, x_perturbed
-        )
-        if len(changes_prediction_indices) != 0:
-            ros[changes_prediction_indices] = np.nan
-        return ros
 
     @staticmethod
     def relative_output_stability_objective(
@@ -398,3 +482,89 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         denominator = h_x - h_xs
         denominator = l2_norm(denominator) + eps_min
         return nominator / denominator
+
+
+class RelativeRepresentationStability(BatchedPerturbationMetric):
+    """
+    Relative Output Stability leverages the stability of an explanation with respect
+    to the change in the output logits
+
+    :math:`RRS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{L_x - L_{x'}}{L_x}||_p, \epsilon_{min})},`
+
+    where `L(·)` denotes the internal model representation, e.g., output embeddings of hidden layers.
+
+    References:
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
+    """
+
+    @staticmethod
+    def compute_maximization_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        pass
+
+    @staticmethod
+    def relative_representation_stability_objective(
+        l_x: np.ndarray,
+        l_xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Computes relative representation stabilities maximization objective
+        as defined here https://arxiv.org/pdf/2203.06877.pdf by the authors.
+
+        Parameters
+        ----------
+        l_x: np.ndarray
+            Internal representation for x_batch.
+        l_xs: np.ndarray
+            Internal representation for xs_batch.
+        e_x: np.ndarray
+            Explanations for x.
+        e_xs: np.ndarray
+            Explanations for xs.
+
+        Returns
+        -------
+        rrs_obj: np.ndarray
+            RRS maximization objective.
+        """
+
+        # prevent division by 0
+        eps_min = np.finfo(np.float32).eps
+
+        nominator = (e_x - e_xs) / (e_x + eps_min)
+        nominator = l2_norm(nominator)
+
+        denominator = l_x - l_xs
+        denominator /= l_x + eps_min
+        denominator = l2_norm(denominator) + eps_min
+
+        return nominator / denominator
+
+
+class CombinedRelativeStability(RelativeStability):
+
+    """Computes 3 metrics with computational cost of 1."""
+
+    @staticmethod
+    def compute_maximization_objective(
+        x: np.ndarray,
+        xs: np.ndarray,
+        e_x: np.ndarray,
+        e_xs: np.ndarray,
+    ) -> np.ndarray:
+        ris = RelativeInputStability.compute_maximization_objective(x, xs, e_x, e_xs)
+        ros = RelativeOutputStability.compute_maximization_objective(x, xs, e_x, e_xs)
+        rrs = RelativeRepresentationStability.compute_maximization_objective(
+            x, xs, e_x, e_xs
+        )
+
+    def maximize_objective(
+        self, scores: dict[str, np.ndarray]
+    ) -> dict[str, np.ndarray]:
+        pass

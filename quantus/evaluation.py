@@ -7,14 +7,15 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-import warnings
-from functools import partial
+from functools import partial, wraps
 from types import SimpleNamespace
 from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Optional, Union
 
 import numpy as np
 from tqdm.auto import tqdm
 
+import quantus
+import warnings
 from quantus.functions.explanation_func import explain
 from quantus.helpers import asserts
 from quantus.helpers import utils
@@ -23,6 +24,7 @@ from quantus.helpers.collection_utils import (
     value_or_default,
     batch_inputs,
     flatten,
+    map_dict,
 )
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.nlp_utils import map_explanations
@@ -34,6 +36,43 @@ if TYPE_CHECKING:
     from quantus.helpers.q_types import ModelT, TokenizerT
 
 
+def suggest_combined_metrics(func):
+    @wraps(func)
+    def wrapper(metrics: dict, *args, **kwargs):
+        metric_types = map_dict(metrics, type).values()
+        if (
+            quantus.AvgSensitivity in metric_types
+            and quantus.MaxSensitivity in metric_types
+        ):
+            warnings.warn(
+                """
+                We identified, that you're evaluating both Average and MaxSensitivity metrics.
+                In case both were initialized with same hyper-parameters and are used to evaluate same XAI methods,
+                we recommend to use quantus.AvgAndMaxSensitivity, which has potential to drastically reduce
+                time run-time for large scale evaluation.
+                """
+            )
+
+        if (
+            quantus.RelativeInputStability in metric_types
+            and quantus.RelativeOutputStability in metric_types
+            and quantus.RelativeRepresentationStability in metric_types
+        ):
+            warnings.warn(
+                """
+                We identified, that you're evaluating Relative Input, Representation and Output stabilities at the
+                same time. In case all were initialized with same hyper-parameters and are used to evaluate same
+                XAI methods, we recommend to use quantus.CombinedRelativeStability, which has potential to drastically
+                reduce  time run-time for large scale evaluation.
+                """
+            )
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@suggest_combined_metrics
 def evaluate(
     metrics: Dict,
     xai_methods: Union[Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]],
@@ -191,7 +230,10 @@ def evaluate(
 
 
 class evaluate_text_classification(SimpleNamespace):
+    from quantus.helpers import nlp_utils
+
     @staticmethod
+    @suggest_combined_metrics
     def varying_explain_func_kwargs_on_multiple_metrics(
         metrics: Mapping[str, BatchedMetric],
         model: ModelT,
@@ -226,7 +268,7 @@ class evaluate_text_classification(SimpleNamespace):
                 result = {}
                 for k, v in explain_func_kwargs.items():
                     pbar.set_description(f"Evaluating {k}")
-                    scores = evaluate_text_classification.on_multiple_metrics(
+                    scores = evaluate_text_classification._on_multiple_metrics(
                         metrics,
                         model_wrapper,
                         x_batch,
@@ -246,7 +288,7 @@ class evaluate_text_classification(SimpleNamespace):
                     explain_func_kwargs, disable=not verbose, desc="Evaluation..."
                 )
                 result = [
-                    evaluate_text_classification.on_multiple_metrics(
+                    evaluate_text_classification._on_multiple_metrics(
                         metrics,
                         model_wrapper,
                         x_batch,
@@ -337,7 +379,34 @@ class evaluate_text_classification(SimpleNamespace):
             return result
 
     @staticmethod
+    @suggest_combined_metrics
     def on_multiple_metrics(
+        metrics: Mapping[str, BatchedMetric],
+        model: ModelT,
+        x_batch: List[str],
+        y_batch: np.ndarray | None,
+        explain_func: ExplainFn | None,
+        explain_func_kwargs: Dict[str, ...] | None = None,
+        batch_size: int = 64,
+        tokenizer: TokenizerT | None = None,
+        verbose: bool = True,
+        persist_callback: PersistFn | None = None,
+    ):
+        return evaluate_text_classification._on_multiple_metrics(
+            metrics,
+            model,
+            x_batch,
+            y_batch,
+            explain_func,
+            explain_func_kwargs,
+            batch_size,
+            tokenizer,
+            verbose,
+            persist_callback,
+        )
+
+    @staticmethod
+    def _on_multiple_metrics(
         metrics: Mapping[str, BatchedMetric],
         model: ModelT,
         x_batch: List[str],

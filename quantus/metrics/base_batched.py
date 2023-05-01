@@ -7,7 +7,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from functools import partial, singledispatchmethod
 from operator import itemgetter
 from typing import (
@@ -16,11 +16,11 @@ from typing import (
     Callable,
     List,
     Sequence,
-    TypedDict,
     TypeVar,
     Union,
     Tuple,
     Dict,
+    Generic,
 )
 
 import numpy as np
@@ -34,12 +34,11 @@ from quantus.helpers.collection_utils import (
     map_optional,
     value_or_default,
     safe_as_array,
+    flatten,
 )
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.model.text_classifier import TextClassifier
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, map_explanations
-from quantus.helpers.tf_utils import is_tensorflow_model
-from quantus.helpers.torch_utils import is_torch_model
 from quantus.helpers.q_types import (
     AggregateFn,
     ExplainFn,
@@ -48,6 +47,8 @@ from quantus.helpers.q_types import (
     NormaliseFn,
     PerturbFn,
 )
+from quantus.helpers.tf_utils import is_tensorflow_model
+from quantus.helpers.torch_utils import is_torch_model
 from quantus.helpers.utils import (
     get_wrapped_model,
     get_wrapped_text_classifier,
@@ -63,18 +64,12 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound=MetricScores, covariant=True)
 # C stands for custom (batch).
 C = TypeVar("C", bound=MetricScores, covariant=True)
+R = TypeVar("R")
+
+V = TypeVar("V")
 
 
-class DataDict(TypedDict, total=False):
-    model: ModelInterface | TextClassifier
-    x_batch: np.ndarray | List[str]
-    y_batch: np.ndarray | None
-    a_batch: np.ndarray | List[Explanation] | None
-    s_batch: np.ndarray | None
-    custom_batch: C | None
-
-
-class BatchedMetric(EvaluateAble, ABC):
+class BatchedMetric(EvaluateAble, Generic[R]):
     """
     Implementation base BatchedMetric class.
     """
@@ -161,7 +156,7 @@ class BatchedMetric(EvaluateAble, ABC):
         s_batch: Any | None = None,
         tokenizer: TokenizerT | None = None,
         **kwargs,
-    ):
+    ) -> R:
         """
         This implementation represents the main logic of the metric and makes the class object callable.
         It completes batch-wise evaluation of explanations (a_batch) with respect to input data (x_batch),
@@ -245,8 +240,6 @@ class BatchedMetric(EvaluateAble, ABC):
         warn.deprecation_warnings(kwargs)
         warn.check_kwargs(kwargs)
 
-        x = 1
-
         data = self.general_preprocess(
             model=model,
             x_batch=x_batch,
@@ -288,15 +281,20 @@ class BatchedMetric(EvaluateAble, ABC):
             x, y, a, custom_batch = self.batch_preprocess(model, x, y, a)
             score = self.evaluate_batch(model, x, y, a, s, custom_batch)
             score = self.batch_postprocess(model, x, y, a, s, score)
-            scores_batch.extend(score)
+            scores_batch.append(score)
+
+        scores_batch = self.join_batches(scores_batch)
 
         # Call post-processing.
         self.custom_postprocess(**data)
         if self.return_aggregate:
             return self.aggregate_func(scores_batch)
         # Append content of last results to all results.
-        scores_batch = np.asarray(scores_batch)
         return scores_batch
+
+    @staticmethod
+    def join_batches(score_batches: List[V]) -> V:
+        return np.asarray(flatten(score_batches))
 
     @singledispatchmethod
     def explain_batch(
@@ -368,7 +366,7 @@ class BatchedMetric(EvaluateAble, ABC):
         custom_batch: np.ndarray | None,
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
-    ) -> DataDict:
+    ):
         if is_tensorflow_model(model):
             model_predict_kwargs = value_or_default(model_predict_kwargs, lambda: {})
             model_predict_kwargs = add_default_items(
@@ -500,7 +498,7 @@ class BatchedMetric(EvaluateAble, ABC):
         raise NotImplementedError()
 
 
-class BatchedPerturbationMetric(BatchedMetric, ABC):
+class BatchedPerturbationMetric(BatchedMetric):
     """
     Implementation base BatchedPertubationMetric class.
 

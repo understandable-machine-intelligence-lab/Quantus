@@ -102,7 +102,6 @@ AVAILABLE_NORMALISATION_FUNCTIONS = {
     "normalise_by_negative": normalise_by_negative,
     "normalise_by_max": normalise_by_max,
     "denormalise": denormalise,
-    "normalise_sum_to_1": normalize_sum_to_1,
 }
 
 
