@@ -69,6 +69,9 @@ def test_avg_and_max_sensitivity(
     assert_numerics(avg_val)
     tf.debugging.assert_greater_equal(max_val, avg_val)
 
+    assert tf.reduce_all(max_val != 0.0)
+    assert tf.reduce_all(avg_val != 0.0)
+
 
 @pytest.mark.robustness
 @pytest.mark.parametrize(

@@ -337,93 +337,40 @@ class Sensitivity(BatchedPerturbationMetric):
         custom_batch=None,
     ) -> np.ndarray:
         batch_size = len(x_batch)
-        similarities = np.zeros((batch_size, self.nr_samples)) * np.nan
+        similarities = np.zeros((batch_size, self.nr_samples))
         is_plain_text = nlp_utils.is_plain_text_perturbation(self.perturb_func)
 
         for step_id in range(self.nr_samples):
             if is_plain_text:
-                similarities[:, step_id] = self._eval_step_nlp_plain_text(
-                    model, x_batch, y_batch, a_batch, custom_batch[step_id]
-                )
+                x_perturbed = custom_batch[step_id]
+                # Generate explanation based on perturbed input x.
+                a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
+                x_batch_embeddings, _ = model.get_embeddings(x_batch)
             else:
-                similarities[:, step_id] = self._eval_step_nlp_embeddings(
-                    model, x_batch, y_batch, a_batch
+                x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
+                x_perturbed = self.perturb_batch(x_batch_embeddings)
+                # Generate explanation based on perturbed input x.
+                a_perturbed = self.explain_batch(
+                    model, x_perturbed, y_batch, **predict_kwargs
                 )
 
+            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+                warn.warn_perturbation_caused_no_change(
+                    x=x_instance,
+                    x_perturbed=x_instance_perturbed,
+                )
+
+            sensitivities = self.similarity_func(
+                utils.flatten_over_axis(a_batch, (0, 1)),
+                utils.flatten_over_axis(a_perturbed, (0, 1)),
+            )
+            numerator = self.norm_numerator(sensitivities)
+            denominator = self.norm_denominator(
+                utils.flatten_over_batch(x_batch_embeddings)
+            )
+            similarities_i = numerator / denominator
+            similarities[:, step_id] = similarities_i
         return self.reduce_similarities(similarities)
-
-    def _eval_step_nlp_plain_text(
-        self,
-        model: TextClassifier,
-        x_batch: list[str],
-        y_batch: np.ndarray,
-        a_batch: list[Explanation],
-        x_perturbed: list[str],
-    ) -> np.ndarray:
-        # changed_prediction_indices = self.changed_prediction_indices(
-        #    model, x_batch, x_perturbed
-        # )
-
-        for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-            warn.warn_perturbation_caused_no_change(
-                x=x_instance,
-                x_perturbed=x_instance_perturbed,
-            )
-        # Generate explanation based on perturbed input x.
-        a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
-        # Get numerical part of explanations.
-        a_batch = nlp_utils.get_scores(a_batch)
-        a_perturbed = nlp_utils.get_scores(a_perturbed)
-
-        # Get numerical representation of x_batch.
-        x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-
-        sensitivities = self.similarity_func(
-            utils.flatten_over_axis(a_batch, (0, 1)),
-            utils.flatten_over_axis(a_perturbed, (0, 1)),
-        )
-
-        numerator = self.norm_numerator(sensitivities)
-        denominator = self.norm_denominator(
-            utils.flatten_over_batch(x_batch_embeddings)
-        )
-        similarities = numerator / denominator
-        return similarities
-
-    def _eval_step_nlp_embeddings(
-        self,
-        model: TextClassifier,
-        x_batch: list[str],
-        y_batch: np.ndarray,
-        a_batch: list[Explanation],
-    ) -> np.ndarray:
-        x_batch_embeddings, predict_kwargs = model.get_embeddings(x_batch)
-        a_batch = nlp_utils.get_scores(a_batch)
-
-        # Perturb input.
-        x_perturbed = self.perturb_batch(x_batch_embeddings)
-        # changed_prediction_indices = self.changed_prediction_indices(
-        #   model, x_batch_embeddings, x_perturbed
-        #
-
-        for x_instance, x_instance_perturbed in zip(x_batch_embeddings, x_perturbed):
-            warn.warn_perturbation_caused_no_change(
-                x=x_instance,
-                x_perturbed=x_instance_perturbed,
-            )
-        # Generate explanation based on perturbed input x.
-        a_perturbed = self.explain_batch(model, x_perturbed, y_batch, **predict_kwargs)
-
-        sensitivities = self.similarity_func(
-            utils.flatten_over_axis(a_batch, (0, 1)),
-            utils.flatten_over_axis(a_perturbed, (0, 1)),
-        )
-        numerator = self.norm_numerator(sensitivities)
-        denominator = self.norm_denominator(
-            utils.flatten_over_batch(x_batch_embeddings)
-        )
-        similarities = numerator / denominator
-        return similarities
 
     def custom_preprocess(
         self,
