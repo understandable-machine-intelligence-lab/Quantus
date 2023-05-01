@@ -354,11 +354,11 @@ class Sensitivity(BatchedPerturbationMetric):
                     model, x_perturbed, y_batch, **predict_kwargs
                 )
 
-            for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
-                warn.warn_perturbation_caused_no_change(
-                    x=x_instance,
-                    x_perturbed=x_instance_perturbed,
-                )
+            # for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
+            #    warn.warn_perturbation_caused_no_change(
+            #        x=x_instance,
+            #        x_perturbed=x_instance_perturbed,
+            #    )
 
             sensitivities = self.similarity_func(
                 utils.flatten_over_axis(a_batch, (0, 1)),
