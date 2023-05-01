@@ -30,6 +30,78 @@ from quantus.helpers.q_types import Explanation
 from quantus.helpers.collection_utils import value_or_default
 from quantus.helpers.nlp_utils import is_plain_text_perturbation, get_scores
 
+INIT_DOCSTRING = """
+        Parameters
+        ----------
+        nr_samples: int
+            The number of samples iterated, default=200.
+        abs: boolean
+            Indicates whether absolute operation is applied on the attribution.
+        normalise: boolean
+            Flag stating if the attributions should be normalised
+        normalise_func: callable
+            Attribution normalisation function applied in case normalise=True.
+        normalise_func_kwargs: dict
+            Keyword arguments to be passed to normalise_func on call, default={}.
+        perturb_func: callable
+            Input perturbation function. If None, the default value is used, default=gaussian_noise.
+        perturb_func_kwargs: dict
+            Keyword arguments to be passed to perturb_func, default={}.
+        return_aggregate: boolean
+            Indicates if an aggregated score should be computed over all instances.
+        aggregate_func: callable
+            Callable that aggregates the scores given an evaluation call.
+        disable_warnings: boolean
+            Indicates whether the warnings are printed, default=False.
+        display_progressbar: boolean
+            Indicates whether a tqdm-progress-bar is printed, default=False.
+        default_plot_func: callable
+            Callable that plots the metrics result.
+        return_nan_when_prediction_changes: boolean
+            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
+        """
+
+CALL_DOCSTRING = """
+        For each image `x`:
+         - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
+         - Compute explanations `e_x` and `e_xs`.
+         - Compute relative input stability objective, find max value with respect to `xs`.
+         - In practise we just use `max` over a finite `xs_batch`.
+
+        Parameters
+        ----------
+        model: tf.keras.Model, torch.nn.Module
+            A torch or tensorflow model that is subject to explanation.
+        x_batch: np.ndarray
+            4D tensor representing batch of input images
+        y_batch: np.ndarray
+            1D tensor, representing predicted labels for the x_batch.
+        model_predict_kwargs: dict, optional
+            Keyword arguments to be passed to the model's predict method.
+        explain_func: callable, optional
+            Function used to generate explanations.
+        explain_func_kwargs: dict, optional
+            Keyword arguments to be passed to explain_func on call.
+        a_batch: np.ndarray, optional
+            4D tensor with pre-computed explanations for the x_batch.
+        device: str, optional
+            Device on which torch should perform computations.
+        softmax: boolean, optional
+            Indicates whether to use softmax probabilities or logits in model prediction.
+            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
+        channel_first: boolean, optional
+            Indicates of the image dimensions are channel first, or channel last.
+            Inferred from the input shape if None.
+        batch_size: int
+            The batch size to be used.
+        kwargs:
+            not used, deprecated
+        Returns
+        -------
+        relative input stability: float, np.ndarray
+            float in case `return_aggregate=True`, otherwise np.ndarray of floats
+        """
+
 
 class RelativeStability(BatchedPerturbationMetric):
     """
@@ -63,37 +135,6 @@ class RelativeStability(BatchedPerturbationMetric):
         return_nan_when_prediction_changes: bool = True,
         **kwargs,
     ):
-        """
-        Parameters
-        ----------
-        nr_samples: int
-            The number of samples iterated, default=200.
-        abs: boolean
-            Indicates whether absolute operation is applied on the attribution.
-        normalise: boolean
-            Flag stating if the attributions should be normalised
-        normalise_func: callable
-            Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs: dict
-            Keyword arguments to be passed to normalise_func on call, default={}.
-        perturb_func: callable
-            Input perturbation function. If None, the default value is used, default=gaussian_noise.
-        perturb_func_kwargs: dict
-            Keyword arguments to be passed to perturb_func, default={}.
-        return_aggregate: boolean
-            Indicates if an aggregated score should be computed over all instances.
-        aggregate_func: callable
-            Callable that aggregates the scores given an evaluation call.
-        disable_warnings: boolean
-            Indicates whether the warnings are printed, default=False.
-        display_progressbar: boolean
-            Indicates whether a tqdm-progress-bar is printed, default=False.
-        default_plot_func: callable
-            Callable that plots the metrics result.
-        return_nan_when_prediction_changes: boolean
-            When set to true, the metric will be evaluated to NaN if the prediction changes after the perturbation is applied, default=True.
-        """
-
         normalise_func = value_or_default(
             normalise_func, lambda: normalise_by_average_second_moment_estimate
         )
@@ -145,46 +186,6 @@ class RelativeStability(BatchedPerturbationMetric):
         tokenizer=None,
         **kwargs,
     ) -> np.ndarray | float:
-        """
-        For each image `x`:
-         - Generate `num_perturbations` perturbed `xs` in the neighborhood of `x`.
-         - Compute explanations `e_x` and `e_xs`.
-         - Compute relative input stability objective, find max value with respect to `xs`.
-         - In practise we just use `max` over a finite `xs_batch`.
-
-        Parameters
-        ----------
-        model: tf.keras.Model, torch.nn.Module
-            A torch or tensorflow model that is subject to explanation.
-        x_batch: np.ndarray
-            4D tensor representing batch of input images
-        y_batch: np.ndarray
-            1D tensor, representing predicted labels for the x_batch.
-        model_predict_kwargs: dict, optional
-            Keyword arguments to be passed to the model's predict method.
-        explain_func: callable, optional
-            Function used to generate explanations.
-        explain_func_kwargs: dict, optional
-            Keyword arguments to be passed to explain_func on call.
-        a_batch: np.ndarray, optional
-            4D tensor with pre-computed explanations for the x_batch.
-        device: str, optional
-            Device on which torch should perform computations.
-        softmax: boolean, optional
-            Indicates whether to use softmax probabilities or logits in model prediction.
-            This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
-        channel_first: boolean, optional
-            Indicates of the image dimensions are channel first, or channel last.
-            Inferred from the input shape if None.
-        batch_size: int
-            The batch size to be used.
-        kwargs:
-            not used, deprecated
-        Returns
-        -------
-        relative input stability: float, np.ndarray
-            float in case `return_aggregate=True`, otherwise np.ndarray of floats
-        """
         return super().__call__(
             model=model,
             x_batch=x_batch,

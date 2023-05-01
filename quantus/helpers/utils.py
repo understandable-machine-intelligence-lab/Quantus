@@ -21,7 +21,7 @@ from typing import (
     Union,
     List,
 )
-from functools import singledispatch
+from functools import singledispatch, wraps
 
 import numpy as np
 from skimage.segmentation import slic, felzenszwalb
@@ -1114,3 +1114,15 @@ if is_tensorflow_available():
         old_shape = tf.gather(tf.shape(arr), axis)
         new_shape = tf.concat([old_shape, [-1]], axis=0)
         return tf.reshape(arr, new_shape)
+
+
+def add_docstrings(docstr):
+    def docstring_decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            fn.__doc__ = docstr
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return docstring_decorator

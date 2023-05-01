@@ -68,3 +68,51 @@ def test_avg_and_max_sensitivity(
     assert_numerics(max_val)
     assert_numerics(avg_val)
     tf.debugging.assert_greater_equal(max_val, avg_val)
+
+
+@pytest.mark.robustness
+@pytest.mark.parametrize(
+    "perturb_func, perturb_func_kwargs",
+    [(quantus.spelling_replacement, dict(k=3)), (quantus.gaussian_noise, {})],
+    ids=["spelling_replacement", "gaussian_noise"],
+)
+def test_relative_stability(
+    tf_sst2_model,
+    sst2_tokenizer,
+    sst2_dataset,
+    return_scores_only,
+    perturb_func,
+    perturb_func_kwargs,
+):
+    metric = quantus.CombinedRelativeStability(
+        perturb_func=perturb_func,
+        perturb_func_kwargs=perturb_func_kwargs,
+        normalise=True,
+        normalise_func=transformers_gradients.normalize_sum_to_1,
+        nr_samples=5,
+    )
+    scores = metric(
+        tf_sst2_model,
+        sst2_dataset["x_batch"],
+        sst2_dataset["y_batch"],
+        explain_func=quantus.explain,
+        explain_func_kwargs=dict(method="NoiseGrad", config=dict(n=2)),
+        tokenizer=sst2_tokenizer,
+    )
+
+    assert isinstance(scores, dict)
+    ris = scores["ris"]
+    ros = scores["ros"]
+    rrs = scores["rrs"]
+
+    tf.debugging.assert_rank(ris, 1)
+    tf.debugging.assert_rank(ros, 1)
+    tf.debugging.assert_rank(rrs, 1)
+
+    assert len(ris) == len(sst2_dataset["x_batch"])
+    assert len(ros) == len(sst2_dataset["y_batch"])
+    assert len(rrs) == len(sst2_dataset["y_batch"])
+
+    assert_numerics(ris)
+    assert_numerics(ros)
+    assert_numerics(rrs)

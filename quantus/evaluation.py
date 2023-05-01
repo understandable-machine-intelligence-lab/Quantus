@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from functools import partial, wraps
 from types import SimpleNamespace
-from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Optional, Union
+from typing import Callable, Dict, List, TYPE_CHECKING, Mapping, Optional, Union, Any
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -28,7 +28,7 @@ from quantus.helpers.collection_utils import (
 )
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.nlp_utils import map_explanations
-from quantus.helpers.q_types import ExplainFn, PersistFn
+from quantus.helpers.q_types import ExplainFn
 from quantus.helpers.tf_utils import is_tensorflow_model
 from quantus.metrics.base_batched import BatchedMetric
 
@@ -244,7 +244,7 @@ class evaluate_text_classification(SimpleNamespace):
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
-        persist_callback: PersistFn | None = None,
+        persist_callback: Callable[[str, dict[str, Any], Any], None] | None = None,
     ):
         if is_tensorflow_model(model):
             model_predict_kwargs = dict(batch_size=batch_size, verbose=0)
@@ -316,7 +316,7 @@ class evaluate_text_classification(SimpleNamespace):
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
-        persist_callback: PersistFn | None = None,
+        persist_callback: Callable[[dict[str, Any], Any], None] | None = None,
     ):
         """One metric, different hyper parameters."""
 
@@ -353,7 +353,7 @@ class evaluate_text_classification(SimpleNamespace):
                 )  # noqa
 
                 if persist_callback is not None:
-                    persist_callback(k, v, scores)
+                    persist_callback(v, scores)
 
                 result[k] = scores
             return result
@@ -373,7 +373,7 @@ class evaluate_text_classification(SimpleNamespace):
                 )  # noqa
 
                 if persist_callback is not None:
-                    persist_callback(None, v, scores)
+                    persist_callback(v, scores)
 
                 result.append(scores)
             return result
@@ -390,7 +390,7 @@ class evaluate_text_classification(SimpleNamespace):
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
-        persist_callback: PersistFn | None = None,
+        persist_callback: Callable[[str, dict[str, Any], Any], None] | None = None,
     ):
         return evaluate_text_classification._on_multiple_metrics(
             metrics,
@@ -416,7 +416,7 @@ class evaluate_text_classification(SimpleNamespace):
         batch_size: int = 64,
         tokenizer: TokenizerT | None = None,
         verbose: bool = True,
-        persist_callback: PersistFn | None = None,
+        persist_callback: Callable[[str, dict[str, Any], Any], None] | None = None,
         pbar=None,
     ) -> Dict[str, np.ndarray | Dict[str, np.ndarray]]:
         """Evaluate set of metrics for a single set of explanation_func hyper parameters."""

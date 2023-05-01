@@ -39,9 +39,6 @@ Explanation = Tuple[List[str], np.ndarray]
 MetricScores = Union[np.ndarray, float, Dict[str, Union[np.ndarray, float]]]
 AggregateFn = Callable[[np.ndarray], ArrayLike]
 SimilarityFn = Callable[[np.ndarray, np.ndarray], Union[float, np.ndarray]]
-PersistFn = Callable[
-    [str, Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]], None
-]
 DataDomain = Literal["Image", "Time-Series", "Tabular", "NLP"]
 FlipTask = Literal["pruning", "activation"]
 LayerOrderT = Literal["independent", "top_down"]
