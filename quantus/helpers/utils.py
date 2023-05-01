@@ -1094,15 +1094,23 @@ def flatten_over_axis(arr: np.ndarray, axis: tuple[int, ...]) -> np.ndarray:
 
 if is_tensorflow_available():
     # To keep as much computations on GPU as possible.
-    @flatten_over_batch.register
+
+    from transformers_gradients import is_xla_compatible_platform
+
+    @flatten_over_batch.register(tf.Tensor)
+    @tf.function(reduce_retracing=True, jit_compile=is_xla_compatible_platform())
     def _(arr: tf.Tensor) -> tf.Tensor:
         """Apply np.reshape(-1) keeping batch axis unchanged."""
         batch_size = tf.shape(arr)[0]
         new_shape = [batch_size, -1]
         return tf.reshape(arr, new_shape)
 
-    @flatten_over_axis.register
-    def flatten_over_axis(arr: tf.Tensor, axis: tuple[int, ...]) -> tf.Tensor:
+    @flatten_over_axis.register(tf.Tensor)
+    def _(arr: tf.Tensor, axis: tuple[int, ...]) -> tf.Tensor:
+        return flatten_over_axis_fn(arr, tf.constant(axis))
+
+    @tf.function(reduce_retracing=True, jit_compile=is_xla_compatible_platform())
+    def flatten_over_axis_fn(arr: tf.Tensor, axis) -> tf.Tensor:
         old_shape = tf.gather(tf.shape(arr), axis)
         new_shape = tf.concat([old_shape, [-1]], axis=0)
         return tf.reshape(arr, new_shape)
