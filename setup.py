@@ -53,7 +53,7 @@ setup(
     description="A toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    install_requires=required+["setuptools>=67.7.2"],
+    install_requires=required,
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
     author="Anna Hedstrom",
