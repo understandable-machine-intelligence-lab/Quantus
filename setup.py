@@ -3,68 +3,57 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 
-import importlib
 from setuptools import setup, find_packages
-from sys import version_info
 from importlib import util
 
-# Interpret the version of a package depending on if python>=3.8 vs python<3.8:
-# Read: https://stackoverflow.com/questions/20180543/how-to-check-version-of-python-modules?rq=1.
-if version_info[1] <= 7:
-    import pkg_resources
+with open("requirements.txt") as f:
+    required = f.read().splitlines()
 
-    def version(s: str):
-        return pkg_resources.get_distribution(s).version
-
-else:
-    from importlib.metadata import version
+with open("requirements_test.txt") as f:
+    required_tests = f.read().splitlines()
 
 # Define extras.
 EXTRAS = {}
 EXTRAS["torch"] = (
-    ["torch==1.10.1", "torchvision==0.11.2"]
-    if not (util.find_spec("torch") and version("torch") >= "1.2")
+    [
+        "torch>=1.13.1; sys_platform != 'linux'",
+        "torch>=1.13.1,<2.0.0; sys_platform == 'linux'",
+        "torchvision>=0.15.1; sys_platform != 'linux'",
+        "torchvision>=0.14.0,<0.15.1; sys_platform == 'linux'",
+     ]
+    if not (util.find_spec("torch"))
     else []
 )
 EXTRAS["tensorflow"] = (
-    ["tensorflow==2.6.2"]
-    if not (util.find_spec("tensorflow") and version("tensorflow") >= "2.0")
+    [
+        "tensorflow>=2.12.0; sys_platform != 'darwin'",
+        "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
+    ]
+    if not (util.find_spec("tensorflow"))
     else []
 )
 EXTRAS["captum"] = (
-    (EXTRAS["torch"] + ["captum==0.4.1"]) if not util.find_spec("captum") else []
+    (EXTRAS["torch"] + ["captum>=0.6.0"]) if not util.find_spec("captum") else []
 )
 EXTRAS["tf-explain"] = (
-    (EXTRAS["tensorflow"] + ["tf-explain==0.3.1"])
+    (EXTRAS["tensorflow"] + ["tf-explain>=0.3.1"])
     if not util.find_spec("tf-explain")
     else []
 )
 EXTRAS["zennit"] = (
-    (EXTRAS["torch"] + ["zennit==0.4.5"]) if not util.find_spec("zennit") else []
+    (EXTRAS["torch"] + ["zennit>=0.5.1"]) if not util.find_spec("zennit") else []
 )
-EXTRAS["tutorials"] = (
-    EXTRAS["torch"] + EXTRAS["captum"] + ["pandas", "xmltodict", "tensorflow-datasets"]
-)
-EXTRAS["tests"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
-EXTRAS["full"] = EXTRAS["tutorials"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
+EXTRAS["tests"] = required + required_tests[1:]
+EXTRAS["full"] = EXTRAS["captum"] + EXTRAS["tf-explain"] + EXTRAS["zennit"]
 
 # Define setup.
 setup(
     name="quantus",
-    version="0.3.5",
-    description="A metrics toolkit to evaluate neural network explanations.",
+    version="0.4.0",
+    description="A toolkit to evaluate neural network explanations.",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
-    install_requires=[
-        "matplotlib>=3.3.4",
-        "numpy>=1.19.5",
-        "opencv-python>=4.5.5.62",
-        "protobuf~=3.19.0",
-        "scikit-image>=0.19.1",
-        "scikit-learn>=0.24.2",
-        "scipy>=1.7.3",
-        "tqdm>=4.62.3",
-    ],
+    install_requires=required,
     extras_require=EXTRAS,
     url="http://github.com/understandable-machine-intelligence-lab/Quantus",
     author="Anna Hedstrom",

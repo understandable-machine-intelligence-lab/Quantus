@@ -23,11 +23,12 @@ _Quantus is currently under active development so carefully note the Quantus rel
         
 ## News and Highlights! :rocket:
 
-- Accepted to Journal of Machine Learning Research (MLOSS) ([paper](https://jmlr.org/papers/v24/22-0142.html))!
+- Released a new version 0.4.0 that now supports Python 3.10 and 3.11, read more [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases)!
+- Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/) and [tf-explain](https://tf-explain.readthedocs.io/en/latest/))
-- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
+- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)
 
 See [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) for the latest release(s).
 
@@ -197,9 +198,10 @@ For a more in-depth guide on how to install Quantus, please read more [here](htt
 The package requirements are as follows:
 ```
 python>=3.7.0
-pytorch>=1.10.1
-TensorFlow==2.6.2
+torch>=1.11.0
+tensorflow>=2.5.0
 ```
+Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …). See `requirements_test.txt` to retrieve the exact versions of [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org).
 
 ## Getting started
 
