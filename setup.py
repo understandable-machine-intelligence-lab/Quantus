@@ -16,18 +16,23 @@ with open("requirements_test.txt") as f:
 EXTRAS = {}
 EXTRAS["torch"] = (
     [
-        "torch>=1.13.1; sys_platform != 'linux'",
-        "torch>=1.13.1,<2.0.0; sys_platform == 'linux'",
-        "torchvision>=0.15.1; sys_platform != 'linux'",
-        "torchvision>=0.14.0,<0.15.1; sys_platform == 'linux'",
+        "torch<=1.11.0; python_version == '3.7'",
+        "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
+        "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+        "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
+        "torchvision<=0.12.0.; python_version == '3.7'",
+        "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
+        "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+        "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'",
      ]
     if not (util.find_spec("torch"))
     else []
 )
 EXTRAS["tensorflow"] = (
     [
-        "tensorflow>=2.12.0; sys_platform != 'darwin'",
-        "tensorflow_macos>=2.12.0; sys_platform == 'darwin'",
+        "tensorflow>=2.5.0; python_version == '3.7'",
+        "tensorflow>=2.12.0; sys_platform != 'darwin' and python_version > '3.7'",
+        "tensorflow_macos>=2.12.0; sys_platform == 'darwin' and python_version > '3.7'",
     ]
     if not (util.find_spec("tensorflow"))
     else []
