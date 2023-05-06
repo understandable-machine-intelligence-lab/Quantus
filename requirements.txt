@@ -1,3 +1,4 @@
+setuptools<=65.5.0
 cachetools>=5.3.0
 matplotlib>=3.3.4
 numpy>=1.19.5
