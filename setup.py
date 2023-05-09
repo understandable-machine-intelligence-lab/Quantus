@@ -3,13 +3,15 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 
+import os
 from setuptools import setup, find_packages
 from importlib import util
 
-with open("requirements.txt") as f:
+with open(os.path.join(os.path.dirname(__file__), "requirements.txt")) as f:
+
     required = f.read().splitlines()
 
-with open("requirements_test.txt") as f:
+with open(os.path.join(os.path.dirname(__file__), "requirements_test.txt")) as f:
     required_tests = f.read().splitlines()
 
 # Define extras.
