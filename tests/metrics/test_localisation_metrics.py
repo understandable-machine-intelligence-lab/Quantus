@@ -1352,7 +1352,7 @@ def test_auc(
                 },
             },
             {"min": 0.8, "max": 0.95},  # TODO: verify correctness
-            marks=pytest.mark.xfail
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),

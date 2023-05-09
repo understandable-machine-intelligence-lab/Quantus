@@ -20,7 +20,7 @@ EXTRAS["torch"] = (
         "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
         "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
         "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
-        "torchvision<=0.12.0.; python_version == '3.7'",
+        "torchvision<=0.12.0; python_version == '3.7'",
         "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
         "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
         "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'",

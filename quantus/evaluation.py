@@ -136,9 +136,7 @@ def evaluate(
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
         elif isinstance(value, np.ndarray):
-            explain_funcs[
-                method
-            ] = explain
+            explain_funcs[method] = explain
             a_batch = value
 
         else:
