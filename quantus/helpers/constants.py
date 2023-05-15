@@ -30,6 +30,8 @@ AVAILABLE_METRICS = {
         "ROAD": ROAD,
         "Infidelity": Infidelity,
         "Sufficiency": Sufficiency,
+        "Faithfulness AUC": FaithfulnessAUC,
+        "Faithfulness Correlation Modified": FaithfulnessCorrelationModified,
     },
     "Robustness": {
         "Continuity Test": Continuity,
