@@ -290,7 +290,7 @@ def test_difference(data: np.ndarray, params: dict, expected: Union[float, dict,
 @pytest.mark.parametrize(
     "data,params,expected",
     [
-        (lazy_fixture("atts_sq_diff_1"), {}, 0,
+        (lazy_fixture("atts_sq_diff_1"), {}, 0),
         (lazy_fixture("atts_sq_diff_2"), {}, 27),
         (lazy_fixture("atts_sq_diff_3"), {}, ValueError),
     ],
