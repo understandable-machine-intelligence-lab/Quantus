@@ -2,7 +2,8 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from keras.datasets import cifar10
+import tensorflow
+from tensorflow.keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
