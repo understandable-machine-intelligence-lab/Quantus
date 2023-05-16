@@ -295,14 +295,10 @@ def test_difference(data: np.ndarray, params: dict, expected: Union[float, dict,
         (lazy_fixture("atts_sq_diff_3"), {}, ValueError),
     ],
 )
-def test_squared_difference(data: np.ndarray, params: dict, expected: Union[float, dict, bool, int, ValueError]):
+def test_squared_difference(data: np.ndarray, params: dict, expected: Union[int, ValueError]):
     try:
         out = squared_difference(a=data["a"], b=data["b"])
-        assert all(out == expected), "Test failed."
+        assert out == expected, "Test failed."
     except ValueError:
         assert isinstance(out, expected), "Test failed."
-
-
-
-
 
