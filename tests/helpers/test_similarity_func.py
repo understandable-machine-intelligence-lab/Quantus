@@ -300,7 +300,7 @@ def test_squared_difference(data: np.ndarray, params: dict, expected: Union[floa
         out = squared_difference(a=data["a"], b=data["b"])
         assert all(out == expected), "Test failed."
     except ValueError:
-        assert isinstance(expected, ValueError), "Test failed."
+        assert isinstance(out, expected), "Test failed."
 
 
 
