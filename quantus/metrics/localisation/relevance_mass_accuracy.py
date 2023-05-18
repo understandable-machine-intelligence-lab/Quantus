@@ -20,7 +20,7 @@ class RelevanceMassAccuracy(Metric):
     """
     Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
 
-    The Relevance Mass Accuracy computes the ratio of positive attributions inside the bounding box to
+    The Relevance Mass Accuracy computes the ratio of attributions inside the bounding box to
     the sum of overall positive attributions. High scores are desired, as the pixels with the highest positively
     attributed scores should be within the bounding box of the targeted object.
 

@@ -157,7 +157,9 @@ from quantus.metrics.faithfulness import (
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "GradientsInput",},
+                    "explain_func_kwargs": {
+                        "method": "GradientsInput",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -1305,7 +1307,9 @@ def test_region_perturbation(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"type": np.float64},
@@ -1811,7 +1815,6 @@ def test_ROAD(
         a_batch=a_batch,
         **call_params,
     )
-    print("scores!!!", scores)
 
     assert all(s <= expected["max"] for s in scores.values()) & (
         all(s >= expected["min"] for s in scores.values())

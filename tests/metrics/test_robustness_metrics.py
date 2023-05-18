@@ -151,7 +151,7 @@ from quantus.metrics.robustness import (
             },
             {"min": 0.0, "max": 1.0},
         ),
-(
+        (
             lazy_fixture("load_mnist_model_tf"),
             lazy_fixture("load_mnist_images_tf"),
             {
@@ -338,7 +338,7 @@ def test_max_sensitivity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-(
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
@@ -677,7 +677,7 @@ def test_continuity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-(
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {
@@ -822,7 +822,7 @@ def test_avg_sensitivity(
             },
             {"min": 0.0, "max": 1.0},
         ),
-(
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("load_mnist_images"),
             {

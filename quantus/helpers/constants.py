@@ -90,6 +90,7 @@ AVAILABLE_SIMILARITY_FUNCTIONS = {
     "distance_chebyshev": distance_chebyshev,
     "lipschitz_constant": lipschitz_constant,
     "abs_difference": abs_difference,
+    "squared_difference": squared_difference,
     "difference": difference,
     "cosine": cosine,
     "ssim": ssim,

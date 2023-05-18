@@ -2,7 +2,8 @@ import pytest
 import pickle
 import torch
 import numpy as np
-from keras.datasets import cifar10
+import tensorflow
+from tensorflow.keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -202,7 +203,7 @@ def titanic_dataset():
     df["fare"] = df["fare"].fillna(df["fare"].mean())
 
     df_enc = pd.get_dummies(df, columns=["embarked", "pclass", "sex"]).sample(frac=1)
-    X = df_enc.drop(["survived"], axis=1).values.astype(np.float)
-    Y = df_enc["survived"].values.astype(np.int)
+    X = df_enc.drop(["survived"], axis=1).values.astype(float)
+    Y = df_enc["survived"].values.astype(int)
     _, test_features, _, test_labels = train_test_split(X, Y, test_size=0.3)
     return {"x_batch": test_features, "y_batch": test_labels}

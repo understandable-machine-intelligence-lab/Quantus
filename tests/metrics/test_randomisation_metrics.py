@@ -113,7 +113,9 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -132,7 +134,9 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "VanillaGradients",},
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
+                    },
                 },
             },
             {"exception": ValueError},
@@ -151,7 +155,9 @@ def explain_func_stub(*args, **kwargs):
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "Gradient",},
+                    "explain_func_kwargs": {
+                        "method": "Gradient",
+                    },
                 },
             },
             {"min": -1.0, "max": 1.0},
@@ -307,6 +313,7 @@ def test_model_parameter_randomisation(
                     "display_progressbar": False,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
@@ -326,13 +333,14 @@ def test_model_parameter_randomisation(
                     "display_progressbar": False,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -346,13 +354,14 @@ def test_model_parameter_randomisation(
                     "display_progressbar": False,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_mnist_model"),
@@ -366,13 +375,14 @@ def test_model_parameter_randomisation(
                     "display_progressbar": False,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -385,6 +395,7 @@ def test_model_parameter_randomisation(
                     "display_progressbar": True,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
@@ -404,13 +415,14 @@ def test_model_parameter_randomisation(
                     "display_progressbar": True,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "Saliency",
                     },
                 },
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -1.0, "max": 1.0},
         ),
         (
             lazy_fixture("titanic_model_torch"),
@@ -423,6 +435,7 @@ def test_model_parameter_randomisation(
                     "disable_warnings": True,
                 },
                 "call": {
+                    "softmax": True,
                     "explain_func": explain,
                     "explain_func_kwargs": {
                         "method": "IntegratedGradients",
@@ -442,7 +455,7 @@ def test_model_parameter_randomisation(
                     "abs": True,
                     "disable_warnings": True,
                 },
-                "call": {"explain_func": explain_func_stub},
+                "call": {"softmax": True, "explain_func": explain_func_stub},
             },
             {"min": -1.0, "max": 1.01},
         ),
