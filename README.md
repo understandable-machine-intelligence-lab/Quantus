@@ -10,7 +10,7 @@
 [![Launch Tutorials](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/understandable-machine-intelligence-lab/Quantus/HEAD?labpath=tutorials)
 [![Python package](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/python-package.yml)
 [![Code coverage](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml/badge.svg)](https://github.com/understandable-machine-intelligence-lab/Quantus/actions/workflows/codecov.yml)
-![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue.svg)
+![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)
 [![PyPI version](https://badge.fury.io/py/quantus.svg)](https://badge.fury.io/py/quantus)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Documentation Status](https://readthedocs.org/projects/quantus/badge/?version=latest)](https://quantus.readthedocs.io/en/latest/?badge=latest)
@@ -23,11 +23,12 @@ _Quantus is currently under active development so carefully note the Quantus rel
         
 ## News and Highlights! :rocket:
 
-- Accepted to Journal of Machine Learning Research (MLOSS) ([paper](https://jmlr.org/papers/v24/22-0142.html))!
+- Released a new version 0.4.0 that now supports Python 3.10 and 3.11, read more [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases)!
+- Accepted to Journal of Machine Learning Research (MLOSS), read the [paper](https://jmlr.org/papers/v24/22-0142.html)
 - Offers more than **30+ metrics in 6 categories** for XAI evaluation
 - Supports different data types (image, time-series, tabular, NLP next up!) and models (PyTorch, TensorFlow)
 - Extended built-in support for explanation methods ([captum](https://captum.ai/) and [tf-explain](https://tf-explain.readthedocs.io/en/latest/))
-- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)!
+- New optimisations to help speed up computation, see API reference [here](https://quantus.readthedocs.io/en/latest/docs_api/quantus.metrics.base_batched.html)
 
 See [here](https://github.com/understandable-machine-intelligence-lab/Quantus/releases) for the latest release(s).
 
@@ -197,9 +198,10 @@ For a more in-depth guide on how to install Quantus, please read more [here](htt
 The package requirements are as follows:
 ```
 python>=3.7.0
-pytorch>=1.10.1
-TensorFlow==2.6.2
+torch>=1.11.0
+tensorflow>=2.5.0
 ```
+Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …). See `requirements_test.txt` to retrieve the exact versions of [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org).
 
 ## Getting started
 
@@ -216,29 +218,44 @@ Let's first load the data and model. In this example, a pre-trained LeNet availa
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
 
 ```python
-import quantus
-from quantus.helpers.model.models import LeNet
+from collections import OrderedDict
+import urllib.request
 import torch
-import torchvision
-from torchvision import transforms
-  
-# Enable GPU.
+# Download model weights and batch of sample data.
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist",
+   "/tmp/lenet_mnist_weights.pickle"
+)
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_x",
+   "/tmp/mnist_x_batch.pt"
+)
+urllib.request.urlretrieve(
+   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_y",
+   "/tmp/mnist_y_batch.pt"
+)
+# Enable GPU if available.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
-model = LeNet()
-if device.type == "cpu":
-    model.load_state_dict(torch.load("tests/assets/mnist", map_location=torch.device('cpu')))
-else: 
-    model.load_state_dict(torch.load("tests/assets/mnist"))
-
-# Load datasets and make loaders.
-test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
-
-# Load a batch of inputs and outputs to use for XAI evaluation.
-x_batch, y_batch = iter(test_loader).next()
-x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
+# Define LeNet model.
+model = torch.nn.Sequential(OrderedDict([
+   ("conv_1", torch.nn.Conv2d(1, 6, 5)),
+   ("relu_1", torch.nn.ReLU(),),
+   ("max_pool_1", torch.nn.MaxPool2d(2, 2),),
+   ("conv_2", torch.nn.Conv2d(6, 16, 5)),
+   ("relu_2", torch.nn.ReLU(),),
+   ("max_pool_2", torch.nn.MaxPool2d(2, 2),),
+   ("flatten", torch.nn.Flatten(),),
+   ("fc_1", torch.nn.Linear(256, 120)),
+   ("relu_3", torch.nn.ReLU(),),
+   ("fc_2", torch.nn.Linear(120, 84),),
+   ("relu_4", torch.nn.ReLU(),),
+   ("fc_3", torch.nn.Linear(84, 10),),
+]))
+# Load weights.
+model.load_state_dict(torch.load("/tmp/lenet_mnist_weights.pickle", map_location=device))
+# Load a batch of inputs and labels to use for XAI evaluation.
+x_batch = torch.load('/tmp/mnist_x_batch.pt').to(device)
+y_batch = torch.load('/tmp/mnist_y_batch.pt').to(device)
 ```
 </details>
 

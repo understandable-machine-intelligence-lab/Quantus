@@ -183,7 +183,7 @@ def lipschitz_constant(
 
 def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
     """
-    Calculate the absolute difference between two images (or explanations).
+    Calculate the mean of the absolute differences between two images (or explanations).
 
     Parameters
     ----------
@@ -200,6 +200,27 @@ def abs_difference(a: np.array, b: np.array, **kwargs) -> float:
         The similarity score.
     """
     return np.mean(abs(a - b))
+
+
+def squared_difference(a: np.array, b: np.array, **kwargs) -> float:
+    """
+    Calculate the sqaured differences between two images (or explanations).
+
+    Parameters
+    ----------
+    a: np.ndarray
+         The first array to use for similarity scoring.
+    b: np.ndarray
+         The second array to use for similarity scoring.
+    kwargs: optional
+        Keyword arguments.
+
+    Returns
+    -------
+    float
+        The similarity score.
+    """
+    return np.sum((a - b) ** 2)
 
 
 def cosine(a: np.array, b: np.array, **kwargs) -> float:
@@ -241,18 +262,16 @@ def ssim(a: np.array, b: np.array, **kwargs) -> float:
     float
         The similarity score.
     """
-    max_val = np.max(np.abs(np.concatenate([a, b])))
-    data_range = 1. if max_val <= 1. else 255.
-
+    max_point, min_point = np.max(np.concatenate([a, b])), np.min(
+        np.concatenate([a, b])
+    )
+    data_range = float(np.abs(max_point - min_point))
     return skimage.metrics.structural_similarity(
-        im1=a,
-        im2=b,
-        win_size=kwargs.get("win_size"),
-        data_range=data_range,
+        im1=a, im2=b, win_size=kwargs.get("win_size", None), data_range=data_range
     )
 
 
-def difference(a: np.array, b: np.array, **kwargs) -> float:
+def difference(a: np.array, b: np.array, **kwargs) -> np.array:
     """
     Calculate the difference between two images (or explanations).
 
@@ -267,7 +286,7 @@ def difference(a: np.array, b: np.array, **kwargs) -> float:
 
     Returns
     -------
-    float
-        The similarity score.
+    np.array
+        The difference in each element.
     """
     return a - b

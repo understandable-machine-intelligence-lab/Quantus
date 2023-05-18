@@ -431,25 +431,25 @@ def test_non_sensitivity(
     "model,data,params,expected",
     [
         (
-                lazy_fixture("load_mnist_model_tf"),
-                lazy_fixture("load_mnist_images_tf"),
-                {
-                    "a_batch_generate": True,
-                    "init": {
-                        "abs": False,
-                        "normalise": False,
-                        "input_shift": 0.2,
-                        "disable_warnings": True,
-                        "display_progressbar": False,
-                    },
-                    "call": {
-                        "explain_func": explain,
-                        "explain_func_kwargs": {
-                            "method": "VanillaGradients",
-                        },
+            lazy_fixture("load_mnist_model_tf"),
+            lazy_fixture("load_mnist_images_tf"),
+            {
+                "a_batch_generate": True,
+                "init": {
+                    "abs": False,
+                    "normalise": False,
+                    "input_shift": 0.2,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {
+                    "explain_func": explain,
+                    "explain_func_kwargs": {
+                        "method": "VanillaGradients",
                     },
                 },
-                {"dtypes": [True, False]},
+            },
+            {"dtypes": [True, False]},
         ),
         (
             lazy_fixture("load_1d_3ch_conv_model"),
@@ -508,7 +508,8 @@ def test_non_sensitivity(
                 "call": {
                     "explain_func": explain,
                     "explain_func_kwargs": {
-                        "method": "InputXGradient",},
+                        "method": "InputXGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},
@@ -590,7 +591,9 @@ def test_non_sensitivity(
                 },
                 "call": {
                     "explain_func": explain,
-                    "explain_func_kwargs": {"method": "InputXGradient",},
+                    "explain_func_kwargs": {
+                        "method": "InputXGradient",
+                    },
                 },
             },
             {"dtypes": [True, False]},

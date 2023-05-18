@@ -54,6 +54,20 @@ def atts_ssim_diff():
     return {"a": np.zeros((16, 16)), "b": np.ones((16, 16))}
 
 
+@pytest.fixture
+def atts_sq_diff_1():
+    return {"a": np.array([1, 2, 3]), "b": np.array([1, 2, 3])}
+
+@pytest.fixture
+def atts_sq_diff_2():
+    return {"a": np.array([1, 2, 3]), "b": np.array([4, 5, 6])}
+
+@pytest.fixture
+def atts_sq_diff_3():
+    return {"a": np.array([1, 2, 3]), "b": np.array([4, 5])}
+
+
+
 @pytest.mark.similar_func
 @pytest.mark.parametrize(
     "data,params,expected",
@@ -270,3 +284,21 @@ def test_mse(data: np.ndarray, params: dict, expected: Union[float, dict, bool])
 def test_difference(data: np.ndarray, params: dict, expected: Union[float, dict, bool]):
     out = difference(a=data["a"], b=data["b"])
     assert all(out == expected), "Test failed."
+
+
+@pytest.mark.similar_func
+@pytest.mark.parametrize(
+    "data,params,expected",
+    [
+        (lazy_fixture("atts_sq_diff_1"), {}, 0),
+        (lazy_fixture("atts_sq_diff_2"), {}, 27),
+        (lazy_fixture("atts_sq_diff_3"), {}, ValueError),
+    ],
+)
+def test_squared_difference(data: np.ndarray, params: dict, expected: Union[int, ValueError]):
+    try:
+        out = squared_difference(a=data["a"], b=data["b"])
+        assert out == expected, "Test failed."
+    except ValueError:
+        pass
+

@@ -228,7 +228,7 @@ def generate_tf_explanation(
                 Indicates the indices of dimensions of the output explanation array to be summed. For example, an input
                 array of shape (8, 28, 28, 3) with keepdims=True and reduce_axes = (-1,) will return an array of shape
                 (8, 28, 28, -1). Passing "()" will keep
-                the original dimensions. 
+                the original dimensions.
             keepdims: boolean
                 Indicated if the reduced axes shall be preserved (True) or removed (False).
     Returns
@@ -513,7 +513,10 @@ def generate_captum_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
+    reduce_axes = {
+        "axis": tuple(kwargs.get("reduce_axes", [1])),
+        "keepdims": kwargs.get("keepdims", True),
+    }
 
     # Prevent attribution summation for 2D-data. Recreate np.sum behavior when passing reduce_axes=(), i.e. no change.
     if (len(tuple(kwargs.get("reduce_axes", [1]))) == 0) | (inputs.ndim < 3):
@@ -755,7 +758,10 @@ def generate_zennit_explanation(
         "{} and  {}.".format(len(kwargs.get("reduce_axes", [1])), inputs.ndim - 1)
     )
 
-    reduce_axes = {"axis": tuple(kwargs.get("reduce_axes", [1])), "keepdims": kwargs.get("keepdims", True)}
+    reduce_axes = {
+        "axis": tuple(kwargs.get("reduce_axes", [1])),
+        "keepdims": kwargs.get("keepdims", True),
+    }
 
     # Get zennit composite, canonizer, attributor and handle canonizer kwargs.
     canonizer = kwargs.get("canonizer", None)

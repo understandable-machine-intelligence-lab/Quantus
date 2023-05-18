@@ -9,7 +9,6 @@ import pickle
 from quantus.functions.explanation_func import explain
 from quantus.functions.mosaic_func import mosaic_creation
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.model.models import LeNetAdaptivePooling
 from quantus.metrics.localisation import (
     AttributionLocalisation,
     AUC,
@@ -19,6 +18,7 @@ from quantus.metrics.localisation import (
     RelevanceRankAccuracy,
     TopKIntersection,
 )
+from tests.sample_models import LeNetAdaptivePooling
 
 
 @pytest.fixture
@@ -1352,7 +1352,7 @@ def test_auc(
                 },
             },
             {"min": 0.8, "max": 0.95},  # TODO: verify correctness
-            marks=pytest.mark.xfail
+            marks=pytest.mark.xfail,
         ),
         (
             lazy_fixture("load_mnist_model"),
