@@ -13,5 +13,6 @@ Submodules
    :maxdepth: 4
 
    quantus.helpers.model.model_interface
+   quantus.helpers.model.models
    quantus.helpers.model.pytorch_model
    quantus.helpers.model.tf_model

@@ -1,10 +1,33 @@
 name: codecov
-on: [ pull_request, workflow_dispatch ]
+on:
+  push:
+    # Run coverage only when pushed to main
+    branches:
+      - main
+    # and changes are in source or testing code.
+    paths:
+      - quantus
+      - tests
+  # Run coverage on any PR modifying source or testing code.
+  pull_request:
+    paths:
+      - quantus
+      - tests
+  # Allow manual trigger.
+  workflow_dispatch:
+
+
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Setup python 3.10
+        uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: "3.10"
 
       - name: Install tox-gh
         run: pip install tox-gh
@@ -14,8 +37,6 @@ jobs:
 
       - name: Measure coverage.
         run: tox run -e coverage
-        env:
-          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
 
       - name: Upload
         uses: codecov/codecov-action@v3

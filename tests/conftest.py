@@ -7,7 +7,7 @@ from tensorflow.keras.datasets import cifar10
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from tests.sample_models import (
+from quantus.helpers.model.models import (
     LeNet,
     LeNetTF,
     CifarCNNModel,

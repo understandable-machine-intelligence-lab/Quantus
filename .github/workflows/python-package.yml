@@ -3,7 +3,23 @@
 
 name: Python package
 
-on: [ pull_request, workflow_dispatch ]
+on:
+  push:
+    # Run only when pushed to main
+    branches:
+      - main
+    # and changes are in source or testing code.
+    paths:
+      - quantus
+      - tests
+  # Run on any PR modifying source or testing code.
+  pull_request:
+    paths:
+      - quantus
+      - tests
+      # Allow manual trigger.
+  workflow_dispatch:
+
 
 jobs:
   build:
@@ -20,7 +36,7 @@ jobs:
       - name: Setup python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          #cache: 'pip'
+          cache: 'pip'
           python-version: ${{ matrix.python-version }}
 
       - name: Install tox-gh
@@ -31,5 +47,3 @@ jobs:
 
       - name: Test with PyTest
         run: tox run --skip-pkg-install
-        env:
-          TF_XLA_FLAGS: "--tf_xla_auto_jit=2 --tf_xla_cpu_global_jit"
