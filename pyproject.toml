@@ -1,0 +1,268 @@
+[project]
+# This is the name of your project. The first time you publish this
+# package, this name will be registered for you. It will determine how
+# users can install this project, e.g.:
+#
+# $ pip install sampleproject
+#
+# And where it will live on PyPI: https://pypi.org/project/sampleproject/
+#
+# There are some restrictions on what makes a valid project name
+# specification here:
+# https://packaging.python.org/specifications/core-metadata/#name
+name = "quantus"  # Required
+
+# Versions should comply with PEP 440:
+# https://www.python.org/dev/peps/pep-0440/
+#
+# For a discussion on single-sourcing the version, see
+# https://packaging.python.org/guides/single-sourcing-package-version/
+version = "0.4.0"  # Required
+
+# This is a one-line description or tagline of what your project does. This
+# corresponds to the "Summary" metadata field:
+# https://packaging.python.org/specifications/core-metadata/#summary
+description = "A metrics toolkit to evaluate neural network explanations."  # Optional
+
+# This is an optional longer description of your project that represents
+# the body of text which users will see when they visit PyPI.
+#
+# Often, this is the same as your README, so you can just read it in from
+# that file directly (as we have already done above)
+#
+# This field corresponds to the "Description" metadata field:
+# https://packaging.python.org/specifications/core-metadata/#description-optional
+readme = "README.md" # Optional
+
+# Specify which Python versions you support. In contrast to the
+# 'Programming Language' classifiers above, 'pip install' will check this
+# and refuse to install the project if the version does not match. See
+# https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
+requires-python = ">=3.7"
+
+# This is either text indicating the license for the distribution, or a file
+# that contains the license
+# https://packaging.python.org/en/latest/specifications/core-metadata/#license
+license = { file = "LICENSE" }
+
+# This field adds keywords for your project which will appear on the
+# project page. What does your project relate to?
+#
+# Note that this is a list of additional keywords, separated
+# by commas, to be used to assist searching for the distribution in a
+# larger catalog.
+keywords = ["explainable ai", "xai", "machine learning", "deep learning"]  # Optional
+
+# This should be your name or the name of the organization who originally
+# authored the project, and a valid email address corresponding to the name
+# listed.
+authors = [
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+]
+
+# This should be your name or the names of the organization who currently
+# maintains the project, and a valid email address corresponding to the name
+# listed.
+maintainers = [
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+]
+
+# Classifiers help users find your project by categorizing it.
+#
+# For a list of valid classifiers, see https://pypi.org/classifiers/
+classifiers = [# Optional
+    # How mature is this project? Common values are
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    "Development Status :: 5 - Production/Stable",
+    # Indicate who your project is intended for
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    # Pick your license as you wish
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Topic :: Scientific :: Explainable Artificial Intelligence",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# This field lists other packages that your project depends on to run.
+# Any package you put here will be installed by pip when your project is
+# installed, so they must be valid existing projects.
+#
+# For an analysis of this field vs pip's requirements files see:
+# https://packaging.python.org/discussions/install-requires-vs-requirements/
+dependencies = [
+    "numpy>=1.19.5",
+    "opencv-python>=4.5.5.62",
+    "scikit-image>=0.19.3",
+    "scikit-learn>=0.24.2",
+    "scipy>=1.7.3",
+    "tqdm>=4.62.3",
+    "matplotlib>=3.3.4"
+]
+
+# List additional groups of dependencies here (e.g. development
+# dependencies). Users will be able to install these using the "extras"
+# syntax, for example:
+#
+#   $ pip install sampleproject[dev]
+#
+# Similar to `dependencies` above, these must be valid existing
+# projects.
+[project.optional-dependencies] # Optional
+tests = [
+    "captum>=0.6.0",
+    "coverage>=7.2.3",
+    "flake8<=4.0.1; python_version == '3.7'",
+    "flake8>=6.0.0; python_version > '3.7'",
+    "pandas<=1.3.3; python_version == '3.7'",
+    "pandas>=2.0.1; python_version > '3.7'",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.0.0",
+    "pytest-lazy-fixture>=0.6.3",
+    "pytest-mock==3.10.0",
+    "pytest_xdist",
+    "tf-explain>=0.3.1",
+    "zennit>=0.4.5; python_version >= '3.7'",
+    "tensorflow>=2.5.0; python_version == '3.7'",
+    "tensorflow>=2.12.0; sys_platform != 'darwin' and python_version > '3.7'",
+    "tensorflow_macos>=2.9.0; sys_platform == 'darwin' and python_version > '3.7'",
+    "torch<=1.9.0; python_version == '3.7'",
+    "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
+    "torchvision<=0.12.0; python_version == '3.7'",
+    "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'"
+]
+torch = [
+    "torch<=1.11.0; python_version == '3.7'",
+    "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
+    "torchvision<=0.12.0; python_version == '3.7'",
+    "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'"
+]
+tensorflow = [
+    "tensorflow>=2.5.0; python_version == '3.7'",
+    "tensorflow>=2.12.0; sys_platform != 'darwin' and python_version > '3.7'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin' and python_version > '3.7'",
+]
+captum = [
+    "quantus[torch]",
+    "captum>=0.6.0"
+]
+tf_explain = [
+    "quantus[tensorflow]",
+    "tf-explain>=0.3.1"
+]
+zennit = [
+    "quantus[torch]",
+    "zennit>=0.5.1"
+]
+full = [
+    "quantus[captum,tf_explain,zennit]"
+]
+
+# List URLs that are relevant to your project
+#
+# This field corresponds to the "Project-URL" and "Home-Page" metadata fields:
+# https://packaging.python.org/specifications/core-metadata/#project-url-multiple-use
+# https://packaging.python.org/specifications/core-metadata/#home-page-optional
+#
+# Examples listed include a pattern for specifying where the package tracks
+# issues, where the source is hosted, where to say thanks to the package
+# maintainers, and where to support the project financially. The key is
+# what's used to render the link text on PyPI.
+[project.urls]  # Optional
+"Homepage" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
+#"Bug Reports" = "https://github.com/pypa/sampleproject/issues"
+#"Funding" = "https://donate.pypi.org"
+#"Say Thanks!" = "http://saythanks.io/to/example"
+#"Source" = "https://github.com/pypa/sampleproject/"
+
+# The following would provide a command line executable called `sample`
+# which executes the function `main` from this package when invoked.
+#[project.scripts]  # Optional
+#sample = "sample:main"
+
+[build-system]
+# These are the assumed default build requirements from pip:
+# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
+requires = ["flit-core >= 3.4"]
+build-backend = "flit_core.buildapi"
+
+
+# Global options:
+# https://mypy.readthedocs.io/en/stable/config_file.html#config-file-import-discovery-global
+
+# Instructions to run mypy. Go to library root, then run:
+# > mypy quantus
+
+[tool.mypy]
+warn_return_any = false
+warn_unused_configs = true
+mypy_path = "quantus/"
+ignore_missing_imports = true
+no_site_packages = true
+show_none_errors = false
+plugins = ["numpy.typing.mypy_plugin"]
+
+
+[[tool.mypy.overrides]]
+module = "quantus.*"
+disallow_untyped_defs = false
+disable_error_code = ["misc", "index", "arg-type"]
+
+# PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
+[tool.pytest.ini_options]
+# addopts = ["-s -v -n auto"]
+markers = [
+    "loss_func: loss_func tests.",
+    "similar_func: similar_func tests.",
+    "perturb_func: perturb_func tests.",
+    "normalise_func: normalise_func tests.",
+    "norm_func: norm_func tests.",
+    "explain_func: explain_func tests.",
+    "evaluate_func: evaluate tests.",
+    "utils: utils tests.",
+    "fixes: fixing tests.",
+    "pytorch_model: pytorch model interface tests.",
+    "tf_model: tensorflow model interface tests.",
+    "randomisation: randomisation metrics tests.",
+    "faithfulness: faithfulness metrics tests.",
+    "robustness: robustness metrics tests.",
+    "localisation: localisation metrics tests.",
+    "complexity: complexity metrics tests.",
+    "axiomatic: axiomatic metrics tests."
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning"
+]
+
+# Coverage configuration, for all options refer to https://coverage.readthedocs.io/en/latest/config.html
+# Note, we need to run python 3.11 or have coverage[toml] installed.
+[tool.coverage.run]
+source = ["quantus.*"]
+omit = [
+    "/tutorials/*",
+    "/tests/*",
+    "quantus/metrics/base.py",
+    "quantus/helpers/asserts.py",
+    "quantus/helpers/warn_func.py",
+    "quantus/helpers/model_interface.py",
+    "quantus/helpers/models.py",
+    "quantus/helpers/constants.py",
+    "quantus/helpers/plotting.py"
+]
+
+[tool.coverage.report]
+ignore_errors = true

@@ -1,18 +1,45 @@
 name: codecov
-on: [push, pull_request]
+on:
+  push:
+    # Run coverage only when pushed to main
+    branches:
+      - main
+    # and changes are in source or testing code.
+    paths:
+      - quantus
+      - tests
+  # Run coverage on any PR modifying source or testing code.
+  pull_request:
+    paths:
+      - quantus
+      - tests
+  # Allow manual trigger.
+  workflow_dispatch:
+
+
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch
-        uses: actions/checkout@master
-      - name: Test
-        run: |
-          pip install -r requirements_test.txt
-          pytest tests -v --cov-report term --cov-report html:htmlcov --cov-report xml --cov=quantus
+      - uses: actions/checkout@v3
+
+      - name: Setup python 3.10
+        uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: "3.10"
+
+      - name: Install tox-gh
+        run: pip install tox-gh
+
+      - name: Setup test environment
+        run: tox run -e coverage --notest
+
+      - name: Measure coverage.
+        run: tox run -e coverage
+
       - name: Upload
-        uses:  codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml, coverage.xml
-
