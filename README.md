@@ -218,44 +218,29 @@ Let's first load the data and model. In this example, a pre-trained LeNet availa
 for the purpose of this tutorial is loaded, but generally, you might use any Pytorch (or TensorFlow) model instead. To follow this example, one needs to have quantus and torch installed, by e.g., `pip install 'quantus[torch]'`.
 
 ```python
-from collections import OrderedDict
-import urllib.request
+import quantus
+from quantus.helpers.model.models import LeNet
 import torch
-# Download model weights and batch of sample data.
-urllib.request.urlretrieve(
-   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist",
-   "/tmp/lenet_mnist_weights.pickle"
-)
-urllib.request.urlretrieve(
-   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_x",
-   "/tmp/mnist_x_batch.pt"
-)
-urllib.request.urlretrieve(
-   "https://raw.github.com/understandable-machine-intelligence-lab/Quantus/main/tests/assets/mnist_y",
-   "/tmp/mnist_y_batch.pt"
-)
-# Enable GPU if available.
+import torchvision
+from torchvision import transforms
+  
+# Enable GPU.
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# Define LeNet model.
-model = torch.nn.Sequential(OrderedDict([
-   ("conv_1", torch.nn.Conv2d(1, 6, 5)),
-   ("relu_1", torch.nn.ReLU(),),
-   ("max_pool_1", torch.nn.MaxPool2d(2, 2),),
-   ("conv_2", torch.nn.Conv2d(6, 16, 5)),
-   ("relu_2", torch.nn.ReLU(),),
-   ("max_pool_2", torch.nn.MaxPool2d(2, 2),),
-   ("flatten", torch.nn.Flatten(),),
-   ("fc_1", torch.nn.Linear(256, 120)),
-   ("relu_3", torch.nn.ReLU(),),
-   ("fc_2", torch.nn.Linear(120, 84),),
-   ("relu_4", torch.nn.ReLU(),),
-   ("fc_3", torch.nn.Linear(84, 10),),
-]))
-# Load weights.
-model.load_state_dict(torch.load("/tmp/lenet_mnist_weights.pickle", map_location=device))
-# Load a batch of inputs and labels to use for XAI evaluation.
-x_batch = torch.load('/tmp/mnist_x_batch.pt').to(device)
-y_batch = torch.load('/tmp/mnist_y_batch.pt').to(device)
+
+# Load a pre-trained LeNet classification model (architecture at quantus/helpers/models).
+model = LeNet()
+if device.type == "cpu":
+    model.load_state_dict(torch.load("tests/assets/mnist", map_location=torch.device('cpu')))
+else: 
+    model.load_state_dict(torch.load("tests/assets/mnist"))
+
+# Load datasets and make loaders.
+test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
+
+# Load a batch of inputs and outputs to use for XAI evaluation.
+x_batch, y_batch = iter(test_loader).next()
+x_batch, y_batch = x_batch.cpu().numpy(), y_batch.cpu().numpy()
 ```
 </details>
 
