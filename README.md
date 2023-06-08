@@ -250,7 +250,7 @@ model = torch.nn.Sequential(OrderedDict([
    ("fc_2", torch.nn.Linear(120, 84),),
    ("relu_4", torch.nn.ReLU(),),
    ("fc_3", torch.nn.Linear(84, 10),),
-]))
+])).to(device)
 # Load weights.
 model.load_state_dict(torch.load("/tmp/lenet_mnist_weights.pickle", map_location=device))
 # Load a batch of inputs and labels to use for XAI evaluation.
