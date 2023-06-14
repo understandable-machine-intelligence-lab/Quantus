@@ -29,4 +29,4 @@ jobs:
       - name: Run flake8
         run: tox run -e lint
       - name: Run mypy
-        run: tox run -e mypy
+        run: tox run -e type
