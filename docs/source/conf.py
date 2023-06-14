@@ -32,13 +32,14 @@ language = "en"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = {"logo_only": True,}
+html_theme_options = {
+    "logo_only": True,
+}
 html_logo = "assets/quantus_logo 2.png"
 html_static_path = ["", "_static"]
 
 # -- Extension configuration -------------------------------------------------
 
 autodoc_default_options = {
-    'special-members': '__call__, __init__',
+    "special-members": "__call__, __init__",
 }
-

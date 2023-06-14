@@ -316,7 +316,6 @@ def test_baseline_replacement_by_shift(
 def test_baseline_replacement_by_blur(
     data: np.ndarray, params: dict, expected: Union[float, dict, bool]
 ):
-
     if "exception" in expected:
         with pytest.raises(expected["exception"]):
             out = baseline_replacement_by_blur(

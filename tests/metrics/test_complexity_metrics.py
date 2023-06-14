@@ -198,7 +198,7 @@ def test_sparseness(
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data.get("a_batch"),
-        **call_params
+        **call_params,
     )
     if isinstance(expected, float):
         assert all(s == expected for s in scores), "Test failed."
@@ -390,7 +390,7 @@ def test_complexity(
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data.get("a_batch"),
-        **call_params
+        **call_params,
     )
     assert scores is not None, "Test failed."
 
@@ -577,6 +577,6 @@ def test_effective_complexity(
         x_batch=data["x_batch"],
         y_batch=data["y_batch"],
         a_batch=data.get("a_batch"),
-        **call_params
+        **call_params,
     )
     assert scores is not None, "Test failed."
