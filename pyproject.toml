@@ -17,7 +17,7 @@ name = "quantus"  # Required
 #
 # For a discussion on single-sourcing the version, see
 # https://packaging.python.org/guides/single-sourcing-package-version/
-version = "0.4.0"  # Required
+version = "0.4.1"  # Required
 
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
@@ -197,72 +197,3 @@ full = [
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["flit-core >= 3.4"]
 build-backend = "flit_core.buildapi"
-
-
-# Global options:
-# https://mypy.readthedocs.io/en/stable/config_file.html#config-file-import-discovery-global
-
-# Instructions to run mypy. Go to library root, then run:
-# > mypy quantus
-
-[tool.mypy]
-warn_return_any = false
-warn_unused_configs = true
-mypy_path = "quantus/"
-ignore_missing_imports = true
-no_site_packages = true
-show_none_errors = false
-plugins = ["numpy.typing.mypy_plugin"]
-
-
-[[tool.mypy.overrides]]
-module = "quantus.*"
-disallow_untyped_defs = false
-disable_error_code = ["misc", "index", "arg-type"]
-
-# PyTest confoguration, for all options refer to https://docs.pytest.org/en/7.2.x/reference/customize.html
-[tool.pytest.ini_options]
-# addopts = ["-s -v -n auto"]
-markers = [
-    "loss_func: loss_func tests.",
-    "similar_func: similar_func tests.",
-    "perturb_func: perturb_func tests.",
-    "normalise_func: normalise_func tests.",
-    "norm_func: norm_func tests.",
-    "explain_func: explain_func tests.",
-    "evaluate_func: evaluate tests.",
-    "utils: utils tests.",
-    "fixes: fixing tests.",
-    "pytorch_model: pytorch model interface tests.",
-    "tf_model: tensorflow model interface tests.",
-    "randomisation: randomisation metrics tests.",
-    "faithfulness: faithfulness metrics tests.",
-    "robustness: robustness metrics tests.",
-    "localisation: localisation metrics tests.",
-    "complexity: complexity metrics tests.",
-    "axiomatic: axiomatic metrics tests."
-]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning"
-]
-
-# Coverage configuration, for all options refer to https://coverage.readthedocs.io/en/latest/config.html
-# Note, we need to run python 3.11 or have coverage[toml] installed.
-[tool.coverage.run]
-source = ["quantus.*"]
-omit = [
-    "/tutorials/*",
-    "/tests/*",
-    "quantus/metrics/base.py",
-    "quantus/helpers/asserts.py",
-    "quantus/helpers/warn_func.py",
-    "quantus/helpers/model_interface.py",
-    "quantus/helpers/models.py",
-    "quantus/helpers/constants.py",
-    "quantus/helpers/plotting.py"
-]
-
-[tool.coverage.report]
-ignore_errors = true

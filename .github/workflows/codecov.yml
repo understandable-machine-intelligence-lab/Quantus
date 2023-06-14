@@ -1,19 +1,9 @@
 name: codecov
 on:
   push:
-    # Run coverage only when pushed to main
     branches:
       - main
-    # and changes are in source or testing code.
-    paths:
-      - quantus
-      - tests
-  # Run coverage on any PR modifying source or testing code.
   pull_request:
-    paths:
-      - quantus
-      - tests
-  # Allow manual trigger.
   workflow_dispatch:
 
 
