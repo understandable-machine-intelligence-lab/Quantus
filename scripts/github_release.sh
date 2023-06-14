@@ -15,8 +15,7 @@ echo "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
 git fetch --atomic --verbose && git checkout main
 # Build wheel.
-python3 -m build .
-python3 -m twine check ./dist/*
+tox run -e build
 # Tag release.
 git tag "$TAG"
 git push --follow-tags
