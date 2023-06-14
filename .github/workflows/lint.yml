@@ -30,8 +30,3 @@ jobs:
         run: tox run -e lint
       - name: Run mypy
         run: tox run -e mypy
-      - name: Verify black code-style
-        uses: psf/black@stable
-        with:
-          options: "--check --diff --color"
-          jupyter: true
