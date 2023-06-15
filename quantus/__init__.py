@@ -3,6 +3,12 @@
 # Quantus is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
+import subprocess
+
+commit_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+version = subprocess.check_output(['git', 'describe', '--tags', '--always', '--dirty=-pre', commit_sha]).strip().decode('utf-8')
+
+__version__ = version
 
 # Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
