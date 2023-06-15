@@ -74,10 +74,8 @@ python3 -m tox list
 python3 -m tox run
 # Or, e.g., you can run only tests for pytho3.8 with:
 python3 -m tox run -e py38
-# Or, e.g., run type checking for python 3.10 with:
-python3 -m tox run -e py310_type
-# Or coverage using python 3.10
-python3 -m tox run -e py310_coverage
+# Or, e.g., run type checking with:
+python3 -m tox run -e type
 # If you want to pass CLI arguments to pytest, add them after --, e.g., you might want to split execution between 4 cpu cores, 
 # show verbose logging, and run only robustness tests.
 python3 -m tox run py310 -- -n 4 -s -v -m "robustness"
