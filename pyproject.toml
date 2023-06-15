@@ -17,8 +17,7 @@ name = "quantus"  # Required
 #
 # For a discussion on single-sourcing the version, see
 # https://packaging.python.org/guides/single-sourcing-package-version/
-# version = "0.4.1"  # Required
-dynamic = ["version"]
+version = "0.4.1.dev1"  # Required
 
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
