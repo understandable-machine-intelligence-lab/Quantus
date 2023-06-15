@@ -1,6 +1,8 @@
 name: Python package
 
 on:
+  schedule:
+    - cron: '* 8 * * *'
   push:
     branches:
       - main
