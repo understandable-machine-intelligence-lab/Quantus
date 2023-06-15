@@ -6,16 +6,28 @@ trap 'echo -e "\033[0;31mCHANGED\033[0m"' ERR
 git diff-index --quiet HEAD --
 trap - ERR
 echo -e "\033[0;32mUNCHANGED\033[0m"
+
+echo -n "Looking for GitHub CLI... "
+if ! command -v gh &>/dev/null; then
+  echo -e "\033[0;31m GitHub CLI not installed.\033[0m"
+  exit
+else
+  echo -e "\033[0;32mOK\033[0m"
+fi
 # Check provided 1 positional argument
 if [ $# -eq 0 ]; then
-  echo -e "Must provide tag as positional argument"
+  echo -e "\033[0;31m Must provide tag as positional argument\033[0m"
+  exit
 fi
 TAG=$1
-echo "TAG=${TAG}"
+echo -n "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
 git fetch --atomic --verbose && git checkout main
+# Clean old artifacts.
+rm -f -R dist
 # Build wheel.
-tox run -e build
+python3 -m pip install tox
+python3 -m tox run -e build
 # Tag release.
 git tag "$TAG"
 git push --follow-tags
