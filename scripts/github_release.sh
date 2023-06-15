@@ -12,7 +12,8 @@ if [ $# -eq 0 ]; then
 fi
 if ! command -v ghs &> /dev/null
 then
-    echo -e "GitHub CLI not installed."
+    echo -e "\033[0;31m GitHub CLI not installed."
+    exit
 fi
 TAG=$1
 echo "TAG=${TAG}"
