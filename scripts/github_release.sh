@@ -12,7 +12,7 @@ if ! command -v gh &>/dev/null; then
   echo -e "\033[0;31m GitHub CLI not installed.\033[0m"
   exit
 else
-  echo -e "\033[0;32OK\033[0m"
+  echo -e "\033[0;32mOK\033[0m"
 fi
 # Check provided 1 positional argument
 if [ $# -eq 0 ]; then
