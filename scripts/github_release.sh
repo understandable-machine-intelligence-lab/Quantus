@@ -13,7 +13,7 @@ fi
 TAG=$1
 echo "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
-# git fetch --atomic --verbose && git checkout main
+git fetch --atomic --verbose && git checkout main
 # Clean old artifacts.
 rm -f -R build
 # Build wheel.
