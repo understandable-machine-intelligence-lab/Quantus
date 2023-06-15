@@ -8,7 +8,7 @@ trap - ERR
 echo -e "\033[0;32mUNCHANGED\033[0m"
 
 echo -n "Looking for GitHub CLI... "
-if ! command -v ghs &>/dev/null; then
+if ! command -v gh &>/dev/null; then
   echo -e "\033[0;31m GitHub CLI not installed.\033[0m"
   exit
 else
