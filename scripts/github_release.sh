@@ -14,8 +14,11 @@ TAG=$1
 echo "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
 git fetch --atomic --verbose && git checkout main
+# Clean old artifacts.
+rm -f -R build
 # Build wheel.
-tox run -e build
+python3 -m pip install tox
+python3 -m tox tox run -e build
 # Tag release.
 git tag "$TAG"
 git push --follow-tags
