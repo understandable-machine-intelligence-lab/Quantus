@@ -18,7 +18,7 @@ git fetch --atomic --verbose && git checkout main
 rm -f -R build
 # Build wheel.
 python3 -m pip install tox
-python3 -m tox tox run -e build
+python3 -m tox run -e build
 # Tag release.
 git tag "$TAG"
 git push --follow-tags
