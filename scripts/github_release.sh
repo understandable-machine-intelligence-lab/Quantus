@@ -10,6 +10,11 @@ echo -e "\033[0;32mUNCHANGED\033[0m"
 if [ $# -eq 0 ]; then
   echo -e "Must provide tag as positional argument"
 fi
+if ! command -v gh &> /dev/null
+then
+    echo "GitHub CLI not installed."
+    exit
+fi
 TAG=$1
 echo "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
