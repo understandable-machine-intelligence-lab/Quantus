@@ -1,18 +1,15 @@
 name: Python package
 
 on:
-  # Publish snapshot release every night.
-  schedule:
-    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       index:
         type: choice
         description: Index to publish snapshot release to
         options:
-          - https://test.pypi.org/simple/
-          - https://pypi.org/simple/
-        default: https://test.pypi.org/simple/
+          - Test PyPi
+          - PyPi
+        default: Test PyPi
 
 
 
@@ -35,11 +32,17 @@ jobs:
         run: tox run
       - name: Test building package
         run: tox run -e build
-      - name: Publish package
+      - name: Publish to Test PyPi
+        if: ${{github.event.inputs.index == 'Test PyPi'}}
         uses: pypa/gh-action-pypi-publish@release/v1
-        env:
-          SNAPSHOT_RELEASE: 1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/simple/
+      - name: Publish to PyPi
+        if: ${{github.event.inputs.index == 'PyPi'}}
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          repository-url: ${{ github.event.inputs.index }}
+          repository-url: https://pypi.org/simple/
