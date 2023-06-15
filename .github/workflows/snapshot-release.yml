@@ -1,0 +1,45 @@
+name: Python package
+
+on:
+  # Publish snapshot release every night.
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      index:
+        type: choice
+        description: Index to publish snapshot release to
+        options:
+          - https://test.pypi.org/simple/
+          - https://pypi.org/simple/
+        default: https://test.pypi.org/simple/
+
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Pre Release
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: "3.10"
+      - name: Install tox-gh
+        run: pip install tox-gh
+      - name: Setup test environment
+        run: tox run --notest
+      - name: Test with PyTest
+        run: tox run
+      - name: Test building package
+        run: tox run -e build
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish/v1
+        env:
+          SNAPSHOT_RELEASE: 1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          repository-url: ${{ github.event.inputs.index }}

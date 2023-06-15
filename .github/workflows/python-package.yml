@@ -1,8 +1,9 @@
 name: Python package
 
 on:
+  # Run tests every night, to catch potentially breaking changes in dependencies.
   schedule:
-    - cron: '* 8 * * *'
+    - cron: '0 0 * * *'
   push:
     branches:
       - main

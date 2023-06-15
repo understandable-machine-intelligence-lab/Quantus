@@ -4,11 +4,20 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 import subprocess
+import os
 
-commit_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
-version = subprocess.check_output(['git', 'describe', '--tags', '--always', '--dirty=-pre', commit_sha]).strip().decode('utf-8')
-
-__version__ = version
+if "SNAPSHOT_RELEASE" in os.environ:
+    commit_sha = (
+        subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+    )
+    version = (
+        subprocess.check_output(["git", "describe", "--tags", "--always", commit_sha])
+        .strip()
+        .decode("utf-8")
+    )
+    __version__ = version
+else:
+    __version__ = "0.4.1"
 
 # Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
