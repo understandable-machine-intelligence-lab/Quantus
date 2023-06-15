@@ -24,7 +24,7 @@ echo -n "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
 git fetch --atomic --verbose && git checkout main
 # Clean old artifacts.
-rm -f -R build
+rm -f -R dist
 # Build wheel.
 python3 -m pip install tox
 python3 -m tox run -e build

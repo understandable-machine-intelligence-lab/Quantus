@@ -82,7 +82,7 @@ classifiers = [# Optional
     "Intended Audience :: Developers",
     # Pick your license as you wish
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Topic :: Scientific :: Explainable Artificial Intelligence",
+    # "Topic :: Scientific :: Explainable Artificial Intelligence",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
