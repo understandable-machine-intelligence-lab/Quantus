@@ -3,9 +3,9 @@
 # package, this name will be registered for you. It will determine how
 # users can install this project, e.g.:
 #
-# $ pip install sampleproject
+# $ pip install quantus
 #
-# And where it will live on PyPI: https://pypi.org/project/sampleproject/
+# And where it will live on PyPI: https://pypi.org/project/quantus/
 #
 # There are some restrictions on what makes a valid project name
 # specification here:
@@ -108,7 +108,7 @@ dependencies = [
 # dependencies). Users will be able to install these using the "extras"
 # syntax, for example:
 #
-#   $ pip install sampleproject[dev]
+#   $ pip install quantus[dev]
 #
 # Similar to `dependencies` above, these must be valid existing
 # projects.
@@ -182,10 +182,10 @@ full = [
 # what's used to render the link text on PyPI.
 [project.urls]  # Optional
 "Homepage" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
-#"Bug Reports" = "https://github.com/pypa/sampleproject/issues"
+#"Bug Reports" = "https://github.com/pypa/quantus/issues"
 #"Funding" = "https://donate.pypi.org"
 #"Say Thanks!" = "http://saythanks.io/to/example"
-#"Source" = "https://github.com/pypa/sampleproject/"
+"Source" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
 
 # The following would provide a command line executable called `sample`
 # which executes the function `main` from this package when invoked.
