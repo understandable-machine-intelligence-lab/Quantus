@@ -23,8 +23,6 @@ TAG=$1
 echo -n "TAG=${TAG}"
 # Update main ref's and switch to main's HEAD.
 git fetch --atomic --verbose && git checkout main
-# Clean old artifacts.
-rm -f -R dist
 # Build wheel.
 python3 -m pip install tox
 python3 -m tox run -e build
@@ -32,4 +30,4 @@ python3 -m tox run -e build
 git tag "$TAG"
 git push --follow-tags
 # Create GitHub release draft.
-gh release create "$TAG" ./dist/* --draft --latest
+gh release create "$TAG" "./dist/*${TAG}*" --draft --latest
