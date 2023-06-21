@@ -3,7 +3,7 @@
 name = "quantus"
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
-version = "0.4.1.dev1"
+version = "0.4.1"
 description = "A metrics toolkit to evaluate neural network explanations."
 readme = "README.md"
 requires-python = ">=3.7"
