@@ -1,9 +1,15 @@
 ### How to run tests
 
-Run all tests for all supported python versions, coverage, linting and type-checking at once
+Run all tests for all supported python versions, execute:
 
 ```shell
 python3 -m tox run
+```
+
+... or to run all testing environments in parallel, execute:
+
+```shell
+python3 -m tox run-parallel
 ```
 
 To list all configured test environments, run

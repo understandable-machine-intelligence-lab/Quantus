@@ -75,12 +75,6 @@ To perform the tests for all supported python versions execute the following CLI
 python3 -m tox run
 ```
 
-... or to run all testing environments in parallel, execute:
-
-```shell
-python3 -m tox run-parallel
-```
-
 ... alternatively, to get additionally coverage details, run:
 
 ```bash
