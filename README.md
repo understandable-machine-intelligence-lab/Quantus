@@ -235,7 +235,7 @@ else:
     model.load_state_dict(torch.load("tests/assets/mnist"))
 
 # Load datasets and make loaders.
-test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
+test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transform=transforms.Compose([transforms.ToTensor()]))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for XAI evaluation.
@@ -266,7 +266,7 @@ and `a_batch_intgrad`:
 
 ```python
 a_batch_saliency = load("path/to/precomputed/saliency/explanations")
-a_batch_saliency = load("path/to/precomputed/intgrad/explanations")
+a_batch_intgrad = load("path/to/precomputed/intgrad/explanations")
 ```
 
 Another option is to simply obtain the attributions using one of many XAI frameworks out there, 
