@@ -22,8 +22,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    # Explainable Artificial Intelligence is not in the list of valid classifiers.
-    # "Topic :: Scientific :: Explainable Artificial Intelligence",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",

@@ -50,8 +50,8 @@ git clone https://github.com/understandable-machine-intelligence-lab/Quantus.git
 cd quantus
 # Tox will provision dev environment with editable installation for you.
 python3 -m pip install tox
-python3 -m tox run -e dev
-source .tox/dev/bin/activate
+python3 -m tox devenv
+source venv/bin/activate
 ```
 
 ### Branching
@@ -66,22 +66,22 @@ We use [flake8](https://pypi.org/project/flake8/) for quick style checks and [bl
 ### Unit Tests
 
 Tests are written using [pytest](https://github.com/pytest-dev/pytest) and executed together with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
-We use [tox](https://tox.wiki/en/latest/) for test automation. 
-```bash
-# To list all test environments, run:
-python3 -m tox list
-# To execute all test environments run:
+We use [tox](https://tox.wiki/en/latest/) for test automation. For complete list of CLI commands, please refer to [tox - CLI interface](https://tox.wiki/en/latest/cli_interface.html).
+To perform the tests for all supported python versions, linting and type checking execute the following CLI command:
+```shell
 python3 -m tox run
-# Or, e.g., you can run only tests for pytho3.8 with:
-python3 -m tox run -e py38
-# Or, e.g., run type checking with:
-python3 -m tox run -e type
-# If you want to pass CLI arguments to pytest, add them after --, e.g., you might want to split execution between 4 cpu cores, 
-# show verbose logging, and run only robustness tests.
-python3 -m tox run py310 -- -n 4 -s -v -m "robustness"
-# You still can run tests using your active local interpreter by:
-python -m pytest 
 ```
+
+... alternatively, to get additionaly coverage details, run:
+```bash
+python3 -m tox run -e coverage
+```
+
+It is possible to limit the scope of testing to specific sections of the codebase, for example, only test the Faithfulness metrics using python3.10:
+```bash
+python3 -m tox run -e py310 -- -m faithfulness -s
+```
+For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
 
 ### Documentation
 
@@ -101,16 +101,16 @@ black quantus/INSERT_YOUR_FILE_NAME.py
 ```bash
 flake8 quantus/INSERT_YOUR_FILE_NAME.py
 ```
-- Create tests for new functionality and add under `tests/` folder.
-- If tests include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
+- Create a unit test for new functionality and add under `tests/` folder, add `@pytest.mark` with fitting category.
+- If newly added test cases include a new category of `@pytest.mark` then add that category with description to `pytest.ini`
 - Make sure all unit tests pass for all supported python version by running:
 ```shell
-python -m tox run
+python3 -m tox run -e 'py3{7,8,9,10,11}
 ```
 - Generally, every change should be covered with respective test-case, we aim at ~100% code coverage for Quantus.
 You can verify it by running:
 ```bash
-python -m tox run coverage
+python3 -m tox run -e coverage
 ```
 
 ### Pull Requests
