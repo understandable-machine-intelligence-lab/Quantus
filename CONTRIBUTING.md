@@ -48,7 +48,10 @@ Make sure to install the latest version of Quantus from the main branch.
 ```bash
 git clone https://github.com/understandable-machine-intelligence-lab/Quantus.git
 cd quantus
-# Tox will provision dev environment with editable installation for you.
+```
+
+Tox will provision dev environment with editable installation for you.
+```bash
 python3 -m pip install tox
 python3 -m tox devenv
 source venv/bin/activate
@@ -69,9 +72,10 @@ Tests are written using [pytest](https://github.com/pytest-dev/pytest) and execu
 with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 We use [tox](https://tox.wiki/en/latest/) for test automation. For complete list of CLI commands, please refer
 to [tox - CLI interface](https://tox.wiki/en/latest/cli_interface.html).
-To perform the tests for all supported python versions execute the following CLI command:
+To perform the tests for all supported python versions execute the following CLI command (a re-intall of tox is necessary):
 
 ```shell
+python3 -m pip install tox
 python3 -m tox run
 ```
 
@@ -82,10 +86,10 @@ python3 -m tox run -e coverage
 ```
 
 It is possible to limit the scope of testing to specific sections of the codebase, for example, only test the
-Faithfulness metrics using python3.10:
+Faithfulness metrics using python3.9 (make sure the python versions match in your environment):
 
 ```bash
-python3 -m tox run -e py310 -- -m faithfulness -s
+python3 -m tox run -e py39 -- -m faithfulness -s
 ```
 
 For a complete overview of the possible testing scopes, please refer to `pytest.ini`.
@@ -93,7 +97,6 @@ For a complete overview of the possible testing scopes, please refer to `pytest.
 ### Documentation
 
 Make sure to add docstrings to every class, method and function that you add to the codebase. The docstring should include a description of all parameters and returns. Use the existing documentation as an example.
-TODO: Automatic docstring generation.
 
 ### Before You Create a Pull Request
 
@@ -103,13 +106,13 @@ Before creating a PR, double-check that the following tasks are completed:
 - Run `black` to format source code:
 
 ```bash
-black quantus/INSERT_YOUR_FILE_NAME.py
+black quantus/*/INSERT_YOUR_FILE_NAME.py
 ```
 
 - Run `flake8` for quick style checks, e.g.:
 
 ```bash
-flake8 quantus/INSERT_YOUR_FILE_NAME.py
+flake8 quantus/*/INSERT_YOUR_FILE_NAME.py
 ```
 
 - Create a unit test for new functionality and add under `tests/` folder, add `@pytest.mark` with fitting category.
@@ -154,6 +157,7 @@ See a more detailed description of those in [README](https://github.com/understa
 Identify which category your metric belongs to and create a Python file for your metric class in the respective folder in `quantus/metrics`.
 
 Add the metric to the `__init__.py` file in the respective folder.
+
 ### Metric Class
 Every metric class inherits from the base `Metric` class: `quantus/metrics/base.py`. Importantly, Faithfulness and Robustness inherit not from the `Metric` class directly, but rather from its child `PerturbationMetric`.
 

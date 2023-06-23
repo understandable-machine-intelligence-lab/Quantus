@@ -1,6 +1,7 @@
 # A complete reference of pyproject.toml format can be found on: https://flit.pypa.io/en/stable/pyproject_toml.html
 [project]
 name = "quantus"
+
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
 version = "0.4.1"
@@ -10,10 +11,10 @@ requires-python = ">=3.7"
 license = { file = "LICENSE" }
 keywords = ["explainable ai", "xai", "machine learning", "deep learning"]
 authors = [
-    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" }
 ]
 maintainers = [
-    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" } # Optional
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" }
 ]
 # For a list of valid classifiers, see https://pypi.org/classifiers/
 classifiers = [
@@ -35,6 +36,10 @@ dependencies = [
     "tqdm>=4.62.3",
     "matplotlib>=3.3.4"
 ]
+
+[project.urls]
+"Documentation" = "https://quantus.readthedocs.io/en/latest/"
+"Source" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
 
 # List additional groups of dependencies here (e.g. development dependencies).
 # Users will be able to install these using the "extras" syntax, for example:
@@ -98,9 +103,6 @@ zennit = [
 full = [
     "quantus[captum,tf_explain,zennit]"
 ]
-[project.urls]
-"Documentation" = "https://quantus.readthedocs.io/en/latest/"
-"Source" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
 
 [build-system]
 requires = ["flit-core >= 3.4"]
