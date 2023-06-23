@@ -341,7 +341,9 @@ scores = metric(
 )
 ```
 
-In this example, we rely on the built-in `quantus.explain` function in order to recompute the explanations during the robustness evaluation procedure. Further hyperparameters for generating the explanations can be specified through a dictionary passed to `explain_func_kwargs`. Please find more details on how to use  `quantus.explain` at [API documentation](https://quantus.readthedocs.io/en/latest/docs_api/quantus.functions.explanation_func.html).
+#### Use quantus.explain
+
+Since a re-computation of the explanations is necessary for robustness evaluation, in this example, we also pass an explanation function (`explain_func`) to the metric call. Here, we rely on the built-in `quantus.explain` function to recompute the explanations. The hyperparameters are set with the `explain_func_kwargs` dictionary. Please find more details on how to use  `quantus.explain` at [API documentation](https://quantus.readthedocs.io/en/latest/docs_api/quantus.functions.explanation_func.html).
 
 #### Employ customised functions
 
