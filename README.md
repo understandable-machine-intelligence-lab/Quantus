@@ -184,15 +184,6 @@ For TensorFlow, please run:
 pip install "quantus[tensorflow]"
 ```
 
-Alternatively, you can simply install Quantus with [requirements.txt](https://github.com/understandable-machine-intelligence-lab/Quantus/blob/main/requirements.txt).
-Note that this installation requires that either [PyTorch](https://pytorch.org/) or [TensorFlow](https://www.TensorFlow.org) are already installed on your machine.
-
-```setup
-pip install -r requirements.txt
-```
-
-For a more in-depth guide on how to install Quantus, please read more [here](https://quantus.readthedocs.io/en/latest/getting_started/installation.html). This includes instructions for how to install a desired deep learning framework such as PyTorch or TensorFlow together with Quantus.
-
 ### Package requirements
 
 The package requirements are as follows:
@@ -201,7 +192,10 @@ python>=3.7.0
 torch>=1.11.0
 tensorflow>=2.5.0
 ```
-Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …). See `requirements_test.txt` to retrieve the exact versions of [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org).
+
+Please note that the exact [PyTorch](https://pytorch.org/) and/ or [TensorFlow](https://www.TensorFlow.org) versions
+to be installed depends on your Python version (3.7-3.11) and platform (`darwin`, `linux`, …).
+See `[project.optional-dependencies]` section in the `pyproject.toml` file.
 
 ## Getting started
 

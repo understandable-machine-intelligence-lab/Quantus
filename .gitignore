@@ -38,8 +38,8 @@ build/
 *sample_data/
 tutorials/invited_talks/
 
-# PyCharm project files
+# pyCharm project files
 .idea
 
-# Tox files.
+# tox files.
 .tox

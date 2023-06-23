@@ -1,0 +1,109 @@
+# A complete reference of pyproject.toml format can be found on: https://flit.pypa.io/en/stable/pyproject_toml.html
+[project]
+name = "quantus"
+
+# Versions should comply with PEP 440:
+# https://www.python.org/dev/peps/pep-0440/
+version = "0.4.1"
+description = "A metrics toolkit to evaluate neural network explanations."
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+keywords = ["explainable ai", "xai", "machine learning", "deep learning"]
+authors = [
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" }
+]
+maintainers = [
+    { name = "Anna Hedstrom", email = "hedstroem.anna@gmail.com" }
+]
+# For a list of valid classifiers, see https://pypi.org/classifiers/
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.19.5",
+    "opencv-python>=4.5.5.62",
+    "scikit-image>=0.19.3",
+    "scikit-learn>=0.24.2",
+    "scipy>=1.7.3",
+    "tqdm>=4.62.3",
+    "matplotlib>=3.3.4"
+]
+
+[project.urls]
+"Documentation" = "https://quantus.readthedocs.io/en/latest/"
+"Source" = "https://github.com/understandable-machine-intelligence-lab/Quantus"
+
+# List additional groups of dependencies here (e.g. development dependencies).
+# Users will be able to install these using the "extras" syntax, for example:
+#
+#   $ pip install quantus[tensorflow]
+#
+[project.optional-dependencies]
+tests = [
+    "captum>=0.6.0",
+    "coverage>=7.2.3",
+    "flake8<=4.0.1; python_version == '3.7'",
+    "flake8>=6.0.0; python_version > '3.7'",
+    "pandas<=1.3.3; python_version == '3.7'",
+    "pandas>=2.0.1; python_version > '3.7'",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.0.0",
+    "pytest-lazy-fixture>=0.6.3",
+    "pytest-mock==3.10.0",
+    "pytest_xdist",
+    "tf-explain>=0.3.1",
+    "zennit>=0.4.5; python_version >= '3.7'",
+    "tensorflow>=2.5.0; python_version == '3.7'",
+    "tensorflow>=2.12.0; sys_platform != 'darwin' and python_version > '3.7'",
+    "tensorflow_macos>=2.9.0; sys_platform == 'darwin' and python_version > '3.7'",
+    "torch<=1.9.0; python_version == '3.7'",
+    "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
+    "torchvision<=0.12.0; python_version == '3.7'",
+    "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'"
+]
+torch = [
+    "torch<=1.11.0; python_version == '3.7'",
+    "torch>=1.13.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torch>=1.13.1, <2.0.0; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torch>=2.0.0; sys_platform == 'linux' and python_version >= '3.11'",
+    "torchvision<=0.12.0; python_version == '3.7'",
+    "torchvision>=0.15.1; sys_platform != 'linux' and python_version > '3.7'",
+    "torchvision>=0.14.0, <0.15.1; sys_platform == 'linux' and python_version > '3.7' and python_version <= '3.10'",
+    "torchvision>=0.15.1; sys_platform == 'linux' and python_version >= '3.11'"
+]
+tensorflow = [
+    "tensorflow>=2.5.0; python_version == '3.7'",
+    "tensorflow>=2.12.0; sys_platform != 'darwin' and python_version > '3.7'",
+    "tensorflow_macos>=2.12.0; sys_platform == 'darwin' and python_version > '3.7'",
+]
+captum = [
+    "quantus[torch]",
+    "captum>=0.6.0"
+]
+tf_explain = [
+    "quantus[tensorflow]",
+    "tf-explain>=0.3.1"
+]
+zennit = [
+    "quantus[torch]",
+    "zennit>=0.5.1"
+]
+full = [
+    "quantus[captum,tf_explain,zennit]"
+]
+
+[build-system]
+requires = ["flit-core >= 3.4"]
+build-backend = "flit_core.buildapi"
