@@ -122,7 +122,7 @@ def assert_attributions_order(order: str) -> None:
     assert order in [
         "random",
         "morf",
-        "lorf",
+        "lerf",
     ], "The order of sorting the attributions must be either random, morf, or lorf."
 
 
