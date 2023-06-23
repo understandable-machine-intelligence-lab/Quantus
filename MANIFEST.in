@@ -1,5 +1,0 @@
-include requirements.txt
-include requirements_test.txt
-include quantus/*
-global-exclude *.pyc
-recursive-exclude . "__pycache__"
