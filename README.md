@@ -322,7 +322,9 @@ metric = quantus.MaxSensitivity(nr_samples=10,
                                 norm_numerator=quantus.fro_norm,
                                 norm_denominator=quantus.fro_norm,
                                 perturb_func=quantus.uniform_noise,
-                                similarity_func=quantus.difference)
+                                similarity_func=quantus.difference,
+                                abs=True,
+                                normalise=True)
 ```
 
 and then applied to your model, data, and (pre-computed) explanations:
@@ -333,25 +335,13 @@ scores = metric(
     x_batch=x_batch,
     y_batch=y_batch,
     a_batch=a_batch_saliency,
-    device=device
-)
-```
-
-#### Use quantus.explain
-
-Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
-which can be specified through a dictionary passed to `explain_func_kwargs`.
-
-```python
-scores = metric(
-    model=model,
-    x_batch=x_batch,
-    y_batch=y_batch,
     device=device,
     explain_func=quantus.explain,
-    explain_func_kwargs={"method": "Saliency"}
+    explain_func_kwargs={"method": "Saliency"},
 )
 ```
+
+In this example, we rely on the built-in `quantus.explain` function in order to recompute the explanations during the robustness evaluation procedure. Further hyperparameters for generating the explanations can be specified through a dictionary passed to `explain_func_kwargs`. Please find more details on how to use  `quantus.explain` at [API documentation](https://quantus.readthedocs.io/en/latest/docs_api/quantus.functions.explanation_func.html).
 
 #### Employ customised functions
 
