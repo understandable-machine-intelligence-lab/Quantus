@@ -229,7 +229,7 @@ else:
     model.load_state_dict(torch.load("tests/assets/mnist"))
 
 # Load datasets and make loaders.
-test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transforms=transforms.Compose([transforms.ToTensor()]))
+test_set = torchvision.datasets.MNIST(root='./sample_data', download=True, transform=transforms.Compose([transforms.ToTensor()]))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=24)
 
 # Load a batch of inputs and outputs to use for XAI evaluation.
@@ -260,7 +260,7 @@ and `a_batch_intgrad`:
 
 ```python
 a_batch_saliency = load("path/to/precomputed/saliency/explanations")
-a_batch_saliency = load("path/to/precomputed/intgrad/explanations")
+a_batch_intgrad = load("path/to/precomputed/intgrad/explanations")
 ```
 
 Another option is to simply obtain the attributions using one of many XAI frameworks out there, 
@@ -316,7 +316,9 @@ metric = quantus.MaxSensitivity(nr_samples=10,
                                 norm_numerator=quantus.fro_norm,
                                 norm_denominator=quantus.fro_norm,
                                 perturb_func=quantus.uniform_noise,
-                                similarity_func=quantus.difference)
+                                similarity_func=quantus.difference,
+                                abs=True,
+                                normalise=True)
 ```
 
 and then applied to your model, data, and (pre-computed) explanations:
@@ -327,25 +329,15 @@ scores = metric(
     x_batch=x_batch,
     y_batch=y_batch,
     a_batch=a_batch_saliency,
-    device=device
+    device=device,
+    explain_func=quantus.explain,
+    explain_func_kwargs={"method": "Saliency"},
 )
 ```
 
 #### Use quantus.explain
 
-Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
-which can be specified through a dictionary passed to `explain_func_kwargs`.
-
-```python
-scores = metric(
-    model=model,
-    x_batch=x_batch,
-    y_batch=y_batch,
-    device=device,
-    explain_func=quantus.explain,
-    explain_func_kwargs={"method": "Saliency"}
-)
-```
+Since a re-computation of the explanations is necessary for robustness evaluation, in this example, we also pass an explanation function (`explain_func`) to the metric call. Here, we rely on the built-in `quantus.explain` function to recompute the explanations. The hyperparameters are set with the `explain_func_kwargs` dictionary. Please find more details on how to use  `quantus.explain` at [API documentation](https://quantus.readthedocs.io/en/latest/docs_api/quantus.functions.explanation_func.html).
 
 #### Employ customised functions
 

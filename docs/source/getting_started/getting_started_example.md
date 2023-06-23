@@ -131,24 +131,14 @@ scores = metric(
     model=model,
     x_batch=x_batch,
     y_batch=y_batch,
-    a_batch=a_batch_saliency,
-    device=device
-)
-```
-
-Alternatively, instead of providing pre-computed explanations, you can employ the `quantus.explain` function,
-which can be specified through a dictionary passed to `explain_func_kwargs`.
-
-```python
-scores = metric(
-    model=model,
-    x_batch=x_batch,
-    y_batch=y_batch,
     device=device,
     explain_func=quantus.explain,
     explain_func_kwargs={"method": "Saliency"}
 )
 ```
+
+Since a re-computation of the explanations is necessary for robustness evaluation, in this example, we also pass an explanation function (`explain_func`) to the metric call. Here, we rely on the built-in `quantus.explain` function to recompute the explanations. The hyperparameters are set with the `explain_func_kwargs` dictionary. Please find more details on how to use  `quantus.explain` at [API documentation](https://quantus.readthedocs.io/en/latest/docs_api/quantus.functions.explanation_func.html).
+
 You can alternatively use your own customised explanation function
 (assuming it returns an `np.ndarray` in a shape that matches the input `x_batch`). This is done as follows:
 
