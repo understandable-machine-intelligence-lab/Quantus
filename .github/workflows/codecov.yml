@@ -13,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup python 3.10
+      - name: Setup python 3.9
         uses: actions/setup-python@v4
         with:
           cache: 'pip'
-          python-version: "3.10"
+          python-version: "3.9"
 
       - name: Install tox-gh
         run: pip install tox-gh
