@@ -39,7 +39,7 @@ class Complexity(Metric):
     """
 
     _name = "Complexity"
-    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.LOWER
 
