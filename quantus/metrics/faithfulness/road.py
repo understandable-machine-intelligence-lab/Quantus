@@ -46,7 +46,7 @@ class ROAD(PerturbationMetric):
     _name = "ROAD"
     _data_applicability = {DataType.IMAGE}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
-    _score_direction = ScoreDirection.LOWER  # Not sure.
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

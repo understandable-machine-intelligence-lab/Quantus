@@ -44,14 +44,9 @@ class Sufficiency(Metric):
     """
 
     _name = "Sufficiency"
-    _data_applicability = {
-        DataType.IMAGE,
-        DataType.TIMESERIES,
-        DataType.TABLUAR,
-        DataType.TEXT,
-    }
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
-    _score_direction = ScoreDirection.HIGHER  # Not sure.
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(
@@ -337,8 +332,8 @@ class Sufficiency(Metric):
         x_input = model.shape_input(
             x_batch, x_batch[0].shape, channel_first=True, batched=True
         )
-
         y_pred_classes = np.argmax(model.predict(x_input), axis=1).flatten()
+
         return {
             "i_batch": np.arange(x_batch.shape[0]),
             "a_sim_vector_batch": a_sim_matrix,

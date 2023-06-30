@@ -39,12 +39,7 @@ class RelevanceRankAccuracy(Metric):
     """
 
     _name = "Relevance Rank Accuracy"
-    _data_applicability = {
-        DataType.IMAGE,
-        DataType.TIMESERIES,
-        DataType.TABLUAR,
-        DataType.TEXT,
-    }
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
 
