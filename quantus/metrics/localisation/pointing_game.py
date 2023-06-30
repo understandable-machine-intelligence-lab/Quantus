@@ -14,7 +14,7 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class PointingGame(Metric):
@@ -41,6 +41,7 @@ class PointingGame(Metric):
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
+    _evaluation_category = EvaluationCategory.LOCALISATION
 
     @asserts.attributes_check
     def __init__(

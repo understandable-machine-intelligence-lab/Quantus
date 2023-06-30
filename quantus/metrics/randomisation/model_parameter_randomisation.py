@@ -26,7 +26,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class ModelParameterRandomisation(Metric):
@@ -49,12 +49,14 @@ class ModelParameterRandomisation(Metric):
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
         - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - _evaluation_category: What property/ explanation quality that this metric measures.
     """
 
     _name = "Model Parameter Randomisation"
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.LOWER
+    _evaluation_category = EvaluationCategory.RANDOMISATION
 
     @asserts.attributes_check
     def __init__(
@@ -309,7 +311,7 @@ class ModelParameterRandomisation(Metric):
             # Save similarity scores in a result dictionary.
             self.last_results[layer_name] = similarity_scores
 
-        # Call post-processing
+        # Call post-processing.
         self.custom_postprocess(
             model=model,
             x_batch=x_batch,

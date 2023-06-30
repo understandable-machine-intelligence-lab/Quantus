@@ -16,8 +16,8 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
-from quantus.metrics.base import PerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class FaithfulnessCorrelation(PerturbationMetric):
@@ -46,12 +46,14 @@ class FaithfulnessCorrelation(PerturbationMetric):
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
         - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - _evaluation_category: What property/ explanation quality that this metric measures.
     """
 
     _name = "Faithfulness Correlation"
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
+    _evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(

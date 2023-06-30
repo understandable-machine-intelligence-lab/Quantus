@@ -16,7 +16,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric):
@@ -40,12 +40,14 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
         - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - _evaluation_category: What property/ explanation quality that this metric measures.
     """
 
     _name = "Local Lipschitz Estimate"
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.LOWER
+    _evaluation_category = EvaluationCategory.ROBUSTNESS
 
     @asserts.attributes_check
     def __init__(

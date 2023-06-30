@@ -9,7 +9,7 @@ import inspect
 import re
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection
+from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection, List
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -19,7 +19,7 @@ from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions import postprocess_func
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory, EvaluationCategory
 
 
 class Metric:
@@ -31,12 +31,14 @@ class Metric:
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
         - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - _evaluation_category: What property/ explanation quality that this metric measures.
     """
 
     _name = "Metric"
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
+    _evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(
@@ -119,6 +121,7 @@ class Metric:
             or not hasattr(self, "_data_applicability")
             or not hasattr(self, "_model_applicability")
             or not hasattr(self, "_score_direction")
+            or not hasattr(self, "_evaluation_category")
         ):
             raise NotImplementedError(
                 "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation"
@@ -139,6 +142,10 @@ class Metric:
     @property
     def score_direction(self):
         return self._score_direction
+
+    @property
+    def evaluation_category(self):
+        return self._evaluation_category
 
     def __call__(
         self,
@@ -258,7 +265,7 @@ class Metric:
 
         self.last_results = [None for _ in x_batch]
 
-        # Evaluate with instace given the metric.
+        # Evaluate with instance given the metric.
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(**data_instance)
@@ -266,6 +273,8 @@ class Metric:
 
         # Call custom post-processing.
         self.custom_postprocess(**data)
+
+        self.skill_scores = self.compute_skill_score(a_batch=data["a_batch"])
 
         if self.return_aggregate:
             if self.aggregate_func:
@@ -790,113 +799,15 @@ class Metric:
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
 
-class PerturbationMetric(Metric):
-    """
-    Implementation base PertubationMetric class.
+    def compute_skill_score(self,
+                            a_batch: np.array) -> List[float]:
+        # Calculate explanation skill score.
+        skill_scores = []
 
-    Metric categories such as Faithfulness and Robustness share certain characteristics when it comes to perturbations.
-    As follows, this metric class is created which has additional attributes for perturbations.
-    """
+        # TODO. Get baseline explanation.
+        e_worst = np.random.uniform(low=a_batch.min(), high=a_batch.max(), size=a_batch.shape)
 
-    @asserts.attributes_check
-    def __init__(
-        self,
-        abs: bool,
-        normalise: bool,
-        normalise_func: Callable,
-        normalise_func_kwargs: Optional[Dict[str, Any]],
-        perturb_func: Callable,
-        perturb_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: bool,
-        aggregate_func: Callable,
-        default_plot_func: Optional[Callable],
-        disable_warnings: bool,
-        display_progressbar: bool,
-        **kwargs,
-    ):
-        """
-        Initialise the PerturbationMetric base class.
+        for s in self.last_results:
+            skill_scores.append(postprocess_func.explanation_skill_score(y_score=s, y_ref=e_worst))
 
-        Parameters
-        ----------
-        Parameters
-        ----------
-        abs: boolean
-            Indicates whether absolute operation is applied on the attribution.
-        normalise: boolean
-            Indicates whether normalise operation is applied on the attribution.
-        normalise_func: callable
-            Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs: dict
-            Keyword arguments to be passed to normalise_func on call.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
-        return_aggregate: boolean
-            Indicates if an aggregated score should be computed over all instances.
-        aggregate_func: callable
-            Callable that aggregates the scores given an evaluation call.
-        default_plot_func: callable
-            Callable that plots the metrics result.
-        disable_warnings: boolean
-            Indicates whether the warnings are printed.
-        display_progressbar: boolean
-            Indicates whether a tqdm-progress-bar is printed.
-        kwargs: optional
-            Keyword arguments.
-        """
-
-        # Initialize super-class with passed parameters
-        super().__init__(
-            abs=abs,
-            normalise=normalise,
-            normalise_func=normalise_func,
-            normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
-            default_plot_func=default_plot_func,
-            display_progressbar=display_progressbar,
-            disable_warnings=disable_warnings,
-            **kwargs,
-        )
-
-        # Save perturbation metric attributes.
-        self.perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        self.perturb_func_kwargs = perturb_func_kwargs
-
-    @abstractmethod
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        This method needs to be implemented to use __call__().
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError()
+        return skill_scores

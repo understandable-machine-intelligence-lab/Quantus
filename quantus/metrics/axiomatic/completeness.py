@@ -14,8 +14,8 @@ from quantus.helpers import asserts
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import PerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class Completeness(PerturbationMetric):
@@ -50,6 +50,7 @@ class Completeness(PerturbationMetric):
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
+    _evaluation_category = EvaluationCategory.AXIOMATIC
 
     @asserts.attributes_check
     def __init__(
