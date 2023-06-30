@@ -42,7 +42,7 @@ class ScoreDirection(Enum):
 
 class EvaluationCategory(Enum):
     """
-    This enum represents different categories of explanation quality for machine learning models.
+    This enum represents different categories of explanation quality for XAI algorithms.
 
         - FAITHFULNESS: Indicates how well the explanation reflects the true features used by the model.
         - ROBUSTNESS: Represents the degree to which the explanation remains consistent under small perturbations in the input.
