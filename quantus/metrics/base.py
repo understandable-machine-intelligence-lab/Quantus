@@ -798,16 +798,3 @@ class Metric:
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-
-    def compute_skill_score(self,
-                            a_batch: np.array) -> List[float]:
-        # Calculate explanation skill score.
-        skill_scores = []
-
-        # TODO. Get baseline explanation.
-        e_worst = np.random.uniform(low=a_batch.min(), high=a_batch.max(), size=a_batch.shape)
-
-        for s in self.last_results:
-            skill_scores.append(postprocess_func.explanation_skill_score(y_score=s, y_ref=e_worst))
-
-        return skill_scores
