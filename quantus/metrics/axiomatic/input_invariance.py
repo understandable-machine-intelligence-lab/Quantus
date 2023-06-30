@@ -15,7 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class InputInvariance(BatchedPerturbationMetric):
@@ -41,6 +41,7 @@ class InputInvariance(BatchedPerturbationMetric):
     _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
+    _evaluation_category = EvaluationCategory.AXIOMATIC
 
     @asserts.attributes_check
     def __init__(
