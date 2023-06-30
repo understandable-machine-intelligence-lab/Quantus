@@ -18,12 +18,25 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.functions import postprocess_func
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class Metric:
     """
     Implementation of the base Metric class.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Metric"
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR, DataType.TEXT}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(
@@ -100,6 +113,26 @@ class Metric:
 
         self.last_results: Any = []
         self.all_results: Any = []
+
+        if not hasattr(self, "_name") or not hasattr(self, "_data_applicability") or not hasattr(self, "_model_applicability") or not hasattr(self, "_score_direction"):
+            raise NotImplementedError(
+                "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation")
+
+    @property
+    def get_name(self):
+        return self._name
+
+    @property
+    def get_data_applicability(self):
+        return self._data_applicability
+
+    @property
+    def get_model_applicability(self):
+        return self._model_applicability
+
+    @property
+    def get_score_direction(self):
+        return self._score_direction
 
     def __call__(
         self,
@@ -227,6 +260,7 @@ class Metric:
 
         # Call custom post-processing.
         self.custom_postprocess(**data)
+
 
         if self.return_aggregate:
             if self.aggregate_func:
