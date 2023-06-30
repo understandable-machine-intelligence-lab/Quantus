@@ -43,7 +43,6 @@ class Complexity(Metric):
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.LOWER
 
-    # TODO. Only bool for return_aggreate..
 
     @asserts.attributes_check
     def __init__(

@@ -125,19 +125,19 @@ class Metric:
             )
 
     @property
-    def get_name(self):
+    def name(self):
         return self._name
 
     @property
-    def get_data_applicability(self):
+    def data_applicability(self):
         return self._data_applicability
 
     @property
-    def get_model_applicability(self):
+    def model_applicability(self):
         return self._model_applicability
 
     @property
-    def get_score_direction(self):
+    def score_direction(self):
         return self._score_direction
 
     def __call__(
