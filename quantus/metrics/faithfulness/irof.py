@@ -17,6 +17,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class IROF(PerturbationMetric):
@@ -36,7 +37,17 @@ class IROF(PerturbationMetric):
         1) Laura Rieger and Lars Kai Hansen. "Irof: a low resource evaluation metric for
         explanation methods." arXiv preprint arXiv:2003.08747 (2020).
 
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "IROF"
+    _data_applicability = {DataType.IMAGE}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

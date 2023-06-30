@@ -34,7 +34,12 @@ class Metric:
     """
 
     _name = "Metric"
-    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR, DataType.TEXT}
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
     _model_applicability = {ModelType.TORCH, ModelType.TF}
     _score_direction = ScoreDirection.HIGHER
 
@@ -114,9 +119,15 @@ class Metric:
         self.last_results: Any = []
         self.all_results: Any = []
 
-        if not hasattr(self, "_name") or not hasattr(self, "_data_applicability") or not hasattr(self, "_model_applicability") or not hasattr(self, "_score_direction"):
+        if (
+            not hasattr(self, "_name")
+            or not hasattr(self, "_data_applicability")
+            or not hasattr(self, "_model_applicability")
+            or not hasattr(self, "_score_direction")
+        ):
             raise NotImplementedError(
-                "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation")
+                "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation"
+            )
 
     @property
     def get_name(self):
@@ -260,7 +271,6 @@ class Metric:
 
         # Call custom post-processing.
         self.custom_postprocess(**data)
-
 
         if self.return_aggregate:
             if self.aggregate_func:

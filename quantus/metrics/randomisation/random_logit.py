@@ -15,6 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class RandomLogit(Metric):
@@ -27,7 +28,23 @@ class RandomLogit(Metric):
     References:
         1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
         Attributions Fail." ICML (2020): 9046-9057.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Random Logit"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(
@@ -50,8 +67,7 @@ class RandomLogit(Metric):
         Parameters
         ----------
         similarity_func: callable
-            Similarity function applied to compare input and perturbed input,
-            default=ssim.
+            Similarity function applied to compare input and perturbed input, default=ssim.
         num_classes: integer
             Number of prediction classes in the input, default=1000.
         seed: integer

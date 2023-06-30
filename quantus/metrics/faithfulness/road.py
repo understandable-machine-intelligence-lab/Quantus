@@ -16,6 +16,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import noisy_linear_imputation
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class ROAD(PerturbationMetric):
@@ -34,7 +35,18 @@ class ROAD(PerturbationMetric):
     References:
         1) Leemann Rong et al.: "Evaluating Feature Attribution: An Information-Theoretic Perspective." arXiv preprint
         arXiv:2202.00449 (2022).
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "ROAD"
+    _data_applicability = {DataType.IMAGE}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER  # Not sure.
 
     @asserts.attributes_check
     def __init__(

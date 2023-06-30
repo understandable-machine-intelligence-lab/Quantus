@@ -15,6 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class Completeness(PerturbationMetric):
@@ -37,7 +38,23 @@ class Completeness(PerturbationMetric):
         features through propagating activation differences." International Conference on Machine Learning. PMLR, 2017.
         3) Conservation - Grégoire Montavon et al.: "Methods for interpreting
         and understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Completeness"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

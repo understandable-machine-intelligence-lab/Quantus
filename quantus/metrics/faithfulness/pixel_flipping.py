@@ -18,6 +18,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class PixelFlipping(PerturbationMetric):
@@ -32,7 +33,23 @@ class PixelFlipping(PerturbationMetric):
     References:
         1) Sebastian Bach et al.: "On pixel-wise explanations for non-linear classifier
         decisions by layer-wise relevance propagation." PloS one 10.7 (2015): e0130140.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Pixel-Flipping"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

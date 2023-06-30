@@ -17,6 +17,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class MonotonicityCorrelation(PerturbationMetric):
@@ -30,7 +31,23 @@ class MonotonicityCorrelation(PerturbationMetric):
     References:
         1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Monotonicity"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(
@@ -287,7 +304,7 @@ class MonotonicityCorrelation(PerturbationMetric):
         y_pred = float(model.predict(x_input)[:, y])
 
         inv_pred = 1.0 if np.abs(y_pred) < self.eps else 1.0 / np.abs(y_pred)
-        inv_pred = inv_pred**2
+        inv_pred = inv_pred ** 2
 
         # Reshape attributions.
         a = a.flatten()

@@ -18,6 +18,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class Continuity(PerturbationMetric):
@@ -37,7 +38,17 @@ class Continuity(PerturbationMetric):
         1) Grégoire Montavon et al.: "Methods for interpreting and
         understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Continuity"
+    _data_applicability = {DataType.IMAGE}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

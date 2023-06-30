@@ -15,6 +15,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_shift, perturb_batch
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class InputInvariance(BatchedPerturbationMetric):
@@ -28,7 +29,23 @@ class InputInvariance(BatchedPerturbationMetric):
 
     References:
         Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Input Invariance"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(
@@ -264,9 +281,8 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.perturb_func_kwargs,
         )
 
-        # Get input shift
+        # Get input shift.
         input_shift = self.perturb_func_kwargs["input_shift"]
-
         x_shifted = model.shape_input(
             x=x_shifted,
             shape=x_shifted.shape,
@@ -274,6 +290,7 @@ class InputInvariance(BatchedPerturbationMetric):
             batched=True,
         )
 
+        # Shift the model.
         shifted_model = model.add_mean_shift_to_first_layer(
             input_shift, x_shifted[:1].shape
         )
@@ -286,7 +303,7 @@ class InputInvariance(BatchedPerturbationMetric):
             **self.explain_func_kwargs,
         )
 
-        # Compute the evaluation.
+        # Compute the invaraince.
         score = np.all(
             np.isclose(a_batch, a_shifted, atol=1e-04),
             axis=tuple(range(1, a_batch.ndim)),

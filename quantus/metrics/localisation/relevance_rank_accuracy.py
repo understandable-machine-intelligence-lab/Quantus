@@ -14,6 +14,7 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class RelevanceRankAccuracy(Metric):
@@ -29,7 +30,23 @@ class RelevanceRankAccuracy(Metric):
     References:
         1) Leila Arras et al.: "CLEVR-XAI: A benchmark dataset for the ground
         truth evaluation of neural network explanations." Inf. Fusion 81 (2022): 14-40.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Relevance Rank Accuracy"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

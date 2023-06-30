@@ -19,6 +19,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class RegionPerturbation(PerturbationMetric):
@@ -39,7 +40,18 @@ class RegionPerturbation(PerturbationMetric):
         1) Wojciech Samek et al.: "Evaluating the visualization of what a deep
         neural network has learned." IEEE transactions on neural networks and
         learning systems 28.11 (2016): 2660-2673.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Region-Perturbation"
+    _data_applicability = {DataType.IMAGE}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

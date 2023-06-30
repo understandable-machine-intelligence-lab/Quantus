@@ -17,13 +17,14 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class Monotonicity(PerturbationMetric):
     """
     Implementation of Monotonicity metric by Arya at el., 2019.
 
-    Montonicity tests if adding more positive evidence increases the probability
+    Monotonicity tests if adding more positive evidence increases the probability
     of classification in the specified class.
 
     It captures attributions' faithfulness by incrementally adding each attribute
@@ -36,7 +37,23 @@ class Monotonicity(PerturbationMetric):
         techniques." arXiv preprint arXiv:1909.03012 (2019).
         2) Ronny Luss et al.: "Generating contrastive explanations with monotonic attribute functions."
         arXiv preprint arXiv:1905.12698 (2019).
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Monotonicity"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

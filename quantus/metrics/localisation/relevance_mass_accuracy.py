@@ -14,11 +14,12 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class RelevanceMassAccuracy(Metric):
     """
-    Implementation of the Relevance Rank Accuracy by Arras et al., 2021.
+    Implementation of the Relevance Mass Accuracy by Arras et al., 2021.
 
     The Relevance Mass Accuracy computes the ratio of attributions inside the bounding box to
     the sum of overall positive attributions. High scores are desired, as the pixels with the highest positively
@@ -27,7 +28,23 @@ class RelevanceMassAccuracy(Metric):
     References:
         1) Leila Arras et al.: "CLEVR-XAI: A benchmark dataset for the ground
         truth evaluation of neural network explanations." Inf. Fusion 81 (2022): 14-40.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Relevance Mass Accuracy"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

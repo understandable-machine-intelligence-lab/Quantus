@@ -17,6 +17,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class Infidelity(PerturbationMetric):
@@ -32,14 +33,25 @@ class Infidelity(PerturbationMetric):
         blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
         In this implementation, we use squared patches as the default option.
         - Since we use squared patches in this implementation, the metric is only applicable
-        to 3-dimensional (image) data. To extend the applicablity to other data domains, adjustments
+        to 3-dimensional (image) data. To extend the applicability to other data domains, adjustments
         to the current implementation might be necessary.
 
     References:
         1) Chih-Kuan Yeh et al.:
         "On the (In)fidelity and Sensitivity of Explanations."
         33rd Conference on Neural Information Processing Systems (NeurIPS 2019), Vancouver, Canada.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Infidelity"
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

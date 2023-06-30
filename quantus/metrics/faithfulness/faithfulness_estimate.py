@@ -17,6 +17,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
 from quantus.metrics.base import PerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class FaithfulnessEstimate(PerturbationMetric):
@@ -29,7 +30,18 @@ class FaithfulnessEstimate(PerturbationMetric):
     References:
         1) David Alvarez-Melis and Tommi S. Jaakkola.: "Towards robust interpretability with self-explaining
         neural networks." NeurIPS (2018): 7786-7795.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Faithfulness Estimate"
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.HIGHER
 
     @asserts.attributes_check
     def __init__(

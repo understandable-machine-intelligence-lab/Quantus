@@ -16,6 +16,7 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric):
@@ -33,7 +34,18 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
         2) David Alvarez-Melis and Tommi S. Jaakkola. "Towards robust interpretability with self-explaining
         neural networks." NeurIPS (2018): 7786-7795.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Local Lipschitz Estimate"
+    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABLUAR}
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(

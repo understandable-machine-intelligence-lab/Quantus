@@ -26,6 +26,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection
 
 
 class ModelParameterRandomisation(Metric):
@@ -41,9 +42,24 @@ class ModelParameterRandomisation(Metric):
         HOG and SSIM. We have set Spearman as the default value.
 
     References:
-        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
-        NeurIPS (2018): 9525-9536.
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
+
+    _name = "Model Parameter Randomisation"
+    _data_applicability = {
+        DataType.IMAGE,
+        DataType.TIMESERIES,
+        DataType.TABLUAR,
+        DataType.TEXT,
+    }
+    _model_applicability = {ModelType.TORCH, ModelType.TF}
+    _score_direction = ScoreDirection.LOWER
 
     @asserts.attributes_check
     def __init__(
@@ -67,8 +83,7 @@ class ModelParameterRandomisation(Metric):
         Parameters
         ----------
         similarity_func: callable
-            Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
+            Similarity function applied to compare input and perturbed input, default=correlation_spearman.
         layer_order: string
             Indicated whether the model is randomized cascadingly or independently.
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
