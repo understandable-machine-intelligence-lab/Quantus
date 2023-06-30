@@ -18,8 +18,7 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.functions import postprocess_func
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory, EvaluationCategory
+from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
 
 
 class Metric:
@@ -49,6 +48,8 @@ class Metric:
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Callable,
+        #return_skill_score: bool,
+        #skill_score_samples: int,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -797,4 +798,3 @@ class Metric:
             "default_plot_func",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
-
