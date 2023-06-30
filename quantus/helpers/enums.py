@@ -8,9 +8,9 @@ class DataType(Enum):
     - TABULAR: Represents tabular data.
     - TEXT: Represents text data.
     """
-    IMAGE = "image"
-    TIMESERIES = "time-series"
-    TABULAR = "tabular"
+    IMAGE = "image" # 3D data
+    TIMESERIES = "time-series" # 1D data
+    TABULAR = "tabular" # 2D data
     TEXT = "text"
 
 
