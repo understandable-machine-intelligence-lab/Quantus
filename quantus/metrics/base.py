@@ -279,8 +279,6 @@ class Metric:
         # Call custom post-processing.
         self.custom_postprocess(**data)
 
-        self.skill_scores = self.compute_skill_score(a_batch=data["a_batch"])
-
         if self.return_aggregate:
             if self.aggregate_func:
                 try:
@@ -804,3 +802,14 @@ class Metric:
             "default_plot_func",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
+
+    @property
+    def last_results(self):
+        print(
+            "Warning: 'last_results' has been renamed to 'evaluation_scores'. 'last_results' is removed in current version.")
+        return self.evaluation_scores
+
+    @property
+    def all_results(self):
+        print("Warning: 'all_results' has been renamed to 'all_evaluation_scores'. 'all_results' is removed in current version.")
+        return self.all_evaluation_scores
