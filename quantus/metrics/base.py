@@ -9,7 +9,17 @@ import inspect
 import re
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection, List
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Sequence,
+    Optional,
+    Tuple,
+    Union,
+    Collection,
+    List,
+)
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -18,7 +28,12 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Metric:
@@ -48,8 +63,8 @@ class Metric:
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Callable,
-        #return_skill_score: bool,
-        #skill_score_samples: int,
+        # return_skill_score: bool,
+        # skill_score_samples: int,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -68,7 +83,7 @@ class Metric:
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -114,8 +129,8 @@ class Metric:
 
         self.a_axes: Sequence[int] = None
 
-        self.last_results: Any = []
-        self.all_results: Any = []
+        self.evaluation_scores: Any = []
+        self.all_evaluation_scores: Any = []
 
         if (
             not hasattr(self, "_name")
@@ -151,10 +166,10 @@ class Metric:
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        evaluate_instance() on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        evaluate_instance() on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -191,7 +206,7 @@ class Metric:
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -244,13 +259,13 @@ class Metric:
             custom_batch=custom_batch,
         )
 
-        self.last_results = [None for _ in x_batch]
+        self.evaluation_scores = [None for _ in x_batch]
 
         # Evaluate with instance given the metric.
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(**data_instance)
-            self.last_results[id_instance] = result
+            self.evaluation_scores[id_instance] = result
 
         # Call custom post-processing.
         self.custom_postprocess(**data)
@@ -260,21 +275,23 @@ class Metric:
         if self.return_aggregate:
             if self.aggregate_func:
                 try:
-                    self.last_results = [self.aggregate_func(self.last_results)]
+                    self.evaluation_scores = [
+                        self.aggregate_func(self.evaluation_scores)
+                    ]
                 except:
                     print(
                         "The aggregation of evaluation scores failed. Check that "
                         "'aggregate_func' supplied is appropriate for the data "
-                        "in 'last_results'."
+                        "in 'evaluation_scores'."
                     )
             else:
                 raise KeyError(
                     "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
                 )
 
-        self.all_results.append(self.last_results)
+        self.all_evaluation_scores.append(self.evaluation_scores)
 
-        return self.last_results
+        return self.evaluation_scores
 
     @abstractmethod
     def evaluate_instance(
@@ -773,8 +790,8 @@ class Metric:
         attr_exclude = [
             "args",
             "kwargs",
-            "all_results",
-            "last_results",
+            "all_evaluation_scores",
+            "evaluation_scores",
             "default_plot_func",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}

@@ -19,7 +19,12 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base_perturbed import PerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Selectivity(PerturbationMetric):
@@ -181,8 +186,8 @@ class Selectivity(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -215,7 +220,7 @@ class Selectivity(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -378,6 +383,6 @@ class Selectivity(PerturbationMetric):
         return np.mean(
             [
                 utils.calculate_auc(np.array(curve))
-                for i, curve in enumerate(self.last_results)
+                for i, curve in enumerate(self.evaluation_scores)
             ]
         )

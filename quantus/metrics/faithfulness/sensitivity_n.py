@@ -18,7 +18,12 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
 from quantus.metrics.base_perturbed import PerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class SensitivityN(PerturbationMetric):
@@ -186,8 +191,8 @@ class SensitivityN(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -220,7 +225,7 @@ class SensitivityN(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -333,7 +338,7 @@ class SensitivityN(PerturbationMetric):
             y_pred_perturb = float(model.predict(x_input)[:, y])
             pred_deltas.append(y_pred - y_pred_perturb)
 
-        # Each list-element of self.last_results will be such a dictionary
+        # Each list-element of self.evaluation_scores will be such a dictionary
         # We will unpack that later in custom_postprocess().
         return {"att_sums": att_sums, "pred_deltas": pred_deltas}
 
@@ -409,9 +414,11 @@ class SensitivityN(PerturbationMetric):
 
         # Get pred_deltas and att_sums from result list.
         sub_results_pred_deltas: List[Any] = [
-            r["pred_deltas"] for r in self.last_results
+            r["pred_deltas"] for r in self.evaluation_scores
         ]
-        sub_results_att_sums: List[Any] = [r["att_sums"] for r in self.last_results]
+        sub_results_att_sums: List[Any] = [
+            r["att_sums"] for r in self.evaluation_scores
+        ]
 
         # Re-arrange sub-lists so that they are sorted by n.
         sub_results_pred_deltas_l: Dict[int, Any] = {k: [] for k in range(max_features)}
@@ -424,7 +431,7 @@ class SensitivityN(PerturbationMetric):
                 sub_results_att_sums_l[k].append(att_sums_instance[k])
 
         # Compute the similarity for each n.
-        self.last_results = [
+        self.evaluation_scores = [
             self.similarity_func(
                 a=sub_results_att_sums_l[k], b=sub_results_pred_deltas_l[k]
             )

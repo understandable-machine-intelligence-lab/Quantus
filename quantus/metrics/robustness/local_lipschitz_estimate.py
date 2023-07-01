@@ -16,7 +16,12 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import gaussian_noise, perturb_batch
 from quantus.functions.similarity_func import lipschitz_constant, distance_euclidean
 from quantus.metrics.base_batched import BatchedPerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class LocalLipschitzEstimate(BatchedPerturbationMetric):
@@ -205,8 +210,8 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -239,7 +244,7 @@ class LocalLipschitzEstimate(BatchedPerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

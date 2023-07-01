@@ -16,7 +16,12 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import noisy_linear_imputation
 from quantus.metrics.base_perturbed import PerturbationMetric
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class ROAD(PerturbationMetric):
@@ -175,8 +180,8 @@ class ROAD(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -209,7 +214,7 @@ class ROAD(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -378,7 +383,7 @@ class ROAD(PerturbationMetric):
         """
 
         # Calculate accuracy for every number of most important pixels removed.
-        self.last_results = {
-            percentage: np.mean(np.array(self.last_results)[:, p_ix])
+        self.evaluation_scores = {
+            percentage: np.mean(np.array(self.evaluation_scores)[:, p_ix])
             for p_ix, percentage in enumerate(self.percentages)
         }

@@ -9,7 +9,17 @@ import inspect
 import re
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection, List
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Sequence,
+    Optional,
+    Tuple,
+    Union,
+    Collection,
+    List,
+)
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -20,7 +30,12 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base import Metric
 from quantus.functions import postprocess_func
-from quantus.helpers.enums import ModelType, DataType, ScoreDirection, EvaluationCategory
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class PerturbationMetric(Metric):
