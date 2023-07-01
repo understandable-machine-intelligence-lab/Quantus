@@ -132,16 +132,25 @@ class Metric:
         self.evaluation_scores: Any = []
         self.all_evaluation_scores: Any = []
 
-        if (
-            not hasattr(self, "_name")
-            or not hasattr(self, "_data_applicability")
-            or not hasattr(self, "model_applicability")
-            or not hasattr(self, "score_direction")
-            or not hasattr(self, "evaluation_category")
-        ):
-            raise NotImplementedError(
-                "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation"
-            )
+    @property
+    @abstractmethod
+    def name(self):
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def evaluation_category(self):
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def model_applicability(self):
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def data_applicability(self):
+        raise NotImplementedError
 
     def __call__(
         self,
