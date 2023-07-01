@@ -29,15 +29,15 @@ class Metric:
         -  _name: The name of the metric.
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
-        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - _evaluation_category: What property/ explanation quality that this metric measures.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    _name = "Metric"
-    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    _model_applicability = {ModelType.TORCH, ModelType.TF}
-    _score_direction = ScoreDirection.HIGHER
-    _evaluation_category = EvaluationCategory.NONE
+    name = "Metric"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(
@@ -120,33 +120,13 @@ class Metric:
         if (
             not hasattr(self, "_name")
             or not hasattr(self, "_data_applicability")
-            or not hasattr(self, "_model_applicability")
-            or not hasattr(self, "_score_direction")
-            or not hasattr(self, "_evaluation_category")
+            or not hasattr(self, "model_applicability")
+            or not hasattr(self, "score_direction")
+            or not hasattr(self, "evaluation_category")
         ):
             raise NotImplementedError(
                 "Subclasses must define name, data_applicability, model_applicability and score_direction before instantiation"
             )
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def data_applicability(self):
-        return self._data_applicability
-
-    @property
-    def model_applicability(self):
-        return self._model_applicability
-
-    @property
-    def score_direction(self):
-        return self._score_direction
-
-    @property
-    def evaluation_category(self):
-        return self._evaluation_category
 
     def __call__(
         self,

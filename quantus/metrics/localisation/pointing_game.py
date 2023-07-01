@@ -34,14 +34,14 @@ class PointingGame(Metric):
         -  _name: The name of the metric.
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
-        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
 
-    _name = "Pointing-Game"
-    _data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    _model_applicability = {ModelType.TORCH, ModelType.TF}
-    _score_direction = ScoreDirection.HIGHER
-    _evaluation_category = EvaluationCategory.LOCALISATION
+    name = "Pointing-Game"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.LOCALISATION
 
     @asserts.attributes_check
     def __init__(

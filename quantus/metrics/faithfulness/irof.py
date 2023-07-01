@@ -41,15 +41,15 @@ class IROF(PerturbationMetric):
         -  _name: The name of the metric.
         - _data_applicability: The data types that the metric implementation currently supports.
         - _models: The model types that this metric can work with.
-        - _score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - _evaluation_category: What property/ explanation quality that this metric measures.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    _name = "IROF"
-    _data_applicability = {DataType.IMAGE}
-    _model_applicability = {ModelType.TORCH, ModelType.TF}
-    _score_direction = ScoreDirection.HIGHER
-    _evaluation_category = EvaluationCategory.FAITHFULNESS
+    name = "IROF"
+    data_applicability = {DataType.IMAGE}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
