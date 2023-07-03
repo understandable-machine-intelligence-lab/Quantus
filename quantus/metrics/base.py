@@ -9,7 +9,18 @@ import inspect
 import re
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Sequence, Optional, Tuple, Union, Collection
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Sequence,
+    Optional,
+    Tuple,
+    Union,
+    Collection,
+    List,
+    Set,
+)
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
@@ -18,12 +29,43 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Metric:
     """
     Implementation of the base Metric class.
     """
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def evaluation_category(self) -> EvaluationCategory:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def score_direction(self) -> ScoreDirection:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def model_applicability(self) -> Set[ModelType]:
+        return {ModelType.TORCH, ModelType.TF}
+
+    @property
+    @abstractmethod
+    def data_applicability(self) -> Set[DataType]:
+        raise NotImplementedError
 
     @asserts.attributes_check
     def __init__(
@@ -52,7 +94,7 @@ class Metric:
         - general_preprocess(): Prepares all necessary data structures for evaluation.
                                 Will call custom_preprocess() at the end.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -98,8 +140,8 @@ class Metric:
 
         self.a_axes: Sequence[int] = None
 
-        self.last_results: Any = []
-        self.all_results: Any = []
+        self.evaluation_scores: Any = []
+        self.all_evaluation_scores: Any = []
 
     def __call__(
         self,
@@ -124,10 +166,10 @@ class Metric:
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        evaluate_instance() on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        evaluate_instance() on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -164,7 +206,7 @@ class Metric:
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -217,13 +259,13 @@ class Metric:
             custom_batch=custom_batch,
         )
 
-        self.last_results = [None for _ in x_batch]
+        self.evaluation_scores = [None for _ in x_batch]
 
-        # Evaluate with instace given the metric.
+        # Evaluate with instance given the metric.
         iterator = self.get_instance_iterator(data=data)
         for id_instance, data_instance in iterator:
             result = self.evaluate_instance(**data_instance)
-            self.last_results[id_instance] = result
+            self.evaluation_scores[id_instance] = result
 
         # Call custom post-processing.
         self.custom_postprocess(**data)
@@ -231,21 +273,23 @@ class Metric:
         if self.return_aggregate:
             if self.aggregate_func:
                 try:
-                    self.last_results = [self.aggregate_func(self.last_results)]
+                    self.evaluation_scores = [
+                        self.aggregate_func(self.evaluation_scores)
+                    ]
                 except:
                     print(
                         "The aggregation of evaluation scores failed. Check that "
                         "'aggregate_func' supplied is appropriate for the data "
-                        "in 'last_results'."
+                        "in 'evaluation_scores'."
                     )
             else:
                 raise KeyError(
                     "Specify an 'aggregate_func' (Callable) to aggregate evaluation scores."
                 )
 
-        self.all_results.append(self.last_results)
+        self.all_evaluation_scores.append(self.evaluation_scores)
 
-        return self.last_results
+        return self.evaluation_scores
 
     @abstractmethod
     def evaluate_instance(
@@ -744,120 +788,22 @@ class Metric:
         attr_exclude = [
             "args",
             "kwargs",
-            "all_results",
-            "last_results",
+            "all_evaluation_scores",
+            "evaluation_scores",
             "default_plot_func",
         ]
         return {k: v for k, v in self.__dict__.items() if k not in attr_exclude}
 
-
-class PerturbationMetric(Metric):
-    """
-    Implementation base PertubationMetric class.
-
-    Metric categories such as Faithfulness and Robustness share certain characteristics when it comes to perturbations.
-    As follows, this metric class is created which has additional attributes for perturbations.
-    """
-
-    @asserts.attributes_check
-    def __init__(
-        self,
-        abs: bool,
-        normalise: bool,
-        normalise_func: Callable,
-        normalise_func_kwargs: Optional[Dict[str, Any]],
-        perturb_func: Callable,
-        perturb_func_kwargs: Optional[Dict[str, Any]],
-        return_aggregate: bool,
-        aggregate_func: Callable,
-        default_plot_func: Optional[Callable],
-        disable_warnings: bool,
-        display_progressbar: bool,
-        **kwargs,
-    ):
-        """
-        Initialise the PerturbationMetric base class.
-
-        Parameters
-        ----------
-        Parameters
-        ----------
-        abs: boolean
-            Indicates whether absolute operation is applied on the attribution.
-        normalise: boolean
-            Indicates whether normalise operation is applied on the attribution.
-        normalise_func: callable
-            Attribution normalisation function applied in case normalise=True.
-        normalise_func_kwargs: dict
-            Keyword arguments to be passed to normalise_func on call.
-        perturb_func: callable
-            Input perturbation function.
-        perturb_func_kwargs: dict, optional
-            Keyword arguments to be passed to perturb_func.
-        return_aggregate: boolean
-            Indicates if an aggregated score should be computed over all instances.
-        aggregate_func: callable
-            Callable that aggregates the scores given an evaluation call.
-        default_plot_func: callable
-            Callable that plots the metrics result.
-        disable_warnings: boolean
-            Indicates whether the warnings are printed.
-        display_progressbar: boolean
-            Indicates whether a tqdm-progress-bar is printed.
-        kwargs: optional
-            Keyword arguments.
-        """
-
-        # Initialize super-class with passed parameters
-        super().__init__(
-            abs=abs,
-            normalise=normalise,
-            normalise_func=normalise_func,
-            normalise_func_kwargs=normalise_func_kwargs,
-            return_aggregate=return_aggregate,
-            aggregate_func=aggregate_func,
-            default_plot_func=default_plot_func,
-            display_progressbar=display_progressbar,
-            disable_warnings=disable_warnings,
-            **kwargs,
+    @property
+    def last_results(self):
+        print(
+            "Warning: 'last_results' has been renamed to 'evaluation_scores'. 'last_results' is removed in current version."
         )
+        return self.evaluation_scores
 
-        # Save perturbation metric attributes.
-        self.perturb_func = perturb_func
-
-        if perturb_func_kwargs is None:
-            perturb_func_kwargs = {}
-        self.perturb_func_kwargs = perturb_func_kwargs
-
-    @abstractmethod
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-    ) -> Any:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        This method needs to be implemented to use __call__().
-
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        Any
-        """
-        raise NotImplementedError()
+    @property
+    def all_results(self):
+        print(
+            "Warning: 'all_results' has been renamed to 'all_evaluation_scores'. 'all_results' is removed in current version."
+        )
+        return self.all_evaluation_scores

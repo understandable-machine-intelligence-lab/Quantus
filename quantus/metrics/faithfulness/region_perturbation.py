@@ -18,7 +18,13 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class RegionPerturbation(PerturbationMetric):
@@ -39,7 +45,20 @@ class RegionPerturbation(PerturbationMetric):
         1) Wojciech Samek et al.: "Evaluating the visualization of what a deep
         neural network has learned." IEEE transactions on neural networks and
         learning systems 28.11 (2016): 2660-2673.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Region-Perturbation"
+    data_applicability = {DataType.IMAGE}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
@@ -178,8 +197,8 @@ class RegionPerturbation(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -212,7 +231,7 @@ class RegionPerturbation(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -403,5 +422,5 @@ class RegionPerturbation(PerturbationMetric):
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
         return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.last_results]
+            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
         )

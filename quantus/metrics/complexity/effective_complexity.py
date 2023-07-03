@@ -14,6 +14,12 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class EffectiveComplexity(Metric):
@@ -26,7 +32,20 @@ class EffectiveComplexity(Metric):
     References:
         1) An-phi Nguyen and María Rodríguez Martínez.: "On quantitative aspects of model
         interpretability." arXiv preprint arXiv:2007.07584 (2020).
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Effective Complexity"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.COMPLEXITY
 
     @asserts.attributes_check
     def __init__(
@@ -129,8 +148,8 @@ class EffectiveComplexity(Metric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -163,7 +182,7 @@ class EffectiveComplexity(Metric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

@@ -231,13 +231,13 @@ def normalise_by_average_second_moment_estimate(
 
     # Check that square root of the second momment estimatte is nonzero.
     second_moment_sqrt = np.sqrt(
-        np.sum(a**2, axis=normalise_axes, keepdims=True)
+        np.sum(a ** 2, axis=normalise_axes, keepdims=True)
         / np.prod([a.shape[n] for n in normalise_axes])
     )
 
     if all(second_moment_sqrt != 0):
         a /= np.sqrt(
-            np.sum(a**2, axis=normalise_axes, keepdims=True)
+            np.sum(a ** 2, axis=normalise_axes, keepdims=True)
             / np.prod([a.shape[n] for n in normalise_axes])
         )
     else:

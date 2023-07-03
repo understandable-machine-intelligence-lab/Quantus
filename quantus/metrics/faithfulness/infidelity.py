@@ -16,7 +16,13 @@ from quantus.functions.loss_func import mse
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Infidelity(PerturbationMetric):
@@ -32,14 +38,27 @@ class Infidelity(PerturbationMetric):
         blob/master/infid_sen_utils.py) supports perturbation of Gaussian noise and squared patches.
         In this implementation, we use squared patches as the default option.
         - Since we use squared patches in this implementation, the metric is only applicable
-        to 3-dimensional (image) data. To extend the applicablity to other data domains, adjustments
+        to 3-dimensional (image) data. To extend the applicability to other data domains, adjustments
         to the current implementation might be necessary.
 
     References:
         1) Chih-Kuan Yeh et al.:
         "On the (In)fidelity and Sensitivity of Explanations."
         33rd Conference on Neural Information Processing Systems (NeurIPS 2019), Vancouver, Canada.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Infidelity"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
@@ -182,8 +201,8 @@ class Infidelity(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -216,7 +235,7 @@ class Infidelity(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

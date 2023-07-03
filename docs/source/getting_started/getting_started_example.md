@@ -319,7 +319,7 @@ quantus.AVAILABLE_PERTURBATION_FUNCTIONS
 quantus.AVAILABLE_NORMALISATION_FUNCTIONS
 
 # To get the scores of the last evaluated batch.
-metric_instance_called.last_results
+metric_instance_called.evaluation_scores
 ````
 
 Per default, 

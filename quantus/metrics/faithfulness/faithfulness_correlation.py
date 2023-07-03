@@ -16,7 +16,13 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.functions.similarity_func import correlation_pearson
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class FaithfulnessCorrelation(PerturbationMetric):
@@ -40,7 +46,19 @@ class FaithfulnessCorrelation(PerturbationMetric):
         1) Umang Bhatt et al.: "Evaluating and aggregating feature-based model
         explanations." IJCAI (2020): 3016-3022.
 
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Faithfulness Correlation"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
@@ -173,8 +191,8 @@ class FaithfulnessCorrelation(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -210,7 +228,7 @@ class FaithfulnessCorrelation(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

@@ -16,14 +16,20 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Monotonicity(PerturbationMetric):
     """
     Implementation of Monotonicity metric by Arya at el., 2019.
 
-    Montonicity tests if adding more positive evidence increases the probability
+    Monotonicity tests if adding more positive evidence increases the probability
     of classification in the specified class.
 
     It captures attributions' faithfulness by incrementally adding each attribute
@@ -36,7 +42,20 @@ class Monotonicity(PerturbationMetric):
         techniques." arXiv preprint arXiv:1909.03012 (2019).
         2) Ronny Luss et al.: "Generating contrastive explanations with monotonic attribute functions."
         arXiv preprint arXiv:1905.12698 (2019).
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Monotonicity"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
@@ -157,8 +176,8 @@ class Monotonicity(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -191,7 +210,7 @@ class Monotonicity(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

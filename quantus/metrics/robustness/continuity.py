@@ -17,7 +17,13 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import translation_x_direction
 from quantus.functions.similarity_func import lipschitz_constant
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Continuity(PerturbationMetric):
@@ -37,7 +43,19 @@ class Continuity(PerturbationMetric):
         1) Grégoire Montavon et al.: "Methods for interpreting and
         understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
 
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Continuity"
+    data_applicability = {DataType.IMAGE}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.ROBUSTNESS
 
     @asserts.attributes_check
     def __init__(
@@ -182,8 +200,8 @@ class Continuity(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -216,7 +234,7 @@ class Continuity(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -335,7 +353,7 @@ class Continuity(PerturbationMetric):
             if self.abs:
                 a_perturbed = np.abs(a_perturbed)
 
-            # Store the prediction score as the last element of the sub_self.last_results dictionary.
+            # Store the prediction score as the last element of the sub_self.evaluation_scores dictionary.
             y_pred = float(model.predict(x_input)[:, y])
 
             results[self.nr_patches].append(y_pred)
@@ -439,10 +457,10 @@ class Continuity(PerturbationMetric):
         return np.mean(
             [
                 self.similarity_func(
-                    self.last_results[sample][self.nr_patches],
-                    self.last_results[sample][ix_patch],
+                    self.evaluation_scores[sample][self.nr_patches],
+                    self.evaluation_scores[sample][ix_patch],
                 )
                 for ix_patch in range(self.nr_patches)
-                for sample in self.last_results.keys()
+                for sample in self.evaluation_scores.keys()
             ]
         )

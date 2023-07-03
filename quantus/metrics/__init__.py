@@ -5,6 +5,8 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 from quantus.metrics.base import *
+from quantus.metrics.base_batched import *
+from quantus.metrics.base_perturbed import *
 from quantus.metrics.axiomatic import *
 from quantus.metrics.complexity import *
 from quantus.metrics.faithfulness import *

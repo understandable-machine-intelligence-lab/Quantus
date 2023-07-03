@@ -22,17 +22,38 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class RelativeInputStability(BatchedPerturbationMetric):
     """
-    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data
+    Relative Input Stability leverages the stability of an explanation with respect to the change in the input data.
 
-    :math:`RIS(x, x', e_x, e_x') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}{max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
+        `RIS(x, x', e_x, e_x') = max \\frac{||\\frac{e_x - e_{x'}}{e_x}||_p}
+        {max (||\\frac{x - x'}{x}||_p, \epsilon_{min})}`
 
     References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/abs/2203.06877
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.",
+        https://arxiv.org/abs/2203.06877
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Relative Output Stability"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.ROBUSTNESS
 
     @attributes_check
     def __init__(
@@ -301,7 +322,6 @@ class RelativeInputStability(BatchedPerturbationMetric):
             The batched evaluation results.
 
         """
-
         batch_size = x_batch.shape[0]
         _explain_func = partial(
             self.explain_func, model=model.get_model(), **self.explain_func_kwargs
@@ -309,6 +329,7 @@ class RelativeInputStability(BatchedPerturbationMetric):
 
         # Prepare output array.
         ris_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
+
         for index in range(self._nr_samples):
             # Perturb input.
             x_perturbed = perturb_batch(
@@ -318,15 +339,18 @@ class RelativeInputStability(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
+
             # Compute maximization's objective.
             ris = self.relative_input_stability_objective(
                 x_batch, x_perturbed, a_batch, a_batch_perturbed
             )
             ris_batch[index] = ris
+
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
             if not self._return_nan_when_prediction_changes:
                 continue
@@ -346,4 +370,5 @@ class RelativeInputStability(BatchedPerturbationMetric):
         result = np.max(ris_batch, axis=0)
         if self.return_aggregate:
             result = [self.aggregate_func(result)]
+
         return result

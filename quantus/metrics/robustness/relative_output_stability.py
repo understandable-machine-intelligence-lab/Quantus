@@ -21,21 +21,40 @@ from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class RelativeOutputStability(BatchedPerturbationMetric):
     """
-    Relative Output Stability leverages the stability of an explanation with respect
-    to the change in the output logits
+    Relative Output Stability leverages the stability of an explanation with respect to the change in the output logits.
 
-    :math:`ROS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_x'}{e_x}||_p}{max (||h(x) - h(x')||_p, \epsilon_{min})}`,
+        `ROS(x, x', ex, ex') = max \\frac{||\\frac{e_x - e_x'}{e_x}||_p}
+        {max (||h(x) - h(x')||_p, \epsilon_{min})}`,
 
-    where `h(x)` and `h(x')` are the output logits for `x` and `x'` respectively
-
+    where `h(x)` and `h(x')` are the output logits for `x` and `x'` respectively.
 
     References:
-        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.", https://arxiv.org/pdf/2203.06877.pdf
+        1) Chirag Agarwal, et. al., 2022. "Rethinking stability for attribution based explanations.",
+        https://arxiv.org/pdf/2203.06877.pdf
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Relative Output Stability"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.ROBUSTNESS
 
     @attributes_check
     def __init__(
@@ -315,10 +334,12 @@ class RelativeOutputStability(BatchedPerturbationMetric):
         )
         # Execute forward pass on provided inputs.
         logits = model.predict(x_batch)
+
         # Prepare output array.
         ros_batch = np.zeros(shape=[self._nr_samples, x_batch.shape[0]])
 
         for index in range(self._nr_samples):
+
             # Perturb input.
             x_perturbed = perturb_batch(
                 perturb_func=self.perturb_func,
@@ -327,10 +348,12 @@ class RelativeOutputStability(BatchedPerturbationMetric):
                 arr=x_batch,
                 **self.perturb_func_kwargs,
             )
+
             # Generate explanations for perturbed input.
             a_batch_perturbed = self.generate_normalised_explanations_batch(
                 x_perturbed, y_batch, _explain_func
             )
+
             # Execute forward pass on perturbed inputs.
             logits_perturbed = model.predict(x_perturbed)
             # Compute maximization's objective.
@@ -338,6 +361,7 @@ class RelativeOutputStability(BatchedPerturbationMetric):
                 logits, logits_perturbed, a_batch, a_batch_perturbed
             )
             ros_batch[index] = ros
+
             # We're done with this sample if `return_nan_when_prediction_changes`==False.
             if not self._return_nan_when_prediction_changes:
                 continue
@@ -351,10 +375,12 @@ class RelativeOutputStability(BatchedPerturbationMetric):
 
             if len(changed_prediction_indices) == 0:
                 continue
+
             ros_batch[index, changed_prediction_indices] = np.nan
 
         # Compute ROS.
         result = np.max(ros_batch, axis=0)
         if self.return_aggregate:
             result = [self.aggregate_func(result)]
+
         return result

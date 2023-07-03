@@ -15,6 +15,12 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class RandomLogit(Metric):
@@ -27,7 +33,20 @@ class RandomLogit(Metric):
     References:
         1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
         Attributions Fail." ICML (2020): 9046-9057.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Random Logit"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.RANDOMISATION
 
     @asserts.attributes_check
     def __init__(
@@ -50,8 +69,7 @@ class RandomLogit(Metric):
         Parameters
         ----------
         similarity_func: callable
-            Similarity function applied to compare input and perturbed input,
-            default=ssim.
+            Similarity function applied to compare input and perturbed input, default=ssim.
         num_classes: integer
             Number of prediction classes in the input, default=1000.
         seed: integer
@@ -136,8 +154,8 @@ class RandomLogit(Metric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -170,7 +188,7 @@ class RandomLogit(Metric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

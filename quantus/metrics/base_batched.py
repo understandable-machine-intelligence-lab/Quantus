@@ -19,12 +19,31 @@ from quantus.metrics.base import Metric
 from quantus.helpers import asserts
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class BatchedMetric(Metric):
     """
     Implementation base BatchedMetric class.
+
+    Attributes:
+        - name: The name of the metric.
+        - data_applicability: The data types that the metric implementation currently supports.
+        - model_applicability: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "BatchedMetric"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(
@@ -114,10 +133,10 @@ class BatchedMetric(Metric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        evaluate_instance() on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        evaluate_instance() on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -154,7 +173,7 @@ class BatchedMetric(Metric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -212,10 +231,10 @@ class BatchedMetric(Metric):
             batch_size=batch_size,
         )
 
-        self.last_results = []
+        self.evaluation_scores = []
         for data_batch in batch_generator:
             result = self.evaluate_batch(**data_batch)
-            self.last_results.extend(result)
+            self.evaluation_scores.extend(result)
 
         # Call post-processing.
         self.custom_postprocess(**data)
@@ -223,12 +242,14 @@ class BatchedMetric(Metric):
         if self.return_aggregate:
             if self.aggregate_func:
                 try:
-                    self.last_results = [self.aggregate_func(self.last_results)]
+                    self.evaluation_scores = [
+                        self.aggregate_func(self.evaluation_scores)
+                    ]
                 except:
                     print(
                         "The aggregation of evaluation scores failed. Check that "
                         "'aggregate_func' supplied is appropriate for the data "
-                        "in 'last_results'."
+                        "in 'evaluation_scores'."
                     )
             else:
                 raise KeyError(
@@ -236,9 +257,9 @@ class BatchedMetric(Metric):
                 )
 
         # Append content of last results to all results.
-        self.all_results.append(self.last_results)
+        self.all_evaluation_scores.append(self.evaluation_scores)
 
-        return self.last_results
+        return self.evaluation_scores
 
     @abstractmethod
     def evaluate_batch(

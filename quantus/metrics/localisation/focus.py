@@ -15,6 +15,12 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Focus(Metric):
@@ -31,7 +37,20 @@ class Focus(Metric):
     References:
         1) Anna Arias-Duart et al.: "Focus! Rating XAI Methods
         and Finding Biases" FUZZ-IEEE (2022): 1-8.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Focus"
+    data_applicability = {DataType.IMAGE}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.LOCALISATION
 
     @asserts.attributes_check
     def __init__(
@@ -131,8 +150,8 @@ class Focus(Metric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         For this metric to run we need to get the positions of the target class within the mosaic.
         This should be a np.ndarray containing one tuple per sample, representing the positions
@@ -195,7 +214,7 @@ class Focus(Metric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:

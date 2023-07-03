@@ -18,7 +18,13 @@ from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
-from quantus.metrics.base import PerturbationMetric
+from quantus.metrics.base_perturbed import PerturbationMetric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class Selectivity(PerturbationMetric):
@@ -39,7 +45,20 @@ class Selectivity(PerturbationMetric):
         1) Grégoire Montavon et al.:
         "Methods for interpreting and understanding deep neural networks."
         Digital Signal Processing 73 (2018): 1-15.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Selectivity"
+    data_applicability = {DataType.IMAGE}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.FAITHFULNESS
 
     @asserts.attributes_check
     def __init__(
@@ -167,8 +186,8 @@ class Selectivity(PerturbationMetric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
         Parameters
         ----------
@@ -201,7 +220,7 @@ class Selectivity(PerturbationMetric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -348,7 +367,6 @@ class Selectivity(PerturbationMetric):
             x_perturbed = utils._unpad_array(
                 x_perturbed_pad, pad_width, padded_axes=self.a_axes
             )
-
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x and store the difference from predicting on unperturbed input.
@@ -365,6 +383,6 @@ class Selectivity(PerturbationMetric):
         return np.mean(
             [
                 utils.calculate_auc(np.array(curve))
-                for i, curve in enumerate(self.last_results)
+                for i, curve in enumerate(self.evaluation_scores)
             ]
         )

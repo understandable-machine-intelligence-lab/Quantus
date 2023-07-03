@@ -26,6 +26,12 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
 from quantus.metrics.base import Metric
+from quantus.helpers.enums import (
+    ModelType,
+    DataType,
+    ScoreDirection,
+    EvaluationCategory,
+)
 
 
 class ModelParameterRandomisation(Metric):
@@ -41,9 +47,21 @@ class ModelParameterRandomisation(Metric):
         HOG and SSIM. We have set Spearman as the default value.
 
     References:
-        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps."
-        NeurIPS (2018): 9525-9536.
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "Model Parameter Randomisation"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.LOWER
+    evaluation_category = EvaluationCategory.RANDOMISATION
 
     @asserts.attributes_check
     def __init__(
@@ -67,8 +85,7 @@ class ModelParameterRandomisation(Metric):
         Parameters
         ----------
         similarity_func: callable
-            Similarity function applied to compare input and perturbed input,
-            default=correlation_spearman.
+            Similarity function applied to compare input and perturbed input, default=correlation_spearman.
         layer_order: string
             Indicated whether the model is randomized cascadingly or independently.
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
@@ -125,7 +142,7 @@ class ModelParameterRandomisation(Metric):
         self.return_sample_correlation = return_sample_correlation
 
         # Results are returned/saved as a dictionary not like in the super-class as a list.
-        self.last_results = {}
+        self.evaluation_scores = {}
 
         # Asserts and warnings.
         asserts.assert_layer_order(layer_order=self.layer_order)
@@ -166,10 +183,10 @@ class ModelParameterRandomisation(Metric):
         output labels (y_batch) and a torch or tensorflow model (model).
 
         Calls general_preprocess() with all relevant arguments, calls
-        () on each instance, and saves results to last_results.
-        Calls custom_postprocess() afterwards. Finally returns last_results.
+        () on each instance, and saves results to evaluation_scores.
+        Calls custom_postprocess() afterwards. Finally returns evaluation_scores.
 
-        The content of last_results will be appended to all_results (list) at the end of
+        The content of evaluation_scores will be appended to all_evaluation_scores (list) at the end of
         the evaluation call.
 
         Parameters
@@ -203,7 +220,7 @@ class ModelParameterRandomisation(Metric):
 
         Returns
         -------
-        last_results: list
+        evaluation_scores: list
             a list of Any with the evaluation scores of the concerned batch.
 
         Examples:
@@ -261,7 +278,7 @@ class ModelParameterRandomisation(Metric):
         a_batch = data["a_batch"]
 
         # Results are returned/saved as a dictionary not as a list as in the super-class.
-        self.last_results = {}
+        self.evaluation_scores = {}
 
         # Get number of iterations from number of layers.
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
@@ -297,9 +314,9 @@ class ModelParameterRandomisation(Metric):
                 similarity_scores[instance_id] = result
 
             # Save similarity scores in a result dictionary.
-            self.last_results[layer_name] = similarity_scores
+            self.evaluation_scores[layer_name] = similarity_scores
 
-        # Call post-processing
+        # Call post-processing.
         self.custom_postprocess(
             model=model,
             x_batch=x_batch,
@@ -309,18 +326,18 @@ class ModelParameterRandomisation(Metric):
         )
 
         if self.return_sample_correlation:
-            self.last_results = self.compute_correlation_per_sample()
+            self.evaluation_scores = self.compute_correlation_per_sample()
 
         if self.return_aggregate:
             assert self.return_sample_correlation, (
                 "You must set 'return_average_correlation_per_sample'"
                 " to True in order to compute te aggregat"
             )
-            self.last_results = [self.aggregate_func(self.last_results)]
+            self.evaluation_scores = [self.aggregate_func(self.evaluation_scores)]
 
-        self.all_results.append(self.last_results)
+        self.all_evaluation_scores.append(self.evaluation_scores)
 
-        return self.last_results
+        return self.evaluation_scores
 
     def evaluate_instance(
         self,
@@ -404,17 +421,19 @@ class ModelParameterRandomisation(Metric):
         self,
     ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
 
-        assert isinstance(self.last_results, dict), (
+        assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
-        layer_length = len(self.last_results[list(self.last_results.keys())[0]])
+        layer_length = len(
+            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+        )
         results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
 
         for sample in results:
-            for layer in self.last_results:
-                results[sample].append(float(self.last_results[layer][sample]))
+            for layer in self.evaluation_scores:
+                results[sample].append(float(self.evaluation_scores[layer][sample]))
             results[sample] = np.mean(results[sample])
 
         corr_coeffs = list(results.values())
