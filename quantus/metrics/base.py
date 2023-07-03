@@ -19,6 +19,7 @@ from typing import (
     Union,
     Collection,
     List,
+    Set,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -134,22 +135,22 @@ class Metric:
 
     @property
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def evaluation_category(self):
+    def evaluation_category(self) -> Set[EvaluationCategory]:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def model_applicability(self):
-        raise NotImplementedError
+    def model_applicability(self) -> Set[ModelType]:
+        return {ModelType.Torch, ModelType.TensorFlow}
 
     @property
     @abstractmethod
-    def data_applicability(self):
+    def data_applicability(self) -> Set[DataType]:
         raise NotImplementedError
 
     def __call__(
@@ -806,10 +807,13 @@ class Metric:
     @property
     def last_results(self):
         print(
-            "Warning: 'last_results' has been renamed to 'evaluation_scores'. 'last_results' is removed in current version.")
+            "Warning: 'last_results' has been renamed to 'evaluation_scores'. 'last_results' is removed in current version."
+        )
         return self.evaluation_scores
 
     @property
     def all_results(self):
-        print("Warning: 'all_results' has been renamed to 'all_evaluation_scores'. 'all_results' is removed in current version.")
+        print(
+            "Warning: 'all_results' has been renamed to 'all_evaluation_scores'. 'all_results' is removed in current version."
+        )
         return self.all_evaluation_scores
