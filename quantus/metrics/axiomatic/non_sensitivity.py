@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Set
 import numpy as np
 
 from quantus.helpers import warn
@@ -37,21 +37,23 @@ class NonSensitivity(PerturbationMetric):
         Values Approximation." ICML (2019): 272-281.
         3) Grégoire Montavon et al.: "Methods for interpreting and
         understanding deep neural networks." Digital Signal Processing 73 (2018): 1-15.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Non-Sensitivity"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
-    evaluation_category = EvaluationCategory.AXIOMATIC
-
+    @property
+    def name(self) -> str:
+        return "Non-Sensitivity"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.AXIOMATIC
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.LOWER
+    
     @asserts.attributes_check
     def __init__(
         self,

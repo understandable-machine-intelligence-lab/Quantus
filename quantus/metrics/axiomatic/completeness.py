@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 import numpy as np
 
 from quantus.helpers import warn
@@ -16,7 +16,6 @@ from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.perturb_func import baseline_replacement_by_indices
 from quantus.metrics.base_perturbed import PerturbationMetric
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
@@ -51,12 +50,22 @@ class Completeness(PerturbationMetric):
         - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
 
-    name = "Completeness"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.AXIOMATIC
-
+    @property
+    def name(self) -> str:
+        return "Completeness"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return {EvaluationCategory.AXIOMATIC}
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.HIGHER
+    
     @asserts.attributes_check
     def __init__(
         self,

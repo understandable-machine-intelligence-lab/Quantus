@@ -15,7 +15,7 @@ from typing import (
     Tuple,
     Union,
     Collection,
-    Iterable,
+    Iterable, Set,
 )
 import numpy as np
 from tqdm.auto import tqdm
@@ -48,21 +48,24 @@ class ModelParameterRandomisation(Metric):
 
     References:
         1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Model Parameter Randomisation"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
-    evaluation_category = EvaluationCategory.RANDOMISATION
-
+    
+    @property
+    def name(self) -> str:
+        return "Model Parameter Randomisation"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.RANDOMISATION
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.LOWER
+    
     @asserts.attributes_check
     def __init__(
         self,

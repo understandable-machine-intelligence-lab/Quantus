@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 import numpy as np
 
 from quantus.helpers import asserts
@@ -37,21 +37,24 @@ class Consistency(Metric):
     References:
          1) Sanjoy Dasgupta et al.: "Framework for Evaluating Faithfulness of Local
             Explanations." ICML (2022): 4794-4815.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Consistency"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
-    evaluation_category = EvaluationCategory.ROBUSTNESS
-
+    
+    @property
+    def name(self) -> str:
+        return "Consistency"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.ROBUSTNESS
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.LOWER
+    
     @asserts.attributes_check
     def __init__(
         self,

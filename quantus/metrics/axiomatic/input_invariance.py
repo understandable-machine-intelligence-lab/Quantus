@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Set
 import numpy as np
 
 from quantus.helpers import warn
@@ -34,20 +34,28 @@ class InputInvariance(BatchedPerturbationMetric):
 
     References:
         Pieter-Jan Kindermans et al.: "The (Un)reliability of Saliency Methods." Explainable AI (2019): 267-280
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
     """
-
-    name = "Input Invariance"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.AXIOMATIC
-
+    
+    @property
+    def name(self) -> str:
+        return "Input Invariance"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.AXIOMATIC
+    
+    @property
+    def model_applicability(self) -> Set[ModelType]:
+        return super().model_applicability
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.HIGHER
+    
     @asserts.attributes_check
     def __init__(
         self,

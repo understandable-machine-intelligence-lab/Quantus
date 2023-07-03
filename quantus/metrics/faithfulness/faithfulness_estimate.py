@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Set
 
 import numpy as np
 
@@ -35,21 +35,24 @@ class FaithfulnessEstimate(PerturbationMetric):
     References:
         1) David Alvarez-Melis and Tommi S. Jaakkola.: "Towards robust interpretability with self-explaining
         neural networks." NeurIPS (2018): 7786-7795.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Faithfulness Estimate"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.FAITHFULNESS
-
+    
+    @property
+    def name(self) -> str:
+        return "Faithfulness Estimate"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.FAITHFULNESS
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.HIGHER
+    
     @asserts.attributes_check
     def __init__(
         self,

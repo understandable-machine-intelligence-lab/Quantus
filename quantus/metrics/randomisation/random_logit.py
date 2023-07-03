@@ -6,21 +6,21 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set
+
 import numpy as np
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts
+from quantus.helpers import warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base import Metric
 
 
 class RandomLogit(Metric):
@@ -33,21 +33,24 @@ class RandomLogit(Metric):
     References:
         1) Leon Sixt et al.: "When Explanations Lie: Why Many Modified BP
         Attributions Fail." ICML (2020): 9046-9057.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Random Logit"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.LOWER
-    evaluation_category = EvaluationCategory.RANDOMISATION
-
+    
+    @property
+    def name(self) -> str:
+        return "Random Logit"
+    
+    @property
+    def evaluation_category(self) -> Set[EvaluationCategory]:
+        return EvaluationCategory.RANDOMISATION
+    
+    @property
+    def data_applicability(self) -> Set[DataType]:
+        return {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    
+    @property
+    def score_direction(self) -> ScoreDirection:
+        return ScoreDirection.LOWER
+    
     @asserts.attributes_check
     def __init__(
         self,
