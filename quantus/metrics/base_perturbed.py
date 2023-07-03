@@ -43,7 +43,20 @@ class PerturbationMetric(Metric):
 
     Metric categories such as Faithfulness and Robustness share certain characteristics when it comes to perturbations.
     As follows, this metric class is created which has additional attributes for perturbations.
+
+    Attributes:
+        - name: The name of the metric.
+        - data_applicability: The data types that the metric implementation currently supports.
+        - model_applicability: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
+
+    name = "PerturbationMetric"
+    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
+    model_applicability = {ModelType.TORCH, ModelType.TF}
+    score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(

@@ -32,17 +32,18 @@ class BatchedMetric(Metric):
     Implementation base BatchedMetric class.
 
     Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
+        - name: The name of the metric.
+        - data_applicability: The data types that the metric implementation currently supports.
+        - model_applicability: The model types that this metric can work with.
         - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
         - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Metric"
+    name = "BatchedMetric"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.HIGHER
+    evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(

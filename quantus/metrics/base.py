@@ -40,20 +40,7 @@ from quantus.helpers.enums import (
 class Metric:
     """
     Implementation of the base Metric class.
-
-    Attributes:
-        -  _name: The name of the metric.
-        - _data_applicability: The data types that the metric implementation currently supports.
-        - _models: The model types that this metric can work with.
-        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
-        - evaluation_category: What property/ explanation quality that this metric measures.
     """
-
-    name = "Metric"
-    data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
-    model_applicability = {ModelType.TORCH, ModelType.TF}
-    score_direction = ScoreDirection.HIGHER
-    evaluation_category = EvaluationCategory.NONE
 
     @asserts.attributes_check
     def __init__(
@@ -64,8 +51,6 @@ class Metric:
         normalise_func_kwargs: Optional[Dict[str, Any]],
         return_aggregate: bool,
         aggregate_func: Callable,
-        # return_skill_score: bool,
-        # skill_score_samples: int,
         default_plot_func: Optional[Callable],
         disable_warnings: bool,
         display_progressbar: bool,
@@ -145,8 +130,13 @@ class Metric:
 
     @property
     @abstractmethod
+    def score_direction(self) -> Set[ScoreDirection]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def model_applicability(self) -> Set[ModelType]:
-        return {ModelType.Torch, ModelType.TensorFlow}
+        return {ModelType.TORCH, ModelType.TF}
 
     @property
     @abstractmethod
