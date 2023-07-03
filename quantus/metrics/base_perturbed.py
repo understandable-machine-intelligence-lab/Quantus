@@ -29,7 +29,6 @@ from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base import Metric
-from quantus.functions import postprocess_func
 from quantus.helpers.enums import (
     ModelType,
     DataType,
