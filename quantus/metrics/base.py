@@ -42,6 +42,31 @@ class Metric:
     Implementation of the base Metric class.
     """
 
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def evaluation_category(self) -> EvaluationCategory:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def score_direction(self) -> ScoreDirection:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def model_applicability(self) -> Set[ModelType]:
+        return {ModelType.TORCH, ModelType.TF}
+
+    @property
+    @abstractmethod
+    def data_applicability(self) -> Set[DataType]:
+        raise NotImplementedError
+
     @asserts.attributes_check
     def __init__(
         self,
@@ -117,31 +142,6 @@ class Metric:
 
         self.evaluation_scores: Any = []
         self.all_evaluation_scores: Any = []
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def evaluation_category(self) -> Set[EvaluationCategory]:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def score_direction(self) -> Set[ScoreDirection]:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def model_applicability(self) -> Set[ModelType]:
-        return {ModelType.TORCH, ModelType.TF}
-
-    @property
-    @abstractmethod
-    def data_applicability(self) -> Set[DataType]:
-        raise NotImplementedError
 
     def __call__(
         self,
