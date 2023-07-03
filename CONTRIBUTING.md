@@ -72,7 +72,7 @@ Tests are written using [pytest](https://github.com/pytest-dev/pytest) and execu
 with [codecov](https://github.com/codecov/codecov-action) for coverage reports.
 We use [tox](https://tox.wiki/en/latest/) for test automation. For complete list of CLI commands, please refer
 to [tox - CLI interface](https://tox.wiki/en/latest/cli_interface.html).
-To perform the tests for all supported python versions execute the following CLI command (a re-intall of tox is necessary):
+To perform the tests for all supported python versions execute the following CLI command (a re-install of tox is necessary):
 
 ```shell
 python3 -m pip install tox
