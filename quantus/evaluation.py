@@ -14,7 +14,9 @@ from quantus.helpers import asserts
 from quantus.helpers import utils
 from quantus.helpers import warn
 from quantus.helpers.model.model_interface import ModelInterface
+from quantus.helpers.enums import ScoreDirection, EvaluationCategory
 from quantus.functions.explanation_func import explain
+from quantus.functions import postprocess_func
 
 
 def evaluate(
@@ -28,6 +30,7 @@ def evaluate(
     progress: bool = False,
     explain_func_kwargs: Optional[dict] = None,
     call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    return_skill_score: bool = False,
     **kwargs,
 ) -> Optional[dict]:
     """
@@ -60,6 +63,8 @@ def evaluate(
         Keyword arguments to be passed to explain_func on call. Pass None if using Dict[str, Dict] type for xai_methods.
     call_kwargs: Dict[str, Dict]
         Keyword arguments for the call of the metrics, keys are names for arg set and values are argument dictionaries.
+    return_skill_score: boolean
+        Indicates if skill score is to be returned.
     kwargs: optional
         Deprecated keyword arguments for the call of the metrics.
     Returns
@@ -159,6 +164,29 @@ def evaluate(
                         f"Evaluating {method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
                     )
 
+                if return_skill_score:
+
+                    # Remove the aggregate function.
+                    agg_func_old = agg_func
+                    agg_func = np.array
+
+                    # Make sure to return one value per explanation.
+                    if metric_func.return_aggregate:
+                        metric_func.return_aggregate = False
+                        print(
+                            "'return_aggregate' was set to True. To calculate skill score, it is now set to False."
+                        )
+
+                    # Specific case for MPT, return the average correlation per sample.
+                    if (
+                        hasattr(metric_func, "return_sample_correlation")
+                        and not metric_func.return_sample_correlation
+                    ):
+                        metric_func.return_sample_correlation = True
+                        print(
+                            "'return_sample_correlation' was set to False. To calculate skill score, it is now set to True."
+                        )
+
                 results[method][metric][call_kwarg_str] = agg_func(
                     metric_func(
                         model=model,
@@ -175,5 +203,72 @@ def evaluate(
                         **kwargs,
                     )
                 )
+
+                if return_skill_score:
+
+                    # Get the worst-case explanation.
+                    method_control = "Control Var. Random Uniform"
+                    explain_funcs[method_control] = explain
+
+                    # Special case, randomisation category.
+                    if metric_func.evaluation_category == EvaluationCategory.RANDOMISATION:
+
+                        # Generate an explanations and score them constantly.
+                        a_batch = explain_funcs[method_control](
+                            model=model,
+                            inputs=x_batch,
+                            targets=y_batch,
+                            **{**explain_func_kwargs,
+                               **{"method": method_control},
+                               }
+                        )
+
+                        # Measure similarity against the same explanation.
+                        scores_reference = [metric_func.similarity_func(a.flatten(), a.flatten()) for a in a_batch]
+
+                    else:
+
+                        scores_reference = agg_func(
+                            metric_func(
+                                model=model,
+                                x_batch=x_batch,
+                                y_batch=y_batch,
+                                a_batch=a_batch,
+                                s_batch=s_batch,
+                                explain_func=explain_funcs[method_control],
+                                explain_func_kwargs={
+                                    **explain_func_kwargs,
+                                    **{"method": method_control},
+                                },
+                                **call_kwarg,
+                                **kwargs,
+                            )
+                        )
+
+                    print(f"\n{metric} ({metric_func.score_direction.name} is better)\n  Baseline: "
+                          f"{scores_reference}\n  {method}: {results[method][metric][call_kwarg_str]}")
+
+                    # Compute the skill score.
+                    skill_score = postprocess_func.explanation_skill_score(
+                        y_scores=results[method][metric][call_kwarg_str],
+                        y_refs=scores_reference,
+                        score_direction=metric_func.score_direction,
+                        agg_func=agg_func_old,
+                    )
+
+                    """
+                    # Compute the skill score.
+                    xai_score = postprocess_func.xai_skill_score(
+                        y_scores=results[method][metric][call_kwarg_str],
+                        y_refs=scores_reference,
+                        score_direction=metric_func.score_direction,
+                        #agg_func=agg_func_old,
+                    )
+                    """
+
+                    print("Skill:", skill_score)
+                    #print("Skill *:", xai_score)
+
+                    results[method][metric][call_kwarg_str] = skill_score
 
     return results

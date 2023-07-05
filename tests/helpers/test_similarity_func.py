@@ -58,14 +58,15 @@ def atts_ssim_diff():
 def atts_sq_diff_1():
     return {"a": np.array([1, 2, 3]), "b": np.array([1, 2, 3])}
 
+
 @pytest.fixture
 def atts_sq_diff_2():
     return {"a": np.array([1, 2, 3]), "b": np.array([4, 5, 6])}
 
+
 @pytest.fixture
 def atts_sq_diff_3():
     return {"a": np.array([1, 2, 3]), "b": np.array([4, 5])}
-
 
 
 @pytest.mark.similar_func
@@ -295,10 +296,11 @@ def test_difference(data: np.ndarray, params: dict, expected: Union[float, dict,
         (lazy_fixture("atts_sq_diff_3"), {}, ValueError),
     ],
 )
-def test_squared_difference(data: np.ndarray, params: dict, expected: Union[int, ValueError]):
+def test_squared_difference(
+    data: np.ndarray, params: dict, expected: Union[int, ValueError]
+):
     try:
         out = squared_difference(a=data["a"], b=data["b"])
         assert out == expected, "Test failed."
     except ValueError:
         pass
-

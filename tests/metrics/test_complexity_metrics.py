@@ -504,7 +504,7 @@ def test_complexity(
             },
             {"max": 1.0, "min": 0.0},
         ),
-(
+        (
             lazy_fixture("load_mnist_model"),
             lazy_fixture("almost_uniform_2d_no_abatch"),
             {

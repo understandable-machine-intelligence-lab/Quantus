@@ -3,11 +3,12 @@ from typing import Union
 import pytest
 from pytest_lazyfixture import lazy_fixture
 import numpy as np
+
+import quantus
 from quantus.evaluation import evaluate
 from quantus.functions.explanation_func import explain
 
-from quantus.metrics.complexity import Sparseness
-from quantus.metrics.robustness import MaxSensitivity
+from quantus.metrics import *
 
 
 @pytest.mark.evaluate_func
@@ -64,7 +65,7 @@ from quantus.metrics.robustness import MaxSensitivity
                     "method": "Gradient",
                 },
                 "explain_func": explain,
-                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
                 "call_kwargs": "{'0': {}}",
             },
@@ -109,8 +110,129 @@ from quantus.metrics.robustness import MaxSensitivity
                 "eval_metrics": "{'Sparseness': Sparseness(**{'disable_warnings': True, 'normalise': True,})}",
                 "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func_kwargs']}",
                 "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
             },
-            {"min": 0.0, "max": 1.0},
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'Complexity': Complexity(**{'disable_warnings': True, 'normalise': True, 'normalise_func': quantus.normalise_func.normalise_by_max})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func_kwargs']}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'EffectiveComplexity': EffectiveComplexity(**{'disable_warnings': True, 'weighted': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method'] : params['explain_func_kwargs']}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "IntegratedGradients",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'max-Sensitivity': MaxSensitivity(**{'disable_warnings': True,'normalise': True,})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Gradient",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'MPT': ModelParameterRandomisation(**{'disable_warnings': True, 'normalise': False, 'similarity_func': quantus.similarity_func.correlation_pearson})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Gradient",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'MPT': ModelParameterRandomisation(**{'disable_warnings': True, 'normalise': False, 'similarity_func': quantus.similarity_func.correlation_pearson, 'return_sample_correlation': False})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'FaithfulnessCorrelation': FaithfulnessCorrelation(**{'disable_warnings': True, 'normalise': False})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'FaithfulnessCorrelation': FaithfulnessCorrelation(**{'disable_warnings': True, 'normalise': True})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
+        ),
+        (
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("load_mnist_images"),
+            {
+                "explain_func_kwargs": {
+                    "method": "Saliency",
+                },
+                "explain_func": explain,
+                "eval_metrics": "{'Monotonicity': Monotonicity(**{'disable_warnings': True, 'normalise': True})}",
+                "eval_xai_methods": "{params['explain_func_kwargs']['method']: a_batch}",
+                "call_kwargs": "{'0': {}}",
+                "return_skill_score": True,
+            },
+            {"min": -100.0, "max": 100.0},
         ),
     ],
 )
@@ -122,7 +244,8 @@ def test_evaluate_func(
 ):
     x_batch, y_batch = data["x_batch"], data["y_batch"]
     explain = params["explain_func"]
-    call_kwargs = params.get("call_kwargs", {})
+    return_skill_score = params.get("return_skill_score", False)
+
     a_batch = explain(
         model=model,
         inputs=x_batch,
@@ -140,6 +263,7 @@ def test_evaluate_func(
             agg_func=np.mean,
             explain_func_kwargs=params["explain_func_kwargs"],
             call_kwargs=eval(params["call_kwargs"]),
+            return_skill_score=return_skill_score,
         )
         assert results == None, "Test failed."
 
@@ -152,6 +276,7 @@ def test_evaluate_func(
         agg_func=np.mean,
         explain_func_kwargs=params["explain_func_kwargs"],
         call_kwargs=eval(params["call_kwargs"]),
+        return_skill_score=return_skill_score,
     )
 
     if "min" in expected and "max" in expected:
