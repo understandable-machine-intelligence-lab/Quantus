@@ -270,7 +270,7 @@ class Completeness(PerturbationMetric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-    ) -> bool:
+    ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -308,6 +308,6 @@ class Completeness(PerturbationMetric):
         y_pred_baseline = float(model.predict(x_input)[:, y])
 
         if np.sum(a) == self.output_func(y_pred - y_pred_baseline):
-            return True
+            return 1.0
         else:
-            return False
+            return 0.0

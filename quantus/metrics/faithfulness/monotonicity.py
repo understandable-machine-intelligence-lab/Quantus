@@ -323,7 +323,7 @@ class Monotonicity(PerturbationMetric):
             y_pred_perturb = float(model.predict(x_input)[:, y])
             preds[i_ix] = y_pred_perturb
 
-        return np.all(np.diff(preds) >= 0)
+        return np.all(np.diff(preds) >= 0).astype(float)
 
     def custom_preprocess(
         self,

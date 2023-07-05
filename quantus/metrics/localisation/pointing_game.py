@@ -238,7 +238,7 @@ class PointingGame(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-    ) -> bool:
+    ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -279,7 +279,7 @@ class PointingGame(Metric):
         if self.weighted and hit:
             hit = 1 - (np.sum(s) / float(np.prod(s.shape)))
 
-        return hit
+        return hit.astype(float)
 
     def custom_preprocess(
         self,
