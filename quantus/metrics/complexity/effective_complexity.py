@@ -51,6 +51,7 @@ class EffectiveComplexity(Metric):
     def __init__(
         self,
         eps: float = 1e-5,
+        weighted: bool = False,
         abs: bool = True,
         normalise: bool = True,
         normalise_func: Optional[Callable[[np.ndarray], np.ndarray]] = None,
@@ -67,6 +68,9 @@ class EffectiveComplexity(Metric):
         ----------
         eps: float
             Attributions threshold, default=1e-5.
+        weighted: boolean
+            Indicates whether the weighted variant of the inside-total relevance ratio is used,
+            default=False.
         abs: boolean
             Indicates whether absolute operation is applied on the attribution, default=True.
         normalise: boolean
@@ -110,6 +114,7 @@ class EffectiveComplexity(Metric):
 
         # Save metric-specific attributes.
         self.eps = eps
+        self.weighted = weighted
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -238,7 +243,7 @@ class EffectiveComplexity(Metric):
         y: np.ndarray,
         a: np.ndarray,
         s: np.ndarray,
-    ) -> int:
+    ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -260,6 +265,9 @@ class EffectiveComplexity(Metric):
         integer
             The evaluation results.
         """
-
         a = a.flatten()
-        return int(np.sum(a > self.eps))
+        comp = np.sum(a > self.eps)
+
+        if self.weighted:
+            return comp / a.size
+        return comp

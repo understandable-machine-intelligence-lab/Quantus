@@ -405,6 +405,7 @@ def test_complexity(
             {
                 "init": {
                     "normalise": True,
+                    "weighted": True,
                     "disable_warnings": False,
                     "display_progressbar": False,
                 },
@@ -503,6 +504,22 @@ def test_complexity(
             },
             {"max": 1.0, "min": 0.0},
         ),
+(
+            lazy_fixture("load_mnist_model"),
+            lazy_fixture("almost_uniform_2d_no_abatch"),
+            {
+                "init": {
+                    "normalise": False,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                    "weighted": True,
+                },
+                "call": {
+                    "explain_func": explain,
+                },
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
         (
             None,
             lazy_fixture("almost_uniform_1d"),
@@ -561,6 +578,21 @@ def test_complexity(
             },
             {"max": 1.0, "min": 0.0},
         ),
+        (
+            lazy_fixture("titanic_model_tf"),
+            lazy_fixture("titanic_dataset"),
+            {
+                "init": {
+                    "normalise": True,
+                    "abs": True,
+                    "weighted": True,
+                    "disable_warnings": True,
+                    "display_progressbar": False,
+                },
+                "call": {"explain_func": explain_func_stub},
+            },
+            {"max": 1.0, "min": 0.0},
+        ),
     ],
 )
 def test_effective_complexity(
@@ -579,4 +611,6 @@ def test_effective_complexity(
         a_batch=data.get("a_batch"),
         **call_params
     )
+    print("call_params", init_params)
+    print("scores", scores)
     assert scores is not None, "Test failed."
