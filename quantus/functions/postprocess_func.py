@@ -43,28 +43,32 @@ def explanation_skill_score(
     # Make asserts.
     assert_skill_scores(y_scores=y_scores, y_refs=y_refs)
 
+    # Retrieve the optimal value.
+    if score_direction == ScoreDirection.HIGHER:
+        optimal_value = 1.0
+
+        # Verify that all elements are not larger than one.
+        assert np.all(y_scores <= 1), "For skill score calculation, 'y_scores' cannot contain values larger than 1."
+        assert np.all(y_refs <= 1), "For skill score calculation, 'y_refs' cannot contain values larger than 1."
+
+    elif score_direction == ScoreDirection.LOWER:
+        optimal_value = 0.0
+
+    else:
+        print(
+            "To calculate skill score, the 'score_direction' must be either "
+            "'ScoreDirection.HIGHER' or 'ScoreDirection.LOWER'"
+        )
+
     skill_scores = []
     for i in range(len(y_scores)):
-        if score_direction == ScoreDirection.HIGHER:
 
-            # Verify that all elements are not larger than one.
-            assert np.all(y_scores <= 1), "For skill score calculation, 'y_scores' cannot contain values larger than 1."
-            assert np.all(y_refs <= 1), "For skill score calculation, 'y_refs' cannot contain values larger than 1."
-            try:
-                ss = (y_scores[i] - y_refs[i]) / (1.0 - y_refs[i])
-            except RuntimeWarning:
-                ss = 0.0
+        try:
+            ss = (y_scores[i] - y_refs[i]) / (optimal_value - y_refs[i])
+        except RuntimeWarning:
+            ss = 0.0
 
-        elif score_direction == ScoreDirection.LOWER:
-            try:
-                ss = (y_scores[i] - y_refs[i]) / (0.0 - y_refs[i])
-            except RuntimeWarning:
-                ss = 0.0
-        else:
-            print(
-                "To calculate skill score, the 'score_direction' must be either "
-                "'ScoreDirection.HIGHER' or 'ScoreDirection.LOWER'"
-            )
+
         skill_scores.append(ss)
 
     return agg_func(skill_scores)

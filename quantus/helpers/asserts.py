@@ -354,3 +354,35 @@ def assert_indexed_axes(arr: np.array, indexed_axes: Sequence[int]) -> None:
     assert (
         0 in indexed_axes or arr.ndim - 1 in indexed_axes
     ), "Make sure indexed_axes contains either the first or last axis of arr."
+
+
+def assert_skill_scores(y_scores: np.ndarray, y_refs: np.ndarray) -> None:
+    """
+    Asserts on skill scores calculation inputs.
+
+    Parameters
+    ----------
+    y_scores: np.array
+        Actual score outcome.
+    y_refs: np.array
+        Reference score, worst-case scenario.
+
+    Returns
+    -------
+        None
+    """
+    # Verify input types and convert to np.array if necessary.
+    if not isinstance(y_scores, np.ndarray):
+        try:
+            y_scores = np.array(y_scores)
+        except Exception as e:
+            print(f"Error converting y_scores to np.array: {str(e)}")
+    if not isinstance(y_refs, np.ndarray):
+        try:
+            y_refs = np.array(y_refs)
+        except Exception as e:
+            print(f"Error converting y_refs to np.array: {str(e)}")
+
+    # Verify that y_scores and y_refs have the same length.
+    if y_scores.shape != y_refs.shape:
+        print("Error: y_scores and y_refs must have the same shape.")
