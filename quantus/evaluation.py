@@ -81,7 +81,7 @@ def evaluate(
         return None
 
     if call_kwargs is None:
-        call_kwargs = {}
+        call_kwargs = {'0': {}}
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
