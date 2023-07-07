@@ -267,7 +267,6 @@ def generate_tf_explanation(
         targets = np.array([targets])
 
     channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
-
     inputs = make_channel_last(inputs, channel_first)
 
     explanation: np.ndarray = np.zeros_like(inputs)
@@ -738,7 +737,6 @@ def generate_zennit_explanation(
     """
 
     channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
-
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
         warnings.warn(
