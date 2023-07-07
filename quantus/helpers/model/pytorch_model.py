@@ -56,7 +56,7 @@ class PyTorchModel(ModelInterface):
         self.device = device
 
     @lru_cache(maxsize=None)
-    def _get_last_softmax_layer_index(self) -> bool:
+    def _get_last_softmax_layer_index(self) -> Optional[int]:
         """
         Returns the index of the last module of torch.nn.Softmax type in the list of model children.
         If no softmax module is found, returns None.
