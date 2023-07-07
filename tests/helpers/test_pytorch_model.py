@@ -17,67 +17,54 @@ def mock_input_torch_array():
 
 @pytest.mark.pytorch_model
 @pytest.mark.parametrize(
-    "data,params,expected",
+    "model,data,params",
     [
         (
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("mock_input_torch_array"),
             {
                 "softmax": False,
                 "device": "cpu",
             },
-            np.array(
-                [
-                    -0.44321266,
-                    0.60336196,
-                    0.2091731,
-                    -0.17474744,
-                    -0.03755454,
-                    0.5306321,
-                    -0.3079375,
-                    0.5329694,
-                    -0.41116637,
-                    -0.3060812,
-                ]
-            ),
         ),
         (
+            lazy_fixture("load_mnist_model"),
             lazy_fixture("mock_input_torch_array"),
             {
                 "softmax": True,
                 "device": "cpu",
             },
-            softmax(
-                np.array(
-                    [
-                        -0.44321266,
-                        0.60336196,
-                        0.2091731,
-                        -0.17474744,
-                        -0.03755454,
-                        0.5306321,
-                        -0.3079375,
-                        0.5329694,
-                        -0.41116637,
-                        -0.3060812,
-                    ]
-                ),
-            ),
+        ),
+        (
+            lazy_fixture("load_mnist_model_softmax_not_last"),
+            lazy_fixture("mock_input_torch_array"),
+            {
+                "softmax": False,
+                "device": "cpu",
+            },
+        ),
+(
+            lazy_fixture("load_mnist_model_softmax"),
+            lazy_fixture("mock_input_torch_array"),
+            {
+                "softmax": False,
+                "device": "cpu",
+            },
         ),
     ],
 )
 def test_get_softmax_arg_model(
-    data: np.ndarray, params: dict, expected: Union[float, dict, bool], load_mnist_model
+    model: torch.nn.Module, data: np.ndarray, params: dict,
 ):
-    load_mnist_model.eval()
+    model.eval()
 
-    model = PyTorchModel(load_mnist_model, softmax=True)
-    sm_model = model.get_softmax_arg_model()
-    sm_model.eval()
-    new_model = PyTorchModel(model=sm_model, **params)
+    sm_model = PyTorchModel(model, softmax=True)
+    no_sm_model = PyTorchModel(model, softmax=False)
 
-    out = new_model.predict(x=data["x"])
+    sm_out = sm_model.predict(x=data["x"])
+    no_sm_out = no_sm_model.predict(x=data["x"])
 
-    assert np.allclose(out, expected), "Test failed."
+    assert np.allclose(sm_out, softmax(no_sm_out)), "Test failed."
 
 
 @pytest.mark.pytorch_model
