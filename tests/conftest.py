@@ -212,17 +212,17 @@ def titanic_dataset():
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax_not_last():
     model = torch.nn.Sequential(
-          torch.nn.Flatten(),
-          torch.nn.Softmax(),
-          torch.nn.Linear(28*28, 10),
-        )
+        torch.nn.Flatten(),
+        torch.nn.Softmax(),
+        torch.nn.Linear(28 * 28, 10),
+    )
     return model
 
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax():
     model = torch.nn.Sequential(
-          LeNet(),
-          torch.nn.Softmax(),
-        )
+        LeNet(),
+        torch.nn.Softmax(),
+    )
     return model

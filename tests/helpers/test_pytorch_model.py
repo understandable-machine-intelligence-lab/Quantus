@@ -43,7 +43,7 @@ def mock_input_torch_array():
                 "device": "cpu",
             },
         ),
-(
+        (
             lazy_fixture("load_mnist_model_softmax"),
             lazy_fixture("mock_input_torch_array"),
             {
@@ -54,7 +54,9 @@ def mock_input_torch_array():
     ],
 )
 def test_get_softmax_arg_model(
-    model: torch.nn.Module, data: np.ndarray, params: dict,
+    model: torch.nn.Module,
+    data: np.ndarray,
+    params: dict,
 ):
     model.eval()
 

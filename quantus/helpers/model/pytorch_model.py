@@ -97,28 +97,28 @@ class PyTorchModel(ModelInterface):
         last_softmax = self._get_last_softmax_layer_index()
 
         if self.softmax and last_softmax == -1:
-            return self.model # Case 1
+            return self.model  # Case 1
 
         if self.softmax and not last_softmax:
-            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1)) # Case 3
+            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 3
 
         if not self.softmax and not last_softmax:
-            return self.model # Case 6
+            return self.model  # Case 6
 
         warnings.warn(
             "The combination of the value of the passed softmax argument and the passed model potentially requires "
             "adjusting the model's modules. Make sure that the torch.nn.Softmax layer is the last module in the list "
             "of model's children (self.model.modules()) if and only if it is the actual last module applied before"
             "output."
-        ) # Warning for cases 1, 2, 4, 5
+        )  # Warning for cases 2, 4, 5
 
         if self.softmax and last_softmax != -1:
-            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1)) # Case 2
+            return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 2
 
         if not self.softmax and last_softmax == -1:
-            return self._get_model_with_linear_top() # Case 4
+            return self._get_model_with_linear_top()  # Case 4
 
-        return self.model # Case 5
+        return self.model  # Case 5
 
     def predict(self, x: np.ndarray, grad: bool = False, **kwargs) -> np.array:
         """
