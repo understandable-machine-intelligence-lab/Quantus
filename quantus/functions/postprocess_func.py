@@ -55,7 +55,7 @@ def explanation_skill_score(
         optimal_value = 0.0
 
     else:
-        print(
+        raise ValueError(
             "To calculate skill score, the 'score_direction' must be either "
             "'ScoreDirection.HIGHER' or 'ScoreDirection.LOWER'"
         )
@@ -67,7 +67,6 @@ def explanation_skill_score(
             ss = (y_scores[i] - y_refs[i]) / (optimal_value - y_refs[i])
         except RuntimeWarning:
             ss = 0.0
-
 
         skill_scores.append(ss)
 
