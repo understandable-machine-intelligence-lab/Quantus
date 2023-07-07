@@ -266,10 +266,7 @@ def generate_tf_explanation(
     if not isinstance(targets, np.ndarray):
         targets = np.array([targets])
 
-    if "channel_first" not in kwargs:
-        channel_first = infer_channel_first(inputs)
-    else:
-        channel_first = kwargs["channel_first"]
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
 
     inputs = make_channel_last(inputs, channel_first)
 
@@ -481,10 +478,7 @@ def generate_captum_explanation(
          Returns np.ndarray of same shape as inputs.
     """
 
-    if "channel_first" not in kwargs:
-        channel_first = infer_channel_first(inputs)
-    else:
-        channel_first = kwargs["channel_first"]
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
 
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
@@ -743,10 +737,7 @@ def generate_zennit_explanation(
 
     """
 
-    if "channel_first" not in kwargs:
-        channel_first = infer_channel_first(inputs)
-    else:
-        channel_first = kwargs["channel_first"]
+    channel_first = kwargs.get("channel_first", infer_channel_first(inputs))
 
     softmax = kwargs.get("softmax", None)
     if softmax is not None:
