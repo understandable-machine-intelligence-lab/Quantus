@@ -74,7 +74,7 @@ class PyTorchModel(ModelInterface):
     def _get_model_with_linear_top(self) -> torch.nn:
         """
         In a case model has a softmax module, the last torch.nn.Softmax module in the self.model.modules() list is
-        replaced with torch.nn.Identity(). Call the method using P.cached() context in order to preserve model in cache.
+        replaced with torch.nn.Identity().
         """
         linear_model = copy.deepcopy(self.model)
 
