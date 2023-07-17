@@ -96,14 +96,14 @@ def evaluate(
     if not isinstance(xai_methods, dict):
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
 
-    for method, value in xai_methods.items():
+    for xai_method, xai_method_value in xai_methods.items():
 
-        results[method] = {}
+        results[xai_method] = {}
 
-        if callable(value):
+        if callable(xai_method_value):
 
-            explain_funcs[method] = value
-            explain_func = value
+            explain_funcs[xai_method] = xai_method_value
+            explain_func = xai_method_value
 
             # Asserts.
             asserts.assert_explain_func(explain_func=explain_func)
@@ -113,14 +113,14 @@ def evaluate(
                 model=model,
                 inputs=x_batch,
                 targets=y_batch,
-                **{**explain_func_kwargs, **{"method": method}},
+                **{**explain_func_kwargs, **{"method": xai_method}},
             )
             a_batch = utils.expand_attribution_channel(a_batch, x_batch)
 
             # Asserts.
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        elif isinstance(value, Dict):
+        elif isinstance(xai_method_value, Dict):
 
             if explain_func_kwargs is not None:
                 warnings.warn(
@@ -128,8 +128,8 @@ def evaluate(
                     "Pass explanation arguments as dictionary values."
                 )
 
-            explain_func_kwargs = value
-            explain_funcs[method] = explain
+            explain_func_kwargs = xai_method_value
+            explain_funcs[xai_method] = explain
 
             # Generate explanations.
             a_batch = explain(
@@ -140,12 +140,11 @@ def evaluate(
             # Asserts.
             asserts.assert_attributions(a_batch=a_batch, x_batch=x_batch)
 
-        elif isinstance(value, np.ndarray):
-            explain_funcs[method] = explain
-            a_batch = value
+        elif isinstance(xai_method_value, np.ndarray):
+            explain_funcs[xai_method] = explain
+            a_batch = xai_method_value
 
         else:
-
             raise TypeError(
                 "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
             )
@@ -155,13 +154,13 @@ def evaluate(
 
         for (metric, metric_func) in metrics.items():
 
-            results[method][metric] = {}
+            results[xai_method][metric] = {}
 
             for (call_kwarg_str, call_kwarg) in call_kwargs.items():
 
                 if progress:
                     print(
-                        f"Evaluating {method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
+                        f"Evaluating {xai_method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
                     )
 
                 if return_skill_score:
@@ -187,17 +186,17 @@ def evaluate(
                             "'return_sample_correlation' was set to False. To calculate skill score, it is now set to True."
                         )
 
-                results[method][metric][call_kwarg_str] = agg_func(
+                results[xai_method][metric][call_kwarg_str] = agg_func(
                     metric_func(
                         model=model,
                         x_batch=x_batch,
                         y_batch=y_batch,
                         a_batch=a_batch,
                         s_batch=s_batch,
-                        explain_func=explain_funcs[method],
+                        explain_func=explain_funcs[xai_method],
                         explain_func_kwargs={
                             **explain_func_kwargs,
-                            **{"method": method},
+                            **{"method": xai_method},
                         },
                         **call_kwarg,
                         **kwargs,
@@ -246,11 +245,11 @@ def evaluate(
                         )
 
                     print(f"\n{metric} ({metric_func.score_direction.name} is better)\n  Baseline: "
-                          f"{scores_reference}\n  {method}: {results[method][metric][call_kwarg_str]}")
+                          f"{scores_reference}\n  {xai_method}: {results[xai_method][metric][call_kwarg_str]}")
 
                     # Compute the skill score.
                     skill_score = postprocess_func.explanation_skill_score(
-                        y_scores=results[method][metric][call_kwarg_str],
+                        y_scores=results[xai_method][metric][call_kwarg_str],
                         y_refs=scores_reference,
                         score_direction=metric_func.score_direction,
                         agg_func=agg_func_old,
@@ -269,6 +268,6 @@ def evaluate(
                     print("Skill:", skill_score)
                     #print("Skill *:", xai_score)
 
-                    results[method][metric][call_kwarg_str] = skill_score
+                    results[xai_method][metric][call_kwarg_str] = skill_score
 
     return results
