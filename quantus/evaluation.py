@@ -8,6 +8,7 @@
 import warnings
 from typing import Union, Callable, Dict, Optional, List
 
+import pandas as pd
 import numpy as np
 
 from quantus.helpers import asserts
@@ -27,10 +28,12 @@ def evaluate(
     y_batch: np.ndarray,
     s_batch: Union[np.ndarray, None] = None,
     agg_func: Callable = lambda x: x,
+    return_as_df: bool = False,
     progress: bool = False,
     explain_func_kwargs: Optional[dict] = None,
-    call_kwargs: Union[Dict, Dict[str, Dict]] = None,
+    call_kwargs: Optional[Union[Dict, Dict[str, Dict]]] = None,
     return_skill_score: bool = False,
+    agg_func_skill_score: Optional[Callable] = lambda x: x,
     **kwargs,
 ) -> Optional[dict]:
     """
@@ -57,6 +60,8 @@ def evaluate(
         A np.ndarray which contains segmentation masks that matches the input.
     agg_func: callable
         Indicates how to aggregates scores e.g., pass np.mean.
+    return_as_df: boolean
+        Indicates if a pd.DataFrame should be returned.
     progress: boolean
         Indicates if progress should be printed to std, or not.
     explain_func_kwargs: dict, optional
@@ -65,6 +70,8 @@ def evaluate(
         Keyword arguments for the call of the metrics, keys are names for arg set and values are argument dictionaries.
     return_skill_score: boolean
         Indicates if skill score is to be returned.
+    agg_func_skill_score: callable, None
+        Indicates how to aggregates skill scores e.g., pass np.nanmean, optional.
     kwargs: optional
         Deprecated keyword arguments for the call of the metrics.
     Returns
@@ -86,19 +93,24 @@ def evaluate(
         return None
 
     if call_kwargs is None:
-        call_kwargs = {}
+        call_kwargs = {'call_kwargs_empty': {}}
+
     elif not isinstance(call_kwargs, Dict):
         raise TypeError("xai_methods type is not Dict[str, Dict].")
 
-    results: Dict[str, dict] = {}
+    evaluation_results: Dict[str, dict] = {}
     explain_funcs: Dict[str, Callable] = {}
 
     if not isinstance(xai_methods, dict):
         "xai_methods type is not in: Dict[str, Callable], Dict[str, Dict], Dict[str, np.ndarray]."
 
+    evaluation_scores_raw = {}
+    evaluation_scores_refs = {}
+
     for xai_method, xai_method_value in xai_methods.items():
 
-        results[xai_method] = {}
+        evaluation_results[xai_method] = {}
+        evaluation_scores_raw[xai_method] = {}
 
         if callable(xai_method_value):
 
@@ -122,10 +134,10 @@ def evaluate(
 
         elif isinstance(xai_method_value, Dict):
 
-            if explain_func_kwargs is not None:
+            if explain_func_kwargs:
                 warnings.warn(
-                    "Passed explain_func_kwargs will be ignored when passing type Dict[str, Dict] as xai_methods."
-                    "Pass explanation arguments as dictionary values."
+                    "Passed 'explain_func_kwargs' will be ignored when passing type Dict[str, Dict] as xai_methods. "
+                    "Pass explanation arguments as dictionary values for 'xai_methods'."
                 )
 
             explain_func_kwargs = xai_method_value
@@ -152,22 +164,65 @@ def evaluate(
         if explain_func_kwargs is None:
             explain_func_kwargs = {}
 
+        if return_skill_score:
+
+            # Remove the aggregate function.
+            agg_func_args = agg_func
+            agg_func = np.array
+
+            # Get the worst-case explanation.
+            method_control = "Control Var. Random Uniform"
+            explain_funcs[method_control] = explain
+
+            # Generate an explanations and score them constantly.
+            a_batch_control = explain_funcs[method_control](
+                model=model,
+                inputs=x_batch,
+                targets=y_batch,
+                **{**explain_func_kwargs,
+                **{"method": method_control},
+                }
+            )
+
         for (metric, metric_func) in metrics.items():
 
-            results[xai_method][metric] = {}
+            evaluation_results[xai_method][metric] = {}
+            evaluation_scores_raw[xai_method][metric] = {}
+            evaluation_scores_refs[metric] = {}
 
             for (call_kwarg_str, call_kwarg) in call_kwargs.items():
+
+                # TODO. Fix evaluation_scores_raw keys if len(call_kwargs) > 1:
+                # TODO. Fix evaluation_scores_refs keys if len(call_kwargs) > 1:
 
                 if progress:
                     print(
                         f"Evaluating {xai_method} explanations on {metric} metric on set of call parameters {call_kwarg_str}..."
                     )
 
+                # Compute evaluation scores.
+                evaluation_scores = agg_func(
+                    metric_func(
+                        model=model,
+                        x_batch=x_batch,
+                        y_batch=y_batch,
+                        a_batch=a_batch,
+                        s_batch=s_batch,
+                        explain_func=explain_funcs[xai_method],
+                        explain_func_kwargs={
+                            **explain_func_kwargs,
+                            **{"method": xai_method},
+                        },
+                        **call_kwarg,
+                        **kwargs,
+                    )
+                )
+
+                evaluation_scores_raw[xai_method][metric]["evaluation_scores"] = evaluation_scores
+
                 if return_skill_score:
 
-                    # Remove the aggregate function.
-                    agg_func_old = agg_func
-                    agg_func = np.array
+                    # Preprocessing steps.
 
                     # Make sure to return one value per explanation.
                     if metric_func.return_aggregate:
@@ -186,88 +241,70 @@ def evaluate(
                             "'return_sample_correlation' was set to False. To calculate skill score, it is now set to True."
                         )
 
-                results[xai_method][metric][call_kwarg_str] = agg_func(
-                    metric_func(
-                        model=model,
-                        x_batch=x_batch,
-                        y_batch=y_batch,
-                        a_batch=a_batch,
-                        s_batch=s_batch,
-                        explain_func=explain_funcs[xai_method],
-                        explain_func_kwargs={
-                            **explain_func_kwargs,
-                            **{"method": xai_method},
-                        },
-                        **call_kwarg,
-                        **kwargs,
-                    )
-                )
+                    if "reference_scores" not in evaluation_scores_refs[metric]:
+                        # Special case, randomisation category.
+                        if metric_func.evaluation_category == EvaluationCategory.RANDOMISATION:
 
-                if return_skill_score:
+                            # Measure similarity against the same explanation.
+                            reference_scores = [metric_func.similarity_func(a_batch_control.flatten(), a_batch_control.flatten()) for a in a_batch]
 
-                    # Get the worst-case explanation.
-                    method_control = "Control Var. Random Uniform"
-                    explain_funcs[method_control] = explain
+                        else:
 
-                    # Special case, randomisation category.
-                    if metric_func.evaluation_category == EvaluationCategory.RANDOMISATION:
+                            # Compute reference scores.
+                            reference_scores = agg_func(
+                                metric_func(
+                                    model=model,
+                                    x_batch=x_batch,
+                                    y_batch=y_batch,
+                                    a_batch=a_batch_control,
+                                    s_batch=s_batch,
+                                    explain_func=explain_funcs[method_control],
+                                    explain_func_kwargs={
+                                        **explain_func_kwargs,
+                                        **{"method": method_control},
+                                    },
+                                    **call_kwarg,
+                                    **kwargs,
+                                )
+                                )
 
-                        # Generate an explanations and score them constantly.
-                        a_batch = explain_funcs[method_control](
-                            model=model,
-                            inputs=x_batch,
-                            targets=y_batch,
-                            **{**explain_func_kwargs,
-                               **{"method": method_control},
-                               }
-                        )
 
-                        # Measure similarity against the same explanation.
-                        scores_reference = [metric_func.similarity_func(a.flatten(), a.flatten()) for a in a_batch]
+                    print(f"\n{metric} ({metric_func.score_direction.name} is better)\n"
+                          f" Baseline: {reference_scores}\n  {xai_method}: {evaluation_scores}")
 
-                    else:
-
-                        scores_reference = agg_func(
-                            metric_func(
-                                model=model,
-                                x_batch=x_batch,
-                                y_batch=y_batch,
-                                a_batch=a_batch,
-                                s_batch=s_batch,
-                                explain_func=explain_funcs[method_control],
-                                explain_func_kwargs={
-                                    **explain_func_kwargs,
-                                    **{"method": method_control},
-                                },
-                                **call_kwarg,
-                                **kwargs,
-                            )
-                        )
-
-                    print(f"\n{metric} ({metric_func.score_direction.name} is better)\n  Baseline: "
-                          f"{scores_reference}\n  {xai_method}: {results[xai_method][metric][call_kwarg_str]}")
+                    if agg_func_skill_score is None:
+                        agg_func_skill_score = np.nanmean
 
                     # Compute the skill score.
-                    skill_score = postprocess_func.explanation_skill_score(
-                        y_scores=results[xai_method][metric][call_kwarg_str],
-                        y_refs=scores_reference,
+                    skill_scores = postprocess_func.explanation_skill_score(
+                        y_scores=evaluation_scores,
+                        y_refs=reference_scores,
                         score_direction=metric_func.score_direction,
-                        agg_func=agg_func_old,
+                        agg_func=agg_func_skill_score,
                     )
+                    print("Skill:", skill_scores)
 
-                    """
-                    # Compute the skill score.
-                    xai_score = postprocess_func.xai_skill_score(
-                        y_scores=results[method][metric][call_kwarg_str],
-                        y_refs=scores_reference,
-                        score_direction=metric_func.score_direction,
-                        #agg_func=agg_func_old,
-                    )
-                    """
+                    evaluation_scores_refs[metric]["reference_scores"] = reference_scores
+                    evaluation_scores_raw[xai_method][metric]["skill_scores"] = skill_scores
 
-                    print("Skill:", skill_score)
-                    #print("Skill *:", xai_score)
+                    evaluation_scores = skill_scores
 
-                    results[xai_method][metric][call_kwarg_str] = skill_score
+                # If there is only one set of call_kwargs we drop the key.
+                if len(call_kwargs) > 1:
+                    evaluation_results[xai_method][metric][call_kwarg_str] = evaluation_scores
+                else:
+                    evaluation_results[xai_method][metric] = evaluation_scores
 
-    return results
+    # Convert the result to pd.DataFrame.
+    if return_as_df:
+        if len(call_kwargs) > 1:
+            print("Conversion from dict to pd.DataFrame of quantus.evaluate results is only possible if no dict is passed to 'call_kwargs' argument.")
+            return evaluation_results, evaluation_scores_raw, evaluation_scores_refs
+        else:
+            try:
+                return pd.DataFrame(evaluation_results), evaluation_scores_raw, evaluation_scores_refs
+            except:
+                print("Tried to convert the quantus.evaluate results to pd.DataFrame but failed. Try to set 'return_as_df' to False.")
+                return evaluation_results, evaluation_scores_raw, evaluation_scores_refs
+
+    return evaluation_results, evaluation_scores_raw, evaluation_scores_refs
