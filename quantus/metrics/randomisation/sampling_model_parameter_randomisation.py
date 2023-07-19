@@ -248,47 +248,48 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         # Get number of iterations from number of layers.
         n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
 
-        model_iterators = [tqdm(
-            model.get_random_layer_generator(order=self.layer_order, seed=self.seeds[n]),
-            total=n_layers,
-            disable=not self.display_progressbar,
-        ) for n in range(self.num_draws)]
+        model_iterators = [
+            model.get_random_layer_generator(order=self.layer_order, seed=self.seeds[n]) for n in range(self.num_draws)
+            ]
 
-        for l in range(n_layers):
+        with tqdm(total=n_layers*self.num_draws, disable=not self.display_progressbar) as pbar:
+            for l in range(n_layers):
 
-            similarity_scores = [None for _ in x_batch]
-            a_batch_perturbed_draws = []
+                similarity_scores = [None for _ in x_batch]
+                a_batch_perturbed_draws = []
 
-            # Generate self.num_draws perturbed models and explanations for each layer
-            for draw in range(self.num_draws):
-                model_iterator = model_iterators[draw]
+                # Generate self.num_draws perturbed models and explanations for each layer
+                for draw in range(self.num_draws):
+                    model_iterator = model_iterators[draw]
 
-                layer_name, random_layer_model = next(x for i,x in enumerate(model_iterator) if i==l)
+                    layer_name, random_layer_model = next(x for x in model_iterator)
 
-                # Generate an explanation with perturbed model.
-                a_batch_perturbed_draws.append(self.explain_func(
-                    model=random_layer_model,
-                    inputs=x_batch,
-                    targets=y_batch,
-                    **self.explain_func_kwargs,
-                ))
-            
-            a_batch_perturbed = np.mean(a_batch_perturbed_draws, axis=0)
+                    # Generate an explanation with perturbed model.
+                    a_batch_perturbed_draws.append(self.explain_func(
+                        model=random_layer_model,
+                        inputs=x_batch,
+                        targets=y_batch,
+                        **self.explain_func_kwargs,
+                    ))
 
-            batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.evaluate_instance(
-                    model=random_layer_model,
-                    x=None,
-                    y=None,
-                    s=None,
-                    a=a_instance,
-                    a_perturbed=a_instance_perturbed,
-                )
-                similarity_scores[instance_id] = result
+                    pbar.update(1)
+                
+                a_batch_perturbed = np.mean(a_batch_perturbed_draws, axis=0)
 
-            # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
+                batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
+                for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
+                    result = self.evaluate_instance(
+                        model=random_layer_model,
+                        x=None,
+                        y=None,
+                        s=None,
+                        a=a_instance,
+                        a_perturbed=a_instance_perturbed,
+                    )
+                    similarity_scores[instance_id] = result
+
+                # Save similarity scores in a result dictionary.
+                self.evaluation_scores[layer_name] = similarity_scores
 
         # Call post-processing.
         self.custom_postprocess(
