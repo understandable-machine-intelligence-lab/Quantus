@@ -79,11 +79,21 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
             xai_lib: string, optional
                 XAI library: captum, tf-explain or zennit.
             method: string, optional
-                XAI method (used with captum and tf-explain libraries).
-            attributor: string, optional
-                XAI method (used with zennit).
+                (used with captum and tf-explain libraries) XAI method.
+            attributor: zennit.attribution.Attributor class, optional
+                (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
+            composite: zennit.core.Composite, optional
+                (used with zennit) zennit composite, handling backward pass modification
+            canonizer: zennit.canonizers.Canonizer, optional
+                (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
             xai_lib_kwargs: dictionary, optional
-                Keyword arguments to be passed to the attribution function.
+                (used with captum and tf-explain libraries) Keyword arguments to be passed to the attribution function.
+            attributor_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the attributor.
+            composite_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the composite.
+            canonizer_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the canonizer.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
             channel_first: boolean, optional
@@ -150,11 +160,21 @@ def get_explanation(model, inputs, targets, **kwargs):
             xai_lib: string, optional
                 XAI library: captum, tf-explain or zennit.
             method: string, optional
-                XAI method (used with captum and tf-explain libraries).
-            attributor: string, optional
-                XAI method (used with zennit).
+                (used with captum and tf-explain libraries) XAI method.
+            attributor: zennit.attribution.Attributor class, optional
+                (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
+            composite: zennit.core.Composite, optional
+                (used with zennit) zennit composite, handling backward pass modification
+            canonizer: zennit.canonizers.Canonizer, optional
+                (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
             xai_lib_kwargs: dictionary, optional
-                Keyword arguments to be passed to the attribution function.
+                (used with captum and tf-explain libraries) Keyword arguments to be passed to the attribution function.
+            attributor_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the attributor.
+            composite_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the composite.
+            canonizer_kwargs: dictionary, optional
+                (used with zennit) Keyword arguments to be passed to the canonizer.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
             channel_first: boolean, optional
@@ -714,10 +734,18 @@ def generate_zennit_explanation(
             Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
             Pass as regular kwargs when using the stnad-alone function.
 
-            attributor: string, optional
-                XAI method.
-            xai_lib_kwargs: dictionary, optional
-                Keyword arguments to be passed to the attribution function.
+            attributor: zennit.attribution.Attributor class, optional
+                zennit Attributor handling input augmentation, default="Gradient"
+            composite: zennit.core.Composite, optional
+                zennit composite, handling backward pass modification
+            canonizer: zennit.canonizers.Canonizer, optional
+                zennit canonizer, handling model canonization required for some explanation methods
+            attributor_kwargs: dictionary, optional
+                Keyword arguments to be passed to the attributor.
+            composite_kwargs: dictionary, optional
+                Keyword arguments to be passed to the composite.
+            canonizer_kwargs: dictionary, optional
+                Keyword arguments to be passed to the canonizer.
             softmax: boolean, optional
                 Indicated whether softmax activation in the last layer shall be removed.
             channel_first: boolean, optional
