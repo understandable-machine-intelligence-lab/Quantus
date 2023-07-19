@@ -82,7 +82,7 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 (used with captum and tf-explain libraries) XAI method.
             attributor: zennit.attribution.Attributor (sub)class, optional
                 (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
-            composite: zennit.core.Composite (sub)class, optional
+            composite: string or zennit.core.Composite (sub)class, optional
                 (used with zennit) zennit composite, handling backward pass modification
             canonizer: zennit.canonizers.Canonizer (sub)class, optional
                 (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
@@ -163,7 +163,7 @@ def get_explanation(model, inputs, targets, **kwargs):
                 (used with captum and tf-explain libraries) XAI method.
             attributor: zennit.attribution.Attributor (sub)class, optional
                 (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
-            composite: zennit.core.Composite (sub)class, optional
+            composite: string or zennit.core.Composite (sub)class, optional
                 (used with zennit) zennit composite, handling backward pass modification
             canonizer: zennit.canonizers.Canonizer (sub)class, optional
                 (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
@@ -738,7 +738,7 @@ def generate_zennit_explanation(
                 zennit Attributor handling input augmentation, default="Gradient"
             composite: zennit.core.Composite (sub)class, optional
                 zennit composite, handling backward pass modification
-            canonizer: zennit.canonizers.Canonizer (sub)class, optional
+            canonizer: string or zennit.canonizers.Canonizer (sub)class, optional
                 zennit canonizer, handling model canonization required for some explanation methods
             attributor_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attributor.
