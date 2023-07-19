@@ -80,11 +80,11 @@ def explain(model, inputs, targets, **kwargs) -> np.ndarray:
                 XAI library: captum, tf-explain or zennit.
             method: string, optional
                 (used with captum and tf-explain libraries) XAI method.
-            attributor: zennit.attribution.Attributor class, optional
+            attributor: zennit.attribution.Attributor (sub)class, optional
                 (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
-            composite: zennit.core.Composite, optional
+            composite: zennit.core.Composite (sub)class, optional
                 (used with zennit) zennit composite, handling backward pass modification
-            canonizer: zennit.canonizers.Canonizer, optional
+            canonizer: zennit.canonizers.Canonizer (sub)class, optional
                 (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
             xai_lib_kwargs: dictionary, optional
                 (used with captum and tf-explain libraries) Keyword arguments to be passed to the attribution function.
@@ -161,11 +161,11 @@ def get_explanation(model, inputs, targets, **kwargs):
                 XAI library: captum, tf-explain or zennit.
             method: string, optional
                 (used with captum and tf-explain libraries) XAI method.
-            attributor: zennit.attribution.Attributor class, optional
+            attributor: zennit.attribution.Attributor (sub)class, optional
                 (used with zennit) zennit Attributor handling input augmentation, default="Gradient" 
-            composite: zennit.core.Composite, optional
+            composite: zennit.core.Composite (sub)class, optional
                 (used with zennit) zennit composite, handling backward pass modification
-            canonizer: zennit.canonizers.Canonizer, optional
+            canonizer: zennit.canonizers.Canonizer (sub)class, optional
                 (used with zennit) zennit canonizer, handling model canonization required for some explanation methods
             xai_lib_kwargs: dictionary, optional
                 (used with captum and tf-explain libraries) Keyword arguments to be passed to the attribution function.
@@ -734,11 +734,11 @@ def generate_zennit_explanation(
             Keyword arguments. Pass as "explain_func_kwargs" dictionary when working with a metric class.
             Pass as regular kwargs when using the stnad-alone function.
 
-            attributor: zennit.attribution.Attributor class, optional
+            attributor: zennit.attribution.Attributor (sub)class, optional
                 zennit Attributor handling input augmentation, default="Gradient"
-            composite: zennit.core.Composite, optional
+            composite: zennit.core.Composite (sub)class, optional
                 zennit composite, handling backward pass modification
-            canonizer: zennit.canonizers.Canonizer, optional
+            canonizer: zennit.canonizers.Canonizer (sub)class, optional
                 zennit canonizer, handling model canonization required for some explanation methods
             attributor_kwargs: dictionary, optional
                 Keyword arguments to be passed to the attributor.
