@@ -7,32 +7,28 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 import collections
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
-    Collection,
-    no_type_check,
-    final,
-)
+import sys
+from typing import Any, Callable, Collection, Dict, List, Optional, Union, no_type_check
 
 import numpy as np
 from tqdm.auto import tqdm
 
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.helpers import asserts, warn, utils
+from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedMetric
+
+if sys.version_info > (3, 7):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
 @final

@@ -6,20 +6,27 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, final
+import sys
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 
-from quantus.helpers import asserts, warn, utils
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
-from quantus.metrics.base_batched import BatchedMetric
+from quantus.helpers import asserts, utils, warn
 from quantus.helpers.enums import (
-    ModelType,
     DataType,
-    ScoreDirection,
     EvaluationCategory,
+    ModelType,
+    ScoreDirection,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base_batched import BatchedMetric
+
+if sys.version_info > (3, 7):
+    from typing import final
+else:
+    from typing_extensions import final
 
 
 @final
