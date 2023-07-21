@@ -6,7 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, final
 import numpy as np
 
 from quantus.helpers import asserts, warn, utils
@@ -22,6 +22,7 @@ from quantus.helpers.enums import (
 )
 
 
+@final
 class RandomLogit(BatchedMetric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.

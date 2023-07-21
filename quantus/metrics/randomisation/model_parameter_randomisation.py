@@ -15,6 +15,8 @@ from typing import (
     Optional,
     Union,
     Collection,
+    no_type_check,
+    final
 )
 
 import numpy as np
@@ -33,6 +35,7 @@ from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedMetric
 
 
+@final
 class ModelParameterRandomisation(BatchedMetric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
@@ -162,7 +165,7 @@ class ModelParameterRandomisation(BatchedMetric):
                 ),
             )
 
-    def __call__(
+    def __call__(  # type: ignore
         self,
         model,
         x_batch: np.array,
@@ -297,7 +300,7 @@ class ModelParameterRandomisation(BatchedMetric):
             similarity_scores = self.evaluate_batch(a_batch, a_batch_perturbed)
 
             # Save similarity scores in a result dictionary.
-            self.evaluation_scores[layer_name] = similarity_scores
+            self.evaluation_scores[layer_name] = similarity_scores.tolist()
 
         # Call post-processing.
         self.custom_postprocess(
@@ -322,6 +325,7 @@ class ModelParameterRandomisation(BatchedMetric):
 
         return self.evaluation_scores
 
+    @no_type_check
     def evaluate_batch(
         self, a_batch: np.ndarray, a_perturbed: np.ndarray, **kwargs
     ) -> np.ndarray:
@@ -371,13 +375,12 @@ class ModelParameterRandomisation(BatchedMetric):
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
-        results: Dict[int, list] = collections.defaultdict(lambda: [])
+        results: Dict[str, List] = collections.defaultdict(lambda: [])
+        results_mean = dict()
 
         for sample in results:
             for layer in self.evaluation_scores:
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
-            results[sample] = float(np.mean(results[sample]))
+            results_mean[sample] = float(np.mean(results[sample]))
 
-        corr_coeffs = list(results.values())
-
-        return corr_coeffs
+        return list(results_mean.values())
