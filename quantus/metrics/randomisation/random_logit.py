@@ -8,7 +8,6 @@
 
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
-import logging
 
 from quantus.helpers import asserts, warn, utils
 from quantus.helpers.model.model_interface import ModelInterface
@@ -21,8 +20,6 @@ from quantus.helpers.enums import (
     ScoreDirection,
     EvaluationCategory,
 )
-
-log = logging.getLogger("quantus")
 
 
 class RandomLogit(BatchedMetric):
