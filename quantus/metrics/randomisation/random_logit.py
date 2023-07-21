@@ -6,15 +6,15 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional
 import numpy as np
+import logging
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
+from quantus.helpers import asserts, warn, utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import ssim
-from quantus.metrics.base import Metric
+from quantus.metrics.base_batched import BatchedMetric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -22,8 +22,10 @@ from quantus.helpers.enums import (
     EvaluationCategory,
 )
 
+log = logging.getLogger("quantus")
 
-class RandomLogit(Metric):
+
+class RandomLogit(BatchedMetric):
     """
     Implementation of the Random Logit Metric by Sixt et al., 2020.
 
@@ -51,7 +53,7 @@ class RandomLogit(Metric):
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Callable = None,
+        similarity_func: Callable[[np.ndarray, np.ndarray], float] = ssim,
         num_classes: int = 1000,
         seed: int = 42,
         abs: bool = False,
@@ -70,6 +72,7 @@ class RandomLogit(Metric):
         ----------
         similarity_func: callable
             Similarity function applied to compare input and perturbed input, default=ssim.
+            Must take two 1D arrays as positional arguments and return a float scalar.
         num_classes: integer
             Number of prediction classes in the input, default=1000.
         seed: integer
@@ -113,9 +116,9 @@ class RandomLogit(Metric):
         )
 
         # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = ssim
-        self.similarity_func = similarity_func
+        self.similarity_func = np.vectorize(
+            similarity_func, signature="(n),(n)->()", cache=True
+        )
         self.num_classes = num_classes
         self.seed = seed
 
@@ -237,61 +240,39 @@ class RandomLogit(Metric):
             **kwargs,
         )
 
-    def evaluate_instance(
+    def evaluate_batch(
         self,
         model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-        s: np.ndarray,
-    ) -> float:
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        a_batch: np.ndarray,
+        s_batch: np.ndarray,
+    ) -> np.ndarray:
         """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+        .evaluate_batch() will:
+            - Swap each entry in y_batch
+            - Generate explanations for pseudo-labels.
+            - Compute similarity between original and newly generated explanations.
 
-        Parameters
-        ----------
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-
-        Returns
-        -------
-        float
-            The evaluation results.
         """
-        # Randomly select off-class labels.
         np.random.seed(self.seed)
-        y_off = np.array(
-            [
-                np.random.choice(
-                    [y_ for y_ in list(np.arange(0, self.num_classes)) if y_ != y]
-                )
-            ]
-        )
+        prng = np.random.default_rng()
+
+        y_off_batch = prng.integers(0, self.num_classes, y_batch.shape)
+
+        while any(y_off_batch == y_batch):
+            # We need to make sure every label was changed.
+            same_indexes = np.argwhere(y_off_batch == y_batch)
+            y_off_2 = prng.integers(0, self.num_classes, y_batch.shape)
+            y_off_batch[same_indexes] = y_off_2[same_indexes]
 
         # Explain against a random class.
-        a_perturbed = self.explain_func(
-            model=model.get_model(),
-            inputs=np.expand_dims(x, axis=0),
-            targets=y_off,
-            **self.explain_func_kwargs,
-        )
+        a_perturbed = self.explain_batch(model, x_batch, y_off_batch)
 
-        # Normalise and take absolute values of the attributions, if True.
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+        a_batch = utils.flatten_over_batch(a_batch)
+        a_perturbed = utils.flatten_over_batch(a_perturbed)
 
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
-
-        return self.similarity_func(a.flatten(), a_perturbed.flatten())
+        return self.similarity_func(a_batch, a_perturbed)
 
     def custom_preprocess(
         self,

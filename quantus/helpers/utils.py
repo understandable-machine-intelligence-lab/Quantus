@@ -995,3 +995,23 @@ def calculate_auc(values: np.array, dx: int = 1):
         Definite integral of values.
     """
     return np.trapz(np.array(values), dx=dx)
+
+
+def flatten_over_batch(arr: np.ndarray) -> np.ndarray:
+    """
+    Flatten each element in batch. Accepts array with rank 3 and higher.
+
+    Examples:
+        >>> x = np.random.default_rng().uniform(0, 1, [8, 24, 24, 3])
+        >>> flatten_over_batch(x).shape
+        >>> (8, 1728)
+    """
+
+    # Is identical to https://www.tensorflow.org/api_docs/python/tf/rank, just it is missing in numpy API
+    rank = len(np.shape(arr))
+
+    if rank < 3:
+        return arr
+
+    batch_size = len(arr)
+    return np.reshape(arr, (batch_size, -1))

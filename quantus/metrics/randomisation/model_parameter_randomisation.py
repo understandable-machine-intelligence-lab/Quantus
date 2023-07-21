@@ -6,35 +6,34 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+import collections
 from typing import (
     Any,
     Callable,
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
     Collection,
-    Iterable,
 )
+
 import numpy as np
 from tqdm.auto import tqdm
 
-from quantus.helpers import asserts
-from quantus.helpers import warn
-from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.base import Metric
+from quantus.helpers import asserts, warn, utils
 from quantus.helpers.enums import (
     ModelType,
     DataType,
     ScoreDirection,
     EvaluationCategory,
 )
+from quantus.helpers.model.model_interface import ModelInterface
+from quantus.metrics.base_batched import BatchedMetric
 
 
-class ModelParameterRandomisation(Metric):
+class ModelParameterRandomisation(BatchedMetric):
     """
     Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
 
@@ -66,7 +65,9 @@ class ModelParameterRandomisation(Metric):
     @asserts.attributes_check
     def __init__(
         self,
-        similarity_func: Callable = None,
+        similarity_func: Callable[
+            [np.ndarray, np.ndarray], float
+        ] = correlation_spearman,
         layer_order: str = "independent",
         seed: int = 42,
         return_sample_correlation: bool = False,
@@ -86,6 +87,7 @@ class ModelParameterRandomisation(Metric):
         ----------
         similarity_func: callable
             Similarity function applied to compare input and perturbed input, default=correlation_spearman.
+            Must take two 1D arrays as positional arguments and return a float scalar.
         layer_order: string
             Indicated whether the model is randomized cascadingly or independently.
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
@@ -134,9 +136,9 @@ class ModelParameterRandomisation(Metric):
         )
 
         # Save metric-specific attributes.
-        if similarity_func is None:
-            similarity_func = correlation_spearman
-        self.similarity_func = similarity_func
+        self.similarity_func = np.vectorize(
+            similarity_func, signature="(n),(n)->()", cache=True
+        )
         self.layer_order = layer_order
         self.seed = seed
         self.return_sample_correlation = return_sample_correlation
@@ -290,28 +292,9 @@ class ModelParameterRandomisation(Metric):
         )
 
         for layer_name, random_layer_model in model_iterator:
-
-            similarity_scores = [None for _ in x_batch]
-
             # Generate an explanation with perturbed model.
-            a_batch_perturbed = self.explain_func(
-                model=random_layer_model,
-                inputs=x_batch,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                result = self.evaluate_instance(
-                    model=random_layer_model,
-                    x=None,
-                    y=None,
-                    s=None,
-                    a=a_instance,
-                    a_perturbed=a_instance_perturbed,
-                )
-                similarity_scores[instance_id] = result
+            a_batch_perturbed = self.explain_batch(random_layer_model, x_batch, y_batch)
+            similarity_scores = self.evaluate_batch(a_batch, a_batch_perturbed)
 
             # Save similarity scores in a result dictionary.
             self.evaluation_scores[layer_name] = similarity_scores
@@ -339,48 +322,13 @@ class ModelParameterRandomisation(Metric):
 
         return self.evaluation_scores
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: Optional[np.ndarray],
-        y: Optional[np.ndarray],
-        a: Optional[np.ndarray],
-        s: Optional[np.ndarray],
-        a_perturbed: Optional[np.ndarray] = None,
-    ) -> float:
-        """
-        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
-
-        Parameters
-        ----------
-        i: integer
-            The evaluation instance.
-        model: ModelInterface
-            A ModelInteface that is subject to explanation.
-        x: np.ndarray
-            The input to be evaluated on an instance-basis.
-        y: np.ndarray
-            The output to be evaluated on an instance-basis.
-        a: np.ndarray
-            The explanation to be evaluated on an instance-basis.
-        s: np.ndarray
-            The segmentation to be evaluated on an instance-basis.
-        a_perturbed: np.ndarray
-            The perturbed attributions.
-
-        Returns
-        -------
-        float
-            The evaluation results.
-        """
-        if self.normalise:
-            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
-
-        if self.abs:
-            a_perturbed = np.abs(a_perturbed)
-
-        # Compute distance measure.
-        return self.similarity_func(a_perturbed.flatten(), a.flatten())
+    def evaluate_batch(
+        self, a_batch: np.ndarray, a_perturbed: np.ndarray, **kwargs
+    ) -> np.ndarray:
+        """Computes similarity between original explanations, and the ones generated by modified model."""
+        a_batch = utils.flatten_over_batch(a_batch)
+        a_perturbed = utils.flatten_over_batch(a_perturbed)
+        return self.similarity_func(a_batch, a_perturbed)
 
     def custom_preprocess(
         self,
@@ -417,24 +365,18 @@ class ModelParameterRandomisation(Metric):
         # won't be executed when a_batch != None.
         asserts.assert_explain_func(explain_func=self.explain_func)
 
-    def compute_correlation_per_sample(
-        self,
-    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
-
+    def compute_correlation_per_sample(self) -> List[float]:
         assert isinstance(self.evaluation_scores, dict), (
             "To compute the average correlation coefficient per sample for "
             "Model Parameter Randomisation Test, 'last_result' "
             "must be of type dict."
         )
-        layer_length = len(
-            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
-        )
-        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+        results: Dict[int, list] = collections.defaultdict(lambda: [])
 
         for sample in results:
             for layer in self.evaluation_scores:
                 results[sample].append(float(self.evaluation_scores[layer][sample]))
-            results[sample] = np.mean(results[sample])
+            results[sample] = float(np.mean(results[sample]))
 
         corr_coeffs = list(results.values())
 

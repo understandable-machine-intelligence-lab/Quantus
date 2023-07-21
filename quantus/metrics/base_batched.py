@@ -419,6 +419,28 @@ class BatchedMetric(Metric):
             "evaluate_instance() not implemented for BatchedMetric"
         )
 
+    def explain_batch(self, model: ModelInterface, x_batch: np.ndarray, y_batch: np.ndarray) -> np.ndarray:
+        """Compute explanations, normalize and take absolute (if was configured so during metric initialization.)"""
+        if hasattr(model, "get_model"):
+            # Sometimes the model is our wrapper, but sometimes raw Keras/Torch model.
+            model = model.get_model()
+
+        a_batch = self.explain_func(
+            model=model,
+            inputs=x_batch,
+            targets=y_batch,
+            **self.explain_func_kwargs
+        )
+
+        # Normalise and take absolute values of the attributions, if configured during metric instantiation.
+        if self.normalise:
+            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
+
+        if self.abs:
+            a_batch = np.abs(a_batch)
+
+        return a_batch
+
 
 class BatchedPerturbationMetric(BatchedMetric):
     """
