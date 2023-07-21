@@ -6,9 +6,7 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
-import inspect
 import math
-import re
 from abc import abstractmethod
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
@@ -16,8 +14,7 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from quantus.metrics.base import Metric
-from quantus.helpers import asserts
-from quantus.helpers import warn
+from quantus.helpers import asserts, warn, utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.helpers.enums import (
     ModelType,
@@ -431,6 +428,8 @@ class BatchedMetric(Metric):
             targets=y_batch,
             **self.explain_func_kwargs
         )
+        a_batch = utils.expand_attribution_channel(a_batch, x_batch)
+        asserts.assert_attributions(x_batch=x_batch, a_batch=a_batch)
 
         # Normalise and take absolute values of the attributions, if configured during metric instantiation.
         if self.normalise:
