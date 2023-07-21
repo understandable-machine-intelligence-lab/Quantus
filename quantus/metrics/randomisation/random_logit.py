@@ -23,7 +23,7 @@ from quantus.helpers.enums import (
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedMetric
 
-if sys.version_info > (3, 7):
+if sys.version_info >= (3, 8):
     from typing import final
 else:
     from typing_extensions import final
