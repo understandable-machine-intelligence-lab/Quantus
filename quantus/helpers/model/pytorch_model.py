@@ -10,6 +10,7 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import Any, Dict, Optional, Tuple, List, Union
 import warnings
+import logging
 
 import numpy as np
 import torch
@@ -75,12 +76,18 @@ class PyTorchModel(ModelInterface):
         """
         In a case model has a softmax module, the last torch.nn.Softmax module in the self.model.modules() list is
         replaced with torch.nn.Identity().
+        Iterates through named modules in reverse order (from the last to the first), for the first module of
+        torch.nn.Softmax type, the module's name is then used to replace the module with torch.nn.Identity() in
+        the original model's copy using setattr.
         """
         linear_model = copy.deepcopy(self.model)
 
-        for attr_tpl in list(linear_model.named_modules())[::-1]:
-            if isinstance(attr_tpl[1], torch.nn.Softmax):
-                setattr(linear_model, attr_tpl[0], torch.nn.Identity())
+        for named_module in list(linear_model.named_modules())[::-1]:
+            if isinstance(named_module[1], torch.nn.Softmax):
+                setattr(linear_model, named_module[0], torch.nn.Identity())
+
+                logging.info("Argument softmax=False passed, but the passed model contains a module of type "
+                             "torch.nn.Softmax. Module {} has been replaced with torch.nn.Identity().", named_module[0])
                 break
 
         return linear_model
@@ -90,6 +97,17 @@ class PyTorchModel(ModelInterface):
         Returns model with last layer adjusted accordingly to softmax argument.
         If the original model has softmax activation as the last layer and softmax=false,
         the layer is removed.
+            +----------------------------------------------+----------------+-------------------+
+            |                                              | softmax = true |  softmax = false  |
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax LAST in model.modules()     | Do softmax  (1)| Remove softmax (4)|
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax NOT LAST in model.modules() | Add softmax (2)| Do nothing     (5)|
+            +----------------------------------------------+----------------+-------------------+
+            | torch.nn.Softmax NOT in model.modules()      | Add softmax (3)| Do nothing     (6)|
+            +----------------------------------------------+----------------+-------------------+
+
+        (cells numbers according to Case N comments in the method)
         """
 
         # last_softmax is the index of the last module which is of softmax type in the list of model children
@@ -100,6 +118,8 @@ class PyTorchModel(ModelInterface):
             return self.model  # Case 1
 
         if self.softmax and not last_softmax:
+            logging.info("Argument softmax=True passed, but the passed model contains no module of type "
+                         "torch.nn.Softmax. torch.nn.Softmax module is added as the output layer.")
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 3
 
         if not self.softmax and not last_softmax:
@@ -113,6 +133,13 @@ class PyTorchModel(ModelInterface):
         )  # Warning for cases 2, 4, 5
 
         if self.softmax and last_softmax != -1:
+            logging.info("Argument softmax=True passed. The passed model contains a module of type "
+                         "torch.nn.Softmax, but it is not the last in the list of model's children ("
+                         "self.model.modules()). torch.nn.Softmax module is added as the output layer."
+                         "Make sure that the torch.nn.Softmax layer is the last module in the list "
+                         "of model's children (self.model.modules()) if and only if it is the actual last module "
+                         "applied before output.")
+
             return torch.nn.Sequential(self.model, torch.nn.Softmax(dim=-1))  # Case 2
 
         if not self.softmax and last_softmax == -1:

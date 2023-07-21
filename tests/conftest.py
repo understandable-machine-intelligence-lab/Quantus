@@ -211,6 +211,10 @@ def titanic_dataset():
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax_not_last():
+    '''
+    Model with a softmax layer not last in the list of modules. Used to test the logic of pytorch_model.py,
+    method get_softmax_arg_model (see the method's documentation).
+    '''
     model = torch.nn.Sequential(
         torch.nn.Flatten(),
         torch.nn.Softmax(),
@@ -221,6 +225,10 @@ def load_mnist_model_softmax_not_last():
 
 @pytest.fixture(scope="session", autouse=True)
 def load_mnist_model_softmax():
+    '''
+    Model with a softmax layer last in the list of modules. Used to test the logic of pytorch_model.py,
+    method get_softmax_arg_model (see the method's documentation).
+    '''
     model = torch.nn.Sequential(
         LeNet(),
         torch.nn.Softmax(),
