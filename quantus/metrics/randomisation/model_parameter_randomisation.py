@@ -16,7 +16,7 @@ from typing import (
     Union,
     Collection,
     no_type_check,
-    final
+    final,
 )
 
 import numpy as np
