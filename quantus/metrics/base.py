@@ -67,7 +67,6 @@ class Metric:
     def data_applicability(self) -> Set[DataType]:
         raise NotImplementedError
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool,

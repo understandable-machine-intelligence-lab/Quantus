@@ -57,7 +57,6 @@ class Completeness(PerturbationMetric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.AXIOMATIC
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool = False,

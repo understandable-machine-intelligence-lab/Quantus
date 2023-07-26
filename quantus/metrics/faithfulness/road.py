@@ -55,7 +55,6 @@ class ROAD(PerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.FAITHFULNESS
 
-    @asserts.attributes_check
     def __init__(
         self,
         percentages: Optional[List[float]] = None,

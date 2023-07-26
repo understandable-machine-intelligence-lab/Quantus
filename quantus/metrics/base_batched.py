@@ -45,7 +45,6 @@ class BatchedMetric(Metric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.NONE
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool,
@@ -427,7 +426,6 @@ class BatchedPerturbationMetric(BatchedMetric):
     This batched metric has additional attributes for perturbations.
     """
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool,

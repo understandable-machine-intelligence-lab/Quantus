@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.metrics.base_batched import BatchedPerturbationMetric
 from quantus.helpers.warn import warn_parameterisation
-from quantus.helpers.asserts import attributes_check
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
 from quantus.functions.perturb_func import uniform_noise, perturb_batch
 from quantus.helpers.utils import expand_attribution_channel
@@ -58,7 +57,6 @@ class RelativeRepresentationStability(BatchedPerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.ROBUSTNESS
 
-    @attributes_check
     def __init__(
         self,
         nr_samples: int = 200,

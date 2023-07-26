@@ -52,7 +52,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.ROBUSTNESS
 
-    @asserts.attributes_check
+
     def __init__(
         self,
         similarity_func: Optional[Callable] = None,

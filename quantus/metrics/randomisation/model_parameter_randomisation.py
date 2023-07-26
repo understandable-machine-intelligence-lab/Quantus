@@ -63,7 +63,6 @@ class ModelParameterRandomisation(Metric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.RANDOMISATION
 
-    @asserts.attributes_check
     def __init__(
         self,
         similarity_func: Callable = None,
