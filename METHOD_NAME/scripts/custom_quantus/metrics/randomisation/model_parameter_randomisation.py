@@ -1,4 +1,4 @@
-"""This module contains the implementation of the Model Parameter Randomisation with Sampling metric."""
+"""This module contains the implementation of the Model Parameter Sensitivity metric."""
 
 # This file is part of Quantus.
 # Quantus is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -17,19 +17,15 @@ from typing import (
     Collection,
     Iterable,
 )
-import os
 import numpy as np
-import torch
 from tqdm.auto import tqdm
-from copy import deepcopy
 
 from quantus.helpers import asserts
 from quantus.helpers import warn
-from quantus.helpers import utils
 from quantus.helpers.model.model_interface import ModelInterface
 from quantus.functions.normalise_func import normalise_by_max
 from quantus.functions.similarity_func import correlation_spearman
-from quantus.metrics.randomisation.model_parameter_randomisation import ModelParameterRandomisation
+from quantus.metrics.base import Metric
 from quantus.helpers.enums import (
     ModelType,
     DataType,
@@ -38,12 +34,30 @@ from quantus.helpers.enums import (
 )
 
 
-class ModelParameterRandomisationSampling(ModelParameterRandomisation):
+class ModelParameterRandomisation(Metric):
     """
-    
+    Implementation of the Model Parameter Randomization Method by Adebayo et. al., 2018.
+
+    The Model Parameter Randomization measures the distance between the original attribution and a newly computed
+    attribution throughout the process of cascadingly/independently randomizing the model parameters of one layer
+    at a time.
+
+    Assumptions:
+        - In the original paper multiple distance measures are taken: Spearman rank correlation (with and without abs),
+        HOG and SSIM. We have set Spearman as the default value.
+
+    References:
+        1) Julius Adebayo et al.: "Sanity Checks for Saliency Maps." NeurIPS (2018): 9525-9536.
+
+    Attributes:
+        -  _name: The name of the metric.
+        - _data_applicability: The data types that the metric implementation currently supports.
+        - _models: The model types that this metric can work with.
+        - score_direction: How to interpret the scores, whether higher/ lower values are considered better.
+        - evaluation_category: What property/ explanation quality that this metric measures.
     """
 
-    name = "Model Parameter Randomisation Sampling"
+    name = "Model Parameter Randomisation"
     data_applicability = {DataType.IMAGE, DataType.TIMESERIES, DataType.TABULAR}
     model_applicability = {ModelType.TORCH, ModelType.TF}
     score_direction = ScoreDirection.LOWER
@@ -52,12 +66,9 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
     @asserts.attributes_check
     def __init__(
         self,
-        n_perturbations: int = 3,
-        perturbation_noise_level: float = 0.1,
-        n_randomisations: int = 1,
         similarity_func: Callable = None,
         layer_order: str = "independent",
-        seed: int = None,
+        seed: int = 42,
         return_sample_correlation: bool = False,
         abs: bool = True,
         normalise: bool = True,
@@ -73,17 +84,14 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         """
         Parameters
         ----------
-        num_draws: integer
-            Number of randomization draws per layer.
-            Higher numbers reduce noise in explanation functions but take longer to compute, default=10
         similarity_func: callable
             Similarity function applied to compare input and perturbed input, default=correlation_spearman.
         layer_order: string
             Indicated whether the model is randomized cascadingly or independently.
             Set order=top_down for cascading randomization, set order=independent for independent randomization,
             default="independent".
-        seeds: List of integers
-            Seeds used for the random generators, with as many seeds as num_draws, default=None.
+        seed: integer
+            Seed used for the random generator, default=42.
         return_sample_correlation: boolean
             Indicates whether return one float per sample, representing the average
             correlation coefficient across the layers for that sample.
@@ -109,28 +117,10 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         kwargs: optional
             Keyword arguments.
         """
-
-        self.n_perturbations = n_perturbations
-        self.perturbation_noise_level = perturbation_noise_level
-        self.n_randomisations = n_randomisations
-
-        # Set seed for reproducibility
-        if seed is not None:
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            os.environ['PYTHONHASHSEED'] = str(seed)
-
-            #torch.backends.cudnn.benchmark = False
-            #torch.backends.cudnn.deterministic = True
-            #torch.backends.cudnn.enabled = False
+        if normalise_func is None:
+            normalise_func = normalise_by_max
 
         super().__init__(
-            similarity_func=similarity_func,
-            layer_order=layer_order,
-            return_sample_correlation=return_sample_correlation,
             abs=abs,
             normalise=normalise,
             normalise_func=normalise_func,
@@ -142,6 +132,33 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
             disable_warnings=disable_warnings,
             **kwargs,
         )
+
+        # Save metric-specific attributes.
+        if similarity_func is None:
+            similarity_func = correlation_spearman
+        self.similarity_func = similarity_func
+        self.layer_order = layer_order
+        self.seed = seed
+        self.return_sample_correlation = return_sample_correlation
+
+        # Results are returned/saved as a dictionary not like in the super-class as a list.
+        self.evaluation_scores = {}
+
+        # Asserts and warnings.
+        asserts.assert_layer_order(layer_order=self.layer_order)
+        if not self.disable_warnings:
+            warn.warn_parameterisation(
+                metric_name=self.__class__.__name__,
+                sensitive_params=(
+                    "similarity metric 'similarity_func' and the order of "
+                    "the layer randomisation 'layer_order'"
+                ),
+                citation=(
+                    "Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. "
+                    "'Sanity Checks for Saliency Maps.' arXiv preprint,"
+                    " arXiv:1810.073292v3 (2018)"
+                ),
+            )
 
     def __call__(
         self,
@@ -158,7 +175,6 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         device: Optional[str] = None,
         batch_size: int = 64,
         custom_batch: Optional[Any] = None,
-        attributions_path: str = None,
         **kwargs,
     ) -> Union[List[float], float, Dict[str, List[float]], Collection[Any]]:
         """
@@ -199,8 +215,6 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
             This is used for this __call__ only and won't be saved as attribute. If None, self.softmax is used.
         device: string
             Indicated the device on which a torch.Tensor is or will be allocated: "cpu" or "gpu".
-        attributions_path: str
-            Optional path to store attributions as .npy files. default=None
         kwargs: optional
             Keyword arguments.
 
@@ -258,7 +272,6 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
             softmax=softmax,
             device=device,
         )
-
         model = data["model"]
         x_batch = data["x_batch"]
         y_batch = data["y_batch"]
@@ -267,70 +280,41 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         # Results are returned/saved as a dictionary not as a list as in the super-class.
         self.evaluation_scores = {}
 
-        # Get randomisable layers
-        randomisable_layers = model.get_randomisable_layer_names(order=self.layer_order)
+        # Get number of iterations from number of layers.
+        n_layers = len(list(model.get_random_layer_generator(order=self.layer_order)))
 
-        with tqdm(total=len(randomisable_layers)*self.n_perturbations*self.n_randomisations, disable=not self.display_progressbar) as pbar:
-            for randomisation in range(self.n_randomisations):
-                for l, layer_name in enumerate(randomisable_layers):
-                    similarity_scores = [None for _ in x_batch]
-                    a_batch_perturbed_draws = []
-                    _, random_layer_model = model.get_random_model_until_layer(order=self.layer_order, layer_name=layer_name)
+        model_iterator = tqdm(
+            model.get_random_layer_generator(order=self.layer_order, seed=self.seed),
+            total=n_layers,
+            disable=not self.display_progressbar,
+        )
 
-                    # Generate self.num_draws perturbed models and explanations for each layer
-                    for perturb in range(self.n_perturbations):
-                        # model_iterator = model_iterators[draw]
-                        # layer_name, random_layer_model = next(x for x in model_iterator)
-                        random_layer_model_draw = deepcopy(random_layer_model)
+        for layer_name, random_layer_model in model_iterator:
 
-                        # Keep last perturbation as the original
-                        if perturb != self.n_perturbations - 1:
-                            model.perturb_model_weights(random_layer_model_draw, std=self.perturbation_noise_level)
+            similarity_scores = [None for _ in x_batch]
 
-                        # Generate an explanation with perturbed model.
-                        a_batch_perturbed_draws.append(self.explain_func(
-                            model=random_layer_model_draw,
-                            inputs=x_batch,
-                            targets=y_batch,
-                            **self.explain_func_kwargs,
-                        ))
-                    
-                    a_batch_perturbed = np.mean(a_batch_perturbed_draws, axis=0)
+            # Generate an explanation with perturbed model.
+            a_batch_perturbed = self.explain_func(
+                model=random_layer_model,
+                inputs=x_batch,
+                targets=y_batch,
+                **self.explain_func_kwargs,
+            )
 
-                    # Get id for storage
-                    if attributions_path is not None and randomisation == self.n_randomisations-1:
-                        savepath = os.path.join(attributions_path, f"{l}-{layer_name}")
-                        os.makedirs(savepath, exist_ok=True)
-                        last_id = 0
-                        for fname in os.listdir(savepath):
-                            if "original_attribution_" in fname:
-                                id = int(fname.split("original_attribution_")[1].split(".")[0]) > last_id
-                                if id > last_id:
-                                    last_id = id
+            batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
+            for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
+                result = self.evaluate_instance(
+                    model=random_layer_model,
+                    x=None,
+                    y=None,
+                    s=None,
+                    a=a_instance,
+                    a_perturbed=a_instance_perturbed,
+                )
+                similarity_scores[instance_id] = result
 
-                    batch_iterator = enumerate(zip(a_batch, a_batch_perturbed))
-                    for instance_id, (a_instance, a_instance_perturbed) in batch_iterator:
-                        result = self.evaluate_instance(
-                            model=random_layer_model,
-                            x=None,
-                            y=None,
-                            s=None,
-                            a=a_instance,
-                            a_perturbed=a_instance_perturbed,
-                        )
-                        similarity_scores[instance_id] = result
-
-                        if attributions_path is not None:
-                            np.save(os.path.join(savepath, f"input_{last_id+instance_id}.npy"), x_batch[instance_id])
-                            np.save(os.path.join(savepath, f"original_attribution_{last_id+instance_id}.npy"), a_instance)
-                            np.save(os.path.join(savepath, f"perturbed_attribution_{last_id+instance_id}.npy"), a_instance_perturbed)
-
-                    # Save similarity scores in a result dictionary.
-                    if layer_name not in self.evaluation_scores.keys():
-                        self.evaluation_scores[layer_name] = []
-                    self.evaluation_scores[layer_name].append(similarity_scores)
-
-                    pbar.update(1)
+            # Save similarity scores in a result dictionary.
+            self.evaluation_scores[layer_name] = similarity_scores
 
         # Call post-processing.
         self.custom_postprocess(
@@ -354,3 +338,104 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
         self.all_evaluation_scores.append(self.evaluation_scores)
 
         return self.evaluation_scores
+
+    def evaluate_instance(
+        self,
+        model: ModelInterface,
+        x: Optional[np.ndarray],
+        y: Optional[np.ndarray],
+        a: Optional[np.ndarray],
+        s: Optional[np.ndarray],
+        a_perturbed: Optional[np.ndarray] = None,
+    ) -> float:
+        """
+        Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
+
+        Parameters
+        ----------
+        i: integer
+            The evaluation instance.
+        model: ModelInterface
+            A ModelInteface that is subject to explanation.
+        x: np.ndarray
+            The input to be evaluated on an instance-basis.
+        y: np.ndarray
+            The output to be evaluated on an instance-basis.
+        a: np.ndarray
+            The explanation to be evaluated on an instance-basis.
+        s: np.ndarray
+            The segmentation to be evaluated on an instance-basis.
+        a_perturbed: np.ndarray
+            The perturbed attributions.
+
+        Returns
+        -------
+        float
+            The evaluation results.
+        """
+        if self.normalise:
+            a_perturbed = self.normalise_func(a_perturbed, **self.normalise_func_kwargs)
+
+        if self.abs:
+            a_perturbed = np.abs(a_perturbed)
+
+        # Compute distance measure.
+        return self.similarity_func(a_perturbed.flatten(), a.flatten())
+
+    def custom_preprocess(
+        self,
+        model: ModelInterface,
+        x_batch: np.ndarray,
+        y_batch: Optional[np.ndarray],
+        a_batch: Optional[np.ndarray],
+        s_batch: np.ndarray,
+        custom_batch: Optional[np.ndarray],
+    ) -> None:
+        """
+        Implementation of custom_preprocess_batch.
+
+        Parameters
+        ----------
+        model: torch.nn.Module, tf.keras.Model
+            A torch or tensorflow model e.g., torchvision.models that is subject to explanation.
+        x_batch: np.ndarray
+            A np.ndarray which contains the input data that are explained.
+        y_batch: np.ndarray
+            A np.ndarray which contains the output labels that are explained.
+        a_batch: np.ndarray, optional
+            A np.ndarray which contains pre-computed attributions i.e., explanations.
+        s_batch: np.ndarray, optional
+            A np.ndarray which contains segmentation masks that matches the input.
+        custom_batch: any
+            Gives flexibility ot the user to use for evaluation, can hold any variable.
+
+        Returns
+        -------
+        None
+        """
+        # Additional explain_func assert, as the one in general_preprocess()
+        # won't be executed when a_batch != None.
+        asserts.assert_explain_func(explain_func=self.explain_func)
+
+    def compute_correlation_per_sample(
+        self,
+    ) -> Union[List[List[Any]], Dict[int, List[Any]]]:
+
+        assert isinstance(self.evaluation_scores, dict), (
+            "To compute the average correlation coefficient per sample for "
+            "Model Parameter Randomisation Test, 'last_result' "
+            "must be of type dict."
+        )
+        layer_length = len(
+            self.evaluation_scores[list(self.evaluation_scores.keys())[0]]
+        )
+        results: Dict[int, list] = {sample: [] for sample in range(layer_length)}
+
+        for sample in results:
+            for layer in self.evaluation_scores:
+                results[sample].append(float(self.evaluation_scores[layer][sample]))
+            results[sample] = np.mean(results[sample])
+
+        corr_coeffs = list(results.values())
+
+        return corr_coeffs

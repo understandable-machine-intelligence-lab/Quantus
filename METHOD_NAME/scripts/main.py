@@ -1,18 +1,140 @@
 import click
 import os
 import logging
+from typing import List, Union, Dict, Any
+import json
 
 import numpy as np
 import torch
+import wandb
 
-import quantus
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
+from PIL import Image
+
 from zennit import attribution as zattr
+from zennit import image as zimage
 from zennit import composites as zcomp
 
+import custom_quantus as quantus
 from models import models
 from data import dataloaders, datasets, transforms
 from attribution import zennit_utils as zutils
 from utils import arguments as argument_utils
+
+XAI_METHODS = {
+        "gradient": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "canonizer": None,
+            "composite": None,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+        },
+        "lrp-epsilon": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "composite": zutils.Epsilon,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {
+                "stabilizer": 1e-6,
+                "epsilon": 1e-6
+            },
+        },
+        "lrp-zplus": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "composite": zutils.ZPlus,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {
+                "stabilizer": 1e-6,
+            },
+        },
+        "guided-backprop": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "composite": zcomp.GuidedBackprop,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+        },
+        "excitation-backprop": {
+            "xai_lib": "zennit",
+            "attributor": zattr.SmoothGrad,
+            "composite": zcomp.ExcitationBackprop,
+            "canonizer_kwargs": {},
+            "composite_kwargs": {},
+        },
+    }
+
+def plot_model_parameter_randomisation_experiment(
+    results,
+    *args,
+    **kwargs,
+) -> None:
+
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.sans-serif'] = 'CMU Serif'
+    plt.rcParams.update({'font.size': 15})
+    fig, ax = plt.subplots(1, 1, figsize=(9, 6))
+    ax.set_ylabel(kwargs.get("similarity_metric", "Score"))
+    ax.set_xlabel("Layers")
+    ax.set_ylim([0, 1])
+
+    for method in results.keys():
+        layers = list(results[method].keys())
+        scores: Dict[Any, Any] = {k: [] for k in layers}
+        for layer in layers:
+            for rand in results[method][layer]:
+                for sample in rand:
+                    scores[layer].append(sample)
+
+        ax.plot(layers, [np.mean(v) for k, v in scores.items()], label=method)
+
+    ax.set_xticklabels(layers, rotation=90)
+    ax.legend()
+
+    fig.subplots_adjust(left=0.2, right=0.95, bottom=0.2, top=0.95, wspace=0, hspace=0)
+    
+    if kwargs.get("file_name", None) is not None:
+        fig.savefig(kwargs.get("file_name", None))
+    #plt.show()
+
+def plot_heatmap(attr, dst, cmap="seismic", level=2.0):
+    """
+    Plots a single heatmaps from src .npy file, and
+    """
+
+    # Preprocess attributions
+    attr = np.sum(attr, axis=0)
+    amax = attr.max((0, 1), keepdims=True)
+    attr = (attr + amax) / 2 / amax
+
+    # Render and save image
+    zimage.imsave(
+        dst,
+        attr,
+        vmin=0.,
+        vmax=1.,
+        level=level,
+        cmap=cmap
+    )
+
+def plot_input(img, dst, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+    """
+    Plots a single input image from src .npy file, and saves it to dst as a .png
+    """
+
+    # TODO: Preprocess?
+    img = img.transpose(1, 2, 0)
+    img *= std
+    img += mean
+    img = img*255
+    img = np.uint8(img)
+
+    # Render and save image
+    img = Image.fromarray(img, mode="RGB")
+    img.save(dst)
 
 @click.group()
 def main():
@@ -23,26 +145,75 @@ def main():
 @click.argument("data-path", type=click.Path(), required=True)
 @click.argument("labelmap-path", type=click.Path(), required=True)
 @click.argument("model-name", type=str, required=True)
+@click.argument("xai-methodname", type=str, required=True)
+@click.argument("xai-n-noisedraws", type=int, required=True)
+@click.argument("xai-noiselevel", type=float, required=True)
+@click.argument("eval-layerorder", type=str, required=True)
+@click.argument("eval-n-perturbations", type=int, required=True)
+@click.argument("eval-perturbation-noiselevel", type=float, required=True)
+@click.argument("eval-n-randomizations", type=int, required=True)
 @click.argument("save-path", type=click.Path(), required=True)
 @click.option("--use-cpu", type=bool, default=False, required=False)
 @click.option("--batch-size", type=int, default=32, required=False)
 @click.option("--shuffle", type=bool, default=False, required=False)
+@click.option("--seed", type=int, default=None, required=False)
+@click.option("--wandb-key", type=str, default="", required=False)
 def randomization(
         dataset_name,
         data_path,
         labelmap_path,
         model_name,
+        xai_methodname,
+        xai_n_noisedraws,
+        xai_noiselevel,
+        eval_layerorder,
+        eval_n_perturbations,
+        eval_perturbation_noiselevel,
+        eval_n_randomizations,
         save_path,
         use_cpu,
         batch_size,
-        shuffle
+        shuffle,
+        seed,
+        wandb_key,
 ):
     """
     Evaluate
     """
-    # Set experiment path using current timestamp
+
+    # Set save paths
     save_path = os.path.join(save_path, dataset_name, model_name)
     os.makedirs(save_path, exist_ok=True)
+    wandbpath = os.path.join(save_path, "wandb")
+    os.makedirs(wandbpath, exist_ok=True)
+
+    # Set wandb key
+    if wandb_key is not None:
+        os.environ["WANDB_API_KEY"] = wandb_key
+
+    # Set up wandb
+    id = wandb.util.generate_id()
+    wandb.init(
+        id=id,
+        resume="allow",
+        project="denoise-sanity-checks",
+        dir=wandbpath,
+        config={
+            "dataset_name": dataset_name,
+            "model_name": model_name,
+            "xai_methodname": xai_methodname,
+            "xai_n_noisedraws": xai_n_noisedraws,
+            "xai_noiselevel": xai_noiselevel,
+            "eval_layer_order": eval_layerorder,
+            "eval_n_perturbations": eval_n_perturbations,
+            "eval_perturbation_noiselevel": eval_perturbation_noiselevel,
+            "eval_n_randomizations": eval_n_randomizations,
+            "use_cpu": use_cpu,
+            "batch_size": batch_size,
+            "shuffle": shuffle,
+            "seed": seed,
+        }
+    )
 
     # Save arguments
     print("Saving arguments...")
@@ -67,8 +238,9 @@ def randomization(
         labelmap_path=labelmap_path
     )
 
-    # TODO: Remove
-    dataset.samples = dataset.samples[:50]
+    print(f"Number of Samples in Dataset: {len(dataset.samples)}")
+    dataset.samples = dataset.samples[:1000]
+    print(f"Reduced of Samples in Dataset: {len(dataset.samples)}")
 
     # Prepare dataloaders
     logging.info("Preparing dataloaders...")
@@ -86,11 +258,13 @@ def randomization(
 
     # Prepare Quantus Eval
     metrics = {
-        "sampling-based-model-parameter-randomisation": quantus.ModelParameterRandomisationSampling(
-            num_draws = 1,
+        f"SMPR-perturb_{eval_n_perturbations}_{eval_perturbation_noiselevel}-random_{eval_n_randomizations}": quantus.ModelParameterRandomisationSampling(
+            n_perturbations = eval_n_perturbations,
+            perturbation_noise_level = eval_perturbation_noiselevel,
+            n_randomisations = eval_n_randomizations,
             similarity_func = quantus.similarity_func.ssim,
-            layer_order = "bottom_up",
-            seeds = [42],
+            layer_order = eval_layerorder,
+            seed = seed,
             return_sample_correlation = False,
             abs = False,
             normalise = True,
@@ -99,99 +273,29 @@ def randomization(
             aggregate_func = None,
             default_plot_func = None,
             disable_warnings = False,
-            display_progressbar = True
-        )
-    }
-    xai_methods = {
-        "gradient": {
-            "xai_lib": "zennit",
-            "attributor": zattr.Gradient,
-            "canonizer": None,
-            "composite": None,
-            "attributor_kwargs": {},
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-            "device": device
-        },
-        "lrp-epsilon": {
-            "xai_lib": "zennit",
-            "attributor": zattr.Gradient,
-            "canonizer": zutils.get_zennit_canonizer(model),
-            "composite": zutils.Epsilon,
-            "attributor_kwargs": {},
-            "canonizer_kwargs": {},
-            "composite_kwargs": {
-                "stabilizer": 1e-6,
-                "epsilon": 1e-6
-            },
-            "device": device
-        },
-        "lrp-zplus": {
-            "xai_lib": "zennit",
-            "attributor": zattr.Gradient,
-            "canonizer": zutils.get_zennit_canonizer(model),
-            "composite": zutils.ZPlus,
-            "attributor_kwargs": {},
-            "canonizer_kwargs": {},
-            "composite_kwargs": {
-                "stabilizer": 1e-6,
-            },
-            "device": device
-        },
-        "guided-backprop": {
-            "xai_lib": "zennit",
-            "attributor": zattr.Gradient,
-            "canonizer": zutils.get_zennit_canonizer(model),
-            "composite": zcomp.GuidedBackprop,
-            "attributor_kwargs": {},
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-            "device": device
-        },
-        "excitation-backprop": {
-            "xai_lib": "zennit",
-            "attributor": zattr.Gradient,
-            "canonizer": zutils.get_zennit_canonizer(model),
-            "composite": zcomp.ExcitationBackprop,
-            "attributor_kwargs": {},
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-            "device": device
-        },
-        "smoothgrad": {
-            "xai_lib": "zennit",
-            "attributor": zattr.SmoothGrad,
-            "canonizer": None,
-            "composite": None,
-            "attributor_kwargs": {
-                "noise_level": 0.1,
-                "n_iter": 10,
-            },
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-            "device": device
-        },
-        "intgrad": {
-            "xai_lib": "zennit",
-            "attributor": zattr.IntegratedGradients,
-            "canonizer": None,
-            "composite": None,
-            "attributor_kwargs": {
-                "baseline_fn": None,
-                "n_iter": 10,
-            },
-            "canonizer_kwargs": {},
-            "composite_kwargs": {},
-            "device": device
-        },
+            display_progressbar = False,
+        ),
     }
 
+    xai_attributor_kwargs = {
+        "n_iter": xai_n_noisedraws,
+        "noise_level": xai_noiselevel
+    }
+    xai_canonizer = zutils.get_zennit_canonizer(model)
+    xai_methods = {xai_methodname: {
+        **XAI_METHODS[xai_methodname], 
+        "canonizer": xai_canonizer,
+        "attributor_kwargs": xai_attributor_kwargs,
+        "device": device,
+    }}
 
     # Iterate over Batches and Evaluate
-    results = []
-    for batch, labels in loader:
+    results =  {m: {x: {} for x in xai_methods.keys()} for m in metrics.keys()} 
+    for i, (batch, labels) in enumerate(loader):
 
-        results.append(quantus.evaluate(
+        print("Evaluating Batch {}/{}".format(i+1, len(loader)))
+
+        batch_results = quantus.evaluate(
             metrics = metrics,
             xai_methods = xai_methods,
             model = model,
@@ -201,13 +305,60 @@ def randomization(
             agg_func = lambda x: x,
             progress = True,
             explain_func_kwargs = None,
+            attributions_path = os.path.join(save_path, "attributions"),
             call_kwargs = {"set1": {"device": device}},
-        ))
+        )
 
-        print(results)
-        exit()
+        # Append correctly to results
+        for m in metrics.keys():
+            for x in xai_methods.keys():
+                layers = list(batch_results[x][m]["set1"].keys())
+                for l in layers:
+                    if l not in results[m][x].keys():
+                        results[m][x][l] = []
+                    results[m][x][l] += batch_results[x][m]["set1"][l]
+
+    resultsfile = os.path.join(save_path, "results.json")
+    with open(resultsfile, "w") as jsonfile:
+        json.dump(results, jsonfile)
+
+    for metric, m_results in results.items():
+        plot_model_parameter_randomisation_experiment(
+            m_results,
+            similarity_score = "SSIM",
+            file_name = os.path.join(save_path, f"{metric}.svg")
+        )
+        for method in m_results.keys():
+            layers = list(m_results[method].keys())
+            for l, layer in enumerate(layers):
+                scores = []
+                for rand in m_results[method][layer]:
+                    for sample in rand:
+                        scores.append(sample)
+                wandb.log({
+                    "layer": layer,
+                    "layer_id": l,
+                    "mean-score": np.mean(scores),
+                    "std-score": np.std(scores)
+                })
 
 
+
+@main.command(name="plot-attribution-results")
+@click.argument("path", type=str, required=True)
+def randomization(
+        path,
+):
+    for layer in os.listdir(path):
+        for file in os.listdir(os.path.join(path, layer)):
+            if file.endswith(".npy"):
+                fpath = os.path.join(path, layer, file)
+                if "input" in file:
+                    plot_input(np.load(fpath), fpath.split(".npy")[0]+".png", mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+                elif "original_attribution" in file:
+                    plot_heatmap(np.load(fpath), fpath.split(".npy")[0]+".png", cmap="seismic", level=2.0)
+                elif "perturbed_attribution" in file:
+                    plot_heatmap(np.load(fpath), fpath.split(".npy")[0]+".png", cmap="seismic", level=2.0)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: pytorch/pytorch:1.10.0-cuda11.3-cudnn8-runtime
+
+%files
+
+  ../../../../Quantus /opt/Quantus
+
+%post
+
+  export "PATH=/opt/conda/bin:$PATH"
+  cd /opt/Quantus/quantus
+  python3 -m pip install tox
+  python3 -m tox devenv
+  . /opt/Quantus/quantus/venv/bin/activate
+  python3 -m pip install wandb
+
+  apt-get update -y
+  apt-get install -y libglib2.0-0 libx11-6 libxext6
+
+%runscript
+
+  cd /opt/Quantus/METHOD_NAME/scripts/
+  . /opt/Quantus/quantus/venv/bin/activate
+  python main.py "$@"
+
