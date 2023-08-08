@@ -384,7 +384,7 @@ class AvgSensitivity(BatchedPerturbationMetric):
                     b=a_perturbed[instance_id].flatten(),
                 )
                 numerator = self.norm_numerator(a=sensitivities)
-                denominator = self.norm_denominator(a=x_batch[instance_id].flatten())
+                denominator = self.norm_denominator(a=a_batch[instance_id].flatten())
                 sensitivities_norm = numerator / denominator
                 similarities[instance_id, step_id] = sensitivities_norm
         mean_func = np.mean if self.return_nan_when_prediction_changes else np.nanmean
