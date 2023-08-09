@@ -4,7 +4,7 @@
 #SBATCH --output=%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --gpus=1
 
 data="$1"
@@ -34,30 +34,42 @@ cp -r ${HOME}/Quantus/METHOD_NAME/scripts/label_map_imagenet.json ${LOCAL_JOB_DI
 dir ${LOCAL_JOB_DIR}
 dir ${LOCAL_JOB_DIR}/results
 
-/usr/bin/time -v singularity \
-  run \
-        --nv \
-        --bind /data/datapool/datasets/ImageNet-complete/:/mnt/datasets/${data} \
-        --bind ${LOCAL_JOB_DIR}/labelmaps:/mnt/labelmaps/ \
-        --bind ${LOCAL_JOB_DIR}/results:/mnt/output/ \
-        ../singularity/smpr.sif evaluate-randomisation \
-          ${data} \
-          /mnt/datasets/${data} \
-          /mnt/labelmaps/label_map_imagenet.json \
-          ${model} \
-          ${xai_methodname} \
-          ${xai_n_noisedraws} \
-          ${xai_noiselevel} \
-          ${eval_layer_order} \
-          ${eval_n_perturbations} \
-          ${eval_perturbation_noiselevel} \
-          ${eval_n_randomizations} \
-          /mnt/output/ \
-          --use-cpu True \
-          --batch-size 32 \
-          --shuffle True \
-          --seed ${seed} \
-          --wandb-key ${wandb_key} \
+# Handle torch not recognizing GPU on Cluster
+for i in {1..30}; do
+  /usr/bin/time -v apptainer \
+    run \
+          --nv \
+          --bind /data/datapool/datasets/ImageNet-complete/:/mnt/datasets/${data} \
+          --bind ${LOCAL_JOB_DIR}/labelmaps:/mnt/labelmaps/ \
+          --bind ${LOCAL_JOB_DIR}/results:/mnt/output/ \
+          ../singularity/smpr.sif evaluate-randomisation \
+            ${data} \
+            /mnt/datasets/${data} \
+            /mnt/labelmaps/label_map_imagenet.json \
+            ${model} \
+            ${xai_methodname} \
+            ${xai_n_noisedraws} \
+            ${xai_noiselevel} \
+            ${eval_layer_order} \
+            ${eval_n_perturbations} \
+            ${eval_perturbation_noiselevel} \
+            ${eval_n_randomizations} \
+            /mnt/output/ \
+            --use-cpu False \
+            --batch-size 32 \
+            --shuffle True \
+            --seed ${seed} \
+            --wandb-key ${wandb_key}
+  ret_val=$?;
+
+  if (( $ret_val == 77 )); then 
+    echo "Apptainer call failed at torch.cuda.is_available. Trying again for the $i th time"
+    sleep 10;
+    continue;
+  fi
+  
+  break;
+done
 
 base=${data}-${model}-${xai_methodname}-${xai_n_noisedraws}-${xai_noiselevel}-${eval_layer_order}-${eval_n_perturbations}-${eval_perturbation_noiselevel}-${eval_n_randomizations}-${seed} \
 cd ${LOCAL_JOB_DIR}

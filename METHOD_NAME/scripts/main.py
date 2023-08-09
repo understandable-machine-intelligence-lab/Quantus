@@ -3,6 +3,7 @@ import os
 import logging
 from typing import List, Union, Dict, Any
 import json
+import sys
 
 import numpy as np
 import torch
@@ -17,11 +18,15 @@ from zennit import attribution as zattr
 from zennit import image as zimage
 from zennit import composites as zcomp
 
-import custom_quantus as quantus
+import quantus
 from models import models
 from data import dataloaders, datasets, transforms
 from attribution import zennit_utils as zutils
 from utils import arguments as argument_utils
+
+# This is for handling a sporadic error on the gpu-cluster
+if not torch.cuda.is_available():
+    sys.exit(77)
 
 XAI_METHODS = {
         "gradient": {
@@ -222,7 +227,11 @@ def randomization(
 
     # Find correct device
     print("Preparing device and transforms...")
-    device = torch.device('cuda' if torch.cuda.is_available() and not use_cpu else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = None
+        raise ValueError("CUDA IS NOT AVAILABLE")
 
     # Prepare transforms
     transform = transforms.get_transforms(dataset_name, mode="test")
@@ -294,6 +303,7 @@ def randomization(
     for i, (batch, labels) in enumerate(loader):
 
         print("Evaluating Batch {}/{}".format(i+1, len(loader)))
+        print(device)
 
         batch_results = quantus.evaluate(
             metrics = metrics,

@@ -298,7 +298,7 @@ class ModelParameterRandomisationSampling(ModelParameterRandomisation):
                     a_batch_perturbed = np.mean(a_batch_perturbed_draws, axis=0)
 
                     # Get id for storage
-                    if attributions_path is not None and randomisation == self.n_randomisations-1:
+                    if attributions_path is not None:
                         savepath = os.path.join(attributions_path, f"{l}-{layer_name}")
                         os.makedirs(savepath, exist_ok=True)
                         last_id = 0
