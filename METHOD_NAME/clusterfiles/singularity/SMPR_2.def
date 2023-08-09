@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+
+%files
+
+  ../../scripts /opt/scripts
+
+%post
+
+  export "PATH=/opt/conda/bin:$PATH"
+  python3 -m pip install \
+    "numpy>=1.19.5" \
+    "opencv-python>=4.5.5.62" \
+    "scikit-image>=0.19.3" \
+    "scikit-learn>=0.24.2" \
+    "scipy>=1.7.3" \
+    "tqdm>=4.62.3" \
+    "matplotlib>=3.3.4" \
+    "torchvision>=0.14.0" \
+    "zennit>=0.5.1" \
+    "cachetools" \
+    "wandb" \
+
+  apt-get update -y
+  apt-get install -y libglib2.0-0 libx11-6 libxext6
+
+  conda list
+
+%runscript
+
+  cd /opt/scripts/
+  conda list
+  python main.py "$@"
+
