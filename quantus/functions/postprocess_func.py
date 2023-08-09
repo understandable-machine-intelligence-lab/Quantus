@@ -52,6 +52,11 @@ def explanation_skill_score(
         assert np.all(y_refs <= 1), "For skill score calculation, 'y_refs' cannot contain values larger than 1."
 
     elif score_direction == ScoreDirection.LOWER:
+
+        if np.any(y_scores <= 0):
+            print("...")
+            y_scores = np.abs(y_scores)
+
         optimal_value = 0.0
 
     else:

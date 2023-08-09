@@ -30,18 +30,15 @@ def check_kwargs(kwargs):
     """
     if kwargs:
         raise ValueError(
-            f"Please handle the following arguments: {kwargs}. "
-            "There were unexpected keyword arguments passed to the metric method. "
-            "Quantus has undergone heavy API-changes since the last release(s), "
-            "to make the kwargs-passing and error handling more robust and transparent. "
-            "Passing unexpected keyword arguments is now discouraged. Please adjust "
-            "your code to pass your kwargs in dictionaries to the arguments named "
-            "normalise_func_kwargs, explain_func_kwargs or model_predict_kwargs. "
-            "For evaluate function pass explain_func_kwargs and call_kwargs."
-            "And also, always make sure to check for typos. "
-            "If these API changes are not suitable for your project's needs, "
-            "please install quantus using 'pip install quantus==0.1.6' "
-        )
+            f"Unexpected arguments were found: {kwargs}. Please check the arguments passed to the metric." 
+            "All kwargs should be passed either under 'normalise_func_kwargs', 'explain_func_kwargs' or "
+            "'model_predict_kwargs' if you are directly using a metric method. "
+            "If you are using 'quantus.evaluate', pass the extra arguments under 'explain_func_kwargs' and 'call_kwargs'. "
+            "Please review your code for possible typos or misnamed arguments. "
+            "You can view all available parameters by utilising the 'get_params' method on a 'Metric' instance. " 
+            "Simply use 'quantus.Metric().get_params'."
+    )
+
 
 
 def warn_noise_zero(noise: float) -> None:

@@ -16,7 +16,7 @@ __pycache__/
 *.pth
 
 # dev
-temp/
+quantus/__init__.pyc
 
 # code coverage
 *.gcno
