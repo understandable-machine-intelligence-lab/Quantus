@@ -4,6 +4,11 @@
 # You should have received a copy of the GNU Lesser General Public License along with Quantus. If not, see <https://www.gnu.org/licenses/>.
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
+# Set the correct version.
+import toml
+package = toml.load("pyproject.toml")
+__version__ = package["project"]["version"]
+
 # Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
 
@@ -18,3 +23,9 @@ from quantus.metrics import *
 
 # Expose quantus.helpers.constants to the user.
 from quantus.helpers.constants import *
+
+# Expose the model interfaces.
+from quantus.helpers.model import *
+
+# Expose the helpers utils.
+from quantus.helpers.utils import *
