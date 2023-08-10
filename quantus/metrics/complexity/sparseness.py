@@ -52,7 +52,6 @@ class Sparseness(Metric):
     score_direction = ScoreDirection.HIGHER
     evaluation_category = EvaluationCategory.COMPLEXITY
 
-    @asserts.attributes_check
     def __init__(
         self,
         abs: bool = True,

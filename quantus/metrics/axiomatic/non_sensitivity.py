@@ -52,7 +52,6 @@ class NonSensitivity(PerturbationMetric):
     score_direction = ScoreDirection.LOWER
     evaluation_category = EvaluationCategory.AXIOMATIC
 
-    @asserts.attributes_check
     def __init__(
         self,
         eps: float = 1e-5,
