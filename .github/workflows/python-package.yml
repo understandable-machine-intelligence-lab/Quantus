@@ -34,4 +34,8 @@ jobs:
       - name: Test with PyTest
         run: tox run
       - name: Test building package
-        run: tox run -e build
+        run: |
+          tox run -e build
+          pip install dist/*.whl
+          cd /tmp
+          python3 -c "import quantus;quantus.__version__"

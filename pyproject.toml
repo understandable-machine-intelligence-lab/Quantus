@@ -4,7 +4,6 @@ name = "quantus"
 
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
-version = "0.4.2"
 description = "A metrics toolkit to evaluate neural network explanations."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -35,8 +34,9 @@ dependencies = [
     "scipy>=1.7.3",
     "tqdm>=4.62.3",
     "matplotlib>=3.3.4",
-    "toml>=0.6.0"
 ]
+
+dynamic = ["version"]
 
 [project.urls]
 "Documentation" = "https://quantus.readthedocs.io/en/latest/"
