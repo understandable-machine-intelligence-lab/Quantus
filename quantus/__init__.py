@@ -5,9 +5,7 @@
 # Quantus project URL: <https://github.com/understandable-machine-intelligence-lab/Quantus>.
 
 # Set the correct version.
-import toml
-package = toml.load("pyproject.toml")
-__version__ = package["project"]["version"]
+__version__ = "0.4.2"
 
 # Expose quantus.evaluate to the user.
 from quantus.evaluation import evaluate
