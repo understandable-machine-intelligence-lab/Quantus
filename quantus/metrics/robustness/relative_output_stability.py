@@ -268,33 +268,6 @@ class RelativeOutputStability(PerturbationMetric):
         denominator += (denominator == 0) * self._eps_min  # prevent division by 0
         return nominator / denominator
 
-    def generate_normalised_explanations_batch(
-        self, x_batch: np.ndarray, y_batch: np.ndarray, explain_func: Callable
-    ) -> np.ndarray:
-        """
-        Generate explanation, apply normalization and take absolute values if configured so during metric instantiation.
-
-        Parameters
-        ----------
-        x_batch: np.ndarray
-            4D tensor representing batch of input images.
-        y_batch: np.ndarray
-             1D tensor, representing predicted labels for the x_batch.
-        explain_func: callable
-            Function to generate explanations, takes only inputs,targets kwargs.
-
-        Returns
-        -------
-        a_batch: np.ndarray
-            A batch of explanations.
-        """
-        a_batch = explain_func(inputs=x_batch, targets=y_batch)
-        if self.normalise:
-            a_batch = self.normalise_func(a_batch, **self.normalise_func_kwargs)
-        if self.abs:
-            a_batch = np.abs(a_batch)
-        return expand_attribution_channel(a_batch, x_batch)
-
     def evaluate_batch(
         self,
         model: ModelInterface,
@@ -347,9 +320,7 @@ class RelativeOutputStability(PerturbationMetric):
             )
 
             # Generate explanations for perturbed input.
-            a_batch_perturbed = self.generate_normalised_explanations_batch(
-                x_perturbed, y_batch, _explain_func
-            )
+            a_batch_perturbed = self.explain_batch(model, x_perturbed, y_batch)
 
             # Execute forward pass on perturbed inputs.
             logits_perturbed = model.predict(x_perturbed)
@@ -359,21 +330,12 @@ class RelativeOutputStability(PerturbationMetric):
             )
             ros_batch[index] = ros
 
-            # We're done with this sample if `return_nan_when_prediction_changes`==False.
-            if not self._return_nan_when_prediction_changes:
-                continue
-
+            
             # If perturbed input caused change in prediction, then it's ROS=nan.
-            predicted_y = model.predict(x_batch).argmax(axis=-1)
-            predicted_y_perturbed = model.predict(x_perturbed).argmax(axis=-1)
-            changed_prediction_indices = np.argwhere(
-                predicted_y != predicted_y_perturbed
-            ).reshape(-1)
+            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
 
-            if len(changed_prediction_indices) == 0:
-                continue
-
-            ros_batch[index, changed_prediction_indices] = np.nan
+            if len(changed_prediction_indices) != 0:
+                ros_batch[index, changed_prediction_indices] = np.nan
 
         # Compute ROS.
         result = np.max(ros_batch, axis=0)

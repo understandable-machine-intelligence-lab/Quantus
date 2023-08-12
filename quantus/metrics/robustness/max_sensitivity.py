@@ -326,21 +326,7 @@ class MaxSensitivity(PerturbationMetric):
                 **self.perturb_func_kwargs,
             )
 
-            changed_prediction_indices = (
-                np.argwhere(
-                    model.predict(x_batch).argmax(axis=-1)
-                    != model.predict(x_perturbed).argmax(axis=-1)
-                ).reshape(-1)
-                if self.return_nan_when_prediction_changes
-                else []
-            )
-
-            x_input = model.shape_input(
-                x=x_perturbed,
-                shape=x_batch.shape,
-                channel_first=True,
-                batched=True,
-            )
+            changed_prediction_indices = self.changed_prediction_indices(model, x_batch, x_perturbed)
 
             for x_instance, x_instance_perturbed in zip(x_batch, x_perturbed):
                 warn.warn_perturbation_caused_no_change(
@@ -349,21 +335,7 @@ class MaxSensitivity(PerturbationMetric):
                 )
 
             # Generate explanation based on perturbed input x.
-            a_perturbed = self.explain_func(
-                model=model.get_model(),
-                inputs=x_input,
-                targets=y_batch,
-                **self.explain_func_kwargs,
-            )
-
-            if self.normalise:
-                a_perturbed = self.normalise_func(
-                    a_perturbed,
-                    **self.normalise_func_kwargs,
-                )
-
-            if self.abs:
-                a_perturbed = np.abs(a_perturbed)
+            a_perturbed = self.explain_batch(model, x_perturbed, y_batch)
 
             # Measure similarity for each instance separately.
             for instance_id in range(batch_size):
